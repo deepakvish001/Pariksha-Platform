@@ -1,3 +1,4 @@
+import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
 import FeatureTabs from "@/components/FeatureTabs";
@@ -11,14 +12,21 @@ import CTA from "@/components/CTA";
 const Index = () => {
   return (
     <main className="min-h-screen bg-background">
+      <Navbar />
       <Hero />
-      <Features />
+      <section id="features">
+        <Features />
+      </section>
       <FeatureTabs />
       <Checklist />
-      <Analytics />
+      <section id="analytics">
+        <Analytics />
+      </section>
       <Momentum />
       <Upcoming />
-      <Pricing />
+      <section id="pricing">
+        <Pricing />
+      </section>
       <CTA />
     </main>
   );
