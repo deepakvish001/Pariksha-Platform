@@ -402,6 +402,12 @@ const QuestionsTable = ({
   toggleRevision,
   isLoggedIn,
 }: QuestionsTableProps) => {
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  const toggleExpand = (id: number) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
   return (
     <div className="border border-border/50 rounded-lg overflow-hidden">
       {/* Header */}
@@ -422,72 +428,135 @@ const QuestionsTable = ({
             No questions found
           </div>
         ) : (
-          questions.map((question, index) => (
-            <motion.div
-              key={question.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: index * 0.02 }}
-              className="grid grid-cols-[40px_1fr_100px_100px_80px_80px] gap-4 px-4 py-4 hover:bg-muted/20 transition-colors items-start"
-            >
-              <div className="text-sm text-muted-foreground pt-1">{index + 1}</div>
-              <div className="min-w-0">
-                <h4 className="font-medium text-foreground mb-1">{question.text}</h4>
-                {question.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {question.description}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Badge
-                  variant="outline"
-                  className={cn("text-xs", difficultyColors[question.difficulty])}
-                >
-                  {question.difficulty}
-                </Badge>
-              </div>
-              <div>
-                {showCategory && question.category && (
-                  <Badge variant="outline" className="text-xs">
-                    {question.category}
-                  </Badge>
-                )}
-              </div>
-              <div className="flex justify-center">
-                <button
-                  onClick={() => toggleSolved(question.id)}
+          questions.map((question, index) => {
+            const hasAnswer = !!question.answer;
+            const isExpanded = expandedId === question.id;
+
+            return (
+              <div key={question.id}>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: index * 0.02 }}
                   className={cn(
-                    "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all",
-                    isSolved(question.id)
-                      ? "border-green-500 bg-green-500/20 text-green-500"
-                      : "border-border hover:border-green-500/50",
-                    !isLoggedIn && "opacity-50"
+                    "grid grid-cols-[40px_1fr_100px_100px_80px_80px] gap-4 px-4 py-4 hover:bg-muted/20 transition-colors items-start",
+                    isExpanded && "bg-muted/30"
                   )}
-                  title={isLoggedIn ? "Mark as solved" : "Sign in to track progress"}
                 >
-                  {isSolved(question.id) && <Check className="h-4 w-4" />}
-                </button>
-              </div>
-              <div className="flex justify-center">
-                <button
-                  onClick={() => toggleRevision(question.id)}
-                  className={cn(
-                    "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all",
-                    isRevision(question.id)
-                      ? "border-yellow-500 bg-yellow-500/20 text-yellow-500"
-                      : "border-border hover:border-yellow-500/50",
-                    !isLoggedIn && "opacity-50"
+                  <div className="text-sm text-muted-foreground pt-1">{index + 1}</div>
+                  <div className="min-w-0">
+                    <div
+                      className={cn(
+                        "flex items-start gap-2",
+                        hasAnswer && "cursor-pointer group"
+                      )}
+                      onClick={() => hasAnswer && toggleExpand(question.id)}
+                      role={hasAnswer ? "button" : undefined}
+                      tabIndex={hasAnswer ? 0 : undefined}
+                      onKeyDown={(e) => {
+                        if (hasAnswer && (e.key === "Enter" || e.key === " ")) {
+                          e.preventDefault();
+                          toggleExpand(question.id);
+                        }
+                      }}
+                    >
+                      {hasAnswer && (
+                        <motion.div
+                          animate={{ rotate: isExpanded ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex-shrink-0 mt-0.5"
+                        >
+                          <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </motion.div>
+                      )}
+                      <div className="flex-1">
+                        <h4 className={cn(
+                          "font-medium text-foreground mb-1 transition-colors",
+                          hasAnswer && "group-hover:text-primary",
+                          isSolved(question.id) && "line-through text-muted-foreground"
+                        )}>
+                          {question.text}
+                        </h4>
+                        {question.description && !isExpanded && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {question.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <Badge
+                      variant="outline"
+                      className={cn("text-xs", difficultyColors[question.difficulty])}
+                    >
+                      {question.difficulty}
+                    </Badge>
+                  </div>
+                  <div>
+                    {showCategory && question.category && (
+                      <Badge variant="outline" className="text-xs">
+                        {question.category}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex justify-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSolved(question.id);
+                      }}
+                      className={cn(
+                        "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all",
+                        isSolved(question.id)
+                          ? "border-emerald-500 bg-emerald-500/20 text-emerald-500"
+                          : "border-border hover:border-emerald-500/50",
+                        !isLoggedIn && "opacity-50"
+                      )}
+                      title={isLoggedIn ? "Mark as solved" : "Sign in to track progress"}
+                    >
+                      {isSolved(question.id) && <Check className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <div className="flex justify-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleRevision(question.id);
+                      }}
+                      className={cn(
+                        "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all",
+                        isRevision(question.id)
+                          ? "border-amber-500 bg-amber-500/20 text-amber-500"
+                          : "border-border hover:border-amber-500/50",
+                        !isLoggedIn && "opacity-50"
+                      )}
+                      title={isLoggedIn ? "Mark for revision" : "Sign in to track progress"}
+                    >
+                      <Bookmark
+                        className={cn("h-4 w-4", isRevision(question.id) && "fill-amber-500")}
+                      />
+                    </button>
+                  </div>
+                </motion.div>
+
+                {/* Expandable Answer Panel */}
+                <AnimatePresence>
+                  {isExpanded && hasAnswer && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-muted/20 border-t border-border/30"
+                    >
+                      <AnswerPanel answer={question.answer} />
+                    </motion.div>
                   )}
-                  title={isLoggedIn ? "Mark for revision" : "Sign in to track progress"}
-                >
-                  <Bookmark
-                    className={cn("h-4 w-4", isRevision(question.id) && "fill-yellow-500")}
-                  />
-                </button>
+                </AnimatePresence>
               </div>
-            </motion.div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
