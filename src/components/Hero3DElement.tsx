@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import heroCharacter from "@/assets/hero-character.png";
+import heroCharacter from "@/assets/hero-character-transparent.png";
 
 const Hero3DElement = () => {
   return (
-    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[350px] h-[450px] lg:w-[450px] lg:h-[580px] pointer-events-none hidden lg:block">
+    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[380px] h-[550px] lg:w-[480px] lg:h-[680px] pointer-events-none hidden lg:block">
       {/* Subtle glow behind character */}
       <motion.div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/30 rounded-full blur-3xl"
