@@ -49,10 +49,13 @@ export type Database = {
           course_name: string | null
           created_at: string
           current_experience: string | null
+          email_notifications_enabled: boolean | null
           experience: string | null
           id: string
           interested_features: string[] | null
+          marketing_emails_enabled: boolean | null
           mobile_number: string | null
+          new_feature_alerts_enabled: boolean | null
           onboarding_completed: boolean | null
           other_description: string | null
           referral_source: string | null
@@ -62,6 +65,7 @@ export type Database = {
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
+          weekly_digest_enabled: boolean | null
         }
         Insert: {
           branch?: string | null
@@ -70,10 +74,13 @@ export type Database = {
           course_name?: string | null
           created_at?: string
           current_experience?: string | null
+          email_notifications_enabled?: boolean | null
           experience?: string | null
           id?: string
           interested_features?: string[] | null
+          marketing_emails_enabled?: boolean | null
           mobile_number?: string | null
+          new_feature_alerts_enabled?: boolean | null
           onboarding_completed?: boolean | null
           other_description?: string | null
           referral_source?: string | null
@@ -83,6 +90,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
+          weekly_digest_enabled?: boolean | null
         }
         Update: {
           branch?: string | null
@@ -91,10 +99,13 @@ export type Database = {
           course_name?: string | null
           created_at?: string
           current_experience?: string | null
+          email_notifications_enabled?: boolean | null
           experience?: string | null
           id?: string
           interested_features?: string[] | null
+          marketing_emails_enabled?: boolean | null
           mobile_number?: string | null
+          new_feature_alerts_enabled?: boolean | null
           onboarding_completed?: boolean | null
           other_description?: string | null
           referral_source?: string | null
@@ -104,6 +115,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"]
+          weekly_digest_enabled?: boolean | null
         }
         Relationships: []
       }

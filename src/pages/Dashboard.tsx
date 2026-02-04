@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { 
@@ -20,7 +20,10 @@ import {
   Phone,
   Target,
   Sparkles,
-  Calendar
+  Camera,
+  Upload,
+  Bell,
+  Mail
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +34,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -50,6 +56,10 @@ interface ExtendedProfile {
   mobile_number?: string;
   interested_features?: string[];
   referral_source?: string;
+  email_notifications_enabled?: boolean;
+  marketing_emails_enabled?: boolean;
+  weekly_digest_enabled?: boolean;
+  new_feature_alerts_enabled?: boolean;
 }
 
 const experienceOptions = [
@@ -83,6 +93,21 @@ const yearOptions = [
   { value: "4th Year", label: "4th Year" },
   { value: "5th Year", label: "5th Year" },
   { value: "Other", label: "Other" },
+];
+
+const featureOptions = [
+  { id: "quiz", title: "Quiz" },
+  { id: "dsa", title: "DSA" },
+  { id: "aptitude", title: "Aptitude" },
+  { id: "interview_questions", title: "Interview Questions" },
+  { id: "cs_questions", title: "CS Questions" },
+  { id: "handwritten_notes", title: "Notes" },
+  { id: "projects", title: "Projects" },
+  { id: "cold_dms", title: "Cold DMs" },
+  { id: "job_portals", title: "Job Portals" },
+  { id: "roadmap", title: "Roadmap" },
+  { id: "interview_copilot", title: "Interview Copilot" },
+  { id: "companies", title: "Companies" },
 ];
 
 const experienceLabels: Record<string, string> = {
@@ -147,6 +172,11 @@ const Dashboard = () => {
   const [extendedProfile, setExtendedProfile] = useState<ExtendedProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   
+  // Avatar upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
+  
   // Edit profile modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -160,9 +190,20 @@ const Dashboard = () => {
     company_name: "",
     role: "",
     experience: "",
+    interested_features: [] as string[],
+    email_notifications_enabled: true,
+    marketing_emails_enabled: false,
+    weekly_digest_enabled: true,
+    new_feature_alerts_enabled: true,
   });
   const [phoneError, setPhoneError] = useState("");
   const [isSavingExtended, setIsSavingExtended] = useState(false);
+
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      setAvatarUrl(profile.avatar_url);
+    }
+  }, [profile]);
 
   useEffect(() => {
     const fetchExtendedProfile = async () => {
@@ -176,7 +217,6 @@ const Dashboard = () => {
 
       if (!error && data) {
         setExtendedProfile(data as ExtendedProfile);
-        // Pre-fill edit form
         setEditForm({
           mobile_number: data.mobile_number || "",
           current_experience: data.current_experience || "",
@@ -188,6 +228,11 @@ const Dashboard = () => {
           company_name: data.company_name || "",
           role: data.role || "",
           experience: data.experience || "",
+          interested_features: data.interested_features || [],
+          email_notifications_enabled: data.email_notifications_enabled ?? true,
+          marketing_emails_enabled: data.marketing_emails_enabled ?? false,
+          weekly_digest_enabled: data.weekly_digest_enabled ?? true,
+          new_feature_alerts_enabled: data.new_feature_alerts_enabled ?? true,
         });
       }
       setLoadingProfile(false);
@@ -195,6 +240,59 @@ const Dashboard = () => {
 
     fetchExtendedProfile();
   }, [user]);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({ variant: "destructive", title: "Please select an image file" });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ variant: "destructive", title: "Image must be less than 5MB" });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+
+      const newAvatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: newAvatarUrl })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(newAvatarUrl);
+      toast({ title: "Avatar updated!", description: "Your profile picture has been changed." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Upload failed", description: error.message });
+    }
+
+    setIsUploadingAvatar(false);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -209,16 +307,9 @@ const Dashboard = () => {
     const { error } = await updateProfile({ full_name: editName });
     
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Update failed",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "Update failed", description: error.message });
     } else {
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
-      });
+      toast({ title: "Profile updated", description: "Your profile has been updated successfully." });
       setIsEditing(false);
     }
     setIsUpdating(false);
@@ -230,6 +321,15 @@ const Dashboard = () => {
     setPhoneError("");
   };
 
+  const toggleFeature = (featureId: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      interested_features: prev.interested_features.includes(featureId)
+        ? prev.interested_features.filter(id => id !== featureId)
+        : [...prev.interested_features, featureId]
+    }));
+  };
+
   const getUserTypeFromExperience = (exp: string) => {
     const option = experienceOptions.find(o => o.value === exp);
     return option?.type || "other";
@@ -238,7 +338,6 @@ const Dashboard = () => {
   const handleSaveExtendedProfile = async () => {
     if (!user || !extendedProfile) return;
 
-    // Validate phone
     if (editForm.mobile_number && !validatePhoneNumber(editForm.mobile_number)) {
       setPhoneError("Please enter a valid phone number");
       return;
@@ -263,31 +362,25 @@ const Dashboard = () => {
         company_name: userType === "professional" ? editForm.company_name : null,
         role: userType === "professional" ? editForm.role : null,
         experience: userType === "professional" ? editForm.experience : null,
+        interested_features: editForm.interested_features,
+        email_notifications_enabled: editForm.email_notifications_enabled,
+        marketing_emails_enabled: editForm.marketing_emails_enabled,
+        weekly_digest_enabled: editForm.weekly_digest_enabled,
+        new_feature_alerts_enabled: editForm.new_feature_alerts_enabled,
       })
       .eq("id", extendedProfile.id);
 
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Update failed",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "Update failed", description: error.message });
     } else {
-      // Refresh profile
       const { data } = await supabase
         .from("user_profiles_extended")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
       
-      if (data) {
-        setExtendedProfile(data as ExtendedProfile);
-      }
-
-      toast({
-        title: "Profile updated",
-        description: "Your extended profile has been updated.",
-      });
+      if (data) setExtendedProfile(data as ExtendedProfile);
+      toast({ title: "Profile updated", description: "Your settings have been saved." });
       setIsEditModalOpen(false);
     }
 
@@ -296,12 +389,7 @@ const Dashboard = () => {
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return user?.email?.charAt(0).toUpperCase() || "U";
-    return name
-      .split(" ")
-      .map((n) => n.charAt(0))
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
+    return name.split(" ").map((n) => n.charAt(0)).join("").toUpperCase().slice(0, 2);
   };
 
   const getUserTypeIcon = () => {
@@ -322,6 +410,14 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleAvatarUpload}
+        accept="image/*"
+        className="hidden"
+      />
+
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-lg sticky top-0 z-50">
         <div className="section-container flex items-center justify-between h-16">
@@ -333,11 +429,7 @@ const Dashboard = () => {
           </Link>
 
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
+            <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
               {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
             <Button variant="ghost" size="icon">
@@ -354,91 +446,64 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="section-container py-8">
         {/* Welcome Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Welcome back, {profile?.full_name?.split(" ")[0] || "there"}! 👋
           </h1>
-          <p className="text-muted-foreground">
-            Here's an overview of your learning progress
-          </p>
+          <p className="text-muted-foreground">Here's an overview of your learning progress</p>
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Profile Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="lg:col-span-1 space-y-6"
-          >
-            {/* Basic Profile */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="lg:col-span-1 space-y-6">
             <div className="card-dark">
               <div className="flex flex-col items-center text-center">
-                <Avatar className="w-24 h-24 mb-4 border-4 border-primary/20">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
-                    {getInitials(profile?.full_name)}
-                  </AvatarFallback>
-                </Avatar>
+                {/* Avatar with upload */}
+                <div className="relative group mb-4">
+                  <Avatar className="w-24 h-24 border-4 border-primary/20">
+                    <AvatarImage src={avatarUrl || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
+                      {getInitials(profile?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingAvatar}
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  >
+                    {isUploadingAvatar ? (
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Camera className="w-6 h-6 text-white" />
+                    )}
+                  </button>
+                </div>
 
                 {isEditing ? (
                   <div className="w-full space-y-3">
-                    <Input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      placeholder="Your name"
-                      className="text-center"
-                    />
+                    <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Your name" className="text-center" />
                     <div className="flex justify-center gap-2">
-                      <Button
-                        size="sm"
-                        onClick={handleSaveProfile}
-                        disabled={isUpdating}
-                      >
-                        <Check className="w-4 h-4 mr-1" />
-                        Save
+                      <Button size="sm" onClick={handleSaveProfile} disabled={isUpdating}>
+                        <Check className="w-4 h-4 mr-1" /> Save
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setIsEditing(false);
-                          setEditName(profile?.full_name || "");
-                        }}
-                      >
-                        <X className="w-4 h-4 mr-1" />
-                        Cancel
+                      <Button size="sm" variant="outline" onClick={() => { setIsEditing(false); setEditName(profile?.full_name || ""); }}>
+                        <X className="w-4 h-4 mr-1" /> Cancel
                       </Button>
                     </div>
                   </div>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 mb-1">
-                      <h2 className="text-xl font-bold text-foreground">
-                        {profile?.full_name || "Set your name"}
-                      </h2>
-                      <button
-                        onClick={() => {
-                          setIsEditing(true);
-                          setEditName(profile?.full_name || "");
-                        }}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
+                      <h2 className="text-xl font-bold text-foreground">{profile?.full_name || "Set your name"}</h2>
+                      <button onClick={() => { setIsEditing(true); setEditName(profile?.full_name || ""); }} className="text-muted-foreground hover:text-foreground transition-colors">
                         <Edit2 className="w-4 h-4" />
                       </button>
                     </div>
                     <p className="text-muted-foreground text-sm">{user?.email}</p>
-                    
                     {extendedProfile && (
                       <Badge variant="secondary" className="mt-2">
                         <UserTypeIcon className="w-3 h-3 mr-1" />
-                        {extendedProfile.user_type === "student" ? "Student" : 
-                         extendedProfile.user_type === "professional" ? "Professional" : "Other"}
+                        {extendedProfile.user_type === "student" ? "Student" : extendedProfile.user_type === "professional" ? "Professional" : "Other"}
                       </Badge>
                     )}
                   </>
@@ -455,12 +520,7 @@ const Dashboard = () => {
 
             {/* Extended Profile Info */}
             {!loadingProfile && extendedProfile && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="card-dark space-y-4"
-              >
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card-dark space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-foreground flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-primary" />
@@ -469,224 +529,234 @@ const Dashboard = () => {
                   <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
                     <DialogTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-8">
-                        <Edit2 className="w-3.5 h-3.5 mr-1" />
-                        Edit
+                        <Edit2 className="w-3.5 h-3.5 mr-1" /> Edit
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Edit Profile Details</DialogTitle>
+                        <DialogTitle>Edit Profile Settings</DialogTitle>
                       </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        {/* Mobile Number */}
-                        <div className="space-y-2">
-                          <Label>Mobile Number</Label>
-                          <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <Input
-                              type="tel"
-                              value={editForm.mobile_number}
-                              onChange={(e) => handlePhoneChange(e.target.value)}
-                              placeholder="+91 98765 43210"
-                              className={cn("pl-9", phoneError && "border-destructive")}
-                            />
-                          </div>
-                          {phoneError && (
-                            <p className="text-sm text-destructive">{phoneError}</p>
-                          )}
-                        </div>
+                      
+                      <Tabs defaultValue="profile" className="mt-4">
+                        <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="profile">Profile</TabsTrigger>
+                          <TabsTrigger value="interests">Interests</TabsTrigger>
+                          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                        </TabsList>
 
-                        {/* Experience */}
-                        <div className="space-y-2">
-                          <Label>Current Experience</Label>
-                          <Select 
-                            value={editForm.current_experience} 
-                            onValueChange={(v) => setEditForm(prev => ({ ...prev, current_experience: v }))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select experience" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {experienceOptions.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Goal */}
-                        <div className="space-y-2">
-                          <Label>Target Goal</Label>
-                          <Select 
-                            value={editForm.target_goal} 
-                            onValueChange={(v) => setEditForm(prev => ({ ...prev, target_goal: v }))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select goal" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {goalOptions.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Student Fields */}
-                        {currentUserType === "student" && (
-                          <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5">
-                            <div className="flex items-center gap-2 text-primary text-sm font-medium">
-                              <GraduationCap className="w-4 h-4" />
-                              Academic Details
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <Label>College/University</Label>
+                        {/* Profile Tab */}
+                        <TabsContent value="profile" className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label>Mobile Number</Label>
+                            <div className="relative">
+                              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                               <Input
-                                value={editForm.college_name}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, college_name: e.target.value }))}
-                                placeholder="e.g., IIT Delhi"
+                                type="tel"
+                                value={editForm.mobile_number}
+                                onChange={(e) => handlePhoneChange(e.target.value)}
+                                placeholder="+91 98765 43210"
+                                className={cn("pl-9", phoneError && "border-destructive")}
                               />
                             </div>
+                            {phoneError && <p className="text-sm text-destructive">{phoneError}</p>}
+                          </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label>Course</Label>
-                                <Input
-                                  value={editForm.course_name}
-                                  onChange={(e) => setEditForm(prev => ({ ...prev, course_name: e.target.value }))}
-                                  placeholder="e.g., B.Tech"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Branch</Label>
-                                <Input
-                                  value={editForm.branch}
-                                  onChange={(e) => setEditForm(prev => ({ ...prev, branch: e.target.value }))}
-                                  placeholder="e.g., CSE"
-                                />
-                              </div>
-                            </div>
-
+                          <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label>Year of Study</Label>
-                              <Select 
-                                value={editForm.study_year} 
-                                onValueChange={(v) => setEditForm(prev => ({ ...prev, study_year: v }))}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select year" />
-                                </SelectTrigger>
+                              <Label>Experience</Label>
+                              <Select value={editForm.current_experience} onValueChange={(v) => setEditForm(prev => ({ ...prev, current_experience: v }))}>
+                                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                                 <SelectContent>
-                                  {yearOptions.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
-                                      {opt.label}
-                                    </SelectItem>
+                                  {experienceOptions.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Goal</Label>
+                              <Select value={editForm.target_goal} onValueChange={(v) => setEditForm(prev => ({ ...prev, target_goal: v }))}>
+                                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                                <SelectContent>
+                                  {goalOptions.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             </div>
                           </div>
-                        )}
 
-                        {/* Professional Fields */}
-                        {currentUserType === "professional" && (
-                          <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5">
-                            <div className="flex items-center gap-2 text-primary text-sm font-medium">
-                              <Briefcase className="w-4 h-4" />
-                              Professional Details
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <Label>Company</Label>
-                              <Input
-                                value={editForm.company_name}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, company_name: e.target.value }))}
-                                placeholder="e.g., Google"
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label>Role</Label>
-                                <Input
-                                  value={editForm.role}
-                                  onChange={(e) => setEditForm(prev => ({ ...prev, role: e.target.value }))}
-                                  placeholder="e.g., Software Engineer"
-                                />
+                          {currentUserType === "student" && (
+                            <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5">
+                              <div className="flex items-center gap-2 text-primary text-sm font-medium">
+                                <GraduationCap className="w-4 h-4" /> Academic Details
                               </div>
                               <div className="space-y-2">
-                                <Label>Experience</Label>
-                                <Select 
-                                  value={editForm.experience} 
-                                  onValueChange={(v) => setEditForm(prev => ({ ...prev, experience: v }))}
+                                <Label>College/University</Label>
+                                <Input value={editForm.college_name} onChange={(e) => setEditForm(prev => ({ ...prev, college_name: e.target.value }))} placeholder="e.g., IIT Delhi" />
+                              </div>
+                              <div className="grid grid-cols-3 gap-3">
+                                <div className="space-y-2">
+                                  <Label>Course</Label>
+                                  <Input value={editForm.course_name} onChange={(e) => setEditForm(prev => ({ ...prev, course_name: e.target.value }))} placeholder="B.Tech" />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Branch</Label>
+                                  <Input value={editForm.branch} onChange={(e) => setEditForm(prev => ({ ...prev, branch: e.target.value }))} placeholder="CSE" />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Year</Label>
+                                  <Select value={editForm.study_year} onValueChange={(v) => setEditForm(prev => ({ ...prev, study_year: v }))}>
+                                    <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
+                                    <SelectContent>
+                                      {yearOptions.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {currentUserType === "professional" && (
+                            <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5">
+                              <div className="flex items-center gap-2 text-primary text-sm font-medium">
+                                <Briefcase className="w-4 h-4" /> Professional Details
+                              </div>
+                              <div className="grid grid-cols-3 gap-3">
+                                <div className="space-y-2">
+                                  <Label>Company</Label>
+                                  <Input value={editForm.company_name} onChange={(e) => setEditForm(prev => ({ ...prev, company_name: e.target.value }))} placeholder="Google" />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Role</Label>
+                                  <Input value={editForm.role} onChange={(e) => setEditForm(prev => ({ ...prev, role: e.target.value }))} placeholder="SDE" />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Experience</Label>
+                                  <Select value={editForm.experience} onValueChange={(v) => setEditForm(prev => ({ ...prev, experience: v }))}>
+                                    <SelectTrigger><SelectValue placeholder="Years" /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="0-1 years">0-1 years</SelectItem>
+                                      <SelectItem value="1-3 years">1-3 years</SelectItem>
+                                      <SelectItem value="3-5 years">3-5 years</SelectItem>
+                                      <SelectItem value="5-10 years">5-10 years</SelectItem>
+                                      <SelectItem value="10+ years">10+ years</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </TabsContent>
+
+                        {/* Interests Tab */}
+                        <TabsContent value="interests" className="py-4">
+                          <div className="space-y-4">
+                            <p className="text-sm text-muted-foreground">Select the features you're interested in using:</p>
+                            <div className="grid grid-cols-3 gap-3">
+                              {featureOptions.map((feature) => (
+                                <label
+                                  key={feature.id}
+                                  className={cn(
+                                    "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
+                                    editForm.interested_features.includes(feature.id)
+                                      ? "border-primary bg-primary/10"
+                                      : "border-border hover:border-muted-foreground/50"
+                                  )}
                                 >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="0-1 years">0-1 years</SelectItem>
-                                    <SelectItem value="1-3 years">1-3 years</SelectItem>
-                                    <SelectItem value="3-5 years">3-5 years</SelectItem>
-                                    <SelectItem value="5-10 years">5-10 years</SelectItem>
-                                    <SelectItem value="10+ years">10+ years</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
+                                  <Checkbox
+                                    checked={editForm.interested_features.includes(feature.id)}
+                                    onCheckedChange={() => toggleFeature(feature.id)}
+                                  />
+                                  <span className="text-sm font-medium">{feature.title}</span>
+                                </label>
+                              ))}
                             </div>
                           </div>
-                        )}
+                        </TabsContent>
 
-                        <div className="flex justify-end gap-3 pt-4">
-                          <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-                            Cancel
-                          </Button>
-                          <Button onClick={handleSaveExtendedProfile} disabled={isSavingExtended}>
-                            {isSavingExtended ? (
-                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                            ) : (
-                              <Check className="w-4 h-4 mr-2" />
-                            )}
-                            Save Changes
-                          </Button>
-                        </div>
+                        {/* Notifications Tab */}
+                        <TabsContent value="notifications" className="py-4">
+                          <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-0.5">
+                                <Label className="text-base">Email Notifications</Label>
+                                <p className="text-sm text-muted-foreground">Receive important updates via email</p>
+                              </div>
+                              <Switch
+                                checked={editForm.email_notifications_enabled}
+                                onCheckedChange={(v) => setEditForm(prev => ({ ...prev, email_notifications_enabled: v }))}
+                              />
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-0.5">
+                                <Label className="text-base">Weekly Digest</Label>
+                                <p className="text-sm text-muted-foreground">Get a summary of your progress every week</p>
+                              </div>
+                              <Switch
+                                checked={editForm.weekly_digest_enabled}
+                                onCheckedChange={(v) => setEditForm(prev => ({ ...prev, weekly_digest_enabled: v }))}
+                              />
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-0.5">
+                                <Label className="text-base">New Feature Alerts</Label>
+                                <p className="text-sm text-muted-foreground">Be the first to know about new features</p>
+                              </div>
+                              <Switch
+                                checked={editForm.new_feature_alerts_enabled}
+                                onCheckedChange={(v) => setEditForm(prev => ({ ...prev, new_feature_alerts_enabled: v }))}
+                              />
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-0.5">
+                                <Label className="text-base">Marketing Emails</Label>
+                                <p className="text-sm text-muted-foreground">Receive promotional content and offers</p>
+                              </div>
+                              <Switch
+                                checked={editForm.marketing_emails_enabled}
+                                onCheckedChange={(v) => setEditForm(prev => ({ ...prev, marketing_emails_enabled: v }))}
+                              />
+                            </div>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+
+                      <div className="flex justify-end gap-3 pt-4 border-t">
+                        <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveExtendedProfile} disabled={isSavingExtended}>
+                          {isSavingExtended ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+                          Save Changes
+                        </Button>
                       </div>
                     </DialogContent>
                   </Dialog>
                 </div>
 
                 <div className="space-y-3 text-sm">
-                  {/* Experience Level */}
                   {extendedProfile.current_experience && (
                     <div className="flex items-start gap-3">
                       <UserTypeIcon className="w-4 h-4 text-muted-foreground mt-0.5" />
                       <div>
                         <p className="text-muted-foreground text-xs">Experience</p>
-                        <p className="text-foreground">
-                          {experienceLabels[extendedProfile.current_experience] || extendedProfile.current_experience}
-                        </p>
+                        <p className="text-foreground">{experienceLabels[extendedProfile.current_experience] || extendedProfile.current_experience}</p>
                       </div>
                     </div>
                   )}
-
-                  {/* Goal */}
                   {extendedProfile.target_goal && (
                     <div className="flex items-start gap-3">
                       <Target className="w-4 h-4 text-muted-foreground mt-0.5" />
                       <div>
                         <p className="text-muted-foreground text-xs">Goal</p>
-                        <p className="text-foreground">
-                          {goalLabels[extendedProfile.target_goal] || extendedProfile.target_goal}
-                        </p>
+                        <p className="text-foreground">{goalLabels[extendedProfile.target_goal] || extendedProfile.target_goal}</p>
                       </div>
                     </div>
                   )}
-
-                  {/* Mobile Number */}
                   {extendedProfile.mobile_number && (
                     <div className="flex items-start gap-3">
                       <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
@@ -696,8 +766,6 @@ const Dashboard = () => {
                       </div>
                     </div>
                   )}
-
-                  {/* Student Info */}
                   {extendedProfile.user_type === "student" && extendedProfile.college_name && (
                     <>
                       <div className="flex items-start gap-3">
@@ -722,8 +790,6 @@ const Dashboard = () => {
                       )}
                     </>
                   )}
-
-                  {/* Professional Info */}
                   {extendedProfile.user_type === "professional" && extendedProfile.company_name && (
                     <>
                       <div className="flex items-start gap-3">
@@ -738,10 +804,7 @@ const Dashboard = () => {
                           <Briefcase className="w-4 h-4 text-muted-foreground mt-0.5" />
                           <div>
                             <p className="text-muted-foreground text-xs">Role</p>
-                            <p className="text-foreground">
-                              {extendedProfile.role}
-                              {extendedProfile.experience && ` (${extendedProfile.experience})`}
-                            </p>
+                            <p className="text-foreground">{extendedProfile.role}{extendedProfile.experience && ` (${extendedProfile.experience})`}</p>
                           </div>
                         </div>
                       )}
@@ -749,20 +812,15 @@ const Dashboard = () => {
                   )}
                 </div>
 
-                {/* Interested Features */}
                 {extendedProfile.interested_features && extendedProfile.interested_features.length > 0 && (
                   <div className="pt-3 border-t border-border">
                     <p className="text-muted-foreground text-xs mb-2">Interested in</p>
                     <div className="flex flex-wrap gap-1.5">
                       {extendedProfile.interested_features.slice(0, 5).map((feature) => (
-                        <Badge key={feature} variant="outline" className="text-xs capitalize">
-                          {feature.replace(/_/g, " ")}
-                        </Badge>
+                        <Badge key={feature} variant="outline" className="text-xs capitalize">{feature.replace(/_/g, " ")}</Badge>
                       ))}
                       {extendedProfile.interested_features.length > 5 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{extendedProfile.interested_features.length - 5} more
-                        </Badge>
+                        <Badge variant="outline" className="text-xs">+{extendedProfile.interested_features.length - 5} more</Badge>
                       )}
                     </div>
                   </div>
@@ -772,25 +830,12 @@ const Dashboard = () => {
           </motion.div>
 
           {/* Stats Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="lg:col-span-2"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-2">
             <div className="grid sm:grid-cols-2 gap-4 mb-6">
               {stats.map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
-                  className="card-feature"
-                >
+                <motion.div key={stat.label} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + index * 0.1 }} className="card-feature">
                   <div className="flex items-center gap-4">
-                    <div className={`icon-box ${stat.color}`}>
-                      <stat.icon className="w-5 h-5" />
-                    </div>
+                    <div className={`icon-box ${stat.color}`}><stat.icon className="w-5 h-5" /></div>
                     <div>
                       <p className="text-2xl font-bold text-foreground">{stat.value}</p>
                       <p className="text-sm text-muted-foreground">{stat.label}</p>
@@ -800,47 +845,27 @@ const Dashboard = () => {
               ))}
             </div>
 
-            {/* Quick Actions */}
             <div className="card-dark">
               <h3 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
               <div className="grid sm:grid-cols-2 gap-3">
-                <Button variant="outline" className="justify-start h-12">
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Continue Learning
-                </Button>
-                <Button variant="outline" className="justify-start h-12">
-                  <Trophy className="w-4 h-4 mr-2" />
-                  View Achievements
-                </Button>
-                <Button variant="outline" className="justify-start h-12">
-                  <Clock className="w-4 h-4 mr-2" />
-                  Study Schedule
-                </Button>
-                <Button variant="outline" className="justify-start h-12">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Account Settings
-                </Button>
+                <Button variant="outline" className="justify-start h-12"><BookOpen className="w-4 h-4 mr-2" />Continue Learning</Button>
+                <Button variant="outline" className="justify-start h-12"><Trophy className="w-4 h-4 mr-2" />View Achievements</Button>
+                <Button variant="outline" className="justify-start h-12"><Clock className="w-4 h-4 mr-2" />Study Schedule</Button>
+                <Button variant="outline" className="justify-start h-12"><Settings className="w-4 h-4 mr-2" />Account Settings</Button>
               </div>
             </div>
           </motion.div>
         </div>
 
-        {/* Recent Activity Placeholder */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-8"
-        >
+        {/* Recent Activity */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-8">
           <div className="card-dark">
             <h3 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h3>
             <div className="text-center py-12 text-muted-foreground">
               <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p className="font-medium">No recent activity</p>
               <p className="text-sm mt-1">Start learning to see your activity here</p>
-              <Button className="mt-4 btn-primary">
-                Browse Courses
-              </Button>
+              <Button className="mt-4 btn-primary">Browse Courses</Button>
             </div>
           </div>
         </motion.div>
