@@ -1,177 +1,184 @@
 
 
-# Plan: Enhanced UI/UX for Position Detail Tabular Section
+# Plan: Enhanced Collapsible Table Design for Position Detail
 
-## Current State Analysis
+## Overview
+Transform the current flat table layout into an organized, collapsible accordion-style design similar to SheetDetail, with improved visual hierarchy, animations, and better information organization.
 
-The PositionDetail page currently has:
-- Basic tabbed navigation for categories
-- Simple flat table for questions
-- Minimal visual hierarchy
-- Basic filter controls in a separate bordered section
+## Current vs Proposed Design
 
-The SheetDetail page (reference design) has:
-- Collapsible accordion sections with animated progress bars
-- Rich table rows with hover animations (framer-motion)
-- Tooltips on interactive elements
-- Animated progress indicators with shimmer effects
-- Visual status indicators (sparkles on completion)
-- Better organized header with progress card
-- Random problem feature
+### Current Design
+- Flat table showing all questions for selected category tab
+- Simple table with question text, difficulty badge, and action buttons
+- Tab switching required to view different categories
+- No visual grouping or collapsible sections
 
-## Proposed Improvements
+### Proposed Design
+- Collapsible category sections (each category as an expandable accordion)
+- Animated progress bars per category showing completion status
+- Nested table inside each section with enhanced row animations
+- "Expand All / Collapse All" quick toggle
+- Preserved tab view option for those who prefer it
 
-### 1. Progress Summary Card (Above Table)
-Add a visual progress card similar to SheetDetail showing:
-- Circular percentage indicator
-- Difficulty breakdown with colored dots (Easy/Medium/Hard)
-- Overall stats at a glance
+## Key Improvements
 
-### 2. Enhanced Table Header Design
-- More compact, visually distinct table headers
-- Add icon indicators in headers
-- Improve responsive text handling
-- Add subtle background gradient to header row
+### 1. Collapsible Category Sections
+Each category (Interview, DSA, SQL, etc.) becomes a collapsible section:
+```text
++--------------------------------------------------+
+| v Interview Questions          [====>    ] 12/25 |
+|   +----------------------------------------------+
+|   | # | Question              | Diff | Actions  |
+|   | 1 | What is middleware... | Easy | [v][*][n]|
+|   +----------------------------------------------+
+| > DSA Questions                [==>       ] 5/20 |
+| > SQL Questions                [=>        ] 3/15 |
++--------------------------------------------------+
+```
 
-### 3. Animated Table Rows
-- Add hover animations using framer-motion
-- Smooth transitions when checking/unchecking items
-- Row highlight effect on hover
-- Subtle scale/lift effect on interaction
+### 2. Section Header Design
+- Chevron icon with rotation animation on open/close
+- Section title with sparkle icon when 100% complete
+- Animated progress bar with shimmer effect
+- Solved count badge (e.g., "12 / 25")
 
-### 4. Interactive Elements with Tooltips
-- Add tooltips to all action buttons (Solved, Revision, Notes)
-- Provide clear feedback on what each icon does
-- Add micro-animations on icon interactions
+### 3. Enhanced Table Within Sections
+- Animated row entrance (staggered fade-in)
+- Hover lift effect with background highlight
+- Completion celebration animation
+- Note preview on hover
 
-### 5. Collapsible Category Sections (Optional)
-- Instead of tabs, optionally show all categories as collapsible sections
-- Each section shows its own progress bar
-- Maintains current tab approach but adds visual hierarchy
+### 4. Quick Actions
+- "Expand All" / "Collapse All" button
+- Toggle between "Section View" and "Tab View" (preserves current behavior)
+- Section-specific random question picker
 
-### 6. Quick Actions Bar
-- Add "Random Question" button for discovering new questions
-- Add quick stats summary (X solved today, Y pending)
-- Show streak indicator if applicable
-
-### 7. Enhanced Empty States
-- Better visual design for empty states
-- Animated illustrations
-- Clear call-to-action buttons
-
-### 8. Status Indicators
-- Add completion sparkle animation when marking solved
-- Show progress milestone badges
-- Visual feedback on filter changes
+### 5. Visual Polish
+- Animated chevron rotation (90deg on expand)
+- Shimmer effect on progress bars
+- Sparkles icon on completed sections
+- Smooth height transitions using framer-motion
 
 ## Technical Implementation
 
+### New Components to Create
+
+**1. CategorySection Component**
+A collapsible wrapper for each category containing:
+- Header with title, progress bar, and count
+- Nested table with question rows
+- Expand/collapse animation
+
+**2. SectionProgressBar Component**
+Animated progress indicator with:
+- Shimmer overlay effect
+- Color transition based on completion percentage
+- Smooth value transitions
+
 ### Files to Modify
-- `src/pages/library/PositionDetail.tsx` - Main component updates
 
-### New Components/Features
-1. **Progress Summary Card**
-   - Circular progress with percentage
-   - Difficulty stats row with colored indicators
+**1. `src/pages/library/PositionDetail.tsx`**
+- Add view mode toggle: "sections" | "tabs"
+- Render CategorySection components when in section view
+- Preserve existing tab logic for backward compatibility
+- Add "Expand All" / "Collapse All" controls
 
-2. **Animated Table Row Component**
-   - Extract row logic into separate component
-   - Add framer-motion animations
-   - Implement hover/interaction effects
+**2. `src/components/library/CategorySection.tsx` (New)**
+- Collapsible wrapper using Radix Collapsible
+- Progress calculation per category
+- Animated height transitions
+- Nested table rendering
 
-3. **Enhanced Filter Bar**
-   - Random question button
-   - Quick stats display
-   - Improved visual grouping
+**3. `src/components/library/SectionProgressBar.tsx` (New)**
+- Animated Progress component with shimmer
+- Color gradients based on completion level
+- Smooth value interpolation
 
-4. **Tooltip Integration**
-   - Wrap all action buttons with tooltips
-   - Add descriptive helper text
+### Animation Specifications
 
-### Animations to Add
-```text
-+-----------------------------------+
-|  Row Hover: scale(1.01), lift    |
-|  Checkbox: spring animation       |
-|  Bookmark: rotate + fill          |
-|  Notes: scale on hover            |
-|  Progress: shimmer effect         |
-+-----------------------------------+
-```
+**Chevron Rotation:**
+- Initial: 0deg (collapsed)
+- Open: 90deg
+- Transition: 200ms ease-out
 
-### Design Tokens
-- Use existing Tailwind classes for consistency
-- Match color scheme with SheetDetail (emerald/amber/red for difficulties)
-- Apply glassmorphism effects where appropriate
+**Content Expand/Collapse:**
+- Height: 0 to auto
+- Opacity: 0 to 1
+- Transition: 300ms cubic-bezier(0.4, 0, 0.2, 1)
+
+**Progress Bar:**
+- Width transition: 500ms ease-out
+- Shimmer overlay animation: 1.5s infinite
+
+**Row Stagger:**
+- Each row delays 30ms after previous
+- Fade-in + slide from left
 
 ## UI Layout Changes
 
-### Before (Current)
-```text
-+------------------------------------------+
-| [Tabs: Interview | DSA | ... | Revision] |
-|------------------------------------------|
-| [Search] [Difficulty ▼] [Notes] [Clear]  |
-| X questions found                        |
-|------------------------------------------|
-| # | Question | Difficulty | ✓ | ★ | Notes|
-|---|----------|------------|---|---|------|
-| 1 | Question | Easy       | □ | ☆ | 📝   |
-| 2 | Question | Medium     | ☑ | ★ | 📝   |
-+------------------------------------------+
-```
-
-### After (Enhanced)
+### Section View (New Default)
 ```text
 +--------------------------------------------------+
 | Progress Card                                     |
 | +--------+  +----------------------------------+ |
 | |  45%   |  | Easy: 12/20  Medium: 8/15       | |
-| |   ◯    |  | Hard: 5/10   Total: 25/45       | |
 | +--------+  +----------------------------------+ |
 +--------------------------------------------------+
-| [Tabs: Interview | DSA | ... | Revision (12)]    |
+| [Section View] [Tab View]  [Expand All]          |
 |--------------------------------------------------|
-| [Search🔍] [Difficulty▼] [Notes] [🎲 Random]     |
+| [Search] [Difficulty] [Notes Filter] [Random]    |
 |--------------------------------------------------|
-| Status | Problem              | Diff | Actions   |
-|--------|----------------------|------|-----------|
-|  ✓     | Question text        | Easy | ★ 📝     |
-|        | + note preview...    |      |           |
-|  ○     | Question text...     | Med  | ☆ 📝     |
-|  (hover animation + lift effect)                 |
+| v Interview Questions          [======>  ] 32/50 |
+|   | # | Question | Difficulty | Solved | Rev | N |
+|   |---|----------|------------|--------|-----|---|
+|   | 1 | Question | Easy       | [x]    | [*] |[n]|
+|   | 2 | Question | Medium     | [ ]    | [ ] |[n]|
+|--------------------------------------------------|
+| v DSA Questions                [===>     ] 10/25 |
+|   | # | Question | Difficulty | Solved | Rev | N |
+|--------------------------------------------------|
+| > SQL Questions (collapsed)    [=>       ] 5/15  |
+| > Aptitude Questions           [         ] 0/13  |
+| > Core CS Questions            [>        ] 2/13  |
 +--------------------------------------------------+
 ```
 
+### Tab View (Preserved)
+Same as current design - switches categories via tabs.
+
 ## Implementation Steps
 
-1. **Add Progress Summary Card**
-   - Create a Card component above the main table card
-   - Show circular progress and difficulty breakdown
-   - Animate on mount
+1. **Create SectionProgressBar Component**
+   - Build animated progress bar with shimmer effect
+   - Add color transitions based on percentage
 
-2. **Refactor Table Row into Component**
-   - Extract TableRow logic to `QuestionRow` component
-   - Add framer-motion wrapper
-   - Implement hover animations
+2. **Create CategorySection Component**
+   - Implement collapsible wrapper with Radix Collapsible
+   - Add progress calculation and header design
+   - Include nested table with QuestionRow components
 
-3. **Add Tooltips to Actions**
-   - Import TooltipProvider, Tooltip, TooltipTrigger, TooltipContent
-   - Wrap each action button
-   - Add descriptive labels
+3. **Update PositionDetail Page**
+   - Add view mode state (sections vs tabs)
+   - Implement view toggle buttons
+   - Add expand/collapse all functionality
+   - Integrate CategorySection components
 
-4. **Enhance Filter Bar**
-   - Add Random Question button with dice icon
-   - Add quick stats summary
-   - Improve visual spacing
+4. **Add Animation Polish**
+   - Chevron rotation animations
+   - Height transition effects
+   - Row stagger animations
+   - Completion celebration effects
 
-5. **Add Micro-Animations**
-   - Checkbox completion animation
-   - Bookmark star fill/rotate animation
-   - Row entrance animations
+5. **Mobile Optimization**
+   - Compact section headers on mobile
+   - Touch-friendly expand/collapse targets
+   - Responsive progress bar sizing
 
-6. **Polish Empty States**
-   - Add motion.div wrappers
-   - Improve visual hierarchy
-   - Add actionable buttons
+## Benefits
+
+- **Better Organization**: All categories visible at once, expandable on demand
+- **Visual Progress**: Clear progress indicators per category motivate completion
+- **Faster Navigation**: No tab switching needed to see multiple categories
+- **Consistent Design**: Matches SheetDetail design language
+- **User Choice**: Can switch between section and tab views based on preference
 
