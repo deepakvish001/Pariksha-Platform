@@ -1,5 +1,6 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import ScrollReveal from "./ScrollReveal";
 
 const CTA = () => {
@@ -80,10 +81,10 @@ const CTA = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button className="btn-primary inline-flex items-center gap-2 text-lg group">
+            <Link to="/signup" className="btn-primary inline-flex items-center gap-2 text-lg group">
               Start Now
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-            </button>
+            </Link>
             <button className="px-6 py-3 rounded-full border border-border bg-secondary/50 text-foreground font-medium hover:bg-secondary transition-colors">
               View Demo
             </button>

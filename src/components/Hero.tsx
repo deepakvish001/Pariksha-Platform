@@ -1,6 +1,7 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import HeroIllustration from "./HeroIllustration";
 
 // Animated stat component
@@ -175,10 +176,10 @@ const Hero = () => {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
         >
-          <button className="btn-primary inline-flex items-center gap-2 text-lg group">
+          <Link to="/signup" className="btn-primary inline-flex items-center gap-2 text-lg group">
             Start Learning Clearly
             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-          </button>
+          </Link>
           <button className="px-6 py-3 rounded-full border border-border bg-secondary/50 text-foreground font-medium hover:bg-secondary transition-colors">
             Watch Demo
           </button>

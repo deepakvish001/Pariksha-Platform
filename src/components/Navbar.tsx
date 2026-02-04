@@ -1,7 +1,17 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Sun, Moon } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Menu, X, Sun, Moon, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -14,6 +24,8 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { user, profile, signOut, loading } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setMounted(true);
@@ -38,6 +50,21 @@ const Navbar = () => {
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return user?.email?.charAt(0).toUpperCase() || "U";
+    return name
+      .split(" ")
+      .map((n) => n.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
@@ -100,9 +127,55 @@ const Navbar = () => {
               </motion.button>
             )}
             
-            <button className="btn-primary text-sm py-2 px-5">
-              Get Started
-            </button>
+            {/* Auth Section */}
+            {!loading && (
+              user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-2 p-1 rounded-full hover:bg-secondary transition-colors">
+                    <Avatar className="w-8 h-8 border border-border">
+                      <AvatarImage src={profile?.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                        {getInitials(profile?.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <div className="px-2 py-1.5 text-sm">
+                      <p className="font-medium text-foreground truncate">
+                        {profile?.full_name || "User"}
+                      </p>
+                      <p className="text-muted-foreground text-xs truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard" className="cursor-pointer">
+                        <User className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Link 
+                    to="/login" 
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link to="/signup" className="btn-primary text-sm py-2 px-5">
+                    Get Started
+                  </Link>
+                </div>
+              )
+            )}
           </nav>
 
           {/* Mobile Controls */}
@@ -116,6 +189,18 @@ const Navbar = () => {
               >
                 {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
+            )}
+
+            {/* User Avatar - Mobile */}
+            {!loading && user && (
+              <Link to="/dashboard">
+                <Avatar className="w-8 h-8 border border-border">
+                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                    {getInitials(profile?.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
             )}
             
             {/* Mobile Menu Button */}
@@ -148,9 +233,45 @@ const Navbar = () => {
                     {link.label}
                   </button>
                 ))}
-                <button className="btn-primary w-full text-sm py-2 mt-2">
-                  Get Started
-                </button>
+                {!loading && (
+                  user ? (
+                    <>
+                      <Link
+                        to="/dashboard"
+                        className="block w-full text-left px-2 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Dashboard
+                      </Link>
+                      <button
+                        onClick={() => {
+                          handleSignOut();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-2 py-2 text-destructive hover:text-destructive/80 transition-colors"
+                      >
+                        Sign Out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/login"
+                        className="block w-full text-left px-2 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Sign In
+                      </Link>
+                      <Link
+                        to="/signup"
+                        className="btn-primary w-full text-sm py-2 mt-2 text-center block"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Get Started
+                      </Link>
+                    </>
+                  )
+                )}
               </div>
             </motion.nav>
           )}
