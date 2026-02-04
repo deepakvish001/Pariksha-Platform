@@ -565,94 +565,110 @@ const PositionResources = () => {
           className="rounded-lg border border-border bg-card"
         >
           {filteredQuestions.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-16">#</TableHead>
-                  <TableHead>Question</TableHead>
-                  {viewMode === "revision" && (
-                    <TableHead className="w-36">Category</TableHead>
-                  )}
-                  <TableHead className="w-28">Difficulty</TableHead>
-                  <TableHead className="w-20 text-center">Solved</TableHead>
-                  <TableHead className="w-20 text-center">Revision</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredQuestions.map((question, index) => (
-                  <TableRow
-                    key={`${question.categoryId}-${question.id}`}
-                    className={cn(
-                      "transition-colors",
-                      isSolved(question.id, question.categoryId) && "bg-muted/30"
+            <div className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-10 sm:w-12">#</TableHead>
+                    <TableHead className="min-w-0">Question</TableHead>
+                    {viewMode === "revision" && (
+                      <TableHead className="hidden md:table-cell w-28">Category</TableHead>
                     )}
-                  >
-                    <TableCell className="font-medium text-muted-foreground">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell
+                    <TableHead className="w-20 sm:w-24">Difficulty</TableHead>
+                    <TableHead className="w-12 sm:w-16 text-center">
+                      <span className="hidden sm:inline">Solved</span>
+                      <span className="sm:hidden">✓</span>
+                    </TableHead>
+                    <TableHead className="w-12 sm:w-16 text-center">
+                      <span className="hidden sm:inline">Revision</span>
+                      <span className="sm:hidden">★</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredQuestions.map((question, index) => (
+                    <TableRow
+                      key={`${question.categoryId}-${question.id}`}
                       className={cn(
-                        "font-medium",
-                        isSolved(question.id, question.categoryId) &&
-                          "line-through text-muted-foreground"
+                        "transition-colors",
+                        isSolved(question.id, question.categoryId) && "bg-muted/30"
                       )}
                     >
-                      {question.text}
-                    </TableCell>
-                    {viewMode === "revision" && (
+                      <TableCell className="font-medium text-muted-foreground text-xs sm:text-sm">
+                        {index + 1}
+                      </TableCell>
+                      <TableCell className="min-w-0">
+                        <p
+                          className={cn(
+                            "font-medium text-sm break-words",
+                            isSolved(question.id, question.categoryId) &&
+                              "line-through text-muted-foreground"
+                          )}
+                        >
+                          {question.text}
+                        </p>
+                        {viewMode === "revision" && (
+                          <Badge variant="secondary" className="font-normal mt-1 md:hidden text-xs">
+                            {question.categoryName}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      {viewMode === "revision" && (
+                        <TableCell className="hidden md:table-cell">
+                          <Badge variant="secondary" className="font-normal text-xs">
+                            {question.categoryName}
+                          </Badge>
+                        </TableCell>
+                      )}
                       <TableCell>
-                        <Badge variant="secondary" className="font-normal">
-                          {question.categoryName}
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "font-medium text-xs",
+                            getDifficultyStyles(question.difficulty)
+                          )}
+                        >
+                          <span className="hidden sm:inline">{question.difficulty}</span>
+                          <span className="sm:hidden">{question.difficulty[0]}</span>
                         </Badge>
                       </TableCell>
-                    )}
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "font-medium",
-                          getDifficultyStyles(question.difficulty)
-                        )}
-                      >
-                        {question.difficulty}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox
-                        checked={isSolved(question.id, question.categoryId)}
-                        onCheckedChange={() =>
-                          toggleSolved(question.id, question.categoryId)
-                        }
-                        className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          toggleRevision(question.id, question.categoryId)
-                        }
-                        className={cn(
-                          "h-8 w-8 transition-colors",
-                          isRevision(question.id, question.categoryId)
-                            ? "text-yellow-500 hover:text-yellow-600"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        {isRevision(question.id, question.categoryId) ? (
-                          <BookmarkCheck className="h-4 w-4 fill-current" />
-                        ) : (
-                          <Bookmark className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      <TableCell className="text-center p-2">
+                        <Checkbox
+                          checked={isSolved(question.id, question.categoryId)}
+                          onCheckedChange={() =>
+                            toggleSolved(question.id, question.categoryId)
+                          }
+                          className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center p-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            toggleRevision(question.id, question.categoryId)
+                          }
+                          className={cn(
+                            "h-7 w-7 sm:h-8 sm:w-8 transition-colors",
+                            isRevision(question.id, question.categoryId)
+                              ? "text-yellow-500 hover:text-yellow-600"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {isRevision(question.id, question.categoryId) ? (
+                            <BookmarkCheck className="h-4 w-4 fill-current" />
+                          ) : (
+                            <Bookmark className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
               {viewMode === "revision" ? (
                 <>
                   <BookmarkCheck className="h-12 w-12 text-muted-foreground/50 mb-4" />
