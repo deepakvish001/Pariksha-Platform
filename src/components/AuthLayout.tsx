@@ -1,9 +1,8 @@
 import { ReactNode } from "react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Sun, Moon, CheckCircle, Sparkles, TrendingUp, Users, Zap } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useState, useEffect } from "react";
+import { CheckCircle, Sparkles, TrendingUp, Users, Zap } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -19,41 +18,15 @@ const features = [
 ];
 
 const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="flex-shrink-0 h-16 border-b border-border bg-background/80 backdrop-blur-sm z-10">
-        <div className="h-full px-6 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-orange flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">U</span>
-            </div>
-            <span className="text-xl font-bold text-foreground">UniDash</span>
-          </Link>
-          
-          {mounted && (
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-full bg-secondary border border-border text-foreground hover:border-primary transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-          )}
-        </div>
-      </header>
+    <div className="min-h-screen flex flex-col">
+      {/* Navbar */}
+      <Navbar />
 
       {/* Main Content */}
-      <main className="flex-1 flex min-h-0">
+      <main className="flex-1 flex pt-16">
         {/* Left Side - Hero */}
-        <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-primary/10 via-background to-orange-500/5 overflow-hidden">
+        <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-primary/10 via-background to-orange-500/5 overflow-hidden min-h-[calc(100vh-16rem)]">
           {/* Background Effects */}
           <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse-slow" />
           <div className="absolute bottom-1/3 right-1/4 w-64 h-64 bg-orange-500/15 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
@@ -106,7 +79,7 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
         </div>
 
         {/* Right Side - Form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 overflow-y-auto">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -119,21 +92,7 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
       </main>
 
       {/* Footer */}
-      <footer className="flex-shrink-0 h-14 border-t border-border bg-background">
-        <div className="h-full px-6 flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} UniDash. All rights reserved.
-          </p>
-          <div className="flex items-center gap-4">
-            <Link to="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Privacy
-            </Link>
-            <Link to="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Terms
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
