@@ -1,5 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 interface ActivityData {
   [date: string]: number;
@@ -7,10 +15,13 @@ interface ActivityData {
 
 interface CalendarHeatmapProps {
   activityData: ActivityData;
-  months?: 3 | 6 | 12;
 }
 
-const CalendarHeatmap = ({ activityData, months = 12 }: CalendarHeatmapProps) => {
+const CalendarHeatmap = ({ activityData }: CalendarHeatmapProps) => {
+  const [selectedRange, setSelectedRange] = useState<'current' | '6months' | '3months'>('current');
+  
+  const months = selectedRange === 'current' ? 12 : selectedRange === '6months' ? 6 : 3;
+
   const { weeks, monthLabels, stats } = useMemo(() => {
     const today = new Date();
     const weeksData: { date: Date; count: number }[][] = [];
@@ -73,20 +84,6 @@ const CalendarHeatmap = ({ activityData, months = 12 }: CalendarHeatmapProps) =>
       weeksData.push(currentWeek);
     }
     
-    // Calculate current streak (from today backwards)
-    let currentStreak = 0;
-    const sortedDates = [...allDates].reverse();
-    for (let i = 0; i < sortedDates.length; i++) {
-      if (sortedDates[i].count > 0) {
-        currentStreak++;
-      } else if (i === 0) {
-        // Today might have no activity yet
-        continue;
-      } else {
-        break;
-      }
-    }
-    
     return { 
       weeks: weeksData, 
       monthLabels: labels,
@@ -94,7 +91,6 @@ const CalendarHeatmap = ({ activityData, months = 12 }: CalendarHeatmapProps) =>
         totalSubmissions,
         activeDays,
         maxStreak,
-        currentStreak
       }
     };
   }, [activityData, months]);
@@ -116,7 +112,21 @@ const CalendarHeatmap = ({ activityData, months = 12 }: CalendarHeatmapProps) =>
     });
   };
 
-  const periodLabel = months === 12 ? 'year' : `${months} months`;
+  const getRangeLabel = () => {
+    switch (selectedRange) {
+      case 'current': return 'Current';
+      case '6months': return '6 Months';
+      case '3months': return '3 Months';
+    }
+  };
+
+  const getPeriodText = () => {
+    switch (selectedRange) {
+      case 'current': return 'one year';
+      case '6months': return 'six months';
+      case '3months': return 'three months';
+    }
+  };
 
   return (
     <div className="w-full">
@@ -124,21 +134,44 @@ const CalendarHeatmap = ({ activityData, months = 12 }: CalendarHeatmapProps) =>
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold">{stats.totalSubmissions}</span>
-          <span className="text-muted-foreground">topics in the past {periodLabel}</span>
+          <span className="text-muted-foreground">submissions in the past {getPeriodText()}</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Total topics completed in this period</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
         <div className="flex items-center gap-6 text-sm">
           <div>
-            <span className="text-muted-foreground">Active days: </span>
+            <span className="text-muted-foreground">Total active days: </span>
             <span className="font-semibold">{stats.activeDays}</span>
           </div>
           <div>
             <span className="text-muted-foreground">Max streak: </span>
             <span className="font-semibold">{stats.maxStreak}</span>
           </div>
-          <div>
-            <span className="text-muted-foreground">Current: </span>
-            <span className="font-semibold">{stats.currentStreak}</span>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1">
+                {getRangeLabel()}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setSelectedRange('current')}>
+                Current (1 Year)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSelectedRange('6months')}>
+                6 Months
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSelectedRange('3months')}>
+                3 Months
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       
@@ -163,7 +196,7 @@ const CalendarHeatmap = ({ activityData, months = 12 }: CalendarHeatmapProps) =>
                         />
                       </TooltipTrigger>
                       <TooltipContent side="top" className="text-xs">
-                        <p className="font-medium">{day.count} topic{day.count !== 1 ? 's' : ''}</p>
+                        <p className="font-medium">{day.count} submission{day.count !== 1 ? 's' : ''}</p>
                         <p className="text-muted-foreground">{formatDate(day.date)}</p>
                       </TooltipContent>
                     </Tooltip>
@@ -190,19 +223,6 @@ const CalendarHeatmap = ({ activityData, months = 12 }: CalendarHeatmapProps) =>
             })}
           </div>
         </div>
-      </div>
-      
-      {/* Legend */}
-      <div className="flex items-center justify-end gap-2 mt-3 text-xs text-muted-foreground">
-        <span>Less</span>
-        <div className="flex gap-[3px]">
-          <div className="h-[11px] w-[11px] rounded-[2px] bg-[#1e3a29]" />
-          <div className="h-[11px] w-[11px] rounded-[2px] bg-[#2d5a3d]" />
-          <div className="h-[11px] w-[11px] rounded-[2px] bg-[#3d7a52]" />
-          <div className="h-[11px] w-[11px] rounded-[2px] bg-[#4d9a66]" />
-          <div className="h-[11px] w-[11px] rounded-[2px] bg-[#5dba7a]" />
-        </div>
-        <span>More</span>
       </div>
     </div>
   );
