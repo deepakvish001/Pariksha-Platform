@@ -11,16 +11,37 @@ interface Profile {
   updated_at: string;
 }
 
+interface ExtendedProfile {
+  id: string;
+  user_id: string;
+  mobile_number: string | null;
+  user_type: "student" | "professional" | "other";
+  college_name: string | null;
+  course_name: string | null;
+  branch: string | null;
+  study_year: string | null;
+  company_name: string | null;
+  role: string | null;
+  experience: string | null;
+  other_description: string | null;
+  onboarding_completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  extendedProfile: ExtendedProfile | null;
   loading: boolean;
+  onboardingCompleted: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
+  refreshExtendedProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,6 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [extendedProfile, setExtendedProfile] = useState<ExtendedProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -53,6 +75,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return data as Profile | null;
   };
 
+  const fetchExtendedProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("user_profiles_extended")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching extended profile:", error);
+      return null;
+    }
+    return data as ExtendedProfile | null;
+  };
+
+  const refreshExtendedProfile = async () => {
+    if (user) {
+      const extendedData = await fetchExtendedProfile(user.id);
+      setExtendedProfile(extendedData);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -65,9 +108,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setTimeout(async () => {
             const profileData = await fetchProfile(session.user.id);
             setProfile(profileData);
+            const extendedData = await fetchExtendedProfile(session.user.id);
+            setExtendedProfile(extendedData);
           }, 0);
         } else {
           setProfile(null);
+          setExtendedProfile(null);
         }
 
         setLoading(false);
@@ -75,12 +121,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // THEN get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        fetchProfile(session.user.id).then(setProfile);
+        const profileData = await fetchProfile(session.user.id);
+        setProfile(profileData);
+        const extendedData = await fetchExtendedProfile(session.user.id);
+        setExtendedProfile(extendedData);
       }
       setLoading(false);
     });
@@ -125,6 +174,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setExtendedProfile(null);
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
@@ -143,16 +193,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const onboardingCompleted = extendedProfile?.onboarding_completed ?? false;
+
   const value = {
     user,
     session,
     profile,
+    extendedProfile,
     loading,
+    onboardingCompleted,
     signUp,
     signIn,
     signInWithGoogle,
     signOut,
     updateProfile,
+    refreshExtendedProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

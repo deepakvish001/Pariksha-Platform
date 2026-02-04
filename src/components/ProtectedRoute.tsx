@@ -3,10 +3,11 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireOnboarding?: boolean;
 }
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+const ProtectedRoute = ({ children, requireOnboarding = false }: ProtectedRouteProps) => {
+  const { user, loading, onboardingCompleted } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -22,6 +23,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // If route requires onboarding and user hasn't completed it, redirect to onboarding
+  if (requireOnboarding && !onboardingCompleted) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;
