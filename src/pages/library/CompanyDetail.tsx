@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -8,7 +8,6 @@ import {
   Star,
   Briefcase,
   Loader2,
-  ChevronsUpDown,
   Database,
   MessageSquare,
   Code2,
@@ -21,16 +20,31 @@ import {
   Copy,
   Check,
   Filter,
+  X,
+  ArrowLeft,
   Shuffle,
+  Sparkles,
+  List,
+  LayoutGrid,
+  ChevronsUpDown,
+  ChevronsDownUp,
+  BookmarkCheck,
   FileQuestion,
 } from "lucide-react";
+import CompanyCategorySection from "@/components/library/CompanyCategorySection";
 import CompanyQuestionTableRow from "@/components/library/CompanyQuestionTableRow";
+import ProgressSummaryCard from "@/components/library/ProgressSummaryCard";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  TooltipProvider,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -69,6 +83,11 @@ import { useCompanyProgress } from "@/hooks/useCompanyProgress";
 
 // Local storage keys
 const FAVORITES_KEY = "company-favorites";
+const VIEW_MODE_STORAGE_KEY = "company-detail-view-mode";
+
+// View modes
+type ViewMode = "all" | "revision";
+type LayoutMode = "sections" | "tabs";
 
 // Tab icons mapping
 const tabIcons: Record<string, React.ElementType> = {
@@ -82,9 +101,17 @@ const tabIcons: Record<string, React.ElementType> = {
   "cold-dms": Mail,
 };
 
-// Tab groups for better organization
-const questionTabs = ["sql-questions", "interview-questions", "dsa-questions", "aptitude-questions"];
-const resourceTabs = ["job-portals", "projects", "resume-templates", "cold-dms"];
+// Question tab IDs
+const questionTabIds = ["sql-questions", "interview-questions", "dsa-questions", "aptitude-questions"];
+const resourceTabIds = ["job-portals", "projects", "resume-templates", "cold-dms"];
+
+// Question categories for section view
+const questionCategories = [
+  { id: "sql-questions", name: "SQL Questions" },
+  { id: "interview-questions", name: "Interview Questions" },
+  { id: "dsa-questions", name: "DSA Questions" },
+  { id: "aptitude-questions", name: "Aptitude Questions" },
+];
 
 const CompanyDetail = () => {
   const { companyId } = useParams<{ companyId: string }>();
@@ -97,23 +124,34 @@ const CompanyDetail = () => {
     [companyId]
   );
 
-  const [activeTab, setActiveTab] = useState(companyTabs[0].id);
+  const [activeTab, setActiveTab] = useState("sql-questions");
+  const [viewMode, setViewMode] = useState<ViewMode>("all");
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
+    const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    return stored === "tabs" ? "tabs" : "sections";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | "all">("all");
+  const [openSection, setOpenSection] = useState<string | null>(null);
   const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<number>>(new Set());
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(FAVORITES_KEY);
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
 
-  // Reset expanded questions and filters when switching tabs
+  // Persist layout mode preference
   useEffect(() => {
-    setExpandedQuestionIds(new Set());
+    localStorage.setItem(VIEW_MODE_STORAGE_KEY, layoutMode);
+  }, [layoutMode]);
+
+  // Reset filters when switching modes
+  useEffect(() => {
     setSearchQuery("");
     setDifficultyFilter("all");
-  }, [activeTab]);
+    setExpandedQuestionIds(new Set());
+  }, [activeTab, layoutMode]);
 
-  // Use Supabase-synced progress
+  // Use Supabase-synced progress for current tab
   const {
     isLoading,
     isSolved,
@@ -166,154 +204,196 @@ const CompanyDetail = () => {
     await toggleRevisionAsync(itemId);
   };
 
-  // Get tab item counts
-  const tabCounts = useMemo(() => {
-    return {
-      "sql-questions": sqlQuestions.length,
-      "interview-questions": interviewQuestions.length,
-      "dsa-questions": dsaQuestions.length,
-      "aptitude-questions": aptitudeQuestions.length,
-      "job-portals": jobPortals.length,
-      "projects": projects.length,
-      "resume-templates": resumeTemplates.length,
-      "cold-dms": coldDMs.length,
-    };
+  // Get all questions data
+  const allQuestions = useMemo(() => ({
+    "sql-questions": sqlQuestions,
+    "interview-questions": interviewQuestions,
+    "dsa-questions": dsaQuestions,
+    "aptitude-questions": aptitudeQuestions,
+  }), []);
+
+  // Get current tab data (for tabs mode)
+  const currentTabQuestions = useMemo(() => {
+    return allQuestions[activeTab as keyof typeof allQuestions] || [];
+  }, [activeTab, allQuestions]);
+
+  // Get all revision questions across all categories
+  const revisionQuestions = useMemo(() => {
+    const questions: (Question & { categoryId: string; categoryName: string })[] = [];
+    questionCategories.forEach((cat) => {
+      const catQuestions = allQuestions[cat.id as keyof typeof allQuestions] || [];
+      catQuestions.forEach((q) => {
+        if (isRevision(q.id)) {
+          questions.push({
+            ...q,
+            categoryId: cat.id,
+            categoryName: cat.name,
+          });
+        }
+      });
+    });
+    return questions;
+  }, [allQuestions, isRevision]);
+
+  // Get questions grouped by category for section view
+  const questionsByCategory = useMemo(() => {
+    const result: Record<string, Question[]> = {};
+    questionCategories.forEach((cat) => {
+      let catQuestions = allQuestions[cat.id as keyof typeof allQuestions] || [];
+
+      // Apply revision filter
+      if (viewMode === "revision") {
+        catQuestions = catQuestions.filter((q) => isRevision(q.id));
+      }
+
+      // Apply search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        catQuestions = catQuestions.filter((q) =>
+          q.text.toLowerCase().includes(query)
+        );
+      }
+
+      // Apply difficulty filter
+      if (difficultyFilter !== "all") {
+        catQuestions = catQuestions.filter((q) => q.difficulty === difficultyFilter);
+      }
+
+      result[cat.id] = catQuestions;
+    });
+    return result;
+  }, [allQuestions, searchQuery, difficultyFilter, viewMode, isRevision]);
+
+  // Total question counts per category (unfiltered)
+  const totalQuestionsPerCategory = useMemo(() => {
+    const result: Record<string, number> = {};
+    questionCategories.forEach((cat) => {
+      result[cat.id] = (allQuestions[cat.id as keyof typeof allQuestions] || []).length;
+    });
+    return result;
+  }, [allQuestions]);
+
+  // Check if filters are active
+  const isFiltered = searchQuery.trim() !== "" || difficultyFilter !== "all";
+  const hasActiveFilters = isFiltered;
+
+  // Auto-expand section with search matches
+  useEffect(() => {
+    if (layoutMode === "sections" && searchQuery.trim()) {
+      const firstMatchingSection = questionCategories.find(
+        (cat) => (questionsByCategory[cat.id]?.length || 0) > 0
+      );
+      setOpenSection(firstMatchingSection?.id || null);
+    }
+  }, [searchQuery, layoutMode, questionsByCategory]);
+
+  // Filter questions for tabs mode
+  const filteredTabQuestions = useMemo(() => {
+    let filtered = viewMode === "revision" ? revisionQuestions : currentTabQuestions;
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((q) => q.text.toLowerCase().includes(query));
+    }
+
+    if (difficultyFilter !== "all") {
+      filtered = filtered.filter((q) => q.difficulty === difficultyFilter);
+    }
+
+    return filtered;
+  }, [currentTabQuestions, revisionQuestions, searchQuery, difficultyFilter, viewMode]);
+
+  // Section controls (accordion behavior)
+  const toggleSection = useCallback((categoryId: string) => {
+    setOpenSection((prev) => (prev === categoryId ? null : categoryId));
   }, []);
 
-  // Get current tab data
-  const currentTabData = useMemo(() => {
-    switch (activeTab) {
-      case "sql-questions":
-        return sqlQuestions;
-      case "interview-questions":
-        return interviewQuestions;
-      case "dsa-questions":
-        return dsaQuestions;
-      case "aptitude-questions":
-        return aptitudeQuestions;
-      case "job-portals":
-        return jobPortals;
-      case "projects":
-        return projects;
-      case "resume-templates":
-        return resumeTemplates;
-      case "cold-dms":
-        return coldDMs;
-      default:
-        return [];
-    }
-  }, [activeTab]);
+  const expandAllSections = useCallback(() => {
+    setOpenSection(questionCategories[0]?.id || null);
+  }, []);
 
-  // Check if current tab is a question tab
-  const isQuestionTab = questionTabs.includes(activeTab);
+  const collapseAllSections = useCallback(() => {
+    setOpenSection(null);
+  }, []);
 
-  // Get all question IDs with answers for the current tab
-  const questionsWithAnswers = useMemo(() => {
-    if (!isQuestionTab) return [];
-    const questions = currentTabData as Question[];
-    return questions.filter((q) => !!q.answer).map((q) => q.id);
-  }, [currentTabData, isQuestionTab]);
+  // Clear all filters
+  const clearFilters = useCallback(() => {
+    setSearchQuery("");
+    setDifficultyFilter("all");
+  }, []);
 
-  const handleExpandAll = () => {
-    setExpandedQuestionIds(new Set(questionsWithAnswers));
-    if (questionsWithAnswers.length > 0) {
-      setTimeout(() => {
-        const firstQuestionId = questionsWithAnswers[0];
-        const element = document.querySelector(`[data-question-id="${firstQuestionId}"]`);
-        if (element) {
-          const headerOffset = 80;
-          const elementPosition = element.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.scrollY - headerOffset;
-          window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-        }
-      }, 100);
-    }
-  };
+  // Random question for tabs mode
+  const goToRandomQuestion = useCallback(() => {
+    const unsolvedQuestions = filteredTabQuestions.filter((q) => !isSolved(q.id));
+    if (unsolvedQuestions.length === 0) return;
 
-  const handleCollapseAll = () => {
-    setExpandedQuestionIds(new Set());
-  };
+    const randomIndex = Math.floor(Math.random() * unsolvedQuestions.length);
+    const randomQuestion = unsolvedQuestions[randomIndex];
 
-  const handleToggleExpand = (id: number) => {
+    setExpandedQuestionIds(new Set([randomQuestion.id]));
+
+    setTimeout(() => {
+      const element = document.querySelector(`[data-question-id="${randomQuestion.id}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.classList.add("ring-2", "ring-primary", "ring-offset-2");
+        setTimeout(() => {
+          element.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+        }, 2000);
+      }
+    }, 100);
+  }, [filteredTabQuestions, isSolved]);
+
+  // Toggle answer expansion for tabs mode
+  const handleToggleExpand = useCallback((id: number) => {
     setExpandedQuestionIds((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
         newSet.delete(id);
       } else {
+        // Only one expanded at a time
+        newSet.clear();
         newSet.add(id);
       }
       return newSet;
     });
-  };
+  }, []);
 
-  // Random question feature
-  const handleRandomQuestion = () => {
-    if (!isQuestionTab) return;
-    const questions = currentTabData as Question[];
-    const unsolvedQuestions = questions.filter((q) => !isSolved(q.id));
-    const pool = unsolvedQuestions.length > 0 ? unsolvedQuestions : questions;
-    if (pool.length === 0) return;
-    
-    const randomQuestion = pool[Math.floor(Math.random() * pool.length)];
-    setExpandedQuestionIds(new Set([randomQuestion.id]));
-    
-    setTimeout(() => {
-      const element = document.querySelector(`[data-question-id="${randomQuestion.id}"]`);
-      if (element) {
-        const headerOffset = 100;
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.scrollY - headerOffset;
-        window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-      }
-    }, 100);
-  };
-
-  // Filter data based on search and difficulty
-  const filteredData = useMemo(() => {
-    let data = currentTabData;
-    
-    // Apply difficulty filter for question tabs
-    if (isQuestionTab && difficultyFilter !== "all") {
-      data = (data as Question[]).filter((q) => q.difficulty === difficultyFilter);
-    }
-    
-    // Apply search filter
-    if (!searchQuery.trim()) return data;
-    const query = searchQuery.toLowerCase();
-
-    return data.filter((item: any) => {
-      if ("text" in item) return item.text.toLowerCase().includes(query);
-      if ("name" in item) return item.name.toLowerCase().includes(query);
-      if ("title" in item) return item.title.toLowerCase().includes(query);
-      if ("message" in item) return item.message.toLowerCase().includes(query);
-      return true;
-    });
-  }, [currentTabData, searchQuery, difficultyFilter, isQuestionTab]);
-
-  // Calculate progress stats for header
+  // Calculate progress stats
   const progressStats = useMemo(() => {
-    const allQuestions = [...sqlQuestions, ...interviewQuestions, ...dsaQuestions, ...aptitudeQuestions];
-    const solved = allQuestions.filter((q) => isSolved(q.id)).length;
-    const total = allQuestions.length;
-    const percentage = total > 0 ? Math.round((solved / total) * 100) : 0;
-    
-    // Difficulty breakdown
-    const easyTotal = allQuestions.filter((q) => q.difficulty === "Easy").length;
-    const mediumTotal = allQuestions.filter((q) => q.difficulty === "Medium").length;
-    const hardTotal = allQuestions.filter((q) => q.difficulty === "Hard").length;
-    const easySolved = allQuestions.filter((q) => q.difficulty === "Easy" && isSolved(q.id)).length;
-    const mediumSolved = allQuestions.filter((q) => q.difficulty === "Medium" && isSolved(q.id)).length;
-    const hardSolved = allQuestions.filter((q) => q.difficulty === "Hard" && isSolved(q.id)).length;
-    
-    return { 
-      solved, 
-      total, 
-      percentage,
-      easy: { solved: easySolved, total: easyTotal },
-      medium: { solved: mediumSolved, total: mediumTotal },
-      hard: { solved: hardSolved, total: hardTotal },
+    const allQs = [...sqlQuestions, ...interviewQuestions, ...dsaQuestions, ...aptitudeQuestions];
+    let solvedEasy = 0, solvedMedium = 0, solvedHard = 0, totalSolved = 0;
+    let easyTotal = 0, mediumTotal = 0, hardTotal = 0;
+
+    allQs.forEach((q) => {
+      if (q.difficulty === "Easy") easyTotal++;
+      if (q.difficulty === "Medium") mediumTotal++;
+      if (q.difficulty === "Hard") hardTotal++;
+
+      if (isSolved(q.id)) {
+        totalSolved++;
+        if (q.difficulty === "Easy") solvedEasy++;
+        if (q.difficulty === "Medium") solvedMedium++;
+        if (q.difficulty === "Hard") solvedHard++;
+      }
+    });
+
+    return {
+      total: allQs.length,
+      totalSolved,
+      easy: { total: easyTotal, solved: solvedEasy },
+      medium: { total: mediumTotal, solved: solvedMedium },
+      hard: { total: hardTotal, solved: solvedHard },
+      percentage: allQs.length > 0 ? Math.round((totalSolved / allQs.length) * 100) : 0,
     };
   }, [isSolved]);
+
+  // Total filtered count for section view
+  const totalFilteredCount = useMemo(() => {
+    return Object.values(questionsByCategory).reduce((sum, qs) => sum + qs.length, 0);
+  }, [questionsByCategory]);
+
+  const unsolvedCount = filteredTabQuestions.filter((q) => !isSolved(q.id)).length;
 
   if (!company) {
     return (
@@ -334,22 +414,49 @@ const CompanyDetail = () => {
   };
 
   const isFavorited = favorites.has(companyId || "");
+  const isQuestionMode = !resourceTabIds.includes(activeTab);
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={300}>
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
-          <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
-            <div className="flex items-center gap-4 min-w-0">
-              <SidebarTrigger />
-              <nav className="flex items-center gap-2 text-sm text-muted-foreground truncate">
-                <Link to="/library/companies" className="hover:text-foreground transition-colors whitespace-nowrap">
-                  Companies
-                </Link>
-                <span>/</span>
-                <span className="text-foreground font-medium truncate">{company.name}</span>
-              </nav>
+          <div className="flex h-16 items-center gap-4 px-4 md:px-6">
+            <SidebarTrigger />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate("/library/companies")}
+                  className="mr-2"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Back to companies</TooltipContent>
+            </Tooltip>
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="h-10 w-10 rounded-xl bg-gradient-orange flex items-center justify-center shrink-0">
+                <Building2 className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg md:text-xl font-bold truncate">{company.name}</h1>
+                  <Badge variant="outline" className={cn("text-xs shrink-0 hidden sm:inline-flex", getCategoryStyle(company.category))}>
+                    {company.category}
+                  </Badge>
+                  {company.isHiring && (
+                    <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/40 bg-emerald-500/10 shrink-0 hidden sm:inline-flex">
+                      <Briefcase className="h-3 w-3 mr-1" />
+                      Hiring
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs md:text-sm text-muted-foreground truncate">
+                  {progressStats.totalSolved}/{progressStats.total} questions completed
+                </p>
+              </div>
             </div>
             <Button
               variant="outline"
@@ -366,349 +473,388 @@ const CompanyDetail = () => {
           </div>
         </header>
 
-        <main className="p-4 md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden">
-          {/* Enhanced Company Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-              {/* Company Icon & Info */}
-              <div className="flex items-start gap-4 flex-1 min-w-0">
-                <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gradient-orange flex items-center justify-center shrink-0 shadow-lg">
-                  <Building2 className="h-7 w-7 sm:h-8 sm:w-8 text-primary-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">{company.name}</h1>
-                    <Badge variant="outline" className={cn("text-xs shrink-0", getCategoryStyle(company.category))}>
-                      {company.category}
-                    </Badge>
-                    {company.isHiring && (
-                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/40 bg-emerald-500/10 shrink-0">
-                        <Briefcase className="h-3 w-3 mr-1" />
-                        Hiring
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">{company.description}</p>
-                </div>
-              </div>
+        <main className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
+          {/* Progress Summary Card */}
+          {user && <ProgressSummaryCard stats={progressStats} />}
 
-              {/* Progress Stats Card - Enhanced with difficulty breakdown */}
-              {user && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.1 }}
-                  className="flex flex-col p-4 rounded-xl border border-border/50 bg-card w-full lg:w-auto lg:min-w-[200px]"
-                >
-                  <div className="flex items-center justify-between lg:justify-center lg:flex-col gap-4 lg:gap-2">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">{progressStats.percentage}%</div>
-                      <div className="text-xs text-muted-foreground">Complete</div>
-                    </div>
-                    <div className="flex-1 lg:w-full">
-                      <Progress value={progressStats.percentage} className="h-2" />
-                      <div className="text-xs text-muted-foreground mt-2 text-center">
-                        {progressStats.solved}/{progressStats.total} solved
-                      </div>
-                    </div>
-                  </div>
-                  {/* Difficulty breakdown */}
-                  <div className="flex gap-3 mt-3 pt-3 border-t border-border/50 justify-center">
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-emerald-500">{progressStats.easy.solved}/{progressStats.easy.total}</div>
-                      <div className="text-[10px] text-muted-foreground">Easy</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-amber-500">{progressStats.medium.solved}/{progressStats.medium.total}</div>
-                      <div className="text-[10px] text-muted-foreground">Medium</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-red-500">{progressStats.hard.solved}/{progressStats.hard.total}</div>
-                      <div className="text-[10px] text-muted-foreground">Hard</div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Enhanced Grouped Tabs */}
+          {/* Resource Tabs (separate section for non-question resources) */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-6 space-y-4"
+            transition={{ delay: 0.05 }}
+            className="flex flex-wrap gap-2"
           >
-            {/* Questions Group */}
-            <div>
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
-                Questions
-              </div>
-              <div className="flex flex-wrap gap-1 border-b border-border/50 pb-2">
-                {companyTabs
-                  .filter((tab) => questionTabs.includes(tab.id))
-                  .map((tab) => {
-                    const Icon = tabIcons[tab.id];
-                    const count = tabCounts[tab.id as keyof typeof tabCounts];
-                    const isActive = activeTab === tab.id;
-
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={cn(
-                          "flex items-center gap-1.5 px-3 py-2 text-sm font-medium whitespace-nowrap transition-all border-b-2 -mb-px rounded-t-lg",
-                          isActive
-                            ? "text-foreground border-primary bg-muted/50"
-                            : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/30"
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span className="hidden sm:inline">{tab.name}</span>
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            "h-5 px-1.5 text-xs",
-                            isActive ? "bg-primary/20 text-primary" : ""
-                          )}
-                        >
-                          {count}
-                        </Badge>
-                      </button>
-                    );
-                  })}
-              </div>
-            </div>
-
-            {/* Resources Group */}
-            <div>
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
-                Resources
-              </div>
-              <div className="flex flex-wrap gap-1 border-b border-border/50 pb-2">
-                {companyTabs
-                  .filter((tab) => resourceTabs.includes(tab.id))
-                  .map((tab) => {
-                    const Icon = tabIcons[tab.id];
-                    const count = tabCounts[tab.id as keyof typeof tabCounts];
-                    const isActive = activeTab === tab.id;
-
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={cn(
-                          "flex items-center gap-1.5 px-3 py-2 text-sm font-medium whitespace-nowrap transition-all border-b-2 -mb-px rounded-t-lg",
-                          isActive
-                            ? "text-foreground border-primary bg-muted/50"
-                            : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/30"
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span className="hidden sm:inline">{tab.name}</span>
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            "h-5 px-1.5 text-xs",
-                            isActive ? "bg-primary/20 text-primary" : ""
-                          )}
-                        >
-                          {count}
-                        </Badge>
-                      </button>
-                    );
-                  })}
-              </div>
-            </div>
+            {companyTabs
+              .filter((tab) => resourceTabIds.includes(tab.id))
+              .map((tab) => {
+                const Icon = tabIcons[tab.id];
+                const isActive = activeTab === tab.id;
+                return (
+                  <Button
+                    key={tab.id}
+                    variant={isActive ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setActiveTab(tab.id)}
+                    className="gap-2"
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="hidden sm:inline">{tab.name}</span>
+                  </Button>
+                );
+              })}
           </motion.div>
 
-          {/* Enhanced Search and Controls */}
-          {(isQuestionTab || activeTab === "cold-dms") && (
+          {/* Main Questions Content Card */}
+          {isQuestionMode && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-3 mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="rounded-lg border border-border bg-card overflow-hidden"
             >
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={`Search ${companyTabs.find((t) => t.id === activeTab)?.name.toLowerCase()}...`}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                {/* Difficulty Filter - only for question tabs */}
-                {isQuestionTab && (
-                  <Select
-                    value={difficultyFilter}
-                    onValueChange={(value) => setDifficultyFilter(value as Difficulty | "all")}
-                  >
-                    <SelectTrigger className="w-full sm:w-[160px]">
-                      <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <SelectValue placeholder="Difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Levels</SelectItem>
-                      <SelectItem value="Easy">
-                        <span className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          Easy
-                        </span>
-                      </SelectItem>
-                      <SelectItem value="Medium">
-                        <span className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full bg-amber-500" />
-                          Medium
-                        </span>
-                      </SelectItem>
-                      <SelectItem value="Hard">
-                        <span className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full bg-red-500" />
-                          Hard
-                        </span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
+              {/* View Mode Toggle + Layout Toggle */}
+              <div className="border-b border-border p-3 md:p-4 bg-muted/30">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  {/* Layout Mode Toggle */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center rounded-lg border border-border p-1 bg-background">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant={layoutMode === "sections" ? "secondary" : "ghost"}
+                            size="sm"
+                            onClick={() => setLayoutMode("sections")}
+                            className="h-7 px-2 gap-1"
+                          >
+                            <LayoutGrid className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline text-xs">Sections</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Section View</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant={layoutMode === "tabs" ? "secondary" : "ghost"}
+                            size="sm"
+                            onClick={() => setLayoutMode("tabs")}
+                            className="h-7 px-2 gap-1"
+                          >
+                            <List className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline text-xs">Tabs</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Tab View</TooltipContent>
+                      </Tooltip>
+                    </div>
 
-                {/* Random Question Button */}
-                {isQuestionTab && (
+                    {/* Expand/Collapse All (only for sections mode) */}
+                    {layoutMode === "sections" && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={openSection ? collapseAllSections : expandAllSections}
+                            className="h-7 px-2 gap-1"
+                          >
+                            {openSection ? (
+                              <ChevronsDownUp className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronsUpDown className="h-3.5 w-3.5" />
+                            )}
+                            <span className="hidden sm:inline text-xs">
+                              {openSection ? "Collapse" : "Expand"}
+                            </span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {openSection ? "Collapse section" : "Expand first section"}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+
+                  {/* Revision Toggle */}
                   <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleRandomQuestion}
-                    className="h-10 w-10 shrink-0"
-                    title="Random question"
+                    variant={viewMode === "revision" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode(viewMode === "revision" ? "all" : "revision")}
+                    className="h-7 gap-1"
                   >
-                    <Shuffle className="h-4 w-4" />
+                    <BookmarkCheck className="h-3.5 w-3.5" />
+                    <span className="text-xs">Revision</span>
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-background/50">
+                      {revisionQuestions.length}
+                    </Badge>
                   </Button>
+                </div>
+
+                {/* Category Tabs (only for tabs mode) */}
+                {layoutMode === "tabs" && viewMode !== "revision" && (
+                  <div className="mt-3">
+                    <Tabs value={activeTab} onValueChange={setActiveTab}>
+                      <TabsList className="flex-wrap h-auto gap-1.5 md:gap-2 bg-transparent p-0">
+                        {questionCategories.map((category) => (
+                          <TabsTrigger
+                            key={category.id}
+                            value={category.id}
+                            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm px-2.5 md:px-3 py-1.5"
+                          >
+                            <span className="hidden md:inline">{category.name}</span>
+                            <span className="md:hidden">{category.name.replace(" Questions", "")}</span>
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                    </Tabs>
+                  </div>
                 )}
               </div>
 
-              {/* Results count and expand/collapse controls */}
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">{filteredData.length}</span>{" "}
-                  {filteredData.length === 1 ? "question" : "questions"} found
-                  {(searchQuery || difficultyFilter !== "all") && (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 ml-2 text-xs"
-                      onClick={() => {
-                        setSearchQuery("");
-                        setDifficultyFilter("all");
-                      }}
-                    >
-                      Clear filters
-                    </Button>
-                  )}
-                </div>
+              {/* Search and Filter Bar */}
+              <div className="border-b border-border p-3 md:p-4">
+                <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+                  {/* Search Input */}
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search questions..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 pr-10 h-9 md:h-10"
+                    />
+                    {searchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setSearchQuery("")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
 
-                {isQuestionTab && questionsWithAnswers.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <AnimatePresence>
-                      {expandedQuestionIds.size > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                        >
-                          <Badge variant="secondary" className="text-xs font-medium">
-                            {expandedQuestionIds.size} expanded
-                          </Badge>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    <AnimatePresence mode="wait">
-                      {expandedQuestionIds.size < questionsWithAnswers.length && (
-                        <motion.div
-                          key="expand"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                        >
-                          <Button variant="outline" size="sm" onClick={handleExpandAll} className="gap-2 h-8 text-xs">
-                            <ChevronsUpDown className="h-3 w-3" />
-                            Expand All
+                  {/* Filter Actions */}
+                  <div className="flex gap-2">
+                    {/* Difficulty Filter */}
+                    <Select
+                      value={difficultyFilter}
+                      onValueChange={(v) => setDifficultyFilter(v as Difficulty | "all")}
+                    >
+                      <SelectTrigger className="w-28 md:w-32 h-9 md:h-10">
+                        <Filter className="h-3.5 w-3.5 mr-1.5 hidden sm:block" />
+                        <SelectValue placeholder="Difficulty" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Levels</SelectItem>
+                        <SelectItem value="Easy">
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            Easy
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="Medium">
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            Medium
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="Hard">
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-red-500" />
+                            Hard
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Random Question (only for tabs mode) */}
+                    {layoutMode === "tabs" && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={goToRandomQuestion}
+                            disabled={unsolvedCount === 0}
+                            className="h-9 w-9 md:h-10 md:w-10"
+                          >
+                            <Shuffle className="h-4 w-4" />
                           </Button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Pick a random unsolved question
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+
+                    {/* Clear Filters */}
                     <AnimatePresence>
-                      {expandedQuestionIds.size > 0 && (
+                      {hasActiveFilters && (
                         <motion.div
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.9 }}
                         >
-                          <Button variant="outline" size="sm" onClick={handleCollapseAll} className="gap-2 h-8 text-xs">
-                            <ChevronsUpDown className="h-3 w-3" />
-                            Collapse All
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={clearFilters} className="h-9 w-9 md:h-10 md:w-10">
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Clear all filters</TooltipContent>
+                          </Tooltip>
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
-                )}
+                </div>
+
+                {/* Results count */}
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-xs md:text-sm text-muted-foreground">
+                    {layoutMode === "sections" ? totalFilteredCount : filteredTabQuestions.length} question{(layoutMode === "sections" ? totalFilteredCount : filteredTabQuestions.length) !== 1 ? "s" : ""}{" "}
+                    {hasActiveFilters ? "found" : "available"}
+                    {viewMode === "revision" && " for revision"}
+                  </p>
+                  {layoutMode === "tabs" && unsolvedCount > 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      {unsolvedCount} pending
+                    </Badge>
+                  )}
+                </div>
               </div>
+
+              {/* Loading state */}
+              {isLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-muted-foreground">Loading progress...</span>
+                </div>
+              )}
+
+              {/* Content: Sections View or Tabs View */}
+              {!isLoading && layoutMode === "sections" ? (
+                /* Sections View */
+                totalFilteredCount > 0 ? (
+                  <div>
+                    {questionCategories.map((category) => {
+                      const categoryQuestions = questionsByCategory[category.id] || [];
+                      // Skip empty categories in revision mode
+                      if (viewMode === "revision" && categoryQuestions.length === 0) {
+                        return null;
+                      }
+                      return (
+                        <CompanyCategorySection
+                          key={category.id}
+                          categoryId={category.id}
+                          categoryName={category.name}
+                          questions={categoryQuestions}
+                          totalQuestionsInCategory={totalQuestionsPerCategory[category.id] || 0}
+                          isFiltered={isFiltered}
+                          isOpen={openSection === category.id}
+                          showCategory={activeTab === "sql-questions"}
+                          onOpenChange={() => toggleSection(category.id)}
+                          isSolved={isSolved}
+                          isRevision={isRevision}
+                          onToggleSolved={handleToggleSolved}
+                          onToggleRevision={handleToggleRevision}
+                          isLoggedIn={!!user}
+                        />
+                      );
+                    })}
+                  </div>
+                ) : viewMode === "revision" ? (
+                  <EmptyRevisionState onBrowseAll={() => setViewMode("all")} />
+                ) : (
+                  <EmptySearchState onClearFilters={clearFilters} />
+                )
+              ) : !isLoading && layoutMode === "tabs" ? (
+                /* Tabs View */
+                filteredTabQuestions.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent bg-muted/20">
+                          <TableHead className="w-10 sm:w-12 text-xs font-semibold">#</TableHead>
+                          <TableHead className="min-w-0 text-xs font-semibold">Question</TableHead>
+                          {viewMode === "revision" && (
+                            <TableHead className="hidden md:table-cell w-28 text-xs font-semibold">Category</TableHead>
+                          )}
+                          <TableHead className="hidden sm:table-cell w-20 sm:w-24 text-xs font-semibold">Difficulty</TableHead>
+                          <TableHead className="w-12 sm:w-16 text-center text-xs font-semibold">
+                            <span className="hidden sm:inline">Solved</span>
+                            <span className="sm:hidden">✓</span>
+                          </TableHead>
+                          <TableHead className="w-12 sm:w-16 text-center text-xs font-semibold">
+                            <span className="hidden sm:inline">Revision</span>
+                            <span className="sm:hidden">★</span>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <AnimatePresence mode="popLayout">
+                          {filteredTabQuestions.map((question, index) => (
+                            <CompanyQuestionTableRow
+                              key={question.id}
+                              question={question}
+                              index={index}
+                              isSolved={isSolved(question.id)}
+                              isRevision={isRevision(question.id)}
+                              isExpanded={expandedQuestionIds.has(question.id)}
+                              isLoggedIn={!!user}
+                              showCategory={viewMode === "revision"}
+                              onToggleSolved={() => handleToggleSolved(question.id)}
+                              onToggleRevision={() => handleToggleRevision(question.id)}
+                              onToggleExpand={() => handleToggleExpand(question.id)}
+                            />
+                          ))}
+                        </AnimatePresence>
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : viewMode === "revision" ? (
+                  <EmptyRevisionState onBrowseAll={() => setViewMode("all")} />
+                ) : hasActiveFilters ? (
+                  <EmptySearchState onClearFilters={clearFilters} />
+                ) : (
+                  <EmptyQuestionsState />
+                )
+              ) : null}
             </motion.div>
           )}
 
-          {/* Loading state */}
-          {isLoading && (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-muted-foreground">Loading progress...</span>
-            </div>
-          )}
-
-          {/* Content */}
-          {!isLoading && (
-            <div className="space-y-0">
-              {isQuestionTab && (
-                <QuestionsTable
-                  questions={filteredData as Question[]}
-                  showCategory={activeTab === "sql-questions"}
-                  isSolved={isSolved}
-                  isRevision={isRevision}
-                  toggleSolved={handleToggleSolved}
-                  toggleRevision={handleToggleRevision}
-                  isLoggedIn={!!user}
-                  expandedIds={expandedQuestionIds}
-                  onToggleExpand={handleToggleExpand}
-                />
-              )}
-
+          {/* Resource Content (non-question tabs) */}
+          {!isQuestionMode && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
               {activeTab === "job-portals" && (
                 <JobPortalsGrid
-                  portals={filteredData as JobPortal[]}
+                  portals={jobPortals}
                   isSolved={isSolved}
                   toggleSolved={handleToggleSolved}
                   isLoggedIn={!!user}
                 />
               )}
 
-              {activeTab === "projects" && <ProjectsGrid projects={filteredData as Project[]} />}
+              {activeTab === "projects" && <ProjectsGrid projects={projects} />}
 
-              {activeTab === "resume-templates" && <ResumeTemplatesGrid templates={filteredData as ResumeTemplate[]} />}
+              {activeTab === "resume-templates" && <ResumeTemplatesGrid templates={resumeTemplates} />}
 
               {activeTab === "cold-dms" && (
                 <ColdDMsGrid
-                  dms={filteredData as ColdDM[]}
+                  dms={coldDMs}
                   isSolved={isSolved}
                   toggleSolved={handleToggleSolved}
                   isLoggedIn={!!user}
                 />
               )}
-            </div>
+            </motion.div>
           )}
 
           {/* Login prompt */}
@@ -716,7 +862,7 @@ const CompanyDetail = () => {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-6 p-4 rounded-lg border border-primary/30 bg-primary/5 text-center"
+              className="p-4 rounded-lg border border-primary/30 bg-primary/5 text-center"
             >
               <p className="text-sm text-muted-foreground mb-2">Sign in to track your progress and sync across devices</p>
               <Button size="sm" onClick={() => navigate("/login")}>
@@ -730,78 +876,77 @@ const CompanyDetail = () => {
   );
 };
 
-// Questions Table Component with proper HTML table structure
-interface QuestionsTableProps {
-  questions: Question[];
-  showCategory?: boolean;
-  isSolved: (id: number) => boolean;
-  isRevision: (id: number) => boolean;
-  toggleSolved: (id: number) => void;
-  toggleRevision: (id: number) => void;
-  isLoggedIn: boolean;
-  expandedIds: Set<number>;
-  onToggleExpand: (id: number) => void;
-}
+// Empty States
+const EmptyRevisionState = ({ onBrowseAll }: { onBrowseAll: () => void }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex flex-col items-center justify-center py-16 text-center px-4"
+  >
+    <motion.div
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      transition={{ type: "spring", stiffness: 200 }}
+      className="h-16 w-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4"
+    >
+      <BookmarkCheck className="h-8 w-8 text-amber-500" />
+    </motion.div>
+    <h3 className="text-lg font-medium">No revision questions</h3>
+    <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+      Bookmark questions to add them to your revision list for quick access later.
+    </p>
+    <Button variant="outline" className="mt-4" onClick={onBrowseAll}>
+      Browse All Questions
+    </Button>
+  </motion.div>
+);
 
-const QuestionsTable = ({
-  questions,
-  showCategory = false,
-  isSolved,
-  isRevision,
-  toggleSolved,
-  toggleRevision,
-  isLoggedIn,
-  expandedIds,
-  onToggleExpand,
-}: QuestionsTableProps) => {
-  if (questions.length === 0) {
-    return (
-      <div className="border border-border/50 rounded-lg p-12 text-center">
-        <FileQuestion className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-        <h3 className="font-medium text-foreground mb-1">No questions found</h3>
-        <p className="text-sm text-muted-foreground">
-          Try adjusting your search or filters
-        </p>
-      </div>
-    );
-  }
+const EmptySearchState = ({ onClearFilters }: { onClearFilters: () => void }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex flex-col items-center justify-center py-16 text-center px-4"
+  >
+    <motion.div
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      transition={{ type: "spring", stiffness: 200 }}
+      className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4"
+    >
+      <Search className="h-8 w-8 text-muted-foreground" />
+    </motion.div>
+    <h3 className="text-lg font-medium">No questions found</h3>
+    <p className="text-sm text-muted-foreground mt-1">
+      Try adjusting your search or filters.
+    </p>
+    <Button variant="outline" onClick={onClearFilters} className="mt-4">
+      Clear Filters
+    </Button>
+  </motion.div>
+);
 
-  return (
-    <div className="border border-border/50 rounded-lg overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/30 hover:bg-muted/30">
-            <TableHead className="w-12 text-center">#</TableHead>
-            <TableHead>Question</TableHead>
-            <TableHead className="hidden sm:table-cell w-24">Difficulty</TableHead>
-            {showCategory && <TableHead className="hidden md:table-cell w-28">Category</TableHead>}
-            <TableHead className="w-16 text-center">Solved</TableHead>
-            <TableHead className="w-16 text-center">Revision</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {questions.map((question, index) => (
-            <CompanyQuestionTableRow
-              key={question.id}
-              question={question}
-              index={index}
-              isSolved={isSolved(question.id)}
-              isRevision={isRevision(question.id)}
-              isExpanded={expandedIds.has(question.id)}
-              isLoggedIn={isLoggedIn}
-              showCategory={showCategory}
-              onToggleSolved={() => toggleSolved(question.id)}
-              onToggleRevision={() => toggleRevision(question.id)}
-              onToggleExpand={() => onToggleExpand(question.id)}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-};
+const EmptyQuestionsState = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex flex-col items-center justify-center py-16 text-center px-4"
+  >
+    <motion.div
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      transition={{ type: "spring", stiffness: 200 }}
+      className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4"
+    >
+      <FileQuestion className="h-8 w-8 text-muted-foreground" />
+    </motion.div>
+    <h3 className="text-lg font-medium">No questions available</h3>
+    <p className="text-sm text-muted-foreground mt-1">
+      Questions for this category will be added soon.
+    </p>
+  </motion.div>
+);
 
-// Job Portals Grid (Enhanced Cards)
+// Resource Grid Components
 interface JobPortalsGridProps {
   portals: JobPortal[];
   isSolved: (id: number) => boolean;
@@ -872,7 +1017,6 @@ const JobPortalsGrid = ({ portals, isSolved, toggleSolved, isLoggedIn }: JobPort
   );
 };
 
-// Projects Grid (Enhanced Cards with difficulty)
 interface ProjectsGridProps {
   projects: Project[];
 }
@@ -927,7 +1071,6 @@ const ProjectsGrid = ({ projects }: ProjectsGridProps) => {
   );
 };
 
-// Resume Templates Grid (Gallery with Download)
 interface ResumeTemplatesGridProps {
   templates: ResumeTemplate[];
 }
@@ -956,12 +1099,10 @@ const ResumeTemplatesGrid = ({ templates }: ResumeTemplatesGridProps) => {
           <div className="aspect-[3/4] bg-muted/30 flex items-center justify-center relative">
             <FileText className="h-12 w-12 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <div className="flex flex-col gap-2">
-                <Button size="sm" variant="secondary" className="gap-2">
-                  <ExternalLink className="h-3 w-3" />
-                  Preview
-                </Button>
-              </div>
+              <Button size="sm" variant="secondary" className="gap-2">
+                <ExternalLink className="h-3 w-3" />
+                Preview
+              </Button>
             </div>
           </div>
           <div className="p-3">
@@ -976,7 +1117,6 @@ const ResumeTemplatesGrid = ({ templates }: ResumeTemplatesGridProps) => {
   );
 };
 
-// Cold DMs Grid (Enhanced Cards with Platform Badges)
 interface ColdDMsGridProps {
   dms: ColdDM[];
   isSolved: (id: number) => boolean;
@@ -998,7 +1138,7 @@ const ColdDMsGrid = ({ dms, isSolved, toggleSolved, isLoggedIn }: ColdDMsGridPro
       <div className="border border-border/50 rounded-lg p-12 text-center">
         <Mail className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
         <h3 className="font-medium text-foreground mb-1">No templates found</h3>
-        <p className="text-sm text-muted-foreground">Try adjusting your search</p>
+        <p className="text-sm text-muted-foreground">Check back later for cold DM templates</p>
       </div>
     );
   }
