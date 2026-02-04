@@ -282,6 +282,36 @@ const PublicProfile = () => {
         <meta name="twitter:title" content={profileTitle} />
         <meta name="twitter:description" content={profileDescription} />
         {profile?.avatar_url && <meta name="twitter:image" content={profile.avatar_url} />}
+        
+        {/* JSON-LD Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Person",
+            name: profile?.full_name,
+            url: profileUrl,
+            image: profile?.avatar_url || undefined,
+            description: profile?.bio || undefined,
+            jobTitle: profile?.occupation || undefined,
+            address: profile?.location ? {
+              "@type": "PostalAddress",
+              addressLocality: profile.location
+            } : undefined,
+            sameAs: [
+              profile?.twitter_url,
+              profile?.linkedin_url,
+              profile?.github_url,
+              profile?.instagram_url,
+              profile?.leetcode_url,
+              profile?.hackerrank_url,
+              profile?.codeforces_url,
+              profile?.codechef_url,
+              profile?.geeksforgeeks_url,
+              profile?.website,
+            ].filter(Boolean),
+            knowsAbout: profile?.skills?.length ? profile.skills : undefined,
+          })}
+        </script>
       </Helmet>
       
       <Navbar />
