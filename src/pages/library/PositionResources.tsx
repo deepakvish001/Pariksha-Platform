@@ -122,6 +122,7 @@ const PositionResources = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | "all">("all");
+  const [hasNotesFilter, setHasNotesFilter] = useState(false);
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progress, setProgress] = useState<ProgressState>({});
   const [noteDialog, setNoteDialog] = useState<NoteDialogState>({
@@ -191,7 +192,7 @@ const PositionResources = () => {
     }));
   }, [selectedRole, selectedCategory, viewMode, revisionQuestions, currentCategory]);
 
-  // Filter questions by search and difficulty
+  // Filter questions by search, difficulty, and notes
   const filteredQuestions = useMemo(() => {
     let filtered = baseQuestions;
 
@@ -208,8 +209,15 @@ const PositionResources = () => {
       filtered = filtered.filter((q) => q.difficulty === difficultyFilter);
     }
 
+    // Has notes filter
+    if (hasNotesFilter) {
+      filtered = filtered.filter((q) => 
+        Boolean(progress[selectedRole]?.[q.categoryId]?.[q.id]?.note)
+      );
+    }
+
     return filtered;
-  }, [baseQuestions, searchQuery, difficultyFilter]);
+  }, [baseQuestions, searchQuery, difficultyFilter, hasNotesFilter, progress, selectedRole]);
 
   // Toggle solved status
   const toggleSolved = (questionId: number, categoryId: string) => {
@@ -341,9 +349,10 @@ const PositionResources = () => {
   const clearFilters = () => {
     setSearchQuery("");
     setDifficultyFilter("all");
+    setHasNotesFilter(false);
   };
 
-  const hasActiveFilters = searchQuery.trim() !== "" || difficultyFilter !== "all";
+  const hasActiveFilters = searchQuery.trim() !== "" || difficultyFilter !== "all" || hasNotesFilter;
 
   return (
     <div className="min-h-screen bg-background">
@@ -493,6 +502,18 @@ const PositionResources = () => {
               <SelectItem value="Hard">Hard</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Has Notes Filter */}
+          <Button
+            variant={hasNotesFilter ? "default" : "outline"}
+            size="default"
+            onClick={() => setHasNotesFilter(!hasNotesFilter)}
+            className="gap-2 whitespace-nowrap"
+          >
+            <StickyNote className="h-4 w-4" />
+            <span className="hidden sm:inline">Has Notes</span>
+            <span className="sm:hidden">Notes</span>
+          </Button>
 
           {/* Clear Filters */}
           {hasActiveFilters && (
