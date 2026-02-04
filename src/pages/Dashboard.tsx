@@ -55,8 +55,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 interface ExtendedProfile {
   id: string;
@@ -485,10 +484,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <SidebarProvider>
-      <DashboardSidebar />
-      <SidebarInset>
-        <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
           <input
             type="file"
             ref={fileInputRef}
@@ -1037,9 +1033,7 @@ const Dashboard = () => {
           </div>
         </motion.div>
       </main>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+    </div>
   );
 };
 

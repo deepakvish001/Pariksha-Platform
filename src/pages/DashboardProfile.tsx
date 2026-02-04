@@ -15,8 +15,7 @@ import {
   BookOpen,
   Clock
 } from "lucide-react";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -101,10 +100,7 @@ const DashboardProfile = () => {
   ];
 
   return (
-    <SidebarProvider>
-      <DashboardSidebar />
-      <SidebarInset>
-        <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
           <input
             type="file"
             ref={fileInputRef}
@@ -271,9 +267,7 @@ const DashboardProfile = () => {
             </div>
           </main>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
-  );
-};
-
-export default DashboardProfile;
+      );
+    };
+    
+    export default DashboardProfile;

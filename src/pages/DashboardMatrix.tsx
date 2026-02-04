@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { LayoutGrid, CheckCircle2, Clock, Target, Zap } from "lucide-react";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -51,10 +50,7 @@ const DashboardMatrix = () => {
   const overallProgress = Math.round((totalCompleted / totalQuestions) * 100);
 
   return (
-    <SidebarProvider>
-      <DashboardSidebar />
-      <SidebarInset>
-        <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
           {/* Header */}
           <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
             <div className="flex h-16 items-center gap-4 px-6">
@@ -176,9 +172,7 @@ const DashboardMatrix = () => {
             </div>
           </main>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
-  );
-};
-
-export default DashboardMatrix;
+      );
+    };
+    
+    export default DashboardMatrix;

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 import {
   User,
   Lock,
@@ -9,7 +8,6 @@ import {
   Eye,
   EyeOff,
   Check,
-  ChevronLeft,
   Camera,
   Phone,
   GraduationCap,
@@ -31,6 +29,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -461,13 +460,9 @@ const Settings = () => {
 
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-lg sticky top-0 z-50">
-        <div className="section-container flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 px-6">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard">
-              <Button variant="ghost" size="icon">
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-            </Link>
+            <SidebarTrigger />
             <h1 className="text-xl font-bold text-foreground">Settings</h1>
           </div>
           <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>

@@ -2,10 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -21,6 +22,15 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Layout wrapper for dashboard routes
+const DashboardLayoutWrapper = () => (
+  <ProtectedRoute requireOnboarding>
+    <DashboardLayout>
+      <Outlet />
+    </DashboardLayout>
+  </ProtectedRoute>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -45,43 +55,20 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute requireOnboarding>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/matrix"
-                element={
-                  <ProtectedRoute requireOnboarding>
-                    <DashboardMatrix />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/sheets"
-                element={
-                  <ProtectedRoute requireOnboarding>
-                    <DashboardSheets />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/profile"
-                element={
-                  <ProtectedRoute requireOnboarding>
-                    <DashboardProfile />
-                  </ProtectedRoute>
-                }
-              />
+              {/* Dashboard routes with shared layout */}
+              <Route path="/dashboard" element={<DashboardLayoutWrapper />}>
+                <Route index element={<Dashboard />} />
+                <Route path="matrix" element={<DashboardMatrix />} />
+                <Route path="sheets" element={<DashboardSheets />} />
+                <Route path="profile" element={<DashboardProfile />} />
+              </Route>
               <Route
                 path="/settings"
                 element={
                   <ProtectedRoute requireOnboarding>
-                    <Settings />
+                    <DashboardLayout>
+                      <Settings />
+                    </DashboardLayout>
                   </ProtectedRoute>
                 }
               />

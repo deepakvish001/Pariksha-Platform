@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { FileSpreadsheet, Search, Filter, Star, ExternalLink, BookOpen } from "lucide-react";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -80,10 +79,7 @@ const DashboardSheets = () => {
   });
 
   return (
-    <SidebarProvider>
-      <DashboardSidebar />
-      <SidebarInset>
-        <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
           {/* Header */}
           <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
             <div className="flex h-16 items-center gap-4 px-6">
@@ -192,11 +188,9 @@ const DashboardSheets = () => {
                 )}
               </TabsContent>
             </Tabs>
-          </main>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
-  );
-};
-
-export default DashboardSheets;
+        </main>
+      </div>
+    );
+  };
+  
+  export default DashboardSheets;
