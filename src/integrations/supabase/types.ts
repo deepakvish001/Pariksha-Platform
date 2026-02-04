@@ -154,6 +154,68 @@ export type Database = {
         }
         Relationships: []
       }
+      user_folder_items: {
+        Row: {
+          created_at: string
+          folder_id: string
+          id: string
+          question_id: number
+          question_source: string
+        }
+        Insert: {
+          created_at?: string
+          folder_id: string
+          id?: string
+          question_id: number
+          question_source?: string
+        }
+        Update: {
+          created_at?: string
+          folder_id?: string
+          id?: string
+          question_id?: number
+          question_source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_folder_items_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "user_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_folders: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_goals: {
         Row: {
           created_at: string
