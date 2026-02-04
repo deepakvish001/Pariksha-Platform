@@ -1,5 +1,6 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import Hero3DElement from "./Hero3DElement";
 
 const Hero = () => {
   return (
@@ -55,8 +56,11 @@ const Hero = () => {
         ))}
       </div>
 
+      {/* 3D Element */}
+      <Hero3DElement />
+
       {/* Content */}
-      <div className="relative z-10 section-container text-center pt-28 pb-32">
+      <div className="relative z-10 section-container text-center lg:text-left pt-28 pb-32 lg:pr-[400px]">
         {/* Badge */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -97,7 +101,7 @@ const Hero = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
         >
           <button className="btn-primary inline-flex items-center gap-2 text-lg group">
             Start Learning Clearly
@@ -113,7 +117,7 @@ const Hero = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto"
+          className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto lg:mx-0"
         >
           {[
             { value: "10K+", label: "Active Users" },
