@@ -63,15 +63,15 @@ const CompanyDetail = () => {
 
   const [activeTab, setActiveTab] = useState(companyTabs[0].id);
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedQuestionId, setExpandedQuestionId] = useState<number | null>(null);
+  const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<number>>(new Set());
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(FAVORITES_KEY);
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
 
-  // Reset expanded question when switching tabs
+  // Reset expanded questions when switching tabs
   useEffect(() => {
-    setExpandedQuestionId(null);
+    setExpandedQuestionIds(new Set());
   }, [activeTab]);
 
   // Use Supabase-synced progress
@@ -150,6 +150,32 @@ const CompanyDetail = () => {
         return [];
     }
   }, [activeTab]);
+
+  // Get all question IDs with answers for the current tab
+  const questionsWithAnswers = useMemo(() => {
+    const questions = currentTabData as Question[];
+    return questions.filter((q) => !!q.answer).map((q) => q.id);
+  }, [currentTabData]);
+
+  const handleExpandAll = () => {
+    setExpandedQuestionIds(new Set(questionsWithAnswers));
+  };
+
+  const handleCollapseAll = () => {
+    setExpandedQuestionIds(new Set());
+  };
+
+  const handleToggleExpand = (id: number) => {
+    setExpandedQuestionIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
 
   // Filter data based on search
   const filteredData = useMemo(() => {
@@ -284,26 +310,51 @@ const CompanyDetail = () => {
                 className="pl-10"
               />
             </div>
-            <AnimatePresence>
-              {expandedQuestionId !== null && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setExpandedQuestionId(null)}
-                    className="gap-2 h-10 whitespace-nowrap"
-                  >
-                    <ChevronsUpDown className="h-4 w-4" />
-                    Collapse All
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {questionsWithAnswers.length > 0 && (
+              <div className="flex gap-2">
+                <AnimatePresence mode="wait">
+                  {expandedQuestionIds.size < questionsWithAnswers.length && (
+                    <motion.div
+                      key="expand"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExpandAll}
+                        className="gap-2 h-10 whitespace-nowrap"
+                      >
+                        <ChevronsUpDown className="h-4 w-4" />
+                        Expand All
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <AnimatePresence>
+                  {expandedQuestionIds.size > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCollapseAll}
+                        className="gap-2 h-10 whitespace-nowrap"
+                      >
+                        <ChevronsUpDown className="h-4 w-4" />
+                        Collapse All
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -344,8 +395,8 @@ const CompanyDetail = () => {
                 toggleSolved={handleToggleSolved}
                 toggleRevision={handleToggleRevision}
                 isLoggedIn={!!user}
-                expandedId={expandedQuestionId}
-                onToggleExpand={(id) => setExpandedQuestionId(expandedQuestionId === id ? null : id)}
+                expandedIds={expandedQuestionIds}
+                onToggleExpand={handleToggleExpand}
               />
             )}
 
@@ -357,8 +408,8 @@ const CompanyDetail = () => {
                 toggleSolved={handleToggleSolved}
                 toggleRevision={handleToggleRevision}
                 isLoggedIn={!!user}
-                expandedId={expandedQuestionId}
-                onToggleExpand={(id) => setExpandedQuestionId(expandedQuestionId === id ? null : id)}
+                expandedIds={expandedQuestionIds}
+                onToggleExpand={handleToggleExpand}
               />
             )}
 
@@ -370,8 +421,8 @@ const CompanyDetail = () => {
                 toggleSolved={handleToggleSolved}
                 toggleRevision={handleToggleRevision}
                 isLoggedIn={!!user}
-                expandedId={expandedQuestionId}
-                onToggleExpand={(id) => setExpandedQuestionId(expandedQuestionId === id ? null : id)}
+                expandedIds={expandedQuestionIds}
+                onToggleExpand={handleToggleExpand}
               />
             )}
 
@@ -383,8 +434,8 @@ const CompanyDetail = () => {
                 toggleSolved={handleToggleSolved}
                 toggleRevision={handleToggleRevision}
                 isLoggedIn={!!user}
-                expandedId={expandedQuestionId}
-                onToggleExpand={(id) => setExpandedQuestionId(expandedQuestionId === id ? null : id)}
+                expandedIds={expandedQuestionIds}
+                onToggleExpand={handleToggleExpand}
               />
             )}
 
@@ -445,7 +496,7 @@ interface QuestionsTableProps {
   toggleSolved: (id: number) => void;
   toggleRevision: (id: number) => void;
   isLoggedIn: boolean;
-  expandedId: number | null;
+  expandedIds: Set<number>;
   onToggleExpand: (id: number) => void;
 }
 
@@ -457,7 +508,7 @@ const QuestionsTable = ({
   toggleSolved,
   toggleRevision,
   isLoggedIn,
-  expandedId,
+  expandedIds,
   onToggleExpand,
 }: QuestionsTableProps) => {
   return (
@@ -482,7 +533,7 @@ const QuestionsTable = ({
         ) : (
           questions.map((question, index) => {
             const hasAnswer = !!question.answer;
-            const isExpanded = expandedId === question.id;
+            const isExpanded = expandedIds.has(question.id);
 
             return (
               <div key={question.id}>
