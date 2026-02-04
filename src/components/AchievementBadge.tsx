@@ -1,0 +1,220 @@
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { 
+  Trophy, 
+  Flame, 
+  Target, 
+  Star, 
+  Zap, 
+  Crown,
+  Medal,
+  Rocket,
+  BookOpen,
+  GraduationCap
+} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: keyof typeof iconMap;
+  color: string;
+  requirement: {
+    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics';
+    value: number;
+  };
+}
+
+const iconMap = {
+  trophy: Trophy,
+  flame: Flame,
+  target: Target,
+  star: Star,
+  zap: Zap,
+  crown: Crown,
+  medal: Medal,
+  rocket: Rocket,
+  book: BookOpen,
+  graduation: GraduationCap,
+};
+
+export const achievements: Achievement[] = [
+  {
+    id: 'first_topic',
+    name: 'First Steps',
+    description: 'Complete your first topic',
+    icon: 'rocket',
+    color: 'from-blue-500 to-cyan-500',
+    requirement: { type: 'topics_completed', value: 1 }
+  },
+  {
+    id: 'topics_10',
+    name: 'Getting Started',
+    description: 'Complete 10 topics',
+    icon: 'book',
+    color: 'from-green-500 to-emerald-500',
+    requirement: { type: 'topics_completed', value: 10 }
+  },
+  {
+    id: 'topics_50',
+    name: 'Dedicated Learner',
+    description: 'Complete 50 topics',
+    icon: 'star',
+    color: 'from-yellow-500 to-orange-500',
+    requirement: { type: 'topics_completed', value: 50 }
+  },
+  {
+    id: 'topics_100',
+    name: 'Century Club',
+    description: 'Complete 100 topics',
+    icon: 'trophy',
+    color: 'from-orange-500 to-red-500',
+    requirement: { type: 'topics_completed', value: 100 }
+  },
+  {
+    id: 'topics_250',
+    name: 'Knowledge Seeker',
+    description: 'Complete 250 topics',
+    icon: 'graduation',
+    color: 'from-purple-500 to-pink-500',
+    requirement: { type: 'topics_completed', value: 250 }
+  },
+  {
+    id: 'topics_500',
+    name: 'Master Scholar',
+    description: 'Complete 500 topics',
+    icon: 'crown',
+    color: 'from-yellow-400 to-yellow-600',
+    requirement: { type: 'topics_completed', value: 500 }
+  },
+  {
+    id: 'streak_3',
+    name: 'Warming Up',
+    description: 'Maintain a 3-day streak',
+    icon: 'flame',
+    color: 'from-orange-400 to-red-400',
+    requirement: { type: 'streak_days', value: 3 }
+  },
+  {
+    id: 'streak_7',
+    name: 'Week Warrior',
+    description: 'Maintain a 7-day streak',
+    icon: 'flame',
+    color: 'from-orange-500 to-red-500',
+    requirement: { type: 'streak_days', value: 7 }
+  },
+  {
+    id: 'streak_14',
+    name: 'Fortnight Fighter',
+    description: 'Maintain a 14-day streak',
+    icon: 'flame',
+    color: 'from-orange-600 to-red-600',
+    requirement: { type: 'streak_days', value: 14 }
+  },
+  {
+    id: 'streak_30',
+    name: 'Monthly Master',
+    description: 'Maintain a 30-day streak',
+    icon: 'zap',
+    color: 'from-purple-500 to-indigo-500',
+    requirement: { type: 'streak_days', value: 30 }
+  },
+  {
+    id: 'revision_10',
+    name: 'Reviewer',
+    description: 'Mark 10 topics for revision',
+    icon: 'target',
+    color: 'from-cyan-500 to-blue-500',
+    requirement: { type: 'revision_topics', value: 10 }
+  },
+  {
+    id: 'revision_50',
+    name: 'Strategic Learner',
+    description: 'Mark 50 topics for revision',
+    icon: 'medal',
+    color: 'from-teal-500 to-cyan-500',
+    requirement: { type: 'revision_topics', value: 50 }
+  },
+];
+
+interface AchievementBadgeProps {
+  achievement: Achievement;
+  earned: boolean;
+  earnedAt?: string;
+  size?: 'sm' | 'md' | 'lg';
+  showName?: boolean;
+}
+
+const AchievementBadge = ({ 
+  achievement, 
+  earned, 
+  earnedAt,
+  size = 'md',
+  showName = true
+}: AchievementBadgeProps) => {
+  const Icon = iconMap[achievement.icon];
+  
+  const sizeClasses = {
+    sm: 'h-10 w-10',
+    md: 'h-14 w-14',
+    lg: 'h-20 w-20',
+  };
+  
+  const iconSizes = {
+    sm: 'h-5 w-5',
+    md: 'h-7 w-7',
+    lg: 'h-10 w-10',
+  };
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <motion.div 
+          className="flex flex-col items-center gap-1 cursor-pointer"
+          whileHover={{ scale: earned ? 1.1 : 1 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
+          <div
+            className={cn(
+              "rounded-full flex items-center justify-center transition-all",
+              sizeClasses[size],
+              earned 
+                ? `bg-gradient-to-br ${achievement.color} shadow-lg` 
+                : "bg-muted/50 border-2 border-dashed border-muted-foreground/30"
+            )}
+          >
+            <Icon 
+              className={cn(
+                iconSizes[size],
+                earned ? "text-white" : "text-muted-foreground/50"
+              )} 
+            />
+          </div>
+          {showName && (
+            <span className={cn(
+              "text-xs text-center max-w-16 leading-tight",
+              earned ? "text-foreground" : "text-muted-foreground"
+            )}>
+              {achievement.name}
+            </span>
+          )}
+        </motion.div>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-48">
+        <p className="font-semibold">{achievement.name}</p>
+        <p className="text-muted-foreground text-xs">{achievement.description}</p>
+        {earned && earnedAt && (
+          <p className="text-xs text-primary mt-1">
+            Earned {new Date(earnedAt).toLocaleDateString()}
+          </p>
+        )}
+        {!earned && (
+          <p className="text-xs text-muted-foreground mt-1">Not yet earned</p>
+        )}
+      </TooltipContent>
+    </Tooltip>
+  );
+};
+
+export default AchievementBadge;

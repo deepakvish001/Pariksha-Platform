@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LayoutGrid, CheckCircle2, Target, Zap, Star, Loader2, Flame, Trophy, Settings2 } from "lucide-react";
+import { LayoutGrid, CheckCircle2, Target, Zap, Star, Loader2, Flame, Trophy, Settings2, Calendar } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import CalendarHeatmap from "@/components/CalendarHeatmap";
+import AchievementBadge, { achievements } from "@/components/AchievementBadge";
 
 // Sheet definitions with total counts
 const sheetDefinitions = [
@@ -93,6 +95,11 @@ interface UserGoals {
   weekly_target: number;
 }
 
+interface EarnedAchievement {
+  achievement_id: string;
+  earned_at: string;
+}
+
 const DashboardMatrix = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -108,6 +115,9 @@ const DashboardMatrix = () => {
   const [editGoals, setEditGoals] = useState<UserGoals>({ daily_target: 5, weekly_target: 25 });
   const [lastNotifiedDaily, setLastNotifiedDaily] = useState<string | null>(null);
   const [lastNotifiedWeekly, setLastNotifiedWeekly] = useState<string | null>(null);
+  const [activityHeatmap, setActivityHeatmap] = useState<{ [date: string]: number }>({});
+  const [earnedAchievements, setEarnedAchievements] = useState<Map<string, string>>(new Map());
+  const [totalRevision, setTotalRevision] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -118,7 +128,7 @@ const DashboardMatrix = () => {
 
       try {
         // Fetch all data in parallel
-        const [progressResult, goalsResult, leaderboardResult] = await Promise.all([
+        const [progressResult, goalsResult, leaderboardResult, achievementsResult] = await Promise.all([
           supabase
             .from("user_topic_progress")
             .select("sheet_id, completed, is_revision, updated_at")
@@ -130,7 +140,11 @@ const DashboardMatrix = () => {
             .maybeSingle(),
           supabase
             .from("leaderboard_view")
-            .select("*")
+            .select("*"),
+          supabase
+            .from("user_achievements")
+            .select("achievement_id, earned_at")
+            .eq("user_id", user.id)
         ]);
 
         if (progressResult.error) throw progressResult.error;
@@ -138,8 +152,10 @@ const DashboardMatrix = () => {
         // Process progress data
         const progressMap = new Map<string, SheetProgress>();
         const activityDates = new Set<string>();
+        const heatmapData: { [date: string]: number } = {};
         const today = new Date().toISOString().split('T')[0];
         let todayCount = 0;
+        let revisionCount = 0;
         
         if (progressResult.data) {
           progressResult.data.forEach((row) => {
@@ -153,10 +169,12 @@ const DashboardMatrix = () => {
               existing.completed += 1;
               const date = new Date(row.updated_at).toISOString().split('T')[0];
               activityDates.add(date);
+              heatmapData[date] = (heatmapData[date] || 0) + 1;
               if (date === today) todayCount++;
             }
             if (row.is_revision) {
               existing.revision += 1;
+              revisionCount++;
             }
             
             progressMap.set(row.sheet_id, existing);
@@ -165,6 +183,8 @@ const DashboardMatrix = () => {
 
         setProgressData(progressMap);
         setTodayCompleted(todayCount);
+        setActivityHeatmap(heatmapData);
+        setTotalRevision(revisionCount);
 
         // Calculate streak
         const sortedDates = Array.from(activityDates).sort().reverse();
@@ -221,6 +241,24 @@ const DashboardMatrix = () => {
           setLeaderboard(leaderboardResult.data as LeaderboardEntry[]);
         }
 
+        // Set earned achievements
+        if (achievementsResult.data) {
+          const achievementMap = new Map<string, string>();
+          achievementsResult.data.forEach((a: EarnedAchievement) => {
+            achievementMap.set(a.achievement_id, a.earned_at);
+          });
+          setEarnedAchievements(achievementMap);
+        }
+
+        // Check for new achievements
+        const totalCompleted = Array.from(progressMap.values()).reduce((acc, p) => acc + p.completed, 0);
+        await checkAndAwardAchievements(
+          totalCompleted, 
+          currentStreak, 
+          revisionCount, 
+          achievementsResult.data?.map((a: EarnedAchievement) => a.achievement_id) || []
+        );
+
       } catch (error) {
         console.error("Failed to load data:", error);
       } finally {
@@ -231,13 +269,76 @@ const DashboardMatrix = () => {
     loadData();
   }, [user]);
 
+  const checkAndAwardAchievements = async (
+    topicsCompleted: number,
+    streakDays: number,
+    revisionTopics: number,
+    alreadyEarned: string[]
+  ) => {
+    if (!user) return;
+
+    const newAchievements: string[] = [];
+    
+    for (const achievement of achievements) {
+      if (alreadyEarned.includes(achievement.id)) continue;
+      
+      let earned = false;
+      switch (achievement.requirement.type) {
+        case 'topics_completed':
+          earned = topicsCompleted >= achievement.requirement.value;
+          break;
+        case 'streak_days':
+          earned = streakDays >= achievement.requirement.value;
+          break;
+        case 'revision_topics':
+          earned = revisionTopics >= achievement.requirement.value;
+          break;
+      }
+      
+      if (earned) {
+        newAchievements.push(achievement.id);
+      }
+    }
+
+    // Save new achievements to database
+    if (newAchievements.length > 0) {
+      const inserts = newAchievements.map(id => ({
+        user_id: user.id,
+        achievement_id: id,
+      }));
+
+      const { error } = await supabase
+        .from("user_achievements")
+        .insert(inserts);
+
+      if (!error) {
+        // Update local state
+        const newMap = new Map(earnedAchievements);
+        newAchievements.forEach(id => {
+          newMap.set(id, new Date().toISOString());
+        });
+        setEarnedAchievements(newMap);
+
+        // Show notification for each new achievement
+        newAchievements.forEach(id => {
+          const achievement = achievements.find(a => a.id === id);
+          if (achievement) {
+            toast({
+              title: `🏆 Achievement Unlocked!`,
+              description: `${achievement.name}: ${achievement.description}`,
+            });
+          }
+        });
+      }
+    }
+  };
+
   // Check for goal achievements and show notifications
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     const weekKey = getWeekKey();
     const weeklyTotal = weeklyActivity.reduce((acc, d) => acc + d.count, 0);
 
-    // Daily goal notification
     if (todayCompleted >= goals.daily_target && lastNotifiedDaily !== today) {
       toast({
         title: "🎉 Daily Goal Achieved!",
@@ -246,7 +347,6 @@ const DashboardMatrix = () => {
       setLastNotifiedDaily(today);
     }
 
-    // Weekly goal notification
     if (weeklyTotal >= goals.weekly_target && lastNotifiedWeekly !== weekKey) {
       toast({
         title: "🏆 Weekly Goal Achieved!",
@@ -298,14 +398,12 @@ const DashboardMatrix = () => {
   // Calculate totals
   const totalQuestions = sheetDefinitions.reduce((acc, sheet) => acc + sheet.total, 0);
   const totalCompleted = Array.from(progressData.values()).reduce((acc, p) => acc + p.completed, 0);
-  const totalRevision = Array.from(progressData.values()).reduce((acc, p) => acc + p.revision, 0);
   const overallProgress = totalQuestions > 0 ? Math.round((totalCompleted / totalQuestions) * 100) : 0;
   const weeklyTotal = weeklyActivity.reduce((acc, d) => acc + d.count, 0);
   const dailyProgress = goals.daily_target > 0 ? Math.min((todayCompleted / goals.daily_target) * 100, 100) : 0;
   const weeklyProgress = goals.weekly_target > 0 ? Math.min((weeklyTotal / goals.weekly_target) * 100, 100) : 0;
-
-  // Find current user's rank
   const userRank = leaderboard.findIndex(entry => entry.user_id === user?.id) + 1;
+  const earnedCount = earnedAchievements.size;
 
   if (isLoading) {
     return (
@@ -339,75 +437,147 @@ const DashboardMatrix = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid gap-4 md:grid-cols-5"
+          className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6"
         >
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                  <Target className="h-6 w-6 text-primary" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total</p>
-                  <p className="text-2xl font-bold">{totalQuestions}</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
+                  <p className="text-xl font-bold">{totalQuestions}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-green-500/20 flex items-center justify-center">
-                  <CheckCircle2 className="h-6 w-6 text-green-500" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-green-500/20 flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold">{totalCompleted}</p>
+                  <p className="text-xs text-muted-foreground">Done</p>
+                  <p className="text-xl font-bold">{totalCompleted}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 border-yellow-500/20">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                  <Star className="h-6 w-6 text-yellow-500" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+                  <Star className="h-5 w-5 text-yellow-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Revision</p>
-                  <p className="text-2xl font-bold">{totalRevision}</p>
+                  <p className="text-xs text-muted-foreground">Revision</p>
+                  <p className="text-xl font-bold">{totalRevision}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                  <Flame className="h-6 w-6 text-orange-500" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <Flame className="h-5 w-5 text-orange-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Streak</p>
-                  <p className="text-2xl font-bold">{streak} days</p>
+                  <p className="text-xs text-muted-foreground">Streak</p>
+                  <p className="text-xl font-bold">{streak}d</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                  <Trophy className="h-5 w-5 text-purple-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Badges</p>
+                  <p className="text-xl font-bold">{earnedCount}/{achievements.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                  <Zap className="h-6 w-6 text-blue-500" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-blue-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Progress</p>
-                  <p className="text-2xl font-bold">{overallProgress}%</p>
+                  <p className="text-xs text-muted-foreground">Progress</p>
+                  <p className="text-xl font-bold">{overallProgress}%</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Achievements Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+        >
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                  <Trophy className="h-5 w-5 text-purple-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Achievements</CardTitle>
+                  <CardDescription>{earnedCount} of {achievements.length} unlocked</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4 justify-center sm:justify-start">
+                {achievements.map((achievement) => (
+                  <AchievementBadge
+                    key={achievement.id}
+                    achievement={achievement}
+                    earned={earnedAchievements.has(achievement.id)}
+                    earnedAt={earnedAchievements.get(achievement.id)}
+                    size="md"
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Calendar Heatmap */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                  <Calendar className="h-5 w-5 text-green-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Activity Overview</CardTitle>
+                  <CardDescription>Your learning activity over the past 4 months</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <CalendarHeatmap activityData={activityHeatmap} months={4} />
             </CardContent>
           </Card>
         </motion.div>
@@ -418,7 +588,7 @@ const DashboardMatrix = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.15 }}
           >
             <Card>
               <CardHeader>
@@ -433,7 +603,6 @@ const DashboardMatrix = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Daily Goal */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">Today's Progress</span>
@@ -445,7 +614,6 @@ const DashboardMatrix = () => {
                   <Progress value={dailyProgress} className="h-3" />
                 </div>
 
-                {/* Weekly Goal */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">This Week's Progress</span>
@@ -457,13 +625,12 @@ const DashboardMatrix = () => {
                   <Progress value={weeklyProgress} className="h-3" />
                 </div>
 
-                {/* Motivational message */}
                 <div className="text-center pt-2">
                   {todayCompleted >= goals.daily_target ? (
-                    <p className="text-sm text-green-500 font-medium">🎉 Daily goal achieved! Keep the momentum going!</p>
+                    <p className="text-sm text-green-500 font-medium">🎉 Daily goal achieved!</p>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      {goals.daily_target - todayCompleted} more topic{goals.daily_target - todayCompleted !== 1 ? 's' : ''} to reach today's goal
+                      {goals.daily_target - todayCompleted} more to reach today's goal
                     </p>
                   )}
                 </div>
@@ -475,7 +642,7 @@ const DashboardMatrix = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
+            transition={{ delay: 0.2 }}
           >
             <Card>
               <CardHeader>
@@ -490,7 +657,7 @@ const DashboardMatrix = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="h-[160px] w-full">
+                <div className="h-[140px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={weeklyActivity} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <XAxis 
@@ -510,9 +677,7 @@ const DashboardMatrix = () => {
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '8px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                         }}
-                        labelStyle={{ color: 'hsl(var(--foreground))' }}
                         formatter={(value: number) => [`${value} topics`, 'Completed']}
                       />
                       <Bar 
@@ -523,24 +688,6 @@ const DashboardMatrix = () => {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                {/* Activity dots */}
-                <div className="flex justify-center gap-1 mt-4">
-                  {weeklyActivity.map((day) => (
-                    <div
-                      key={day.date}
-                      className={`h-3 w-3 rounded-sm transition-colors ${
-                        day.count > 0 
-                          ? day.count >= 5 
-                            ? 'bg-primary' 
-                            : day.count >= 3 
-                              ? 'bg-primary/70' 
-                              : 'bg-primary/40'
-                          : 'bg-muted'
-                      }`}
-                      title={`${day.day}: ${day.count} topics`}
-                    />
-                  ))}
-                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -550,7 +697,7 @@ const DashboardMatrix = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.25 }}
         >
           <Card>
             <CardHeader>
@@ -561,7 +708,7 @@ const DashboardMatrix = () => {
                   </div>
                   <div>
                     <CardTitle className="text-lg">Leaderboard</CardTitle>
-                    <CardDescription>Top performers this month</CardDescription>
+                    <CardDescription>Top performers</CardDescription>
                   </div>
                 </div>
                 {userRank > 0 && (
@@ -575,10 +722,10 @@ const DashboardMatrix = () => {
               {leaderboard.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No entries yet. Complete topics to appear on the leaderboard!</p>
+                  <p>Complete topics to appear on the leaderboard!</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {leaderboard.slice(0, 10).map((entry, index) => (
                     <div
                       key={entry.user_id}
@@ -609,7 +756,6 @@ const DashboardMatrix = () => {
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {entry.completed_count} completed
-                          {entry.revision_count > 0 && ` · ${entry.revision_count} for revision`}
                         </p>
                       </div>
                       <div className="text-right">
@@ -636,7 +782,7 @@ const DashboardMatrix = () => {
                 key={sheet.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + index * 0.1 }}
+                transition={{ delay: 0.3 + index * 0.05 }}
               >
                 <Card 
                   className="hover:shadow-lg transition-shadow cursor-pointer group"
@@ -650,7 +796,7 @@ const DashboardMatrix = () => {
                       </Badge>
                     </div>
                     <CardDescription className="flex items-center gap-4">
-                      <span>{completed} of {sheet.total} completed</span>
+                      <span>{completed} of {sheet.total}</span>
                       {revision > 0 && (
                         <span className="flex items-center gap-1 text-yellow-500">
                           <Star className="h-3 w-3 fill-current" />
