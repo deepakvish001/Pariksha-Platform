@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -11,7 +11,8 @@ import {
   Star,
   ChevronDown,
   X,
-  Save
+  Save,
+  Loader2
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +32,9 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 // Types
 interface Topic {
@@ -213,11 +217,13 @@ const mockSheetData: Record<string, SheetData> = {
 function TopicRow({ 
   topic, 
   onToggle,
-  onOpenNote 
+  onOpenNote,
+  onToggleRevision
 }: { 
   topic: Topic; 
   onToggle: (id: string) => void;
   onOpenNote: (topic: Topic) => void;
+  onToggleRevision: (id: string) => void;
 }) {
   return (
     <div className="flex items-center py-3 px-4 hover:bg-muted/50 transition-colors border-b border-border/30 last:border-b-0">
@@ -277,11 +283,14 @@ function TopicRow({
         </div>
         {/* Revision */}
         <div className="w-12 flex justify-center">
-          <button className={cn(
-            "transition-colors",
-            topic.isRevision ? "text-yellow-500" : "text-muted-foreground hover:text-yellow-500"
-          )}>
-            <Star className="h-4 w-4" />
+          <button 
+            onClick={() => onToggleRevision(topic.id)}
+            className={cn(
+              "transition-colors",
+              topic.isRevision ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground hover:text-yellow-500"
+            )}
+          >
+            <Star className={cn("h-4 w-4", topic.isRevision && "fill-current")} />
           </button>
         </div>
       </div>
@@ -293,11 +302,13 @@ function TopicRow({
 function SubSectionCard({ 
   subSection, 
   onToggleTopic,
-  onOpenNote 
+  onOpenNote,
+  onToggleRevision
 }: { 
   subSection: SubSection; 
   onToggleTopic: (id: string) => void;
   onOpenNote: (topic: Topic) => void;
+  onToggleRevision: (id: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const completed = subSection.topics.filter(t => t.completed).length;
@@ -334,6 +345,7 @@ function SubSectionCard({
                 topic={topic} 
                 onToggle={onToggleTopic} 
                 onOpenNote={onOpenNote}
+                onToggleRevision={onToggleRevision}
               />
             ))}
           </div>
@@ -347,11 +359,13 @@ function SubSectionCard({
 function SectionCard({ 
   section, 
   onToggleTopic,
-  onOpenNote 
+  onOpenNote,
+  onToggleRevision
 }: { 
   section: Section; 
   onToggleTopic: (id: string) => void;
   onOpenNote: (topic: Topic) => void;
+  onToggleRevision: (id: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const allTopics = section.subSections.flatMap(s => s.topics);
@@ -380,6 +394,7 @@ function SectionCard({
                 subSection={subSection} 
                 onToggleTopic={onToggleTopic}
                 onOpenNote={onOpenNote}
+                onToggleRevision={onToggleRevision}
               />
             ))}
           </CardContent>
@@ -392,12 +407,104 @@ function SectionCard({
 export default function SheetDetail() {
   const { sheetId } = useParams<{ sheetId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [sheetData, setSheetData] = useState<SheetData | null>(
     sheetId ? mockSheetData[sheetId] || mockSheetData["machine-learning"] : mockSheetData["machine-learning"]
   );
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
   const [noteText, setNoteText] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const currentSheetId = sheetId || "machine-learning";
+
+  // Load user progress from database
+  const loadProgress = useCallback(async () => {
+    if (!user || !sheetData) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("user_topic_progress")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("sheet_id", currentSheetId);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Apply saved progress to sheet data
+        const progressMap = new Map(data.map(p => [p.topic_id, p]));
+        
+        setSheetData(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            sections: prev.sections.map(section => ({
+              ...section,
+              subSections: section.subSections.map(subSection => ({
+                ...subSection,
+                topics: subSection.topics.map(topic => {
+                  const saved = progressMap.get(topic.id);
+                  if (saved) {
+                    return {
+                      ...topic,
+                      completed: saved.completed,
+                      isRevision: saved.is_revision,
+                      note: saved.note || "",
+                    };
+                  }
+                  return topic;
+                }),
+              })),
+            })),
+          };
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load progress:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, currentSheetId, sheetData]);
+
+  useEffect(() => {
+    loadProgress();
+  }, [user, currentSheetId]);
+
+  // Save progress to database
+  const saveProgress = async (topicId: string, updates: { completed?: boolean; is_revision?: boolean; note?: string }) => {
+    if (!user) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("user_topic_progress")
+        .upsert({
+          user_id: user.id,
+          sheet_id: currentSheetId,
+          topic_id: topicId,
+          ...updates,
+        }, {
+          onConflict: "user_id,sheet_id,topic_id",
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Failed to save progress:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save your progress.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (!sheetData) {
     return (
@@ -407,7 +514,13 @@ export default function SheetDetail() {
     );
   }
 
-  const handleToggleTopic = (topicId: string) => {
+  const handleToggleTopic = async (topicId: string) => {
+    const topic = sheetData.sections
+      .flatMap(s => s.subSections.flatMap(ss => ss.topics))
+      .find(t => t.id === topicId);
+    
+    const newCompleted = !topic?.completed;
+
     setSheetData(prev => {
       if (!prev) return prev;
       return {
@@ -416,13 +529,41 @@ export default function SheetDetail() {
           ...section,
           subSections: section.subSections.map(subSection => ({
             ...subSection,
-            topics: subSection.topics.map(topic =>
-              topic.id === topicId ? { ...topic, completed: !topic.completed } : topic
+            topics: subSection.topics.map(t =>
+              t.id === topicId ? { ...t, completed: newCompleted } : t
             ),
           })),
         })),
       };
     });
+
+    await saveProgress(topicId, { completed: newCompleted });
+  };
+
+  const handleToggleRevision = async (topicId: string) => {
+    const topic = sheetData.sections
+      .flatMap(s => s.subSections.flatMap(ss => ss.topics))
+      .find(t => t.id === topicId);
+    
+    const newRevision = !topic?.isRevision;
+
+    setSheetData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        sections: prev.sections.map(section => ({
+          ...section,
+          subSections: section.subSections.map(subSection => ({
+            ...subSection,
+            topics: subSection.topics.map(t =>
+              t.id === topicId ? { ...t, isRevision: newRevision } : t
+            ),
+          })),
+        })),
+      };
+    });
+
+    await saveProgress(topicId, { is_revision: newRevision });
   };
 
   const handleOpenNote = (topic: Topic) => {
@@ -431,7 +572,7 @@ export default function SheetDetail() {
     setNoteModalOpen(true);
   };
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
     if (!editingTopic) return;
     
     setSheetData(prev => {
@@ -449,16 +590,31 @@ export default function SheetDetail() {
         })),
       };
     });
+
+    await saveProgress(editingTopic.id, { note: noteText });
     
     setNoteModalOpen(false);
     setEditingTopic(null);
     setNoteText("");
+    
+    toast({
+      title: "Note saved",
+      description: "Your note has been saved successfully.",
+    });
   };
 
   // Calculate progress
   const allTopics = sheetData.sections.flatMap(s => s.subSections.flatMap(ss => ss.topics));
   const completedCount = allTopics.filter(t => t.completed).length;
   const progressPercent = allTopics.length > 0 ? (completedCount / allTopics.length) * 100 : 0;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -470,6 +626,9 @@ export default function SheetDetail() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-xl font-bold">{sheetData.title}</h1>
+          {isSaving && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground ml-auto" />
+          )}
         </div>
       </header>
 
@@ -520,6 +679,7 @@ export default function SheetDetail() {
                 section={section} 
                 onToggleTopic={handleToggleTopic} 
                 onOpenNote={handleOpenNote}
+                onToggleRevision={handleToggleRevision}
               />
             </motion.div>
           ))}
@@ -547,8 +707,8 @@ export default function SheetDetail() {
             <Button variant="outline" onClick={() => setNoteModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveNote} className="gap-2">
-              <Save className="h-4 w-4" />
+            <Button onClick={handleSaveNote} className="gap-2" disabled={isSaving}>
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save Note
             </Button>
           </DialogFooter>

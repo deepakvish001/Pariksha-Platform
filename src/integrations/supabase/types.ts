@@ -175,6 +175,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_topic_progress: {
+        Row: {
+          completed: boolean
+          created_at: string
+          id: string
+          is_revision: boolean
+          note: string | null
+          sheet_id: string
+          topic_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          is_revision?: boolean
+          note?: string | null
+          sheet_id: string
+          topic_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          is_revision?: boolean
+          note?: string | null
+          sheet_id?: string
+          topic_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
