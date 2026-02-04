@@ -6,6 +6,7 @@ import Checklist from "@/components/Checklist";
 import Analytics from "@/components/Analytics";
 import Momentum from "@/components/Momentum";
 import Upcoming from "@/components/Upcoming";
+import Testimonials from "@/components/Testimonials";
 import Pricing from "@/components/Pricing";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
@@ -25,6 +26,7 @@ const Index = () => {
       </section>
       <Momentum />
       <Upcoming />
+      <Testimonials />
       <section id="pricing">
         <Pricing />
       </section>
