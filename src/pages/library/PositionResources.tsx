@@ -4,7 +4,6 @@ import {
   Layers,
   Bookmark,
   BookmarkCheck,
-  Check,
   BarChart3,
   Server,
   Brain,
@@ -21,11 +20,15 @@ import {
   Rocket,
   Blocks,
   Globe,
+  Search,
+  Filter,
+  X,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -43,6 +46,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
@@ -77,6 +87,9 @@ const iconMap: Record<string, React.ElementType> = {
 // Local storage keys
 const STORAGE_KEY = "position-resources-progress";
 
+// View modes
+type ViewMode = "all" | "revision";
+
 interface ProgressState {
   [roleId: string]: {
     [categoryId: string]: {
@@ -88,9 +101,17 @@ interface ProgressState {
   };
 }
 
+interface QuestionWithMeta extends Question {
+  categoryId: string;
+  categoryName: string;
+}
+
 const PositionResources = () => {
   const [selectedRole, setSelectedRole] = useState(roles[0].id);
   const [selectedCategory, setSelectedCategory] = useState(categories[0].id);
+  const [viewMode, setViewMode] = useState<ViewMode>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | "all">("all");
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progress, setProgress] = useState<ProgressState>({});
 
@@ -111,12 +132,6 @@ const PositionResources = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
   }, [progress]);
 
-  // Get current questions
-  const questions = useMemo(
-    () => getQuestions(selectedRole, selectedCategory),
-    [selectedRole, selectedCategory]
-  );
-
   // Get current role data
   const currentRole = useMemo(
     () => roles.find((r) => r.id === selectedRole),
@@ -129,18 +144,67 @@ const PositionResources = () => {
     [selectedCategory]
   );
 
+  // Get all revision questions across all categories for the selected role
+  const revisionQuestions = useMemo(() => {
+    const questions: QuestionWithMeta[] = [];
+    categories.forEach((cat) => {
+      const catQuestions = getQuestions(selectedRole, cat.id);
+      catQuestions.forEach((q) => {
+        if (progress[selectedRole]?.[cat.id]?.[q.id]?.revision) {
+          questions.push({
+            ...q,
+            categoryId: cat.id,
+            categoryName: cat.name,
+          });
+        }
+      });
+    });
+    return questions;
+  }, [selectedRole, progress]);
+
+  // Get current questions based on view mode
+  const baseQuestions = useMemo(() => {
+    if (viewMode === "revision") {
+      return revisionQuestions;
+    }
+    return getQuestions(selectedRole, selectedCategory).map((q) => ({
+      ...q,
+      categoryId: selectedCategory,
+      categoryName: currentCategory?.name || "",
+    }));
+  }, [selectedRole, selectedCategory, viewMode, revisionQuestions, currentCategory]);
+
+  // Filter questions by search and difficulty
+  const filteredQuestions = useMemo(() => {
+    let filtered = baseQuestions;
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((q) =>
+        q.text.toLowerCase().includes(query)
+      );
+    }
+
+    // Difficulty filter
+    if (difficultyFilter !== "all") {
+      filtered = filtered.filter((q) => q.difficulty === difficultyFilter);
+    }
+
+    return filtered;
+  }, [baseQuestions, searchQuery, difficultyFilter]);
+
   // Toggle solved status
-  const toggleSolved = (questionId: number) => {
+  const toggleSolved = (questionId: number, categoryId: string) => {
     setProgress((prev) => ({
       ...prev,
       [selectedRole]: {
         ...prev[selectedRole],
-        [selectedCategory]: {
-          ...prev[selectedRole]?.[selectedCategory],
+        [categoryId]: {
+          ...prev[selectedRole]?.[categoryId],
           [questionId]: {
-            ...prev[selectedRole]?.[selectedCategory]?.[questionId],
-            solved:
-              !prev[selectedRole]?.[selectedCategory]?.[questionId]?.solved,
+            ...prev[selectedRole]?.[categoryId]?.[questionId],
+            solved: !prev[selectedRole]?.[categoryId]?.[questionId]?.solved,
           },
         },
       },
@@ -148,17 +212,16 @@ const PositionResources = () => {
   };
 
   // Toggle revision status
-  const toggleRevision = (questionId: number) => {
+  const toggleRevision = (questionId: number, categoryId: string) => {
     setProgress((prev) => ({
       ...prev,
       [selectedRole]: {
         ...prev[selectedRole],
-        [selectedCategory]: {
-          ...prev[selectedRole]?.[selectedCategory],
+        [categoryId]: {
+          ...prev[selectedRole]?.[categoryId],
           [questionId]: {
-            ...prev[selectedRole]?.[selectedCategory]?.[questionId],
-            revision:
-              !prev[selectedRole]?.[selectedCategory]?.[questionId]?.revision,
+            ...prev[selectedRole]?.[categoryId]?.[questionId],
+            revision: !prev[selectedRole]?.[categoryId]?.[questionId]?.revision,
           },
         },
       },
@@ -166,18 +229,18 @@ const PositionResources = () => {
   };
 
   // Check if question is solved
-  const isSolved = (questionId: number) =>
-    progress[selectedRole]?.[selectedCategory]?.[questionId]?.solved || false;
+  const isSolved = (questionId: number, categoryId: string) =>
+    progress[selectedRole]?.[categoryId]?.[questionId]?.solved || false;
 
   // Check if question is marked for revision
-  const isRevision = (questionId: number) =>
-    progress[selectedRole]?.[selectedCategory]?.[questionId]?.revision || false;
+  const isRevision = (questionId: number, categoryId: string) =>
+    progress[selectedRole]?.[categoryId]?.[questionId]?.revision || false;
 
   // Calculate progress stats for dialog
   const progressStats = useMemo(() => {
     const allQuestions = getAllQuestionsForRole(selectedRole);
     const counts = getQuestionCountsByDifficulty(allQuestions);
-    
+
     let solvedEasy = 0;
     let solvedMedium = 0;
     let solvedHard = 0;
@@ -202,7 +265,8 @@ const PositionResources = () => {
       easy: { total: counts.easy, solved: solvedEasy },
       medium: { total: counts.medium, solved: solvedMedium },
       hard: { total: counts.hard, solved: solvedHard },
-      percentage: counts.total > 0 ? Math.round((totalSolved / counts.total) * 100) : 0,
+      percentage:
+        counts.total > 0 ? Math.round((totalSolved / counts.total) * 100) : 0,
     };
   }, [selectedRole, progress]);
 
@@ -217,6 +281,14 @@ const PositionResources = () => {
         return "bg-red-500/20 text-red-500 border-red-500/30";
     }
   };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchQuery("");
+    setDifficultyFilter("all");
+  };
+
+  const hasActiveFilters = searchQuery.trim() !== "" || difficultyFilter !== "all";
 
   return (
     <div className="min-h-screen bg-background">
@@ -269,41 +341,103 @@ const PositionResources = () => {
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
 
-          {/* Category Tabs */}
-          <Tabs
-            value={selectedCategory}
-            onValueChange={setSelectedCategory}
-            className="w-full"
-          >
-            <TabsList className="w-full justify-start overflow-x-auto flex-nowrap bg-muted/50">
-              {categories.map((category) => (
-                <TabsTrigger
-                  key={category.id}
-                  value={category.id}
-                  className="shrink-0"
-                >
-                  {category.name}
+          {/* View Mode + Category Tabs */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* View Mode Toggle */}
+            <Tabs
+              value={viewMode}
+              onValueChange={(v) => setViewMode(v as ViewMode)}
+              className="shrink-0"
+            >
+              <TabsList className="bg-muted/50">
+                <TabsTrigger value="all" className="gap-2">
+                  <Layers className="h-4 w-4" />
+                  All Questions
                 </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+                <TabsTrigger value="revision" className="gap-2">
+                  <BookmarkCheck className="h-4 w-4" />
+                  Revision ({revisionQuestions.length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* Category Tabs - Only show in "all" mode */}
+            {viewMode === "all" && (
+              <Tabs
+                value={selectedCategory}
+                onValueChange={setSelectedCategory}
+                className="flex-1"
+              >
+                <TabsList className="w-full justify-start overflow-x-auto flex-nowrap bg-muted/50">
+                  {categories.map((category) => (
+                    <TabsTrigger
+                      key={category.id}
+                      value={category.id}
+                      className="shrink-0"
+                    >
+                      {category.name}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            )}
+          </div>
         </motion.div>
 
-        {/* Content Header */}
+        {/* Search and Filter Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+          className="flex flex-col sm:flex-row gap-4"
         >
-          <div>
-            <h2 className="text-2xl font-bold">
-              {currentRole?.name} - {currentCategory?.name}
-            </h2>
-            <p className="text-muted-foreground">
-              {questions.length} questions available
-            </p>
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search questions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
+
+          {/* Difficulty Filter */}
+          <Select
+            value={difficultyFilter}
+            onValueChange={(v) => setDifficultyFilter(v as Difficulty | "all")}
+          >
+            <SelectTrigger className="w-full sm:w-40">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Difficulty" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Levels</SelectItem>
+              <SelectItem value="Easy">Easy</SelectItem>
+              <SelectItem value="Medium">Medium</SelectItem>
+              <SelectItem value="Hard">Hard</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <Button variant="outline" onClick={clearFilters} className="gap-2">
+              <X className="h-4 w-4" />
+              Clear
+            </Button>
+          )}
+
+          {/* Progress Button */}
           <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="gap-2">
@@ -334,7 +468,7 @@ const PositionResources = () => {
                 {/* Difficulty Breakdown */}
                 <div className="space-y-4">
                   <h4 className="font-medium">By Difficulty</h4>
-                  
+
                   {/* Easy */}
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
@@ -403,6 +537,26 @@ const PositionResources = () => {
           </Dialog>
         </motion.div>
 
+        {/* Content Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <div>
+            <h2 className="text-2xl font-bold">
+              {viewMode === "revision"
+                ? `${currentRole?.name} - Revision List`
+                : `${currentRole?.name} - ${currentCategory?.name}`}
+            </h2>
+            <p className="text-muted-foreground">
+              {filteredQuestions.length} question{filteredQuestions.length !== 1 ? "s" : ""}{" "}
+              {hasActiveFilters ? "found" : "available"}
+              {viewMode === "revision" && " for revision"}
+            </p>
+          </div>
+        </motion.div>
+
         {/* Questions Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -410,24 +564,27 @@ const PositionResources = () => {
           transition={{ delay: 0.2 }}
           className="rounded-lg border border-border bg-card"
         >
-          {questions.length > 0 ? (
+          {filteredQuestions.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-16">#</TableHead>
                   <TableHead>Question</TableHead>
+                  {viewMode === "revision" && (
+                    <TableHead className="w-36">Category</TableHead>
+                  )}
                   <TableHead className="w-28">Difficulty</TableHead>
                   <TableHead className="w-20 text-center">Solved</TableHead>
                   <TableHead className="w-20 text-center">Revision</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {questions.map((question, index) => (
+                {filteredQuestions.map((question, index) => (
                   <TableRow
-                    key={question.id}
+                    key={`${question.categoryId}-${question.id}`}
                     className={cn(
                       "transition-colors",
-                      isSolved(question.id) && "bg-muted/30"
+                      isSolved(question.id, question.categoryId) && "bg-muted/30"
                     )}
                   >
                     <TableCell className="font-medium text-muted-foreground">
@@ -436,11 +593,19 @@ const PositionResources = () => {
                     <TableCell
                       className={cn(
                         "font-medium",
-                        isSolved(question.id) && "line-through text-muted-foreground"
+                        isSolved(question.id, question.categoryId) &&
+                          "line-through text-muted-foreground"
                       )}
                     >
                       {question.text}
                     </TableCell>
+                    {viewMode === "revision" && (
+                      <TableCell>
+                        <Badge variant="secondary" className="font-normal">
+                          {question.categoryName}
+                        </Badge>
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Badge
                         variant="outline"
@@ -454,8 +619,10 @@ const PositionResources = () => {
                     </TableCell>
                     <TableCell className="text-center">
                       <Checkbox
-                        checked={isSolved(question.id)}
-                        onCheckedChange={() => toggleSolved(question.id)}
+                        checked={isSolved(question.id, question.categoryId)}
+                        onCheckedChange={() =>
+                          toggleSolved(question.id, question.categoryId)
+                        }
                         className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
                       />
                     </TableCell>
@@ -463,15 +630,17 @@ const PositionResources = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => toggleRevision(question.id)}
+                        onClick={() =>
+                          toggleRevision(question.id, question.categoryId)
+                        }
                         className={cn(
                           "h-8 w-8 transition-colors",
-                          isRevision(question.id)
+                          isRevision(question.id, question.categoryId)
                             ? "text-yellow-500 hover:text-yellow-600"
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
-                        {isRevision(question.id) ? (
+                        {isRevision(question.id, question.categoryId) ? (
                           <BookmarkCheck className="h-4 w-4 fill-current" />
                         ) : (
                           <Bookmark className="h-4 w-4" />
@@ -484,11 +653,34 @@ const PositionResources = () => {
             </Table>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Layers className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-medium">No questions available</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Questions for this category will be added soon.
-              </p>
+              {viewMode === "revision" ? (
+                <>
+                  <BookmarkCheck className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-medium">No revision questions</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Bookmark questions to add them to your revision list.
+                  </p>
+                </>
+              ) : hasActiveFilters ? (
+                <>
+                  <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-medium">No questions found</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Try adjusting your search or filters.
+                  </p>
+                  <Button variant="outline" onClick={clearFilters} className="mt-4">
+                    Clear Filters
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Layers className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-medium">No questions available</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Questions for this category will be added soon.
+                  </p>
+                </>
+              )}
             </div>
           )}
         </motion.div>
