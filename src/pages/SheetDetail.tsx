@@ -12,8 +12,10 @@ import {
   ChevronDown,
   X,
   Save,
-  Loader2
+  Loader2,
+  Filter
 } from "lucide-react";
+import { Toggle } from "@/components/ui/toggle";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -417,6 +419,7 @@ export default function SheetDetail() {
   const [noteText, setNoteText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showRevisionOnly, setShowRevisionOnly] = useState(false);
 
   const currentSheetId = sheetId || "machine-learning";
 
@@ -607,6 +610,26 @@ export default function SheetDetail() {
   const allTopics = sheetData.sections.flatMap(s => s.subSections.flatMap(ss => ss.topics));
   const completedCount = allTopics.filter(t => t.completed).length;
   const progressPercent = allTopics.length > 0 ? (completedCount / allTopics.length) * 100 : 0;
+  const revisionCount = allTopics.filter(t => t.isRevision).length;
+
+  // Filter sections based on revision filter
+  const getFilteredSections = () => {
+    if (!showRevisionOnly) return sheetData.sections;
+    
+    return sheetData.sections
+      .map(section => ({
+        ...section,
+        subSections: section.subSections
+          .map(subSection => ({
+            ...subSection,
+            topics: subSection.topics.filter(t => t.isRevision)
+          }))
+          .filter(subSection => subSection.topics.length > 0)
+      }))
+      .filter(section => section.subSections.length > 0);
+  };
+
+  const filteredSections = getFilteredSections();
 
   if (isLoading) {
     return (
@@ -626,9 +649,20 @@ export default function SheetDetail() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-xl font-bold">{sheetData.title}</h1>
-          {isSaving && (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground ml-auto" />
-          )}
+          <div className="ml-auto flex items-center gap-3">
+            <Toggle
+              pressed={showRevisionOnly}
+              onPressedChange={setShowRevisionOnly}
+              aria-label="Show revision only"
+              className="gap-2 data-[state=on]:bg-yellow-500/20 data-[state=on]:text-yellow-500"
+            >
+              <Star className="h-4 w-4" />
+              <span className="hidden sm:inline">Revision ({revisionCount})</span>
+            </Toggle>
+            {isSaving && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+          </div>
         </div>
       </header>
 
@@ -668,21 +702,32 @@ export default function SheetDetail() {
 
         {/* Sections */}
         <div className="space-y-4">
-          {sheetData.sections.map((section, index) => (
-            <motion.div
-              key={section.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <SectionCard 
-                section={section} 
-                onToggleTopic={handleToggleTopic} 
-                onOpenNote={handleOpenNote}
-                onToggleRevision={handleToggleRevision}
-              />
-            </motion.div>
-          ))}
+          {filteredSections.length > 0 ? (
+            filteredSections.map((section, index) => (
+              <motion.div
+                key={section.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <SectionCard 
+                  section={section} 
+                  onToggleTopic={handleToggleTopic} 
+                  onOpenNote={handleOpenNote}
+                  onToggleRevision={handleToggleRevision}
+                />
+              </motion.div>
+            ))
+          ) : (
+            <Card className="p-12 text-center">
+              <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                {showRevisionOnly 
+                  ? "No topics marked for revision yet. Click the star icon on any topic to add it here."
+                  : "No topics found."}
+              </p>
+            </Card>
+          )}
         </div>
       </main>
 
