@@ -197,6 +197,9 @@ const Dashboard = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(() => 
+    sessionStorage.getItem("onboardingBannerDismissed") === "true"
+  );
   
   // Edit profile modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -532,10 +535,11 @@ const Dashboard = () => {
       </header>
 
       {/* Onboarding Reminder Banner */}
-      {!onboardingCompleted && (
+      {!onboardingCompleted && !bannerDismissed && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
           className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-primary/20"
         >
           <div className="section-container py-3 flex items-center justify-between gap-4">
@@ -548,12 +552,25 @@ const Dashboard = () => {
                 <p className="text-xs text-muted-foreground">Personalize your experience and unlock all features</p>
               </div>
             </div>
-            <Link to="/onboarding">
-              <Button size="sm" className="gap-2">
-                Complete Now
-                <ArrowRight className="w-4 h-4" />
+            <div className="flex items-center gap-2">
+              <Link to="/onboarding">
+                <Button size="sm" className="gap-2">
+                  Complete Now
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  sessionStorage.setItem("onboardingBannerDismissed", "true");
+                  setBannerDismissed(true);
+                }}
+              >
+                <X className="w-4 h-4" />
               </Button>
-            </Link>
+            </div>
           </div>
         </motion.div>
       )}
