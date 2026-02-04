@@ -15,7 +15,6 @@ import {
   Filter,
   X,
   Shuffle,
-  Sparkles,
   List,
   LayoutGrid,
   ChevronsUpDown,
@@ -27,6 +26,7 @@ import {
 import CompanyCategorySection from "@/components/library/CompanyCategorySection";
 import CompanyQuestionTableRow from "@/components/library/CompanyQuestionTableRow";
 import ProgressSummaryCard from "@/components/library/ProgressSummaryCard";
+import SpacedRepetitionPanel from "@/components/library/SpacedRepetitionPanel";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,7 +61,7 @@ import {
   getQuestionsForCompany,
 } from "@/data/massRecruitmentData";
 import type { Difficulty, Question } from "@/data/companyDetailData";
-import { useCompanyProgress } from "@/hooks/useCompanyProgress";
+import { useMassRecruitmentProgress } from "@/hooks/useMassRecruitmentProgress";
 
 // Local storage keys
 const FAVORITES_KEY = "mass-recruitment-favorites";
@@ -117,14 +117,17 @@ const MassRecruitment = () => {
     setOpenSection(null);
   }, [selectedCompanyId, activeTab, layoutMode]);
 
-  // Use Supabase-synced progress
+  // Use Supabase-synced progress with spaced repetition support
   const {
     isLoading,
     isSolved,
     isRevision,
     toggleSolved: toggleSolvedAsync,
     toggleRevision: toggleRevisionAsync,
-  } = useCompanyProgress(`mass-${selectedCompanyId}`, activeTab);
+    markReviewed,
+    dueQuestions,
+    spacedRepetitionStats,
+  } = useMassRecruitmentProgress(selectedCompanyId, activeTab);
 
   // Save favorites
   useEffect(() => {
@@ -366,6 +369,60 @@ const MassRecruitment = () => {
   const unsolvedCount = filteredTabQuestions.filter((q) => !isSolved(q.id)).length;
   const isFavorited = favorites.has(selectedCompanyId);
 
+  // Get question details for spaced repetition panel
+  const getQuestionDetails = useCallback(
+    (questionId: number, categoryId: string) => {
+      const category = massRecruitmentCategories.find((c) => c.id === categoryId);
+      const questions = getQuestionsForCompany(selectedCompanyId, categoryId);
+      const question = questions.find((q) => q.id === questionId);
+
+      if (!question || !category) return undefined;
+
+      return {
+        id: question.id,
+        text: question.text,
+        difficulty: question.difficulty,
+        categoryId: categoryId,
+        categoryName: category.name,
+      };
+    },
+    [selectedCompanyId]
+  );
+
+  // Handle reviewing a question (for spaced repetition)
+  const handleReviewQuestion = useCallback(
+    async (questionId: number, categoryId: string) => {
+      await markReviewed(questionId, categoryId);
+    },
+    [markReviewed]
+  );
+
+  // Handle scrolling to a question from spaced repetition panel
+  const handleScrollToQuestion = useCallback(
+    (questionId: number, categoryId: string) => {
+      // If in sections mode, expand the relevant section
+      if (layoutMode === "sections") {
+        setOpenSection(categoryId);
+      } else {
+        // In tabs mode, switch to the category tab
+        setActiveTab(categoryId);
+      }
+
+      // Scroll to the question after a brief delay for the section to expand
+      setTimeout(() => {
+        const element = document.querySelector(`[data-question-id="${questionId}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          element.classList.add("ring-2", "ring-primary", "ring-offset-2");
+          setTimeout(() => {
+            element.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+          }, 2000);
+        }
+      }, 300);
+    },
+    [layoutMode]
+  );
+
   return (
     <TooltipProvider delayDuration={300}>
       <div className="min-h-screen bg-background">
@@ -422,6 +479,17 @@ const MassRecruitment = () => {
 
           {/* Progress Summary Card */}
           {user && <ProgressSummaryCard stats={progressStats} />}
+
+          {/* Spaced Repetition Panel */}
+          {user && spacedRepetitionStats.total > 0 && (
+            <SpacedRepetitionPanel
+              dueQuestions={dueQuestions}
+              stats={spacedRepetitionStats}
+              getQuestionDetails={getQuestionDetails}
+              onReviewQuestion={handleReviewQuestion}
+              onScrollToQuestion={handleScrollToQuestion}
+            />
+          )}
 
           {/* Questions Section */}
           <section>
