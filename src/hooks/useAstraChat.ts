@@ -306,6 +306,32 @@ export function useAstraChat() {
     }
   }, [currentConversationId, newChat, fetchConversations, toast]);
 
+  // Rename conversation
+  const renameConversation = useCallback(async (conversationId: string, newTitle: string) => {
+    try {
+      const { error } = await supabase
+        .from("conversations")
+        .update({ title: newTitle })
+        .eq("id", conversationId);
+
+      if (error) throw error;
+
+      await fetchConversations();
+      
+      toast({
+        title: "Renamed",
+        description: "Conversation renamed successfully.",
+      });
+    } catch (error) {
+      console.error("Failed to rename conversation:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to rename conversation.",
+      });
+    }
+  }, [fetchConversations, toast]);
+
   // Initial fetch
   useEffect(() => {
     if (user) {
@@ -323,6 +349,7 @@ export function useAstraChat() {
     loadConversation,
     newChat,
     deleteConversation,
+    renameConversation,
     fetchConversations,
   };
 }
