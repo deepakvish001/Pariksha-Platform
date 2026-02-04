@@ -65,22 +65,23 @@ const CompanyQuestionRow = ({
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: index * 0.02 }}
+        transition={{ delay: index * 0.015 }}
         className={cn(
-          "grid gap-4 px-4 py-4 hover:bg-muted/20 transition-colors items-start border-b border-border/30 last:border-0",
+          "grid gap-2 sm:gap-3 px-3 py-2.5 hover:bg-muted/20 transition-colors items-center border-b border-border/30 last:border-0",
           showCategory
-            ? "grid-cols-[40px_1fr_80px_100px_60px_60px]"
-            : "grid-cols-[40px_1fr_80px_60px_60px]",
+            ? "grid-cols-[28px_1fr_auto_28px_28px] sm:grid-cols-[32px_1fr_60px_80px_40px_40px]"
+            : "grid-cols-[28px_1fr_auto_28px_28px] sm:grid-cols-[32px_1fr_60px_40px_40px]",
           isExpanded && "bg-muted/30"
         )}
       >
         {/* Index */}
-        <div className="text-sm text-muted-foreground pt-1 flex items-center gap-1">
+        <div className="text-xs sm:text-sm text-muted-foreground flex items-center gap-0.5">
           {isSolved && (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 500, damping: 15 }}
+              className="hidden sm:block"
             >
               <Sparkles className="h-3 w-3 text-emerald-500" />
             </motion.div>
@@ -134,10 +135,10 @@ const CompanyQuestionRow = ({
         </div>
 
         {/* Difficulty */}
-        <div>
+        <div className="flex justify-center sm:justify-start">
           <Badge
             variant="outline"
-            className={cn("text-xs font-medium", difficultyStyles[question.difficulty])}
+            className={cn("text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0", difficultyStyles[question.difficulty])}
           >
             <span className="hidden sm:inline">{question.difficulty}</span>
             <span className="sm:hidden">{question.difficulty[0]}</span>
@@ -148,7 +149,7 @@ const CompanyQuestionRow = ({
         {showCategory && (
           <div className="hidden sm:block">
             {question.category && (
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5">
                 {question.category}
               </Badge>
             )}
@@ -168,7 +169,7 @@ const CompanyQuestionRow = ({
                   }}
                   disabled={!isLoggedIn}
                   className={cn(
-                    "h-5 w-5 transition-all duration-200",
+                    "h-4 w-4 sm:h-5 sm:w-5 transition-all duration-200",
                     "data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500",
                     "hover:border-emerald-400",
                     !isLoggedIn && "opacity-50 cursor-not-allowed"
@@ -176,7 +177,7 @@ const CompanyQuestionRow = ({
                 />
               </motion.div>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
+            <TooltipContent side="top" className="text-xs hidden sm:block">
               {isLoggedIn
                 ? isSolved
                   ? "Mark as unsolved"
@@ -203,7 +204,7 @@ const CompanyQuestionRow = ({
                   }}
                   disabled={!isLoggedIn}
                   className={cn(
-                    "h-8 w-8 transition-colors",
+                    "h-6 w-6 sm:h-7 sm:w-7 transition-colors",
                     isRevision
                       ? "text-amber-500 hover:text-amber-600"
                       : "text-muted-foreground hover:text-foreground",
@@ -211,14 +212,14 @@ const CompanyQuestionRow = ({
                   )}
                 >
                   {isRevision ? (
-                    <BookmarkCheck className="h-4 w-4 fill-current" />
+                    <BookmarkCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" />
                   ) : (
-                    <Bookmark className="h-4 w-4" />
+                    <Bookmark className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   )}
                 </Button>
               </motion.div>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
+            <TooltipContent side="top" className="text-xs hidden sm:block">
               {isLoggedIn
                 ? isRevision
                   ? "Remove from revision"
