@@ -97,6 +97,44 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_folders: {
+        Row: {
+          allow_copy: boolean
+          created_at: string
+          expires_at: string | null
+          folder_id: string
+          id: string
+          is_public: boolean
+          share_code: string
+        }
+        Insert: {
+          allow_copy?: boolean
+          created_at?: string
+          expires_at?: string | null
+          folder_id: string
+          id?: string
+          is_public?: boolean
+          share_code: string
+        }
+        Update: {
+          allow_copy?: boolean
+          created_at?: string
+          expires_at?: string | null
+          folder_id?: string
+          id?: string
+          is_public?: boolean
+          share_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_folders_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "user_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_achievements: {
         Row: {
           achievement_id: string

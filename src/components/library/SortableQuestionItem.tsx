@@ -1,9 +1,9 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
-import { GripVertical, CheckCircle2, Bookmark, ExternalLink } from "lucide-react";
+import { GripVertical, CheckCircle2, Bookmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 interface QuestionData {
@@ -19,6 +19,9 @@ interface SortableQuestionItemProps {
   question: QuestionData;
   isSolved?: boolean;
   isRevision?: boolean;
+  isSelected?: boolean;
+  onSelect?: (selected: boolean) => void;
+  showCheckbox?: boolean;
 }
 
 const difficultyStyles: Record<string, string> = {
@@ -32,6 +35,9 @@ const SortableQuestionItem = ({
   question,
   isSolved = false,
   isRevision = false,
+  isSelected = false,
+  onSelect,
+  showCheckbox = false,
 }: SortableQuestionItemProps) => {
   const {
     attributes,
@@ -57,9 +63,20 @@ const SortableQuestionItem = ({
         "flex items-center gap-3 p-3 rounded-lg border bg-card transition-all",
         isDragging
           ? "shadow-lg border-primary/50 bg-primary/5 z-50"
-          : "border-border hover:border-primary/30 hover:bg-muted/30"
+          : "border-border hover:border-primary/30 hover:bg-muted/30",
+        isSelected && "border-primary bg-primary/5"
       )}
     >
+      {/* Checkbox for selection */}
+      {showCheckbox && (
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => onSelect?.(!!checked)}
+          className="flex-shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        />
+      )}
+
       {/* Drag Handle */}
       <button
         {...attributes}

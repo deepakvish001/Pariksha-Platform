@@ -31,6 +31,9 @@ interface UseAllFoldersReturn {
   folderItems: Record<string, FolderItem[]>;
   isLoading: boolean;
   updateItemOrder: (folderId: string, items: { id: string; sort_order: number }[]) => Promise<boolean>;
+  moveItemToFolder: (itemId: string, fromFolderId: string, toFolderId: string) => Promise<boolean>;
+  moveItemsToFolder: (itemIds: string[], fromFolderId: string, toFolderId: string) => Promise<boolean>;
+  deleteItems: (itemIds: string[], folderId: string) => Promise<boolean>;
   refreshFolders: () => Promise<void>;
 }
 
@@ -165,11 +168,177 @@ export function useAllFolders(): UseAllFoldersReturn {
     [user]
   );
 
+  const moveItemToFolder = useCallback(
+    async (itemId: string, fromFolderId: string, toFolderId: string): Promise<boolean> => {
+      if (!user) return false;
+
+      try {
+        // Get current max sort_order in target folder
+        const targetItems = folderItems[toFolderId] || [];
+        const maxSortOrder = targetItems.reduce(
+          (max, item) => Math.max(max, item.sort_order || 0),
+          -1
+        );
+
+        const { error } = await supabase
+          .from("user_folder_items")
+          .update({ folder_id: toFolderId, sort_order: maxSortOrder + 1 })
+          .eq("id", itemId);
+
+        if (error) {
+          console.error("Error moving item:", error);
+          return false;
+        }
+
+        // Update local state
+        setFolderItems((prev) => {
+          const fromItems = (prev[fromFolderId] || []).filter((item) => item.id !== itemId);
+          const movedItem = (prev[fromFolderId] || []).find((item) => item.id === itemId);
+          
+          if (!movedItem) return prev;
+          
+          const toItems = [...(prev[toFolderId] || []), { ...movedItem, folder_id: toFolderId, sort_order: maxSortOrder + 1 }];
+          
+          return {
+            ...prev,
+            [fromFolderId]: fromItems,
+            [toFolderId]: toItems,
+          };
+        });
+
+        // Update folder counts
+        setFolders((prev) =>
+          prev.map((f) => {
+            if (f.id === fromFolderId) {
+              return { ...f, itemCount: Math.max(0, (f.itemCount || 0) - 1) };
+            }
+            if (f.id === toFolderId) {
+              return { ...f, itemCount: (f.itemCount || 0) + 1 };
+            }
+            return f;
+          })
+        );
+
+        return true;
+      } catch (err) {
+        console.error("Error moving item:", err);
+        return false;
+      }
+    },
+    [user, folderItems]
+  );
+
+  const deleteItems = useCallback(
+    async (itemIds: string[], folderId: string): Promise<boolean> => {
+      if (!user || itemIds.length === 0) return false;
+
+      try {
+        const { error } = await supabase
+          .from("user_folder_items")
+          .delete()
+          .in("id", itemIds);
+
+        if (error) {
+          console.error("Error deleting items:", error);
+          return false;
+        }
+
+        // Update local state
+        setFolderItems((prev) => ({
+          ...prev,
+          [folderId]: (prev[folderId] || []).filter((item) => !itemIds.includes(item.id)),
+        }));
+
+        // Update folder count
+        setFolders((prev) =>
+          prev.map((f) =>
+            f.id === folderId
+              ? { ...f, itemCount: Math.max(0, (f.itemCount || 0) - itemIds.length) }
+              : f
+          )
+        );
+
+        return true;
+      } catch (err) {
+        console.error("Error deleting items:", err);
+        return false;
+      }
+    },
+    [user]
+  );
+
+  const moveItemsToFolder = useCallback(
+    async (itemIds: string[], fromFolderId: string, toFolderId: string): Promise<boolean> => {
+      if (!user || itemIds.length === 0) return false;
+
+      try {
+        // Get current max sort_order in target folder
+        const targetItems = folderItems[toFolderId] || [];
+        let sortOrder = targetItems.reduce(
+          (max, item) => Math.max(max, item.sort_order || 0),
+          -1
+        );
+
+        // Update all items
+        const updates = itemIds.map((id, index) =>
+          supabase
+            .from("user_folder_items")
+            .update({ folder_id: toFolderId, sort_order: sortOrder + index + 1 })
+            .eq("id", id)
+        );
+
+        await Promise.all(updates);
+
+        // Update local state
+        setFolderItems((prev) => {
+          const fromItems = (prev[fromFolderId] || []).filter((item) => !itemIds.includes(item.id));
+          const movedItems = (prev[fromFolderId] || [])
+            .filter((item) => itemIds.includes(item.id))
+            .map((item, index) => ({
+              ...item,
+              folder_id: toFolderId,
+              sort_order: sortOrder + index + 1,
+            }));
+          
+          const toItems = [...(prev[toFolderId] || []), ...movedItems];
+          
+          return {
+            ...prev,
+            [fromFolderId]: fromItems,
+            [toFolderId]: toItems,
+          };
+        });
+
+        // Update folder counts
+        setFolders((prev) =>
+          prev.map((f) => {
+            if (f.id === fromFolderId) {
+              return { ...f, itemCount: Math.max(0, (f.itemCount || 0) - itemIds.length) };
+            }
+            if (f.id === toFolderId) {
+              return { ...f, itemCount: (f.itemCount || 0) + itemIds.length };
+            }
+            return f;
+          })
+        );
+
+        return true;
+      } catch (err) {
+        console.error("Error moving items:", err);
+        return false;
+      }
+    },
+    [user, folderItems]
+  );
+
   return {
     folders,
     folderItems,
     isLoading,
     updateItemOrder,
+    moveItemToFolder,
+    moveItemsToFolder,
+    deleteItems,
     refreshFolders: fetchFolders,
   };
 }
