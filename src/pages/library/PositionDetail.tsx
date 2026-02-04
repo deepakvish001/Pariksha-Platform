@@ -215,6 +215,15 @@ const PositionDetail = () => {
     return questions;
   }, [selectedRole, progress]);
 
+  // Get total question counts per category (unfiltered)
+  const totalQuestionsPerCategory = useMemo(() => {
+    const result: Record<string, number> = {};
+    categories.forEach((cat) => {
+      result[cat.id] = getQuestions(selectedRole, cat.id).length;
+    });
+    return result;
+  }, [selectedRole]);
+
   // Get questions grouped by category for section view
   const questionsByCategory = useMemo(() => {
     const result: Record<string, QuestionWithMeta[]> = {};
@@ -252,6 +261,19 @@ const PositionDetail = () => {
     });
     return result;
   }, [selectedRole, searchQuery, difficultyFilter, hasNotesFilter, progress, viewMode]);
+
+  // Check if filters are active (for highlighting matches)
+  const isFiltered = searchQuery.trim() !== "" || difficultyFilter !== "all" || hasNotesFilter;
+
+  // Auto-expand sections with matches when searching
+  useEffect(() => {
+    if (layoutMode === "sections" && searchQuery.trim()) {
+      const sectionsWithMatches = categories
+        .filter((cat) => (questionsByCategory[cat.id]?.length || 0) > 0)
+        .map((cat) => cat.id);
+      setOpenSections(new Set(sectionsWithMatches));
+    }
+  }, [searchQuery, layoutMode, questionsByCategory]);
 
   // Get current questions based on view mode (for tabs layout)
   const baseQuestions = useMemo(() => {
@@ -779,6 +801,8 @@ const PositionDetail = () => {
                         categoryId={category.id}
                         categoryName={category.name}
                         questions={categoryQuestions}
+                        totalQuestionsInCategory={totalQuestionsPerCategory[category.id] || 0}
+                        isFiltered={isFiltered}
                         isOpen={openSections.has(category.id)}
                         onOpenChange={() => toggleSection(category.id)}
                         isSolved={isSolved}
