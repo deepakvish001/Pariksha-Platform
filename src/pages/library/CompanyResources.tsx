@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Building2, Search, Star, Briefcase, ChevronLeft, ChevronRight } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -22,6 +23,7 @@ const tabs: { id: TabType; label: string }[] = [
 ];
 
 const CompanyResources = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -205,6 +207,7 @@ const CompanyResources = () => {
                   index={globalIndex}
                   isFavorite={favorites.has(company.id)}
                   onToggleFavorite={() => toggleFavorite(company.id)}
+                  onNavigate={() => navigate(`/library/companies/${company.id}`)}
                   delay={index * 0.05}
                 />
               );
@@ -275,10 +278,11 @@ interface CompanyRowProps {
   index: number;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  onNavigate: () => void;
   delay: number;
 }
 
-const CompanyRow = ({ company, index, isFavorite, onToggleFavorite, delay }: CompanyRowProps) => {
+const CompanyRow = ({ company, index, isFavorite, onToggleFavorite, onNavigate, delay }: CompanyRowProps) => {
   const getCategoryStyle = (category: string) => {
     return categoryColors[category] || "text-muted-foreground border-border bg-muted/50";
   };
@@ -288,6 +292,7 @@ const CompanyRow = ({ company, index, isFavorite, onToggleFavorite, delay }: Com
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
+      onClick={onNavigate}
       className="group flex items-start gap-4 py-5 px-2 hover:bg-muted/30 transition-colors cursor-pointer rounded-lg -mx-2"
     >
       {/* Index */}
