@@ -1,3 +1,4 @@
+import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -69,103 +70,105 @@ const DashboardLayoutWrapper = () => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/u/:username" element={<PublicProfile />} />
-              <Route
-                path="/onboarding"
-                element={
-                  <ProtectedRoute>
-                    <Onboarding />
-                  </ProtectedRoute>
-                }
-              />
-              
-              {/* Dashboard routes with shared layout */}
-              <Route path="/dashboard" element={<DashboardLayoutWrapper />}>
-                <Route index element={<Dashboard />} />
-                <Route path="matrix" element={<DashboardMatrix />} />
-                <Route path="sheets" element={<DashboardSheets />} />
-                <Route path="sheets/:sheetId" element={<SheetDetail />} />
-                <Route path="profile" element={<DashboardProfile />} />
-              </Route>
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/u/:username" element={<PublicProfile />} />
+                <Route
+                  path="/onboarding"
+                  element={
+                    <ProtectedRoute>
+                      <Onboarding />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                {/* Dashboard routes with shared layout */}
+                <Route path="/dashboard" element={<DashboardLayoutWrapper />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="matrix" element={<DashboardMatrix />} />
+                  <Route path="sheets" element={<DashboardSheets />} />
+                  <Route path="sheets/:sheetId" element={<SheetDetail />} />
+                  <Route path="profile" element={<DashboardProfile />} />
+                </Route>
 
-              {/* Library routes */}
-              <Route path="/library" element={<DashboardLayoutWrapper />}>
-                <Route path="positions" element={<PositionResources />} />
-                <Route path="companies" element={<CompanyResources />} />
-                <Route path="recruitment" element={<MassRecruitment />} />
-                <Route path="interview" element={<InterviewQuestions />} />
-                <Route path="dsa" element={<DSAQuestions />} />
-                <Route path="sql" element={<SQLQuestions />} />
-                <Route path="aptitude" element={<AptitudeQuestions />} />
-                <Route path="cs" element={<CoreCSSubjects />} />
-                <Route path="notes" element={<HandwrittenNotes />} />
-                <Route path="quiz" element={<Quiz />} />
-              </Route>
+                {/* Library routes */}
+                <Route path="/library" element={<DashboardLayoutWrapper />}>
+                  <Route path="positions" element={<PositionResources />} />
+                  <Route path="companies" element={<CompanyResources />} />
+                  <Route path="recruitment" element={<MassRecruitment />} />
+                  <Route path="interview" element={<InterviewQuestions />} />
+                  <Route path="dsa" element={<DSAQuestions />} />
+                  <Route path="sql" element={<SQLQuestions />} />
+                  <Route path="aptitude" element={<AptitudeQuestions />} />
+                  <Route path="cs" element={<CoreCSSubjects />} />
+                  <Route path="notes" element={<HandwrittenNotes />} />
+                  <Route path="quiz" element={<Quiz />} />
+                </Route>
 
-              {/* Fundamentals routes */}
-              <Route path="/fundamentals" element={<DashboardLayoutWrapper />}>
-                <Route path="language" element={<Language />} />
-                <Route path="oops" element={<OOPsConcepts />} />
-              </Route>
+                {/* Fundamentals routes */}
+                <Route path="/fundamentals" element={<DashboardLayoutWrapper />}>
+                  <Route path="language" element={<Language />} />
+                  <Route path="oops" element={<OOPsConcepts />} />
+                </Route>
 
-              {/* System Design routes */}
-              <Route path="/system-design" element={<DashboardLayoutWrapper />}>
-                <Route path="hld" element={<HighLevelDesign />} />
-                <Route path="lld" element={<LowLevelDesign />} />
-              </Route>
+                {/* System Design routes */}
+                <Route path="/system-design" element={<DashboardLayoutWrapper />}>
+                  <Route path="hld" element={<HighLevelDesign />} />
+                  <Route path="lld" element={<LowLevelDesign />} />
+                </Route>
 
-              {/* Research routes */}
-              <Route path="/research" element={<DashboardLayoutWrapper />}>
-                <Route path="jobs" element={<JobPortals />} />
-                <Route path="roadmap" element={<Roadmap />} />
-                <Route path="resume" element={<ResumeTemplates />} />
-                <Route path="analyser" element={<ResumeAnalyser />} />
-                <Route path="outreach" element={<ColdOutreach />} />
-                <Route path="activity" element={<MyActivity />} />
-              </Route>
+                {/* Research routes */}
+                <Route path="/research" element={<DashboardLayoutWrapper />}>
+                  <Route path="jobs" element={<JobPortals />} />
+                  <Route path="roadmap" element={<Roadmap />} />
+                  <Route path="resume" element={<ResumeTemplates />} />
+                  <Route path="analyser" element={<ResumeAnalyser />} />
+                  <Route path="outreach" element={<ColdOutreach />} />
+                  <Route path="activity" element={<MyActivity />} />
+                </Route>
 
-              {/* Platform routes */}
-              <Route path="/platform" element={<DashboardLayoutWrapper />}>
-                <Route path="ai" element={<AstraAI />} />
-                <Route path="resources" element={<Resources />} />
-                <Route path="collections" element={<Collections />} />
-                <Route path="affiliate" element={<Affiliate />} />
-              </Route>
+                {/* Platform routes */}
+                <Route path="/platform" element={<DashboardLayoutWrapper />}>
+                  <Route path="ai" element={<AstraAI />} />
+                  <Route path="resources" element={<Resources />} />
+                  <Route path="collections" element={<Collections />} />
+                  <Route path="affiliate" element={<Affiliate />} />
+                </Route>
 
-              {/* Settings */}
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute requireOnboarding>
-                    <DashboardLayout>
-                      <Settings />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+                {/* Settings */}
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute requireOnboarding>
+                      <DashboardLayout>
+                        <Settings />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;
