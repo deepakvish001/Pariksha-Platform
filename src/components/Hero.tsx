@@ -1,6 +1,6 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-import Hero3DElement from "./Hero3DElement";
+import HeroIllustration from "./HeroIllustration";
 
 const Hero = () => {
   return (
@@ -56,8 +56,8 @@ const Hero = () => {
         ))}
       </div>
 
-      {/* 3D Element */}
-      <Hero3DElement />
+      {/* Animated Illustration */}
+      <HeroIllustration />
 
       {/* Content */}
       <div className="relative z-10 section-container text-center lg:text-left pt-28 pb-32 lg:pr-[400px]">
