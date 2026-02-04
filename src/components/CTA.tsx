@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
+import ScrollReveal from "./ScrollReveal";
 
 const CTA = () => {
   return (
@@ -18,20 +19,22 @@ const CTA = () => {
 
       {/* Content */}
       <div className="relative z-10 section-container text-center">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-6">
-          Track your college life like it<br />
-          <span className="gradient-text">actually matters</span>
-        </h2>
-        
-        <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10">
-          Join thousands of students who've transformed chaos into clarity, 
-          stress into structure, and learning into real career progress.
-        </p>
+        <ScrollReveal>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-6">
+            Track your college life like it<br />
+            <span className="gradient-text">actually matters</span>
+          </h2>
+          
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10">
+            Join thousands of students who've transformed chaos into clarity, 
+            stress into structure, and learning into real career progress.
+          </p>
 
-        <button className="btn-primary inline-flex items-center gap-2 text-lg">
-          Start Now
-          <ArrowRight className="w-5 h-5" />
-        </button>
+          <button className="btn-primary inline-flex items-center gap-2 text-lg">
+            Start Now
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        </ScrollReveal>
       </div>
     </section>
   );

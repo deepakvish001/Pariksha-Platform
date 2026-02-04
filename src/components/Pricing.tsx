@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import ScrollReveal from "./ScrollReveal";
 
 const plans = [
   {
@@ -35,51 +36,52 @@ const Pricing = () => {
     <section className="py-24 bg-secondary/20">
       <div className="section-container">
         {/* Header */}
-        <h2 className="section-title">Choose Your Plan</h2>
-        <p className="section-subtitle">
-          Start free, scale when you're ready
-        </p>
+        <ScrollReveal>
+          <h2 className="section-title">Choose Your Plan</h2>
+          <p className="section-subtitle">
+            Start free, scale when you're ready
+          </p>
+        </ScrollReveal>
 
         {/* Pricing Grid */}
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map((plan, index) => (
-            <div
-              key={index}
-              className={`pricing-card ${plan.featured ? "featured" : ""}`}
-            >
-              <div className="mb-6">
-                <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                  {plan.name}
-                </span>
-                <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-4xl font-bold text-foreground">{plan.price}</span>
-                  <span className="text-muted-foreground">{plan.period}</span>
+            <ScrollReveal key={index} delay={index * 0.15}>
+              <div className={`pricing-card h-full ${plan.featured ? "featured" : ""}`}>
+                <div className="mb-6">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                    {plan.name}
+                  </span>
+                  <div className="flex items-baseline gap-1 mt-2">
+                    <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+                    <span className="text-muted-foreground">{plan.period}</span>
+                  </div>
                 </div>
+
+                <p className="text-sm text-muted-foreground mb-6">
+                  {plan.description}
+                </p>
+
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  className={`w-full py-3 rounded-full font-semibold transition-all duration-300 ${
+                    plan.featured
+                      ? "bg-primary text-primary-foreground hover:scale-105"
+                      : "border border-border text-foreground hover:border-primary hover:text-primary"
+                  }`}
+                >
+                  {plan.cta}
+                </button>
               </div>
-
-              <p className="text-sm text-muted-foreground mb-6">
-                {plan.description}
-              </p>
-
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                className={`w-full py-3 rounded-full font-semibold transition-all duration-300 ${
-                  plan.featured
-                    ? "bg-primary text-primary-foreground hover:scale-105"
-                    : "border border-border text-foreground hover:border-primary hover:text-primary"
-                }`}
-              >
-                {plan.cta}
-              </button>
-            </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>

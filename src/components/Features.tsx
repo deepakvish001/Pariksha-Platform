@@ -1,4 +1,5 @@
 import { CheckSquare, StickyNote, Table2, Flame, BarChart3, Map } from "lucide-react";
+import ScrollReveal from "./ScrollReveal";
 
 const features = [
   {
@@ -44,33 +45,33 @@ const Features = () => {
     <section className="py-24 bg-background">
       <div className="section-container">
         {/* Header */}
-        <h2 className="section-title">Everything tracked, nothing missed</h2>
-        <p className="section-subtitle">
-          A dashboard where everything has its place — and stays there.
-        </p>
+        <ScrollReveal>
+          <h2 className="section-title">Everything tracked, nothing missed</h2>
+          <p className="section-subtitle">
+            A dashboard where everything has its place — and stays there.
+          </p>
+        </ScrollReveal>
 
         {/* Feature Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((feature, index) => (
-            <div
-              key={feature.title}
-              className="card-feature group"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className="flex items-start gap-4">
-                <div className="icon-box group-hover:scale-110 transition-transform duration-300">
-                  <feature.icon className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-foreground mb-1">
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {feature.description}
-                  </p>
+            <ScrollReveal key={feature.title} delay={index * 0.1}>
+              <div className="card-feature group h-full">
+                <div className="flex items-start gap-4">
+                  <div className="icon-box group-hover:scale-110 transition-transform duration-300">
+                    <feature.icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-foreground mb-1">
+                      {feature.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {feature.description}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>
