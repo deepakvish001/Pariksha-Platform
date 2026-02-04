@@ -170,6 +170,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Clear session storage flags
+    sessionStorage.removeItem("skippedOnboarding");
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
