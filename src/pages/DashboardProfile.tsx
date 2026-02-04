@@ -116,7 +116,7 @@ const DashboardProfile = () => {
           {/* Header */}
           <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
             <div className="flex h-16 items-center gap-4 px-6">
-              <SidebarTrigger className="md:hidden" />
+              <SidebarTrigger />
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-gradient-orange flex items-center justify-center">
                   <User className="h-5 w-5 text-primary-foreground" />
