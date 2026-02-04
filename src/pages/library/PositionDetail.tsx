@@ -225,6 +225,13 @@ const PositionDetail = () => {
         categoryName: cat.name,
       }));
 
+      // Apply revision filter for section view
+      if (viewMode === "revision") {
+        catQuestions = catQuestions.filter((q) =>
+          progress[selectedRole]?.[q.categoryId]?.[q.id]?.revision
+        );
+      }
+
       // Apply filters
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -244,7 +251,7 @@ const PositionDetail = () => {
       result[cat.id] = catQuestions;
     });
     return result;
-  }, [selectedRole, searchQuery, difficultyFilter, hasNotesFilter, progress]);
+  }, [selectedRole, searchQuery, difficultyFilter, hasNotesFilter, progress, viewMode]);
 
   // Get current questions based on view mode (for tabs layout)
   const baseQuestions = useMemo(() => {
@@ -583,21 +590,19 @@ const PositionDetail = () => {
                   )}
                 </div>
 
-                {/* Revision Tab (visible in tabs mode) */}
-                {layoutMode === "tabs" && (
-                  <Button
-                    variant={viewMode === "revision" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setViewMode(viewMode === "revision" ? "all" : "revision")}
-                    className="h-7 gap-1"
-                  >
-                    <BookmarkCheck className="h-3.5 w-3.5" />
-                    <span className="text-xs">Revision</span>
-                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-background/50">
-                      {revisionQuestions.length}
-                    </Badge>
-                  </Button>
-                )}
+                {/* Revision Toggle (visible in both modes) */}
+                <Button
+                  variant={viewMode === "revision" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode(viewMode === "revision" ? "all" : "revision")}
+                  className="h-7 gap-1"
+                >
+                  <BookmarkCheck className="h-3.5 w-3.5" />
+                  <span className="text-xs">Revision</span>
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-background/50">
+                    {revisionQuestions.length}
+                  </Badge>
+                </Button>
               </div>
 
               {/* Tabs Navigation (only for tabs mode) */}
@@ -746,7 +751,7 @@ const PositionDetail = () => {
                 <p className="text-xs md:text-sm text-muted-foreground">
                   {layoutMode === "sections" ? totalFilteredCount : filteredQuestions.length} question{(layoutMode === "sections" ? totalFilteredCount : filteredQuestions.length) !== 1 ? "s" : ""}{" "}
                   {hasActiveFilters ? "found" : "available"}
-                  {layoutMode === "tabs" && viewMode === "revision" && " for revision"}
+                  {viewMode === "revision" && " for revision"}
                 </p>
                 {layoutMode === "tabs" && unsolvedCount > 0 && (
                   <Badge variant="outline" className="text-xs">
@@ -760,24 +765,81 @@ const PositionDetail = () => {
             {/* Content: Sections View or Tabs View */}
             {layoutMode === "sections" ? (
               /* Sections View */
-              <div>
-                {categories.map((category) => (
-                  <CategorySection
-                    key={category.id}
-                    categoryId={category.id}
-                    categoryName={category.name}
-                    questions={questionsByCategory[category.id] || []}
-                    isOpen={openSections.has(category.id)}
-                    onOpenChange={() => toggleSection(category.id)}
-                    isSolved={isSolved}
-                    isRevision={isRevision}
-                    getNote={getNote}
-                    onToggleSolved={toggleSolved}
-                    onToggleRevision={toggleRevision}
-                    onOpenNote={openNoteDialog}
-                  />
-                ))}
-              </div>
+              totalFilteredCount > 0 ? (
+                <div>
+                  {categories.map((category) => {
+                    const categoryQuestions = questionsByCategory[category.id] || [];
+                    // Skip empty categories in revision mode
+                    if (viewMode === "revision" && categoryQuestions.length === 0) {
+                      return null;
+                    }
+                    return (
+                      <CategorySection
+                        key={category.id}
+                        categoryId={category.id}
+                        categoryName={category.name}
+                        questions={categoryQuestions}
+                        isOpen={openSections.has(category.id)}
+                        onOpenChange={() => toggleSection(category.id)}
+                        isSolved={isSolved}
+                        isRevision={isRevision}
+                        getNote={getNote}
+                        onToggleSolved={toggleSolved}
+                        onToggleRevision={toggleRevision}
+                        onOpenNote={openNoteDialog}
+                      />
+                    );
+                  })}
+                </div>
+              ) : viewMode === "revision" ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col items-center justify-center py-16 text-center px-4"
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 200 }}
+                    className="h-16 w-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4"
+                  >
+                    <BookmarkCheck className="h-8 w-8 text-amber-500" />
+                  </motion.div>
+                  <h3 className="text-lg font-medium">No revision questions</h3>
+                  <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                    Bookmark questions to add them to your revision list for quick access later.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => setViewMode("all")}
+                  >
+                    Browse All Questions
+                  </Button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col items-center justify-center py-16 text-center px-4"
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 200 }}
+                    className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4"
+                  >
+                    <Search className="h-8 w-8 text-muted-foreground" />
+                  </motion.div>
+                  <h3 className="text-lg font-medium">No questions found</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Try adjusting your search or filters.
+                  </p>
+                  <Button variant="outline" onClick={clearFilters} className="mt-4">
+                    Clear Filters
+                  </Button>
+                </motion.div>
+              )
             ) : (
               /* Tabs View (original) */
               filteredQuestions.length > 0 ? (
