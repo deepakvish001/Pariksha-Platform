@@ -1,13 +1,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LayoutGrid, CheckCircle2, Target, Zap, Star, Loader2, Flame } from "lucide-react";
+import { LayoutGrid, CheckCircle2, Target, Zap, Star, Loader2, Flame, Trophy, Settings2 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 
 // Sheet definitions with total counts
@@ -68,37 +80,69 @@ interface DailyActivity {
   count: number;
 }
 
+interface LeaderboardEntry {
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  completed_count: number;
+  revision_count: number;
+}
+
+interface UserGoals {
+  daily_target: number;
+  weekly_target: number;
+}
+
 const DashboardMatrix = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [progressData, setProgressData] = useState<Map<string, SheetProgress>>(new Map());
   const [streak, setStreak] = useState(0);
   const [weeklyActivity, setWeeklyActivity] = useState<DailyActivity[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [goals, setGoals] = useState<UserGoals>({ daily_target: 5, weekly_target: 25 });
+  const [todayCompleted, setTodayCompleted] = useState(0);
+  const [goalsModalOpen, setGoalsModalOpen] = useState(false);
+  const [editGoals, setEditGoals] = useState<UserGoals>({ daily_target: 5, weekly_target: 25 });
+  const [lastNotifiedDaily, setLastNotifiedDaily] = useState<string | null>(null);
+  const [lastNotifiedWeekly, setLastNotifiedWeekly] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadProgress = async () => {
+    const loadData = async () => {
       if (!user) {
         setIsLoading(false);
         return;
       }
 
       try {
-        // Fetch all progress data
-        const { data, error } = await supabase
-          .from("user_topic_progress")
-          .select("sheet_id, completed, is_revision, updated_at")
-          .eq("user_id", user.id);
+        // Fetch all data in parallel
+        const [progressResult, goalsResult, leaderboardResult] = await Promise.all([
+          supabase
+            .from("user_topic_progress")
+            .select("sheet_id, completed, is_revision, updated_at")
+            .eq("user_id", user.id),
+          supabase
+            .from("user_goals")
+            .select("daily_target, weekly_target")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+          supabase
+            .from("leaderboard_view")
+            .select("*")
+        ]);
 
-        if (error) throw error;
+        if (progressResult.error) throw progressResult.error;
 
-        // Aggregate progress by sheet
+        // Process progress data
         const progressMap = new Map<string, SheetProgress>();
         const activityDates = new Set<string>();
+        const today = new Date().toISOString().split('T')[0];
+        let todayCount = 0;
         
-        if (data) {
-          data.forEach((row) => {
-            // Sheet progress
+        if (progressResult.data) {
+          progressResult.data.forEach((row) => {
             const existing = progressMap.get(row.sheet_id) || { 
               sheetId: row.sheet_id, 
               completed: 0, 
@@ -107,9 +151,9 @@ const DashboardMatrix = () => {
             
             if (row.completed) {
               existing.completed += 1;
-              // Track activity dates for completed items
               const date = new Date(row.updated_at).toISOString().split('T')[0];
               activityDates.add(date);
+              if (date === today) todayCount++;
             }
             if (row.is_revision) {
               existing.revision += 1;
@@ -120,22 +164,22 @@ const DashboardMatrix = () => {
         }
 
         setProgressData(progressMap);
+        setTodayCompleted(todayCount);
 
         // Calculate streak
         const sortedDates = Array.from(activityDates).sort().reverse();
         let currentStreak = 0;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
         
         for (let i = 0; i < sortedDates.length; i++) {
-          const checkDate = new Date(today);
+          const checkDate = new Date(todayDate);
           checkDate.setDate(checkDate.getDate() - i);
           const checkDateStr = checkDate.toISOString().split('T')[0];
           
           if (sortedDates.includes(checkDateStr)) {
             currentStreak++;
           } else if (i === 0) {
-            // If today has no activity, check if yesterday starts a streak
             continue;
           } else {
             break;
@@ -152,8 +196,7 @@ const DashboardMatrix = () => {
           date.setDate(date.getDate() - i);
           const dateStr = date.toISOString().split('T')[0];
           
-          // Count completed items for this day
-          const count = data?.filter(row => {
+          const count = progressResult.data?.filter(row => {
             if (!row.completed) return false;
             const rowDate = new Date(row.updated_at).toISOString().split('T')[0];
             return rowDate === dateStr;
@@ -167,15 +210,90 @@ const DashboardMatrix = () => {
         }
         setWeeklyActivity(weekData);
 
+        // Set goals
+        if (goalsResult.data) {
+          setGoals(goalsResult.data);
+          setEditGoals(goalsResult.data);
+        }
+
+        // Set leaderboard
+        if (leaderboardResult.data) {
+          setLeaderboard(leaderboardResult.data as LeaderboardEntry[]);
+        }
+
       } catch (error) {
-        console.error("Failed to load progress:", error);
+        console.error("Failed to load data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadProgress();
+    loadData();
   }, [user]);
+
+  // Check for goal achievements and show notifications
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const weekKey = getWeekKey();
+    const weeklyTotal = weeklyActivity.reduce((acc, d) => acc + d.count, 0);
+
+    // Daily goal notification
+    if (todayCompleted >= goals.daily_target && lastNotifiedDaily !== today) {
+      toast({
+        title: "🎉 Daily Goal Achieved!",
+        description: `You've completed ${todayCompleted} topics today. Great work!`,
+      });
+      setLastNotifiedDaily(today);
+    }
+
+    // Weekly goal notification
+    if (weeklyTotal >= goals.weekly_target && lastNotifiedWeekly !== weekKey) {
+      toast({
+        title: "🏆 Weekly Goal Achieved!",
+        description: `You've completed ${weeklyTotal} topics this week. Amazing progress!`,
+      });
+      setLastNotifiedWeekly(weekKey);
+    }
+  }, [todayCompleted, weeklyActivity, goals, lastNotifiedDaily, lastNotifiedWeekly, toast]);
+
+  const getWeekKey = () => {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const weekNumber = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
+    return `${now.getFullYear()}-W${weekNumber}`;
+  };
+
+  const handleSaveGoals = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("user_goals")
+        .upsert({
+          user_id: user.id,
+          daily_target: editGoals.daily_target,
+          weekly_target: editGoals.weekly_target,
+        }, {
+          onConflict: "user_id",
+        });
+
+      if (error) throw error;
+
+      setGoals(editGoals);
+      setGoalsModalOpen(false);
+      toast({
+        title: "Goals Updated",
+        description: "Your daily and weekly targets have been saved.",
+      });
+    } catch (error) {
+      console.error("Failed to save goals:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save goals. Please try again.",
+      });
+    }
+  };
 
   // Calculate totals
   const totalQuestions = sheetDefinitions.reduce((acc, sheet) => acc + sheet.total, 0);
@@ -183,6 +301,11 @@ const DashboardMatrix = () => {
   const totalRevision = Array.from(progressData.values()).reduce((acc, p) => acc + p.revision, 0);
   const overallProgress = totalQuestions > 0 ? Math.round((totalCompleted / totalQuestions) * 100) : 0;
   const weeklyTotal = weeklyActivity.reduce((acc, d) => acc + d.count, 0);
+  const dailyProgress = goals.daily_target > 0 ? Math.min((todayCompleted / goals.daily_target) * 100, 100) : 0;
+  const weeklyProgress = goals.weekly_target > 0 ? Math.min((weeklyTotal / goals.weekly_target) * 100, 100) : 0;
+
+  // Find current user's rank
+  const userRank = leaderboard.findIndex(entry => entry.user_id === user?.id) + 1;
 
   if (isLoading) {
     return (
@@ -289,77 +412,213 @@ const DashboardMatrix = () => {
           </Card>
         </motion.div>
 
-        {/* Weekly Activity Chart */}
+        {/* Goals and Activity Row */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Goals Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Daily & Weekly Goals</CardTitle>
+                    <CardDescription>Track your progress against targets</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setGoalsModalOpen(true)}>
+                    <Settings2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Daily Goal */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">Today's Progress</span>
+                    <span className={todayCompleted >= goals.daily_target ? "text-green-500 font-semibold" : "text-muted-foreground"}>
+                      {todayCompleted} / {goals.daily_target} topics
+                      {todayCompleted >= goals.daily_target && " ✓"}
+                    </span>
+                  </div>
+                  <Progress value={dailyProgress} className="h-3" />
+                </div>
+
+                {/* Weekly Goal */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">This Week's Progress</span>
+                    <span className={weeklyTotal >= goals.weekly_target ? "text-green-500 font-semibold" : "text-muted-foreground"}>
+                      {weeklyTotal} / {goals.weekly_target} topics
+                      {weeklyTotal >= goals.weekly_target && " ✓"}
+                    </span>
+                  </div>
+                  <Progress value={weeklyProgress} className="h-3" />
+                </div>
+
+                {/* Motivational message */}
+                <div className="text-center pt-2">
+                  {todayCompleted >= goals.daily_target ? (
+                    <p className="text-sm text-green-500 font-medium">🎉 Daily goal achieved! Keep the momentum going!</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {goals.daily_target - todayCompleted} more topic{goals.daily_target - todayCompleted !== 1 ? 's' : ''} to reach today's goal
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Weekly Activity Chart */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Weekly Activity</CardTitle>
+                    <CardDescription>Topics completed in the last 7 days</CardDescription>
+                  </div>
+                  <Badge variant="secondary" className="text-lg px-3 py-1">
+                    {weeklyTotal} this week
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[160px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weeklyActivity} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <XAxis 
+                        dataKey="day" 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      />
+                      <YAxis 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        allowDecimals={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
+                        formatter={(value: number) => [`${value} topics`, 'Completed']}
+                      />
+                      <Bar 
+                        dataKey="count" 
+                        fill="hsl(var(--primary))"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Activity dots */}
+                <div className="flex justify-center gap-1 mt-4">
+                  {weeklyActivity.map((day) => (
+                    <div
+                      key={day.date}
+                      className={`h-3 w-3 rounded-sm transition-colors ${
+                        day.count > 0 
+                          ? day.count >= 5 
+                            ? 'bg-primary' 
+                            : day.count >= 3 
+                              ? 'bg-primary/70' 
+                              : 'bg-primary/40'
+                          : 'bg-muted'
+                      }`}
+                      title={`${day.day}: ${day.count} topics`}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Leaderboard */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.2 }}
         >
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Weekly Activity</CardTitle>
-                  <CardDescription>Topics completed in the last 7 days</CardDescription>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center">
+                    <Trophy className="h-5 w-5 text-yellow-500" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Leaderboard</CardTitle>
+                    <CardDescription>Top performers this month</CardDescription>
+                  </div>
                 </div>
-                <Badge variant="secondary" className="text-lg px-3 py-1">
-                  {weeklyTotal} this week
-                </Badge>
+                {userRank > 0 && (
+                  <Badge variant="outline" className="text-base px-3 py-1">
+                    Your Rank: #{userRank}
+                  </Badge>
+                )}
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-[200px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weeklyActivity} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <XAxis 
-                      dataKey="day" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                      allowDecimals={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
-                      formatter={(value: number) => [`${value} topics`, 'Completed']}
-                      labelFormatter={(label) => `${label}`}
-                    />
-                    <Bar 
-                      dataKey="count" 
-                      fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              {/* Activity dots */}
-              <div className="flex justify-center gap-1 mt-4">
-                {weeklyActivity.map((day, i) => (
-                  <div
-                    key={day.date}
-                    className={`h-3 w-3 rounded-sm transition-colors ${
-                      day.count > 0 
-                        ? day.count >= 5 
-                          ? 'bg-primary' 
-                          : day.count >= 3 
-                            ? 'bg-primary/70' 
-                            : 'bg-primary/40'
-                        : 'bg-muted'
-                    }`}
-                    title={`${day.day}: ${day.count} topics`}
-                  />
-                ))}
-              </div>
+              {leaderboard.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No entries yet. Complete topics to appear on the leaderboard!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {leaderboard.slice(0, 10).map((entry, index) => (
+                    <div
+                      key={entry.user_id}
+                      className={`flex items-center gap-4 p-3 rounded-lg transition-colors ${
+                        entry.user_id === user?.id 
+                          ? 'bg-primary/10 border border-primary/20' 
+                          : 'hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                        index === 0 ? 'bg-yellow-500/20 text-yellow-500' :
+                        index === 1 ? 'bg-gray-400/20 text-gray-400' :
+                        index === 2 ? 'bg-orange-600/20 text-orange-600' :
+                        'bg-muted text-muted-foreground'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={entry.avatar_url || undefined} />
+                        <AvatarFallback>
+                          {entry.full_name?.charAt(0)?.toUpperCase() || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {entry.full_name || 'Anonymous'}
+                          {entry.user_id === user?.id && <span className="text-primary ml-2">(You)</span>}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {entry.completed_count} completed
+                          {entry.revision_count > 0 && ` · ${entry.revision_count} for revision`}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-primary">{entry.completed_count}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -377,7 +636,7 @@ const DashboardMatrix = () => {
                 key={sheet.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + index * 0.1 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
               >
                 <Card 
                   className="hover:shadow-lg transition-shadow cursor-pointer group"
@@ -416,6 +675,50 @@ const DashboardMatrix = () => {
           })}
         </div>
       </main>
+
+      {/* Goals Settings Modal */}
+      <Dialog open={goalsModalOpen} onOpenChange={setGoalsModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Set Your Goals
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="daily-target">Daily Target (topics per day)</Label>
+              <Input
+                id="daily-target"
+                type="number"
+                min="1"
+                max="50"
+                value={editGoals.daily_target}
+                onChange={(e) => setEditGoals(prev => ({ ...prev, daily_target: parseInt(e.target.value) || 1 }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="weekly-target">Weekly Target (topics per week)</Label>
+              <Input
+                id="weekly-target"
+                type="number"
+                min="1"
+                max="200"
+                value={editGoals.weekly_target}
+                onChange={(e) => setEditGoals(prev => ({ ...prev, weekly_target: parseInt(e.target.value) || 1 }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGoalsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveGoals}>
+              Save Goals
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
