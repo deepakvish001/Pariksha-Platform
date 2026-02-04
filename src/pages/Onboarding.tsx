@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Building2, BookOpen, Calendar, Briefcase } from "lucide-react";
+import { Settings, Building2, BookOpen, Calendar, Briefcase, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const experienceOptions = [
   { value: "student", label: "Student (College/University)", type: "student" },
@@ -74,8 +75,37 @@ const featureOptions = [
   { id: "companies", title: "Companies", description: "Explore company profiles and interview experiences" },
 ];
 
+// Error message component
+const FieldError = ({ message }: { message?: string }) => {
+  if (!message) return null;
+  return (
+    <motion.p
+      initial={{ opacity: 0, y: -5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex items-center gap-1 text-sm text-destructive mt-1"
+    >
+      <AlertCircle className="w-3.5 h-3.5" />
+      {message}
+    </motion.p>
+  );
+};
+
+interface FormErrors {
+  currentExperience?: string;
+  targetGoal?: string;
+  referralSource?: string;
+  collegeName?: string;
+  courseName?: string;
+  studyYear?: string;
+  companyName?: string;
+  role?: string;
+  features?: string;
+}
+
 const Onboarding = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   
   // Form state
   const [fullName, setFullName] = useState("");
@@ -114,6 +144,61 @@ const Onboarding = () => {
     }
   }, [profile]);
 
+  // Clear errors when fields change
+  useEffect(() => {
+    if (currentExperience && errors.currentExperience) {
+      setErrors(prev => ({ ...prev, currentExperience: undefined }));
+    }
+  }, [currentExperience]);
+
+  useEffect(() => {
+    if (targetGoal && errors.targetGoal) {
+      setErrors(prev => ({ ...prev, targetGoal: undefined }));
+    }
+  }, [targetGoal]);
+
+  useEffect(() => {
+    if (referralSource && errors.referralSource) {
+      setErrors(prev => ({ ...prev, referralSource: undefined }));
+    }
+  }, [referralSource]);
+
+  useEffect(() => {
+    if (collegeName && errors.collegeName) {
+      setErrors(prev => ({ ...prev, collegeName: undefined }));
+    }
+  }, [collegeName]);
+
+  useEffect(() => {
+    if (courseName && errors.courseName) {
+      setErrors(prev => ({ ...prev, courseName: undefined }));
+    }
+  }, [courseName]);
+
+  useEffect(() => {
+    if (studyYear && errors.studyYear) {
+      setErrors(prev => ({ ...prev, studyYear: undefined }));
+    }
+  }, [studyYear]);
+
+  useEffect(() => {
+    if (companyName && errors.companyName) {
+      setErrors(prev => ({ ...prev, companyName: undefined }));
+    }
+  }, [companyName]);
+
+  useEffect(() => {
+    if (role && errors.role) {
+      setErrors(prev => ({ ...prev, role: undefined }));
+    }
+  }, [role]);
+
+  useEffect(() => {
+    if (selectedFeatures.length > 0 && errors.features) {
+      setErrors(prev => ({ ...prev, features: undefined }));
+    }
+  }, [selectedFeatures]);
+
   const toggleFeature = (featureId: string) => {
     setSelectedFeatures(prev => 
       prev.includes(featureId)
@@ -122,27 +207,57 @@ const Onboarding = () => {
     );
   };
 
-  const handleSubmit = async () => {
-    if (!user) return;
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
 
-    if (!currentExperience || !targetGoal || !referralSource) {
-      toast({ variant: "destructive", title: "Please fill in all required fields" });
-      return;
+    if (!currentExperience) {
+      newErrors.currentExperience = "Please select your experience level";
     }
 
-    // Validate conditional fields
-    if (userType === "student" && (!collegeName || !courseName || !studyYear)) {
-      toast({ variant: "destructive", title: "Please fill in your academic details" });
-      return;
+    if (!targetGoal) {
+      newErrors.targetGoal = "Please select your goal";
     }
 
-    if (userType === "professional" && (!companyName || !role)) {
-      toast({ variant: "destructive", title: "Please fill in your professional details" });
-      return;
+    if (!referralSource) {
+      newErrors.referralSource = "Please tell us where you found UniDash";
+    }
+
+    // Validate student fields
+    if (userType === "student") {
+      if (!collegeName.trim()) {
+        newErrors.collegeName = "College name is required";
+      }
+      if (!courseName.trim()) {
+        newErrors.courseName = "Course name is required";
+      }
+      if (!studyYear) {
+        newErrors.studyYear = "Please select your year of study";
+      }
+    }
+
+    // Validate professional fields
+    if (userType === "professional") {
+      if (!companyName.trim()) {
+        newErrors.companyName = "Company name is required";
+      }
+      if (!role.trim()) {
+        newErrors.role = "Role is required";
+      }
     }
 
     if (selectedFeatures.length === 0) {
-      toast({ variant: "destructive", title: "Please select at least one feature you're interested in" });
+      newErrors.features = "Please select at least one feature";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!user) return;
+
+    if (!validateForm()) {
+      toast({ variant: "destructive", title: "Please fix the errors above" });
       return;
     }
 
@@ -223,7 +338,10 @@ const Onboarding = () => {
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Your current experience *</Label>
                 <Select value={currentExperience} onValueChange={setCurrentExperience}>
-                  <SelectTrigger className="h-12 bg-muted/50 border-border">
+                  <SelectTrigger className={cn(
+                    "h-12 bg-muted/50 border-border",
+                    errors.currentExperience && "border-destructive"
+                  )}>
                     <SelectValue placeholder="Select your experience" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border">
@@ -234,12 +352,16 @@ const Onboarding = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError message={errors.currentExperience} />
               </div>
 
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Your target/goal *</Label>
                 <Select value={targetGoal} onValueChange={setTargetGoal}>
-                  <SelectTrigger className="h-12 bg-muted/50 border-border">
+                  <SelectTrigger className={cn(
+                    "h-12 bg-muted/50 border-border",
+                    errors.targetGoal && "border-destructive"
+                  )}>
                     <SelectValue placeholder="Select your goal" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border">
@@ -250,6 +372,7 @@ const Onboarding = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError message={errors.targetGoal} />
               </div>
             </div>
 
@@ -277,9 +400,13 @@ const Onboarding = () => {
                             value={collegeName}
                             onChange={(e) => setCollegeName(e.target.value)}
                             placeholder="e.g., IIT Delhi"
-                            className="h-11 pl-10 bg-muted/50 border-border"
+                            className={cn(
+                              "h-11 pl-10 bg-muted/50 border-border",
+                              errors.collegeName && "border-destructive"
+                            )}
                           />
                         </div>
+                        <FieldError message={errors.collegeName} />
                       </div>
 
                       <div className="space-y-2">
@@ -288,8 +415,12 @@ const Onboarding = () => {
                           value={courseName}
                           onChange={(e) => setCourseName(e.target.value)}
                           placeholder="e.g., B.Tech, MBA, BCA"
-                          className="h-11 bg-muted/50 border-border"
+                          className={cn(
+                            "h-11 bg-muted/50 border-border",
+                            errors.courseName && "border-destructive"
+                          )}
                         />
+                        <FieldError message={errors.courseName} />
                       </div>
 
                       <div className="space-y-2">
@@ -305,7 +436,10 @@ const Onboarding = () => {
                       <div className="space-y-2">
                         <Label className="text-muted-foreground">Year of Study *</Label>
                         <Select value={studyYear} onValueChange={setStudyYear}>
-                          <SelectTrigger className="h-11 bg-muted/50 border-border">
+                          <SelectTrigger className={cn(
+                            "h-11 bg-muted/50 border-border",
+                            errors.studyYear && "border-destructive"
+                          )}>
                             <Calendar className="w-5 h-5 mr-2 text-muted-foreground" />
                             <SelectValue placeholder="Select year" />
                           </SelectTrigger>
@@ -315,6 +449,7 @@ const Onboarding = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        <FieldError message={errors.studyYear} />
                       </div>
                     </div>
                   </div>
@@ -346,9 +481,13 @@ const Onboarding = () => {
                             value={companyName}
                             onChange={(e) => setCompanyName(e.target.value)}
                             placeholder="e.g., Google, TCS"
-                            className="h-11 pl-10 bg-muted/50 border-border"
+                            className={cn(
+                              "h-11 pl-10 bg-muted/50 border-border",
+                              errors.companyName && "border-destructive"
+                            )}
                           />
                         </div>
+                        <FieldError message={errors.companyName} />
                       </div>
 
                       <div className="space-y-2">
@@ -357,8 +496,12 @@ const Onboarding = () => {
                           value={role}
                           onChange={(e) => setRole(e.target.value)}
                           placeholder="e.g., Software Engineer"
-                          className="h-11 bg-muted/50 border-border"
+                          className={cn(
+                            "h-11 bg-muted/50 border-border",
+                            errors.role && "border-destructive"
+                          )}
                         />
+                        <FieldError message={errors.role} />
                       </div>
 
                       <div className="space-y-2">
@@ -386,7 +529,10 @@ const Onboarding = () => {
             <div className="space-y-2">
               <Label className="text-muted-foreground">Where did you find UniDash *</Label>
               <Select value={referralSource} onValueChange={setReferralSource}>
-                <SelectTrigger className="h-12 bg-muted/50 border-border w-full md:w-1/2">
+                <SelectTrigger className={cn(
+                  "h-12 bg-muted/50 border-border w-full md:w-1/2",
+                  errors.referralSource && "border-destructive"
+                )}>
                   <SelectValue placeholder="Select source" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
@@ -397,11 +543,20 @@ const Onboarding = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError message={errors.referralSource} />
             </div>
 
             {/* Features Section */}
             <div className="space-y-4">
-              <Label className="text-primary">Feature you are interested to start using</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-primary">Feature you are interested to start using *</Label>
+                {errors.features && (
+                  <span className="flex items-center gap-1 text-sm text-destructive">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    {errors.features}
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {featureOptions.map((feature) => (
                   <motion.div
@@ -409,11 +564,13 @@ const Onboarding = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => toggleFeature(feature.id)}
-                    className={`relative p-4 rounded-lg border cursor-pointer transition-all ${
+                    className={cn(
+                      "relative p-4 rounded-lg border cursor-pointer transition-all",
                       selectedFeatures.includes(feature.id)
                         ? "border-primary bg-primary/10"
-                        : "border-border bg-muted/30 hover:border-muted-foreground/50"
-                    }`}
+                        : "border-border bg-muted/30 hover:border-muted-foreground/50",
+                      errors.features && selectedFeatures.length === 0 && "border-destructive/50"
+                    )}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
