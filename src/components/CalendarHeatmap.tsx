@@ -7,18 +7,17 @@ interface ActivityData {
 
 interface CalendarHeatmapProps {
   activityData: ActivityData;
-  months?: number;
 }
 
-const CalendarHeatmap = ({ activityData, months = 4 }: CalendarHeatmapProps) => {
-  const { weeks, monthLabels } = useMemo(() => {
+const CalendarHeatmap = ({ activityData }: CalendarHeatmapProps) => {
+  const { weeks, monthLabels, stats } = useMemo(() => {
     const today = new Date();
     const weeksData: { date: Date; count: number }[][] = [];
     const labels: { label: string; weekIndex: number }[] = [];
     
-    // Calculate start date (beginning of the week, months ago)
+    // Calculate start date (1 year ago, beginning of the week)
     const startDate = new Date(today);
-    startDate.setMonth(startDate.getMonth() - months);
+    startDate.setFullYear(startDate.getFullYear() - 1);
     startDate.setDate(startDate.getDate() - startDate.getDay()); // Go to Sunday
     
     let currentDate = new Date(startDate);
@@ -26,12 +25,32 @@ const CalendarHeatmap = ({ activityData, months = 4 }: CalendarHeatmapProps) => 
     let lastMonth = -1;
     let weekIndex = 0;
     
+    // Stats tracking
+    let totalSubmissions = 0;
+    let activeDays = 0;
+    let currentStreak = 0;
+    let maxStreak = 0;
+    let tempStreak = 0;
+    const allDates: { date: string; count: number }[] = [];
+    
     while (currentDate <= today) {
       const dateStr = currentDate.toISOString().split('T')[0];
       const count = activityData[dateStr] || 0;
       
-      // Track month labels
-      if (currentDate.getMonth() !== lastMonth && currentDate.getDay() === 0) {
+      // Track stats
+      totalSubmissions += count;
+      if (count > 0) {
+        activeDays++;
+        tempStreak++;
+        maxStreak = Math.max(maxStreak, tempStreak);
+      } else {
+        tempStreak = 0;
+      }
+      
+      allDates.push({ date: dateStr, count });
+      
+      // Track month labels (at the start of each month)
+      if (currentDate.getMonth() !== lastMonth) {
         const monthName = currentDate.toLocaleDateString('en-US', { month: 'short' });
         labels.push({ label: monthName, weekIndex });
         lastMonth = currentDate.getMonth();
@@ -39,7 +58,7 @@ const CalendarHeatmap = ({ activityData, months = 4 }: CalendarHeatmapProps) => 
       
       currentWeek.push({ date: new Date(currentDate), count });
       
-      // Start new week on Sunday
+      // Start new week on Saturday
       if (currentDate.getDay() === 6) {
         weeksData.push(currentWeek);
         currentWeek = [];
@@ -54,15 +73,37 @@ const CalendarHeatmap = ({ activityData, months = 4 }: CalendarHeatmapProps) => 
       weeksData.push(currentWeek);
     }
     
-    return { weeks: weeksData, monthLabels: labels };
-  }, [activityData, months]);
+    // Calculate current streak (from today backwards)
+    const sortedDates = allDates.reverse();
+    for (let i = 0; i < sortedDates.length; i++) {
+      if (sortedDates[i].count > 0) {
+        currentStreak++;
+      } else if (i === 0) {
+        // Today might have no activity yet
+        continue;
+      } else {
+        break;
+      }
+    }
+    
+    return { 
+      weeks: weeksData, 
+      monthLabels: labels,
+      stats: {
+        totalSubmissions,
+        activeDays,
+        maxStreak,
+        currentStreak
+      }
+    };
+  }, [activityData]);
 
   const getIntensityClass = (count: number) => {
-    if (count === 0) return 'bg-muted';
-    if (count === 1) return 'bg-primary/30';
-    if (count <= 3) return 'bg-primary/50';
-    if (count <= 5) return 'bg-primary/70';
-    return 'bg-primary';
+    if (count === 0) return 'bg-[#1e3a29]';
+    if (count === 1) return 'bg-[#2d5a3d]';
+    if (count <= 3) return 'bg-[#3d7a52]';
+    if (count <= 5) return 'bg-[#4d9a66]';
+    return 'bg-[#5dba7a]';
   };
 
   const formatDate = (date: Date) => {
@@ -74,55 +115,48 @@ const CalendarHeatmap = ({ activityData, months = 4 }: CalendarHeatmapProps) => 
     });
   };
 
-  const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
-
   return (
-    <div className="w-full overflow-x-auto">
-      <div className="min-w-fit">
-        {/* Month labels */}
-        <div className="flex mb-1 ml-8">
-          {monthLabels.map((m, i) => (
-            <div
-              key={i}
-              className="text-xs text-muted-foreground"
-              style={{ 
-                position: 'relative',
-                left: `${m.weekIndex * 14}px`,
-                marginRight: i < monthLabels.length - 1 
-                  ? `${(monthLabels[i + 1]?.weekIndex - m.weekIndex - 1) * 14}px` 
-                  : 0
-              }}
-            >
-              {m.label}
-            </div>
-          ))}
+    <div className="w-full">
+      {/* Header Stats */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-bold">{stats.totalSubmissions}</span>
+          <span className="text-muted-foreground">topics completed in the past year</span>
         </div>
-        
-        <div className="flex gap-0.5">
-          {/* Day labels */}
-          <div className="flex flex-col gap-0.5 mr-1">
-            {dayLabels.map((label, i) => (
-              <div key={i} className="h-3 w-6 text-xs text-muted-foreground flex items-center">
-                {label}
-              </div>
-            ))}
+        <div className="flex items-center gap-6 text-sm">
+          <div>
+            <span className="text-muted-foreground">Total active days: </span>
+            <span className="font-semibold">{stats.activeDays}</span>
           </div>
-          
-          {/* Heatmap grid */}
-          <div className="flex gap-0.5">
+          <div>
+            <span className="text-muted-foreground">Max streak: </span>
+            <span className="font-semibold">{stats.maxStreak}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Current: </span>
+            <span className="font-semibold">{stats.currentStreak}</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Heatmap Grid */}
+      <div className="w-full overflow-x-auto pb-2">
+        <div className="min-w-fit">
+          {/* Grid */}
+          <div className="flex gap-[3px]">
             {weeks.map((week, weekIndex) => (
-              <div key={weekIndex} className="flex flex-col gap-0.5">
+              <div key={weekIndex} className="flex flex-col gap-[3px]">
                 {Array.from({ length: 7 }).map((_, dayIndex) => {
                   const day = week.find(d => d.date.getDay() === dayIndex);
                   if (!day) {
-                    return <div key={dayIndex} className="h-3 w-3" />;
+                    return <div key={dayIndex} className="h-[11px] w-[11px]" />;
                   }
                   
                   return (
                     <Tooltip key={dayIndex}>
                       <TooltipTrigger asChild>
                         <div
-                          className={`h-3 w-3 rounded-sm transition-colors cursor-pointer hover:ring-1 hover:ring-foreground/50 ${getIntensityClass(day.count)}`}
+                          className={`h-[11px] w-[11px] rounded-[2px] transition-all cursor-pointer hover:ring-1 hover:ring-white/30 ${getIntensityClass(day.count)}`}
                         />
                       </TooltipTrigger>
                       <TooltipContent side="top" className="text-xs">
@@ -135,20 +169,37 @@ const CalendarHeatmap = ({ activityData, months = 4 }: CalendarHeatmapProps) => 
               </div>
             ))}
           </div>
-        </div>
-        
-        {/* Legend */}
-        <div className="flex items-center gap-2 mt-3 ml-8 text-xs text-muted-foreground">
-          <span>Less</span>
-          <div className="flex gap-0.5">
-            <div className="h-3 w-3 rounded-sm bg-muted" />
-            <div className="h-3 w-3 rounded-sm bg-primary/30" />
-            <div className="h-3 w-3 rounded-sm bg-primary/50" />
-            <div className="h-3 w-3 rounded-sm bg-primary/70" />
-            <div className="h-3 w-3 rounded-sm bg-primary" />
+          
+          {/* Month labels at bottom */}
+          <div className="flex mt-2 text-xs text-muted-foreground">
+            {monthLabels.map((m, i) => {
+              const nextMonthIndex = monthLabels[i + 1]?.weekIndex || weeks.length;
+              const width = (nextMonthIndex - m.weekIndex) * 14; // 11px cell + 3px gap
+              return (
+                <div
+                  key={i}
+                  style={{ width: `${width}px` }}
+                  className="text-left"
+                >
+                  {m.label}
+                </div>
+              );
+            })}
           </div>
-          <span>More</span>
         </div>
+      </div>
+      
+      {/* Legend */}
+      <div className="flex items-center justify-end gap-2 mt-3 text-xs text-muted-foreground">
+        <span>Less</span>
+        <div className="flex gap-[3px]">
+          <div className="h-[11px] w-[11px] rounded-[2px] bg-[#1e3a29]" />
+          <div className="h-[11px] w-[11px] rounded-[2px] bg-[#2d5a3d]" />
+          <div className="h-[11px] w-[11px] rounded-[2px] bg-[#3d7a52]" />
+          <div className="h-[11px] w-[11px] rounded-[2px] bg-[#4d9a66]" />
+          <div className="h-[11px] w-[11px] rounded-[2px] bg-[#5dba7a]" />
+        </div>
+        <span>More</span>
       </div>
     </div>
   );
