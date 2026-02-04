@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import heroIllustration from "@/assets/hero-illustration.png";
+import heroIllustration from "@/assets/hero-illustration-3d.png";
 
 const Hero3DElement = () => {
   return (
