@@ -118,7 +118,7 @@ const DashboardMatrix = () => {
   const [activityHeatmap, setActivityHeatmap] = useState<{ [date: string]: number }>({});
   const [earnedAchievements, setEarnedAchievements] = useState<Map<string, string>>(new Map());
   const [totalRevision, setTotalRevision] = useState(0);
-  const [heatmapRange, setHeatmapRange] = useState<3 | 6 | 12>(12);
+  
 
   useEffect(() => {
     const loadData = async () => {
@@ -567,20 +567,7 @@ const DashboardMatrix = () => {
         >
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center justify-end gap-1 mb-4">
-                {([3, 6, 12] as const).map((range) => (
-                  <Button
-                    key={range}
-                    variant={heatmapRange === range ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setHeatmapRange(range)}
-                    className="h-7 px-3 text-xs"
-                  >
-                    {range === 12 ? '1 Year' : `${range}M`}
-                  </Button>
-                ))}
-              </div>
-              <CalendarHeatmap activityData={activityHeatmap} months={heatmapRange} />
+              <CalendarHeatmap activityData={activityHeatmap} />
             </CardContent>
           </Card>
         </motion.div>
