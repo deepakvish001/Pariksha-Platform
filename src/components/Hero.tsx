@@ -1,6 +1,78 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useState, useRef } from "react";
 import HeroIllustration from "./HeroIllustration";
+
+// Animated stat component
+const AnimatedStat = ({ 
+  value, 
+  suffix, 
+  label, 
+  isDecimal = false 
+}: { 
+  value: number; 
+  suffix: string; 
+  label: string; 
+  isDecimal?: boolean;
+}) => {
+  const [count, setCount] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasStarted) {
+          setHasStarted(true);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasStarted]);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    const duration = 2000;
+    let startTime: number;
+    let animationFrame: number;
+
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      
+      if (isDecimal) {
+        setCount(parseFloat((easeOutQuart * value).toFixed(1)));
+      } else {
+        setCount(Math.floor(easeOutQuart * value));
+      }
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(animationFrame);
+  }, [hasStarted, value, isDecimal]);
+
+  return (
+    <div ref={ref} className="text-center">
+      <div className="text-2xl sm:text-3xl font-bold gradient-text">
+        {isDecimal ? count.toFixed(1) : count}{suffix}
+      </div>
+      <div className="text-sm text-muted-foreground mt-1">{label}</div>
+    </div>
+  );
+};
 
 const Hero = () => {
   return (
@@ -119,16 +191,9 @@ const Hero = () => {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto lg:mx-0"
         >
-          {[
-            { value: "10K+", label: "Active Users" },
-            { value: "95%", label: "Success Rate" },
-            { value: "4.9★", label: "User Rating" },
-          ].map((stat, index) => (
-            <div key={index} className="text-center">
-              <div className="text-2xl sm:text-3xl font-bold gradient-text">{stat.value}</div>
-              <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
-            </div>
-          ))}
+          <AnimatedStat value={10} suffix="K+" label="Active Users" />
+          <AnimatedStat value={95} suffix="%" label="Success Rate" />
+          <AnimatedStat value={4.9} suffix="★" label="User Rating" isDecimal />
         </motion.div>
       </div>
 

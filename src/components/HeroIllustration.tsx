@@ -83,7 +83,7 @@ const HeroIllustration = () => {
           animate={{ y: [0, -8, 0], opacity: 1 }}
           transition={{ y: { duration: 3, repeat: Infinity, ease: "easeInOut" }, opacity: { duration: 0.5 } }}
         >
-          <rect x="160" y="150" width="180" height="120" rx="12" fill="url(#cardGradient)" className="dark:fill-[hsl(0,0%,12%)]" />
+          <rect x="160" y="150" width="180" height="120" rx="12" className="fill-[hsl(0,0%,100%)] dark:fill-[hsl(0,0%,12%)]" />
           <rect x="160" y="150" width="180" height="120" rx="12" stroke="#f97316" strokeWidth="1" strokeOpacity="0.3" fill="none" />
           
           {/* Card header dots */}
@@ -105,7 +105,7 @@ const HeroIllustration = () => {
           animate={{ y: [0, 10, 0], opacity: 1 }}
           transition={{ y: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }, opacity: { duration: 0.5, delay: 0.2 } }}
         >
-          <rect x="80" y="280" width="70" height="70" rx="8" fill="url(#cardGradient)" className="dark:fill-[hsl(0,0%,10%)]" />
+          <rect x="80" y="280" width="70" height="70" rx="8" className="fill-[hsl(0,0%,96%)] dark:fill-[hsl(0,0%,10%)]" />
           <rect x="80" y="280" width="70" height="70" rx="8" stroke="#f97316" strokeWidth="1" strokeOpacity="0.4" fill="none" />
           
           {/* Chip center */}
@@ -132,7 +132,7 @@ const HeroIllustration = () => {
           animate={{ y: [0, -6, 0], opacity: 1 }}
           transition={{ y: { duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1 }, opacity: { duration: 0.5, delay: 0.4 } }}
         >
-          <rect x="350" y="200" width="90" height="100" rx="10" fill="url(#cardGradient)" className="dark:fill-[hsl(0,0%,11%)]" />
+          <rect x="350" y="200" width="90" height="100" rx="10" className="fill-[hsl(0,0%,98%)] dark:fill-[hsl(0,0%,11%)]" />
           <rect x="350" y="200" width="90" height="100" rx="10" stroke="#f97316" strokeWidth="1" strokeOpacity="0.3" fill="none" />
           
           {/* Circular progress */}
@@ -166,7 +166,7 @@ const HeroIllustration = () => {
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
           style={{ transformOrigin: "380px 130px" }}
         >
-          <rect x="355" y="110" width="50" height="40" rx="6" fill="url(#cardGradient)" className="dark:fill-[hsl(0,0%,9%)]" />
+          <rect x="355" y="110" width="50" height="40" rx="6" className="fill-[hsl(0,0%,95%)] dark:fill-[hsl(0,0%,9%)]" />
           <text x="380" y="138" textAnchor="middle" fill="#f97316" fontSize="20" fontWeight="bold" fontFamily="monospace">&lt;/&gt;</text>
         </motion.g>
 
