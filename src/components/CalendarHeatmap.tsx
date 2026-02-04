@@ -233,6 +233,19 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
             </div>
           ))}
         </div>
+        
+        {/* Legend */}
+        <div className="flex items-center justify-end gap-2 mt-4">
+          <span className="text-xs text-muted-foreground">Less</span>
+          <div className="flex gap-[2px]">
+            <div className="h-[10px] w-[10px] rounded-[2px] bg-[#161b22]" />
+            <div className="h-[10px] w-[10px] rounded-[2px] bg-[#0e4429]" />
+            <div className="h-[10px] w-[10px] rounded-[2px] bg-[#006d32]" />
+            <div className="h-[10px] w-[10px] rounded-[2px] bg-[#26a641]" />
+            <div className="h-[10px] w-[10px] rounded-[2px] bg-[#39d353]" />
+          </div>
+          <span className="text-xs text-muted-foreground">More</span>
+        </div>
       </div>
     </div>
   );
