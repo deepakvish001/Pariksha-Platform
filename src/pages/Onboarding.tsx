@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Settings, Mail } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Settings, Building2, BookOpen, Calendar, Briefcase } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,15 +12,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 
 const experienceOptions = [
-  { value: "student", label: "Student (College/University)" },
-  { value: "recent_graduate", label: "Recent Graduate (0-1 years)" },
-  { value: "working_professional_1_3", label: "Working Professional (1-3 years)" },
-  { value: "mid_level", label: "Mid-level Developer (3-5 years)" },
-  { value: "senior", label: "Senior Developer (5-8 years)" },
-  { value: "tech_lead", label: "Tech Lead/Manager (8+ years)" },
-  { value: "career_switcher", label: "Career Switcher (Non-tech background)" },
-  { value: "freelancer", label: "Freelancer/Contractor" },
-  { value: "entrepreneur", label: "Entrepreneur/Founder" },
+  { value: "student", label: "Student (College/University)", type: "student" },
+  { value: "recent_graduate", label: "Recent Graduate (0-1 years)", type: "professional" },
+  { value: "working_professional_1_3", label: "Working Professional (1-3 years)", type: "professional" },
+  { value: "mid_level", label: "Mid-level Developer (3-5 years)", type: "professional" },
+  { value: "senior", label: "Senior Developer (5-8 years)", type: "professional" },
+  { value: "tech_lead", label: "Tech Lead/Manager (8+ years)", type: "professional" },
+  { value: "career_switcher", label: "Career Switcher (Non-tech background)", type: "professional" },
+  { value: "freelancer", label: "Freelancer/Contractor", type: "other" },
+  { value: "entrepreneur", label: "Entrepreneur/Founder", type: "other" },
 ];
 
 const goalOptions = [
@@ -50,6 +50,15 @@ const referralOptions = [
   { value: "other", label: "Other" },
 ];
 
+const yearOptions = [
+  { value: "1st Year", label: "1st Year" },
+  { value: "2nd Year", label: "2nd Year" },
+  { value: "3rd Year", label: "3rd Year" },
+  { value: "4th Year", label: "4th Year" },
+  { value: "5th Year", label: "5th Year" },
+  { value: "Other", label: "Other" },
+];
+
 const featureOptions = [
   { id: "quiz", title: "Quiz", description: "Test your knowledge with interactive quizzes" },
   { id: "dsa", title: "DSA", description: "Master DSA with comprehensive practice" },
@@ -74,17 +83,36 @@ const Onboarding = () => {
   const [targetGoal, setTargetGoal] = useState("");
   const [referralSource, setReferralSource] = useState("");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  
+  // Student fields
+  const [collegeName, setCollegeName] = useState("");
+  const [courseName, setCourseName] = useState("");
+  const [branch, setBranch] = useState("");
+  const [studyYear, setStudyYear] = useState("");
+  
+  // Professional fields
+  const [companyName, setCompanyName] = useState("");
+  const [role, setRole] = useState("");
+  const [experienceYears, setExperienceYears] = useState("");
 
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Get user type based on experience selection
+  const getUserType = () => {
+    const selected = experienceOptions.find(opt => opt.value === currentExperience);
+    return selected?.type || "";
+  };
+
+  const userType = getUserType();
+
   // Pre-fill full name from profile
-  useState(() => {
+  useEffect(() => {
     if (profile?.full_name) {
       setFullName(profile.full_name);
     }
-  });
+  }, [profile]);
 
   const toggleFeature = (featureId: string) => {
     setSelectedFeatures(prev => 
@@ -102,6 +130,17 @@ const Onboarding = () => {
       return;
     }
 
+    // Validate conditional fields
+    if (userType === "student" && (!collegeName || !courseName || !studyYear)) {
+      toast({ variant: "destructive", title: "Please fill in your academic details" });
+      return;
+    }
+
+    if (userType === "professional" && (!companyName || !role)) {
+      toast({ variant: "destructive", title: "Please fill in your professional details" });
+      return;
+    }
+
     if (selectedFeatures.length === 0) {
       toast({ variant: "destructive", title: "Please select at least one feature you're interested in" });
       return;
@@ -116,12 +155,20 @@ const Onboarding = () => {
 
     const { error } = await supabase.from("user_profiles_extended").insert({
       user_id: user.id,
-      user_type: currentExperience === "student" ? "student" : 
-                 currentExperience === "freelancer" || currentExperience === "entrepreneur" ? "other" : "professional",
+      user_type: userType === "student" ? "student" : userType === "other" ? "other" : "professional",
       current_experience: currentExperience,
       target_goal: targetGoal,
       referral_source: referralSource,
       interested_features: selectedFeatures,
+      // Student fields
+      college_name: userType === "student" ? collegeName : null,
+      course_name: userType === "student" ? courseName : null,
+      branch: userType === "student" ? branch : null,
+      study_year: userType === "student" ? studyYear as any : null,
+      // Professional fields
+      company_name: userType === "professional" ? companyName : null,
+      role: userType === "professional" ? role : null,
+      experience: userType === "professional" ? experienceYears : null,
       onboarding_completed: true,
     });
 
@@ -144,7 +191,7 @@ const Onboarding = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <main className="flex-1 flex flex-col items-center px-4 py-8 md:py-12">
+      <main className="flex-1 flex flex-col items-center px-4 py-8 md:py-12 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -159,7 +206,7 @@ const Onboarding = () => {
           </div>
 
           {/* Main Form Card */}
-          <div className="rounded-xl border border-border bg-card/50 p-6 md:p-8 space-y-8">
+          <div className="rounded-xl border border-border bg-card/50 p-6 md:p-8 space-y-6">
             {/* Full Name */}
             <div className="space-y-2">
               <Label className="text-muted-foreground">Full Name</Label>
@@ -174,7 +221,7 @@ const Onboarding = () => {
             {/* Experience & Goal Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-muted-foreground">Your current experience</Label>
+                <Label className="text-muted-foreground">Your current experience *</Label>
                 <Select value={currentExperience} onValueChange={setCurrentExperience}>
                   <SelectTrigger className="h-12 bg-muted/50 border-border">
                     <SelectValue placeholder="Select your experience" />
@@ -190,7 +237,7 @@ const Onboarding = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-muted-foreground">Your target/goal</Label>
+                <Label className="text-muted-foreground">Your target/goal *</Label>
                 <Select value={targetGoal} onValueChange={setTargetGoal}>
                   <SelectTrigger className="h-12 bg-muted/50 border-border">
                     <SelectValue placeholder="Select your goal" />
@@ -206,9 +253,138 @@ const Onboarding = () => {
               </div>
             </div>
 
+            {/* Conditional Student Fields */}
+            <AnimatePresence>
+              {userType === "student" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-4 overflow-hidden"
+                >
+                  <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-4">
+                    <div className="flex items-center gap-2 text-primary">
+                      <BookOpen className="w-5 h-5" />
+                      <span className="font-medium">Academic Details</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground">College/University Name *</Label>
+                        <div className="relative">
+                          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                          <Input
+                            value={collegeName}
+                            onChange={(e) => setCollegeName(e.target.value)}
+                            placeholder="e.g., IIT Delhi"
+                            className="h-11 pl-10 bg-muted/50 border-border"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground">Course Name *</Label>
+                        <Input
+                          value={courseName}
+                          onChange={(e) => setCourseName(e.target.value)}
+                          placeholder="e.g., B.Tech, MBA, BCA"
+                          className="h-11 bg-muted/50 border-border"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground">Branch/Specialization</Label>
+                        <Input
+                          value={branch}
+                          onChange={(e) => setBranch(e.target.value)}
+                          placeholder="e.g., Computer Science"
+                          className="h-11 bg-muted/50 border-border"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground">Year of Study *</Label>
+                        <Select value={studyYear} onValueChange={setStudyYear}>
+                          <SelectTrigger className="h-11 bg-muted/50 border-border">
+                            <Calendar className="w-5 h-5 mr-2 text-muted-foreground" />
+                            <SelectValue placeholder="Select year" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover border-border">
+                            {yearOptions.map((year) => (
+                              <SelectItem key={year.value} value={year.value}>{year.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Conditional Professional Fields */}
+            <AnimatePresence>
+              {userType === "professional" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-4 overflow-hidden"
+                >
+                  <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-4">
+                    <div className="flex items-center gap-2 text-primary">
+                      <Briefcase className="w-5 h-5" />
+                      <span className="font-medium">Professional Details</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground">Company Name *</Label>
+                        <div className="relative">
+                          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                          <Input
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            placeholder="e.g., Google, TCS"
+                            className="h-11 pl-10 bg-muted/50 border-border"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground">Role/Designation *</Label>
+                        <Input
+                          value={role}
+                          onChange={(e) => setRole(e.target.value)}
+                          placeholder="e.g., Software Engineer"
+                          className="h-11 bg-muted/50 border-border"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground">Years of Experience</Label>
+                        <Select value={experienceYears} onValueChange={setExperienceYears}>
+                          <SelectTrigger className="h-11 bg-muted/50 border-border">
+                            <SelectValue placeholder="Select experience" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover border-border">
+                            <SelectItem value="0-1 years">0-1 years</SelectItem>
+                            <SelectItem value="1-3 years">1-3 years</SelectItem>
+                            <SelectItem value="3-5 years">3-5 years</SelectItem>
+                            <SelectItem value="5-10 years">5-10 years</SelectItem>
+                            <SelectItem value="10+ years">10+ years</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Referral Source */}
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Where did you find UniDash</Label>
+              <Label className="text-muted-foreground">Where did you find UniDash *</Label>
               <Select value={referralSource} onValueChange={setReferralSource}>
                 <SelectTrigger className="h-12 bg-muted/50 border-border w-full md:w-1/2">
                   <SelectValue placeholder="Select source" />
