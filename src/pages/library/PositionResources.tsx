@@ -20,6 +20,10 @@ import {
   Globe,
   Search,
   X,
+  Star,
+  Target,
+  CheckCircle2,
+  BookOpen,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -57,6 +61,7 @@ const iconMap: Record<string, React.ElementType> = {
 
 // Local storage keys
 const STORAGE_KEY = "position-resources-progress";
+const FAVORITES_KEY = "position-resources-favorites";
 
 interface ProgressState {
   [roleId: string]: {
@@ -74,6 +79,7 @@ const PositionResources = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [progress, setProgress] = useState<ProgressState>({});
+  const [favorites, setFavorites] = useState<string[]>([]);
 
   // Load progress from local storage
   useEffect(() => {
@@ -86,6 +92,30 @@ const PositionResources = () => {
       }
     }
   }, []);
+
+  // Load favorites from local storage
+  useEffect(() => {
+    const stored = localStorage.getItem(FAVORITES_KEY);
+    if (stored) {
+      try {
+        setFavorites(JSON.parse(stored));
+      } catch {
+        console.error("Failed to parse favorites from local storage");
+      }
+    }
+  }, []);
+
+  // Save favorites to local storage
+  const toggleFavorite = (roleId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavorites((prev) => {
+      const newFavorites = prev.includes(roleId)
+        ? prev.filter((id) => id !== roleId)
+        : [...prev, roleId];
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
+      return newFavorites;
+    });
+  };
 
   // Calculate stats for each role
   const roleStats = useMemo(() => {
@@ -114,18 +144,61 @@ const PositionResources = () => {
         easy: counts.easy,
         medium: counts.medium,
         hard: counts.hard,
+        isFavorite: favorites.includes(role.id),
       };
     });
-  }, [progress]);
+  }, [progress, favorites]);
 
-  // Filter roles by search
-  const filteredRoles = useMemo(() => {
-    if (!searchQuery.trim()) return roleStats;
-    const query = searchQuery.toLowerCase();
-    return roleStats.filter((role) =>
-      role.name.toLowerCase().includes(query)
+  // Calculate global stats
+  const globalStats = useMemo(() => {
+    const totals = roleStats.reduce(
+      (acc, role) => ({
+        totalQuestions: acc.totalQuestions + role.totalQuestions,
+        solvedQuestions: acc.solvedQuestions + role.solvedQuestions,
+        easy: acc.easy + role.easy,
+        medium: acc.medium + role.medium,
+        hard: acc.hard + role.hard,
+      }),
+      { totalQuestions: 0, solvedQuestions: 0, easy: 0, medium: 0, hard: 0 }
     );
+
+    const percentage =
+      totals.totalQuestions > 0
+        ? Math.round((totals.solvedQuestions / totals.totalQuestions) * 100)
+        : 0;
+
+    const rolesStarted = roleStats.filter((r) => r.solvedQuestions > 0).length;
+    const rolesCompleted = roleStats.filter((r) => r.percentage === 100).length;
+
+    return {
+      ...totals,
+      percentage,
+      rolesStarted,
+      rolesCompleted,
+      totalRoles: roles.length,
+    };
+  }, [roleStats]);
+
+  // Filter and sort roles (favorites first)
+  const filteredRoles = useMemo(() => {
+    let filtered = roleStats;
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((role) =>
+        role.name.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort: favorites first, then by name
+    return [...filtered].sort((a, b) => {
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      return 0;
+    });
   }, [roleStats, searchQuery]);
+
+  const favoriteCount = favorites.length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -148,13 +221,81 @@ const PositionResources = () => {
       </header>
 
       <main className="p-4 md:p-6 lg:p-8 space-y-6">
+        {/* Global Progress Summary */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-border bg-card p-4 md:p-6"
+        >
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Main Progress */}
+            <div className="flex-1 space-y-4">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                <h2 className="font-semibold">Overall Progress</h2>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Questions Completed</span>
+                  <span className="font-medium">
+                    {globalStats.solvedQuestions}/{globalStats.totalQuestions} ({globalStats.percentage}%)
+                  </span>
+                </div>
+                <Progress value={globalStats.percentage} className="h-3" />
+              </div>
+              
+              {/* Difficulty Breakdown */}
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Badge
+                  variant="outline"
+                  className="bg-green-500/10 text-green-500 border-green-500/20"
+                >
+                  Easy: {globalStats.easy}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="bg-orange-500/10 text-orange-500 border-orange-500/20"
+                >
+                  Medium: {globalStats.medium}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="bg-red-500/10 text-red-500 border-red-500/20"
+                >
+                  Hard: {globalStats.hard}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-3 gap-3 lg:gap-4">
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <BookOpen className="h-5 w-5 mx-auto mb-1 text-primary" />
+                <p className="text-2xl font-bold">{globalStats.totalRoles}</p>
+                <p className="text-xs text-muted-foreground">Positions</p>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <Target className="h-5 w-5 mx-auto mb-1 text-blue-500" />
+                <p className="text-2xl font-bold">{globalStats.rolesStarted}</p>
+                <p className="text-xs text-muted-foreground">In Progress</p>
+              </div>
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <CheckCircle2 className="h-5 w-5 mx-auto mb-1 text-green-500" />
+                <p className="text-2xl font-bold">{globalStats.rolesCompleted}</p>
+                <p className="text-xs text-muted-foreground">Completed</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Search Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row gap-4"
+          transition={{ delay: 0.05 }}
+          className="flex flex-col sm:flex-row gap-4 items-center"
         >
-          <div className="relative flex-1">
+          <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search positions..."
@@ -173,6 +314,12 @@ const PositionResources = () => {
               </Button>
             )}
           </div>
+          {favoriteCount > 0 && (
+            <Badge variant="secondary" className="gap-1 whitespace-nowrap">
+              <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+              {favoriteCount} Starred
+            </Badge>
+          )}
         </motion.div>
 
         {/* Role Cards Grid */}
@@ -189,10 +336,14 @@ const PositionResources = () => {
                   key={role.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: index * 0.03 }}
+                  layout
                 >
                   <Card
-                    className="hover:shadow-lg transition-all cursor-pointer group h-full"
+                    className={cn(
+                      "hover:shadow-lg transition-all cursor-pointer group h-full relative",
+                      role.isFavorite && "ring-1 ring-yellow-500/30"
+                    )}
                     onClick={() => navigate(`/library/positions/${role.id}`)}
                   >
                     <CardHeader className="pb-3">
@@ -200,9 +351,29 @@ const PositionResources = () => {
                         <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                           <IconComponent className="h-6 w-6 text-primary" />
                         </div>
-                        <Badge variant="secondary" className="text-xs">
-                          {role.totalQuestions} questions
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                              "h-8 w-8 transition-colors",
+                              role.isFavorite
+                                ? "text-yellow-500 hover:text-yellow-600"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                            onClick={(e) => toggleFavorite(role.id, e)}
+                          >
+                            <Star
+                              className={cn(
+                                "h-4 w-4",
+                                role.isFavorite && "fill-current"
+                              )}
+                            />
+                          </Button>
+                          <Badge variant="secondary" className="text-xs">
+                            {role.totalQuestions} questions
+                          </Badge>
+                        </div>
                       </div>
                       <CardTitle className="text-lg mt-4">{role.name}</CardTitle>
                     </CardHeader>
