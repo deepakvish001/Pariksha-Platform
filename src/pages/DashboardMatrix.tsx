@@ -421,110 +421,110 @@ const DashboardMatrix = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background w-full">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="flex h-16 items-center gap-4 px-6">
+        <div className="flex h-14 sm:h-16 items-center gap-3 sm:gap-4 px-4 sm:px-6 lg:px-8">
           <SidebarTrigger />
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-orange flex items-center justify-center">
-              <LayoutGrid className="h-5 w-5 text-primary-foreground" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-gradient-orange flex items-center justify-center flex-shrink-0">
+              <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold">Progress Matrix</h1>
-              <p className="text-sm text-muted-foreground">Track your preparation across topics</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-bold truncate">Progress Matrix</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Track your preparation across topics</p>
             </div>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <main className="p-6 md:p-8 space-y-8">
+      <main className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8 w-full">
         {/* Overview Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6"
+          className="grid gap-2 sm:gap-3 lg:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
         >
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                  <Target className="h-5 w-5 text-primary" />
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                  <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Total</p>
-                  <p className="text-xl font-bold">{totalQuestions}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Total</p>
+                  <p className="text-lg sm:text-xl font-bold">{totalQuestions}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-green-500/20 flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Done</p>
-                  <p className="text-xl font-bold">{totalCompleted}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Done</p>
+                  <p className="text-lg sm:text-xl font-bold">{totalCompleted}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 border-yellow-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                  <Star className="h-5 w-5 text-yellow-500" />
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                  <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Revision</p>
-                  <p className="text-xl font-bold">{totalRevision}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Revision</p>
+                  <p className="text-lg sm:text-xl font-bold">{totalRevision}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                  <Flame className="h-5 w-5 text-orange-500" />
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                  <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Streak</p>
-                  <p className="text-xl font-bold">{streak}d</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Streak</p>
+                  <p className="text-lg sm:text-xl font-bold">{streak}d</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <Trophy className="h-5 w-5 text-purple-500" />
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                  <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Badges</p>
-                  <p className="text-xl font-bold">{earnedCount}/{achievements.length}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Badges</p>
+                  <p className="text-lg sm:text-xl font-bold">{earnedCount}/{achievements.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                  <Zap className="h-5 w-5 text-blue-500" />
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Progress</p>
-                  <p className="text-xl font-bold">{overallProgress}%</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Progress</p>
+                  <p className="text-lg sm:text-xl font-bold">{overallProgress}%</p>
                 </div>
               </div>
             </CardContent>
@@ -537,20 +537,20 @@ const DashboardMatrix = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
         >
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-                  <Trophy className="h-5 w-5 text-purple-500" />
+          <Card className="w-full">
+            <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0">
+                  <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
                 </div>
-                <div>
-                  <CardTitle className="text-lg">Achievements</CardTitle>
-                  <CardDescription>{earnedCount} of {achievements.length} unlocked</CardDescription>
+                <div className="min-w-0">
+                  <CardTitle className="text-base sm:text-lg">Achievements</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">{earnedCount} of {achievements.length} unlocked</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-4 justify-center sm:justify-start">
+            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+              <div className="flex flex-wrap gap-2 sm:gap-4 justify-center sm:justify-start">
                 {achievements.map((achievement) => (
                   <AchievementBadge
                     key={achievement.id}
@@ -571,61 +571,62 @@ const DashboardMatrix = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="w-full">
+            <CardContent className="px-4 sm:px-6 py-4 sm:pt-6">
               <CalendarHeatmap activityData={activityHeatmap} accountCreatedAt={accountCreatedAt} />
             </CardContent>
           </Card>
         </motion.div>
 
         {/* Goals and Activity Row */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           {/* Goals Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
+            className="h-full"
           >
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Daily & Weekly Goals</CardTitle>
-                    <CardDescription>Track your progress against targets</CardDescription>
+            <Card className="h-full">
+              <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <CardTitle className="text-base sm:text-lg">Daily & Weekly Goals</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Track your progress against targets</CardDescription>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => setGoalsModalOpen(true)}>
+                  <Button variant="ghost" size="icon" onClick={() => setGoalsModalOpen(true)} className="flex-shrink-0">
                     <Settings2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-xs sm:text-sm gap-2">
                     <span className="font-medium">Today's Progress</span>
-                    <span className={todayCompleted >= goals.daily_target ? "text-green-500 font-semibold" : "text-muted-foreground"}>
-                      {todayCompleted} / {goals.daily_target} topics
+                    <span className={`${todayCompleted >= goals.daily_target ? "text-green-500 font-semibold" : "text-muted-foreground"} text-right`}>
+                      {todayCompleted} / {goals.daily_target}
                       {todayCompleted >= goals.daily_target && " ✓"}
                     </span>
                   </div>
-                  <Progress value={dailyProgress} className="h-3" />
+                  <Progress value={dailyProgress} className="h-2 sm:h-3" />
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">This Week's Progress</span>
-                    <span className={weeklyTotal >= goals.weekly_target ? "text-green-500 font-semibold" : "text-muted-foreground"}>
-                      {weeklyTotal} / {goals.weekly_target} topics
+                  <div className="flex items-center justify-between text-xs sm:text-sm gap-2">
+                    <span className="font-medium">This Week</span>
+                    <span className={`${weeklyTotal >= goals.weekly_target ? "text-green-500 font-semibold" : "text-muted-foreground"} text-right`}>
+                      {weeklyTotal} / {goals.weekly_target}
                       {weeklyTotal >= goals.weekly_target && " ✓"}
                     </span>
                   </div>
-                  <Progress value={weeklyProgress} className="h-3" />
+                  <Progress value={weeklyProgress} className="h-2 sm:h-3" />
                 </div>
 
                 <div className="text-center pt-2">
                   {todayCompleted >= goals.daily_target ? (
-                    <p className="text-sm text-green-500 font-medium">🎉 Daily goal achieved!</p>
+                    <p className="text-xs sm:text-sm text-green-500 font-medium">🎉 Daily goal achieved!</p>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       {goals.daily_target - todayCompleted} more to reach today's goal
                     </p>
                   )}
@@ -639,34 +640,36 @@ const DashboardMatrix = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
+            className="h-full"
           >
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Weekly Activity</CardTitle>
-                    <CardDescription>Topics completed in the last 7 days</CardDescription>
+            <Card className="h-full">
+              <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="min-w-0">
+                    <CardTitle className="text-base sm:text-lg">Weekly Activity</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm hidden sm:block">Topics completed in the last 7 days</CardDescription>
                   </div>
-                  <Badge variant="secondary" className="text-lg px-3 py-1">
+                  <Badge variant="secondary" className="text-sm sm:text-lg px-2 sm:px-3 py-0.5 sm:py-1 flex-shrink-0">
                     {weeklyTotal} this week
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="h-[140px] w-full">
+              <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+                <div className="h-[120px] sm:h-[140px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={weeklyActivity} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <XAxis 
                         dataKey="day" 
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
                       />
                       <YAxis 
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
                         allowDecimals={false}
+                        width={25}
                       />
                       <Tooltip
                         contentStyle={{
@@ -695,43 +698,43 @@ const DashboardMatrix = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
         >
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
+          <Card className="w-full">
+            <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center flex-shrink-0">
+                    <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">Leaderboard</CardTitle>
-                    <CardDescription>Top performers</CardDescription>
+                  <div className="min-w-0">
+                    <CardTitle className="text-base sm:text-lg">Leaderboard</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Top performers</CardDescription>
                   </div>
                 </div>
                 {userRank > 0 && (
-                  <Badge variant="outline" className="text-base px-3 py-1">
-                    Your Rank: #{userRank}
+                  <Badge variant="outline" className="text-sm sm:text-base px-2 sm:px-3 py-0.5 sm:py-1 flex-shrink-0">
+                    Rank: #{userRank}
                   </Badge>
                 )}
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
               {leaderboard.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Complete topics to appear on the leaderboard!</p>
+                <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                  <Trophy className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+                  <p className="text-sm sm:text-base">Complete topics to appear on the leaderboard!</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {leaderboard.slice(0, 10).map((entry, index) => (
                     <div
                       key={entry.user_id}
-                      className={`flex items-center gap-4 p-3 rounded-lg transition-colors ${
+                      className={`flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-lg transition-colors ${
                         entry.user_id === user?.id 
                           ? 'bg-primary/10 border border-primary/20' 
                           : 'hover:bg-muted/50'
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                      <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm flex-shrink-0 ${
                         index === 0 ? 'bg-yellow-500/20 text-yellow-500' :
                         index === 1 ? 'bg-gray-400/20 text-gray-400' :
                         index === 2 ? 'bg-orange-600/20 text-orange-600' :
@@ -739,23 +742,23 @@ const DashboardMatrix = () => {
                       }`}>
                         {index + 1}
                       </div>
-                      <Avatar className="h-10 w-10">
+                      <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
                         <AvatarImage src={entry.avatar_url || undefined} />
-                        <AvatarFallback>
+                        <AvatarFallback className="text-xs sm:text-sm">
                           {entry.full_name?.charAt(0)?.toUpperCase() || '?'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">
+                        <p className="font-medium truncate text-sm sm:text-base">
                           {entry.full_name || 'Anonymous'}
-                          {entry.user_id === user?.id && <span className="text-primary ml-2">(You)</span>}
+                          {entry.user_id === user?.id && <span className="text-primary ml-1 sm:ml-2 text-xs sm:text-sm">(You)</span>}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
                           {entry.completed_count} completed
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-primary">{entry.completed_count}</p>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-lg sm:text-2xl font-bold text-primary">{entry.completed_count}</p>
                       </div>
                     </div>
                   ))}
@@ -766,7 +769,7 @@ const DashboardMatrix = () => {
         </motion.div>
 
         {/* Category Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {sheetDefinitions.map((sheet, index) => {
             const sheetProgress = progressData.get(sheet.id);
             const completed = sheetProgress?.completed || 0;
@@ -781,17 +784,17 @@ const DashboardMatrix = () => {
                 transition={{ delay: 0.3 + index * 0.05 }}
               >
                 <Card 
-                  className="hover:shadow-lg transition-shadow cursor-pointer group"
+                  className="hover:shadow-lg transition-shadow cursor-pointer group h-full"
                   onClick={() => navigate(sheet.route)}
                 >
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{sheet.name}</CardTitle>
-                      <Badge variant={progress >= 50 ? "default" : "secondary"}>
+                  <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-base sm:text-lg truncate">{sheet.name}</CardTitle>
+                      <Badge variant={progress >= 50 ? "default" : "secondary"} className="flex-shrink-0">
                         {progress}%
                       </Badge>
                     </div>
-                    <CardDescription className="flex items-center gap-4">
+                    <CardDescription className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm">
                       <span>{completed} of {sheet.total}</span>
                       {revision > 0 && (
                         <span className="flex items-center gap-1 text-yellow-500">
@@ -801,11 +804,11 @@ const DashboardMatrix = () => {
                       )}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Progress value={progress} className="h-2" />
-                    <div className="flex flex-wrap gap-2">
+                  <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
+                    <Progress value={progress} className="h-1.5 sm:h-2" />
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {sheet.topics.map((topic) => (
-                        <Badge key={topic} variant="outline" className="text-xs">
+                        <Badge key={topic} variant="outline" className="text-[10px] sm:text-xs">
                           {topic}
                         </Badge>
                       ))}
