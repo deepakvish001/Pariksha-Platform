@@ -190,25 +190,12 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
       
       {/* Heatmap Grid */}
       <div className="w-full overflow-x-auto pb-2">
-        <div className="flex">
-          {/* Day labels */}
-          <div className="flex flex-col gap-[2px] mr-2 pt-0">
-            <div className="h-[10px] text-[9px] text-muted-foreground leading-[10px]"></div>
-            <div className="h-[10px] text-[9px] text-muted-foreground leading-[10px]">Mon</div>
-            <div className="h-[10px] text-[9px] text-muted-foreground leading-[10px]"></div>
-            <div className="h-[10px] text-[9px] text-muted-foreground leading-[10px]">Wed</div>
-            <div className="h-[10px] text-[9px] text-muted-foreground leading-[10px]"></div>
-            <div className="h-[10px] text-[9px] text-muted-foreground leading-[10px]">Fri</div>
-            <div className="h-[10px] text-[9px] text-muted-foreground leading-[10px]"></div>
-          </div>
-          
-          {/* Month columns */}
-          <div className="flex gap-4">
-            {monthsData.map((monthData, monthIndex) => (
-              <div key={monthIndex} className="flex flex-col items-center">
-                {/* Month grid */}
-                <div className="flex gap-[2px]">
-                  {monthData.weeks.map((week, weekIndex) => (
+        <div className="flex gap-4">
+          {monthsData.map((monthData, monthIndex) => (
+            <div key={monthIndex} className="flex flex-col items-center">
+              {/* Month grid */}
+              <div className="flex gap-[2px]">
+                {monthData.weeks.map((week, weekIndex) => (
                   <div key={weekIndex} className="flex flex-col gap-[2px]">
                     {Array.from({ length: 7 }).map((_, dayIndex) => {
                       const day = week.find(d => d.date.getDay() === dayIndex);
@@ -245,7 +232,6 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
               </span>
             </div>
           ))}
-          </div>
         </div>
         
         {/* Legend */}
