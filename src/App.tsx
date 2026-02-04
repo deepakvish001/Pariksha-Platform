@@ -55,6 +55,7 @@ import AstraAI from "./pages/platform/AstraAI";
 import Resources from "./pages/platform/Resources";
 import Collections from "./pages/platform/Collections";
 import Affiliate from "./pages/platform/Affiliate";
+import PublicProfile from "./pages/PublicProfile";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/u/:username" element={<PublicProfile />} />
               <Route
                 path="/onboarding"
                 element={

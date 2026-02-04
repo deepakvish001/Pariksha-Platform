@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import { 
   User, 
   Mail, 
@@ -29,7 +30,9 @@ import {
   AlertCircle,
   Sparkles,
   ChevronRight,
-  Save
+  Save,
+  ExternalLink,
+  Share2
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +56,20 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import ImageCropper from "@/components/ImageCropper";
+import {
+  validateTwitterUrl,
+  validateLinkedInUrl,
+  validateGitHubUrl,
+  validateInstagramUrl,
+  validateLeetCodeUrl,
+  validateHackerRankUrl,
+  validateCodeForcesUrl,
+  validateCodeChefUrl,
+  validateGeeksForGeeksUrl,
+  validateGenericUrl,
+  validateUsername,
+} from "@/lib/validation";
 
 interface ExtendedProfile {
   id: string;
@@ -179,10 +196,15 @@ const DashboardProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
+  // Image cropper state
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string>("");
+  
   // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editSection, setEditSection] = useState<string>("basic");
   const [editForm, setEditForm] = useState<Partial<ExtendedProfile>>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   
   // Temp input states for array fields
   const [tempSkill, setTempSkill] = useState("");
@@ -252,9 +274,9 @@ const DashboardProfile = () => {
     return Math.round((filled / fields.length) * 100);
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
 
     if (!file.type.startsWith("image/")) {
       toast({ variant: "destructive", title: "Please select an image file" });
@@ -266,15 +288,30 @@ const DashboardProfile = () => {
       return;
     }
 
+    // Create object URL for cropper
+    const imageUrl = URL.createObjectURL(file);
+    setSelectedImage(imageUrl);
+    setCropperOpen(true);
+    
+    // Reset input so same file can be selected again
+    event.target.value = "";
+  };
+
+  const handleCroppedImage = async (croppedBlob: Blob) => {
+    if (!user) return;
+
     setIsUploadingAvatar(true);
+    setCropperOpen(false);
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
+      const fileName = `${user.id}/avatar.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, croppedBlob, { 
+          upsert: true,
+          contentType: "image/jpeg"
+        });
 
       if (uploadError) throw uploadError;
 
@@ -295,19 +332,79 @@ const DashboardProfile = () => {
       toast({ title: "Avatar updated!", description: "Your profile picture has been changed." });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Upload failed", description: error.message });
+    } finally {
+      setIsUploadingAvatar(false);
+      // Cleanup object URL
+      if (selectedImage) {
+        URL.revokeObjectURL(selectedImage);
+        setSelectedImage("");
+      }
     }
-
-    setIsUploadingAvatar(false);
   };
 
   const openEditModal = (section: string) => {
     setEditSection(section);
     setEditForm(extendedProfile || {});
+    setValidationErrors({});
     setIsEditModalOpen(true);
+  };
+
+  const validateAllUrls = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    // Username validation
+    const usernameResult = validateUsername(editForm.username || "");
+    if (!usernameResult.valid) errors.username = usernameResult.error!;
+
+    // Website
+    const websiteResult = validateGenericUrl(editForm.website || "");
+    if (!websiteResult.valid) errors.website = websiteResult.error!;
+
+    // Social URLs
+    const twitterResult = validateTwitterUrl(editForm.twitter_url || "");
+    if (!twitterResult.valid) errors.twitter_url = twitterResult.error!;
+
+    const linkedinResult = validateLinkedInUrl(editForm.linkedin_url || "");
+    if (!linkedinResult.valid) errors.linkedin_url = linkedinResult.error!;
+
+    const githubResult = validateGitHubUrl(editForm.github_url || "");
+    if (!githubResult.valid) errors.github_url = githubResult.error!;
+
+    const instagramResult = validateInstagramUrl(editForm.instagram_url || "");
+    if (!instagramResult.valid) errors.instagram_url = instagramResult.error!;
+
+    // Resume URL
+    const resumeResult = validateGenericUrl(editForm.resume_url || "");
+    if (!resumeResult.valid) errors.resume_url = resumeResult.error!;
+
+    // Coding profile URLs
+    const leetcodeResult = validateLeetCodeUrl(editForm.leetcode_url || "");
+    if (!leetcodeResult.valid) errors.leetcode_url = leetcodeResult.error!;
+
+    const hackerrankResult = validateHackerRankUrl(editForm.hackerrank_url || "");
+    if (!hackerrankResult.valid) errors.hackerrank_url = hackerrankResult.error!;
+
+    const codeforcesResult = validateCodeForcesUrl(editForm.codeforces_url || "");
+    if (!codeforcesResult.valid) errors.codeforces_url = codeforcesResult.error!;
+
+    const codechefResult = validateCodeChefUrl(editForm.codechef_url || "");
+    if (!codechefResult.valid) errors.codechef_url = codechefResult.error!;
+
+    const gfgResult = validateGeeksForGeeksUrl(editForm.geeksforgeeks_url || "");
+    if (!gfgResult.valid) errors.geeksforgeeks_url = gfgResult.error!;
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSaveProfile = async () => {
     if (!user || !extendedProfile?.id) return;
+
+    // Validate all URLs
+    if (!validateAllUrls()) {
+      toast({ variant: "destructive", title: "Validation Error", description: "Please fix the errors before saving." });
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -388,9 +485,18 @@ const DashboardProfile = () => {
       <input
         type="file"
         ref={fileInputRef}
-        onChange={handleAvatarUpload}
+        onChange={handleImageSelect}
         accept="image/*"
         className="hidden"
+      />
+
+      {/* Image Cropper Modal */}
+      <ImageCropper
+        open={cropperOpen}
+        onOpenChange={setCropperOpen}
+        imageSrc={selectedImage}
+        onCropComplete={handleCroppedImage}
+        aspectRatio={1}
       />
 
       {/* Header */}
@@ -506,10 +612,20 @@ const DashboardProfile = () => {
                   </div>
                 </div>
 
-                <Button className="gap-2" onClick={() => openEditModal("basic")}>
-                  <Edit2 className="h-4 w-4" />
-                  Edit Profile
-                </Button>
+                <div className="flex items-center gap-2">
+                  {extendedProfile?.username && (
+                    <Link to={`/u/${extendedProfile.username}`} target="_blank">
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Share2 className="h-4 w-4" />
+                        View Public Profile
+                      </Button>
+                    </Link>
+                  )}
+                  <Button className="gap-2" onClick={() => openEditModal("basic")}>
+                    <Edit2 className="h-4 w-4" />
+                    Edit Profile
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -811,8 +927,18 @@ const DashboardProfile = () => {
                   placeholder="your-username"
                   value={editForm.username || ""}
                   onChange={e => setEditForm(prev => ({ ...prev, username: e.target.value }))}
+                  className={validationErrors.username ? "border-destructive" : ""}
                 />
-                <p className="text-xs text-muted-foreground">This will be your unique identifier</p>
+                {validationErrors.username ? (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {validationErrors.username}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    This will be your unique identifier. Your public profile will be at /u/{editForm.username || "username"}
+                  </p>
+                )}
               </div>
             </TabsContent>
 
