@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import heroCharacter from "@/assets/hero-character-transparent.png";
+import heroCharacter from "@/assets/hero-3d-final.png";
 
 const Hero3DElement = () => {
   return (
@@ -60,21 +60,8 @@ const Hero3DElement = () => {
           delay: 0.6,
         }}
       />
-      <motion.div
-        className="absolute top-48 right-4 w-1.5 h-1.5 bg-orange-300 rounded-full"
-        animate={{
-          y: [8, -8, 8],
-          opacity: [0.3, 0.7, 0.3],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 1,
-        }}
-      />
 
-      {/* Main 3D character with dynamic animations */}
+      {/* Main 3D character with animations */}
       <motion.div
         className="relative z-10 w-full h-full flex items-center justify-center"
         initial={{ opacity: 0, scale: 0.8, y: 50 }}
@@ -87,8 +74,7 @@ const Hero3DElement = () => {
           className="w-full h-full object-contain"
           animate={{
             y: [-6, 6, -6],
-            rotate: [-1, 1, -1],
-            scale: [1, 1.02, 1],
+            rotate: [-0.5, 0.5, -0.5],
           }}
           transition={{
             duration: 4,
@@ -100,7 +86,7 @@ const Hero3DElement = () => {
 
       {/* Sparkle effects */}
       <motion.div
-        className="absolute top-20 right-20 w-1 h-1 bg-white rounded-full"
+        className="absolute top-20 right-20 w-1.5 h-1.5 bg-primary rounded-full"
         animate={{
           opacity: [0, 1, 0],
           scale: [0.5, 1.5, 0.5],
@@ -112,7 +98,7 @@ const Hero3DElement = () => {
         }}
       />
       <motion.div
-        className="absolute top-40 left-16 w-1 h-1 bg-white rounded-full"
+        className="absolute top-40 left-16 w-1 h-1 bg-orange-300 rounded-full"
         animate={{
           opacity: [0, 1, 0],
           scale: [0.5, 1.5, 0.5],
@@ -125,7 +111,7 @@ const Hero3DElement = () => {
         }}
       />
       <motion.div
-        className="absolute bottom-32 right-24 w-1 h-1 bg-white rounded-full"
+        className="absolute bottom-32 right-24 w-1 h-1 bg-primary/80 rounded-full"
         animate={{
           opacity: [0, 1, 0],
           scale: [0.5, 1.5, 0.5],
