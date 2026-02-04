@@ -147,7 +147,11 @@ export type Database = {
       }
       user_profiles_extended: {
         Row: {
+          aspirations: string[] | null
+          bio: string | null
           branch: string | null
+          codechef_url: string | null
+          codeforces_url: string | null
           college_name: string | null
           company_name: string | null
           course_name: string | null
@@ -155,24 +159,45 @@ export type Database = {
           current_experience: string | null
           email_notifications_enabled: boolean | null
           experience: string | null
+          geeksforgeeks_url: string | null
+          github_url: string | null
+          goals: string[] | null
+          hackerrank_url: string | null
           id: string
+          instagram_url: string | null
           interested_features: string[] | null
+          interests: string[] | null
+          leetcode_url: string | null
+          linkedin_url: string | null
+          location: string | null
           marketing_emails_enabled: boolean | null
           mobile_number: string | null
           new_feature_alerts_enabled: boolean | null
+          occupation: string | null
           onboarding_completed: boolean | null
           other_description: string | null
+          other_links: Json | null
+          profile_completion_percentage: number | null
           referral_source: string | null
+          resume_url: string | null
           role: string | null
+          skills: string[] | null
           study_year: Database["public"]["Enums"]["study_year"] | null
           target_goal: string | null
+          twitter_url: string | null
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
+          username: string | null
+          website: string | null
           weekly_digest_enabled: boolean | null
         }
         Insert: {
+          aspirations?: string[] | null
+          bio?: string | null
           branch?: string | null
+          codechef_url?: string | null
+          codeforces_url?: string | null
           college_name?: string | null
           company_name?: string | null
           course_name?: string | null
@@ -180,24 +205,45 @@ export type Database = {
           current_experience?: string | null
           email_notifications_enabled?: boolean | null
           experience?: string | null
+          geeksforgeeks_url?: string | null
+          github_url?: string | null
+          goals?: string[] | null
+          hackerrank_url?: string | null
           id?: string
+          instagram_url?: string | null
           interested_features?: string[] | null
+          interests?: string[] | null
+          leetcode_url?: string | null
+          linkedin_url?: string | null
+          location?: string | null
           marketing_emails_enabled?: boolean | null
           mobile_number?: string | null
           new_feature_alerts_enabled?: boolean | null
+          occupation?: string | null
           onboarding_completed?: boolean | null
           other_description?: string | null
+          other_links?: Json | null
+          profile_completion_percentage?: number | null
           referral_source?: string | null
+          resume_url?: string | null
           role?: string | null
+          skills?: string[] | null
           study_year?: Database["public"]["Enums"]["study_year"] | null
           target_goal?: string | null
+          twitter_url?: string | null
           updated_at?: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
+          username?: string | null
+          website?: string | null
           weekly_digest_enabled?: boolean | null
         }
         Update: {
+          aspirations?: string[] | null
+          bio?: string | null
           branch?: string | null
+          codechef_url?: string | null
+          codeforces_url?: string | null
           college_name?: string | null
           company_name?: string | null
           course_name?: string | null
@@ -205,20 +251,37 @@ export type Database = {
           current_experience?: string | null
           email_notifications_enabled?: boolean | null
           experience?: string | null
+          geeksforgeeks_url?: string | null
+          github_url?: string | null
+          goals?: string[] | null
+          hackerrank_url?: string | null
           id?: string
+          instagram_url?: string | null
           interested_features?: string[] | null
+          interests?: string[] | null
+          leetcode_url?: string | null
+          linkedin_url?: string | null
+          location?: string | null
           marketing_emails_enabled?: boolean | null
           mobile_number?: string | null
           new_feature_alerts_enabled?: boolean | null
+          occupation?: string | null
           onboarding_completed?: boolean | null
           other_description?: string | null
+          other_links?: Json | null
+          profile_completion_percentage?: number | null
           referral_source?: string | null
+          resume_url?: string | null
           role?: string | null
+          skills?: string[] | null
           study_year?: Database["public"]["Enums"]["study_year"] | null
           target_goal?: string | null
+          twitter_url?: string | null
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"]
+          username?: string | null
+          website?: string | null
           weekly_digest_enabled?: boolean | null
         }
         Relationships: []
@@ -273,7 +336,12 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      calculate_profile_completion: {
+        Args: {
+          profile_row: Database["public"]["Tables"]["user_profiles_extended"]["Row"]
+        }
+        Returns: number
+      }
     }
     Enums: {
       study_year:
