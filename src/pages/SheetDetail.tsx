@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   CheckSquare, 
-  Square, 
+  Square,
   Youtube, 
   FileText, 
   ExternalLink, 
@@ -842,10 +842,12 @@ function SubSectionCard({
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-b border-border/30 last:border-b-0">
       <CollapsibleTrigger className="flex items-center justify-between w-full py-4 px-4 hover:bg-muted/30 transition-colors group">
         <div className="flex items-center gap-2">
-          <ChevronRight className={cn(
-            "h-4 w-4 text-muted-foreground transition-transform",
-            isOpen && "rotate-90"
-          )} />
+          <motion.div
+            animate={{ rotate: isOpen ? 90 : 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </motion.div>
           <span className="font-medium text-sm">{subSection.title}</span>
         </div>
         <div className="flex items-center gap-4">
@@ -855,29 +857,38 @@ function SubSectionCard({
           </span>
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-border/30 hover:bg-transparent">
-                <TableHead className="w-16 text-xs font-medium">Status</TableHead>
-                <TableHead className="text-xs font-medium">Problem</TableHead>
-                <TableHead className="w-20 text-xs font-medium text-center">
-                  <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px]">Plus</Badge>
-                </TableHead>
-                <TableHead className="w-24 text-xs font-medium text-center">
-                  Resource
-                  <div className="text-[10px] text-muted-foreground">
-                    <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px] mt-0.5">Plus</Badge>
-                  </div>
-                </TableHead>
-                <TableHead className="w-24 text-xs font-medium text-center">Resource</TableHead>
-                <TableHead className="w-20 text-xs font-medium text-center">Practice</TableHead>
-                <TableHead className="w-16 text-xs font-medium text-center">Note</TableHead>
-                <TableHead className="w-20 text-xs font-medium text-center">Revision</TableHead>
-                <TableHead className="w-24 text-xs font-medium text-center">Difficulty</TableHead>
-              </TableRow>
-            </TableHeader>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <CollapsibleContent forceMount asChild>
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border/30 hover:bg-transparent">
+                      <TableHead className="w-16 text-xs font-medium">Status</TableHead>
+                      <TableHead className="text-xs font-medium">Problem</TableHead>
+                      <TableHead className="w-20 text-xs font-medium text-center">
+                        <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px]">Plus</Badge>
+                      </TableHead>
+                      <TableHead className="w-24 text-xs font-medium text-center">
+                        Resource
+                        <div className="text-[10px] text-muted-foreground">
+                          <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px] mt-0.5">Plus</Badge>
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-24 text-xs font-medium text-center">Resource</TableHead>
+                      <TableHead className="w-20 text-xs font-medium text-center">Practice</TableHead>
+                      <TableHead className="w-16 text-xs font-medium text-center">Note</TableHead>
+                      <TableHead className="w-20 text-xs font-medium text-center">Revision</TableHead>
+                      <TableHead className="w-24 text-xs font-medium text-center">Difficulty</TableHead>
+                    </TableRow>
+                  </TableHeader>
             <TableBody>
               {subSection.topics.map(topic => (
                 <TopicRow 
@@ -888,10 +899,13 @@ function SubSectionCard({
                   onToggleRevision={onToggleRevision}
                 />
               ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CollapsibleContent>
+                  </TableBody>
+                </Table>
+              </div>
+            </motion.div>
+          </CollapsibleContent>
+        )}
+      </AnimatePresence>
     </Collapsible>
   );
 }
@@ -917,10 +931,12 @@ function SectionCard({
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-b border-border/50">
       <CollapsibleTrigger className="flex items-center justify-between w-full py-4 px-4 hover:bg-muted/30 transition-colors group">
         <div className="flex items-center gap-3">
-          <ChevronDown className={cn(
-            "h-5 w-5 text-muted-foreground transition-transform",
-            !isOpen && "-rotate-90"
-          )} />
+          <motion.div
+            animate={{ rotate: isOpen ? 0 : -90 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+          </motion.div>
           <span className="font-medium">{section.title}</span>
         </div>
         <div className="flex items-center gap-4">
@@ -930,19 +946,42 @@ function SectionCard({
           </span>
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="ml-4 border-l border-border/30">
-          {section.subSections.map(subSection => (
-            <SubSectionCard 
-              key={subSection.id} 
-              subSection={subSection} 
-              onToggleTopic={onToggleTopic}
-              onOpenNote={onOpenNote}
-              onToggleRevision={onToggleRevision}
-            />
-          ))}
-        </div>
-      </CollapsibleContent>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <CollapsibleContent forceMount asChild>
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              className="overflow-hidden"
+            >
+              <motion.div 
+                className="ml-4 border-l border-border/30"
+                initial={{ x: -10 }}
+                animate={{ x: 0 }}
+                transition={{ duration: 0.25, delay: 0.05 }}
+              >
+                {section.subSections.map((subSection, index) => (
+                  <motion.div
+                    key={subSection.id}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, delay: index * 0.03 }}
+                  >
+                    <SubSectionCard 
+                      subSection={subSection} 
+                      onToggleTopic={onToggleTopic}
+                      onOpenNote={onOpenNote}
+                      onToggleRevision={onToggleRevision}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
+          </CollapsibleContent>
+        )}
+      </AnimatePresence>
     </Collapsible>
   );
 }
