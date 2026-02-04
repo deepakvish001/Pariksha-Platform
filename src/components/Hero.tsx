@@ -4,18 +4,20 @@ import { ArrowRight } from "lucide-react";
 const Hero = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
+      {/* Background Image - Only visible in dark mode */}
       <div 
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 dark:block hidden"
         style={{
           backgroundImage: `url(${heroBg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center bottom',
         }}
       >
-        {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
       </div>
+      
+      {/* Light mode background */}
+      <div className="absolute inset-0 z-0 dark:hidden block bg-gradient-to-b from-primary/5 via-background to-background" />
 
       {/* Content */}
       <div className="relative z-10 section-container text-center pt-20 pb-32">

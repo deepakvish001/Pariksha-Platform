@@ -141,6 +141,10 @@
     box-shadow: var(--shadow-glow);
   }
 
+  .bg-gradient-orange {
+    background: var(--gradient-orange);
+  }
+
   .gradient-text {
     @apply bg-clip-text text-transparent;
     background-image: var(--gradient-orange);

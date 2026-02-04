@@ -5,9 +5,9 @@ import ScrollReveal from "./ScrollReveal";
 const CTA = () => {
   return (
     <section className="relative py-24 overflow-hidden">
-      {/* Background */}
+      {/* Background - Dark mode with image */}
       <div 
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 dark:block hidden"
         style={{
           backgroundImage: `url(${heroBg})`,
           backgroundSize: 'cover',
@@ -16,6 +16,9 @@ const CTA = () => {
       >
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/40" />
       </div>
+      
+      {/* Light mode background */}
+      <div className="absolute inset-0 z-0 dark:hidden block bg-gradient-to-b from-primary/10 via-primary/5 to-background" />
 
       {/* Content */}
       <div className="relative z-10 section-container text-center">
