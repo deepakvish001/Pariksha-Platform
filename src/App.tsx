@@ -26,6 +26,7 @@ import SheetDetail from "./pages/SheetDetail";
 import PositionResources from "./pages/library/PositionResources";
 import PositionDetail from "./pages/library/PositionDetail";
 import CompanyResources from "./pages/library/CompanyResources";
+import CompanyDetail from "./pages/library/CompanyDetail";
 import MassRecruitment from "./pages/library/MassRecruitment";
 import InterviewQuestions from "./pages/library/InterviewQuestions";
 import DSAQuestions from "./pages/library/DSAQuestions";
@@ -108,6 +109,7 @@ const App = () => (
                   <Route path="positions" element={<PositionResources />} />
                   <Route path="positions/:roleId" element={<PositionDetail />} />
                   <Route path="companies" element={<CompanyResources />} />
+                  <Route path="companies/:companyId" element={<CompanyDetail />} />
                   <Route path="recruitment" element={<MassRecruitment />} />
                   <Route path="interview" element={<InterviewQuestions />} />
                   <Route path="dsa" element={<DSAQuestions />} />
