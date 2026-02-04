@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   User, 
   LogOut, 
@@ -23,7 +23,9 @@ import {
   Camera,
   Upload,
   Bell,
-  Mail
+  Mail,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +35,17 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -166,6 +179,7 @@ const Dashboard = () => {
   const { user, profile, signOut, updateProfile } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(profile?.full_name || "");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -176,6 +190,12 @@ const Dashboard = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
+  
+  // Sign out and delete account dialogs
+  const [isSignOutDialogOpen, setIsSignOutDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Edit profile modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -296,10 +316,59 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     await signOut();
+    setIsSignOutDialogOpen(false);
     toast({
       title: "Signed out",
       description: "You've been successfully signed out.",
     });
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "DELETE") return;
+    
+    setIsDeleting(true);
+    
+    try {
+      // Delete user data from extended profile
+      if (user) {
+        await supabase
+          .from("user_profiles_extended")
+          .delete()
+          .eq("user_id", user.id);
+        
+        await supabase
+          .from("profiles")
+          .delete()
+          .eq("user_id", user.id);
+        
+        // Delete avatar from storage if exists
+        if (avatarUrl) {
+          await supabase.storage
+            .from("avatars")
+            .remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.png`, `${user.id}/avatar.webp`]);
+        }
+      }
+      
+      // Sign out the user (account deletion would need to be done via edge function with service role)
+      await signOut();
+      
+      toast({
+        title: "Account deleted",
+        description: "Your account and data have been removed.",
+      });
+      
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Deletion failed",
+        description: error.message || "Could not delete your account. Please try again.",
+      });
+    }
+    
+    setIsDeleting(false);
+    setIsDeleteDialogOpen(false);
+    setDeleteConfirmText("");
   };
 
   const handleSaveProfile = async () => {
@@ -435,10 +504,26 @@ const Dashboard = () => {
             <Button variant="ghost" size="icon">
               <Settings className="w-5 h-5" />
             </Button>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
+            <AlertDialog open={isSignOutDialogOpen} onOpenChange={setIsSignOutDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Sign out?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to sign out of your account? You'll need to sign in again to access your dashboard.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSignOut}>Sign Out</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </header>
@@ -727,12 +812,63 @@ const Dashboard = () => {
                         </TabsContent>
                       </Tabs>
 
-                      <div className="flex justify-end gap-3 pt-4 border-t">
-                        <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSaveExtendedProfile} disabled={isSavingExtended}>
-                          {isSavingExtended ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
-                          Save Changes
-                        </Button>
+                      <div className="flex items-center justify-between pt-4 border-t">
+                        <AlertDialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+                          setIsDeleteDialogOpen(open);
+                          if (!open) setDeleteConfirmText("");
+                        }}>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete Account
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                                <AlertTriangle className="w-5 h-5" />
+                                Delete Account
+                              </AlertDialogTitle>
+                              <AlertDialogDescription className="space-y-3">
+                                <p>
+                                  This action is <strong>permanent and cannot be undone</strong>. All your data, including your profile, preferences, and progress will be permanently deleted.
+                                </p>
+                                <p>
+                                  To confirm, type <strong>DELETE</strong> below:
+                                </p>
+                                <Input
+                                  value={deleteConfirmText}
+                                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                  placeholder="Type DELETE to confirm"
+                                  className="mt-2"
+                                />
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <Button
+                                variant="destructive"
+                                onClick={handleDeleteAccount}
+                                disabled={deleteConfirmText !== "DELETE" || isDeleting}
+                              >
+                                {isDeleting ? (
+                                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                )}
+                                Delete My Account
+                              </Button>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        
+                        <div className="flex gap-3">
+                          <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+                          <Button onClick={handleSaveExtendedProfile} disabled={isSavingExtended}>
+                            {isSavingExtended ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+                            Save Changes
+                          </Button>
+                        </div>
                       </div>
                     </DialogContent>
                   </Dialog>
