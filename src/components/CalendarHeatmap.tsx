@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 interface ActivityData {
   [date: string]: number;
 }
@@ -189,8 +189,8 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
       </div>
       
       {/* Heatmap Grid */}
-      <div className="w-full overflow-x-auto pb-2">
-        <div className="flex gap-4">
+      <ScrollArea className="w-full whitespace-nowrap">
+        <div className="flex gap-4 pb-4">
           {monthsData.map((monthData, monthIndex) => (
             <div key={monthIndex} className="flex flex-col items-center">
               {/* Month grid */}
@@ -233,9 +233,11 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
             </div>
           ))}
         </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
         
-        {/* Legend */}
-        <div className="flex items-center justify-end gap-2 mt-4">
+      {/* Legend */}
+      <div className="flex items-center justify-end gap-2 mt-4">
           <span className="text-xs text-muted-foreground">Less</span>
           <div className="flex gap-[2px]">
             <Tooltip>
@@ -281,7 +283,6 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
           </div>
           <span className="text-xs text-muted-foreground">More</span>
         </div>
-      </div>
     </div>
   );
 };
