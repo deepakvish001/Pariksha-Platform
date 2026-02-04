@@ -159,6 +159,16 @@ const CompanyDetail = () => {
 
   const handleExpandAll = () => {
     setExpandedQuestionIds(new Set(questionsWithAnswers));
+    // Smooth scroll to first question with answer after a short delay for animation
+    if (questionsWithAnswers.length > 0) {
+      setTimeout(() => {
+        const firstQuestionId = questionsWithAnswers[0];
+        const element = document.querySelector(`[data-question-id="${firstQuestionId}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+    }
   };
 
   const handleCollapseAll = () => {
@@ -311,7 +321,23 @@ const CompanyDetail = () => {
               />
             </div>
             {questionsWithAnswers.length > 0 && (
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                {/* Expanded count badge */}
+                <AnimatePresence>
+                  {expandedQuestionIds.size > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <Badge variant="secondary" className="h-10 px-3 text-sm font-medium">
+                        {expandedQuestionIds.size}/{questionsWithAnswers.length} expanded
+                      </Badge>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                
                 <AnimatePresence mode="wait">
                   {expandedQuestionIds.size < questionsWithAnswers.length && (
                     <motion.div
@@ -536,7 +562,7 @@ const QuestionsTable = ({
             const isExpanded = expandedIds.has(question.id);
 
             return (
-              <div key={question.id}>
+              <div key={question.id} data-question-id={question.id}>
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
