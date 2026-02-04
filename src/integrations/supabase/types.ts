@@ -289,10 +289,12 @@ export type Database = {
       user_topic_progress: {
         Row: {
           completed: boolean
+          completed_at: string | null
           created_at: string
           id: string
           is_revision: boolean
           note: string | null
+          review_count: number
           sheet_id: string
           topic_id: string
           updated_at: string
@@ -300,10 +302,12 @@ export type Database = {
         }
         Insert: {
           completed?: boolean
+          completed_at?: string | null
           created_at?: string
           id?: string
           is_revision?: boolean
           note?: string | null
+          review_count?: number
           sheet_id: string
           topic_id: string
           updated_at?: string
@@ -311,10 +315,12 @@ export type Database = {
         }
         Update: {
           completed?: boolean
+          completed_at?: string | null
           created_at?: string
           id?: string
           is_revision?: boolean
           note?: string | null
+          review_count?: number
           sheet_id?: string
           topic_id?: string
           updated_at?: string

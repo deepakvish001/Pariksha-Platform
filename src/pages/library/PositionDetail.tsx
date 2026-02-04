@@ -78,6 +78,8 @@ import {
 import ProgressSummaryCard from "@/components/library/ProgressSummaryCard";
 import QuestionRow from "@/components/library/QuestionRow";
 import CategorySection from "@/components/library/CategorySection";
+import SpacedRepetitionPanel from "@/components/library/SpacedRepetitionPanel";
+import { useSpacedRepetition } from "@/hooks/useSpacedRepetition";
 
 // Icon mapping for roles
 const iconMap: Record<string, React.ElementType> = {
@@ -113,6 +115,8 @@ interface ProgressState {
         solved: boolean;
         revision: boolean;
         note?: string;
+        completedAt?: string;
+        reviewCount?: number;
       };
     };
   };
@@ -317,6 +321,7 @@ const PositionDetail = () => {
   // Toggle solved status with confetti
   const toggleSolved = useCallback((questionId: number, categoryId: string) => {
     const wasSolved = progress[selectedRole]?.[categoryId]?.[questionId]?.solved;
+    const now = new Date().toISOString();
     
     setProgress((prev) => ({
       ...prev,
@@ -327,6 +332,10 @@ const PositionDetail = () => {
           [questionId]: {
             ...prev[selectedRole]?.[categoryId]?.[questionId],
             solved: !wasSolved,
+            // Set completedAt when marking as solved, clear when unsolved
+            completedAt: wasSolved ? undefined : now,
+            // Reset review count when marking as solved
+            reviewCount: wasSolved ? prev[selectedRole]?.[categoryId]?.[questionId]?.reviewCount : 0,
           },
         },
       },
@@ -343,6 +352,35 @@ const PositionDetail = () => {
       });
       setTimeout(() => setLastCompletedId(null), 1000);
     }
+  }, [selectedRole, progress]);
+
+  // Mark a question as reviewed for spaced repetition
+  const markAsReviewed = useCallback((questionId: number, categoryId: string) => {
+    const now = new Date().toISOString();
+    const currentReviewCount = progress[selectedRole]?.[categoryId]?.[questionId]?.reviewCount || 0;
+    
+    setProgress((prev) => ({
+      ...prev,
+      [selectedRole]: {
+        ...prev[selectedRole],
+        [categoryId]: {
+          ...prev[selectedRole]?.[categoryId],
+          [questionId]: {
+            ...prev[selectedRole]?.[categoryId]?.[questionId],
+            completedAt: now,
+            reviewCount: currentReviewCount + 1,
+          },
+        },
+      },
+    }));
+
+    // Light confetti for review completion
+    confetti({
+      particleCount: 30,
+      spread: 40,
+      origin: { y: 0.7 },
+      colors: ['#3b82f6', '#60a5fa', '#93c5fd'],
+    });
   }, [selectedRole, progress]);
 
   // Toggle revision status
@@ -504,6 +542,47 @@ const PositionDetail = () => {
     return Object.values(questionsByCategory).reduce((sum, qs) => sum + qs.length, 0);
   }, [questionsByCategory]);
 
+  // Spaced repetition hook
+  const { dueQuestions, stats: spacedRepStats } = useSpacedRepetition(progress, selectedRole);
+
+  // Get question details for spaced repetition panel
+  const getQuestionDetails = useCallback((questionId: number, categoryId: string) => {
+    const category = categories.find((c) => c.id === categoryId);
+    if (!category) return undefined;
+    
+    const questions = getQuestions(selectedRole, categoryId);
+    const question = questions.find((q) => q.id === questionId);
+    if (!question) return undefined;
+    
+    return {
+      ...question,
+      categoryId,
+      categoryName: category.name,
+    };
+  }, [selectedRole]);
+
+  // Scroll to a question in the list
+  const scrollToQuestion = useCallback((questionId: number, categoryId: string) => {
+    // Expand the section if collapsed
+    if (!openSections.has(categoryId)) {
+      setOpenSections((prev) => new Set([...prev, categoryId]));
+    }
+    
+    // Scroll after a short delay for section to expand
+    setTimeout(() => {
+      const element = document.querySelector(
+        `[data-question-id="${categoryId}-${questionId}"]`
+      );
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.classList.add("ring-2", "ring-primary", "ring-offset-2");
+        setTimeout(() => {
+          element.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+        }, 2000);
+      }
+    }, 300);
+  }, [openSections]);
+
   return (
     <TooltipProvider delayDuration={300}>
       <div className="min-h-screen bg-background">
@@ -541,6 +620,15 @@ const PositionDetail = () => {
         <main className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
           {/* Progress Summary Card */}
           <ProgressSummaryCard stats={progressStats} />
+
+          {/* Spaced Repetition Panel */}
+          <SpacedRepetitionPanel
+            dueQuestions={dueQuestions}
+            stats={spacedRepStats}
+            getQuestionDetails={getQuestionDetails}
+            onReviewQuestion={markAsReviewed}
+            onScrollToQuestion={scrollToQuestion}
+          />
 
           {/* Main Content Card */}
           <motion.div
