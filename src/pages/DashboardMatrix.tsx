@@ -118,6 +118,7 @@ const DashboardMatrix = () => {
   const [activityHeatmap, setActivityHeatmap] = useState<{ [date: string]: number }>({});
   const [earnedAchievements, setEarnedAchievements] = useState<Map<string, string>>(new Map());
   const [totalRevision, setTotalRevision] = useState(0);
+  const [accountCreatedAt, setAccountCreatedAt] = useState<string | undefined>(undefined);
   
 
   useEffect(() => {
@@ -128,6 +129,11 @@ const DashboardMatrix = () => {
       }
 
       try {
+        // Set account creation date from user metadata
+        if (user.created_at) {
+          setAccountCreatedAt(user.created_at);
+        }
+
         // Fetch all data in parallel
         const [progressResult, goalsResult, leaderboardResult, achievementsResult] = await Promise.all([
           supabase
@@ -567,7 +573,7 @@ const DashboardMatrix = () => {
         >
           <Card>
             <CardContent className="pt-6">
-              <CalendarHeatmap activityData={activityHeatmap} />
+              <CalendarHeatmap activityData={activityHeatmap} accountCreatedAt={accountCreatedAt} />
             </CardContent>
           </Card>
         </motion.div>
