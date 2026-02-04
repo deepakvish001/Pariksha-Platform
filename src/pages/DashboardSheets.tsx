@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FileSpreadsheet, Search, Filter, Star, ExternalLink, BookOpen } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import MobileFAB from "@/components/MobileFAB";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -190,6 +191,9 @@ const DashboardSheets = () => {
               </TabsContent>
             </Tabs>
         </main>
+
+        {/* Mobile FAB */}
+        <MobileFAB />
       </div>
     );
   };

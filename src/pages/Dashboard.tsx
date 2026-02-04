@@ -56,6 +56,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import MobileFAB from "@/components/MobileFAB";
 
 interface ExtendedProfile {
   id: string;
@@ -1033,6 +1034,9 @@ const Dashboard = () => {
           </div>
         </motion.div>
       </main>
+
+      {/* Mobile FAB */}
+      <MobileFAB />
     </div>
   );
 };
