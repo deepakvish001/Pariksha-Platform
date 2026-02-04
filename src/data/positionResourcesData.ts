@@ -5,6 +5,7 @@ export interface Question {
   id: number;
   text: string;
   difficulty: Difficulty;
+  answer?: string;
 }
 
 export interface RoleData {
@@ -50,8 +51,64 @@ export const categories: CategoryData[] = [
 export const questionsData: Record<string, Record<string, Question[]>> = {
   "backend-developer": {
     "interview-questions": [
-      { id: 1, text: "What is middleware in web frameworks and how is it used?", difficulty: "Easy" },
-      { id: 2, text: "How does HTTP caching work and which headers control it?", difficulty: "Easy" },
+      { 
+        id: 1, 
+        text: "What is middleware in web frameworks and how is it used?", 
+        difficulty: "Easy",
+        answer: `Middleware is software that acts as an intermediary layer between the incoming HTTP request and the final route handler in web applications.
+
+**How it works:**
+1. Request comes in → Middleware processes it → Route handler responds
+2. Can modify request/response objects
+3. Can end the request-response cycle
+4. Can call the next middleware in the stack
+
+**Common use cases:**
+- **Authentication**: Verify JWT tokens or session cookies
+- **Logging**: Record request details for debugging
+- **CORS handling**: Add cross-origin headers
+- **Rate limiting**: Throttle requests
+- **Body parsing**: Parse JSON/form data
+
+\`\`\`javascript
+// Express.js middleware example
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization;
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  // Verify token...
+  next(); // Pass to next middleware/handler
+};
+\`\`\``
+      },
+      { 
+        id: 2, 
+        text: "How does HTTP caching work and which headers control it?", 
+        difficulty: "Easy",
+        answer: `HTTP caching stores copies of responses to reduce server load and improve performance.
+
+**Key Cache Headers:**
+
+| Header | Purpose |
+|--------|---------|
+| \`Cache-Control\` | Main directive (max-age, no-cache, no-store) |
+| \`ETag\` | Unique identifier for resource version |
+| \`Last-Modified\` | Timestamp of last change |
+| \`Expires\` | Absolute expiration date (legacy) |
+
+**Cache-Control Directives:**
+- \`max-age=3600\` - Cache for 1 hour
+- \`no-cache\` - Revalidate before using
+- \`no-store\` - Never cache (sensitive data)
+- \`private\` - Only browser can cache
+- \`public\` - CDNs can cache
+
+**Validation Flow:**
+1. Browser sends \`If-None-Match: <etag>\` or \`If-Modified-Since: <date>\`
+2. Server returns \`304 Not Modified\` if unchanged
+3. Browser uses cached version`
+      },
       { id: 3, text: "Explain REST vs. GraphQL and trade-offs.", difficulty: "Easy" },
       { id: 4, text: "What is CORS and how do you configure it?", difficulty: "Easy" },
       { id: 5, text: "How do you secure sensitive data at rest?", difficulty: "Easy" },
@@ -102,7 +159,46 @@ export const questionsData: Record<string, Record<string, Question[]>> = {
       { id: 50, text: "What is service mesh and when would you use it?", difficulty: "Hard" },
     ],
     "dsa-questions": [
-      { id: 1, text: "Implement a function to reverse a linked list.", difficulty: "Easy" },
+      { 
+        id: 1, 
+        text: "Implement a function to reverse a linked list.", 
+        difficulty: "Easy",
+        answer: `**Iterative Approach** (O(n) time, O(1) space):
+
+\`\`\`javascript
+function reverseList(head) {
+  let prev = null;
+  let current = head;
+  
+  while (current !== null) {
+    const next = current.next; // Save next
+    current.next = prev;       // Reverse pointer
+    prev = current;            // Move prev forward
+    current = next;            // Move current forward
+  }
+  
+  return prev; // New head
+}
+\`\`\`
+
+**Recursive Approach** (O(n) time, O(n) space):
+
+\`\`\`javascript
+function reverseListRecursive(head) {
+  if (head === null || head.next === null) {
+    return head;
+  }
+  
+  const newHead = reverseListRecursive(head.next);
+  head.next.next = head;
+  head.next = null;
+  
+  return newHead;
+}
+\`\`\`
+
+**Key insight**: At each step, we reverse the pointer direction and move forward.`
+      },
       { id: 2, text: "Find the middle element of a linked list.", difficulty: "Easy" },
       { id: 3, text: "Check if a string is a palindrome.", difficulty: "Easy" },
       { id: 4, text: "Implement binary search on a sorted array.", difficulty: "Easy" },
@@ -112,7 +208,51 @@ export const questionsData: Record<string, Record<string, Question[]>> = {
       { id: 8, text: "Find the first non-repeating character in a string.", difficulty: "Easy" },
       { id: 9, text: "Merge two sorted arrays.", difficulty: "Easy" },
       { id: 10, text: "Count occurrences of an element in an array.", difficulty: "Easy" },
-      { id: 11, text: "Implement LRU Cache.", difficulty: "Medium" },
+      { 
+        id: 11, 
+        text: "Implement LRU Cache.", 
+        difficulty: "Medium",
+        answer: `LRU (Least Recently Used) Cache evicts the least recently accessed item when capacity is exceeded.
+
+**Data Structures:**
+- **HashMap**: O(1) lookup by key
+- **Doubly Linked List**: O(1) removal and insertion for ordering
+
+\`\`\`javascript
+class LRUCache {
+  constructor(capacity) {
+    this.capacity = capacity;
+    this.cache = new Map(); // Maintains insertion order in JS
+  }
+  
+  get(key) {
+    if (!this.cache.has(key)) return -1;
+    
+    // Move to end (most recently used)
+    const value = this.cache.get(key);
+    this.cache.delete(key);
+    this.cache.set(key, value);
+    return value;
+  }
+  
+  put(key, value) {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    }
+    
+    this.cache.set(key, value);
+    
+    // Evict LRU if over capacity
+    if (this.cache.size > this.capacity) {
+      const lruKey = this.cache.keys().next().value;
+      this.cache.delete(lruKey);
+    }
+  }
+}
+\`\`\`
+
+**Time Complexity**: O(1) for both get and put operations.`
+      },
       { id: 12, text: "Find the longest substring without repeating characters.", difficulty: "Medium" },
       { id: 13, text: "Detect a cycle in a linked list.", difficulty: "Medium" },
       { id: 14, text: "Implement BFS and DFS for a graph.", difficulty: "Medium" },

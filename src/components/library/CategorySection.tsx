@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, Sparkles, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ interface QuestionWithMeta {
   difficulty: Difficulty;
   categoryId: string;
   categoryName: string;
+  answer?: string;
 }
 
 interface CategorySectionProps {
@@ -64,6 +65,22 @@ const CategorySection = ({
   onToggleRevision,
   onOpenNote,
 }: CategorySectionProps) => {
+  // Track which question's answer is expanded (only one at a time)
+  const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
+
+  const toggleAnswer = useCallback((questionId: number, categoryIdParam: string) => {
+    const key = `${categoryIdParam}-${questionId}`;
+    setExpandedQuestion((prev) => (prev === key ? null : key));
+  }, []);
+
+  // Auto-collapse answer when section closes
+  const handleOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      setExpandedQuestion(null);
+    }
+    onOpenChange(open);
+  }, [onOpenChange]);
+
   const stats = useMemo(() => {
     const total = questions.length;
     const solved = questions.filter((q) => isSolved(q.id, q.categoryId)).length;
@@ -106,7 +123,7 @@ const CategorySection = ({
   const unsolvedCount = stats.total - stats.solved;
 
   return (
-    <Collapsible open={isOpen} onOpenChange={onOpenChange}>
+    <Collapsible open={isOpen} onOpenChange={handleOpenChange}>
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -239,6 +256,7 @@ const CategorySection = ({
                               hasNote={!!getNote(question.id, question.categoryId)}
                               notePreview={getNote(question.id, question.categoryId)}
                               showCategory={false}
+                              isExpanded={expandedQuestion === `${question.categoryId}-${question.id}`}
                               onToggleSolved={() =>
                                 onToggleSolved(question.id, question.categoryId)
                               }
@@ -251,6 +269,9 @@ const CategorySection = ({
                                   question.categoryId,
                                   question.text
                                 )
+                              }
+                              onToggleAnswer={() =>
+                                toggleAnswer(question.id, question.categoryId)
                               }
                             />
                           ))}
