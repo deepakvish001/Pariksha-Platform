@@ -38,6 +38,7 @@ interface CompanyQuestionTableRowProps {
   onToggleSolved: () => void;
   onToggleRevision: () => void;
   onToggleExpand: () => void;
+  folderButton?: React.ReactNode;
 }
 
 const difficultyStyles: Record<Difficulty, string> = {
@@ -57,6 +58,7 @@ const CompanyQuestionTableRow = ({
   onToggleSolved,
   onToggleRevision,
   onToggleExpand,
+  folderButton,
 }: CompanyQuestionTableRowProps) => {
   const hasAnswer = !!question.answer;
 
@@ -237,6 +239,13 @@ const CompanyQuestionTableRow = ({
             </TooltipContent>
           </Tooltip>
         </TableCell>
+
+        {/* Folder Button (optional) */}
+        {folderButton && (
+          <TableCell className="w-12 text-center">
+            {folderButton}
+          </TableCell>
+        )}
       </TableRow>
 
       {/* Expandable Answer Panel - spans all columns */}
@@ -244,7 +253,7 @@ const CompanyQuestionTableRow = ({
         {isExpanded && hasAnswer && (
           <TableRow className="hover:bg-transparent">
             <TableCell
-              colSpan={showCategory ? 6 : 5}
+              colSpan={showCategory ? (folderButton ? 7 : 6) : (folderButton ? 6 : 5)}
               className="p-0 border-0"
             >
               <motion.div
