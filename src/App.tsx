@@ -10,6 +10,9 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import DashboardMatrix from "./pages/DashboardMatrix";
+import DashboardSheets from "./pages/DashboardSheets";
+import DashboardProfile from "./pages/DashboardProfile";
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -47,6 +50,30 @@ const App = () => (
                 element={
                   <ProtectedRoute requireOnboarding>
                     <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/matrix"
+                element={
+                  <ProtectedRoute requireOnboarding>
+                    <DashboardMatrix />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/sheets"
+                element={
+                  <ProtectedRoute requireOnboarding>
+                    <DashboardSheets />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/profile"
+                element={
+                  <ProtectedRoute requireOnboarding>
+                    <DashboardProfile />
                   </ProtectedRoute>
                 }
               />
