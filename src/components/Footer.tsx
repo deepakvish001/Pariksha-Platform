@@ -94,7 +94,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-border gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-orange flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">U</span>
             </div>
             <span className="text-lg font-bold text-foreground">UniDash</span>
