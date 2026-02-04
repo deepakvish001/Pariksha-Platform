@@ -501,7 +501,7 @@ const Dashboard = () => {
           <header className="border-b border-border bg-card/50 backdrop-blur-lg sticky top-0 z-40">
             <div className="flex items-center justify-between h-14 px-4">
               <div className="flex items-center gap-2">
-                <SidebarTrigger className="md:hidden" />
+                <SidebarTrigger />
                 <span className="text-lg font-semibold text-foreground md:hidden">UniDash</span>
               </div>
 
