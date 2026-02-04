@@ -1,155 +1,184 @@
 
-
-# Plan: Add Inline Expandable Answers to Questions
+# Plan: Redesign Company Wise Resources Page
 
 ## Overview
-Add an answer field to each question with a modern inline expandable design. Clicking on a question row will smoothly expand to reveal the answer below it, keeping the table format clean while providing detailed content on demand.
+Transform the current card-based Company Resources page into a modern, clean tabular list design inspired by the reference screenshot. The new design features a numbered company list with descriptions, category badges, tab filtering, search functionality, and pagination.
 
-## Design Approach: Inline Accordion Rows
+---
 
-The chosen approach uses an **inline expandable row** pattern - a modern, simple UX where:
-- Each question row has a subtle expand indicator (chevron icon)
-- Clicking anywhere on the question text expands the answer below
-- The answer appears as a full-width panel under the question row with smooth animation
-- Supports markdown formatting with syntax highlighting for code answers (especially useful for DSA/SQL categories)
-- Only one answer is visible at a time to reduce cognitive load
+## Design Analysis from Reference
 
-### Why This Approach?
-- **Clean table layout preserved** - answers don't clutter the main view
-- **Instant access** - single click reveals answer, no navigation needed
-- **Modern feel** - smooth framer-motion animations match existing design
-- **Mobile friendly** - full-width answers work well on small screens
-- **Code-friendly** - supports syntax-highlighted code blocks for DSA/SQL answers
+The reference image shows:
+- Clean list-based layout with numbered entries
+- Company name as bold title with detailed description below
+- Category badge on the right side (e.g., "FinTech", "AI/Technology", "E-commerce/Technology")
+- Tab navigation for filtering (All Companies, Product Based, Service Based, Startup, Hiring, Favorites)
+- Search bar at top
+- Pagination at bottom
 
 ---
 
 ## Implementation Steps
 
-### 1. Update Data Structure
+### 1. Create Company Data Structure
 
-**File: `src/data/positionResourcesData.ts`**
+**New File: `src/data/companyResourcesData.ts`**
 
-Extend the `Question` interface to include an optional `answer` field:
-
-```typescript
-export interface Question {
-  id: number;
-  text: string;
-  difficulty: Difficulty;
-  answer?: string;  // Optional markdown-formatted answer
-}
-```
-
-Add sample answers to a few questions to demonstrate the feature:
+Create a comprehensive data file with company information:
 
 ```typescript
-{ 
-  id: 1, 
-  text: "What is middleware in web frameworks?", 
-  difficulty: "Easy",
-  answer: "Middleware is software that sits between..." 
+export interface Company {
+  id: string;
+  name: string;
+  description: string;
+  category: string;       // "FinTech", "AI/Technology", etc.
+  type: CompanyType[];    // "product", "service", "startup"
+  isHiring: boolean;
 }
+
+export type CompanyType = "product" | "service" | "startup";
+
+export const companies: Company[] = [
+  {
+    id: "acko-insurance",
+    name: "Acko Insurance",
+    description: "An independent, digital-first general insurance company offering simplified insurance products for cars, bikes, and health. Acko utilizes technology to eliminate intermediaries and paperwork, providing a seamless customer experience with instant policy issuance and fast claim settlements.",
+    category: "FinTech",
+    type: ["product", "startup"],
+    isHiring: true,
+  },
+  // ... 50+ companies
+];
 ```
 
----
-
-### 2. Create AnswerPanel Component
-
-**New File: `src/components/library/AnswerPanel.tsx`**
-
-A reusable component for displaying formatted answers:
-- Glassmorphism styled panel matching existing design
-- Markdown rendering with `react-markdown` for rich text
-- Code syntax highlighting using existing `CodeBlock` component
-- Subtle entrance animation with framer-motion
-- Copy answer button for easy reference
-
----
-
-### 3. Update QuestionRow Component
-
-**File: `src/components/library/QuestionRow.tsx`**
-
-Add expandable answer functionality:
-- Add `answer?: string` and `isExpanded: boolean` to props
-- Add `onToggleAnswer: () => void` callback
-- Add chevron indicator that rotates on expand
-- Make question text clickable to toggle answer
-- Render `AnswerPanel` in a collapsible row below when expanded
-
-Key changes:
-- Wrap row content in clickable container
-- Add `ChevronDown` icon with rotation animation
-- Use `AnimatePresence` for smooth expand/collapse
-- Show "No answer available" placeholder if answer is undefined
+Include companies from the reference:
+- Acko Insurance (FinTech)
+- Ai.tech (AI/Technology)
+- Amagi (Media Tech)
+- Amazon (E-commerce/Technology)
+- ApClub (Health & Wellness)
+- Apna.co (Recruitment)
+- Apple (Technology)
+- Ather Energy (EV/Mobility)
+- Autodraft (Media/AI)
+- Beyond Appliances (Consumer Electronics)
+- Google, Microsoft, Meta, Netflix (FAANG)
+- And many more...
 
 ---
 
-### 4. Update CategorySection Component  
+### 2. Redesign CompanyResources Page
 
-**File: `src/components/library/CategorySection.tsx`**
+**File: `src/pages/library/CompanyResources.tsx`**
 
-Manage expanded answer state:
-- Add `expandedQuestion: string | null` state (format: `${categoryId}-${questionId}`)
-- Only one answer open at a time within a category
-- Pass expansion state and toggle handler to `QuestionRow`
-- Auto-collapse answer when collapsing section
+Complete rewrite with the new design:
+
+**Key Components:**
+- **Header**: Title "Companies and Startups" with subtitle
+- **Search Bar**: Full-width search input
+- **Tab Navigation**: All Companies | Product Based | Service Based | Startup | Hiring | Favorites
+- **Company List**: Table-style numbered list with hover effects
+- **Pagination**: Page numbers with Previous/Next navigation
+
+**State Management:**
+- `searchQuery` for filtering
+- `activeTab` for category filtering
+- `currentPage` for pagination
+- `favorites` persisted in localStorage (like Position Resources)
+
+**Pagination Logic:**
+- 10 companies per page
+- Show page numbers: 1, 2, 3, 4, 5, ..., 15
+- Previous/Next buttons
 
 ---
 
-### 5. Update PositionDetail Page
-
-**File: `src/pages/library/PositionDetail.tsx`**
-
-Ensure answer data flows through:
-- Update `QuestionWithMeta` interface to include `answer?`
-- Pass answer data when mapping questions
-- Handle answer toggle for tabs layout view
-
----
-
-## Visual Design
+### 3. Component Structure
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│ #  │ Question                              │ Diff │ ✓ │ ★ │ 📝 │
-├─────────────────────────────────────────────────────────────────┤
-│ 1  │ ▼ What is middleware in web...       │ Easy │ ☐ │ ☆ │ 📋 │
-├─────────────────────────────────────────────────────────────────┤
-│    ┌────────────────────────────────────────────────────────┐   │
-│    │  💡 Answer                                     [Copy]  │   │
-│    │  ───────────────────────────────────────────────────── │   │
-│    │  Middleware is software that sits between the OS       │   │
-│    │  and applications, handling requests/responses.        │   │
-│    │                                                        │   │
-│    │  **Key Points:**                                       │   │
-│    │  - Authentication                                      │   │
-│    │  - Logging                                             │   │
-│    │  - Error handling                                      │   │
-│    └────────────────────────────────────────────────────────┘   │
-├─────────────────────────────────────────────────────────────────┤
-│ 2  │ ▶ How does HTTP caching work?        │ Easy │ ☑ │ ★ │ 📋 │
-└─────────────────────────────────────────────────────────────────┘
+CompanyResources
+├── Header (title + subtitle)
+├── Search Input
+├── Tab Navigation
+│   ├── All Companies
+│   ├── Product Based
+│   ├── Service Based
+│   ├── Startup
+│   ├── Hiring
+│   └── Favorites
+├── Company List
+│   └── CompanyRow (for each company)
+│       ├── # (index)
+│       ├── Company Name (bold)
+│       ├── Description (text)
+│       └── Category Badge
+└── Pagination
+    ├── Page Numbers
+    └── Previous/Next Buttons
 ```
 
 ---
 
-## Technical Details
+### 4. Styling Approach
 
-### Dependencies
-- Uses existing `react-markdown` and `react-syntax-highlighter` (already installed)
-- Leverages existing `CodeBlock` component for syntax highlighting
-- Uses existing framer-motion for animations
+**List Row Design:**
+- Clean border-bottom separator
+- Subtle hover effect (muted background)
+- Number column: minimal width, muted color
+- Company info: flex column with name + description
+- Category badge: outline style with category-specific colors
 
-### State Management
-- Expanded answer state is local to each category section (not persisted)
-- Single-answer-open constraint reduces visual clutter
-- Keyboard accessibility: Enter/Space to toggle
+**Category Color Mapping:**
+```typescript
+const categoryColors: Record<string, string> = {
+  "FinTech": "text-green-500 border-green-500/30",
+  "AI/Technology": "text-blue-500 border-blue-500/30",
+  "E-commerce/Technology": "text-purple-500 border-purple-500/30",
+  "Technology": "text-cyan-500 border-cyan-500/30",
+  "Media Tech": "text-pink-500 border-pink-500/30",
+  "Health & Wellness": "text-emerald-500 border-emerald-500/30",
+  "EV/Mobility": "text-orange-500 border-orange-500/30",
+  // ... more categories
+};
+```
 
-### Mobile Responsiveness
-- Answer panel uses full width on all screen sizes
-- Touch-friendly tap targets
-- Readable text sizing with proper padding
+**Tab Design:**
+- Unstyled text tabs with hover effect
+- No background, just text
+- Active tab: slightly bolder or underline
+
+---
+
+### 5. Features to Implement
+
+1. **Search**: Filter by company name or description
+2. **Tab Filtering**: 
+   - All Companies: Show all
+   - Product Based: Filter by type includes "product"
+   - Service Based: Filter by type includes "service"
+   - Startup: Filter by type includes "startup"
+   - Hiring: Filter by isHiring === true
+   - Favorites: Show starred companies
+3. **Favorites System**: Star icon to save favorites (localStorage)
+4. **Pagination**: Client-side pagination, 10 items per page
+5. **Click to Navigate**: Each row links to company detail page (future)
+
+---
+
+### 6. Responsive Design
+
+**Desktop (lg+):**
+- Full table layout with all columns visible
+- Pagination with multiple page numbers
+
+**Tablet (md):**
+- Condensed description (truncated)
+- Fewer page numbers shown
+
+**Mobile (sm):**
+- Stack company info vertically
+- Category badge below description
+- Simplified pagination (Prev/Next only)
 
 ---
 
@@ -157,9 +186,54 @@ Ensure answer data flows through:
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `src/data/positionResourcesData.ts` | Modify | Add `answer` field to Question interface, add sample answers |
-| `src/components/library/AnswerPanel.tsx` | Create | Styled answer display with markdown support |
-| `src/components/library/QuestionRow.tsx` | Modify | Add expand/collapse UI and answer rendering |
-| `src/components/library/CategorySection.tsx` | Modify | Manage expanded answer state |
-| `src/pages/library/PositionDetail.tsx` | Modify | Pass answer data through component tree |
+| `src/data/companyResourcesData.ts` | Create | Company data with types, categories, descriptions |
+| `src/pages/library/CompanyResources.tsx` | Rewrite | New tabular design with all features |
 
+---
+
+## Sample Company Data (to include 50+ companies)
+
+Categories to include:
+- FAANG (Google, Amazon, Apple, Meta, Netflix, Microsoft)
+- FinTech (Acko, Razorpay, PhonePe, Paytm, CRED)
+- E-commerce (Flipkart, Myntra, Meesho, Nykaa)
+- AI/Technology (Ai.tech, OpenAI ecosystem companies)
+- Startups (Zepto, Swiggy, Zomato, Ola, Uber)
+- Service-based (TCS, Infosys, Wipro, Cognizant)
+- Product companies (Atlassian, Salesforce, Adobe)
+- EV/Mobility (Ather, Ola Electric)
+- Recruitment (Apna, Naukri, LinkedIn)
+
+---
+
+## Visual Preview
+
+```text
+┌──────────────────────────────────────────────────────────────────────────┐
+│  Companies and Startups                                                  │
+│  Select a company to explore all available resources and preparation     │
+├──────────────────────────────────────────────────────────────────────────┤
+│  🔍 Search companies...                                                  │
+├──────────────────────────────────────────────────────────────────────────┤
+│  All Companies  │  Product Based  │  Service Based  │  Startup  │  ...   │
+├──────────────────────────────────────────────────────────────────────────┤
+│  #  │  Company                                                │ Category │
+├──────────────────────────────────────────────────────────────────────────┤
+│  1  │  Acko Insurance                                         │ FinTech  │
+│     │  An independent, digital-first general insurance...     │          │
+├──────────────────────────────────────────────────────────────────────────┤
+│  2  │  Ai.tech                                                │ AI/Tech  │
+│     │  An AI and machine learning platform specializing...    │          │
+├──────────────────────────────────────────────────────────────────────────┤
+│                    ◀ 1  2  3  4  5  ...  15  Next ▶                      │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Future Enhancements (Not in this implementation)
+
+- Company detail page with specific resources
+- Interview experiences per company
+- Salary insights
+- Company ratings
