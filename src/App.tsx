@@ -58,6 +58,7 @@ import Resources from "./pages/platform/Resources";
 import Collections from "./pages/platform/Collections";
 import Affiliate from "./pages/platform/Affiliate";
 import PublicProfile from "./pages/PublicProfile";
+import SharedFolder from "./pages/SharedFolder";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ const App = () => (
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/u/:username" element={<PublicProfile />} />
+                <Route path="/shared/:shareCode" element={<SharedFolder />} />
                 <Route
                   path="/onboarding"
                   element={
