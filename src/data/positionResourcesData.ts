@@ -109,30 +109,395 @@ const authMiddleware = (req, res, next) => {
 2. Server returns \`304 Not Modified\` if unchanged
 3. Browser uses cached version`
       },
-      { id: 3, text: "Explain REST vs. GraphQL and trade-offs.", difficulty: "Easy" },
-      { id: 4, text: "What is CORS and how do you configure it?", difficulty: "Easy" },
+      { 
+        id: 3, 
+        text: "Explain REST vs. GraphQL and trade-offs.", 
+        difficulty: "Easy",
+        answer: `**REST (Representational State Transfer)**
+- Resource-based URLs: \`/users/123\`, \`/posts\`
+- Fixed response structure per endpoint
+- Multiple endpoints for related data
+- HTTP verbs define actions (GET, POST, PUT, DELETE)
+
+**GraphQL**
+- Single endpoint: \`/graphql\`
+- Client specifies exactly what data it needs
+- Strongly typed schema
+- Single request for related data
+
+**Trade-offs:**
+
+| Aspect | REST | GraphQL |
+|--------|------|---------|
+| Over-fetching | Common | Eliminated |
+| Under-fetching | Requires multiple calls | Single query |
+| Caching | HTTP caching built-in | Complex, needs Apollo/etc |
+| Learning curve | Lower | Higher |
+| Tooling | Mature | Growing |
+| File uploads | Native | Requires workarounds |
+
+**When to use REST:** Simple CRUD, caching critical, team familiarity
+**When to use GraphQL:** Complex relationships, mobile apps, varying client needs`
+      },
+      { 
+        id: 4, 
+        text: "What is CORS and how do you configure it?", 
+        difficulty: "Easy",
+        answer: `**CORS (Cross-Origin Resource Sharing)** is a security mechanism that allows servers to specify which origins can access their resources.
+
+**The Problem:**
+Browsers block requests from \`https://app.com\` to \`https://api.com\` by default (same-origin policy).
+
+**How CORS Works:**
+1. Browser sends preflight \`OPTIONS\` request
+2. Server responds with allowed origins/methods
+3. If allowed, browser sends actual request
+
+**Key Headers:**
+\`\`\`http
+Access-Control-Allow-Origin: https://app.com
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Allow-Credentials: true
+Access-Control-Max-Age: 86400
+\`\`\`
+
+**Express.js Configuration:**
+\`\`\`javascript
+const cors = require('cors');
+
+app.use(cors({
+  origin: ['https://app.com', 'https://admin.com'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+  maxAge: 86400
+}));
+\`\`\`
+
+**Security tip:** Never use \`origin: '*'\` with \`credentials: true\``
+      },
       { id: 5, text: "How do you secure sensitive data at rest?", difficulty: "Easy" },
       { id: 6, text: "What is a reverse proxy and why use one?", difficulty: "Easy" },
-      { id: 7, text: "Explain JSON Web Tokens (JWT) structure.", difficulty: "Easy" },
+      { 
+        id: 7, 
+        text: "Explain JSON Web Tokens (JWT) structure.", 
+        difficulty: "Easy",
+        answer: `A JWT consists of three base64-encoded parts separated by dots: \`header.payload.signature\`
+
+**1. Header**
+\`\`\`json
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+\`\`\`
+
+**2. Payload (Claims)**
+\`\`\`json
+{
+  "sub": "user123",
+  "name": "John Doe",
+  "role": "admin",
+  "iat": 1704067200,
+  "exp": 1704153600
+}
+\`\`\`
+
+**Standard Claims:**
+- \`iss\` - Issuer
+- \`sub\` - Subject (user ID)
+- \`exp\` - Expiration time
+- \`iat\` - Issued at
+- \`aud\` - Audience
+
+**3. Signature**
+\`\`\`javascript
+HMACSHA256(
+  base64UrlEncode(header) + "." + base64UrlEncode(payload),
+  secret
+)
+\`\`\`
+
+**Important:** JWTs are signed, NOT encrypted. Anyone can decode the payload. Never store sensitive data in JWTs.
+
+**Verification Flow:**
+1. Extract header & payload
+2. Recompute signature with secret
+3. Compare with received signature
+4. Check expiration time`
+      },
       { id: 8, text: "What is connection pooling and its benefits?", difficulty: "Easy" },
       { id: 9, text: "Describe JSON vs. Protobuf for data serialization.", difficulty: "Easy" },
       { id: 10, text: "What is TLS handshake and its purpose?", difficulty: "Easy" },
       { id: 11, text: "Explain symbolic links and their use in deployment.", difficulty: "Easy" },
-      { id: 12, text: "What are the core principles of RESTful API design?", difficulty: "Medium" },
+      { 
+        id: 12, 
+        text: "What are the core principles of RESTful API design?", 
+        difficulty: "Medium",
+        answer: `**1. Resource-Based URLs**
+\`\`\`
+GET    /users          # List users
+GET    /users/123      # Get specific user
+POST   /users          # Create user
+PUT    /users/123      # Update user
+DELETE /users/123      # Delete user
+\`\`\`
+
+**2. Proper HTTP Methods**
+- \`GET\` - Read (idempotent)
+- \`POST\` - Create
+- \`PUT\` - Full update (idempotent)
+- \`PATCH\` - Partial update
+- \`DELETE\` - Remove (idempotent)
+
+**3. Meaningful Status Codes**
+- \`200\` OK, \`201\` Created, \`204\` No Content
+- \`400\` Bad Request, \`401\` Unauthorized, \`403\` Forbidden, \`404\` Not Found
+- \`500\` Internal Server Error
+
+**4. Statelessness**
+Each request contains all information needed. No server-side sessions.
+
+**5. HATEOAS (Hypermedia)**
+\`\`\`json
+{
+  "id": 123,
+  "name": "John",
+  "_links": {
+    "self": "/users/123",
+    "posts": "/users/123/posts"
+  }
+}
+\`\`\`
+
+**6. Consistent Naming**
+- Use nouns, not verbs: \`/users\` not \`/getUsers\`
+- Plural resources: \`/users\` not \`/user\`
+- Kebab-case: \`/user-profiles\` not \`/userProfiles\``
+      },
       { id: 13, text: "Explain the concept of database normalization and its trade-offs.", difficulty: "Medium" },
       { id: 14, text: "How would you implement pagination in a REST API?", difficulty: "Medium" },
       { id: 15, text: "How do you handle file uploads in a backend application?", difficulty: "Medium" },
       { id: 16, text: "Describe how webhooks work and how to implement retry logic.", difficulty: "Medium" },
-      { id: 17, text: "How do you implement rate limiting for APIs?", difficulty: "Medium" },
-      { id: 18, text: "Explain ACID properties in the context of relational databases.", difficulty: "Medium" },
+      { 
+        id: 17, 
+        text: "How do you implement rate limiting for APIs?", 
+        difficulty: "Medium",
+        answer: `Rate limiting protects APIs from abuse and ensures fair usage.
+
+**Common Algorithms:**
+
+**1. Token Bucket**
+- Tokens added at fixed rate
+- Request consumes token
+- Allows bursts up to bucket size
+
+**2. Sliding Window**
+- Counts requests in rolling time window
+- More accurate than fixed windows
+
+**Implementation Example:**
+\`\`\`javascript
+const rateLimit = require('express-rate-limit');
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  message: { error: 'Too many requests' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/', limiter);
+\`\`\`
+
+**Redis-based (distributed):**
+\`\`\`javascript
+const key = \`ratelimit:\${userId}\`;
+const current = await redis.incr(key);
+if (current === 1) {
+  await redis.expire(key, 60); // 1 minute window
+}
+if (current > 100) {
+  throw new Error('Rate limit exceeded');
+}
+\`\`\`
+
+**Response Headers:**
+\`\`\`http
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1704153600
+Retry-After: 60
+\`\`\``
+      },
+      { 
+        id: 18, 
+        text: "Explain ACID properties in the context of relational databases.", 
+        difficulty: "Medium",
+        answer: `ACID guarantees reliable database transactions:
+
+**A - Atomicity**
+All operations succeed or all fail. No partial updates.
+\`\`\`sql
+BEGIN TRANSACTION;
+  UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+  UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+COMMIT; -- Both succeed or both rollback
+\`\`\`
+
+**C - Consistency**
+Database moves from one valid state to another. Constraints always enforced.
+- Foreign keys maintained
+- Check constraints validated
+- Triggers executed
+
+**I - Isolation**
+Concurrent transactions don't interfere. Isolation levels:
+| Level | Dirty Read | Non-Repeatable | Phantom |
+|-------|------------|----------------|---------|
+| READ UNCOMMITTED | ✓ | ✓ | ✓ |
+| READ COMMITTED | ✗ | ✓ | ✓ |
+| REPEATABLE READ | ✗ | ✗ | ✓ |
+| SERIALIZABLE | ✗ | ✗ | ✗ |
+
+**D - Durability**
+Committed transactions survive system failures. Data written to disk/WAL before commit acknowledged.
+
+**Trade-off:** Stronger ACID = Lower performance
+- NoSQL often sacrifices some ACID for scalability
+- Distributed systems use eventual consistency`
+      },
       { id: 19, text: "Describe how you would manage environment-specific configurations.", difficulty: "Medium" },
-      { id: 20, text: "What is a circuit breaker and how is it implemented?", difficulty: "Medium" },
+      { 
+        id: 20, 
+        text: "What is a circuit breaker and how is it implemented?", 
+        difficulty: "Medium",
+        answer: `A circuit breaker prevents cascading failures by stopping requests to failing services.
+
+**States:**
+1. **CLOSED** - Normal operation, requests pass through
+2. **OPEN** - Failures exceeded threshold, requests fail immediately
+3. **HALF-OPEN** - Testing if service recovered
+
+**State Transitions:**
+\`\`\`
+CLOSED --[failures > threshold]--> OPEN
+OPEN --[timeout expires]--> HALF-OPEN
+HALF-OPEN --[request succeeds]--> CLOSED
+HALF-OPEN --[request fails]--> OPEN
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+class CircuitBreaker {
+  constructor(options) {
+    this.failureThreshold = options.failureThreshold || 5;
+    this.resetTimeout = options.resetTimeout || 30000;
+    this.state = 'CLOSED';
+    this.failures = 0;
+    this.lastFailure = null;
+  }
+
+  async call(fn) {
+    if (this.state === 'OPEN') {
+      if (Date.now() - this.lastFailure > this.resetTimeout) {
+        this.state = 'HALF-OPEN';
+      } else {
+        throw new Error('Circuit breaker is OPEN');
+      }
+    }
+
+    try {
+      const result = await fn();
+      this.onSuccess();
+      return result;
+    } catch (error) {
+      this.onFailure();
+      throw error;
+    }
+  }
+
+  onSuccess() {
+    this.failures = 0;
+    this.state = 'CLOSED';
+  }
+
+  onFailure() {
+    this.failures++;
+    this.lastFailure = Date.now();
+    if (this.failures >= this.failureThreshold) {
+      this.state = 'OPEN';
+    }
+  }
+}
+\`\`\`
+
+**Libraries:** Opossum (Node.js), Resilience4j (Java), Polly (.NET)`
+      },
       { id: 21, text: "Explain the CAP theorem and its implications for distributed systems.", difficulty: "Medium" },
       { id: 22, text: "How would you implement health checks for microservices?", difficulty: "Medium" },
       { id: 23, text: "What are the differences between monolithic and microservice architectures?", difficulty: "Medium" },
       { id: 24, text: "Explain the role of message brokers in backend systems.", difficulty: "Medium" },
       { id: 25, text: "Explain the concept of eventual consistency.", difficulty: "Medium" },
-      { id: 26, text: "How do you prevent SQL injection vulnerabilities?", difficulty: "Medium" },
+      { 
+        id: 26, 
+        text: "How do you prevent SQL injection vulnerabilities?", 
+        difficulty: "Medium",
+        answer: `SQL injection occurs when user input is directly concatenated into SQL queries.
+
+**❌ Vulnerable Code:**
+\`\`\`javascript
+// NEVER DO THIS!
+const query = "SELECT * FROM users WHERE id = " + userId;
+const query = \`SELECT * FROM users WHERE name = '\${username}'\`;
+\`\`\`
+
+**✅ Prevention Methods:**
+
+**1. Parameterized Queries (Best)**
+\`\`\`javascript
+// Node.js with pg
+const result = await db.query(
+  'SELECT * FROM users WHERE id = $1 AND status = $2',
+  [userId, 'active']
+);
+
+// MySQL
+connection.execute(
+  'SELECT * FROM users WHERE id = ?',
+  [userId]
+);
+\`\`\`
+
+**2. ORM/Query Builders**
+\`\`\`javascript
+// Prisma
+const user = await prisma.user.findUnique({
+  where: { id: userId }
+});
+
+// Knex.js
+const users = await knex('users')
+  .where('id', userId)
+  .first();
+\`\`\`
+
+**3. Input Validation**
+\`\`\`javascript
+const userId = parseInt(req.params.id, 10);
+if (isNaN(userId)) {
+  throw new Error('Invalid user ID');
+}
+\`\`\`
+
+**4. Least Privilege**
+- Database user should only have necessary permissions
+- Use read-only connections where possible
+
+**5. Escape Special Characters (Last Resort)**
+Only use when parameterized queries aren't possible.`
+      },
       { id: 27, text: "What is the role of API gateways in microservice ecosystems?", difficulty: "Medium" },
       { id: 28, text: "Explain the concept of idempotency and its importance in REST APIs.", difficulty: "Medium" },
       { id: 29, text: "What is container orchestration and why use Kubernetes?", difficulty: "Medium" },
@@ -144,7 +509,64 @@ const authMiddleware = (req, res, next) => {
       { id: 35, text: "How do you optimize database query performance in high-traffic environments?", difficulty: "Hard" },
       { id: 36, text: "What strategies ensure secure authentication for backend services?", difficulty: "Hard" },
       { id: 37, text: "Describe how you would design a logging and monitoring system.", difficulty: "Hard" },
-      { id: 38, text: "Explain the difference between optimistic and pessimistic locking.", difficulty: "Hard" },
+      { 
+        id: 38, 
+        text: "Explain the difference between optimistic and pessimistic locking.", 
+        difficulty: "Hard",
+        answer: `Both strategies handle concurrent access to shared resources.
+
+**Pessimistic Locking**
+Assume conflicts will happen. Lock resource before reading.
+
+\`\`\`sql
+-- Lock the row until transaction completes
+BEGIN;
+SELECT * FROM products WHERE id = 1 FOR UPDATE;
+UPDATE products SET stock = stock - 1 WHERE id = 1;
+COMMIT;
+\`\`\`
+
+**Pros:** Guarantees no conflicts
+**Cons:** Blocks other transactions, potential deadlocks, reduced throughput
+
+---
+
+**Optimistic Locking**
+Assume conflicts are rare. Check for changes before committing.
+
+\`\`\`sql
+-- Add version column to table
+SELECT id, stock, version FROM products WHERE id = 1;
+-- version = 5, stock = 100
+
+UPDATE products 
+SET stock = 99, version = version + 1
+WHERE id = 1 AND version = 5;
+-- If affected rows = 0, someone else modified it
+\`\`\`
+
+\`\`\`javascript
+// Application code
+const product = await getProduct(id);
+product.stock -= 1;
+
+const result = await db.query(
+  'UPDATE products SET stock = $1, version = version + 1 WHERE id = $2 AND version = $3',
+  [product.stock, id, product.version]
+);
+
+if (result.rowCount === 0) {
+  throw new ConflictError('Product was modified by another user');
+}
+\`\`\`
+
+**Pros:** No blocking, better for read-heavy workloads
+**Cons:** Must handle retry logic, conflicts detected late
+
+**When to use:**
+- **Pessimistic:** High contention, short transactions (inventory, banking)
+- **Optimistic:** Low contention, long user sessions (editing documents)`
+      },
       { id: 39, text: "What is CQRS and when would you use it?", difficulty: "Hard" },
       { id: 40, text: "What considerations are important when designing microservices?", difficulty: "Hard" },
       { id: 41, text: "How would you secure communication between microservices?", difficulty: "Hard" },
@@ -199,12 +621,164 @@ function reverseListRecursive(head) {
 
 **Key insight**: At each step, we reverse the pointer direction and move forward.`
       },
-      { id: 2, text: "Find the middle element of a linked list.", difficulty: "Easy" },
-      { id: 3, text: "Check if a string is a palindrome.", difficulty: "Easy" },
-      { id: 4, text: "Implement binary search on a sorted array.", difficulty: "Easy" },
+      { 
+        id: 2, 
+        text: "Find the middle element of a linked list.", 
+        difficulty: "Easy",
+        answer: `Use the **slow and fast pointer** technique (Floyd's Tortoise and Hare).
+
+\`\`\`javascript
+function findMiddle(head) {
+  let slow = head;
+  let fast = head;
+  
+  while (fast !== null && fast.next !== null) {
+    slow = slow.next;        // Move 1 step
+    fast = fast.next.next;   // Move 2 steps
+  }
+  
+  return slow; // Middle element
+}
+\`\`\`
+
+**How it works:**
+- Fast pointer moves 2x speed of slow
+- When fast reaches end, slow is at middle
+- Works for both odd and even length lists
+
+**Time:** O(n) | **Space:** O(1)
+
+**For even length lists:**
+- Returns second middle element
+- Modify condition for first middle if needed`
+      },
+      { 
+        id: 3, 
+        text: "Check if a string is a palindrome.", 
+        difficulty: "Easy",
+        answer: `**Two Pointer Approach** (O(n) time, O(1) space):
+
+\`\`\`javascript
+function isPalindrome(str) {
+  // Clean string: lowercase, alphanumeric only
+  const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+  
+  let left = 0;
+  let right = cleaned.length - 1;
+  
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
+    }
+    left++;
+    right--;
+  }
+  
+  return true;
+}
+\`\`\`
+
+**Examples:**
+- \`"racecar"\` → true
+- \`"A man, a plan, a canal: Panama"\` → true
+- \`"hello"\` → false
+
+**One-liner (less efficient):**
+\`\`\`javascript
+const isPalindrome = s => {
+  const clean = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return clean === clean.split('').reverse().join('');
+};
+\`\`\``
+      },
+      { 
+        id: 4, 
+        text: "Implement binary search on a sorted array.", 
+        difficulty: "Easy",
+        answer: `Binary search halves the search space each iteration.
+
+\`\`\`javascript
+function binarySearch(arr, target) {
+  let left = 0;
+  let right = arr.length - 1;
+  
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    
+    if (arr[mid] === target) {
+      return mid;        // Found!
+    } else if (arr[mid] < target) {
+      left = mid + 1;    // Search right half
+    } else {
+      right = mid - 1;   // Search left half
+    }
+  }
+  
+  return -1; // Not found
+}
+\`\`\`
+
+**Recursive version:**
+\`\`\`javascript
+function binarySearchRecursive(arr, target, left = 0, right = arr.length - 1) {
+  if (left > right) return -1;
+  
+  const mid = Math.floor((left + right) / 2);
+  
+  if (arr[mid] === target) return mid;
+  if (arr[mid] < target) {
+    return binarySearchRecursive(arr, target, mid + 1, right);
+  }
+  return binarySearchRecursive(arr, target, left, mid - 1);
+}
+\`\`\`
+
+**Time:** O(log n) | **Space:** O(1) iterative, O(log n) recursive
+
+**Common pitfall:** Integer overflow with \`(left + right) / 2\`
+**Fix:** \`left + Math.floor((right - left) / 2)\``
+      },
       { id: 5, text: "Find the maximum element in an array.", difficulty: "Easy" },
       { id: 6, text: "Implement a stack using arrays.", difficulty: "Easy" },
-      { id: 7, text: "Check if parentheses are balanced.", difficulty: "Easy" },
+      { 
+        id: 7, 
+        text: "Check if parentheses are balanced.", 
+        difficulty: "Easy",
+        answer: `Use a stack to match opening and closing brackets.
+
+\`\`\`javascript
+function isBalanced(str) {
+  const stack = [];
+  const pairs = {
+    ')': '(',
+    '}': '{',
+    ']': '['
+  };
+  
+  for (const char of str) {
+    if ('({['.includes(char)) {
+      stack.push(char);
+    } else if (')}]'.includes(char)) {
+      if (stack.length === 0 || stack.pop() !== pairs[char]) {
+        return false;
+      }
+    }
+  }
+  
+  return stack.length === 0;
+}
+\`\`\`
+
+**Examples:**
+- \`"(){}[]"\` → true
+- \`"([{}])"\` → true
+- \`"([)]"\` → false
+- \`"((("\` → false
+
+**Time:** O(n) | **Space:** O(n)
+
+**Key insight:** Every closing bracket must match the most recent opening bracket (LIFO = Stack).`
+      },
       { id: 8, text: "Find the first non-repeating character in a string.", difficulty: "Easy" },
       { id: 9, text: "Merge two sorted arrays.", difficulty: "Easy" },
       { id: 10, text: "Count occurrences of an element in an array.", difficulty: "Easy" },
@@ -253,12 +827,151 @@ class LRUCache {
 
 **Time Complexity**: O(1) for both get and put operations.`
       },
-      { id: 12, text: "Find the longest substring without repeating characters.", difficulty: "Medium" },
-      { id: 13, text: "Detect a cycle in a linked list.", difficulty: "Medium" },
+      { 
+        id: 12, 
+        text: "Find the longest substring without repeating characters.", 
+        difficulty: "Medium",
+        answer: `Use **sliding window** with a set/map to track characters.
+
+\`\`\`javascript
+function lengthOfLongestSubstring(s) {
+  const seen = new Map();
+  let maxLen = 0;
+  let start = 0;
+  
+  for (let end = 0; end < s.length; end++) {
+    const char = s[end];
+    
+    if (seen.has(char) && seen.get(char) >= start) {
+      // Move start past the duplicate
+      start = seen.get(char) + 1;
+    }
+    
+    seen.set(char, end);
+    maxLen = Math.max(maxLen, end - start + 1);
+  }
+  
+  return maxLen;
+}
+\`\`\`
+
+**Example walkthrough for "abcabcbb":**
+| end | char | start | window | maxLen |
+|-----|------|-------|--------|--------|
+| 0 | a | 0 | "a" | 1 |
+| 1 | b | 0 | "ab" | 2 |
+| 2 | c | 0 | "abc" | 3 |
+| 3 | a | 1 | "bca" | 3 |
+| 4 | b | 2 | "cab" | 3 |
+
+**Time:** O(n) | **Space:** O(min(n, alphabet size))`
+      },
+      { 
+        id: 13, 
+        text: "Detect a cycle in a linked list.", 
+        difficulty: "Medium",
+        answer: `**Floyd's Cycle Detection** (Tortoise and Hare):
+
+\`\`\`javascript
+function hasCycle(head) {
+  if (!head || !head.next) return false;
+  
+  let slow = head;
+  let fast = head;
+  
+  while (fast && fast.next) {
+    slow = slow.next;
+    fast = fast.next.next;
+    
+    if (slow === fast) {
+      return true; // Cycle detected!
+    }
+  }
+  
+  return false;
+}
+\`\`\`
+
+**Find cycle start (follow-up):**
+\`\`\`javascript
+function detectCycleStart(head) {
+  let slow = head, fast = head;
+  
+  // Find meeting point
+  while (fast && fast.next) {
+    slow = slow.next;
+    fast = fast.next.next;
+    if (slow === fast) break;
+  }
+  
+  if (!fast || !fast.next) return null;
+  
+  // Find cycle start
+  slow = head;
+  while (slow !== fast) {
+    slow = slow.next;
+    fast = fast.next;
+  }
+  
+  return slow; // Cycle start node
+}
+\`\`\`
+
+**Why it works:** Mathematical proof shows they meet after the slow pointer enters the cycle.
+
+**Time:** O(n) | **Space:** O(1)`
+      },
       { id: 14, text: "Implement BFS and DFS for a graph.", difficulty: "Medium" },
       { id: 15, text: "Find the kth largest element in an array.", difficulty: "Medium" },
       { id: 16, text: "Implement a min heap.", difficulty: "Medium" },
-      { id: 17, text: "Solve the two sum problem.", difficulty: "Medium" },
+      { 
+        id: 17, 
+        text: "Solve the two sum problem.", 
+        difficulty: "Medium",
+        answer: `Find two numbers that add up to target.
+
+**Hash Map Approach** (O(n) time):
+\`\`\`javascript
+function twoSum(nums, target) {
+  const seen = new Map();
+  
+  for (let i = 0; i < nums.length; i++) {
+    const complement = target - nums[i];
+    
+    if (seen.has(complement)) {
+      return [seen.get(complement), i];
+    }
+    
+    seen.set(nums[i], i);
+  }
+  
+  return []; // No solution
+}
+\`\`\`
+
+**Example:** \`twoSum([2, 7, 11, 15], 9)\` → \`[0, 1]\`
+
+| i | nums[i] | complement | seen | result |
+|---|---------|------------|------|--------|
+| 0 | 2 | 7 | {2:0} | - |
+| 1 | 7 | 2 | {2:0} | [0,1] ✓ |
+
+**Two Pointer (if sorted):**
+\`\`\`javascript
+function twoSumSorted(nums, target) {
+  let left = 0, right = nums.length - 1;
+  
+  while (left < right) {
+    const sum = nums[left] + nums[right];
+    if (sum === target) return [left, right];
+    if (sum < target) left++;
+    else right--;
+  }
+}
+\`\`\`
+
+**Time:** O(n) hash, O(n log n) two-pointer (with sort)`
+      },
       { id: 18, text: "Find all permutations of a string.", difficulty: "Medium" },
       { id: 19, text: "Implement quicksort algorithm.", difficulty: "Medium" },
       { id: 20, text: "Find the longest common subsequence.", difficulty: "Medium" },
@@ -284,17 +997,221 @@ class LRUCache {
       { id: 13, text: "In how many ways can 5 people be arranged in a row?", difficulty: "Hard" },
     ],
     "sql-questions": [
-      { id: 1, text: "Write a query to select all columns from a table.", difficulty: "Easy" },
+      { 
+        id: 1, 
+        text: "Write a query to select all columns from a table.", 
+        difficulty: "Easy",
+        answer: `**Basic SELECT syntax:**
+\`\`\`sql
+-- Select all columns
+SELECT * FROM users;
+
+-- Select specific columns (recommended)
+SELECT id, name, email, created_at FROM users;
+
+-- With table alias
+SELECT u.id, u.name FROM users u;
+\`\`\`
+
+**Best Practice:** Avoid \`SELECT *\` in production:
+- Fetches unnecessary data
+- Breaks if columns change
+- Harder to optimize
+
+**With conditions:**
+\`\`\`sql
+SELECT id, name, email 
+FROM users 
+WHERE status = 'active'
+LIMIT 100;
+\`\`\``
+      },
       { id: 2, text: "How do you filter rows using WHERE clause?", difficulty: "Easy" },
       { id: 3, text: "Explain the difference between WHERE and HAVING.", difficulty: "Easy" },
       { id: 4, text: "Write a query to count total rows in a table.", difficulty: "Easy" },
       { id: 5, text: "How do you sort results in ascending and descending order?", difficulty: "Easy" },
-      { id: 6, text: "Explain different types of JOINs.", difficulty: "Medium" },
-      { id: 7, text: "Write a query to find duplicate records.", difficulty: "Medium" },
+      { 
+        id: 6, 
+        text: "Explain different types of JOINs.", 
+        difficulty: "Medium",
+        answer: `**JOIN Types Visualized:**
+
+\`\`\`sql
+-- Sample tables
+-- users: id, name
+-- orders: id, user_id, amount
+\`\`\`
+
+**INNER JOIN** - Only matching rows from both tables
+\`\`\`sql
+SELECT u.name, o.amount
+FROM users u
+INNER JOIN orders o ON u.id = o.user_id;
+\`\`\`
+
+**LEFT JOIN** - All from left + matching from right (NULL if no match)
+\`\`\`sql
+SELECT u.name, o.amount
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id;
+-- Shows users even without orders
+\`\`\`
+
+**RIGHT JOIN** - All from right + matching from left
+\`\`\`sql
+SELECT u.name, o.amount
+FROM users u
+RIGHT JOIN orders o ON u.id = o.user_id;
+\`\`\`
+
+**FULL OUTER JOIN** - All rows from both tables
+\`\`\`sql
+SELECT u.name, o.amount
+FROM users u
+FULL OUTER JOIN orders o ON u.id = o.user_id;
+\`\`\`
+
+**CROSS JOIN** - Cartesian product (every combination)
+\`\`\`sql
+SELECT u.name, p.product_name
+FROM users u
+CROSS JOIN products p;
+-- M users × N products = M×N rows
+\`\`\`
+
+**Self JOIN** - Table joined to itself
+\`\`\`sql
+SELECT e.name AS employee, m.name AS manager
+FROM employees e
+JOIN employees m ON e.manager_id = m.id;
+\`\`\``
+      },
+      { 
+        id: 7, 
+        text: "Write a query to find duplicate records.", 
+        difficulty: "Medium",
+        answer: `**Find duplicates by column(s):**
+
+\`\`\`sql
+-- Find duplicate emails
+SELECT email, COUNT(*) as count
+FROM users
+GROUP BY email
+HAVING COUNT(*) > 1;
+\`\`\`
+
+**Get the actual duplicate rows:**
+\`\`\`sql
+SELECT *
+FROM users
+WHERE email IN (
+  SELECT email
+  FROM users
+  GROUP BY email
+  HAVING COUNT(*) > 1
+);
+\`\`\`
+
+**Using window functions (keeps all columns):**
+\`\`\`sql
+SELECT *
+FROM (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) as rn
+  FROM users
+) t
+WHERE rn > 1;  -- Only duplicates (not first occurrence)
+\`\`\`
+
+**Delete duplicates keeping first:**
+\`\`\`sql
+DELETE FROM users
+WHERE id NOT IN (
+  SELECT MIN(id)
+  FROM users
+  GROUP BY email
+);
+\`\`\`
+
+**Multi-column duplicates:**
+\`\`\`sql
+SELECT first_name, last_name, COUNT(*)
+FROM users
+GROUP BY first_name, last_name
+HAVING COUNT(*) > 1;
+\`\`\``
+      },
       { id: 8, text: "How do you use GROUP BY with aggregate functions?", difficulty: "Medium" },
       { id: 9, text: "Write a subquery to find employees earning above average.", difficulty: "Medium" },
       { id: 10, text: "Explain the difference between UNION and UNION ALL.", difficulty: "Medium" },
-      { id: 11, text: "Write a query using window functions (ROW_NUMBER, RANK).", difficulty: "Hard" },
+      { 
+        id: 11, 
+        text: "Write a query using window functions (ROW_NUMBER, RANK).", 
+        difficulty: "Hard",
+        answer: `Window functions perform calculations across rows related to current row.
+
+**ROW_NUMBER** - Unique sequential number
+\`\`\`sql
+SELECT 
+  name,
+  department,
+  salary,
+  ROW_NUMBER() OVER (
+    PARTITION BY department 
+    ORDER BY salary DESC
+  ) as rank_in_dept
+FROM employees;
+\`\`\`
+
+**RANK vs DENSE_RANK**
+\`\`\`sql
+-- Salary: 100, 100, 80
+-- RANK():       1, 1, 3  (skips 2)
+-- DENSE_RANK(): 1, 1, 2  (no gaps)
+
+SELECT 
+  name,
+  salary,
+  RANK() OVER (ORDER BY salary DESC) as rank,
+  DENSE_RANK() OVER (ORDER BY salary DESC) as dense_rank
+FROM employees;
+\`\`\`
+
+**Running totals:**
+\`\`\`sql
+SELECT 
+  date,
+  amount,
+  SUM(amount) OVER (ORDER BY date) as running_total,
+  AVG(amount) OVER (ORDER BY date ROWS 6 PRECEDING) as moving_avg_7d
+FROM sales;
+\`\`\`
+
+**Top N per group:**
+\`\`\`sql
+-- Top 3 salaries per department
+SELECT * FROM (
+  SELECT 
+    *,
+    ROW_NUMBER() OVER (
+      PARTITION BY department 
+      ORDER BY salary DESC
+    ) as rn
+  FROM employees
+) t
+WHERE rn <= 3;
+\`\`\`
+
+**LAG/LEAD - Previous/Next row:**
+\`\`\`sql
+SELECT 
+  date,
+  revenue,
+  LAG(revenue, 1) OVER (ORDER BY date) as prev_day,
+  revenue - LAG(revenue, 1) OVER (ORDER BY date) as daily_change
+FROM sales;
+\`\`\``
+      },
       { id: 12, text: "How do you optimize a slow-running query?", difficulty: "Hard" },
       { id: 13, text: "Write a recursive CTE to traverse hierarchical data.", difficulty: "Hard" },
       { id: 14, text: "Explain transaction isolation levels.", difficulty: "Hard" },
