@@ -23,6 +23,7 @@ import {
   ChevronsDownUp,
   BookmarkCheck,
   FileQuestion,
+  FolderOpen,
 } from "lucide-react";
 import CompanyCategorySection from "@/components/library/CompanyCategorySection";
 import CompanyQuestionTableRow from "@/components/library/CompanyQuestionTableRow";
@@ -463,13 +464,25 @@ const CompanyDetail = () => {
           {user && <ProgressSummaryCard stats={progressStats} />}
 
 
-          {/* Main Questions Content Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-lg border border-border bg-card overflow-hidden"
-          >
+          {/* Questions Section */}
+          <section>
+            {/* Section Header */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FileQuestion className="h-4 w-4 text-primary" />
+              </div>
+              <h2 className="text-lg font-semibold">Questions</h2>
+              <Badge variant="secondary" className="text-xs">
+                {progressStats.total} total
+              </Badge>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="rounded-lg border border-border bg-card overflow-hidden"
+            >
               {/* View Mode Toggle + Layout Toggle */}
               <div className="border-b border-border p-3 md:p-4 bg-muted/30">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -782,14 +795,27 @@ const CompanyDetail = () => {
                 )
               ) : null}
             </motion.div>
+          </section>
 
-          {/* Resource Sections - Collapsible accordion format like Questions */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="rounded-lg border border-border bg-card overflow-hidden"
-          >
+          {/* Resources Section */}
+          <section>
+            {/* Section Header */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FolderOpen className="h-4 w-4 text-primary" />
+              </div>
+              <h2 className="text-lg font-semibold">Resources</h2>
+              <Badge variant="secondary" className="text-xs">
+                {jobPortals.length + projects.length + resumeTemplates.length + coldDMs.length} total
+              </Badge>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="rounded-lg border border-border bg-card overflow-hidden"
+            >
             <ResourceCategorySection
               resourceType="job-portals"
               resourceName="Job Portals"
@@ -826,7 +852,8 @@ const CompanyDetail = () => {
               onToggleSolved={handleToggleSolved}
               isLoggedIn={!!user}
             />
-          </motion.div>
+            </motion.div>
+          </section>
 
           {/* Login prompt */}
           {!user && (
