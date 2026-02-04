@@ -9,12 +9,22 @@ import {
   ExternalLink, 
   Pencil, 
   Star,
-  ChevronDown
+  ChevronDown,
+  X,
+  Save
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Collapsible,
   CollapsibleContent,
@@ -30,7 +40,7 @@ interface Topic {
   resourceType: "youtube" | "article" | "link" | null;
   resourceUrl?: string;
   articleUrl?: string;
-  hasNote: boolean;
+  note: string;
   isRevision: boolean;
 }
 
@@ -76,38 +86,38 @@ const mockSheetData: Record<string, SheetData> = {
             id: "linear-algebra",
             title: "Linear Algebra",
             topics: [
-              { id: "1", title: "Vector", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "2", title: "Linear combinations, span, and basis vectors", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "3", title: "Linear transformations and matrices", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "4", title: "Matrix multiplication as composition", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "5", title: "Three-dimensional linear transformations", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "6", title: "Determinant", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "7", title: "Inverse matrices, column space and null space", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
+              { id: "1", title: "Vector", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "2", title: "Linear combinations, span, and basis vectors", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "3", title: "Linear transformations and matrices", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "4", title: "Matrix multiplication as composition", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "5", title: "Three-dimensional linear transformations", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "6", title: "Determinant", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "7", title: "Inverse matrices, column space and null space", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
             ],
           },
           {
             id: "calculus",
             title: "Calculus",
             topics: [
-              { id: "8", title: "Derivatives and gradients", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "9", title: "Chain rule and backpropagation", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
+              { id: "8", title: "Derivatives and gradients", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "9", title: "Chain rule and backpropagation", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
             ],
           },
           {
             id: "probability",
             title: "Probability and Statistics",
             topics: [
-              { id: "10", title: "Probability distributions", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "11", title: "Bayes theorem", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
+              { id: "10", title: "Probability distributions", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "11", title: "Bayes theorem", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
             ],
           },
           {
             id: "optimization",
             title: "Optimization Theory",
             topics: [
-              { id: "12", title: "Introduction to Optimization", completed: false, resourceType: "link", resourceUrl: "https://medium.com", hasNote: false, isRevision: false },
-              { id: "13", title: "Difference between Derivative, Partial derivative and Gradient", completed: false, resourceType: "link", resourceUrl: "https://medium.com", hasNote: false, isRevision: false },
-              { id: "14", title: "What is Gradient Descent?", completed: false, resourceType: null, articleUrl: "#", hasNote: false, isRevision: false },
+              { id: "12", title: "Introduction to Optimization", completed: false, resourceType: "link", resourceUrl: "https://medium.com", note: "", isRevision: false },
+              { id: "13", title: "Difference between Derivative, Partial derivative and Gradient", completed: false, resourceType: "link", resourceUrl: "https://medium.com", note: "", isRevision: false },
+              { id: "14", title: "What is Gradient Descent?", completed: false, resourceType: null, articleUrl: "#", note: "", isRevision: false },
             ],
           },
         ],
@@ -120,34 +130,34 @@ const mockSheetData: Record<string, SheetData> = {
             id: "intro-ml",
             title: "Introduction to ML",
             topics: [
-              { id: "15", title: "What is Machine Learning?", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "16", title: "Types of ML: Supervised vs Unsupervised", completed: false, resourceType: "link", resourceUrl: "#", articleUrl: "#", hasNote: false, isRevision: false },
-              { id: "17", title: "Train-Test Split & Cross-Validation", completed: false, resourceType: "youtube", resourceUrl: "#", articleUrl: "#", hasNote: false, isRevision: false },
-              { id: "18", title: "Bias-Variance Tradeoff", completed: false, resourceType: "link", resourceUrl: "#", articleUrl: "#", hasNote: false, isRevision: false },
+              { id: "15", title: "What is Machine Learning?", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "16", title: "Types of ML: Supervised vs Unsupervised", completed: false, resourceType: "link", resourceUrl: "#", articleUrl: "#", note: "", isRevision: false },
+              { id: "17", title: "Train-Test Split & Cross-Validation", completed: false, resourceType: "youtube", resourceUrl: "#", articleUrl: "#", note: "", isRevision: false },
+              { id: "18", title: "Bias-Variance Tradeoff", completed: false, resourceType: "link", resourceUrl: "#", articleUrl: "#", note: "", isRevision: false },
             ],
           },
           {
             id: "data-understanding",
             title: "Data Understanding",
             topics: [
-              { id: "19", title: "Exploratory Data Analysis", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "20", title: "Feature Engineering", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
+              { id: "19", title: "Exploratory Data Analysis", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "20", title: "Feature Engineering", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
             ],
           },
           {
             id: "data-handling",
             title: "Data Handling",
             topics: [
-              { id: "21", title: "Handling Missing Values", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "22", title: "Handling Outliers", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
+              { id: "21", title: "Handling Missing Values", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "22", title: "Handling Outliers", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
             ],
           },
           {
             id: "data-visualization",
             title: "Data Visualization",
             topics: [
-              { id: "23", title: "Matplotlib Basics", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "24", title: "Seaborn for Statistical Plots", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
+              { id: "23", title: "Matplotlib Basics", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "24", title: "Seaborn for Statistical Plots", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
             ],
           },
         ],
@@ -160,8 +170,8 @@ const mockSheetData: Record<string, SheetData> = {
             id: "python-intro",
             title: "Python Fundamentals",
             topics: [
-              { id: "25", title: "Variables and Data Types", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "26", title: "Control Flow", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
+              { id: "25", title: "Variables and Data Types", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "26", title: "Control Flow", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
             ],
           },
         ],
@@ -185,12 +195,12 @@ const mockSheetData: Record<string, SheetData> = {
             id: "arrays-1",
             title: "Day 1 - Arrays Part I",
             topics: [
-              { id: "1", title: "Set Matrix Zeroes", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "2", title: "Pascal's Triangle", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "3", title: "Next Permutation", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "4", title: "Kadane's Algorithm", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "5", title: "Sort an array of 0's 1's 2's", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
-              { id: "6", title: "Stock Buy and Sell", completed: false, resourceType: "youtube", resourceUrl: "#", hasNote: false, isRevision: false },
+              { id: "1", title: "Set Matrix Zeroes", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "2", title: "Pascal's Triangle", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "3", title: "Next Permutation", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "4", title: "Kadane's Algorithm", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "5", title: "Sort an array of 0's 1's 2's", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "6", title: "Stock Buy and Sell", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
             ],
           },
         ],
@@ -200,7 +210,15 @@ const mockSheetData: Record<string, SheetData> = {
 };
 
 // Topic item component
-function TopicRow({ topic, onToggle }: { topic: Topic; onToggle: (id: string) => void }) {
+function TopicRow({ 
+  topic, 
+  onToggle,
+  onOpenNote 
+}: { 
+  topic: Topic; 
+  onToggle: (id: string) => void;
+  onOpenNote: (topic: Topic) => void;
+}) {
   return (
     <div className="flex items-center py-3 px-4 hover:bg-muted/50 transition-colors border-b border-border/30 last:border-b-0">
       <button
@@ -247,7 +265,13 @@ function TopicRow({ topic, onToggle }: { topic: Topic; onToggle: (id: string) =>
         </div>
         {/* Note */}
         <div className="w-12 flex justify-center">
-          <button className="text-muted-foreground hover:text-foreground transition-colors">
+          <button 
+            onClick={() => onOpenNote(topic)}
+            className={cn(
+              "transition-colors",
+              topic.note ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
             <Pencil className="h-4 w-4" />
           </button>
         </div>
@@ -266,7 +290,15 @@ function TopicRow({ topic, onToggle }: { topic: Topic; onToggle: (id: string) =>
 }
 
 // SubSection component
-function SubSectionCard({ subSection, onToggleTopic }: { subSection: SubSection; onToggleTopic: (id: string) => void }) {
+function SubSectionCard({ 
+  subSection, 
+  onToggleTopic,
+  onOpenNote 
+}: { 
+  subSection: SubSection; 
+  onToggleTopic: (id: string) => void;
+  onOpenNote: (topic: Topic) => void;
+}) {
   const [isOpen, setIsOpen] = useState(true);
   const completed = subSection.topics.filter(t => t.completed).length;
   const total = subSection.topics.length;
@@ -297,7 +329,12 @@ function SubSectionCard({ subSection, onToggleTopic }: { subSection: SubSection;
             </div>
             {/* Topics */}
             {subSection.topics.map(topic => (
-              <TopicRow key={topic.id} topic={topic} onToggle={onToggleTopic} />
+              <TopicRow 
+                key={topic.id} 
+                topic={topic} 
+                onToggle={onToggleTopic} 
+                onOpenNote={onOpenNote}
+              />
             ))}
           </div>
         </div>
@@ -307,7 +344,15 @@ function SubSectionCard({ subSection, onToggleTopic }: { subSection: SubSection;
 }
 
 // Section component
-function SectionCard({ section, onToggleTopic }: { section: Section; onToggleTopic: (id: string) => void }) {
+function SectionCard({ 
+  section, 
+  onToggleTopic,
+  onOpenNote 
+}: { 
+  section: Section; 
+  onToggleTopic: (id: string) => void;
+  onOpenNote: (topic: Topic) => void;
+}) {
   const [isOpen, setIsOpen] = useState(true);
   const allTopics = section.subSections.flatMap(s => s.topics);
   const completed = allTopics.filter(t => t.completed).length;
@@ -334,6 +379,7 @@ function SectionCard({ section, onToggleTopic }: { section: Section; onToggleTop
                 key={subSection.id} 
                 subSection={subSection} 
                 onToggleTopic={onToggleTopic}
+                onOpenNote={onOpenNote}
               />
             ))}
           </CardContent>
@@ -349,6 +395,9 @@ export default function SheetDetail() {
   const [sheetData, setSheetData] = useState<SheetData | null>(
     sheetId ? mockSheetData[sheetId] || mockSheetData["machine-learning"] : mockSheetData["machine-learning"]
   );
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+  const [noteText, setNoteText] = useState("");
 
   if (!sheetData) {
     return (
@@ -374,6 +423,36 @@ export default function SheetDetail() {
         })),
       };
     });
+  };
+
+  const handleOpenNote = (topic: Topic) => {
+    setEditingTopic(topic);
+    setNoteText(topic.note);
+    setNoteModalOpen(true);
+  };
+
+  const handleSaveNote = () => {
+    if (!editingTopic) return;
+    
+    setSheetData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        sections: prev.sections.map(section => ({
+          ...section,
+          subSections: section.subSections.map(subSection => ({
+            ...subSection,
+            topics: subSection.topics.map(topic =>
+              topic.id === editingTopic.id ? { ...topic, note: noteText } : topic
+            ),
+          })),
+        })),
+      };
+    });
+    
+    setNoteModalOpen(false);
+    setEditingTopic(null);
+    setNoteText("");
   };
 
   // Calculate progress
@@ -437,11 +516,44 @@ export default function SheetDetail() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <SectionCard section={section} onToggleTopic={handleToggleTopic} />
+              <SectionCard 
+                section={section} 
+                onToggleTopic={handleToggleTopic} 
+                onOpenNote={handleOpenNote}
+              />
             </motion.div>
           ))}
         </div>
       </main>
+
+      {/* Notes Modal */}
+      <Dialog open={noteModalOpen} onOpenChange={setNoteModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Notes for: {editingTopic?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Add your personal notes here..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              className="min-h-[200px] resize-none"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setNoteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNote} className="gap-2">
+              <Save className="h-4 w-4" />
+              Save Note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
