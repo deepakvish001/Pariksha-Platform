@@ -26,7 +26,8 @@ import {
   Mail,
   Trash2,
   AlertTriangle,
-  ArrowRight
+  ArrowRight,
+  Menu
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +55,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { DashboardSidebar } from "@/components/DashboardSidebar";
 
 interface ExtendedProfile {
   id: string;
@@ -482,57 +485,38 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleAvatarUpload}
-        accept="image/*"
-        className="hidden"
-      />
+    <SidebarProvider>
+      <DashboardSidebar />
+      <SidebarInset>
+        <div className="min-h-screen bg-background">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleAvatarUpload}
+            accept="image/*"
+            className="hidden"
+          />
 
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-lg sticky top-0 z-50">
-        <div className="section-container flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-orange flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">U</span>
-            </div>
-            <span className="text-xl font-bold text-foreground">UniDash</span>
-          </Link>
+          {/* Header */}
+          <header className="border-b border-border bg-card/50 backdrop-blur-lg sticky top-0 z-40">
+            <div className="flex items-center justify-between h-14 px-4">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger className="md:hidden" />
+                <span className="text-lg font-semibold text-foreground md:hidden">UniDash</span>
+              </div>
 
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </Button>
-            <Link to="/settings">
-              <Button variant="ghost" size="icon">
-                <Settings className="w-5 h-5" />
-              </Button>
-            </Link>
-            <AlertDialog open={isSignOutDialogOpen} onOpenChange={setIsSignOutDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                  {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Sign out?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to sign out of your account? You'll need to sign in again to access your dashboard.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleSignOut}>Sign Out</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
-      </header>
+                <Link to="/settings">
+                  <Button variant="ghost" size="icon">
+                    <Settings className="w-5 h-5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </header>
 
       {/* Onboarding Reminder Banner */}
       {!onboardingCompleted && !bannerDismissed && (
@@ -576,7 +560,7 @@ const Dashboard = () => {
       )}
 
       {/* Main Content */}
-      <main className="section-container py-8">
+      <main className="p-6 md:p-8">
         {/* Welcome Section */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -1053,7 +1037,9 @@ const Dashboard = () => {
           </div>
         </motion.div>
       </main>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
 
