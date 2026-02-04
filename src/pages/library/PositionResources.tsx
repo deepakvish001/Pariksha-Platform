@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   roles,
@@ -80,6 +81,7 @@ const PositionResources = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [progress, setProgress] = useState<ProgressState>({});
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<"all" | "starred">("all");
 
   // Load progress from local storage
   useEffect(() => {
@@ -179,9 +181,14 @@ const PositionResources = () => {
     };
   }, [roleStats]);
 
-  // Filter and sort roles (favorites first)
+  // Filter and sort roles (favorites first when on "all" tab)
   const filteredRoles = useMemo(() => {
     let filtered = roleStats;
+    
+    // Filter by starred tab
+    if (activeTab === "starred") {
+      filtered = filtered.filter((role) => role.isFavorite);
+    }
     
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -190,13 +197,17 @@ const PositionResources = () => {
       );
     }
 
-    // Sort: favorites first, then by name
-    return [...filtered].sort((a, b) => {
-      if (a.isFavorite && !b.isFavorite) return -1;
-      if (!a.isFavorite && b.isFavorite) return 1;
-      return 0;
-    });
-  }, [roleStats, searchQuery]);
+    // Sort: favorites first (only on "all" tab), then by name
+    if (activeTab === "all") {
+      return [...filtered].sort((a, b) => {
+        if (a.isFavorite && !b.isFavorite) return -1;
+        if (!a.isFavorite && b.isFavorite) return 1;
+        return 0;
+      });
+    }
+    
+    return filtered;
+  }, [roleStats, searchQuery, activeTab]);
 
   const favoriteCount = favorites.length;
 
@@ -288,14 +299,39 @@ const PositionResources = () => {
           </div>
         </motion.div>
 
-        {/* Search Bar */}
+        {/* Tabs and Search Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="flex flex-col sm:flex-row gap-4 items-center"
+          className="flex flex-col gap-4"
         >
-          <div className="relative flex-1 w-full">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "starred")}>
+            <TabsList>
+              <TabsTrigger value="all" className="gap-2">
+                <Layers className="h-4 w-4" />
+                All Positions
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {roleStats.length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="starred" className="gap-2">
+                <Star className="h-4 w-4" />
+                Starred
+                <Badge 
+                  variant="secondary" 
+                  className={cn(
+                    "ml-1 text-xs",
+                    favoriteCount > 0 && "bg-yellow-500/20 text-yellow-600"
+                  )}
+                >
+                  {favoriteCount}
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search positions..."
@@ -314,12 +350,6 @@ const PositionResources = () => {
               </Button>
             )}
           </div>
-          {favoriteCount > 0 && (
-            <Badge variant="secondary" className="gap-1 whitespace-nowrap">
-              <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
-              {favoriteCount} Starred
-            </Badge>
-          )}
         </motion.div>
 
         {/* Role Cards Grid */}
@@ -419,15 +449,32 @@ const PositionResources = () => {
 
           {filteredRoles.length === 0 && (
             <div className="text-center py-12">
-              <Layers className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No positions found matching your search</p>
-              <Button
-                variant="outline"
-                onClick={() => setSearchQuery("")}
-                className="mt-4"
-              >
-                Clear Search
-              </Button>
+              {activeTab === "starred" ? (
+                <>
+                  <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No starred positions yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">Click the star icon on any position to add it here</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setActiveTab("all")}
+                    className="mt-4"
+                  >
+                    View All Positions
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Layers className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No positions found matching your search</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSearchQuery("")}
+                    className="mt-4"
+                  >
+                    Clear Search
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </motion.div>
