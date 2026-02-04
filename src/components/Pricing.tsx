@@ -1,37 +1,50 @@
 import { Check } from "lucide-react";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import ScrollReveal from "./ScrollReveal";
 
 const plans = [
   {
     name: "EXPLORER",
-    price: "₹29",
+    monthlyPrice: "₹29",
+    yearlyPrice: "₹249",
     period: "/month",
+    yearlyPeriod: "/year",
     description: "Great for students just getting started with productivity tracking and daily task management.",
     features: ["Basic task tracking", "Note taking", "Weekly analytics"],
     cta: "Get Started",
     featured: false,
+    savings: "Save ₹99",
   },
   {
     name: "BUILDER",
-    price: "₹49",
+    monthlyPrice: "₹49",
+    yearlyPrice: "₹449",
     period: "/month",
+    yearlyPeriod: "/year",
     description: "Ideal for students building consistent habits with advanced analytics and collaboration tools.",
     features: ["Everything in Explorer", "Advanced analytics", "Streak tracking", "Priority support"],
     cta: "Get Started",
     featured: true,
+    savings: "Save ₹139",
   },
   {
-    name: "EXPLORER",
-    price: "₹79",
+    name: "ACHIEVER",
+    monthlyPrice: "₹79",
+    yearlyPrice: "₹699",
     period: "/month",
+    yearlyPeriod: "/year",
     description: "For power users who want the complete experience with unlimited features and premium support.",
     features: ["Everything in Builder", "Unlimited storage", "Custom themes", "API access"],
     cta: "Go Unlimited",
     featured: false,
+    savings: "Save ₹249",
   },
 ];
 
 const Pricing = () => {
+  const [isYearly, setIsYearly] = useState(false);
+
   return (
     <section className="py-24 bg-secondary/20">
       <div className="section-container">
@@ -41,6 +54,38 @@ const Pricing = () => {
           <p className="section-subtitle">
             Start free, scale when you're ready
           </p>
+        </ScrollReveal>
+
+        {/* Billing Toggle */}
+        <ScrollReveal delay={0.1}>
+          <div className="flex items-center justify-center gap-4 mb-12">
+            <span className={`text-sm font-medium transition-colors ${!isYearly ? 'text-primary' : 'text-muted-foreground'}`}>
+              Monthly
+            </span>
+            <button
+              onClick={() => setIsYearly(!isYearly)}
+              className="relative w-14 h-7 rounded-full bg-secondary border border-border transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
+              aria-label="Toggle billing period"
+            >
+              <motion.div
+                className="absolute top-1 left-1 w-5 h-5 rounded-full bg-primary"
+                animate={{ x: isYearly ? 26 : 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              />
+            </button>
+            <span className={`text-sm font-medium transition-colors ${isYearly ? 'text-primary' : 'text-muted-foreground'}`}>
+              Yearly
+            </span>
+            {isYearly && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full"
+              >
+                Save up to 25%
+              </motion.span>
+            )}
+          </div>
         </ScrollReveal>
 
         {/* Pricing Grid */}
@@ -53,9 +98,27 @@ const Pricing = () => {
                     {plan.name}
                   </span>
                   <div className="flex items-baseline gap-1 mt-2">
-                    <span className="text-4xl font-bold text-foreground">{plan.price}</span>
-                    <span className="text-muted-foreground">{plan.period}</span>
+                    <motion.span
+                      key={isYearly ? "yearly" : "monthly"}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-4xl font-bold text-foreground"
+                    >
+                      {isYearly ? plan.yearlyPrice : plan.monthlyPrice}
+                    </motion.span>
+                    <span className="text-muted-foreground">
+                      {isYearly ? plan.yearlyPeriod : plan.period}
+                    </span>
                   </div>
+                  {isYearly && (
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-xs text-primary mt-1 inline-block"
+                    >
+                      {plan.savings}
+                    </motion.span>
+                  )}
                 </div>
 
                 <p className="text-sm text-muted-foreground mb-6">
