@@ -20,15 +20,31 @@ import {
   ExternalLink,
   Copy,
   Check,
+  Filter,
+  Shuffle,
+  FileQuestion,
 } from "lucide-react";
-import AnswerPanel from "@/components/library/AnswerPanel";
-import CompanyQuestionRow from "@/components/library/CompanyQuestionRow";
+import CompanyQuestionTableRow from "@/components/library/CompanyQuestionTableRow";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { companies, categoryColors } from "@/data/companyResourcesData";
@@ -47,6 +63,7 @@ import {
   type Project,
   type ResumeTemplate,
   type ColdDM,
+  type Difficulty,
 } from "@/data/companyDetailData";
 import { useCompanyProgress } from "@/hooks/useCompanyProgress";
 
@@ -65,6 +82,10 @@ const tabIcons: Record<string, React.ElementType> = {
   "cold-dms": Mail,
 };
 
+// Tab groups for better organization
+const questionTabs = ["sql-questions", "interview-questions", "dsa-questions", "aptitude-questions"];
+const resourceTabs = ["job-portals", "projects", "resume-templates", "cold-dms"];
+
 const CompanyDetail = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
@@ -78,16 +99,18 @@ const CompanyDetail = () => {
 
   const [activeTab, setActiveTab] = useState(companyTabs[0].id);
   const [searchQuery, setSearchQuery] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | "all">("all");
   const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<number>>(new Set());
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(FAVORITES_KEY);
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
 
-  // Reset expanded questions when switching tabs
+  // Reset expanded questions and filters when switching tabs
   useEffect(() => {
     setExpandedQuestionIds(new Set());
     setSearchQuery("");
+    setDifficultyFilter("all");
   }, [activeTab]);
 
   // Use Supabase-synced progress
@@ -182,7 +205,7 @@ const CompanyDetail = () => {
   }, [activeTab]);
 
   // Check if current tab is a question tab
-  const isQuestionTab = ["sql-questions", "interview-questions", "dsa-questions", "aptitude-questions"].includes(activeTab);
+  const isQuestionTab = questionTabs.includes(activeTab);
 
   // Get all question IDs with answers for the current tab
   const questionsWithAnswers = useMemo(() => {
@@ -223,19 +246,49 @@ const CompanyDetail = () => {
     });
   };
 
-  // Filter data based on search
+  // Random question feature
+  const handleRandomQuestion = () => {
+    if (!isQuestionTab) return;
+    const questions = currentTabData as Question[];
+    const unsolvedQuestions = questions.filter((q) => !isSolved(q.id));
+    const pool = unsolvedQuestions.length > 0 ? unsolvedQuestions : questions;
+    if (pool.length === 0) return;
+    
+    const randomQuestion = pool[Math.floor(Math.random() * pool.length)];
+    setExpandedQuestionIds(new Set([randomQuestion.id]));
+    
+    setTimeout(() => {
+      const element = document.querySelector(`[data-question-id="${randomQuestion.id}"]`);
+      if (element) {
+        const headerOffset = 100;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - headerOffset;
+        window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+      }
+    }, 100);
+  };
+
+  // Filter data based on search and difficulty
   const filteredData = useMemo(() => {
-    if (!searchQuery.trim()) return currentTabData;
+    let data = currentTabData;
+    
+    // Apply difficulty filter for question tabs
+    if (isQuestionTab && difficultyFilter !== "all") {
+      data = (data as Question[]).filter((q) => q.difficulty === difficultyFilter);
+    }
+    
+    // Apply search filter
+    if (!searchQuery.trim()) return data;
     const query = searchQuery.toLowerCase();
 
-    return currentTabData.filter((item: any) => {
+    return data.filter((item: any) => {
       if ("text" in item) return item.text.toLowerCase().includes(query);
       if ("name" in item) return item.name.toLowerCase().includes(query);
       if ("title" in item) return item.title.toLowerCase().includes(query);
       if ("message" in item) return item.message.toLowerCase().includes(query);
       return true;
     });
-  }, [currentTabData, searchQuery]);
+  }, [currentTabData, searchQuery, difficultyFilter, isQuestionTab]);
 
   // Calculate progress stats for header
   const progressStats = useMemo(() => {
@@ -243,7 +296,23 @@ const CompanyDetail = () => {
     const solved = allQuestions.filter((q) => isSolved(q.id)).length;
     const total = allQuestions.length;
     const percentage = total > 0 ? Math.round((solved / total) * 100) : 0;
-    return { solved, total, percentage };
+    
+    // Difficulty breakdown
+    const easyTotal = allQuestions.filter((q) => q.difficulty === "Easy").length;
+    const mediumTotal = allQuestions.filter((q) => q.difficulty === "Medium").length;
+    const hardTotal = allQuestions.filter((q) => q.difficulty === "Hard").length;
+    const easySolved = allQuestions.filter((q) => q.difficulty === "Easy" && isSolved(q.id)).length;
+    const mediumSolved = allQuestions.filter((q) => q.difficulty === "Medium" && isSolved(q.id)).length;
+    const hardSolved = allQuestions.filter((q) => q.difficulty === "Hard" && isSolved(q.id)).length;
+    
+    return { 
+      solved, 
+      total, 
+      percentage,
+      easy: { solved: easySolved, total: easyTotal },
+      medium: { solved: mediumSolved, total: mediumTotal },
+      hard: { solved: hardSolved, total: hardTotal },
+    };
   }, [isSolved]);
 
   if (!company) {
@@ -271,15 +340,15 @@ const CompanyDetail = () => {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
-          <div className="flex h-16 items-center justify-between gap-4 px-6">
-            <div className="flex items-center gap-4">
+          <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
+            <div className="flex items-center gap-4 min-w-0">
               <SidebarTrigger />
-              <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Link to="/library/companies" className="hover:text-foreground transition-colors">
+              <nav className="flex items-center gap-2 text-sm text-muted-foreground truncate">
+                <Link to="/library/companies" className="hover:text-foreground transition-colors whitespace-nowrap">
                   Companies
                 </Link>
                 <span>/</span>
-                <span className="text-foreground font-medium">{company.name}</span>
+                <span className="text-foreground font-medium truncate">{company.name}</span>
               </nav>
             </div>
             <Button
@@ -287,37 +356,37 @@ const CompanyDetail = () => {
               size="sm"
               onClick={toggleFavorite}
               className={cn(
-                "gap-2",
+                "gap-2 shrink-0",
                 isFavorited && "text-amber-500 border-amber-500/50 bg-amber-500/10"
               )}
             >
               <Star className={cn("h-4 w-4", isFavorited && "fill-amber-400")} />
-              {isFavorited ? "Favorited" : "Favorite"}
+              <span className="hidden sm:inline">{isFavorited ? "Favorited" : "Favorite"}</span>
             </Button>
           </div>
         </header>
 
-        <main className="p-4 md:p-6 lg:p-8 w-full">
+        <main className="p-4 md:p-6 lg:p-8 w-full max-w-full overflow-x-hidden">
           {/* Enhanced Company Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <div className="flex flex-col md:flex-row md:items-start gap-6">
+            <div className="flex flex-col lg:flex-row lg:items-start gap-6">
               {/* Company Icon & Info */}
-              <div className="flex items-start gap-4 flex-1">
-                <div className="h-16 w-16 rounded-2xl bg-gradient-orange flex items-center justify-center shrink-0 shadow-lg">
-                  <Building2 className="h-8 w-8 text-primary-foreground" />
+              <div className="flex items-start gap-4 flex-1 min-w-0">
+                <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gradient-orange flex items-center justify-center shrink-0 shadow-lg">
+                  <Building2 className="h-7 w-7 sm:h-8 sm:w-8 text-primary-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <h1 className="text-2xl md:text-3xl font-bold">{company.name}</h1>
-                    <Badge variant="outline" className={cn("text-xs", getCategoryStyle(company.category))}>
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">{company.name}</h1>
+                    <Badge variant="outline" className={cn("text-xs shrink-0", getCategoryStyle(company.category))}>
                       {company.category}
                     </Badge>
                     {company.isHiring && (
-                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/40 bg-emerald-500/10">
+                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/40 bg-emerald-500/10 shrink-0">
                         <Briefcase className="h-3 w-3 mr-1" />
                         Hiring
                       </Badge>
@@ -327,126 +396,269 @@ const CompanyDetail = () => {
                 </div>
               </div>
 
-              {/* Progress Stats Card */}
+              {/* Progress Stats Card - Enhanced with difficulty breakdown */}
               {user && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="flex flex-col items-center p-4 rounded-xl border border-border/50 bg-card min-w-[140px]"
+                  className="flex flex-col p-4 rounded-xl border border-border/50 bg-card w-full lg:w-auto lg:min-w-[200px]"
                 >
-                  <div className="text-3xl font-bold text-primary">{progressStats.percentage}%</div>
-                  <div className="text-xs text-muted-foreground mb-2">Complete</div>
-                  <Progress value={progressStats.percentage} className="h-1.5 w-full" />
-                  <div className="text-xs text-muted-foreground mt-2">
-                    {progressStats.solved}/{progressStats.total} solved
+                  <div className="flex items-center justify-between lg:justify-center lg:flex-col gap-4 lg:gap-2">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-primary">{progressStats.percentage}%</div>
+                      <div className="text-xs text-muted-foreground">Complete</div>
+                    </div>
+                    <div className="flex-1 lg:w-full">
+                      <Progress value={progressStats.percentage} className="h-2" />
+                      <div className="text-xs text-muted-foreground mt-2 text-center">
+                        {progressStats.solved}/{progressStats.total} solved
+                      </div>
+                    </div>
+                  </div>
+                  {/* Difficulty breakdown */}
+                  <div className="flex gap-3 mt-3 pt-3 border-t border-border/50 justify-center">
+                    <div className="text-center">
+                      <div className="text-xs font-medium text-emerald-500">{progressStats.easy.solved}/{progressStats.easy.total}</div>
+                      <div className="text-[10px] text-muted-foreground">Easy</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs font-medium text-amber-500">{progressStats.medium.solved}/{progressStats.medium.total}</div>
+                      <div className="text-[10px] text-muted-foreground">Medium</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs font-medium text-red-500">{progressStats.hard.solved}/{progressStats.hard.total}</div>
+                      <div className="text-[10px] text-muted-foreground">Hard</div>
+                    </div>
                   </div>
                 </motion.div>
               )}
             </div>
           </motion.div>
 
-          {/* Enhanced Tabs with Icons and Counts */}
+          {/* Enhanced Grouped Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="flex flex-wrap gap-1 border-b border-border/50 mb-6 pb-2"
+            className="mb-6 space-y-4"
           >
-            {companyTabs.map((tab) => {
-              const Icon = tabIcons[tab.id];
-              const count = tabCounts[tab.id as keyof typeof tabCounts];
-              const isActive = activeTab === tab.id;
+            {/* Questions Group */}
+            <div>
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
+                Questions
+              </div>
+              <div className="flex flex-wrap gap-1 border-b border-border/50 pb-2">
+                {companyTabs
+                  .filter((tab) => questionTabs.includes(tab.id))
+                  .map((tab) => {
+                    const Icon = tabIcons[tab.id];
+                    const count = tabCounts[tab.id as keyof typeof tabCounts];
+                    const isActive = activeTab === tab.id;
 
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-all border-b-2 -mb-px rounded-t-lg",
-                    isActive
-                      ? "text-foreground border-primary bg-muted/50"
-                      : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/30"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{tab.name}</span>
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "h-5 px-1.5 text-xs",
-                      isActive ? "bg-primary/20 text-primary" : ""
-                    )}
-                  >
-                    {count}
-                  </Badge>
-                </button>
-              );
-            })}
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-2 text-sm font-medium whitespace-nowrap transition-all border-b-2 -mb-px rounded-t-lg",
+                          isActive
+                            ? "text-foreground border-primary bg-muted/50"
+                            : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/30"
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span className="hidden sm:inline">{tab.name}</span>
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "h-5 px-1.5 text-xs",
+                            isActive ? "bg-primary/20 text-primary" : ""
+                          )}
+                        >
+                          {count}
+                        </Badge>
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Resources Group */}
+            <div>
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
+                Resources
+              </div>
+              <div className="flex flex-wrap gap-1 border-b border-border/50 pb-2">
+                {companyTabs
+                  .filter((tab) => resourceTabs.includes(tab.id))
+                  .map((tab) => {
+                    const Icon = tabIcons[tab.id];
+                    const count = tabCounts[tab.id as keyof typeof tabCounts];
+                    const isActive = activeTab === tab.id;
+
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-2 text-sm font-medium whitespace-nowrap transition-all border-b-2 -mb-px rounded-t-lg",
+                          isActive
+                            ? "text-foreground border-primary bg-muted/50"
+                            : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/30"
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span className="hidden sm:inline">{tab.name}</span>
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "h-5 px-1.5 text-xs",
+                            isActive ? "bg-primary/20 text-primary" : ""
+                          )}
+                        >
+                          {count}
+                        </Badge>
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
           </motion.div>
 
-          {/* Search and Controls */}
+          {/* Enhanced Search and Controls */}
           {(isQuestionTab || activeTab === "cold-dms") && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex flex-col sm:flex-row gap-3 mb-6"
+              className="space-y-3 mb-6"
             >
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={`Search ${companyTabs.find((t) => t.id === activeTab)?.name.toLowerCase()}...`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              {isQuestionTab && questionsWithAnswers.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <AnimatePresence>
-                    {expandedQuestionIds.size > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                      >
-                        <Badge variant="secondary" className="h-10 px-3 text-sm font-medium">
-                          {expandedQuestionIds.size}/{questionsWithAnswers.length} expanded
-                        </Badge>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  <AnimatePresence mode="wait">
-                    {expandedQuestionIds.size < questionsWithAnswers.length && (
-                      <motion.div
-                        key="expand"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                      >
-                        <Button variant="outline" size="sm" onClick={handleExpandAll} className="gap-2 h-10">
-                          <ChevronsUpDown className="h-4 w-4" />
-                          Expand All
-                        </Button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  <AnimatePresence>
-                    {expandedQuestionIds.size > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                      >
-                        <Button variant="outline" size="sm" onClick={handleCollapseAll} className="gap-2 h-10">
-                          <ChevronsUpDown className="h-4 w-4" />
-                          Collapse All
-                        </Button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={`Search ${companyTabs.find((t) => t.id === activeTab)?.name.toLowerCase()}...`}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-              )}
+                
+                {/* Difficulty Filter - only for question tabs */}
+                {isQuestionTab && (
+                  <Select
+                    value={difficultyFilter}
+                    onValueChange={(value) => setDifficultyFilter(value as Difficulty | "all")}
+                  >
+                    <SelectTrigger className="w-full sm:w-[160px]">
+                      <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <SelectValue placeholder="Difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Levels</SelectItem>
+                      <SelectItem value="Easy">
+                        <span className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                          Easy
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="Medium">
+                        <span className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-amber-500" />
+                          Medium
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="Hard">
+                        <span className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-red-500" />
+                          Hard
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Random Question Button */}
+                {isQuestionTab && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleRandomQuestion}
+                    className="h-10 w-10 shrink-0"
+                    title="Random question"
+                  >
+                    <Shuffle className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Results count and expand/collapse controls */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{filteredData.length}</span>{" "}
+                  {filteredData.length === 1 ? "question" : "questions"} found
+                  {(searchQuery || difficultyFilter !== "all") && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 ml-2 text-xs"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setDifficultyFilter("all");
+                      }}
+                    >
+                      Clear filters
+                    </Button>
+                  )}
+                </div>
+
+                {isQuestionTab && questionsWithAnswers.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <AnimatePresence>
+                      {expandedQuestionIds.size > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                        >
+                          <Badge variant="secondary" className="text-xs font-medium">
+                            {expandedQuestionIds.size} expanded
+                          </Badge>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <AnimatePresence mode="wait">
+                      {expandedQuestionIds.size < questionsWithAnswers.length && (
+                        <motion.div
+                          key="expand"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                        >
+                          <Button variant="outline" size="sm" onClick={handleExpandAll} className="gap-2 h-8 text-xs">
+                            <ChevronsUpDown className="h-3 w-3" />
+                            Expand All
+                          </Button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <AnimatePresence>
+                      {expandedQuestionIds.size > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                        >
+                          <Button variant="outline" size="sm" onClick={handleCollapseAll} className="gap-2 h-8 text-xs">
+                            <ChevronsUpDown className="h-3 w-3" />
+                            Collapse All
+                          </Button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
 
@@ -462,7 +674,7 @@ const CompanyDetail = () => {
           {!isLoading && (
             <div className="space-y-0">
               {isQuestionTab && (
-                <QuestionsSection
+                <QuestionsTable
                   questions={filteredData as Question[]}
                   showCategory={activeTab === "sql-questions"}
                   isSolved={isSolved}
@@ -518,8 +730,8 @@ const CompanyDetail = () => {
   );
 };
 
-// Questions Section Component
-interface QuestionsSectionProps {
+// Questions Table Component with proper HTML table structure
+interface QuestionsTableProps {
   questions: Question[];
   showCategory?: boolean;
   isSolved: (id: number) => boolean;
@@ -531,7 +743,7 @@ interface QuestionsSectionProps {
   onToggleExpand: (id: number) => void;
 }
 
-const QuestionsSection = ({
+const QuestionsTable = ({
   questions,
   showCategory = false,
   isSolved,
@@ -541,31 +753,35 @@ const QuestionsSection = ({
   isLoggedIn,
   expandedIds,
   onToggleExpand,
-}: QuestionsSectionProps) => {
+}: QuestionsTableProps) => {
+  if (questions.length === 0) {
+    return (
+      <div className="border border-border/50 rounded-lg p-12 text-center">
+        <FileQuestion className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+        <h3 className="font-medium text-foreground mb-1">No questions found</h3>
+        <p className="text-sm text-muted-foreground">
+          Try adjusting your search or filters
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="border border-border/50 rounded-lg overflow-hidden">
-      {/* Header */}
-      <div
-        className={cn(
-          "grid gap-4 px-4 py-3 bg-muted/30 text-sm font-medium text-muted-foreground border-b border-border/50",
-          showCategory ? "grid-cols-[40px_1fr_80px_100px_60px_60px]" : "grid-cols-[40px_1fr_80px_60px_60px]"
-        )}
-      >
-        <div>#</div>
-        <div>Question</div>
-        <div>Difficulty</div>
-        {showCategory && <div className="hidden sm:block">Category</div>}
-        <div className="text-center">Solved</div>
-        <div className="text-center">Revision</div>
-      </div>
-
-      {/* Rows */}
-      <div>
-        {questions.length === 0 ? (
-          <div className="px-4 py-12 text-center text-muted-foreground">No questions found</div>
-        ) : (
-          questions.map((question, index) => (
-            <CompanyQuestionRow
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/30 hover:bg-muted/30">
+            <TableHead className="w-12 text-center">#</TableHead>
+            <TableHead>Question</TableHead>
+            <TableHead className="hidden sm:table-cell w-24">Difficulty</TableHead>
+            {showCategory && <TableHead className="hidden md:table-cell w-28">Category</TableHead>}
+            <TableHead className="w-16 text-center">Solved</TableHead>
+            <TableHead className="w-16 text-center">Revision</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {questions.map((question, index) => (
+            <CompanyQuestionTableRow
               key={question.id}
               question={question}
               index={index}
@@ -578,14 +794,14 @@ const QuestionsSection = ({
               onToggleRevision={() => toggleRevision(question.id)}
               onToggleExpand={() => onToggleExpand(question.id)}
             />
-          ))
-        )}
-      </div>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };
 
-// Job Portals Grid (Card-based)
+// Job Portals Grid (Enhanced Cards)
 interface JobPortalsGridProps {
   portals: JobPortal[];
   isSolved: (id: number) => boolean;
@@ -594,15 +810,25 @@ interface JobPortalsGridProps {
 }
 
 const JobPortalsGrid = ({ portals, isSolved, toggleSolved, isLoggedIn }: JobPortalsGridProps) => {
+  if (portals.length === 0) {
+    return (
+      <div className="border border-border/50 rounded-lg p-12 text-center">
+        <Globe className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+        <h3 className="font-medium text-foreground mb-1">No job portals found</h3>
+        <p className="text-sm text-muted-foreground">Check back later for updates</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {portals.map((portal, index) => (
         <motion.div
           key={portal.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 }}
-          className="group border border-border/50 rounded-xl p-5 hover:border-primary/50 hover:shadow-md transition-all bg-card"
+          className="group border border-border/50 rounded-xl p-5 hover:border-primary/50 hover:shadow-lg transition-all bg-card"
         >
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -646,12 +872,22 @@ const JobPortalsGrid = ({ portals, isSolved, toggleSolved, isLoggedIn }: JobPort
   );
 };
 
-// Projects Grid (Enhanced Cards)
+// Projects Grid (Enhanced Cards with difficulty)
 interface ProjectsGridProps {
   projects: Project[];
 }
 
 const ProjectsGrid = ({ projects }: ProjectsGridProps) => {
+  if (projects.length === 0) {
+    return (
+      <div className="border border-border/50 rounded-lg p-12 text-center">
+        <FolderKanban className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+        <h3 className="font-medium text-foreground mb-1">No projects available</h3>
+        <p className="text-sm text-muted-foreground">Check back later for project ideas</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {projects.map((project, index) => (
@@ -660,25 +896,30 @@ const ProjectsGrid = ({ projects }: ProjectsGridProps) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 }}
-          className="group border border-border/50 rounded-xl p-5 hover:border-primary/50 hover:shadow-md transition-all bg-card"
+          className="group border border-border/50 rounded-xl p-5 hover:border-primary/50 hover:shadow-lg transition-all bg-card"
         >
           <div className="flex items-start gap-3 mb-3">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <FolderKanban className="h-5 w-5 text-primary" />
             </div>
-            <div className="min-w-0">
-              <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                 {project.title}
               </h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
+              <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{project.description}</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border/50">
-            {project.technologies.map((tech) => (
+          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border/50">
+            {project.technologies.slice(0, 5).map((tech) => (
               <Badge key={tech} variant="outline" className="text-xs">
                 {tech}
               </Badge>
             ))}
+            {project.technologies.length > 5 && (
+              <Badge variant="secondary" className="text-xs">
+                +{project.technologies.length - 5}
+              </Badge>
+            )}
           </div>
         </motion.div>
       ))}
@@ -686,12 +927,22 @@ const ProjectsGrid = ({ projects }: ProjectsGridProps) => {
   );
 };
 
-// Resume Templates Grid (Gallery)
+// Resume Templates Grid (Gallery with Download)
 interface ResumeTemplatesGridProps {
   templates: ResumeTemplate[];
 }
 
 const ResumeTemplatesGrid = ({ templates }: ResumeTemplatesGridProps) => {
+  if (templates.length === 0) {
+    return (
+      <div className="border border-border/50 rounded-lg p-12 text-center">
+        <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+        <h3 className="font-medium text-foreground mb-1">No templates available</h3>
+        <p className="text-sm text-muted-foreground">Check back later for resume templates</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
       {templates.map((template, index) => (
@@ -700,19 +951,21 @@ const ResumeTemplatesGrid = ({ templates }: ResumeTemplatesGridProps) => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: index * 0.05 }}
-          className="group border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 hover:shadow-md transition-all bg-card cursor-pointer"
+          className="group border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all bg-card cursor-pointer"
         >
           <div className="aspect-[3/4] bg-muted/30 flex items-center justify-center relative">
-            <FileText className="h-16 w-16 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
-            <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <Button size="sm" variant="secondary" className="gap-2">
-                <ExternalLink className="h-3 w-3" />
-                Preview
-              </Button>
+            <FileText className="h-12 w-12 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="flex flex-col gap-2">
+                <Button size="sm" variant="secondary" className="gap-2">
+                  <ExternalLink className="h-3 w-3" />
+                  Preview
+                </Button>
+              </div>
             </div>
           </div>
           <div className="p-3">
-            <h4 className="font-medium text-sm mb-0.5 truncate">{template.name}</h4>
+            <h4 className="font-medium text-sm mb-1 truncate">{template.name}</h4>
             <Badge variant="secondary" className="text-xs">
               {template.style}
             </Badge>
@@ -723,7 +976,7 @@ const ResumeTemplatesGrid = ({ templates }: ResumeTemplatesGridProps) => {
   );
 };
 
-// Cold DMs Grid (Card-based with Copy)
+// Cold DMs Grid (Enhanced Cards with Platform Badges)
 interface ColdDMsGridProps {
   dms: ColdDM[];
   isSolved: (id: number) => boolean;
@@ -740,6 +993,16 @@ const ColdDMsGrid = ({ dms, isSolved, toggleSolved, isLoggedIn }: ColdDMsGridPro
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  if (dms.length === 0) {
+    return (
+      <div className="border border-border/50 rounded-lg p-12 text-center">
+        <Mail className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+        <h3 className="font-medium text-foreground mb-1">No templates found</h3>
+        <p className="text-sm text-muted-foreground">Try adjusting your search</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {dms.map((dm, index) => (
@@ -748,7 +1011,12 @@ const ColdDMsGrid = ({ dms, isSolved, toggleSolved, isLoggedIn }: ColdDMsGridPro
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 }}
-          className="group border border-border/50 rounded-xl p-5 hover:border-primary/50 transition-all bg-card"
+          className={cn(
+            "group border rounded-xl p-5 transition-all bg-card",
+            copiedId === dm.id
+              ? "border-emerald-500/50 bg-emerald-500/5"
+              : "border-border/50 hover:border-primary/50"
+          )}
         >
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex items-center gap-2">
@@ -777,8 +1045,16 @@ const ColdDMsGrid = ({ dms, isSolved, toggleSolved, isLoggedIn }: ColdDMsGridPro
           </div>
           <p className="text-sm text-muted-foreground line-clamp-3 mb-3">{dm.message}</p>
           <div className="flex items-center justify-between pt-3 border-t border-border/50">
-            <span className="text-xs text-muted-foreground">{dm.message.length} characters</span>
-            <Button size="sm" variant="outline" className="gap-2 h-8" onClick={() => handleCopy(dm)}>
+            <span className="text-xs text-muted-foreground font-medium">{dm.message.length} chars</span>
+            <Button
+              size="sm"
+              variant={copiedId === dm.id ? "default" : "outline"}
+              className={cn(
+                "gap-2 h-8 transition-all",
+                copiedId === dm.id && "bg-emerald-500 hover:bg-emerald-600"
+              )}
+              onClick={() => handleCopy(dm)}
+            >
               {copiedId === dm.id ? (
                 <>
                   <Check className="h-3 w-3" />
