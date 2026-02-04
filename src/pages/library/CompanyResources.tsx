@@ -303,7 +303,7 @@ const CompanyResources = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="flex flex-wrap gap-1 border-b border-border/50 pb-2 overflow-x-auto"
+          className="flex flex-wrap gap-1 border-b border-border/50 pb-2"
         >
           {tabs.map((tab) => {
             const count =

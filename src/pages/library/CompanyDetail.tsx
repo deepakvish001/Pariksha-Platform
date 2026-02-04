@@ -351,7 +351,7 @@ const CompanyDetail = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="flex gap-1 border-b border-border/50 mb-6 overflow-x-auto pb-px scrollbar-hide"
+            className="flex flex-wrap gap-1 border-b border-border/50 mb-6 pb-2"
           >
             {companyTabs.map((tab) => {
               const Icon = tabIcons[tab.id];
