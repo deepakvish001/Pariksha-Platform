@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { TrendingUp, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import StreakCounter from "@/components/StreakCounter";
 
 interface ProgressStats {
   total: number;
@@ -30,45 +31,50 @@ const ProgressSummaryCard = ({ stats, className }: ProgressSummaryCardProps) => 
       )}
     >
       <div className="flex flex-col sm:flex-row items-center gap-6">
-        {/* Circular Progress */}
-        <div className="relative flex-shrink-0">
-          <svg className="w-24 h-24 md:w-28 md:h-28 transform -rotate-90">
-            {/* Background circle */}
-            <circle
-              cx="50%"
-              cy="50%"
-              r="40"
-              fill="none"
-              stroke="hsl(var(--muted))"
-              strokeWidth="8"
-            />
-            {/* Progress circle */}
-            <motion.circle
-              cx="50%"
-              cy="50%"
-              r="40"
-              fill="none"
-              stroke="hsl(var(--primary))"
-              strokeWidth="8"
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              initial={{ strokeDashoffset: circumference }}
-              animate={{ strokeDashoffset }}
-              transition={{ duration: 1, ease: "easeOut" }}
-            />
-          </svg>
-          {/* Percentage text */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-              className="text-2xl md:text-3xl font-bold"
-            >
-              {stats.percentage}%
-            </motion.span>
-            <span className="text-xs text-muted-foreground">Complete</span>
+        {/* Circular Progress + Streak */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-shrink-0">
+            <svg className="w-24 h-24 md:w-28 md:h-28 transform -rotate-90">
+              {/* Background circle */}
+              <circle
+                cx="50%"
+                cy="50%"
+                r="40"
+                fill="none"
+                stroke="hsl(var(--muted))"
+                strokeWidth="8"
+              />
+              {/* Progress circle */}
+              <motion.circle
+                cx="50%"
+                cy="50%"
+                r="40"
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                initial={{ strokeDashoffset: circumference }}
+                animate={{ strokeDashoffset }}
+                transition={{ duration: 1, ease: "easeOut" }}
+              />
+            </svg>
+            {/* Percentage text */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                className="text-2xl md:text-3xl font-bold"
+              >
+                {stats.percentage}%
+              </motion.span>
+              <span className="text-xs text-muted-foreground">Complete</span>
+            </div>
           </div>
+          
+          {/* Streak Counter */}
+          <StreakCounter variant="compact" />
         </div>
 
         {/* Stats Grid */}
