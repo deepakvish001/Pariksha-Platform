@@ -1,188 +1,210 @@
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, RoundedBox, Text } from '@react-three/drei';
-import { useRef, Suspense } from 'react';
+import { Float, MeshTransmissionMaterial, Environment } from '@react-three/drei';
+import { useRef, Suspense, useMemo } from 'react';
 import * as THREE from 'three';
 
-// Dashboard card representing task/learning progress
-const DashboardCard = ({ position, scale, color, delay = 0 }: { 
-  position: [number, number, number]; 
-  scale: number; 
-  color: string;
-  delay?: number;
-}) => {
-  const meshRef = useRef<THREE.Group>(null);
+// Premium glass-like morphing core sphere
+const GlassCore = () => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<any>(null);
 
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime + delay) * 0.1;
+      meshRef.current.rotation.x = state.clock.elapsedTime * 0.15;
+      meshRef.current.rotation.y = state.clock.elapsedTime * 0.2;
     }
   });
 
   return (
-    <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.3}>
-      <group ref={meshRef} position={position} scale={scale}>
-        <RoundedBox args={[1.5, 1, 0.08]} radius={0.05} smoothness={4}>
-          <meshStandardMaterial
-            color={color}
-            roughness={0.3}
-            metalness={0.1}
-            transparent
-            opacity={0.95}
-          />
-        </RoundedBox>
-        {/* Progress bar on card */}
-        <mesh position={[0, -0.2, 0.05]}>
-          <boxGeometry args={[1.2, 0.1, 0.02]} />
-          <meshStandardMaterial color="#374151" roughness={0.5} />
-        </mesh>
-        <mesh position={[-0.15, -0.2, 0.06]}>
-          <boxGeometry args={[0.9, 0.08, 0.02]} />
-          <meshStandardMaterial color="#f97316" roughness={0.3} metalness={0.5} />
-        </mesh>
-      </group>
+    <Float speed={1.5} rotationIntensity={0.3} floatIntensity={0.5}>
+      <mesh ref={meshRef} scale={1.4}>
+        <icosahedronGeometry args={[1, 4]} />
+        <MeshTransmissionMaterial
+          ref={materialRef}
+          backside
+          samples={16}
+          resolution={512}
+          transmission={0.95}
+          roughness={0.05}
+          thickness={0.5}
+          ior={1.5}
+          chromaticAberration={0.15}
+          anisotropy={0.3}
+          distortion={0.2}
+          distortionScale={0.5}
+          temporalDistortion={0.1}
+          color="#ff6b35"
+        />
+      </mesh>
     </Float>
   );
 };
 
-// Circular progress ring representing learning progress
-const ProgressRing = () => {
+// Inner glowing energy core
+const EnergyCore = () => {
+  const coreRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (coreRef.current) {
+      const scale = 0.6 + Math.sin(state.clock.elapsedTime * 2) * 0.08;
+      coreRef.current.scale.setScalar(scale);
+    }
+  });
+
+  return (
+    <mesh ref={coreRef}>
+      <sphereGeometry args={[0.5, 32, 32]} />
+      <meshStandardMaterial
+        color="#f97316"
+        emissive="#f97316"
+        emissiveIntensity={2}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+};
+
+// Orbiting ring with glow
+const OrbitRing = ({ 
+  radius, 
+  speed, 
+  rotationAxis, 
+  thickness = 0.03,
+  color = "#f97316"
+}: { 
+  radius: number; 
+  speed: number; 
+  rotationAxis: [number, number, number];
+  thickness?: number;
+  color?: string;
+}) => {
   const ringRef = useRef<THREE.Mesh>(null);
-  const progressRef = useRef<THREE.Mesh>(null);
 
   useFrame((state) => {
     if (ringRef.current) {
-      ringRef.current.rotation.z = state.clock.elapsedTime * 0.2;
+      ringRef.current.rotation.x = rotationAxis[0] + state.clock.elapsedTime * speed;
+      ringRef.current.rotation.y = rotationAxis[1] + state.clock.elapsedTime * speed * 0.7;
+      ringRef.current.rotation.z = rotationAxis[2];
     }
   });
 
   return (
-    <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
-      <group position={[0, 0, 0]}>
-        {/* Background ring */}
-        <mesh ref={ringRef}>
-          <torusGeometry args={[1.2, 0.08, 16, 64]} />
-          <meshStandardMaterial
-            color="#374151"
-            roughness={0.4}
-            metalness={0.2}
-            transparent
-            opacity={0.6}
-          />
-        </mesh>
-        {/* Progress arc */}
-        <mesh ref={progressRef} rotation={[0, 0, Math.PI / 4]}>
-          <torusGeometry args={[1.2, 0.1, 16, 32, Math.PI * 1.5]} />
+    <mesh ref={ringRef}>
+      <torusGeometry args={[radius, thickness, 16, 100]} />
+      <meshStandardMaterial
+        color={color}
+        emissive={color}
+        emissiveIntensity={0.8}
+        roughness={0.2}
+        metalness={0.9}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+};
+
+// Orbiting energy particles
+const OrbitingParticle = ({ 
+  radius, 
+  speed, 
+  offset,
+  size = 0.08
+}: { 
+  radius: number; 
+  speed: number; 
+  offset: number;
+  size?: number;
+}) => {
+  const particleRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (particleRef.current) {
+      const angle = state.clock.elapsedTime * speed + offset;
+      particleRef.current.position.x = Math.cos(angle) * radius;
+      particleRef.current.position.z = Math.sin(angle) * radius;
+      particleRef.current.position.y = Math.sin(angle * 2) * 0.3;
+    }
+  });
+
+  return (
+    <mesh ref={particleRef}>
+      <sphereGeometry args={[size, 16, 16]} />
+      <meshStandardMaterial
+        color="#ff8c42"
+        emissive="#f97316"
+        emissiveIntensity={1.5}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+};
+
+// Floating data streams/lines
+const DataStream = ({ 
+  startPos, 
+  angle,
+  length = 1.5
+}: { 
+  startPos: [number, number, number]; 
+  angle: number;
+  length?: number;
+}) => {
+  const streamRef = useRef<THREE.Group>(null);
+  
+  const segments = useMemo(() => {
+    return Array.from({ length: 5 }, (_, i) => ({
+      offset: i * 0.3,
+      size: 0.04 - i * 0.005,
+    }));
+  }, []);
+
+  useFrame((state) => {
+    if (streamRef.current) {
+      streamRef.current.rotation.y = state.clock.elapsedTime * 0.2;
+    }
+  });
+
+  return (
+    <group ref={streamRef} position={startPos} rotation={[0, angle, 0]}>
+      {segments.map((seg, i) => (
+        <mesh key={i} position={[seg.offset * length, 0, 0]}>
+          <sphereGeometry args={[seg.size, 8, 8]} />
           <meshStandardMaterial
             color="#f97316"
-            roughness={0.2}
-            metalness={0.8}
             emissive="#f97316"
-            emissiveIntensity={0.3}
-          />
-        </mesh>
-        {/* Center percentage display */}
-        <mesh>
-          <circleGeometry args={[0.8, 32]} />
-          <meshStandardMaterial
-            color="#1f2937"
-            roughness={0.5}
+            emissiveIntensity={1 - i * 0.15}
             transparent
-            opacity={0.9}
+            opacity={1 - i * 0.15}
+            toneMapped={false}
           />
         </mesh>
-      </group>
-    </Float>
+      ))}
+    </group>
   );
 };
 
-// Floating checkmark representing completed tasks
-const CheckMark = ({ position, scale }: { position: [number, number, number]; scale: number }) => {
-  const groupRef = useRef<THREE.Group>(null);
-
-  useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
-    }
-  });
-
-  return (
-    <Float speed={2.5} rotationIntensity={0.3} floatIntensity={0.6}>
-      <group ref={groupRef} position={position} scale={scale}>
-        {/* Circle background */}
-        <mesh>
-          <circleGeometry args={[0.4, 32]} />
-          <meshStandardMaterial
-            color="#22c55e"
-            roughness={0.3}
-            metalness={0.5}
-          />
-        </mesh>
-        {/* Checkmark lines */}
-        <mesh position={[-0.08, -0.02, 0.02]} rotation={[0, 0, -0.5]}>
-          <boxGeometry args={[0.15, 0.06, 0.02]} />
-          <meshStandardMaterial color="#ffffff" />
-        </mesh>
-        <mesh position={[0.08, 0.05, 0.02]} rotation={[0, 0, 0.8]}>
-          <boxGeometry args={[0.25, 0.06, 0.02]} />
-          <meshStandardMaterial color="#ffffff" />
-        </mesh>
-      </group>
-    </Float>
-  );
-};
-
-// Book/learning icon
-const BookIcon = ({ position, scale }: { position: [number, number, number]; scale: number }) => {
-  const bookRef = useRef<THREE.Group>(null);
-
-  useFrame((state) => {
-    if (bookRef.current) {
-      bookRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15;
-      bookRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.4) * 0.1;
-    }
-  });
-
-  return (
-    <Float speed={1.8} rotationIntensity={0.2} floatIntensity={0.4}>
-      <group ref={bookRef} position={position} scale={scale}>
-        {/* Book cover */}
-        <RoundedBox args={[0.7, 0.9, 0.12]} radius={0.02} smoothness={4}>
-          <meshStandardMaterial
-            color="#f97316"
-            roughness={0.4}
-            metalness={0.3}
-          />
-        </RoundedBox>
-        {/* Book pages */}
-        <mesh position={[0.02, 0, 0]}>
-          <boxGeometry args={[0.6, 0.85, 0.08]} />
-          <meshStandardMaterial color="#f5f5f5" roughness={0.8} />
-        </mesh>
-        {/* Book spine */}
-        <mesh position={[-0.33, 0, 0]}>
-          <boxGeometry args={[0.05, 0.9, 0.14]} />
-          <meshStandardMaterial color="#ea580c" roughness={0.4} metalness={0.3} />
-        </mesh>
-      </group>
-    </Float>
-  );
-};
-
-// Floating particles for ambiance
-const ParticleField = () => {
+// Ambient floating particles
+const AmbientParticles = () => {
   const pointsRef = useRef<THREE.Points>(null);
-  const particleCount = 30;
+  const particleCount = 40;
 
-  const positions = new Float32Array(particleCount * 3);
-  for (let i = 0; i < particleCount; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 6;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 6;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 4;
-  }
+  const positions = useMemo(() => {
+    const pos = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      const radius = 2.5 + Math.random() * 2;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      pos[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      pos[i * 3 + 2] = radius * Math.cos(phi);
+    }
+    return pos;
+  }, []);
 
   useFrame((state) => {
     if (pointsRef.current) {
-      pointsRef.current.rotation.y = state.clock.elapsedTime * 0.03;
+      pointsRef.current.rotation.y = state.clock.elapsedTime * 0.02;
+      pointsRef.current.rotation.x = state.clock.elapsedTime * 0.01;
     }
   });
 
@@ -200,7 +222,7 @@ const ParticleField = () => {
         color="#f97316"
         size={0.04}
         transparent
-        opacity={0.5}
+        opacity={0.6}
         sizeAttenuation
       />
     </points>
@@ -209,35 +231,52 @@ const ParticleField = () => {
 
 const Hero3DElement = () => {
   return (
-    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] lg:w-[600px] lg:h-[600px] pointer-events-none hidden lg:block">
+    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] lg:w-[650px] lg:h-[650px] pointer-events-none hidden lg:block">
       <Canvas
-        camera={{ position: [0, 0, 5], fov: 50 }}
+        camera={{ position: [0, 0, 5.5], fov: 45 }}
         style={{ background: 'transparent' }}
-        gl={{ alpha: true, antialias: true }}
+        gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
       >
         <Suspense fallback={null}>
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[10, 10, 5]} intensity={1} />
-          <pointLight position={[-10, -10, -5]} intensity={0.4} color="#f97316" />
-          <pointLight position={[5, 5, 5]} intensity={0.3} color="#ffffff" />
+          {/* Lighting setup */}
+          <ambientLight intensity={0.3} />
+          <directionalLight position={[10, 10, 5]} intensity={1.5} color="#ffffff" />
+          <pointLight position={[-5, 5, 5]} intensity={1} color="#f97316" />
+          <pointLight position={[5, -5, -5]} intensity={0.5} color="#ff6b35" />
+          <spotLight
+            position={[0, 10, 0]}
+            angle={0.5}
+            penumbra={1}
+            intensity={1}
+            color="#fff7ed"
+          />
           
-          {/* Main progress ring */}
-          <ProgressRing />
+          {/* Environment for reflections */}
+          <Environment preset="city" />
           
-          {/* Dashboard cards */}
-          <DashboardCard position={[-1.8, 1.2, -0.5]} scale={0.7} color="#ffffff" delay={0} />
-          <DashboardCard position={[1.9, 0.8, -0.3]} scale={0.6} color="#f8fafc" delay={1} />
-          <DashboardCard position={[-1.5, -1.3, -0.4]} scale={0.55} color="#ffffff" delay={2} />
+          {/* Main glass core */}
+          <GlassCore />
           
-          {/* Task completion checkmarks */}
-          <CheckMark position={[2.2, -0.8, 0.2]} scale={0.8} />
-          <CheckMark position={[-2.3, 0.3, 0.1]} scale={0.6} />
+          {/* Inner energy core */}
+          <EnergyCore />
           
-          {/* Book icon */}
-          <BookIcon position={[1.5, -1.5, 0.3]} scale={0.7} />
+          {/* Orbiting rings */}
+          <OrbitRing radius={1.8} speed={0.3} rotationAxis={[0.5, 0, 0]} thickness={0.025} color="#f97316" />
+          <OrbitRing radius={2.2} speed={-0.2} rotationAxis={[0.8, 0.3, 0.2]} thickness={0.02} color="#fb923c" />
+          <OrbitRing radius={2.5} speed={0.15} rotationAxis={[-0.3, 0.6, 0.1]} thickness={0.015} color="#fdba74" />
+          
+          {/* Orbiting particles */}
+          <OrbitingParticle radius={1.9} speed={0.8} offset={0} size={0.07} />
+          <OrbitingParticle radius={2.3} speed={-0.6} offset={2} size={0.05} />
+          <OrbitingParticle radius={2.6} speed={0.4} offset={4} size={0.06} />
+          
+          {/* Data streams */}
+          <DataStream startPos={[1.5, 0.5, 0]} angle={0.3} />
+          <DataStream startPos={[-1.2, -0.3, 0.8]} angle={2.5} />
+          <DataStream startPos={[0.5, -0.8, -1]} angle={4.2} />
           
           {/* Ambient particles */}
-          <ParticleField />
+          <AmbientParticles />
         </Suspense>
       </Canvas>
     </div>
