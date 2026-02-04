@@ -47,9 +47,8 @@ const AppleLogo = () => (
 );
 
 const NetflixLogo = () => (
-  <svg viewBox="0 0 111 30" className="w-20 h-7">
-    <path fill="#E50914" d="M105.06 1.53h5.22v27.97h-5.22V1.53zm-9.46 0h5.22v27.97h-5.22V1.53zm-9.45 0h5.22v27.97h-5.22V1.53zM77.2 1.53h5.22v27.97H77.2V1.53zm-9.45 0h5.22v27.97h-5.22V1.53zm-9.46 0h5.22v27.97h-5.22V1.53zM49.34 1.53h5.22v27.97h-5.22V1.53zm-9.45 0h5.22v27.97h-5.22V1.53zm-9.46 0h5.22v27.97H30.43V1.53zM21 1.53h5.22v27.97H21V1.53zm-9.45 0h5.22v27.97h-5.22V1.53zM2.09 1.53h5.22v27.97H2.09V1.53z"/>
-    <text x="5" y="22" fill="#E50914" fontSize="18" fontWeight="bold" fontFamily="Arial Black">NETFLIX</text>
+  <svg viewBox="0 0 24 24" className="w-8 h-8">
+    <path fill="#E50914" d="M5.398 0v.006c3.028 8.556 5.37 15.175 8.348 23.596 2.344.058 4.85.398 4.854.398-2.8-7.924-5.923-16.747-8.487-24zm8.489 0v9.63L18.6 22.951c-.043-7.86-.004-15.913.002-22.95zM5.398 1.05V24c1.873-.225 2.81-.312 4.715-.398v-9.22z"/>
   </svg>
 );
 
@@ -61,7 +60,7 @@ const StripeLogo = () => (
 
 const UberLogo = () => (
   <svg viewBox="0 0 60 20" className="w-14 h-6">
-    <text x="0" y="16" fill="#000000" className="dark:fill-white" fontSize="18" fontWeight="bold" fontFamily="Arial">Uber</text>
+    <text x="0" y="16" fill="currentColor" fontSize="18" fontWeight="bold" fontFamily="Arial">Uber</text>
   </svg>
 );
 
@@ -89,6 +88,49 @@ const ZomatoLogo = () => (
   </svg>
 );
 
+// New company logos
+const AdobeLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-8 h-8">
+    <path fill="#FF0000" d="M13.966 22.624l-1.69-4.281H8.122l3.892-9.144 5.662 13.425h-3.71zm-6.073 0H0l7.893-18.623v18.623zm10.232-18.624h7.875v18.623l-7.875-18.623z"/>
+  </svg>
+);
+
+const SalesforceLogo = () => (
+  <svg viewBox="0 0 100 30" className="w-20 h-7">
+    <text x="0" y="20" fill="#00A1E0" fontSize="14" fontWeight="bold" fontFamily="Arial">Salesforce</text>
+  </svg>
+);
+
+const LinkedInLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-7 h-7">
+    <path fill="#0A66C2" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+  </svg>
+);
+
+const SpotifyLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-8 h-8">
+    <path fill="#1DB954" d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+  </svg>
+);
+
+const PhonePeLogo = () => (
+  <svg viewBox="0 0 80 25" className="w-20 h-6">
+    <text x="0" y="18" fill="#5F259F" fontSize="14" fontWeight="bold" fontFamily="Arial">PhonePe</text>
+  </svg>
+);
+
+const CREDLogo = () => (
+  <svg viewBox="0 0 60 20" className="w-14 h-6">
+    <text x="0" y="16" fill="#2D3436" fontSize="16" fontWeight="900" fontFamily="Arial" className="dark:fill-white">CRED</text>
+  </svg>
+);
+
+const ZerodhaLogo = () => (
+  <svg viewBox="0 0 80 20" className="w-18 h-6">
+    <text x="0" y="16" fill="#387ED1" fontSize="14" fontWeight="bold" fontFamily="Arial">Zerodha</text>
+  </svg>
+);
+
 const companies = [
   { name: "Google", Logo: GoogleLogo },
   { name: "Microsoft", Logo: MicrosoftLogo },
@@ -96,10 +138,17 @@ const companies = [
   { name: "Meta", Logo: MetaLogo },
   { name: "Apple", Logo: AppleLogo },
   { name: "Netflix", Logo: NetflixLogo },
+  { name: "Adobe", Logo: AdobeLogo },
+  { name: "Salesforce", Logo: SalesforceLogo },
+  { name: "LinkedIn", Logo: LinkedInLogo },
+  { name: "Spotify", Logo: SpotifyLogo },
   { name: "Stripe", Logo: StripeLogo },
   { name: "Uber", Logo: UberLogo },
   { name: "Flipkart", Logo: FlipkartLogo },
   { name: "Razorpay", Logo: RazorpayLogo },
+  { name: "PhonePe", Logo: PhonePeLogo },
+  { name: "CRED", Logo: CREDLogo },
+  { name: "Zerodha", Logo: ZerodhaLogo },
   { name: "Swiggy", Logo: SwiggyLogo },
   { name: "Zomato", Logo: ZomatoLogo },
 ];
@@ -114,21 +163,21 @@ const CompanyLogos = () => {
               Get Placed at Top Companies & Startups
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Our students have landed roles at FAANG, MAANG, and India's top startups
+              Our students have landed roles at FAANG, MAANG, and India's top unicorns
             </p>
           </div>
         </ScrollReveal>
 
-        {/* Logo Grid */}
+        {/* Logo Grid - Responsive for 19 companies */}
         <ScrollReveal delay={0.1}>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 max-w-5xl mx-auto">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 max-w-6xl mx-auto">
             {companies.map((company, index) => (
               <motion.div
                 key={company.name}
                 className="flex items-center justify-center bg-card border border-border rounded-xl p-4 h-20 transition-all hover:border-primary/50 hover:shadow-lg group"
                 initial={{ opacity: 0, scale: 0.8 }}
                 whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
+                transition={{ delay: index * 0.03 }}
                 viewport={{ once: true }}
                 whileHover={{ y: -4, scale: 1.05 }}
               >
