@@ -15,6 +15,7 @@ import {
   Bookmark,
   ChevronDown,
   ChevronUp,
+  Folder,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -46,9 +47,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import SpacedRepetitionPanel from "@/components/library/SpacedRepetitionPanel";
 import AnswerPanel from "@/components/library/AnswerPanel";
+import FolderManager from "@/components/library/FolderManager";
+import AddToFolderButton from "@/components/library/AddToFolderButton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInterviewProgress } from "@/hooks/useInterviewProgress";
+import { useFolders } from "@/hooks/useFolders";
 import {
   interviewQuestions,
   interviewRoles,
@@ -59,7 +63,7 @@ import {
 } from "@/data/interviewQuestionsData";
 import type { Difficulty } from "@/data/positionResourcesData";
 
-type ViewMode = "all" | "solved" | "revision";
+type ViewMode = "all" | "solved" | "revision" | "folders";
 
 const InterviewQuestions = () => {
   const navigate = useNavigate();
@@ -70,6 +74,7 @@ const InterviewQuestions = () => {
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | "all">("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [expandedQuestionId, setExpandedQuestionId] = useState<number | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
   const {
     isLoading,
@@ -82,8 +87,41 @@ const InterviewQuestions = () => {
     spacedRepetitionStats,
   } = useInterviewProgress();
 
+  const {
+    folders,
+    folderItems,
+    isLoading: foldersLoading,
+    createFolder,
+    updateFolder,
+    deleteFolder,
+    addToFolder,
+    removeFromFolder,
+    isInFolder,
+  } = useFolders("interview");
+
+  // Get questions in selected folder
+  const folderQuestions = useMemo(() => {
+    if (!selectedFolderId) return [];
+    const items = folderItems[selectedFolderId] || [];
+    return items
+      .filter((item) => item.question_source === "interview")
+      .map((item) => interviewQuestions.find((q) => q.id === item.question_id))
+      .filter(Boolean) as InterviewQuestion[];
+  }, [selectedFolderId, folderItems]);
+
   // Filter questions based on all filters
   const filteredQuestions = useMemo(() => {
+    // If viewing folders and a folder is selected, show folder questions
+    if (viewMode === "folders" && selectedFolderId) {
+      let questions = folderQuestions;
+      questions = getQuestionsByDifficulty(questions, difficultyFilter);
+      questions = searchQuestions(questions, searchQuery);
+      if (roleFilter !== "all") {
+        questions = questions.filter((q) => q.roleId === roleFilter);
+      }
+      return questions;
+    }
+
     let questions = getQuestionsByRole(roleFilter);
     questions = getQuestionsByDifficulty(questions, difficultyFilter);
     questions = searchQuestions(questions, searchQuery);
@@ -96,7 +134,7 @@ const InterviewQuestions = () => {
     }
 
     return questions;
-  }, [roleFilter, difficultyFilter, searchQuery, viewMode, isSolved, isRevision]);
+  }, [roleFilter, difficultyFilter, searchQuery, viewMode, isSolved, isRevision, selectedFolderId, folderQuestions]);
 
   // Progress stats
   const progressStats = useMemo(() => {
@@ -262,13 +300,25 @@ const InterviewQuestions = () => {
 
         <main className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
           {/* View Mode Tabs */}
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+          <Tabs
+            value={viewMode}
+            onValueChange={(v) => {
+              setViewMode(v as ViewMode);
+              if (v !== "folders") {
+                setSelectedFolderId(null);
+              }
+            }}
+          >
             <TabsList>
               <TabsTrigger value="all">All questions</TabsTrigger>
               <TabsTrigger value="solved">Solved questions</TabsTrigger>
               <TabsTrigger value="revision" className="gap-1.5">
                 <BookmarkCheck className="h-3.5 w-3.5" />
-                Revision questions
+                Revision
+              </TabsTrigger>
+              <TabsTrigger value="folders" className="gap-1.5">
+                <Folder className="h-3.5 w-3.5" />
+                Folders
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -338,8 +388,21 @@ const InterviewQuestions = () => {
             </Card>
           </div>
 
+          {/* Folders View */}
+          {viewMode === "folders" && user && (
+            <FolderManager
+              folders={folders}
+              selectedFolderId={selectedFolderId}
+              onSelectFolder={setSelectedFolderId}
+              onCreateFolder={createFolder}
+              onUpdateFolder={updateFolder}
+              onDeleteFolder={deleteFolder}
+              isLoading={foldersLoading}
+            />
+          )}
+
           {/* Spaced Repetition Panel */}
-          {user && spacedRepetitionStats.total > 0 && (
+          {user && spacedRepetitionStats.total > 0 && viewMode !== "folders" && (
             <SpacedRepetitionPanel
               dueQuestions={dueQuestions}
               stats={spacedRepetitionStats}
@@ -443,6 +506,9 @@ const InterviewQuestions = () => {
                       <TableHead className="hidden sm:table-cell w-24 text-xs font-semibold">Difficulty</TableHead>
                       <TableHead className="w-16 text-center text-xs font-semibold">Solved</TableHead>
                       <TableHead className="w-16 text-center text-xs font-semibold">Revision</TableHead>
+                      {user && folders.length > 0 && (
+                        <TableHead className="w-12 text-center text-xs font-semibold">Folder</TableHead>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -457,6 +523,10 @@ const InterviewQuestions = () => {
                           isExpanded={expandedQuestionId === question.id}
                           isLoggedIn={!!user}
                           getRoleName={getRoleName}
+                          folders={folders}
+                          isInFolder={isInFolder}
+                          onAddToFolder={addToFolder}
+                          onRemoveFromFolder={removeFromFolder}
                           onToggleSolved={() => handleToggleSolved(question.id)}
                           onToggleRevision={() => handleToggleRevision(question.id)}
                           onToggleExpand={() => handleToggleExpand(question.id)}
@@ -466,6 +536,12 @@ const InterviewQuestions = () => {
                   </TableBody>
                 </Table>
               </div>
+            ) : viewMode === "folders" ? (
+              selectedFolderId ? (
+                <EmptyFolderState />
+              ) : (
+                <SelectFolderState />
+              )
             ) : viewMode === "revision" ? (
               <EmptyRevisionState onBrowseAll={() => setViewMode("all")} />
             ) : viewMode === "solved" ? (
@@ -507,6 +583,10 @@ interface QuestionRowProps {
   isExpanded: boolean;
   isLoggedIn: boolean;
   getRoleName: (roleId: string) => string;
+  folders: import("@/hooks/useFolders").Folder[];
+  isInFolder: (folderId: string, questionId: number, questionSource: string) => boolean;
+  onAddToFolder: (folderId: string, questionId: number, questionSource: string) => Promise<boolean>;
+  onRemoveFromFolder: (folderId: string, questionId: number, questionSource: string) => Promise<boolean>;
   onToggleSolved: () => void;
   onToggleRevision: () => void;
   onToggleExpand: () => void;
@@ -520,6 +600,10 @@ const QuestionRow = ({
   isExpanded,
   isLoggedIn,
   getRoleName,
+  folders,
+  isInFolder,
+  onAddToFolder,
+  onRemoveFromFolder,
   onToggleSolved,
   onToggleRevision,
   onToggleExpand,
@@ -529,6 +613,8 @@ const QuestionRow = ({
     Medium: "text-amber-500 bg-amber-500/10",
     Hard: "text-red-500 bg-red-500/10",
   };
+
+  const hasFolders = folders.length > 0;
 
   return (
     <>
@@ -605,12 +691,25 @@ const QuestionRow = ({
             <TooltipContent>{isRevision ? "Remove from revision" : "Add to revision"}</TooltipContent>
           </Tooltip>
         </TableCell>
+        {isLoggedIn && hasFolders && (
+          <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+            <AddToFolderButton
+              folders={folders}
+              questionId={question.id}
+              questionSource="interview"
+              isInFolder={isInFolder}
+              onAddToFolder={onAddToFolder}
+              onRemoveFromFolder={onRemoveFromFolder}
+              disabled={!isLoggedIn}
+            />
+          </TableCell>
+        )}
       </TableRow>
 
       <AnimatePresence>
         {isExpanded && question.answer && (
           <TableRow>
-            <TableCell colSpan={6} className="p-0 border-0">
+            <TableCell colSpan={hasFolders && isLoggedIn ? 7 : 6} className="p-0 border-0">
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -714,6 +813,34 @@ const EmptyQuestionsState = () => (
     </motion.div>
     <h3 className="text-lg font-medium">No questions available</h3>
     <p className="text-sm text-muted-foreground mt-1">Questions will be added soon.</p>
+  </motion.div>
+);
+
+const EmptyFolderState = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex flex-col items-center justify-center py-16 text-center px-4"
+  >
+    <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+      <Folder className="h-8 w-8 text-muted-foreground" />
+    </div>
+    <h3 className="text-lg font-medium">This folder is empty</h3>
+    <p className="text-sm text-muted-foreground mt-1">Add questions to this folder from the All questions tab.</p>
+  </motion.div>
+);
+
+const SelectFolderState = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex flex-col items-center justify-center py-16 text-center px-4"
+  >
+    <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+      <Folder className="h-8 w-8 text-muted-foreground" />
+    </div>
+    <h3 className="text-lg font-medium">Select a folder</h3>
+    <p className="text-sm text-muted-foreground mt-1">Choose a folder above to view its questions.</p>
   </motion.div>
 );
 
