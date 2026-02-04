@@ -20,6 +20,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import SheetDetail from "./pages/SheetDetail";
 
 // Library Pages
 import PositionResources from "./pages/library/PositionResources";
@@ -95,6 +96,7 @@ const App = () => (
                 <Route index element={<Dashboard />} />
                 <Route path="matrix" element={<DashboardMatrix />} />
                 <Route path="sheets" element={<DashboardSheets />} />
+                <Route path="sheets/:sheetId" element={<SheetDetail />} />
                 <Route path="profile" element={<DashboardProfile />} />
               </Route>
 

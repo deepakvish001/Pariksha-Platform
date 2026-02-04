@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FileSpreadsheet, Search, Filter, Star, ExternalLink, BookOpen } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -10,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const sheets = [
   {
-    id: 1,
+    id: "strivers-sde-sheet",
     title: "Striver's SDE Sheet",
     description: "Comprehensive DSA problems for SDE interviews",
     category: "DSA",
@@ -19,7 +20,7 @@ const sheets = [
     starred: true,
   },
   {
-    id: 2,
+    id: "love-babbar-450",
     title: "Love Babbar 450",
     description: "450 curated DSA problems by topic",
     category: "DSA",
@@ -28,7 +29,7 @@ const sheets = [
     starred: true,
   },
   {
-    id: 3,
+    id: "neetcode-150",
     title: "Neetcode 150",
     description: "Blind 75 extended with additional patterns",
     category: "DSA",
@@ -37,7 +38,7 @@ const sheets = [
     starred: false,
   },
   {
-    id: 4,
+    id: "sql-practice",
     title: "SQL Practice Sheet",
     description: "Essential SQL queries for interviews",
     category: "SQL",
@@ -46,7 +47,7 @@ const sheets = [
     starred: false,
   },
   {
-    id: 5,
+    id: "system-design",
     title: "System Design Concepts",
     description: "HLD and LLD concepts with examples",
     category: "System Design",
@@ -55,17 +56,18 @@ const sheets = [
     starred: true,
   },
   {
-    id: 6,
-    title: "Aptitude Master Sheet",
-    description: "Quantitative and logical reasoning",
-    category: "Aptitude",
-    problems: 200,
+    id: "machine-learning",
+    title: "Machine Learning",
+    description: "Complete ML roadmap with resources",
+    category: "ML",
+    problems: 184,
     difficulty: "Mixed",
-    starred: false,
+    starred: true,
   },
 ];
 
 const DashboardSheets = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
@@ -149,7 +151,10 @@ const DashboardSheets = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
                     >
-                      <Card className="hover:shadow-lg transition-all cursor-pointer group h-full">
+                      <Card 
+                        className="hover:shadow-lg transition-all cursor-pointer group h-full"
+                        onClick={() => navigate(`/dashboard/sheets/${sheet.id}`)}
+                      >
                         <CardHeader>
                           <div className="flex items-start justify-between">
                             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
@@ -170,10 +175,6 @@ const DashboardSheets = () => {
                           <div className="flex items-center gap-2">
                             <Badge>{sheet.category}</Badge>
                           </div>
-                          <Button variant="outline" className="w-full gap-2 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                            <ExternalLink className="h-4 w-4" />
-                            Open Sheet
-                          </Button>
                         </CardContent>
                       </Card>
                     </motion.div>
