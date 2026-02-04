@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -389,55 +390,44 @@ const PositionDetail = () => {
       </header>
 
       <main className="p-4 md:p-6 lg:p-8 space-y-4">
-        {/* Navigation Controls - Compact Grid Layout */}
+        {/* Tabs Navigation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-3"
         >
-          {/* Row 1: View Mode Toggle */}
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("all")}
-              className="flex-1 sm:flex-none gap-2"
-            >
-              <Layers className="h-4 w-4" />
-              <span className="hidden sm:inline">All Questions</span>
-              <span className="sm:hidden">All</span>
-            </Button>
-            <Button
-              variant={viewMode === "revision" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("revision")}
-              className="flex-1 sm:flex-none gap-2"
-            >
-              <BookmarkCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">Revision</span>
-              <span className="sm:hidden">Rev</span>
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                {revisionQuestions.length}
-              </Badge>
-            </Button>
-          </div>
-
-          {/* Row 2: Category Pills - Only show in "all" mode */}
-          {viewMode === "all" && (
-            <div className="flex flex-wrap gap-2">
+          <Tabs
+            value={viewMode === "revision" ? "revision" : selectedCategory}
+            onValueChange={(value) => {
+              if (value === "revision") {
+                setViewMode("revision");
+              } else {
+                setViewMode("all");
+                setSelectedCategory(value);
+              }
+            }}
+          >
+            <TabsList className="flex-wrap h-auto gap-2 bg-transparent p-0">
               {categories.map((category) => (
-                <Button
+                <TabsTrigger
                   key={category.id}
-                  variant={selectedCategory === category.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedCategory(category.id)}
-                  className="text-xs sm:text-sm"
+                  value={category.id}
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                 >
                   {category.name}
-                </Button>
+                </TabsTrigger>
               ))}
-            </div>
-          )}
+              <TabsTrigger
+                value="revision"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1"
+              >
+                <BookmarkCheck className="h-3.5 w-3.5" />
+                Revision
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  {revisionQuestions.length}
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </motion.div>
 
         {/* Search and Filter Bar */}
