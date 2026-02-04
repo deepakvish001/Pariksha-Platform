@@ -57,6 +57,7 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import MobileFAB from "@/components/MobileFAB";
+import StreakCounter from "@/components/StreakCounter";
 
 interface ExtendedProfile {
   id: string;
@@ -567,8 +568,10 @@ const Dashboard = () => {
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Profile Card */}
+          {/* Left Column - Profile & Streak */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="lg:col-span-1 space-y-6">
+            {/* Streak Counter Card */}
+            <StreakCounter variant="full" />
             <div className="card-dark">
               <div className="flex flex-col items-center text-center">
                 {/* Avatar with upload */}

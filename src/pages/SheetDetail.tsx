@@ -17,8 +17,11 @@ import {
   Search,
   Shuffle,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  Flame
 } from "lucide-react";
+import StreakCounter from "@/components/StreakCounter";
+import { useStreak } from "@/hooks/useStreak";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1129,6 +1132,7 @@ export default function SheetDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { currentStreak, todayCompleted, refreshStreak } = useStreak();
   
   const currentSheetId = sheetId || "strivers-sde-sheet";
   const [sheetData, setSheetData] = useState<SheetData | null>(
@@ -1359,6 +1363,11 @@ export default function SheetDetail() {
     });
 
     await saveProgress(topicId, { completed: newCompleted });
+    
+    // Refresh streak when topic is completed
+    if (newCompleted) {
+      refreshStreak();
+    }
   };
 
   const handleToggleRevision = async (topicId: string) => {
@@ -1446,6 +1455,10 @@ export default function SheetDetail() {
           <div className="flex-1 min-w-0">
             <h1 className="text-lg sm:text-xl font-bold truncate">{sheetData.title}</h1>
           </div>
+          
+          {/* Streak Counter */}
+          <StreakCounter variant="mini" />
+          
           <Badge variant="outline" className="hidden sm:flex text-xs whitespace-nowrap">
             Last updated : {sheetData.lastUpdated}
           </Badge>
