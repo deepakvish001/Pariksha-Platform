@@ -141,18 +141,18 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
   if (isCollapsed) {
     // When collapsed, show a dropdown with group items
     return (
-      <SidebarMenuItem>
+      <SidebarMenuItem className="flex justify-center">
         <Tooltip>
           <TooltipTrigger asChild>
             <SidebarMenuButton
               tooltip={title}
               className={cn(
-                "transition-all duration-200 hover:scale-105 justify-center",
+                "transition-all duration-200 hover:scale-105 justify-center h-10 w-10 mx-auto rounded-lg",
                 isActiveGroup && "bg-sidebar-accent text-sidebar-accent-foreground"
               )}
             >
               {GroupIcon && (
-                <div className="relative">
+                <div className="relative flex items-center justify-center">
                   <GroupIcon className="h-4 w-4 shrink-0" />
                   {isActiveGroup && (
                     <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -249,19 +249,19 @@ export function DashboardSidebar() {
     <>
       <Sidebar collapsible="icon" className="overflow-hidden">
         {/* Header with Logo */}
-        <SidebarHeader className="border-b border-sidebar-border">
-          <Link to="/" className="flex items-center justify-center py-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-orange flex items-center justify-center">
+        <SidebarHeader className="border-b border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
+          <Link to="/" className="flex items-center justify-center py-1">
+            <div className="w-10 h-10 rounded-xl bg-gradient-orange flex items-center justify-center transition-transform duration-200 hover:scale-105">
               <span className="text-primary-foreground font-bold text-lg">U</span>
             </div>
           </Link>
         </SidebarHeader>
 
-        <SidebarContent className="px-2">
+        <SidebarContent className="px-3 py-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3">
           {/* Main Navigation */}
-          <SidebarGroup>
+          <SidebarGroup className="space-y-1">
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
                 {mainNavItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -269,7 +269,7 @@ export function DashboardSidebar() {
                       isActive={location.pathname === item.url}
                       tooltip={item.title}
                       size="lg"
-                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:justify-center"
+                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:mx-auto"
                     >
                       <Link to={item.url} className="group-data-[collapsible=icon]:justify-center">
                         <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
@@ -285,7 +285,7 @@ export function DashboardSidebar() {
                     onClick={() => setIsSignOutDialogOpen(true)}
                     tooltip="Sign Out"
                     size="lg"
-                    className="transition-all duration-200 hover:translate-x-0.5 group/signout hover:text-destructive group-data-[collapsible=icon]:justify-center"
+                    className="transition-all duration-200 hover:translate-x-0.5 group/signout hover:text-destructive group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:mx-auto"
                   >
                     <LogOut className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/signout:scale-110" />
                     <span className="font-medium group-data-[collapsible=icon]:hidden">Sign Out</span>
@@ -295,12 +295,12 @@ export function DashboardSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <SidebarSeparator />
+          <SidebarSeparator className="my-4 group-data-[collapsible=icon]:my-3" />
 
           {/* Collapsible Groups */}
           <SidebarGroup className="space-y-1">
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
                 <CollapsibleGroup title="Library" items={libraryItems} />
                 <CollapsibleGroup title="Fundamentals" items={fundamentalsItems} />
                 <CollapsibleGroup title="System Design" items={systemDesignItems} />
@@ -313,12 +313,12 @@ export function DashboardSidebar() {
         </SidebarContent>
 
         {/* Footer with User Profile */}
-        <SidebarFooter className="border-t border-sidebar-border">
+        <SidebarFooter className="border-t border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
           {isCollapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center justify-center p-2 cursor-pointer">
-                  <Avatar className="h-10 w-10 border-2 border-primary/20">
+                <div className="flex items-center justify-center cursor-pointer">
+                  <Avatar className="h-10 w-10 border-2 border-primary/20 transition-transform duration-200 hover:scale-105">
                     <AvatarImage src={profile?.avatar_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary font-bold">
                       {getInitials(profile?.full_name)}
