@@ -238,7 +238,7 @@ const CompanyResources = () => {
         </div>
       </header>
 
-      <main className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      <main className="p-4 md:p-6 lg:p-8 space-y-6 w-full">
         {/* Stats Card */}
         <CompanyStatsCard
           totalCompanies={stats.total}
