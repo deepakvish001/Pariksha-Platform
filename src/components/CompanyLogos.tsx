@@ -2,16 +2,18 @@ import { motion } from "framer-motion";
 import ScrollReveal from "./ScrollReveal";
 
 const companies = [
-  { name: "Microsoft", logo: "M" },
-  { name: "Google", logo: "G" },
-  { name: "Amazon", logo: "A" },
-  { name: "Meta", logo: "F" },
-  { name: "Apple", logo: "🍎" },
-  { name: "Netflix", logo: "N" },
-  { name: "Stripe", logo: "S" },
-  { name: "Uber", logo: "U" },
-  { name: "Airbnb", logo: "A" },
-  { name: "Spotify", logo: "S" },
+  { name: "Google", style: "font-bold text-xl tracking-tight" },
+  { name: "Microsoft", style: "font-semibold text-lg" },
+  { name: "Amazon", style: "font-bold text-xl italic" },
+  { name: "Meta", style: "font-bold text-xl tracking-wide" },
+  { name: "Apple", style: "font-light text-xl tracking-tight" },
+  { name: "Netflix", style: "font-bold text-lg tracking-wider uppercase" },
+  { name: "Stripe", style: "font-bold text-xl" },
+  { name: "Uber", style: "font-medium text-xl tracking-tight" },
+  { name: "Flipkart", style: "font-bold text-lg italic" },
+  { name: "Razorpay", style: "font-semibold text-lg" },
+  { name: "Swiggy", style: "font-bold text-xl" },
+  { name: "Zomato", style: "font-semibold text-lg tracking-wide" },
 ];
 
 const CompanyLogos = () => {
@@ -21,28 +23,30 @@ const CompanyLogos = () => {
         <ScrollReveal>
           <div className="text-center mb-10">
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
-              Get Placed at Top Companies
+              Get Placed at Top Companies & Startups
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Our students have landed roles at the world's most innovative companies
+              Our students have landed roles at FAANG, MAANG, and India's top startups
             </p>
           </div>
         </ScrollReveal>
 
         {/* Logo Grid */}
         <ScrollReveal delay={0.1}>
-          <div className="grid grid-cols-5 md:grid-cols-10 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 max-w-5xl mx-auto">
             {companies.map((company, index) => (
               <motion.div
                 key={company.name}
-                className="flex items-center justify-center aspect-square bg-card border border-border rounded-xl p-3 transition-all hover:border-primary/50 hover:shadow-lg"
+                className="flex items-center justify-center bg-card border border-border rounded-xl p-4 h-16 transition-all hover:border-primary/50 hover:shadow-lg group"
                 initial={{ opacity: 0, scale: 0.8 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.05 }}
                 viewport={{ once: true }}
                 whileHover={{ y: -4 }}
               >
-                <span className="text-xl font-bold text-muted-foreground">{company.logo}</span>
+                <span className={`text-muted-foreground group-hover:text-foreground transition-colors ${company.style}`}>
+                  {company.name}
+                </span>
               </motion.div>
             ))}
           </div>
