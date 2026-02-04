@@ -389,239 +389,221 @@ const PositionDetail = () => {
         </div>
       </header>
 
-      <main className="p-4 md:p-6 lg:p-8 space-y-4">
-        {/* Tabs Navigation */}
+      <main className="p-4 md:p-6 lg:p-8">
+        {/* Main Content Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          className="rounded-lg border border-border bg-card"
         >
-          <Tabs
-            value={viewMode === "revision" ? "revision" : selectedCategory}
-            onValueChange={(value) => {
-              if (value === "revision") {
-                setViewMode("revision");
-              } else {
-                setViewMode("all");
-                setSelectedCategory(value);
-              }
-            }}
-          >
-            <TabsList className="flex-wrap h-auto gap-2 bg-transparent p-0">
-              {categories.map((category) => (
+          {/* Tabs Navigation - Inside Card */}
+          <div className="border-b border-border p-4">
+            <Tabs
+              value={viewMode === "revision" ? "revision" : selectedCategory}
+              onValueChange={(value) => {
+                if (value === "revision") {
+                  setViewMode("revision");
+                } else {
+                  setViewMode("all");
+                  setSelectedCategory(value);
+                }
+              }}
+            >
+              <TabsList className="flex-wrap h-auto gap-2 bg-transparent p-0">
+                {categories.map((category) => (
+                  <TabsTrigger
+                    key={category.id}
+                    value={category.id}
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm"
+                  >
+                    <span className="hidden sm:inline">{category.name}</span>
+                    <span className="sm:hidden">{category.name.replace(" Questions", "")}</span>
+                  </TabsTrigger>
+                ))}
                 <TabsTrigger
-                  key={category.id}
-                  value={category.id}
-                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  value="revision"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1 text-xs sm:text-sm"
                 >
-                  {category.name}
+                  <BookmarkCheck className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Revision</span>
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {revisionQuestions.length}
+                  </Badge>
                 </TabsTrigger>
-              ))}
-              <TabsTrigger
-                value="revision"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1"
-              >
-                <BookmarkCheck className="h-3.5 w-3.5" />
-                Revision
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                  {revisionQuestions.length}
-                </Badge>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </motion.div>
-
-        {/* Search and Filter Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex flex-col sm:flex-row gap-4"
-        >
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search questions..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                onClick={() => setSearchQuery("")}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+              </TabsList>
+            </Tabs>
           </div>
 
-          {/* Difficulty Filter */}
-          <Select
-            value={difficultyFilter}
-            onValueChange={(v) => setDifficultyFilter(v as Difficulty | "all")}
-          >
-            <SelectTrigger className="w-full sm:w-40">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Difficulty" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Levels</SelectItem>
-              <SelectItem value="Easy">Easy</SelectItem>
-              <SelectItem value="Medium">Medium</SelectItem>
-              <SelectItem value="Hard">Hard</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Has Notes Filter */}
-          <Button
-            variant={hasNotesFilter ? "default" : "outline"}
-            size="default"
-            onClick={() => setHasNotesFilter(!hasNotesFilter)}
-            className="gap-2 whitespace-nowrap"
-          >
-            <StickyNote className="h-4 w-4" />
-            <span className="hidden sm:inline">Has Notes</span>
-            <span className="sm:hidden">Notes</span>
-          </Button>
-
-          {/* Clear Filters */}
-          {hasActiveFilters && (
-            <Button variant="outline" onClick={clearFilters} className="gap-2">
-              <X className="h-4 w-4" />
-              Clear
-            </Button>
-          )}
-
-          {/* Progress Button */}
-          <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <BarChart3 className="h-4 w-4" />
-                My Progress
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Progress for {currentRole?.name}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6 py-4">
-                {/* Overall Progress */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Overall Progress</span>
-                    <span className="font-medium">
-                      {progressStats.totalSolved}/{progressStats.total} (
-                      {progressStats.percentage}%)
-                    </span>
-                  </div>
-                  <Progress value={progressStats.percentage} className="h-3" />
-                </div>
-
-                {/* Difficulty Breakdown */}
-                <div className="space-y-4">
-                  <h4 className="font-medium">By Difficulty</h4>
-
-                  {/* Easy */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-green-500" />
-                        Easy
-                      </span>
-                      <span>
-                        {progressStats.easy.solved}/{progressStats.easy.total}
-                      </span>
-                    </div>
-                    <Progress
-                      value={
-                        progressStats.easy.total > 0
-                          ? (progressStats.easy.solved / progressStats.easy.total) * 100
-                          : 0
-                      }
-                      className="h-2 [&>div]:bg-green-500"
-                    />
-                  </div>
-
-                  {/* Medium */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-orange-500" />
-                        Medium
-                      </span>
-                      <span>
-                        {progressStats.medium.solved}/{progressStats.medium.total}
-                      </span>
-                    </div>
-                    <Progress
-                      value={
-                        progressStats.medium.total > 0
-                          ? (progressStats.medium.solved / progressStats.medium.total) * 100
-                          : 0
-                      }
-                      className="h-2 [&>div]:bg-orange-500"
-                    />
-                  </div>
-
-                  {/* Hard */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-red-500" />
-                        Hard
-                      </span>
-                      <span>
-                        {progressStats.hard.solved}/{progressStats.hard.total}
-                      </span>
-                    </div>
-                    <Progress
-                      value={
-                        progressStats.hard.total > 0
-                          ? (progressStats.hard.solved / progressStats.hard.total) * 100
-                          : 0
-                      }
-                      className="h-2 [&>div]:bg-red-500"
-                    />
-                  </div>
-                </div>
+          {/* Search and Filter Bar - Inside Card */}
+          <div className="border-b border-border p-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search questions..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-10"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                    onClick={() => setSearchQuery("")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-            </DialogContent>
-          </Dialog>
-        </motion.div>
 
-        {/* Content Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
-          <div>
-            <h2 className="text-2xl font-bold">
-              {viewMode === "revision"
-                ? `${currentRole?.name} - Revision List`
-                : `${currentRole?.name} - ${currentCategory?.name}`}
-            </h2>
-            <p className="text-muted-foreground">
+              {/* Difficulty Filter */}
+              <Select
+                value={difficultyFilter}
+                onValueChange={(v) => setDifficultyFilter(v as Difficulty | "all")}
+              >
+                <SelectTrigger className="w-full sm:w-36">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Difficulty" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="Easy">Easy</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="Hard">Hard</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Has Notes Filter */}
+              <Button
+                variant={hasNotesFilter ? "default" : "outline"}
+                size="default"
+                onClick={() => setHasNotesFilter(!hasNotesFilter)}
+                className="gap-2 whitespace-nowrap"
+              >
+                <StickyNote className="h-4 w-4" />
+                <span className="hidden sm:inline">Has Notes</span>
+                <span className="sm:hidden">Notes</span>
+              </Button>
+
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <Button variant="outline" onClick={clearFilters} className="gap-2">
+                  <X className="h-4 w-4" />
+                  <span className="hidden sm:inline">Clear</span>
+                </Button>
+              )}
+
+              {/* Progress Button */}
+              <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Progress</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Progress for {currentRole?.name}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-6 py-4">
+                    {/* Overall Progress */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Overall Progress</span>
+                        <span className="font-medium">
+                          {progressStats.totalSolved}/{progressStats.total} (
+                          {progressStats.percentage}%)
+                        </span>
+                      </div>
+                      <Progress value={progressStats.percentage} className="h-3" />
+                    </div>
+
+                    {/* Difficulty Breakdown */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium">By Difficulty</h4>
+
+                      {/* Easy */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-green-500" />
+                            Easy
+                          </span>
+                          <span>
+                            {progressStats.easy.solved}/{progressStats.easy.total}
+                          </span>
+                        </div>
+                        <Progress
+                          value={
+                            progressStats.easy.total > 0
+                              ? (progressStats.easy.solved / progressStats.easy.total) * 100
+                              : 0
+                          }
+                          className="h-2 [&>div]:bg-green-500"
+                        />
+                      </div>
+
+                      {/* Medium */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-orange-500" />
+                            Medium
+                          </span>
+                          <span>
+                            {progressStats.medium.solved}/{progressStats.medium.total}
+                          </span>
+                        </div>
+                        <Progress
+                          value={
+                            progressStats.medium.total > 0
+                              ? (progressStats.medium.solved / progressStats.medium.total) * 100
+                              : 0
+                          }
+                          className="h-2 [&>div]:bg-orange-500"
+                        />
+                      </div>
+
+                      {/* Hard */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-red-500" />
+                            Hard
+                          </span>
+                          <span>
+                            {progressStats.hard.solved}/{progressStats.hard.total}
+                          </span>
+                        </div>
+                        <Progress
+                          value={
+                            progressStats.hard.total > 0
+                              ? (progressStats.hard.solved / progressStats.hard.total) * 100
+                              : 0
+                          }
+                          className="h-2 [&>div]:bg-red-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Results count */}
+            <p className="text-sm text-muted-foreground mt-3">
               {filteredQuestions.length} question{filteredQuestions.length !== 1 ? "s" : ""}{" "}
               {hasActiveFilters ? "found" : "available"}
               {viewMode === "revision" && " for revision"}
             </p>
           </div>
-        </motion.div>
 
-        {/* Questions Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="rounded-lg border border-border bg-card"
-        >
+          {/* Questions Table - Inside Card */}
           {filteredQuestions.length > 0 ? (
             <div className="overflow-hidden">
               <Table>
