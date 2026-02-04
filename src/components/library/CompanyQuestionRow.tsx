@@ -67,10 +67,13 @@ const CompanyQuestionRow = ({
         animate={{ opacity: 1 }}
         transition={{ delay: index * 0.02 }}
         className={cn(
-          "grid gap-4 px-4 py-4 hover:bg-muted/20 transition-colors items-start border-b border-border/30 last:border-0",
+          // Mobile-first: 3-column layout to avoid horizontal overflow in narrow widths (e.g. sidebar open).
+          // sm+: switches to a table-like multi-column layout.
+          "grid items-start border-b border-border/30 last:border-0 transition-colors hover:bg-muted/20",
+          "gap-3 px-3 py-4 sm:gap-4 sm:px-4",
           showCategory
-            ? "grid-cols-[40px_1fr_80px_100px_60px_60px]"
-            : "grid-cols-[40px_1fr_80px_60px_60px]",
+            ? "grid-cols-[32px_minmax(0,1fr)_84px] sm:grid-cols-[40px_minmax(0,1fr)_80px_100px_60px_60px]"
+            : "grid-cols-[32px_minmax(0,1fr)_84px] sm:grid-cols-[40px_minmax(0,1fr)_80px_60px_60px]",
           isExpanded && "bg-muted/30"
         )}
       >
@@ -124,6 +127,22 @@ const CompanyQuestionRow = ({
               >
                 {question.text}
               </p>
+
+              {/* Mobile meta row (keeps layout compact and prevents horizontal scroll) */}
+              <div className="mt-2 flex flex-wrap items-center gap-2 sm:hidden">
+                <Badge
+                  variant="outline"
+                  className={cn("text-xs font-medium", difficultyStyles[question.difficulty])}
+                >
+                  {question.difficulty}
+                </Badge>
+                {showCategory && question.category && (
+                  <Badge variant="outline" className="text-xs">
+                    {question.category}
+                  </Badge>
+                )}
+              </div>
+
               {question.description && !isExpanded && (
                 <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
                   {question.description}
@@ -134,7 +153,7 @@ const CompanyQuestionRow = ({
         </div>
 
         {/* Difficulty */}
-        <div>
+        <div className="hidden sm:block">
           <Badge
             variant="outline"
             className={cn("text-xs font-medium", difficultyStyles[question.difficulty])}
@@ -155,8 +174,78 @@ const CompanyQuestionRow = ({
           </div>
         )}
 
+        {/* Mobile actions (single column) */}
+        <div className="flex flex-col items-center gap-2 sm:hidden">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <motion.div whileTap={{ scale: 0.9 }}>
+                <Checkbox
+                  checked={isSolved}
+                  onCheckedChange={(e) => {
+                    e && e.valueOf();
+                    onToggleSolved();
+                  }}
+                  disabled={!isLoggedIn}
+                  className={cn(
+                    "h-5 w-5 transition-all duration-200",
+                    "data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500",
+                    "hover:border-emerald-400",
+                    !isLoggedIn && "opacity-50 cursor-not-allowed"
+                  )}
+                />
+              </motion.div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              {isLoggedIn
+                ? isSolved
+                  ? "Mark as unsolved"
+                  : "Mark as solved"
+                : "Sign in to track progress"}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9, rotate: isRevision ? -15 : 15 }}
+              >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleRevision();
+                  }}
+                  disabled={!isLoggedIn}
+                  className={cn(
+                    "h-8 w-8 transition-colors",
+                    isRevision
+                      ? "text-amber-500 hover:text-amber-600"
+                      : "text-muted-foreground hover:text-foreground",
+                    !isLoggedIn && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  {isRevision ? (
+                    <BookmarkCheck className="h-4 w-4 fill-current" />
+                  ) : (
+                    <Bookmark className="h-4 w-4" />
+                  )}
+                </Button>
+              </motion.div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              {isLoggedIn
+                ? isRevision
+                  ? "Remove from revision"
+                  : "Add to revision list"
+                : "Sign in to track progress"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
         {/* Solved Checkbox */}
-        <div className="flex justify-center">
+        <div className="hidden sm:flex justify-center">
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.div whileTap={{ scale: 0.9 }}>
@@ -187,7 +276,7 @@ const CompanyQuestionRow = ({
         </div>
 
         {/* Revision Bookmark */}
-        <div className="flex justify-center">
+        <div className="hidden sm:flex justify-center">
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.div
