@@ -1,24 +1,152 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type Message = {
+  id?: string;
   role: "user" | "assistant";
   content: string;
+};
+
+export type Conversation = {
+  id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/astra-chat`;
 
 export function useAstraChat() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
+  // Fetch conversations list
+  const fetchConversations = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("conversations")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      setConversations(data || []);
+    } catch (error) {
+      console.error("Failed to fetch conversations:", error);
+    }
+  }, [user]);
+
+  // Load messages for a conversation
+  const loadConversation = useCallback(async (conversationId: string) => {
+    setIsLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      
+      setMessages(data?.map(msg => ({
+        id: msg.id,
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      })) || []);
+      setCurrentConversationId(conversationId);
+    } catch (error) {
+      console.error("Failed to load conversation:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load conversation history.",
+      });
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, [toast]);
+
+  // Create a new conversation
+  const createConversation = useCallback(async (firstMessage: string): Promise<string | null> => {
+    if (!user) return null;
+
+    try {
+      const title = firstMessage.slice(0, 50) + (firstMessage.length > 50 ? "..." : "");
+      const { data, error } = await supabase
+        .from("conversations")
+        .insert({ user_id: user.id, title })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setCurrentConversationId(data.id);
+      await fetchConversations();
+      return data.id;
+    } catch (error) {
+      console.error("Failed to create conversation:", error);
+      return null;
+    }
+  }, [user, fetchConversations]);
+
+  // Save message to database
+  const saveMessage = useCallback(async (
+    conversationId: string,
+    role: "user" | "assistant",
+    content: string
+  ) => {
+    try {
+      const { error } = await supabase
+        .from("chat_messages")
+        .insert({ conversation_id: conversationId, role, content });
+
+      if (error) throw error;
+
+      // Update conversation timestamp
+      await supabase
+        .from("conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", conversationId);
+    } catch (error) {
+      console.error("Failed to save message:", error);
+    }
+  }, []);
+
+  // Send message with streaming
   const sendMessage = useCallback(async (input: string) => {
-    if (!input.trim()) return;
+    if (!input.trim() || !user) return;
 
     const userMsg: Message = { role: "user", content: input.trim() };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
+
+    let conversationId = currentConversationId;
+    
+    // Create new conversation if needed
+    if (!conversationId) {
+      conversationId = await createConversation(input);
+      if (!conversationId) {
+        setIsLoading(false);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to start conversation.",
+        });
+        return;
+      }
+    }
+
+    // Save user message
+    await saveMessage(conversationId, "user", input.trim());
 
     let assistantContent = "";
 
@@ -70,9 +198,7 @@ export function useAstraChat() {
         return;
       }
 
-      if (!resp.body) {
-        throw new Error("No response body");
-      }
+      if (!resp.body) throw new Error("No response body");
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -127,6 +253,12 @@ export function useAstraChat() {
           } catch { /* ignore */ }
         }
       }
+
+      // Save assistant message after streaming completes
+      if (assistantContent && conversationId) {
+        await saveMessage(conversationId, "assistant", assistantContent);
+        await fetchConversations(); // Refresh list to update timestamps
+      }
     } catch (error) {
       console.error("Chat error:", error);
       toast({
@@ -137,16 +269,60 @@ export function useAstraChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, toast]);
+  }, [messages, user, currentConversationId, createConversation, saveMessage, fetchConversations, toast]);
 
-  const clearChat = useCallback(() => {
+  // Start new chat
+  const newChat = useCallback(() => {
     setMessages([]);
+    setCurrentConversationId(null);
   }, []);
+
+  // Delete conversation
+  const deleteConversation = useCallback(async (conversationId: string) => {
+    try {
+      const { error } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", conversationId);
+
+      if (error) throw error;
+
+      if (currentConversationId === conversationId) {
+        newChat();
+      }
+      await fetchConversations();
+      
+      toast({
+        title: "Deleted",
+        description: "Conversation deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete conversation.",
+      });
+    }
+  }, [currentConversationId, newChat, fetchConversations, toast]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (user) {
+      fetchConversations();
+    }
+  }, [user, fetchConversations]);
 
   return {
     messages,
+    conversations,
+    currentConversationId,
     isLoading,
+    isLoadingHistory,
     sendMessage,
-    clearChat,
+    loadConversation,
+    newChat,
+    deleteConversation,
+    fetchConversations,
   };
 }

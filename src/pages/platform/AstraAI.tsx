@@ -1,12 +1,27 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Send, Bot, User, Trash2, Loader2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { 
+  Sparkles, 
+  Send, 
+  Bot, 
+  User, 
+  Trash2, 
+  Loader2, 
+  Plus, 
+  History, 
+  ChevronLeft,
+  MessageSquare
+} from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAstraChat } from "@/hooks/useAstraChat";
+import { cn } from "@/lib/utils";
 
 const suggestedPrompts = [
   "Help me prepare for a Google interview",
@@ -17,7 +32,18 @@ const suggestedPrompts = [
 
 const AstraAI = () => {
   const [inputValue, setInputValue] = useState("");
-  const { messages, isLoading, sendMessage, clearChat } = useAstraChat();
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const { 
+    messages, 
+    conversations,
+    currentConversationId,
+    isLoading, 
+    isLoadingHistory,
+    sendMessage, 
+    loadConversation,
+    newChat,
+    deleteConversation 
+  } = useAstraChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,6 +69,11 @@ const AstraAI = () => {
     await sendMessage(prompt);
   };
 
+  const handleLoadConversation = async (conversationId: string) => {
+    await loadConversation(conversationId);
+    setHistoryOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
@@ -59,12 +90,72 @@ const AstraAI = () => {
               </div>
             </div>
           </div>
-          {messages.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearChat} className="gap-2">
-              <Trash2 className="h-4 w-4" />
-              Clear Chat
+          <div className="flex items-center gap-2">
+            <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <History className="h-4 w-4" />
+                  History
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80">
+                <SheetHeader>
+                  <SheetTitle>Chat History</SheetTitle>
+                </SheetHeader>
+                <div className="mt-4">
+                  <Button 
+                    onClick={() => { newChat(); setHistoryOpen(false); }} 
+                    className="w-full gap-2 mb-4"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Chat
+                  </Button>
+                  <ScrollArea className="h-[calc(100vh-200px)]">
+                    <div className="space-y-2">
+                      {conversations.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">
+                          No conversations yet
+                        </p>
+                      ) : (
+                        conversations.map((conv) => (
+                          <div
+                            key={conv.id}
+                            className={cn(
+                              "group flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors",
+                              currentConversationId === conv.id 
+                                ? "bg-primary/10 text-primary" 
+                                : "hover:bg-muted"
+                            )}
+                            onClick={() => handleLoadConversation(conv.id)}
+                          >
+                            <MessageSquare className="h-4 w-4 shrink-0" />
+                            <span className="flex-1 text-sm truncate">
+                              {conv.title || "New conversation"}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteConversation(conv.id);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Button variant="ghost" size="sm" onClick={newChat} className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Chat
             </Button>
-          )}
+          </div>
         </div>
       </header>
 
@@ -76,7 +167,11 @@ const AstraAI = () => {
         >
           <Card className="flex-1 flex flex-col min-h-[500px]">
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-              {messages.length === 0 ? (
+              {isLoadingHistory ? (
+                <div className="h-full flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-8">
                   <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Sparkles className="h-8 w-8 text-primary" />
@@ -115,18 +210,69 @@ const AstraAI = () => {
                         </div>
                       )}
                       <div
-                        className={`rounded-2xl px-4 py-3 max-w-[85%] ${
+                        className={cn(
+                          "rounded-2xl px-4 py-3 max-w-[85%]",
                           message.role === "user"
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted"
-                        }`}
+                        )}
                       >
-                        <div className="text-sm whitespace-pre-wrap break-words">
-                          {message.content}
-                          {message.role === "assistant" && isLoading && index === messages.length - 1 && (
-                            <span className="inline-block w-2 h-4 bg-primary/50 animate-pulse ml-1" />
-                          )}
-                        </div>
+                        {message.role === "assistant" ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                pre: ({ children }) => (
+                                  <pre className="bg-background/50 rounded-lg p-3 overflow-x-auto my-2">
+                                    {children}
+                                  </pre>
+                                ),
+                                code: ({ className, children, ...props }) => {
+                                  const isInline = !className;
+                                  return isInline ? (
+                                    <code className="bg-background/50 px-1.5 py-0.5 rounded text-sm" {...props}>
+                                      {children}
+                                    </code>
+                                  ) : (
+                                    <code className={className} {...props}>
+                                      {children}
+                                    </code>
+                                  );
+                                },
+                                ul: ({ children }) => (
+                                  <ul className="list-disc list-inside my-2 space-y-1">{children}</ul>
+                                ),
+                                ol: ({ children }) => (
+                                  <ol className="list-decimal list-inside my-2 space-y-1">{children}</ol>
+                                ),
+                                p: ({ children }) => (
+                                  <p className="my-2 leading-relaxed">{children}</p>
+                                ),
+                                h1: ({ children }) => (
+                                  <h1 className="text-lg font-bold mt-4 mb-2">{children}</h1>
+                                ),
+                                h2: ({ children }) => (
+                                  <h2 className="text-base font-bold mt-3 mb-2">{children}</h2>
+                                ),
+                                h3: ({ children }) => (
+                                  <h3 className="text-sm font-bold mt-2 mb-1">{children}</h3>
+                                ),
+                                strong: ({ children }) => (
+                                  <strong className="font-semibold">{children}</strong>
+                                ),
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                            {isLoading && index === messages.length - 1 && (
+                              <span className="inline-block w-2 h-4 bg-primary/50 animate-pulse ml-1" />
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-sm whitespace-pre-wrap break-words">
+                            {message.content}
+                          </div>
+                        )}
                       </div>
                       {message.role === "user" && (
                         <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center shrink-0 mt-1">
