@@ -11,7 +11,6 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
 import DashboardMatrix from "./pages/DashboardMatrix";
 import DashboardSheets from "./pages/DashboardSheets";
 import DashboardProfile from "./pages/DashboardProfile";
@@ -97,8 +96,7 @@ const App = () => (
                 
                 {/* Dashboard routes with shared layout */}
                 <Route path="/dashboard" element={<DashboardLayoutWrapper />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="matrix" element={<DashboardMatrix />} />
+                  <Route index element={<DashboardMatrix />} />
                   <Route path="sheets" element={<DashboardSheets />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
                   <Route path="profile" element={<DashboardProfile />} />
