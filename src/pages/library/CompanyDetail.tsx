@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import {
   Building2,
@@ -11,7 +11,9 @@ import {
   FileText,
   Briefcase,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
+import AnswerPanel from "@/components/library/AnswerPanel";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
