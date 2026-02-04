@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LayoutGrid, CheckCircle2, Target, Zap, Star, Loader2, Flame, Trophy, Settings2, Calendar } from "lucide-react";
+import { LayoutGrid, CheckCircle2, Target, Zap, Star, Loader2, Flame, Trophy, Settings2 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -565,19 +565,8 @@ const DashboardMatrix = () => {
           transition={{ delay: 0.1 }}
         >
           <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-green-500" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">Activity Overview</CardTitle>
-                  <CardDescription>Your learning activity over the past 4 months</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CalendarHeatmap activityData={activityHeatmap} months={4} />
+            <CardContent className="pt-6">
+              <CalendarHeatmap activityData={activityHeatmap} />
             </CardContent>
           </Card>
         </motion.div>
