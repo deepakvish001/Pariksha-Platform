@@ -14,7 +14,8 @@ import {
   MessageSquare,
   Pencil,
   Check,
-  X
+  X,
+  Search
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +39,7 @@ const AstraAI = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const { 
     messages, 
     conversations,
@@ -131,19 +133,36 @@ const AstraAI = () => {
                 <div className="mt-4">
                   <Button 
                     onClick={() => { newChat(); setHistoryOpen(false); }} 
-                    className="w-full gap-2 mb-4"
+                    className="w-full gap-2 mb-3"
                   >
                     <Plus className="h-4 w-4" />
                     New Chat
                   </Button>
-                  <ScrollArea className="h-[calc(100vh-200px)]">
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search conversations..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <ScrollArea className="h-[calc(100vh-240px)]">
                     <div className="space-y-2">
                       {conversations.length === 0 ? (
                         <p className="text-sm text-muted-foreground text-center py-8">
                           No conversations yet
                         </p>
+                      ) : conversations.filter(c => 
+                          (c.title || "").toLowerCase().includes(searchQuery.toLowerCase())
+                        ).length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">
+                          No matching conversations
+                        </p>
                       ) : (
-                        conversations.map((conv) => (
+                        conversations
+                          .filter(c => (c.title || "").toLowerCase().includes(searchQuery.toLowerCase()))
+                          .map((conv) => (
                           <div
                             key={conv.id}
                             className={cn(
