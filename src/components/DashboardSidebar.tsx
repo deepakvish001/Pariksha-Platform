@@ -160,7 +160,7 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
   }
 
   return (
-    <Collapsible open={isOpen || isActiveGroup} onOpenChange={setIsOpen}>
+    <Collapsible open={isOpen || isActiveGroup} onOpenChange={setIsOpen} className="group-data-[collapsible=icon]:hidden">
       <CollapsibleTrigger asChild>
         <button
           className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 rounded-md transition-all duration-200 group"
@@ -182,11 +182,11 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
               asChild
               isActive={location.pathname === item.url}
               tooltip={item.title}
-              className="transition-all duration-200 hover:translate-x-0.5 group/item"
+              className="transition-all duration-200 hover:translate-x-0.5 group/item group-data-[collapsible=icon]:justify-center"
             >
-              <Link to={item.url} className="pl-4">
-                <item.icon className="h-4 w-4 transition-transform duration-200 group-hover/item:scale-110" />
-                <span>{item.title}</span>
+              <Link to={item.url} className="pl-4 group-data-[collapsible=icon]:pl-0 group-data-[collapsible=icon]:justify-center">
+                <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/item:scale-110" />
+                <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -222,7 +222,7 @@ export function DashboardSidebar() {
 
   return (
     <>
-      <Sidebar collapsible="icon">
+      <Sidebar collapsible="icon" className="overflow-hidden">
         {/* Header with Logo */}
         <SidebarHeader className="border-b border-sidebar-border">
           <Link to="/" className="flex items-center justify-center py-2">
@@ -244,11 +244,11 @@ export function DashboardSidebar() {
                       isActive={location.pathname === item.url}
                       tooltip={item.title}
                       size="lg"
-                      className="transition-all duration-200 hover:translate-x-0.5 group/nav"
+                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:justify-center"
                     >
-                      <Link to={item.url}>
-                        <item.icon className="h-5 w-5 transition-transform duration-200 group-hover/nav:scale-110" />
-                        <span className="font-medium">{item.title}</span>
+                      <Link to={item.url} className="group-data-[collapsible=icon]:justify-center">
+                        <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                        <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -260,10 +260,10 @@ export function DashboardSidebar() {
                     onClick={() => setIsSignOutDialogOpen(true)}
                     tooltip="Sign Out"
                     size="lg"
-                    className="transition-all duration-200 hover:translate-x-0.5 group/signout hover:text-destructive"
+                    className="transition-all duration-200 hover:translate-x-0.5 group/signout hover:text-destructive group-data-[collapsible=icon]:justify-center"
                   >
-                    <LogOut className="h-5 w-5 transition-transform duration-200 group-hover/signout:scale-110" />
-                    <span className="font-medium">Sign Out</span>
+                    <LogOut className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/signout:scale-110" />
+                    <span className="font-medium group-data-[collapsible=icon]:hidden">Sign Out</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
