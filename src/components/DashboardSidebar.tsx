@@ -48,6 +48,11 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -129,22 +134,39 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
 
   const isActiveGroup = items.some(item => location.pathname === item.url);
 
+  // Get the first item's icon to show as group icon when collapsed
+  const GroupIcon = items[0]?.icon;
+
+  if (isCollapsed) {
+    // When collapsed, show a tooltip with the group name
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            className="flex w-full items-center justify-center px-2 py-2.5 text-sidebar-foreground/80 hover:text-sidebar-foreground transition-colors"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {GroupIcon && <GroupIcon className="h-4 w-4" />}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right" align="center">
+          {title}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
   return (
     <Collapsible open={isOpen || isActiveGroup} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
         <button
-          className={cn(
-            "flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:text-sidebar-foreground transition-colors",
-            isCollapsed && "justify-center px-2"
-          )}
+          className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:text-sidebar-foreground transition-colors"
         >
-          {!isCollapsed && <span>{title}</span>}
-          {!isCollapsed && (
-            isOpen || isActiveGroup ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )
+          <span>{title}</span>
+          {isOpen || isActiveGroup ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
           )}
         </button>
       </CollapsibleTrigger>
@@ -259,25 +281,41 @@ export function DashboardSidebar() {
 
         {/* Footer with User Profile */}
         <SidebarFooter className="border-t border-sidebar-border">
-          <div className={cn(
-            "flex items-center gap-3 p-2",
-            isCollapsed && "justify-center"
-          )}>
-            <Avatar className="h-10 w-10 border-2 border-primary/20">
-              <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                {getInitials(profile?.full_name)}
-              </AvatarFallback>
-            </Avatar>
-            {!isCollapsed && (
+          {isCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center justify-center p-2 cursor-pointer">
+                  <Avatar className="h-10 w-10 border-2 border-primary/20">
+                    <AvatarImage src={profile?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                      {getInitials(profile?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right" align="center">
+                <div>
+                  <p className="font-medium">{profile?.full_name || "User"}</p>
+                  <p className="text-xs text-muted-foreground">Free plan</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <div className="flex items-center gap-3 p-2">
+              <Avatar className="h-10 w-10 border-2 border-primary/20">
+                <AvatarImage src={profile?.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                  {getInitials(profile?.full_name)}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
                   {profile?.full_name || "User"}
                 </p>
                 <p className="text-xs text-primary truncate">Free plan</p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </SidebarFooter>
       </Sidebar>
 
