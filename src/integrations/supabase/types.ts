@@ -41,6 +41,60 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles_extended: {
+        Row: {
+          branch: string | null
+          college_name: string | null
+          company_name: string | null
+          course_name: string | null
+          created_at: string
+          experience: string | null
+          id: string
+          mobile_number: string | null
+          onboarding_completed: boolean | null
+          other_description: string | null
+          role: string | null
+          study_year: Database["public"]["Enums"]["study_year"] | null
+          updated_at: string
+          user_id: string
+          user_type: Database["public"]["Enums"]["user_type"]
+        }
+        Insert: {
+          branch?: string | null
+          college_name?: string | null
+          company_name?: string | null
+          course_name?: string | null
+          created_at?: string
+          experience?: string | null
+          id?: string
+          mobile_number?: string | null
+          onboarding_completed?: boolean | null
+          other_description?: string | null
+          role?: string | null
+          study_year?: Database["public"]["Enums"]["study_year"] | null
+          updated_at?: string
+          user_id: string
+          user_type: Database["public"]["Enums"]["user_type"]
+        }
+        Update: {
+          branch?: string | null
+          college_name?: string | null
+          company_name?: string | null
+          course_name?: string | null
+          created_at?: string
+          experience?: string | null
+          id?: string
+          mobile_number?: string | null
+          onboarding_completed?: boolean | null
+          other_description?: string | null
+          role?: string | null
+          study_year?: Database["public"]["Enums"]["study_year"] | null
+          updated_at?: string
+          user_id?: string
+          user_type?: Database["public"]["Enums"]["user_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -49,7 +103,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      study_year:
+        | "1st Year"
+        | "2nd Year"
+        | "3rd Year"
+        | "4th Year"
+        | "5th Year"
+        | "Other"
+      user_type: "student" | "professional" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -176,6 +237,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      study_year: [
+        "1st Year",
+        "2nd Year",
+        "3rd Year",
+        "4th Year",
+        "5th Year",
+        "Other",
+      ],
+      user_type: ["student", "professional", "other"],
+    },
   },
 } as const
