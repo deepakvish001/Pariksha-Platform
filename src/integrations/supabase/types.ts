@@ -118,6 +118,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_company_progress: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          item_id: number
+          revision: boolean
+          solved: boolean
+          tab_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          item_id: number
+          revision?: boolean
+          solved?: boolean
+          tab_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          item_id?: number
+          revision?: boolean
+          solved?: boolean
+          tab_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_goals: {
         Row: {
           created_at: string

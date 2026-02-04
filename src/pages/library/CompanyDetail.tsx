@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -8,21 +8,16 @@ import {
   Star,
   Check,
   Bookmark,
-  ChevronLeft,
-  ExternalLink,
   FileText,
-  MessageSquare,
-  Code,
-  Brain,
-  Calculator,
   Briefcase,
-  FolderOpen,
+  Loader2,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 import { companies, categoryColors } from "@/data/companyResourcesData";
 import {
   companyTabs,
@@ -41,21 +36,10 @@ import {
   type ColdDM,
   type Difficulty,
 } from "@/data/companyDetailData";
+import { useCompanyProgress } from "@/hooks/useCompanyProgress";
 
 // Local storage keys
 const FAVORITES_KEY = "company-favorites";
-const PROGRESS_KEY = "company-resources-progress";
-
-interface ProgressState {
-  [companyId: string]: {
-    [tabId: string]: {
-      [itemId: number]: {
-        solved: boolean;
-        revision: boolean;
-      };
-    };
-  };
-}
 
 const difficultyColors: Record<Difficulty, string> = {
   Easy: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -66,6 +50,7 @@ const difficultyColors: Record<Difficulty, string> = {
 const CompanyDetail = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Find the company
   const company = useMemo(
@@ -79,20 +64,20 @@ const CompanyDetail = () => {
     const saved = localStorage.getItem(FAVORITES_KEY);
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
-  const [progress, setProgress] = useState<ProgressState>(() => {
-    const saved = localStorage.getItem(PROGRESS_KEY);
-    return saved ? JSON.parse(saved) : {};
-  });
+
+  // Use Supabase-synced progress
+  const {
+    isLoading,
+    isSolved,
+    isRevision,
+    toggleSolved: toggleSolvedAsync,
+    toggleRevision: toggleRevisionAsync,
+  } = useCompanyProgress(companyId, activeTab);
 
   // Save favorites
   useEffect(() => {
     localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites]));
   }, [favorites]);
-
-  // Save progress
-  useEffect(() => {
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
-  }, [progress]);
 
   const toggleFavorite = () => {
     if (!companyId) return;
@@ -107,66 +92,31 @@ const CompanyDetail = () => {
     });
   };
 
-  const toggleSolved = useCallback(
-    (itemId: number) => {
-      if (!companyId) return;
-      const wasSolved = progress[companyId]?.[activeTab]?.[itemId]?.solved;
+  const handleToggleSolved = async (itemId: number) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    const wasSolved = isSolved(itemId);
+    await toggleSolvedAsync(itemId);
+    
+    if (!wasSolved) {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.7 },
+        colors: ["#10b981", "#34d399", "#6ee7b7"],
+      });
+    }
+  };
 
-      setProgress((prev) => ({
-        ...prev,
-        [companyId]: {
-          ...prev[companyId],
-          [activeTab]: {
-            ...prev[companyId]?.[activeTab],
-            [itemId]: {
-              ...prev[companyId]?.[activeTab]?.[itemId],
-              solved: !wasSolved,
-            },
-          },
-        },
-      }));
-
-      if (!wasSolved) {
-        confetti({
-          particleCount: 50,
-          spread: 60,
-          origin: { y: 0.7 },
-          colors: ["#10b981", "#34d399", "#6ee7b7"],
-        });
-      }
-    },
-    [companyId, activeTab, progress]
-  );
-
-  const toggleRevision = useCallback(
-    (itemId: number) => {
-      if (!companyId) return;
-      setProgress((prev) => ({
-        ...prev,
-        [companyId]: {
-          ...prev[companyId],
-          [activeTab]: {
-            ...prev[companyId]?.[activeTab],
-            [itemId]: {
-              ...prev[companyId]?.[activeTab]?.[itemId],
-              revision: !prev[companyId]?.[activeTab]?.[itemId]?.revision,
-            },
-          },
-        },
-      }));
-    },
-    [companyId, activeTab]
-  );
-
-  const isSolved = useCallback(
-    (itemId: number) => progress[companyId || ""]?.[activeTab]?.[itemId]?.solved || false,
-    [companyId, activeTab, progress]
-  );
-
-  const isRevision = useCallback(
-    (itemId: number) => progress[companyId || ""]?.[activeTab]?.[itemId]?.revision || false,
-    [companyId, activeTab, progress]
-  );
+  const handleToggleRevision = async (itemId: number) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    await toggleRevisionAsync(itemId);
+  };
 
   // Get current tab data
   const currentTabData = useMemo(() => {
@@ -326,73 +276,105 @@ const CompanyDetail = () => {
           </motion.div>
         )}
 
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Loading progress...</span>
+          </div>
+        )}
+
         {/* Content based on active tab */}
-        <div className="space-y-0">
-          {activeTab === "sql-questions" && (
-            <QuestionsTable
-              questions={filteredData as Question[]}
-              showCategory
-              isSolved={isSolved}
-              isRevision={isRevision}
-              toggleSolved={toggleSolved}
-              toggleRevision={toggleRevision}
-            />
-          )}
+        {!isLoading && (
+          <div className="space-y-0">
+            {activeTab === "sql-questions" && (
+              <QuestionsTable
+                questions={filteredData as Question[]}
+                showCategory
+                isSolved={isSolved}
+                isRevision={isRevision}
+                toggleSolved={handleToggleSolved}
+                toggleRevision={handleToggleRevision}
+                isLoggedIn={!!user}
+              />
+            )}
 
-          {activeTab === "interview-questions" && (
-            <QuestionsTable
-              questions={filteredData as Question[]}
-              isSolved={isSolved}
-              isRevision={isRevision}
-              toggleSolved={toggleSolved}
-              toggleRevision={toggleRevision}
-            />
-          )}
+            {activeTab === "interview-questions" && (
+              <QuestionsTable
+                questions={filteredData as Question[]}
+                isSolved={isSolved}
+                isRevision={isRevision}
+                toggleSolved={handleToggleSolved}
+                toggleRevision={handleToggleRevision}
+                isLoggedIn={!!user}
+              />
+            )}
 
-          {activeTab === "dsa-questions" && (
-            <QuestionsTable
-              questions={filteredData as Question[]}
-              isSolved={isSolved}
-              isRevision={isRevision}
-              toggleSolved={toggleSolved}
-              toggleRevision={toggleRevision}
-            />
-          )}
+            {activeTab === "dsa-questions" && (
+              <QuestionsTable
+                questions={filteredData as Question[]}
+                isSolved={isSolved}
+                isRevision={isRevision}
+                toggleSolved={handleToggleSolved}
+                toggleRevision={handleToggleRevision}
+                isLoggedIn={!!user}
+              />
+            )}
 
-          {activeTab === "aptitude-questions" && (
-            <QuestionsTable
-              questions={filteredData as Question[]}
-              isSolved={isSolved}
-              isRevision={isRevision}
-              toggleSolved={toggleSolved}
-              toggleRevision={toggleRevision}
-            />
-          )}
+            {activeTab === "aptitude-questions" && (
+              <QuestionsTable
+                questions={filteredData as Question[]}
+                isSolved={isSolved}
+                isRevision={isRevision}
+                toggleSolved={handleToggleSolved}
+                toggleRevision={handleToggleRevision}
+                isLoggedIn={!!user}
+              />
+            )}
 
-          {activeTab === "job-portals" && (
-            <JobPortalsTable
-              portals={filteredData as JobPortal[]}
-              isSolved={isSolved}
-              toggleSolved={toggleSolved}
-            />
-          )}
+            {activeTab === "job-portals" && (
+              <JobPortalsTable
+                portals={filteredData as JobPortal[]}
+                isSolved={isSolved}
+                toggleSolved={handleToggleSolved}
+                isLoggedIn={!!user}
+              />
+            )}
 
-          {activeTab === "projects" && (
-            <ProjectsTable projects={filteredData as Project[]} />
-          )}
+            {activeTab === "projects" && (
+              <ProjectsTable projects={filteredData as Project[]} />
+            )}
 
-          {activeTab === "resume-templates" && (
-            <ResumeTemplatesGrid templates={filteredData as ResumeTemplate[]} />
-          )}
+            {activeTab === "resume-templates" && (
+              <ResumeTemplatesGrid templates={filteredData as ResumeTemplate[]} />
+            )}
 
-          {activeTab === "cold-dms" && (
-            <ColdDMsTable
-              dms={filteredData as ColdDM[]}
-              isSolved={isSolved}
-              toggleSolved={toggleSolved}
-            />
-          )}
-        </div>
+            {activeTab === "cold-dms" && (
+              <ColdDMsTable
+                dms={filteredData as ColdDM[]}
+                isSolved={isSolved}
+                toggleSolved={handleToggleSolved}
+                isLoggedIn={!!user}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Login prompt for non-authenticated users */}
+        {!user && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 p-4 rounded-lg border border-primary/30 bg-primary/5 text-center"
+          >
+            <p className="text-sm text-muted-foreground mb-2">
+              Sign in to track your progress and sync across devices
+            </p>
+            <Button size="sm" onClick={() => navigate("/login")}>
+              Sign In
+            </Button>
+          </motion.div>
+        )}
       </main>
     </div>
   );
@@ -406,6 +388,7 @@ interface QuestionsTableProps {
   isRevision: (id: number) => boolean;
   toggleSolved: (id: number) => void;
   toggleRevision: (id: number) => void;
+  isLoggedIn: boolean;
 }
 
 const QuestionsTable = ({
@@ -415,6 +398,7 @@ const QuestionsTable = ({
   isRevision,
   toggleSolved,
   toggleRevision,
+  isLoggedIn,
 }: QuestionsTableProps) => {
   return (
     <div className="border border-border/50 rounded-lg overflow-hidden">
@@ -475,8 +459,10 @@ const QuestionsTable = ({
                     "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all",
                     isSolved(question.id)
                       ? "border-green-500 bg-green-500/20 text-green-500"
-                      : "border-border hover:border-green-500/50"
+                      : "border-border hover:border-green-500/50",
+                    !isLoggedIn && "opacity-50"
                   )}
+                  title={isLoggedIn ? "Mark as solved" : "Sign in to track progress"}
                 >
                   {isSolved(question.id) && <Check className="h-4 w-4" />}
                 </button>
@@ -488,8 +474,10 @@ const QuestionsTable = ({
                     "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all",
                     isRevision(question.id)
                       ? "border-yellow-500 bg-yellow-500/20 text-yellow-500"
-                      : "border-border hover:border-yellow-500/50"
+                      : "border-border hover:border-yellow-500/50",
+                    !isLoggedIn && "opacity-50"
                   )}
+                  title={isLoggedIn ? "Mark for revision" : "Sign in to track progress"}
                 >
                   <Bookmark
                     className={cn("h-4 w-4", isRevision(question.id) && "fill-yellow-500")}
@@ -509,9 +497,10 @@ interface JobPortalsTableProps {
   portals: JobPortal[];
   isSolved: (id: number) => boolean;
   toggleSolved: (id: number) => void;
+  isLoggedIn: boolean;
 }
 
-const JobPortalsTable = ({ portals, isSolved, toggleSolved }: JobPortalsTableProps) => {
+const JobPortalsTable = ({ portals, isSolved, toggleSolved, isLoggedIn }: JobPortalsTableProps) => {
   return (
     <div className="border border-border/50 rounded-lg overflow-hidden">
       <div className="grid grid-cols-[40px_1fr_150px_80px] gap-4 px-4 py-3 bg-muted/30 text-sm font-medium text-muted-foreground border-b border-border/50">
@@ -536,9 +525,6 @@ const JobPortalsTable = ({ portals, isSolved, toggleSolved }: JobPortalsTablePro
               <p className="text-sm text-muted-foreground line-clamp-2">
                 {portal.description}
               </p>
-              <span className="text-xs text-muted-foreground/70 mt-1 inline-block">
-                {portal.location}
-              </span>
             </div>
             <div className="text-sm text-muted-foreground">{portal.location}</div>
             <div className="flex justify-center">
@@ -548,8 +534,10 @@ const JobPortalsTable = ({ portals, isSolved, toggleSolved }: JobPortalsTablePro
                   "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all",
                   isSolved(portal.id)
                     ? "border-green-500 bg-green-500/20 text-green-500"
-                    : "border-border hover:border-green-500/50"
+                    : "border-border hover:border-green-500/50",
+                  !isLoggedIn && "opacity-50"
                 )}
+                title={isLoggedIn ? "Mark as applied" : "Sign in to track progress"}
               >
                 {isSolved(portal.id) && <Check className="h-4 w-4" />}
               </button>
@@ -637,9 +625,10 @@ interface ColdDMsTableProps {
   dms: ColdDM[];
   isSolved: (id: number) => boolean;
   toggleSolved: (id: number) => void;
+  isLoggedIn: boolean;
 }
 
-const ColdDMsTable = ({ dms, isSolved, toggleSolved }: ColdDMsTableProps) => {
+const ColdDMsTable = ({ dms, isSolved, toggleSolved, isLoggedIn }: ColdDMsTableProps) => {
   return (
     <div className="border border-border/50 rounded-lg overflow-hidden">
       <div className="grid grid-cols-[40px_1fr_150px] gap-4 px-4 py-3 bg-muted/30 text-sm font-medium text-muted-foreground border-b border-border/50">
