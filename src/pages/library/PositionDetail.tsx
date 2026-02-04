@@ -29,6 +29,10 @@ import {
   ArrowLeft,
   Shuffle,
   Sparkles,
+  List,
+  LayoutGrid,
+  ChevronsUpDown,
+  ChevronsDownUp,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -73,6 +77,7 @@ import {
 } from "@/data/positionResourcesData";
 import ProgressSummaryCard from "@/components/library/ProgressSummaryCard";
 import QuestionRow from "@/components/library/QuestionRow";
+import CategorySection from "@/components/library/CategorySection";
 
 // Icon mapping for roles
 const iconMap: Record<string, React.ElementType> = {
@@ -95,9 +100,11 @@ const iconMap: Record<string, React.ElementType> = {
 
 // Local storage keys
 const STORAGE_KEY = "position-resources-progress";
+const VIEW_MODE_STORAGE_KEY = "position-resources-view-mode";
 
 // View modes
 type ViewMode = "all" | "revision";
+type LayoutMode = "sections" | "tabs";
 
 interface ProgressState {
   [roleId: string]: {
@@ -136,6 +143,10 @@ const PositionDetail = () => {
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0].id);
   const [viewMode, setViewMode] = useState<ViewMode>("all");
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
+    const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    return stored === "tabs" ? "tabs" : "sections";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | "all">("all");
   const [hasNotesFilter, setHasNotesFilter] = useState(false);
@@ -148,6 +159,17 @@ const PositionDetail = () => {
   });
   const [noteText, setNoteText] = useState("");
   const [lastCompletedId, setLastCompletedId] = useState<string | null>(null);
+  
+  // Section open states for collapsible view
+  const [openSections, setOpenSections] = useState<Set<string>>(() => {
+    // Open first category by default
+    return new Set([categories[0]?.id]);
+  });
+
+  // Persist layout mode preference
+  useEffect(() => {
+    localStorage.setItem(VIEW_MODE_STORAGE_KEY, layoutMode);
+  }, [layoutMode]);
 
   // Load progress from local storage
   useEffect(() => {
@@ -193,7 +215,38 @@ const PositionDetail = () => {
     return questions;
   }, [selectedRole, progress]);
 
-  // Get current questions based on view mode
+  // Get questions grouped by category for section view
+  const questionsByCategory = useMemo(() => {
+    const result: Record<string, QuestionWithMeta[]> = {};
+    categories.forEach((cat) => {
+      let catQuestions = getQuestions(selectedRole, cat.id).map((q) => ({
+        ...q,
+        categoryId: cat.id,
+        categoryName: cat.name,
+      }));
+
+      // Apply filters
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        catQuestions = catQuestions.filter((q) =>
+          q.text.toLowerCase().includes(query)
+        );
+      }
+      if (difficultyFilter !== "all") {
+        catQuestions = catQuestions.filter((q) => q.difficulty === difficultyFilter);
+      }
+      if (hasNotesFilter) {
+        catQuestions = catQuestions.filter((q) =>
+          Boolean(progress[selectedRole]?.[q.categoryId]?.[q.id]?.note)
+        );
+      }
+
+      result[cat.id] = catQuestions;
+    });
+    return result;
+  }, [selectedRole, searchQuery, difficultyFilter, hasNotesFilter, progress]);
+
+  // Get current questions based on view mode (for tabs layout)
   const baseQuestions = useMemo(() => {
     if (viewMode === "revision") {
       return revisionQuestions;
@@ -205,7 +258,7 @@ const PositionDetail = () => {
     }));
   }, [selectedRole, selectedCategory, viewMode, revisionQuestions, currentCategory]);
 
-  // Filter questions by search, difficulty, and notes
+  // Filter questions by search, difficulty, and notes (for tabs layout)
   const filteredQuestions = useMemo(() => {
     let filtered = baseQuestions;
 
@@ -370,7 +423,7 @@ const PositionDetail = () => {
     setHasNotesFilter(false);
   }, []);
 
-  // Random question
+  // Random question (for tabs view)
   const goToRandomQuestion = useCallback(() => {
     const unsolvedQuestions = filteredQuestions.filter(
       (q) => !isSolved(q.id, q.categoryId)
@@ -391,8 +444,36 @@ const PositionDetail = () => {
     }
   }, [filteredQuestions, isSolved]);
 
+  // Section controls
+  const toggleSection = useCallback((categoryId: string) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  }, []);
+
+  const expandAllSections = useCallback(() => {
+    setOpenSections(new Set(categories.map((c) => c.id)));
+  }, []);
+
+  const collapseAllSections = useCallback(() => {
+    setOpenSections(new Set());
+  }, []);
+
+  const allExpanded = openSections.size === categories.length;
+
   const hasActiveFilters = searchQuery.trim() !== "" || difficultyFilter !== "all" || hasNotesFilter;
   const unsolvedCount = filteredQuestions.filter((q) => !isSolved(q.id, q.categoryId)).length;
+
+  // Total filtered count for section view
+  const totalFilteredCount = useMemo(() => {
+    return Object.values(questionsByCategory).reduce((sum, qs) => sum + qs.length, 0);
+  }, [questionsByCategory]);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -439,42 +520,108 @@ const PositionDetail = () => {
             transition={{ delay: 0.1 }}
             className="rounded-lg border border-border bg-card overflow-hidden"
           >
-            {/* Tabs Navigation */}
+            {/* View Mode Toggle + Layout Toggle */}
             <div className="border-b border-border p-3 md:p-4 bg-muted/30">
-              <Tabs
-                value={viewMode === "revision" ? "revision" : selectedCategory}
-                onValueChange={(value) => {
-                  if (value === "revision") {
-                    setViewMode("revision");
-                  } else {
-                    setViewMode("all");
-                    setSelectedCategory(value);
-                  }
-                }}
-              >
-                <TabsList className="flex-wrap h-auto gap-1.5 md:gap-2 bg-transparent p-0">
-                  {categories.map((category) => (
-                    <TabsTrigger
-                      key={category.id}
-                      value={category.id}
-                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm px-2.5 md:px-3 py-1.5"
-                    >
-                      <span className="hidden md:inline">{category.name}</span>
-                      <span className="md:hidden">{category.name.replace(" Questions", "")}</span>
-                    </TabsTrigger>
-                  ))}
-                  <TabsTrigger
-                    value="revision"
-                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1 text-xs md:text-sm px-2.5 md:px-3 py-1.5"
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                {/* Layout Mode Toggle */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center rounded-lg border border-border p-1 bg-background">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={layoutMode === "sections" ? "secondary" : "ghost"}
+                          size="sm"
+                          onClick={() => setLayoutMode("sections")}
+                          className="h-7 px-2 gap-1"
+                        >
+                          <LayoutGrid className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline text-xs">Sections</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Section View</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={layoutMode === "tabs" ? "secondary" : "ghost"}
+                          size="sm"
+                          onClick={() => setLayoutMode("tabs")}
+                          className="h-7 px-2 gap-1"
+                        >
+                          <List className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline text-xs">Tabs</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Tab View</TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  {/* Expand/Collapse All (only for sections mode) */}
+                  {layoutMode === "sections" && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={allExpanded ? collapseAllSections : expandAllSections}
+                          className="h-7 px-2 gap-1"
+                        >
+                          {allExpanded ? (
+                            <ChevronsDownUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronsUpDown className="h-3.5 w-3.5" />
+                          )}
+                          <span className="hidden sm:inline text-xs">
+                            {allExpanded ? "Collapse" : "Expand"}
+                          </span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {allExpanded ? "Collapse all sections" : "Expand all sections"}
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+
+                {/* Revision Tab (visible in tabs mode) */}
+                {layoutMode === "tabs" && (
+                  <Button
+                    variant={viewMode === "revision" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode(viewMode === "revision" ? "all" : "revision")}
+                    className="h-7 gap-1"
                   >
                     <BookmarkCheck className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Revision</span>
+                    <span className="text-xs">Revision</span>
                     <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-background/50">
                       {revisionQuestions.length}
                     </Badge>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+                  </Button>
+                )}
+              </div>
+
+              {/* Tabs Navigation (only for tabs mode) */}
+              {layoutMode === "tabs" && viewMode !== "revision" && (
+                <div className="mt-3">
+                  <Tabs
+                    value={selectedCategory}
+                    onValueChange={setSelectedCategory}
+                  >
+                    <TabsList className="flex-wrap h-auto gap-1.5 md:gap-2 bg-transparent p-0">
+                      {categories.map((category) => (
+                        <TabsTrigger
+                          key={category.id}
+                          value={category.id}
+                          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm px-2.5 md:px-3 py-1.5"
+                        >
+                          <span className="hidden md:inline">{category.name}</span>
+                          <span className="md:hidden">{category.name.replace(" Questions", "")}</span>
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                </div>
+              )}
             </div>
 
             {/* Search and Filter Bar */}
@@ -552,23 +699,25 @@ const PositionDetail = () => {
                     </TooltipContent>
                   </Tooltip>
 
-                  {/* Random Question */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={goToRandomQuestion}
-                        disabled={unsolvedCount === 0}
-                        className="h-9 w-9 md:h-10 md:w-10"
-                      >
-                        <Shuffle className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Pick a random unsolved question
-                    </TooltipContent>
-                  </Tooltip>
+                  {/* Random Question (only for tabs mode) */}
+                  {layoutMode === "tabs" && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={goToRandomQuestion}
+                          disabled={unsolvedCount === 0}
+                          className="h-9 w-9 md:h-10 md:w-10"
+                        >
+                          <Shuffle className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Pick a random unsolved question
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
 
                   {/* Clear Filters */}
                   <AnimatePresence>
@@ -595,11 +744,11 @@ const PositionDetail = () => {
               {/* Results count */}
               <div className="flex items-center justify-between mt-3">
                 <p className="text-xs md:text-sm text-muted-foreground">
-                  {filteredQuestions.length} question{filteredQuestions.length !== 1 ? "s" : ""}{" "}
+                  {layoutMode === "sections" ? totalFilteredCount : filteredQuestions.length} question{(layoutMode === "sections" ? totalFilteredCount : filteredQuestions.length) !== 1 ? "s" : ""}{" "}
                   {hasActiveFilters ? "found" : "available"}
-                  {viewMode === "revision" && " for revision"}
+                  {layoutMode === "tabs" && viewMode === "revision" && " for revision"}
                 </p>
-                {unsolvedCount > 0 && (
+                {layoutMode === "tabs" && unsolvedCount > 0 && (
                   <Badge variant="outline" className="text-xs">
                     <Sparkles className="h-3 w-3 mr-1" />
                     {unsolvedCount} pending
@@ -608,116 +757,139 @@ const PositionDetail = () => {
               </div>
             </div>
 
-            {/* Questions Table */}
-            {filteredQuestions.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent bg-muted/20">
-                      <TableHead className="w-10 sm:w-12 text-xs font-semibold">#</TableHead>
-                      <TableHead className="min-w-0 text-xs font-semibold">Question</TableHead>
-                      {viewMode === "revision" && (
-                        <TableHead className="hidden md:table-cell w-28 text-xs font-semibold">Category</TableHead>
-                      )}
-                      <TableHead className="w-20 sm:w-24 text-xs font-semibold">Difficulty</TableHead>
-                      <TableHead className="w-12 sm:w-16 text-center text-xs font-semibold">
-                        <span className="hidden sm:inline">Solved</span>
-                        <span className="sm:hidden">✓</span>
-                      </TableHead>
-                      <TableHead className="w-12 sm:w-16 text-center text-xs font-semibold">
-                        <span className="hidden sm:inline">Revision</span>
-                        <span className="sm:hidden">★</span>
-                      </TableHead>
-                      <TableHead className="w-12 sm:w-16 text-center text-xs font-semibold">
-                        <span className="hidden sm:inline">Notes</span>
-                        <span className="sm:hidden">📝</span>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <AnimatePresence mode="popLayout">
-                      {filteredQuestions.map((question, index) => (
-                        <QuestionRow
-                          key={`${question.categoryId}-${question.id}`}
-                          question={question}
-                          index={index}
-                          isSolved={isSolved(question.id, question.categoryId)}
-                          isRevision={isRevision(question.id, question.categoryId)}
-                          hasNote={!!getNote(question.id, question.categoryId)}
-                          notePreview={getNote(question.id, question.categoryId)}
-                          showCategory={viewMode === "revision"}
-                          onToggleSolved={() => toggleSolved(question.id, question.categoryId)}
-                          onToggleRevision={() => toggleRevision(question.id, question.categoryId)}
-                          onOpenNote={() => openNoteDialog(question.id, question.categoryId, question.text)}
-                        />
-                      ))}
-                    </AnimatePresence>
-                  </TableBody>
-                </Table>
+            {/* Content: Sections View or Tabs View */}
+            {layoutMode === "sections" ? (
+              /* Sections View */
+              <div>
+                {categories.map((category) => (
+                  <CategorySection
+                    key={category.id}
+                    categoryId={category.id}
+                    categoryName={category.name}
+                    questions={questionsByCategory[category.id] || []}
+                    isOpen={openSections.has(category.id)}
+                    onOpenChange={() => toggleSection(category.id)}
+                    isSolved={isSolved}
+                    isRevision={isRevision}
+                    getNote={getNote}
+                    onToggleSolved={toggleSolved}
+                    onToggleRevision={toggleRevision}
+                    onOpenNote={openNoteDialog}
+                  />
+                ))}
               </div>
             ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center justify-center py-16 text-center px-4"
-              >
-                {viewMode === "revision" ? (
-                  <>
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 200 }}
-                      className="h-16 w-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4"
-                    >
-                      <BookmarkCheck className="h-8 w-8 text-amber-500" />
-                    </motion.div>
-                    <h3 className="text-lg font-medium">No revision questions</h3>
-                    <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-                      Bookmark questions to add them to your revision list for quick access later.
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="mt-4"
-                      onClick={() => setViewMode("all")}
-                    >
-                      Browse All Questions
-                    </Button>
-                  </>
-                ) : hasActiveFilters ? (
-                  <>
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 200 }}
-                      className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4"
-                    >
-                      <Search className="h-8 w-8 text-muted-foreground" />
-                    </motion.div>
-                    <h3 className="text-lg font-medium">No questions found</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Try adjusting your search or filters.
-                    </p>
-                    <Button variant="outline" onClick={clearFilters} className="mt-4">
-                      Clear Filters
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 200 }}
-                      className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4"
-                    >
-                      <Layers className="h-8 w-8 text-muted-foreground" />
-                    </motion.div>
-                    <h3 className="text-lg font-medium">No questions available</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Questions for this category will be added soon.
-                    </p>
-                  </>
-                )}
-              </motion.div>
+              /* Tabs View (original) */
+              filteredQuestions.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent bg-muted/20">
+                        <TableHead className="w-10 sm:w-12 text-xs font-semibold">#</TableHead>
+                        <TableHead className="min-w-0 text-xs font-semibold">Question</TableHead>
+                        {viewMode === "revision" && (
+                          <TableHead className="hidden md:table-cell w-28 text-xs font-semibold">Category</TableHead>
+                        )}
+                        <TableHead className="w-20 sm:w-24 text-xs font-semibold">Difficulty</TableHead>
+                        <TableHead className="w-12 sm:w-16 text-center text-xs font-semibold">
+                          <span className="hidden sm:inline">Solved</span>
+                          <span className="sm:hidden">✓</span>
+                        </TableHead>
+                        <TableHead className="w-12 sm:w-16 text-center text-xs font-semibold">
+                          <span className="hidden sm:inline">Revision</span>
+                          <span className="sm:hidden">★</span>
+                        </TableHead>
+                        <TableHead className="w-12 sm:w-16 text-center text-xs font-semibold">
+                          <span className="hidden sm:inline">Notes</span>
+                          <span className="sm:hidden">📝</span>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <AnimatePresence mode="popLayout">
+                        {filteredQuestions.map((question, index) => (
+                          <QuestionRow
+                            key={`${question.categoryId}-${question.id}`}
+                            question={question}
+                            index={index}
+                            isSolved={isSolved(question.id, question.categoryId)}
+                            isRevision={isRevision(question.id, question.categoryId)}
+                            hasNote={!!getNote(question.id, question.categoryId)}
+                            notePreview={getNote(question.id, question.categoryId)}
+                            showCategory={viewMode === "revision"}
+                            onToggleSolved={() => toggleSolved(question.id, question.categoryId)}
+                            onToggleRevision={() => toggleRevision(question.id, question.categoryId)}
+                            onOpenNote={() => openNoteDialog(question.id, question.categoryId, question.text)}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col items-center justify-center py-16 text-center px-4"
+                >
+                  {viewMode === "revision" ? (
+                    <>
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 200 }}
+                        className="h-16 w-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4"
+                      >
+                        <BookmarkCheck className="h-8 w-8 text-amber-500" />
+                      </motion.div>
+                      <h3 className="text-lg font-medium">No revision questions</h3>
+                      <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                        Bookmark questions to add them to your revision list for quick access later.
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="mt-4"
+                        onClick={() => setViewMode("all")}
+                      >
+                        Browse All Questions
+                      </Button>
+                    </>
+                  ) : hasActiveFilters ? (
+                    <>
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 200 }}
+                        className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4"
+                      >
+                        <Search className="h-8 w-8 text-muted-foreground" />
+                      </motion.div>
+                      <h3 className="text-lg font-medium">No questions found</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Try adjusting your search or filters.
+                      </p>
+                      <Button variant="outline" onClick={clearFilters} className="mt-4">
+                        Clear Filters
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 200 }}
+                        className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4"
+                      >
+                        <Layers className="h-8 w-8 text-muted-foreground" />
+                      </motion.div>
+                      <h3 className="text-lg font-medium">No questions available</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Questions for this category will be added soon.
+                      </p>
+                    </>
+                  )}
+                </motion.div>
+              )
             )}
           </motion.div>
 
