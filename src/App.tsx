@@ -24,6 +24,7 @@ import SheetDetail from "./pages/SheetDetail";
 
 // Library Pages
 import PositionResources from "./pages/library/PositionResources";
+import PositionDetail from "./pages/library/PositionDetail";
 import CompanyResources from "./pages/library/CompanyResources";
 import MassRecruitment from "./pages/library/MassRecruitment";
 import InterviewQuestions from "./pages/library/InterviewQuestions";
@@ -105,6 +106,7 @@ const App = () => (
                 {/* Library routes */}
                 <Route path="/library" element={<DashboardLayoutWrapper />}>
                   <Route path="positions" element={<PositionResources />} />
+                  <Route path="positions/:roleId" element={<PositionDetail />} />
                   <Route path="companies" element={<CompanyResources />} />
                   <Route path="recruitment" element={<MassRecruitment />} />
                   <Route path="interview" element={<InterviewQuestions />} />
