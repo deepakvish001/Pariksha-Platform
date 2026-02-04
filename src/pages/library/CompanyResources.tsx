@@ -1,15 +1,45 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Building2, Search, Star, Briefcase, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Building2,
+  Search,
+  Star,
+  Briefcase,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  X,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { companies, categoryColors, type Company } from "@/data/companyResourcesData";
+import CompanyStatsCard from "@/components/library/CompanyStatsCard";
 
 type TabType = "all" | "product" | "service" | "startup" | "hiring" | "favorites";
+type SortField = "name" | "category" | "type";
+type SortDirection = "asc" | "desc";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -22,11 +52,17 @@ const tabs: { id: TabType; label: string }[] = [
   { id: "favorites", label: "Favorites" },
 ];
 
+// Get unique categories from companies
+const allCategories = [...new Set(companies.map((c) => c.category))].sort();
+
 const CompanyResources = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     const saved = localStorage.getItem("company-favorites");
     return saved ? new Set(JSON.parse(saved)) : new Set();
@@ -37,7 +73,8 @@ const CompanyResources = () => {
     localStorage.setItem("company-favorites", JSON.stringify([...favorites]));
   }, [favorites]);
 
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setFavorites((prev) => {
       const newFavorites = new Set(prev);
       if (newFavorites.has(id)) {
@@ -49,7 +86,38 @@ const CompanyResources = () => {
     });
   };
 
-  // Filter companies based on search and active tab
+  // Calculate stats
+  const stats = useMemo(() => {
+    return {
+      total: companies.length,
+      product: companies.filter((c) => c.type.includes("product")).length,
+      service: companies.filter((c) => c.type.includes("service")).length,
+      startup: companies.filter((c) => c.type.includes("startup")).length,
+      hiring: companies.filter((c) => c.isHiring).length,
+      favorites: favorites.size,
+    };
+  }, [favorites]);
+
+  // Check if any filters are active
+  const hasActiveFilters = searchQuery || categoryFilter !== "all";
+
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setCategoryFilter("all");
+    setCurrentPage(1);
+  };
+
+  // Handle sort toggle
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Filter and sort companies
   const filteredCompanies = useMemo(() => {
     let result = companies;
 
@@ -62,6 +130,11 @@ const CompanyResources = () => {
           company.description.toLowerCase().includes(query) ||
           company.category.toLowerCase().includes(query)
       );
+    }
+
+    // Category filter
+    if (categoryFilter !== "all") {
+      result = result.filter((c) => c.category === categoryFilter);
     }
 
     // Tab filter
@@ -83,8 +156,25 @@ const CompanyResources = () => {
         break;
     }
 
+    // Sorting
+    result = [...result].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case "name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "category":
+          comparison = a.category.localeCompare(b.category);
+          break;
+        case "type":
+          comparison = a.type.join(",").localeCompare(b.type.join(","));
+          break;
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+
     return result;
-  }, [searchQuery, activeTab, favorites]);
+  }, [searchQuery, activeTab, favorites, categoryFilter, sortField, sortDirection]);
 
   // Pagination
   const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE);
@@ -96,7 +186,7 @@ const CompanyResources = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, activeTab]);
+  }, [searchQuery, activeTab, categoryFilter]);
 
   // Generate page numbers for pagination
   const getPageNumbers = () => {
@@ -119,6 +209,15 @@ const CompanyResources = () => {
     return categoryColors[category] || "text-muted-foreground border-border bg-muted/50";
   };
 
+  const getTypeLabel = (types: string[]) => {
+    return types.map((t) => t.charAt(0).toUpperCase() + t.slice(1)).join(", ");
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4" />;
+    return sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -131,54 +230,115 @@ const CompanyResources = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold">Companies and Startups</h1>
-              <p className="text-sm text-muted-foreground">
-                Select a company to explore all available resources and preparation materials
+              <p className="text-sm text-muted-foreground hidden sm:block">
+                Select a company to explore resources and preparation materials
               </p>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="p-6 md:p-8 space-y-6 max-w-6xl mx-auto">
-        {/* Search */}
+      <main className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+        {/* Stats Card */}
+        <CompanyStatsCard
+          totalCompanies={stats.total}
+          productCount={stats.product}
+          serviceCount={stats.service}
+          startupCount={stats.startup}
+          hiringCount={stats.hiring}
+          favoritesCount={stats.favorites}
+        />
+
+        {/* Search and Filters Row */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative"
+          transition={{ delay: 0.1 }}
+          className="flex flex-col sm:flex-row gap-3"
         >
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Search companies..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 h-12 text-base bg-muted/30 border-border/50 focus:bg-background"
-          />
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Search companies..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 h-11 text-base bg-muted/30 border-border/50 focus:bg-background"
+            />
+          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-full sm:w-48 h-11">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {allCategories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <AnimatePresence>
+            {hasActiveFilters && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+              >
+                <Button
+                  variant="outline"
+                  onClick={clearAllFilters}
+                  className="gap-2 h-11 whitespace-nowrap"
+                >
+                  <X className="h-4 w-4" />
+                  Clear Filters
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex flex-wrap gap-1 border-b border-border/50 pb-2"
+          transition={{ delay: 0.15 }}
+          className="flex flex-wrap gap-1 border-b border-border/50 pb-2 overflow-x-auto"
         >
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "px-4 py-2 text-sm font-medium transition-all rounded-lg",
-                activeTab === tab.id
-                  ? "text-foreground bg-muted"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}
-            >
-              {tab.label}
-              {tab.id === "favorites" && favorites.size > 0 && (
-                <span className="ml-1.5 text-xs text-primary">({favorites.size})</span>
-              )}
-            </button>
-          ))}
+          {tabs.map((tab) => {
+            const count =
+              tab.id === "favorites"
+                ? favorites.size
+                : tab.id === "all"
+                ? companies.length
+                : tab.id === "hiring"
+                ? stats.hiring
+                : stats[tab.id as keyof typeof stats];
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium transition-all rounded-lg flex items-center gap-2 whitespace-nowrap",
+                  activeTab === tab.id
+                    ? "text-foreground bg-muted"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                {tab.label}
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "h-5 px-1.5 text-xs",
+                    activeTab === tab.id ? "bg-primary/20 text-primary" : ""
+                  )}
+                >
+                  {count}
+                </Badge>
+              </button>
+            );
+          })}
         </motion.div>
 
         {/* Results count */}
@@ -186,41 +346,130 @@ const CompanyResources = () => {
           Showing {paginatedCompanies.length} of {filteredCompanies.length} companies
         </div>
 
-        {/* Company List */}
-        <div className="space-y-0 divide-y divide-border/50">
-          {paginatedCompanies.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="py-16 text-center"
-            >
-              <Building2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <p className="text-muted-foreground">No companies found matching your criteria</p>
-            </motion.div>
-          ) : (
-            paginatedCompanies.map((company, index) => {
-              const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
-              return (
-                <CompanyRow
-                  key={company.id}
-                  company={company}
-                  index={globalIndex}
-                  isFavorite={favorites.has(company.id)}
-                  onToggleFavorite={() => toggleFavorite(company.id)}
-                  onNavigate={() => navigate(`/library/companies/${company.id}`)}
-                  delay={index * 0.05}
-                />
-              );
-            })
-          )}
-        </div>
+        {/* Company Table */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="border border-border/50 rounded-lg overflow-hidden"
+        >
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead className="w-12 text-center">#</TableHead>
+                <TableHead className="w-12"></TableHead>
+                <TableHead>
+                  <button
+                    onClick={() => handleSort("name")}
+                    className="flex items-center gap-2 hover:text-foreground transition-colors"
+                  >
+                    Company Name
+                    {getSortIcon("name")}
+                  </button>
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  <button
+                    onClick={() => handleSort("category")}
+                    className="flex items-center gap-2 hover:text-foreground transition-colors"
+                  >
+                    Category
+                    {getSortIcon("category")}
+                  </button>
+                </TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  <button
+                    onClick={() => handleSort("type")}
+                    className="flex items-center gap-2 hover:text-foreground transition-colors"
+                  >
+                    Type
+                    {getSortIcon("type")}
+                  </button>
+                </TableHead>
+                <TableHead className="w-24 text-center">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedCompanies.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-40 text-center">
+                    <Building2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                    <p className="text-muted-foreground">No companies found matching your criteria</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedCompanies.map((company, index) => {
+                  const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+                  const isFavorite = favorites.has(company.id);
+
+                  return (
+                    <TableRow
+                      key={company.id}
+                      onClick={() => navigate(`/library/companies/${company.id}`)}
+                      className="cursor-pointer group"
+                    >
+                      <TableCell className="text-center text-muted-foreground font-medium">
+                        {globalIndex}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <button
+                          onClick={(e) => toggleFavorite(company.id, e)}
+                          className="p-1 rounded-md hover:bg-muted transition-colors"
+                        >
+                          <Star
+                            className={cn(
+                              "h-5 w-5 transition-all",
+                              isFavorite
+                                ? "fill-amber-400 text-amber-400"
+                                : "text-muted-foreground/40 hover:text-amber-400"
+                            )}
+                          />
+                        </button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-lg bg-gradient-orange flex items-center justify-center shrink-0">
+                            <Building2 className="h-4 w-4 text-primary-foreground" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                              {company.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground line-clamp-1 hidden lg:block">
+                              {company.description}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge variant="outline" className={cn("text-xs", getCategoryStyle(company.category))}>
+                          {company.category}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <span className="text-sm text-muted-foreground">{getTypeLabel(company.type)}</span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {company.isHiring && (
+                          <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/40 bg-emerald-500/10">
+                            <Briefcase className="h-3 w-3 mr-1" />
+                            Hiring
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </motion.div>
 
         {/* Pagination */}
         {totalPages > 1 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center justify-center gap-1 pt-6"
+            className="flex items-center justify-center gap-1 pt-4"
           >
             <Button
               variant="ghost"
@@ -245,10 +494,7 @@ const CompanyResources = () => {
                     variant={currentPage === page ? "default" : "ghost"}
                     size="sm"
                     onClick={() => setCurrentPage(page)}
-                    className={cn(
-                      "w-9 h-9",
-                      currentPage === page && "pointer-events-none"
-                    )}
+                    className={cn("w-9 h-9", currentPage === page && "pointer-events-none")}
                   >
                     {page}
                   </Button>
@@ -270,83 +516,6 @@ const CompanyResources = () => {
         )}
       </main>
     </div>
-  );
-};
-
-interface CompanyRowProps {
-  company: Company;
-  index: number;
-  isFavorite: boolean;
-  onToggleFavorite: () => void;
-  onNavigate: () => void;
-  delay: number;
-}
-
-const CompanyRow = ({ company, index, isFavorite, onToggleFavorite, onNavigate, delay }: CompanyRowProps) => {
-  const getCategoryStyle = (category: string) => {
-    return categoryColors[category] || "text-muted-foreground border-border bg-muted/50";
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      onClick={onNavigate}
-      className="group flex items-start gap-4 py-5 px-2 hover:bg-muted/30 transition-colors cursor-pointer rounded-lg -mx-2"
-    >
-      {/* Index */}
-      <div className="w-8 text-sm font-medium text-muted-foreground pt-1 text-right shrink-0">
-        {index}
-      </div>
-
-      {/* Favorite Star */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleFavorite();
-        }}
-        className="shrink-0 pt-1"
-      >
-        <Star
-          className={cn(
-            "h-5 w-5 transition-all",
-            isFavorite
-              ? "fill-yellow-400 text-yellow-400"
-              : "text-muted-foreground/40 hover:text-yellow-400"
-          )}
-        />
-      </button>
-
-      {/* Company Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-            {company.name}
-          </h3>
-          {company.isHiring && (
-            <Badge variant="outline" className="text-xs text-green-600 border-green-500/40 bg-green-500/10">
-              <Briefcase className="h-3 w-3 mr-1" />
-              Hiring
-            </Badge>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-          {company.description}
-        </p>
-      </div>
-
-      {/* Category Badge */}
-      <Badge
-        variant="outline"
-        className={cn(
-          "shrink-0 text-xs font-medium hidden sm:flex",
-          getCategoryStyle(company.category)
-        )}
-      >
-        {company.category}
-      </Badge>
-    </motion.div>
   );
 };
 
