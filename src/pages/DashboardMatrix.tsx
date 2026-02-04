@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import CalendarHeatmap from "@/components/CalendarHeatmap";
 import AchievementBadge, { achievements } from "@/components/AchievementBadge";
+import MobileFAB from "@/components/MobileFAB";
 
 // Sheet definitions with total counts
 const sheetDefinitions = [
@@ -864,6 +865,9 @@ const DashboardMatrix = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile FAB */}
+      <MobileFAB onOpenGoals={() => setGoalsModalOpen(true)} />
     </div>
   );
 };
