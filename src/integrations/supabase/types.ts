@@ -161,6 +161,7 @@ export type Database = {
           id: string
           question_id: number
           question_source: string
+          sort_order: number
         }
         Insert: {
           created_at?: string
@@ -168,6 +169,7 @@ export type Database = {
           id?: string
           question_id: number
           question_source?: string
+          sort_order?: number
         }
         Update: {
           created_at?: string
@@ -175,6 +177,7 @@ export type Database = {
           id?: string
           question_id?: number
           question_source?: string
+          sort_order?: number
         }
         Relationships: [
           {

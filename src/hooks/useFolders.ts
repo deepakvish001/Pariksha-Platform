@@ -17,6 +17,7 @@ export interface FolderItem {
   folder_id: string;
   question_id: number;
   question_source: string;
+  sort_order: number;
   created_at: string;
 }
 
@@ -62,11 +63,12 @@ export function useFolders(questionSource: string = "interview"): UseFoldersRetu
         return;
       }
 
-      // Fetch all folder items
+      // Fetch all folder items with sort order
       const { data: itemsData, error: itemsError } = await supabase
         .from("user_folder_items")
         .select("*")
-        .in("folder_id", foldersData?.map((f) => f.id) || []);
+        .in("folder_id", foldersData?.map((f) => f.id) || [])
+        .order("sort_order", { ascending: true });
 
       if (itemsError) {
         console.error("Error fetching folder items:", itemsError);
@@ -197,12 +199,20 @@ export function useFolders(questionSource: string = "interview"): UseFoldersRetu
       if (!user) return false;
 
       try {
+        // Get the current max sort_order for this folder
+        const currentItems = folderItems[folderId] || [];
+        const maxSortOrder = currentItems.reduce(
+          (max, item) => Math.max(max, item.sort_order || 0),
+          -1
+        );
+
         const { data, error } = await supabase
           .from("user_folder_items")
           .insert({
             folder_id: folderId,
             question_id: questionId,
             question_source: source,
+            sort_order: maxSortOrder + 1,
           })
           .select()
           .single();
@@ -229,7 +239,7 @@ export function useFolders(questionSource: string = "interview"): UseFoldersRetu
         return false;
       }
     },
-    [user]
+    [user, folderItems]
   );
 
   const removeFromFolder = useCallback(
