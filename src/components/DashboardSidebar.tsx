@@ -143,10 +143,10 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            className="flex w-full items-center justify-center px-2 py-2.5 text-sidebar-foreground/80 hover:text-sidebar-foreground transition-colors"
+            className="flex w-full items-center justify-center px-2 py-2.5 text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 rounded-md transition-all duration-200 hover:scale-105"
             onClick={() => setIsOpen(!isOpen)}
           >
-            {GroupIcon && <GroupIcon className="h-4 w-4" />}
+            {GroupIcon && <GroupIcon className="h-4 w-4 transition-transform duration-200" />}
           </button>
         </TooltipTrigger>
         <TooltipContent side="right" align="center">
@@ -160,14 +160,16 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
     <Collapsible open={isOpen || isActiveGroup} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
         <button
-          className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:text-sidebar-foreground transition-colors"
+          className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 rounded-md transition-all duration-200 group"
         >
-          <span>{title}</span>
-          {isOpen || isActiveGroup ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
+          <span className="group-hover:translate-x-0.5 transition-transform duration-200">{title}</span>
+          <span className="transition-transform duration-200">
+            {isOpen || isActiveGroup ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5" />
+            )}
+          </span>
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-1">
@@ -177,9 +179,10 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
               asChild
               isActive={location.pathname === item.url}
               tooltip={item.title}
+              className="transition-all duration-200 hover:translate-x-0.5 group/item"
             >
               <Link to={item.url} className="pl-4">
-                <item.icon className="h-4 w-4" />
+                <item.icon className="h-4 w-4 transition-transform duration-200 group-hover/item:scale-110" />
                 <span>{item.title}</span>
               </Link>
             </SidebarMenuButton>
@@ -238,9 +241,10 @@ export function DashboardSidebar() {
                       isActive={location.pathname === item.url}
                       tooltip={item.title}
                       size="lg"
+                      className="transition-all duration-200 hover:translate-x-0.5 group/nav"
                     >
                       <Link to={item.url}>
-                        <item.icon className="h-5 w-5" />
+                        <item.icon className="h-5 w-5 transition-transform duration-200 group-hover/nav:scale-110" />
                         <span className="font-medium">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -253,8 +257,9 @@ export function DashboardSidebar() {
                     onClick={() => setIsSignOutDialogOpen(true)}
                     tooltip="Sign Out"
                     size="lg"
+                    className="transition-all duration-200 hover:translate-x-0.5 group/signout hover:text-destructive"
                   >
-                    <LogOut className="h-5 w-5" />
+                    <LogOut className="h-5 w-5 transition-transform duration-200 group-hover/signout:scale-110" />
                     <span className="font-medium">Sign Out</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -301,14 +306,14 @@ export function DashboardSidebar() {
               </TooltipContent>
             </Tooltip>
           ) : (
-            <div className="flex items-center gap-3 p-2">
-              <Avatar className="h-10 w-10 border-2 border-primary/20">
+            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent/30 transition-all duration-200 cursor-pointer group/profile">
+              <Avatar className="h-10 w-10 border-2 border-primary/20 transition-transform duration-200 group-hover/profile:scale-105">
                 <AvatarImage src={profile?.avatar_url || undefined} />
                 <AvatarFallback className="bg-primary/10 text-primary font-bold">
                   {getInitials(profile?.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 transition-transform duration-200 group-hover/profile:translate-x-0.5">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
                   {profile?.full_name || "User"}
                 </p>
