@@ -7,17 +7,18 @@ interface ActivityData {
 
 interface CalendarHeatmapProps {
   activityData: ActivityData;
+  months?: 3 | 6 | 12;
 }
 
-const CalendarHeatmap = ({ activityData }: CalendarHeatmapProps) => {
+const CalendarHeatmap = ({ activityData, months = 12 }: CalendarHeatmapProps) => {
   const { weeks, monthLabels, stats } = useMemo(() => {
     const today = new Date();
     const weeksData: { date: Date; count: number }[][] = [];
     const labels: { label: string; weekIndex: number }[] = [];
     
-    // Calculate start date (1 year ago, beginning of the week)
+    // Calculate start date based on months
     const startDate = new Date(today);
-    startDate.setFullYear(startDate.getFullYear() - 1);
+    startDate.setMonth(startDate.getMonth() - months);
     startDate.setDate(startDate.getDate() - startDate.getDay()); // Go to Sunday
     
     let currentDate = new Date(startDate);
@@ -28,7 +29,6 @@ const CalendarHeatmap = ({ activityData }: CalendarHeatmapProps) => {
     // Stats tracking
     let totalSubmissions = 0;
     let activeDays = 0;
-    let currentStreak = 0;
     let maxStreak = 0;
     let tempStreak = 0;
     const allDates: { date: string; count: number }[] = [];
@@ -74,7 +74,8 @@ const CalendarHeatmap = ({ activityData }: CalendarHeatmapProps) => {
     }
     
     // Calculate current streak (from today backwards)
-    const sortedDates = allDates.reverse();
+    let currentStreak = 0;
+    const sortedDates = [...allDates].reverse();
     for (let i = 0; i < sortedDates.length; i++) {
       if (sortedDates[i].count > 0) {
         currentStreak++;
@@ -96,7 +97,7 @@ const CalendarHeatmap = ({ activityData }: CalendarHeatmapProps) => {
         currentStreak
       }
     };
-  }, [activityData]);
+  }, [activityData, months]);
 
   const getIntensityClass = (count: number) => {
     if (count === 0) return 'bg-[#1e3a29]';
@@ -115,17 +116,19 @@ const CalendarHeatmap = ({ activityData }: CalendarHeatmapProps) => {
     });
   };
 
+  const periodLabel = months === 12 ? 'year' : `${months} months`;
+
   return (
     <div className="w-full">
       {/* Header Stats */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold">{stats.totalSubmissions}</span>
-          <span className="text-muted-foreground">topics completed in the past year</span>
+          <span className="text-muted-foreground">topics in the past {periodLabel}</span>
         </div>
         <div className="flex items-center gap-6 text-sm">
           <div>
-            <span className="text-muted-foreground">Total active days: </span>
+            <span className="text-muted-foreground">Active days: </span>
             <span className="font-semibold">{stats.activeDays}</span>
           </div>
           <div>
