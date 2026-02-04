@@ -139,28 +139,43 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
   const GroupIcon = items[0]?.icon;
 
   if (isCollapsed) {
-    // When collapsed, show a tooltip with the group name
+    // When collapsed, show a dropdown with group items
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex w-full items-center justify-center px-2 py-2.5 text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 rounded-md transition-all duration-200 hover:scale-105"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {GroupIcon && <GroupIcon className="h-4 w-4 transition-transform duration-200" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right" align="center">
-          {title}
-        </TooltipContent>
-      </Tooltip>
+      <SidebarMenuItem>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <SidebarMenuButton
+              tooltip={title}
+              className="transition-all duration-200 hover:scale-105 justify-center"
+            >
+              {GroupIcon && <GroupIcon className="h-4 w-4 shrink-0" />}
+            </SidebarMenuButton>
+          </TooltipTrigger>
+          <TooltipContent side="right" align="start" className="p-0 w-48">
+            <div className="py-2">
+              <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
+              {items.map((item) => (
+                <Link
+                  key={item.title}
+                  to={item.url}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors",
+                    location.pathname === item.url && "bg-accent text-accent-foreground font-medium"
+                  )}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span>{item.title}</span>
+                </Link>
+              ))}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </SidebarMenuItem>
     );
   }
 
   return (
-    <Collapsible open={isOpen || isActiveGroup} onOpenChange={setIsOpen} className="group-data-[collapsible=icon]:hidden">
+    <Collapsible open={isOpen || isActiveGroup} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
         <button
           className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 rounded-md transition-all duration-200 group"
@@ -182,11 +197,11 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
               asChild
               isActive={location.pathname === item.url}
               tooltip={item.title}
-              className="transition-all duration-200 hover:translate-x-0.5 group/item group-data-[collapsible=icon]:justify-center"
+              className="transition-all duration-200 hover:translate-x-0.5 group/item"
             >
-              <Link to={item.url} className="pl-4 group-data-[collapsible=icon]:pl-0 group-data-[collapsible=icon]:justify-center">
+              <Link to={item.url} className="pl-4">
                 <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/item:scale-110" />
-                <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                <span>{item.title}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
