@@ -23,6 +23,8 @@ import {
   Search,
   Filter,
   X,
+  StickyNote,
+  FileText,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -96,9 +98,17 @@ interface ProgressState {
       [questionId: number]: {
         solved: boolean;
         revision: boolean;
+        note?: string;
       };
     };
   };
+}
+
+interface NoteDialogState {
+  isOpen: boolean;
+  questionId: number | null;
+  categoryId: string | null;
+  questionText: string;
 }
 
 interface QuestionWithMeta extends Question {
@@ -114,6 +124,13 @@ const PositionResources = () => {
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | "all">("all");
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progress, setProgress] = useState<ProgressState>({});
+  const [noteDialog, setNoteDialog] = useState<NoteDialogState>({
+    isOpen: false,
+    questionId: null,
+    categoryId: null,
+    questionText: "",
+  });
+  const [noteText, setNoteText] = useState("");
 
   // Load progress from local storage
   useEffect(() => {
@@ -235,6 +252,44 @@ const PositionResources = () => {
   // Check if question is marked for revision
   const isRevision = (questionId: number, categoryId: string) =>
     progress[selectedRole]?.[categoryId]?.[questionId]?.revision || false;
+
+  // Get note for a question
+  const getNote = (questionId: number, categoryId: string) =>
+    progress[selectedRole]?.[categoryId]?.[questionId]?.note || "";
+
+  // Open note dialog
+  const openNoteDialog = (questionId: number, categoryId: string, questionText: string) => {
+    const existingNote = getNote(questionId, categoryId);
+    setNoteText(existingNote);
+    setNoteDialog({
+      isOpen: true,
+      questionId,
+      categoryId,
+      questionText,
+    });
+  };
+
+  // Save note
+  const saveNote = () => {
+    if (noteDialog.questionId === null || noteDialog.categoryId === null) return;
+
+    setProgress((prev) => ({
+      ...prev,
+      [selectedRole]: {
+        ...prev[selectedRole],
+        [noteDialog.categoryId!]: {
+          ...prev[selectedRole]?.[noteDialog.categoryId!],
+          [noteDialog.questionId!]: {
+            ...prev[selectedRole]?.[noteDialog.categoryId!]?.[noteDialog.questionId!],
+            note: noteText.trim() || undefined,
+          },
+        },
+      },
+    }));
+
+    setNoteDialog({ isOpen: false, questionId: null, categoryId: null, questionText: "" });
+    setNoteText("");
+  };
 
   // Calculate progress stats for dialog
   const progressStats = useMemo(() => {
@@ -593,87 +648,121 @@ const PositionResources = () => {
                       <span className="hidden sm:inline">Revision</span>
                       <span className="sm:hidden">★</span>
                     </TableHead>
+                    <TableHead className="w-12 sm:w-16 text-center">
+                      <span className="hidden sm:inline">Notes</span>
+                      <span className="sm:hidden">📝</span>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredQuestions.map((question, index) => (
-                    <TableRow
-                      key={`${question.categoryId}-${question.id}`}
-                      className={cn(
-                        "transition-colors",
-                        isSolved(question.id, question.categoryId) && "bg-muted/30"
-                      )}
-                    >
-                      <TableCell className="font-medium text-muted-foreground text-xs sm:text-sm">
-                        {index + 1}
-                      </TableCell>
-                      <TableCell className="min-w-0">
-                        <p
-                          className={cn(
-                            "font-medium text-sm break-words",
-                            isSolved(question.id, question.categoryId) &&
-                              "line-through text-muted-foreground"
-                          )}
-                        >
-                          {question.text}
-                        </p>
-                        {viewMode === "revision" && (
-                          <Badge variant="secondary" className="font-normal mt-1 md:hidden text-xs">
-                            {question.categoryName}
-                          </Badge>
+                  {filteredQuestions.map((question, index) => {
+                    const hasNote = !!getNote(question.id, question.categoryId);
+                    return (
+                      <TableRow
+                        key={`${question.categoryId}-${question.id}`}
+                        className={cn(
+                          "transition-colors",
+                          isSolved(question.id, question.categoryId) && "bg-muted/30"
                         )}
-                      </TableCell>
-                      {viewMode === "revision" && (
-                        <TableCell className="hidden md:table-cell">
-                          <Badge variant="secondary" className="font-normal text-xs">
-                            {question.categoryName}
+                      >
+                        <TableCell className="font-medium text-muted-foreground text-xs sm:text-sm">
+                          {index + 1}
+                        </TableCell>
+                        <TableCell className="min-w-0">
+                          <p
+                            className={cn(
+                              "font-medium text-sm break-words",
+                              isSolved(question.id, question.categoryId) &&
+                                "line-through text-muted-foreground"
+                            )}
+                          >
+                            {question.text}
+                          </p>
+                          {viewMode === "revision" && (
+                            <Badge variant="secondary" className="font-normal mt-1 md:hidden text-xs">
+                              {question.categoryName}
+                            </Badge>
+                          )}
+                          {hasNote && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                              <StickyNote className="h-3 w-3 inline mr-1" />
+                              {getNote(question.id, question.categoryId)}
+                            </p>
+                          )}
+                        </TableCell>
+                        {viewMode === "revision" && (
+                          <TableCell className="hidden md:table-cell">
+                            <Badge variant="secondary" className="font-normal text-xs">
+                              {question.categoryName}
+                            </Badge>
+                          </TableCell>
+                        )}
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "font-medium text-xs",
+                              getDifficultyStyles(question.difficulty)
+                            )}
+                          >
+                            <span className="hidden sm:inline">{question.difficulty}</span>
+                            <span className="sm:hidden">{question.difficulty[0]}</span>
                           </Badge>
                         </TableCell>
-                      )}
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "font-medium text-xs",
-                            getDifficultyStyles(question.difficulty)
-                          )}
-                        >
-                          <span className="hidden sm:inline">{question.difficulty}</span>
-                          <span className="sm:hidden">{question.difficulty[0]}</span>
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center p-2">
-                        <Checkbox
-                          checked={isSolved(question.id, question.categoryId)}
-                          onCheckedChange={() =>
-                            toggleSolved(question.id, question.categoryId)
-                          }
-                          className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                        />
-                      </TableCell>
-                      <TableCell className="text-center p-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            toggleRevision(question.id, question.categoryId)
-                          }
-                          className={cn(
-                            "h-7 w-7 sm:h-8 sm:w-8 transition-colors",
-                            isRevision(question.id, question.categoryId)
-                              ? "text-yellow-500 hover:text-yellow-600"
-                              : "text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          {isRevision(question.id, question.categoryId) ? (
-                            <BookmarkCheck className="h-4 w-4 fill-current" />
-                          ) : (
-                            <Bookmark className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        <TableCell className="text-center p-2">
+                          <Checkbox
+                            checked={isSolved(question.id, question.categoryId)}
+                            onCheckedChange={() =>
+                              toggleSolved(question.id, question.categoryId)
+                            }
+                            className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                          />
+                        </TableCell>
+                        <TableCell className="text-center p-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              toggleRevision(question.id, question.categoryId)
+                            }
+                            className={cn(
+                              "h-7 w-7 sm:h-8 sm:w-8 transition-colors",
+                              isRevision(question.id, question.categoryId)
+                                ? "text-yellow-500 hover:text-yellow-600"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {isRevision(question.id, question.categoryId) ? (
+                              <BookmarkCheck className="h-4 w-4 fill-current" />
+                            ) : (
+                              <Bookmark className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-center p-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              openNoteDialog(question.id, question.categoryId, question.text)
+                            }
+                            className={cn(
+                              "h-7 w-7 sm:h-8 sm:w-8 transition-colors",
+                              hasNote
+                                ? "text-blue-500 hover:text-blue-600"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {hasNote ? (
+                              <FileText className="h-4 w-4" />
+                            ) : (
+                              <StickyNote className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -710,6 +799,54 @@ const PositionResources = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Notes Dialog */}
+        <Dialog
+          open={noteDialog.isOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setNoteDialog({ isOpen: false, questionId: null, categoryId: null, questionText: "" });
+              setNoteText("");
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <StickyNote className="h-5 w-5" />
+                Add Note
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm font-medium">{noteDialog.questionText}</p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Your Notes</label>
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  placeholder="Add your personal notes, hints, or key points..."
+                  className="w-full min-h-[120px] p-3 text-sm border border-border rounded-lg bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setNoteDialog({ isOpen: false, questionId: null, categoryId: null, questionText: "" });
+                    setNoteText("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={saveNote}>
+                  Save Note
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
