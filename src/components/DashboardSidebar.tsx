@@ -263,13 +263,13 @@ export function DashboardSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
                 {mainNavItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                     <SidebarMenuButton
                       asChild
                       isActive={location.pathname === item.url}
                       tooltip={item.title}
                       size="lg"
-                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:mx-auto"
+                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
                     >
                       <Link to={item.url} className="group-data-[collapsible=icon]:justify-center">
                         <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
@@ -280,12 +280,12 @@ export function DashboardSidebar() {
                 ))}
                 
                 {/* Sign Out Button */}
-                <SidebarMenuItem>
+                <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                   <SidebarMenuButton
                     onClick={() => setIsSignOutDialogOpen(true)}
                     tooltip="Sign Out"
                     size="lg"
-                    className="transition-all duration-200 hover:translate-x-0.5 group/signout hover:text-destructive group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:mx-auto"
+                    className="transition-all duration-200 hover:translate-x-0.5 group/signout hover:text-destructive group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
                   >
                     <LogOut className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/signout:scale-110" />
                     <span className="font-medium group-data-[collapsible=icon]:hidden">Sign Out</span>
