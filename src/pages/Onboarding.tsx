@@ -75,6 +75,64 @@ const featureOptions = [
   { id: "companies", title: "Companies", description: "Explore company profiles and interview experiences" },
 ];
 
+// Phone validation helper
+const validatePhoneNumber = (phone: string): { isValid: boolean; message?: string } => {
+  if (!phone) return { isValid: true }; // Optional field
+  
+  // Remove spaces, dashes, and parentheses
+  const cleaned = phone.replace(/[\s\-\(\)]/g, "");
+  
+  // Check for valid formats: +91XXXXXXXXXX, 91XXXXXXXXXX, XXXXXXXXXX
+  const indianPhoneRegex = /^(\+91|91)?[6-9]\d{9}$/;
+  const internationalRegex = /^\+?[1-9]\d{6,14}$/;
+  
+  if (indianPhoneRegex.test(cleaned) || internationalRegex.test(cleaned)) {
+    return { isValid: true };
+  }
+  
+  return { 
+    isValid: false, 
+    message: "Please enter a valid phone number (e.g., +91 98765 43210)" 
+  };
+};
+
+// Format phone number as user types
+const formatPhoneNumber = (value: string): string => {
+  // Remove all non-digit characters except +
+  const cleaned = value.replace(/[^\d+]/g, "");
+  
+  // If it starts with +91, format as +91 XXXXX XXXXX
+  if (cleaned.startsWith("+91") && cleaned.length > 3) {
+    const rest = cleaned.slice(3);
+    if (rest.length <= 5) {
+      return `+91 ${rest}`;
+    } else {
+      return `+91 ${rest.slice(0, 5)} ${rest.slice(5, 10)}`;
+    }
+  }
+  
+  // If it starts with 91, format as 91 XXXXX XXXXX
+  if (cleaned.startsWith("91") && cleaned.length > 2 && !cleaned.startsWith("+")) {
+    const rest = cleaned.slice(2);
+    if (rest.length <= 5) {
+      return `+91 ${rest}`;
+    } else {
+      return `+91 ${rest.slice(0, 5)} ${rest.slice(5, 10)}`;
+    }
+  }
+  
+  // For 10 digit numbers starting with 6-9, assume Indian
+  if (/^[6-9]/.test(cleaned) && cleaned.length <= 10) {
+    if (cleaned.length <= 5) {
+      return cleaned;
+    } else {
+      return `${cleaned.slice(0, 5)} ${cleaned.slice(5, 10)}`;
+    }
+  }
+  
+  return cleaned;
+};
+
 // Error message component
 const FieldError = ({ message }: { message?: string }) => {
   if (!message) return null;
@@ -201,11 +259,24 @@ const Onboarding = () => {
     }
   }, [selectedFeatures]);
 
-  useEffect(() => {
-    if (mobileNumber && errors.mobileNumber) {
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhoneNumber(value);
+    setMobileNumber(formatted);
+    
+    // Clear error on change
+    if (errors.mobileNumber) {
       setErrors(prev => ({ ...prev, mobileNumber: undefined }));
     }
-  }, [mobileNumber]);
+  };
+
+  const handlePhoneBlur = () => {
+    if (mobileNumber) {
+      const validation = validatePhoneNumber(mobileNumber);
+      if (!validation.isValid) {
+        setErrors(prev => ({ ...prev, mobileNumber: validation.message }));
+      }
+    }
+  };
 
   const toggleFeature = (featureId: string) => {
     setSelectedFeatures(prev => 
@@ -228,6 +299,14 @@ const Onboarding = () => {
 
     if (!referralSource) {
       newErrors.referralSource = "Please tell us where you found UniDash";
+    }
+
+    // Validate phone number
+    if (mobileNumber) {
+      const phoneValidation = validatePhoneNumber(mobileNumber);
+      if (!phoneValidation.isValid) {
+        newErrors.mobileNumber = phoneValidation.message;
+      }
     }
 
     // Validate student fields
@@ -266,11 +345,10 @@ const Onboarding = () => {
     
     setIsSkipping(true);
 
-    // Create a minimal profile to mark onboarding as skipped (but not completed)
     const { error } = await supabase.from("user_profiles_extended").insert({
       user_id: user.id,
       user_type: "other",
-      onboarding_completed: true, // Mark as completed so they can access dashboard
+      onboarding_completed: true,
     });
 
     if (error) {
@@ -305,20 +383,21 @@ const Onboarding = () => {
       await supabase.from("profiles").update({ full_name: fullName }).eq("user_id", user.id);
     }
 
+    // Clean phone number before saving
+    const cleanedPhone = mobileNumber.replace(/[\s\-\(\)]/g, "");
+
     const { error } = await supabase.from("user_profiles_extended").insert({
       user_id: user.id,
       user_type: userType === "student" ? "student" : userType === "other" ? "other" : "professional",
-      mobile_number: mobileNumber || null,
+      mobile_number: cleanedPhone || null,
       current_experience: currentExperience,
       target_goal: targetGoal,
       referral_source: referralSource,
       interested_features: selectedFeatures,
-      // Student fields
       college_name: userType === "student" ? collegeName : null,
       course_name: userType === "student" ? courseName : null,
       branch: userType === "student" ? branch : null,
       study_year: userType === "student" ? studyYear as any : null,
-      // Professional fields
       company_name: userType === "professional" ? companyName : null,
       role: userType === "professional" ? role : null,
       experience: userType === "professional" ? experienceYears : null,
@@ -394,11 +473,16 @@ const Onboarding = () => {
                   <Input
                     type="tel"
                     value={mobileNumber}
-                    onChange={(e) => setMobileNumber(e.target.value)}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    onBlur={handlePhoneBlur}
                     placeholder="+91 98765 43210"
-                    className="h-12 pl-10 bg-muted/50 border-border"
+                    className={cn(
+                      "h-12 pl-10 bg-muted/50 border-border",
+                      errors.mobileNumber && "border-destructive"
+                    )}
                   />
                 </div>
+                <FieldError message={errors.mobileNumber} />
               </div>
             </div>
 
