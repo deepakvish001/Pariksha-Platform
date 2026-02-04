@@ -25,7 +25,8 @@ import {
   Bell,
   Mail,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  ArrowRight
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -176,7 +177,7 @@ const formatPhoneNumber = (value: string): string => {
 };
 
 const Dashboard = () => {
-  const { user, profile, signOut, updateProfile } = useAuth();
+  const { user, profile, signOut, updateProfile, onboardingCompleted } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
@@ -529,6 +530,33 @@ const Dashboard = () => {
           </div>
         </div>
       </header>
+
+      {/* Onboarding Reminder Banner */}
+      {!onboardingCompleted && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-primary/20"
+        >
+          <div className="section-container py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/20">
+                <Sparkles className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Complete your profile</p>
+                <p className="text-xs text-muted-foreground">Personalize your experience and unlock all features</p>
+              </div>
+            </div>
+            <Link to="/onboarding">
+              <Button size="sm" className="gap-2">
+                Complete Now
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
+      )}
 
       {/* Main Content */}
       <main className="section-container py-8">
