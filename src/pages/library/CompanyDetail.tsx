@@ -297,7 +297,7 @@ const CompanyDetail = () => {
           </div>
         </header>
 
-        <main className="p-6 md:p-8 max-w-7xl mx-auto">
+        <main className="p-4 md:p-6 lg:p-8 w-full">
           {/* Enhanced Company Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
