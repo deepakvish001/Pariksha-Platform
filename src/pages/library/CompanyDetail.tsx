@@ -12,10 +12,6 @@ import {
   MessageSquare,
   Code2,
   Brain,
-  Globe,
-  FolderKanban,
-  FileText,
-  Mail,
   Filter,
   X,
   ArrowLeft,
@@ -31,12 +27,7 @@ import {
 import CompanyCategorySection from "@/components/library/CompanyCategorySection";
 import CompanyQuestionTableRow from "@/components/library/CompanyQuestionTableRow";
 import ProgressSummaryCard from "@/components/library/ProgressSummaryCard";
-import {
-  JobPortalRow,
-  ProjectRow,
-  ResumeTemplateRow,
-  ColdDMRow,
-} from "@/components/library/ResourceTableRow";
+import ResourceCategorySection from "@/components/library/ResourceCategorySection";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,21 +83,13 @@ const VIEW_MODE_STORAGE_KEY = "company-detail-view-mode";
 type ViewMode = "all" | "revision";
 type LayoutMode = "sections" | "tabs";
 
-// Tab icons mapping
+// Tab icons mapping (for questions only)
 const tabIcons: Record<string, React.ElementType> = {
   "sql-questions": Database,
   "interview-questions": MessageSquare,
   "dsa-questions": Code2,
   "aptitude-questions": Brain,
-  "job-portals": Globe,
-  "projects": FolderKanban,
-  "resume-templates": FileText,
-  "cold-dms": Mail,
 };
-
-// Question tab IDs
-const questionTabIds = ["sql-questions", "interview-questions", "dsa-questions", "aptitude-questions"];
-const resourceTabIds = ["job-portals", "projects", "resume-templates", "cold-dms"];
 
 // Question categories for section view
 const questionCategories = [
@@ -417,7 +400,6 @@ const CompanyDetail = () => {
   };
 
   const isFavorited = favorites.has(companyId || "");
-  const isQuestionMode = !resourceTabIds.includes(activeTab);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -480,41 +462,14 @@ const CompanyDetail = () => {
           {/* Progress Summary Card */}
           {user && <ProgressSummaryCard stats={progressStats} />}
 
-          {/* Resource Tabs (separate section for non-question resources) */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="flex flex-wrap gap-2"
-          >
-            {companyTabs
-              .filter((tab) => resourceTabIds.includes(tab.id))
-              .map((tab) => {
-                const Icon = tabIcons[tab.id];
-                const isActive = activeTab === tab.id;
-                return (
-                  <Button
-                    key={tab.id}
-                    variant={isActive ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setActiveTab(tab.id)}
-                    className="gap-2"
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="hidden sm:inline">{tab.name}</span>
-                  </Button>
-                );
-              })}
-          </motion.div>
 
           {/* Main Questions Content Card */}
-          {isQuestionMode && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="rounded-lg border border-border bg-card overflow-hidden"
-            >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-lg border border-border bg-card overflow-hidden"
+          >
               {/* View Mode Toggle + Layout Toggle */}
               <div className="border-b border-border p-3 md:p-4 bg-muted/30">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -827,141 +782,51 @@ const CompanyDetail = () => {
                 )
               ) : null}
             </motion.div>
-          )}
 
-          {/* Resource Content (non-question tabs) - Tabular Format */}
-          {!isQuestionMode && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-lg border border-border bg-card overflow-hidden"
-            >
-              {/* Job Portals Table */}
-              {activeTab === "job-portals" && (
-                jobPortals.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent bg-muted/20">
-                          <TableHead className="w-10 text-xs font-semibold">#</TableHead>
-                          <TableHead className="min-w-[150px] text-xs font-semibold">Portal</TableHead>
-                          <TableHead className="hidden sm:table-cell text-xs font-semibold">Description</TableHead>
-                          <TableHead className="hidden md:table-cell w-28 text-xs font-semibold">Location</TableHead>
-                          <TableHead className="w-20 text-center text-xs font-semibold">Link</TableHead>
-                          <TableHead className="w-14 text-center text-xs font-semibold">
-                            <span className="hidden sm:inline">Applied</span>
-                            <span className="sm:hidden">✓</span>
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {jobPortals.map((portal, index) => (
-                          <JobPortalRow
-                            key={portal.id}
-                            portal={portal}
-                            index={index}
-                            isSolved={isSolved(portal.id)}
-                            isLoggedIn={!!user}
-                            onToggleSolved={() => handleToggleSolved(portal.id)}
-                          />
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <EmptyResourceState icon={Globe} title="No job portals found" />
-                )
-              )}
-
-              {/* Projects Table */}
-              {activeTab === "projects" && (
-                projects.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent bg-muted/20">
-                          <TableHead className="w-10 text-xs font-semibold">#</TableHead>
-                          <TableHead className="min-w-[150px] text-xs font-semibold">Project</TableHead>
-                          <TableHead className="hidden sm:table-cell text-xs font-semibold">Description</TableHead>
-                          <TableHead className="text-xs font-semibold">Technologies</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {projects.map((project, index) => (
-                          <ProjectRow key={project.id} project={project} index={index} />
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <EmptyResourceState icon={FolderKanban} title="No projects available" />
-                )
-              )}
-
-              {/* Resume Templates Table */}
-              {activeTab === "resume-templates" && (
-                resumeTemplates.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent bg-muted/20">
-                          <TableHead className="w-10 text-xs font-semibold">#</TableHead>
-                          <TableHead className="min-w-[150px] text-xs font-semibold">Template</TableHead>
-                          <TableHead className="text-xs font-semibold">Style</TableHead>
-                          <TableHead className="w-24 text-center text-xs font-semibold">Preview</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {resumeTemplates.map((template, index) => (
-                          <ResumeTemplateRow key={template.id} template={template} index={index} />
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <EmptyResourceState icon={FileText} title="No templates available" />
-                )
-              )}
-
-              {/* Cold DMs Table */}
-              {activeTab === "cold-dms" && (
-                coldDMs.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent bg-muted/20">
-                          <TableHead className="w-10 text-xs font-semibold">#</TableHead>
-                          <TableHead className="min-w-[150px] text-xs font-semibold">Title</TableHead>
-                          <TableHead className="hidden sm:table-cell text-xs font-semibold">Message</TableHead>
-                          <TableHead className="hidden md:table-cell w-24 text-xs font-semibold">Category</TableHead>
-                          <TableHead className="hidden md:table-cell w-20 text-center text-xs font-semibold">Length</TableHead>
-                          <TableHead className="w-20 text-center text-xs font-semibold">Copy</TableHead>
-                          <TableHead className="w-14 text-center text-xs font-semibold">
-                            <span className="hidden sm:inline">Used</span>
-                            <span className="sm:hidden">✓</span>
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {coldDMs.map((dm, index) => (
-                          <ColdDMRow
-                            key={dm.id}
-                            dm={dm}
-                            index={index}
-                            isSolved={isSolved(dm.id)}
-                            isLoggedIn={!!user}
-                            onToggleSolved={() => handleToggleSolved(dm.id)}
-                          />
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <EmptyResourceState icon={Mail} title="No templates found" />
-                )
-              )}
-            </motion.div>
-          )}
+          {/* Resource Sections - Collapsible accordion format like Questions */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="rounded-lg border border-border bg-card overflow-hidden"
+          >
+            <ResourceCategorySection
+              resourceType="job-portals"
+              resourceName="Job Portals"
+              items={jobPortals}
+              isOpen={openSection === "job-portals"}
+              onOpenChange={() => toggleSection("job-portals")}
+              isSolved={isSolved}
+              onToggleSolved={handleToggleSolved}
+              isLoggedIn={!!user}
+            />
+            <ResourceCategorySection
+              resourceType="projects"
+              resourceName="Projects"
+              items={projects}
+              isOpen={openSection === "projects"}
+              onOpenChange={() => toggleSection("projects")}
+              isLoggedIn={!!user}
+            />
+            <ResourceCategorySection
+              resourceType="resume-templates"
+              resourceName="Resume Templates"
+              items={resumeTemplates}
+              isOpen={openSection === "resume-templates"}
+              onOpenChange={() => toggleSection("resume-templates")}
+              isLoggedIn={!!user}
+            />
+            <ResourceCategorySection
+              resourceType="cold-dms"
+              resourceName="Cold DMs"
+              items={coldDMs}
+              isOpen={openSection === "cold-dms"}
+              onOpenChange={() => toggleSection("cold-dms")}
+              isSolved={isSolved}
+              onToggleSolved={handleToggleSolved}
+              isLoggedIn={!!user}
+            />
+          </motion.div>
 
           {/* Login prompt */}
           {!user && (
@@ -1052,31 +917,5 @@ const EmptyQuestionsState = () => (
   </motion.div>
 );
 
-// Empty Resource State
-interface EmptyResourceStateProps {
-  icon: React.ElementType;
-  title: string;
-}
-
-const EmptyResourceState = ({ icon: Icon, title }: EmptyResourceStateProps) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="flex flex-col items-center justify-center py-16 text-center px-4"
-  >
-    <motion.div
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      transition={{ type: "spring", stiffness: 200 }}
-      className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4"
-    >
-      <Icon className="h-8 w-8 text-muted-foreground" />
-    </motion.div>
-    <h3 className="text-lg font-medium">{title}</h3>
-    <p className="text-sm text-muted-foreground mt-1">
-      Check back later for updates
-    </p>
-  </motion.div>
-);
 
 export default CompanyDetail;
