@@ -1,26 +1,37 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
-  ArrowLeft, 
   CheckSquare, 
   Square, 
   Youtube, 
+  FileText, 
   ExternalLink, 
-  Pencil, 
+  PlusCircle, 
   Star,
-  ChevronDown,
+  ChevronRight,
   X,
   Save,
   Loader2,
-  Filter
+  Search,
+  Shuffle,
+  ChevronDown
 } from "lucide-react";
-import { Toggle } from "@/components/ui/toggle";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -33,19 +44,36 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import MobileFAB from "@/components/MobileFAB";
 
 // Types
 interface Topic {
   id: string;
   title: string;
   completed: boolean;
+  difficulty: "Easy" | "Medium" | "Hard";
   resourceType: "youtube" | "article" | "link" | null;
   resourceUrl?: string;
   articleUrl?: string;
+  practiceUrl?: string;
   note: string;
   isRevision: boolean;
 }
@@ -65,6 +93,8 @@ interface Section {
 interface SheetData {
   id: string;
   title: string;
+  description: string;
+  lastUpdated: string;
   totalProblems: number;
   completed: number;
   easy: number;
@@ -73,16 +103,527 @@ interface SheetData {
   sections: Section[];
 }
 
-// Mock data for Machine Learning sheet
+// Mock data for sheets
 const mockSheetData: Record<string, SheetData> = {
+  "strivers-sde-sheet": {
+    id: "strivers-sde-sheet",
+    title: "Striver's A2Z Sheet - Learn DSA from A to Z",
+    description: "This course is made for people who want to learn DSA from A to Z for free in a well-organised and structured manner.",
+    lastUpdated: "December 13, 2025",
+    totalProblems: 446,
+    completed: 0,
+    easy: 128,
+    medium: 177,
+    hard: 141,
+    sections: [
+      {
+        id: "learn-basics",
+        title: "Learn the basics",
+        subSections: [
+          {
+            id: "things-to-know",
+            title: "Things to Know in C++/Java/Python or any language",
+            topics: [
+              { id: "1", title: "User Input / Output", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "2", title: "Data Types", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "3", title: "If Else statements", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "4", title: "Switch Statement", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "5", title: "What are arrays, strings?", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "6", title: "For loops", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "7", title: "While loops", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "8", title: "Functions (Pass by Reference and Value)", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "9", title: "Time Complexity [Learn Basics, and then analyse in next Steps]", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "logical-thinking",
+            title: "Build-up Logical Thinking",
+            topics: [
+              { id: "10", title: "Pattern Problems", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "stl-collections",
+            title: "Learn STL/Java-Collections or similar thing in your language",
+            topics: [
+              { id: "11", title: "C++ STL", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "12", title: "Java Collections", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "basic-maths",
+            title: "Know Basic Maths",
+            topics: [
+              { id: "13", title: "Count digits", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "14", title: "Reverse a number", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "15", title: "Check Palindrome", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "16", title: "GCD or HCF", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "17", title: "Armstrong Numbers", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "18", title: "Print all Divisors", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "19", title: "Check for Prime", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "basic-recursion",
+            title: "Learn Basic Recursion",
+            topics: [
+              { id: "20", title: "Understand recursion", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "21", title: "Print name N times", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "22", title: "Print 1 to N", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "23", title: "Print N to 1", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "24", title: "Sum of first N numbers", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "25", title: "Factorial of N", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "26", title: "Reverse an array", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "27", title: "Check palindrome string", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "28", title: "Fibonacci Number", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "basic-hashing",
+            title: "Learn Basic Hashing",
+            topics: [
+              { id: "29", title: "Hashing Theory", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "30", title: "Counting frequency of elements", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "31", title: "Highest/Lowest frequency element", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "sorting-techniques",
+        title: "Learn Important Sorting Techniques",
+        subSections: [
+          {
+            id: "sorting-1",
+            title: "Sorting I",
+            topics: [
+              { id: "32", title: "Selection Sort", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "33", title: "Bubble Sort", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "34", title: "Insertion Sort", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "sorting-2",
+            title: "Sorting II",
+            topics: [
+              { id: "35", title: "Merge Sort", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "36", title: "Recursive Bubble Sort", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "37", title: "Recursive Insertion Sort", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "38", title: "Quick Sort", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "arrays",
+        title: "Solve Problems on Arrays [Easy -> Medium -> Hard]",
+        subSections: [
+          {
+            id: "arrays-easy",
+            title: "Easy",
+            topics: [
+              { id: "39", title: "Largest Element in Array", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "40", title: "Second Largest Element", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "41", title: "Check if array is sorted", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "42", title: "Remove duplicates from sorted array", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "43", title: "Left rotate array by one", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "44", title: "Left rotate array by D places", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "45", title: "Move zeros to end", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "46", title: "Linear Search", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "47", title: "Union of two sorted arrays", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "48", title: "Missing number in array", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "arrays-medium",
+            title: "Medium",
+            topics: [
+              { id: "49", title: "2Sum Problem", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "50", title: "Sort array of 0s 1s and 2s", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "51", title: "Majority Element (>n/2 times)", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "52", title: "Maximum Subarray Sum (Kadane's)", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "53", title: "Stock Buy and Sell", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "54", title: "Rearrange array by sign", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "55", title: "Next Permutation", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "56", title: "Leaders in an array", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "57", title: "Longest Consecutive Sequence", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "58", title: "Set Matrix Zeros", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "arrays-hard",
+            title: "Hard",
+            topics: [
+              { id: "59", title: "Pascal's Triangle", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "60", title: "Majority Element (>n/3 times)", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "61", title: "3Sum Problem", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "62", title: "4Sum Problem", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "63", title: "Largest Subarray with 0 Sum", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "64", title: "Count subarrays with XOR K", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "65", title: "Merge Overlapping Intervals", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "66", title: "Merge Sorted Arrays", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "67", title: "Find missing and repeating", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "68", title: "Count Inversions", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "binary-search",
+        title: "Binary Search [1D, 2D Arrays, Search Space]",
+        subSections: [
+          {
+            id: "bs-1d",
+            title: "BS on 1D Arrays",
+            topics: [
+              { id: "69", title: "Binary Search to find X", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "70", title: "Lower Bound", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "71", title: "Upper Bound", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "72", title: "Search Insert Position", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "73", title: "Floor/Ceil in Sorted Array", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "74", title: "First and Last Occurrence", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "75", title: "Count occurrences in sorted", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "76", title: "Search in Rotated Sorted Array", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "strings",
+        title: "Strings [Basic and Medium]",
+        subSections: [
+          {
+            id: "strings-basic",
+            title: "Basic String Problems",
+            topics: [
+              { id: "77", title: "Remove outermost parentheses", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "78", title: "Reverse words in a string", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "79", title: "Largest odd number in string", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "80", title: "Longest common prefix", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "81", title: "Isomorphic strings", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "linked-list",
+        title: "Learn LinkedList [Single LL, Double LL, Medium, Hard Problems]",
+        subSections: [
+          {
+            id: "ll-basics",
+            title: "Learn 1D LinkedList",
+            topics: [
+              { id: "82", title: "Introduction to LinkedList", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "83", title: "Inserting a node in LinkedList", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "84", title: "Deleting a node in LinkedList", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "85", title: "Find length of LinkedList", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "86", title: "Search in a LinkedList", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "recursion",
+        title: "Recursion [PatternWise]",
+        subSections: [
+          {
+            id: "recursion-basic",
+            title: "Get a strong hold",
+            topics: [
+              { id: "87", title: "Recursive Implementation of atoi()", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "88", title: "Pow(x, n)", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "89", title: "Count Good Numbers", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "90", title: "Sort a stack using recursion", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "91", title: "Reverse a stack using recursion", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "bit-manipulation",
+        title: "Bit Manipulation [Concepts & Problems]",
+        subSections: [
+          {
+            id: "bit-basics",
+            title: "Learn Bit Manipulation",
+            topics: [
+              { id: "92", title: "Introduction to Bit Manipulation", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "93", title: "Check if ith bit is set", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "94", title: "Check if number is odd or even", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "95", title: "Check if power of 2", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "96", title: "Count set bits", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "stacks-queues",
+        title: "Stack and Queues [Learning, Pre-In-Post-fix, Monotonic Stack, Implementation]",
+        subSections: [
+          {
+            id: "sq-learning",
+            title: "Learning",
+            topics: [
+              { id: "97", title: "Implement Stack using Arrays", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "98", title: "Implement Queue using Arrays", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "99", title: "Implement Stack using Queue", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "100", title: "Implement Queue using Stack", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "sliding-window",
+        title: "Sliding Window & Two Pointer Combined Problems",
+        subSections: [
+          {
+            id: "sw-medium",
+            title: "Medium Problems",
+            topics: [
+              { id: "101", title: "Longest Substring Without Repeating", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "102", title: "Max Consecutive Ones III", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "103", title: "Fruit Into Baskets", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "104", title: "Longest Repeating Character Replacement", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "heaps",
+        title: "Heaps [Learning, Medium, Hard Problems]",
+        subSections: [
+          {
+            id: "heaps-learning",
+            title: "Learning",
+            topics: [
+              { id: "105", title: "Introduction to Priority Queues", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "106", title: "Min Heap and Max Heap", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "greedy",
+        title: "Greedy Algorithms [Easy, Medium/Hard]",
+        subSections: [
+          {
+            id: "greedy-easy",
+            title: "Easy Problems",
+            topics: [
+              { id: "107", title: "Assign Cookies", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "108", title: "Fractional Knapsack", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "109", title: "Greedy algorithm to find minimum number of coins", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "binary-trees",
+        title: "Binary Trees [Traversals, Medium and Hard Problems]",
+        subSections: [
+          {
+            id: "bt-traversals",
+            title: "Traversals",
+            topics: [
+              { id: "110", title: "Introduction to Trees", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "111", title: "Binary Tree Representation", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "112", title: "Preorder Traversal", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "113", title: "Inorder Traversal", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "114", title: "Postorder Traversal", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "115", title: "Level Order Traversal", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "bst",
+        title: "Binary Search Trees [Concept and Problems]",
+        subSections: [
+          {
+            id: "bst-concept",
+            title: "Concept of BST",
+            topics: [
+              { id: "116", title: "Introduction to BST", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "117", title: "Search in a BST", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "118", title: "Min/Max in BST", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "graphs",
+        title: "Graphs [Concepts & Problems]",
+        subSections: [
+          {
+            id: "graphs-learning",
+            title: "Learning",
+            topics: [
+              { id: "119", title: "Graph Representation", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "120", title: "BFS of Graph", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "121", title: "DFS of Graph", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "122", title: "Number of Provinces", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "123", title: "Connected Components", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "124", title: "Rotten Oranges", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "dp",
+        title: "Dynamic Programming [Patterns and Problems]",
+        subSections: [
+          {
+            id: "dp-intro",
+            title: "Introduction to DP",
+            topics: [
+              { id: "125", title: "Dynamic Programming Introduction", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "126", title: "Climbing Stairs", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "127", title: "Frog Jump", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "128", title: "Frog Jump with K distances", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "129", title: "Maximum sum of non-adjacent elements", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "130", title: "House Robber", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "tries",
+        title: "Tries",
+        subSections: [
+          {
+            id: "tries-theory",
+            title: "Theory",
+            topics: [
+              { id: "131", title: "Implement Trie (Prefix Tree)", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "132", title: "Implement Trie II", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "133", title: "Longest String with All Prefixes", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "134", title: "Number of Distinct Substrings", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  "love-babbar-450": {
+    id: "love-babbar-450",
+    title: "Love Babbar 450 DSA Sheet",
+    description: "450 curated DSA problems to crack any coding interview",
+    lastUpdated: "January 15, 2026",
+    totalProblems: 450,
+    completed: 0,
+    easy: 150,
+    medium: 200,
+    hard: 100,
+    sections: [
+      {
+        id: "arrays",
+        title: "Arrays",
+        subSections: [
+          {
+            id: "array-problems",
+            title: "Array Problems",
+            topics: [
+              { id: "lb-1", title: "Reverse the array", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "lb-2", title: "Find the maximum and minimum element in an array", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "lb-3", title: "Find the Kth max and min element", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  "neetcode-150": {
+    id: "neetcode-150",
+    title: "Neetcode 150",
+    description: "Blind 75 extended with additional patterns for comprehensive preparation",
+    lastUpdated: "February 1, 2026",
+    totalProblems: 150,
+    completed: 0,
+    easy: 40,
+    medium: 80,
+    hard: 30,
+    sections: [
+      {
+        id: "arrays-hashing",
+        title: "Arrays & Hashing",
+        subSections: [
+          {
+            id: "ah-problems",
+            title: "Problems",
+            topics: [
+              { id: "nc-1", title: "Contains Duplicate", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "nc-2", title: "Valid Anagram", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "nc-3", title: "Two Sum", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  "sql-practice": {
+    id: "sql-practice",
+    title: "SQL Practice Sheet",
+    description: "Essential SQL queries for acing database interviews",
+    lastUpdated: "January 20, 2026",
+    totalProblems: 75,
+    completed: 0,
+    easy: 30,
+    medium: 30,
+    hard: 15,
+    sections: [
+      {
+        id: "basic-queries",
+        title: "Basic Queries",
+        subSections: [
+          {
+            id: "select-queries",
+            title: "SELECT Statements",
+            topics: [
+              { id: "sql-1", title: "Recyclable and Low Fat Products", completed: false, difficulty: "Easy", resourceType: "article", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "sql-2", title: "Find Customer Referee", completed: false, difficulty: "Easy", resourceType: "article", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  "system-design": {
+    id: "system-design",
+    title: "System Design Concepts",
+    description: "HLD and LLD concepts with real-world examples",
+    lastUpdated: "December 20, 2025",
+    totalProblems: 25,
+    completed: 0,
+    easy: 5,
+    medium: 12,
+    hard: 8,
+    sections: [
+      {
+        id: "hld-basics",
+        title: "HLD Basics",
+        subSections: [
+          {
+            id: "scalability",
+            title: "Scalability",
+            topics: [
+              { id: "sd-1", title: "Horizontal vs Vertical Scaling", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "sd-2", title: "Load Balancing", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+    ],
+  },
   "machine-learning": {
     id: "machine-learning",
-    title: "Machine Learning",
+    title: "Machine Learning Complete Roadmap",
+    description: "Comprehensive ML roadmap covering prerequisites to advanced topics",
+    lastUpdated: "January 28, 2026",
     totalProblems: 184,
     completed: 0,
-    easy: 13,
-    medium: 143,
-    hard: 28,
+    easy: 50,
+    medium: 100,
+    hard: 34,
     sections: [
       {
         id: "prerequisites",
@@ -92,121 +633,9 @@ const mockSheetData: Record<string, SheetData> = {
             id: "linear-algebra",
             title: "Linear Algebra",
             topics: [
-              { id: "1", title: "Vector", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "2", title: "Linear combinations, span, and basis vectors", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "3", title: "Linear transformations and matrices", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "4", title: "Matrix multiplication as composition", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "5", title: "Three-dimensional linear transformations", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "6", title: "Determinant", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "7", title: "Inverse matrices, column space and null space", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-          {
-            id: "calculus",
-            title: "Calculus",
-            topics: [
-              { id: "8", title: "Derivatives and gradients", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "9", title: "Chain rule and backpropagation", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-          {
-            id: "probability",
-            title: "Probability and Statistics",
-            topics: [
-              { id: "10", title: "Probability distributions", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "11", title: "Bayes theorem", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-          {
-            id: "optimization",
-            title: "Optimization Theory",
-            topics: [
-              { id: "12", title: "Introduction to Optimization", completed: false, resourceType: "link", resourceUrl: "https://medium.com", note: "", isRevision: false },
-              { id: "13", title: "Difference between Derivative, Partial derivative and Gradient", completed: false, resourceType: "link", resourceUrl: "https://medium.com", note: "", isRevision: false },
-              { id: "14", title: "What is Gradient Descent?", completed: false, resourceType: null, articleUrl: "#", note: "", isRevision: false },
-            ],
-          },
-        ],
-      },
-      {
-        id: "ml-fundamentals",
-        title: "Machine Learning Fundamentals",
-        subSections: [
-          {
-            id: "intro-ml",
-            title: "Introduction to ML",
-            topics: [
-              { id: "15", title: "What is Machine Learning?", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "16", title: "Types of ML: Supervised vs Unsupervised", completed: false, resourceType: "link", resourceUrl: "#", articleUrl: "#", note: "", isRevision: false },
-              { id: "17", title: "Train-Test Split & Cross-Validation", completed: false, resourceType: "youtube", resourceUrl: "#", articleUrl: "#", note: "", isRevision: false },
-              { id: "18", title: "Bias-Variance Tradeoff", completed: false, resourceType: "link", resourceUrl: "#", articleUrl: "#", note: "", isRevision: false },
-            ],
-          },
-          {
-            id: "data-understanding",
-            title: "Data Understanding",
-            topics: [
-              { id: "19", title: "Exploratory Data Analysis", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "20", title: "Feature Engineering", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-          {
-            id: "data-handling",
-            title: "Data Handling",
-            topics: [
-              { id: "21", title: "Handling Missing Values", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "22", title: "Handling Outliers", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-          {
-            id: "data-visualization",
-            title: "Data Visualization",
-            topics: [
-              { id: "23", title: "Matplotlib Basics", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "24", title: "Seaborn for Statistical Plots", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-        ],
-      },
-      {
-        id: "python-basics",
-        title: "Python - Basics",
-        subSections: [
-          {
-            id: "python-intro",
-            title: "Python Fundamentals",
-            topics: [
-              { id: "25", title: "Variables and Data Types", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "26", title: "Control Flow", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  "strivers-sde-sheet": {
-    id: "strivers-sde-sheet",
-    title: "Striver's SDE Sheet",
-    totalProblems: 191,
-    completed: 0,
-    easy: 25,
-    medium: 120,
-    hard: 46,
-    sections: [
-      {
-        id: "arrays",
-        title: "Arrays",
-        subSections: [
-          {
-            id: "arrays-1",
-            title: "Day 1 - Arrays Part I",
-            topics: [
-              { id: "1", title: "Set Matrix Zeroes", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "2", title: "Pascal's Triangle", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "3", title: "Next Permutation", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "4", title: "Kadane's Algorithm", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "5", title: "Sort an array of 0's 1's 2's", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
-              { id: "6", title: "Stock Buy and Sell", completed: false, resourceType: "youtube", resourceUrl: "#", note: "", isRevision: false },
+              { id: "ml-1", title: "Vectors and Vector Spaces", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-2", title: "Matrix Operations", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-3", title: "Eigenvalues and Eigenvectors", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
             ],
           },
         ],
@@ -215,7 +644,25 @@ const mockSheetData: Record<string, SheetData> = {
   },
 };
 
-// Topic item component
+// Difficulty badge component
+function DifficultyBadge({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
+  const colorMap = {
+    Easy: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    Medium: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    Hard: "bg-red-500/20 text-red-400 border-red-500/30",
+  };
+  
+  return (
+    <span className={cn(
+      "text-xs px-2.5 py-1 rounded-full border font-medium",
+      colorMap[difficulty]
+    )}>
+      {difficulty}
+    </span>
+  );
+}
+
+// Topic row component
 function TopicRow({ 
   topic, 
   onToggle,
@@ -228,79 +675,154 @@ function TopicRow({
   onToggleRevision: (id: string) => void;
 }) {
   return (
-    <div className="flex items-center py-3 px-4 hover:bg-muted/50 transition-colors border-b border-border/30 last:border-b-0">
-      <button
-        onClick={() => onToggle(topic.id)}
-        className="mr-4 text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {topic.completed ? (
-          <CheckSquare className="h-5 w-5 text-primary" />
-        ) : (
-          <Square className="h-5 w-5" />
-        )}
-      </button>
-      <span className={cn("flex-1 text-sm", topic.completed && "line-through text-muted-foreground")}>
-        {topic.title}
-      </span>
-      <div className="flex items-center gap-6">
-        {/* Resource */}
-        <div className="w-20 flex justify-center">
-          {topic.resourceType === "youtube" && (
-            <a href={topic.resourceUrl} target="_blank" rel="noopener noreferrer">
-              <Youtube className="h-5 w-5 text-red-500 hover:text-red-400 transition-colors" />
-            </a>
-          )}
-          {topic.resourceType === "link" && (
-            <a 
-              href={topic.resourceUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline"
-            >
-              medium.com
-            </a>
-          )}
-        </div>
-        {/* Article */}
-        <div className="w-16 flex justify-center">
-          {topic.articleUrl ? (
-            <a href={topic.articleUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4 text-primary hover:text-primary/80 transition-colors" />
-            </a>
+    <TableRow className="hover:bg-muted/30 transition-colors">
+      {/* Status */}
+      <TableCell className="w-16">
+        <button
+          onClick={() => onToggle(topic.id)}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {topic.completed ? (
+            <CheckSquare className="h-5 w-5 text-primary" />
           ) : (
-            <span className="text-xs text-muted-foreground">N/A</span>
+            <Square className="h-5 w-5" />
+          )}
+        </button>
+      </TableCell>
+      
+      {/* Problem Title */}
+      <TableCell className="font-medium">
+        <span className={cn(topic.completed && "line-through text-muted-foreground")}>
+          {topic.title}
+        </span>
+      </TableCell>
+      
+      {/* Solve Button */}
+      <TableCell className="w-20">
+        {topic.practiceUrl && (
+          <a 
+            href={topic.practiceUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary hover:text-primary/80 text-sm font-medium"
+          >
+            Solve
+          </a>
+        )}
+      </TableCell>
+      
+      {/* Resource Plus (Video) */}
+      <TableCell className="w-24 text-center">
+        {topic.resourceType === "youtube" && topic.resourceUrl && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a 
+                  href={topic.resourceUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded bg-primary/20 hover:bg-primary/30 transition-colors"
+                >
+                  <Youtube className="h-4 w-4 text-primary" />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>Watch Video</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </TableCell>
+      
+      {/* Resource (Article + Video) */}
+      <TableCell className="w-24">
+        <div className="flex items-center justify-center gap-2">
+          {topic.articleUrl && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a 
+                    href={topic.articleUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <FileText className="h-4 w-4" />
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>Read Article</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {topic.resourceUrl && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a 
+                    href={topic.resourceUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-red-500 hover:text-red-400 transition-colors"
+                  >
+                    <Youtube className="h-4 w-4" />
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>Watch Video</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
-        {/* Note */}
-        <div className="w-12 flex justify-center">
-          <button 
-            onClick={() => onOpenNote(topic)}
-            className={cn(
-              "transition-colors",
-              topic.note ? "text-primary" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-        </div>
-        {/* Revision */}
-        <div className="w-12 flex justify-center">
-          <button 
-            onClick={() => onToggleRevision(topic.id)}
-            className={cn(
-              "transition-colors",
-              topic.isRevision ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground hover:text-yellow-500"
-            )}
-          >
-            <Star className={cn("h-4 w-4", topic.isRevision && "fill-current")} />
-          </button>
-        </div>
-      </div>
-    </div>
+      </TableCell>
+      
+      {/* Practice */}
+      <TableCell className="w-20 text-center text-muted-foreground text-sm">
+        ---
+      </TableCell>
+      
+      {/* Note */}
+      <TableCell className="w-16 text-center">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                onClick={() => onOpenNote(topic)}
+                className={cn(
+                  "p-1.5 rounded-full transition-colors",
+                  topic.note 
+                    ? "text-primary bg-primary/10" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                <PlusCircle className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{topic.note ? "Edit Note" : "Add Note"}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </TableCell>
+      
+      {/* Revision */}
+      <TableCell className="w-20 text-center">
+        <button 
+          onClick={() => onToggleRevision(topic.id)}
+          className={cn(
+            "transition-colors",
+            topic.isRevision 
+              ? "text-yellow-500" 
+              : "text-muted-foreground hover:text-yellow-500"
+          )}
+        >
+          <Star className={cn("h-5 w-5", topic.isRevision && "fill-current")} />
+        </button>
+      </TableCell>
+      
+      {/* Difficulty */}
+      <TableCell className="w-24">
+        <DifficultyBadge difficulty={topic.difficulty} />
+      </TableCell>
+    </TableRow>
   );
 }
 
-// SubSection component
+// SubSection component with table
 function SubSectionCard({ 
   subSection, 
   onToggleTopic,
@@ -315,42 +837,59 @@ function SubSectionCard({
   const [isOpen, setIsOpen] = useState(true);
   const completed = subSection.topics.filter(t => t.completed).length;
   const total = subSection.topics.length;
-  const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="bg-muted/30 rounded-lg overflow-hidden">
-      <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/50 transition-colors">
-        <span className="font-medium text-sm">{subSection.title}</span>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">{progress}%</span>
-          <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-b border-border/30 last:border-b-0">
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-4 px-4 hover:bg-muted/30 transition-colors group">
+        <div className="flex items-center gap-2">
+          <ChevronRight className={cn(
+            "h-4 w-4 text-muted-foreground transition-transform",
+            isOpen && "rotate-90"
+          )} />
+          <span className="font-medium text-sm">{subSection.title}</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <Progress value={(completed / total) * 100} className="w-24 h-1.5" />
+          <span className="text-sm text-muted-foreground min-w-[50px] text-right">
+            {completed} / {total}
+          </span>
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="px-4 pb-2">
-          <div className="bg-background rounded-lg border border-border/50 overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center py-2 px-4 border-b border-border/50 text-xs text-muted-foreground font-medium">
-              <span className="w-9">Status</span>
-              <span className="flex-1 ml-2">Title</span>
-              <div className="flex items-center gap-6">
-                <span className="w-20 text-center">Resource</span>
-                <span className="w-16 text-center">Article</span>
-                <span className="w-12 text-center">Note</span>
-                <span className="w-12 text-center">Revision</span>
-              </div>
-            </div>
-            {/* Topics */}
-            {subSection.topics.map(topic => (
-              <TopicRow 
-                key={topic.id} 
-                topic={topic} 
-                onToggle={onToggleTopic} 
-                onOpenNote={onOpenNote}
-                onToggleRevision={onToggleRevision}
-              />
-            ))}
-          </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border/30 hover:bg-transparent">
+                <TableHead className="w-16 text-xs font-medium">Status</TableHead>
+                <TableHead className="text-xs font-medium">Problem</TableHead>
+                <TableHead className="w-20 text-xs font-medium text-center">
+                  <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px]">Plus</Badge>
+                </TableHead>
+                <TableHead className="w-24 text-xs font-medium text-center">
+                  Resource
+                  <div className="text-[10px] text-muted-foreground">
+                    <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px] mt-0.5">Plus</Badge>
+                  </div>
+                </TableHead>
+                <TableHead className="w-24 text-xs font-medium text-center">Resource</TableHead>
+                <TableHead className="w-20 text-xs font-medium text-center">Practice</TableHead>
+                <TableHead className="w-16 text-xs font-medium text-center">Note</TableHead>
+                <TableHead className="w-20 text-xs font-medium text-center">Revision</TableHead>
+                <TableHead className="w-24 text-xs font-medium text-center">Difficulty</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {subSection.topics.map(topic => (
+                <TopicRow 
+                  key={topic.id} 
+                  topic={topic} 
+                  onToggle={onToggleTopic} 
+                  onOpenNote={onOpenNote}
+                  onToggleRevision={onToggleRevision}
+                />
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </CollapsibleContent>
     </Collapsible>
@@ -369,40 +908,42 @@ function SectionCard({
   onOpenNote: (topic: Topic) => void;
   onToggleRevision: (id: string) => void;
 }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const allTopics = section.subSections.flatMap(s => s.topics);
   const completed = allTopics.filter(t => t.completed).length;
   const total = allTopics.length;
-  const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
-    <Card className="overflow-hidden">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger className="flex items-center justify-between w-full p-6 hover:bg-muted/30 transition-colors">
-          <h3 className="font-semibold text-lg">{section.title}</h3>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{progress}%</span>
-            </div>
-            <ChevronDown className={cn("h-5 w-5 transition-transform", isOpen && "rotate-180")} />
-          </div>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <CardContent className="pt-0 space-y-3">
-            {section.subSections.map(subSection => (
-              <SubSectionCard 
-                key={subSection.id} 
-                subSection={subSection} 
-                onToggleTopic={onToggleTopic}
-                onOpenNote={onOpenNote}
-                onToggleRevision={onToggleRevision}
-              />
-            ))}
-          </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-b border-border/50">
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-4 px-4 hover:bg-muted/30 transition-colors group">
+        <div className="flex items-center gap-3">
+          <ChevronDown className={cn(
+            "h-5 w-5 text-muted-foreground transition-transform",
+            !isOpen && "-rotate-90"
+          )} />
+          <span className="font-medium">{section.title}</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <Progress value={(completed / total) * 100} className="w-32 h-1.5" />
+          <span className="text-sm text-muted-foreground min-w-[60px] text-right">
+            {completed} / {total}
+          </span>
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="ml-4 border-l border-border/30">
+          {section.subSections.map(subSection => (
+            <SubSectionCard 
+              key={subSection.id} 
+              subSection={subSection} 
+              onToggleTopic={onToggleTopic}
+              onOpenNote={onOpenNote}
+              onToggleRevision={onToggleRevision}
+            />
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -411,17 +952,22 @@ export default function SheetDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  const currentSheetId = sheetId || "strivers-sde-sheet";
   const [sheetData, setSheetData] = useState<SheetData | null>(
-    sheetId ? mockSheetData[sheetId] || mockSheetData["machine-learning"] : mockSheetData["machine-learning"]
+    mockSheetData[currentSheetId] || mockSheetData["strivers-sde-sheet"]
   );
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
   const [noteText, setNoteText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [showRevisionOnly, setShowRevisionOnly] = useState(false);
-
-  const currentSheetId = sheetId || "machine-learning";
+  
+  // Filters
+  const [activeTab, setActiveTab] = useState<"all" | "revision">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
 
   // Load user progress from database
   const loadProgress = useCallback(async () => {
@@ -440,7 +986,6 @@ export default function SheetDetail() {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Apply saved progress to sheet data
         const progressMap = new Map(data.map(p => [p.topic_id, p]));
         
         setSheetData(prev => {
@@ -509,19 +1054,73 @@ export default function SheetDetail() {
     }
   };
 
-  if (!sheetData) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Sheet not found</p>
-      </div>
-    );
-  }
+  // Calculate stats
+  const allTopics = useMemo(() => 
+    sheetData?.sections.flatMap(s => s.subSections.flatMap(ss => ss.topics)) || [],
+    [sheetData]
+  );
+  
+  const completedCount = allTopics.filter(t => t.completed).length;
+  const revisionCount = allTopics.filter(t => t.isRevision).length;
+  const progressPercent = allTopics.length > 0 ? Math.round((completedCount / allTopics.length) * 100) : 0;
+  
+  const easyCompleted = allTopics.filter(t => t.difficulty === "Easy" && t.completed).length;
+  const mediumCompleted = allTopics.filter(t => t.difficulty === "Medium" && t.completed).length;
+  const hardCompleted = allTopics.filter(t => t.difficulty === "Hard" && t.completed).length;
+  
+  const easyTotal = sheetData?.easy || 0;
+  const mediumTotal = sheetData?.medium || 0;
+  const hardTotal = sheetData?.hard || 0;
+
+  // Filter sections
+  const getFilteredSections = useCallback(() => {
+    if (!sheetData) return [];
+    
+    let sections = sheetData.sections;
+    
+    // Apply filters
+    sections = sections.map(section => ({
+      ...section,
+      subSections: section.subSections
+        .map(subSection => ({
+          ...subSection,
+          topics: subSection.topics.filter(topic => {
+            // Revision filter
+            if (activeTab === "revision" && !topic.isRevision) return false;
+            
+            // Search filter
+            if (searchQuery && !topic.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+            
+            // Difficulty filter
+            if (difficultyFilter !== "all" && topic.difficulty.toLowerCase() !== difficultyFilter) return false;
+            
+            return true;
+          })
+        }))
+        .filter(subSection => subSection.topics.length > 0)
+    })).filter(section => section.subSections.length > 0);
+    
+    return sections;
+  }, [sheetData, activeTab, searchQuery, difficultyFilter]);
+
+  const filteredSections = getFilteredSections();
+
+  // Random problem
+  const handleRandomProblem = () => {
+    const uncompletedTopics = allTopics.filter(t => !t.completed);
+    if (uncompletedTopics.length === 0) {
+      toast({ title: "All problems completed!", description: "Great job!" });
+      return;
+    }
+    const randomTopic = uncompletedTopics[Math.floor(Math.random() * uncompletedTopics.length)];
+    toast({ 
+      title: "Random Problem", 
+      description: randomTopic.title,
+    });
+  };
 
   const handleToggleTopic = async (topicId: string) => {
-    const topic = sheetData.sections
-      .flatMap(s => s.subSections.flatMap(ss => ss.topics))
-      .find(t => t.id === topicId);
-    
+    const topic = allTopics.find(t => t.id === topicId);
     const newCompleted = !topic?.completed;
 
     setSheetData(prev => {
@@ -544,10 +1143,7 @@ export default function SheetDetail() {
   };
 
   const handleToggleRevision = async (topicId: string) => {
-    const topic = sheetData.sections
-      .flatMap(s => s.subSections.flatMap(ss => ss.topics))
-      .find(t => t.id === topicId);
-    
+    const topic = allTopics.find(t => t.id === topicId);
     const newRevision = !topic?.isRevision;
 
     setSheetData(prev => {
@@ -606,30 +1202,13 @@ export default function SheetDetail() {
     });
   };
 
-  // Calculate progress
-  const allTopics = sheetData.sections.flatMap(s => s.subSections.flatMap(ss => ss.topics));
-  const completedCount = allTopics.filter(t => t.completed).length;
-  const progressPercent = allTopics.length > 0 ? (completedCount / allTopics.length) * 100 : 0;
-  const revisionCount = allTopics.filter(t => t.isRevision).length;
-
-  // Filter sections based on revision filter
-  const getFilteredSections = () => {
-    if (!showRevisionOnly) return sheetData.sections;
-    
-    return sheetData.sections
-      .map(section => ({
-        ...section,
-        subSections: section.subSections
-          .map(subSection => ({
-            ...subSection,
-            topics: subSection.topics.filter(t => t.isRevision)
-          }))
-          .filter(subSection => subSection.topics.length > 0)
-      }))
-      .filter(section => section.subSections.length > 0);
-  };
-
-  const filteredSections = getFilteredSections();
+  if (!sheetData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Sheet not found</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -643,57 +1222,135 @@ export default function SheetDetail() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="flex h-16 items-center gap-4 px-6">
+        <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
           <SidebarTrigger />
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-xl font-bold">{sheetData.title}</h1>
-          <div className="ml-auto flex items-center gap-3">
-            <Toggle
-              pressed={showRevisionOnly}
-              onPressedChange={setShowRevisionOnly}
-              aria-label="Show revision only"
-              className="gap-2 data-[state=on]:bg-yellow-500/20 data-[state=on]:text-yellow-500"
-            >
-              <Star className="h-4 w-4" />
-              <span className="hidden sm:inline">Revision ({revisionCount})</span>
-            </Toggle>
-            {isSaving && (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            )}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold truncate">{sheetData.title}</h1>
           </div>
+          <Badge variant="outline" className="hidden sm:flex text-xs whitespace-nowrap">
+            Last updated : {sheetData.lastUpdated}
+          </Badge>
+          {isSaving && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
         </div>
       </header>
 
-      {/* Content */}
-      <main className="p-6 md:p-8 space-y-6 max-w-6xl mx-auto">
-        {/* Overall Progress Card */}
+      <main className="p-4 sm:p-6 lg:p-8 space-y-6 w-full">
+        {/* Description */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-lg">Overall Progress</h2>
-                <span className="text-sm text-muted-foreground">
-                  {completedCount} / {sheetData.totalProblems} completed
-                </span>
-              </div>
-              <Progress value={progressPercent} className="h-2 mb-6" />
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-yellow-500">{sheetData.easy}</p>
-                  <p className="text-sm text-muted-foreground">Easy</p>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            {sheetData.description}{" "}
+            <a href="#" className="text-primary hover:underline">Know more</a>
+          </p>
+        </motion.div>
+
+        {/* Filters Row */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
+        >
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "revision")}>
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="all" className="data-[state=active]:bg-foreground data-[state=active]:text-background">
+                All Problems
+              </TabsTrigger>
+              <TabsTrigger value="revision" className="data-[state=active]:bg-foreground data-[state=active]:text-background">
+                Revision
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Search and Filters */}
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-initial sm:w-48">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+            
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[130px] h-9">
+                <SelectValue placeholder="All problems" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All problems</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+              <SelectTrigger className="w-[110px] h-9">
+                <SelectValue placeholder="Difficulty" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="easy">Easy</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="hard">Hard</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2 h-9"
+              onClick={handleRandomProblem}
+            >
+              <Shuffle className="h-4 w-4" />
+              <span className="hidden sm:inline">Random Problem</span>
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Progress Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card className="bg-card/50 border-border/50">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 rounded-full border-4 border-muted flex items-center justify-center">
+                    <span className="text-lg font-bold">{progressPercent}%</span>
+                  </div>
+                  <div>
+                    <p className="font-medium">Overall Progress</p>
+                    <p className="text-sm text-muted-foreground">
+                      {completedCount}/{sheetData.totalProblems}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-orange-500">{sheetData.medium}</p>
-                  <p className="text-sm text-muted-foreground">Medium</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-red-500">{sheetData.hard}</p>
-                  <p className="text-sm text-muted-foreground">Hard</p>
+                
+                <div className="flex items-center gap-6 sm:gap-8">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    <span className="text-sm">Easy</span>
+                    <span className="text-sm text-muted-foreground">{easyCompleted}/{easyTotal}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                    <span className="text-sm">Medium</span>
+                    <span className="text-sm text-muted-foreground">{mediumCompleted}/{mediumTotal}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                    <span className="text-sm">Hard</span>
+                    <span className="text-sm text-muted-foreground">{hardCompleted}/{hardTotal}</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -701,42 +1358,49 @@ export default function SheetDetail() {
         </motion.div>
 
         {/* Sections */}
-        <div className="space-y-4">
-          {filteredSections.length > 0 ? (
-            filteredSections.map((section, index) => (
-              <motion.div
-                key={section.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <SectionCard 
-                  section={section} 
-                  onToggleTopic={handleToggleTopic} 
-                  onOpenNote={handleOpenNote}
-                  onToggleRevision={handleToggleRevision}
-                />
-              </motion.div>
-            ))
-          ) : (
-            <Card className="p-12 text-center">
-              <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                {showRevisionOnly 
-                  ? "No topics marked for revision yet. Click the star icon on any topic to add it here."
-                  : "No topics found."}
-              </p>
-            </Card>
-          )}
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="overflow-hidden">
+            <CardContent className="p-0">
+              {filteredSections.length > 0 ? (
+                filteredSections.map((section) => (
+                  <SectionCard 
+                    key={section.id} 
+                    section={section} 
+                    onToggleTopic={handleToggleTopic} 
+                    onOpenNote={handleOpenNote}
+                    onToggleRevision={handleToggleRevision}
+                  />
+                ))
+              ) : (
+                <div className="p-12 text-center">
+                  <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    {activeTab === "revision" 
+                      ? "No topics marked for revision yet. Click the star icon on any topic to add it here."
+                      : searchQuery 
+                        ? "No topics found matching your search."
+                        : "No topics found."}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
       </main>
+
+      {/* Mobile FAB */}
+      <MobileFAB />
 
       {/* Notes Modal */}
       <Dialog open={noteModalOpen} onOpenChange={setNoteModalOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Pencil className="h-5 w-5" />
+              <PlusCircle className="h-5 w-5" />
               Notes for: {editingTopic?.title}
             </DialogTitle>
           </DialogHeader>
