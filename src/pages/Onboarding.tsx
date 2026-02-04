@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Building2, BookOpen, Calendar, Briefcase, AlertCircle } from "lucide-react";
+import { Settings, Building2, BookOpen, Calendar, Briefcase, AlertCircle, Phone, SkipForward } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -100,15 +100,17 @@ interface FormErrors {
   companyName?: string;
   role?: string;
   features?: string;
+  mobileNumber?: string;
 }
 
 const Onboarding = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
   
   // Form state
   const [fullName, setFullName] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
   const [currentExperience, setCurrentExperience] = useState("");
   const [targetGoal, setTargetGoal] = useState("");
   const [referralSource, setReferralSource] = useState("");
@@ -199,6 +201,12 @@ const Onboarding = () => {
     }
   }, [selectedFeatures]);
 
+  useEffect(() => {
+    if (mobileNumber && errors.mobileNumber) {
+      setErrors(prev => ({ ...prev, mobileNumber: undefined }));
+    }
+  }, [mobileNumber]);
+
   const toggleFeature = (featureId: string) => {
     setSelectedFeatures(prev => 
       prev.includes(featureId)
@@ -253,6 +261,35 @@ const Onboarding = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleSkip = async () => {
+    if (!user) return;
+    
+    setIsSkipping(true);
+
+    // Create a minimal profile to mark onboarding as skipped (but not completed)
+    const { error } = await supabase.from("user_profiles_extended").insert({
+      user_id: user.id,
+      user_type: "other",
+      onboarding_completed: true, // Mark as completed so they can access dashboard
+    });
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: "Skipped onboarding",
+        description: "You can complete your profile anytime from settings.",
+      });
+      navigate("/dashboard", { replace: true });
+    }
+
+    setIsSkipping(false);
+  };
+
   const handleSubmit = async () => {
     if (!user) return;
 
@@ -271,6 +308,7 @@ const Onboarding = () => {
     const { error } = await supabase.from("user_profiles_extended").insert({
       user_id: user.id,
       user_type: userType === "student" ? "student" : userType === "other" ? "other" : "professional",
+      mobile_number: mobileNumber || null,
       current_experience: currentExperience,
       target_goal: targetGoal,
       referral_source: referralSource,
@@ -313,24 +351,55 @@ const Onboarding = () => {
           className="w-full max-w-4xl"
         >
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-foreground">Welcome to UniDash</h1>
-            <p className="text-muted-foreground mt-1">
-              Let's get you onboarded to customize your experience.
-            </p>
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Welcome to UniDash</h1>
+              <p className="text-muted-foreground mt-1">
+                Let's get you onboarded to customize your experience.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              onClick={handleSkip}
+              disabled={isSkipping}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {isSkipping ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+              ) : (
+                <SkipForward className="w-4 h-4 mr-2" />
+              )}
+              Skip for now
+            </Button>
           </div>
 
           {/* Main Form Card */}
           <div className="rounded-xl border border-border bg-card/50 p-6 md:p-8 space-y-6">
-            {/* Full Name */}
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">Full Name</Label>
-              <Input
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
-                className="h-12 bg-muted/50 border-border"
-              />
+            {/* Full Name & Mobile */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Full Name</Label>
+                <Input
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className="h-12 bg-muted/50 border-border"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Mobile Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="tel"
+                    value={mobileNumber}
+                    onChange={(e) => setMobileNumber(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="h-12 pl-10 bg-muted/50 border-border"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Experience & Goal Row */}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { 
@@ -13,14 +13,61 @@ import {
   Check,
   X,
   Sun,
-  Moon
+  Moon,
+  GraduationCap,
+  Briefcase,
+  Building2,
+  Phone,
+  Target,
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
+
+interface ExtendedProfile {
+  user_type: string;
+  current_experience?: string;
+  target_goal?: string;
+  college_name?: string;
+  course_name?: string;
+  branch?: string;
+  study_year?: string;
+  company_name?: string;
+  role?: string;
+  experience?: string;
+  mobile_number?: string;
+  interested_features?: string[];
+}
+
+const experienceLabels: Record<string, string> = {
+  student: "Student",
+  recent_graduate: "Recent Graduate",
+  working_professional_1_3: "Working Professional (1-3 yrs)",
+  mid_level: "Mid-level Developer",
+  senior: "Senior Developer",
+  tech_lead: "Tech Lead/Manager",
+  career_switcher: "Career Switcher",
+  freelancer: "Freelancer",
+  entrepreneur: "Entrepreneur",
+};
+
+const goalLabels: Record<string, string> = {
+  find_jobs: "Find new jobs",
+  learn_skills: "Learn new skills",
+  build_projects: "Build projects",
+  start_business: "Start a business",
+  advance_career: "Advance career",
+  switch_careers: "Switch careers",
+  freelancing: "Freelancing",
+  academic: "Academic",
+  hobby: "Hobby/Personal",
+};
 
 const Dashboard = () => {
   const { user, profile, signOut, updateProfile } = useAuth();
@@ -29,6 +76,27 @@ const Dashboard = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(profile?.full_name || "");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [extendedProfile, setExtendedProfile] = useState<ExtendedProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    const fetchExtendedProfile = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from("user_profiles_extended")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setExtendedProfile(data as ExtendedProfile);
+      }
+      setLoadingProfile(false);
+    };
+
+    fetchExtendedProfile();
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -67,6 +135,14 @@ const Dashboard = () => {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const getUserTypeIcon = () => {
+    if (extendedProfile?.user_type === "student") return GraduationCap;
+    if (extendedProfile?.user_type === "professional") return Briefcase;
+    return User;
+  };
+
+  const UserTypeIcon = getUserTypeIcon();
 
   const stats = [
     { label: "Courses", value: "12", icon: BookOpen, color: "text-blue-500" },
@@ -116,7 +192,7 @@ const Dashboard = () => {
           className="mb-8"
         >
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Welcome back, {profile?.full_name?.split(" ")[0] || "Student"}! 👋
+            Welcome back, {profile?.full_name?.split(" ")[0] || "there"}! 👋
           </h1>
           <p className="text-muted-foreground">
             Here's an overview of your learning progress
@@ -129,8 +205,9 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="lg:col-span-1"
+            className="lg:col-span-1 space-y-6"
           >
+            {/* Basic Profile */}
             <div className="card-dark">
               <div className="flex flex-col items-center text-center">
                 <Avatar className="w-24 h-24 mb-4 border-4 border-primary/20">
@@ -187,6 +264,14 @@ const Dashboard = () => {
                       </button>
                     </div>
                     <p className="text-muted-foreground text-sm">{user?.email}</p>
+                    
+                    {extendedProfile && (
+                      <Badge variant="secondary" className="mt-2">
+                        <UserTypeIcon className="w-3 h-3 mr-1" />
+                        {extendedProfile.user_type === "student" ? "Student" : 
+                         extendedProfile.user_type === "professional" ? "Professional" : "Other"}
+                      </Badge>
+                    )}
                   </>
                 )}
 
@@ -198,6 +283,130 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+
+            {/* Extended Profile Info */}
+            {!loadingProfile && extendedProfile && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="card-dark space-y-4"
+              >
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  Profile Details
+                </h3>
+
+                <div className="space-y-3 text-sm">
+                  {/* Experience Level */}
+                  {extendedProfile.current_experience && (
+                    <div className="flex items-start gap-3">
+                      <UserTypeIcon className="w-4 h-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-muted-foreground text-xs">Experience</p>
+                        <p className="text-foreground">
+                          {experienceLabels[extendedProfile.current_experience] || extendedProfile.current_experience}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Goal */}
+                  {extendedProfile.target_goal && (
+                    <div className="flex items-start gap-3">
+                      <Target className="w-4 h-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-muted-foreground text-xs">Goal</p>
+                        <p className="text-foreground">
+                          {goalLabels[extendedProfile.target_goal] || extendedProfile.target_goal}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mobile Number */}
+                  {extendedProfile.mobile_number && (
+                    <div className="flex items-start gap-3">
+                      <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-muted-foreground text-xs">Mobile</p>
+                        <p className="text-foreground">{extendedProfile.mobile_number}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Student Info */}
+                  {extendedProfile.user_type === "student" && extendedProfile.college_name && (
+                    <>
+                      <div className="flex items-start gap-3">
+                        <Building2 className="w-4 h-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-muted-foreground text-xs">College</p>
+                          <p className="text-foreground">{extendedProfile.college_name}</p>
+                        </div>
+                      </div>
+                      {extendedProfile.course_name && (
+                        <div className="flex items-start gap-3">
+                          <BookOpen className="w-4 h-4 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-muted-foreground text-xs">Course</p>
+                            <p className="text-foreground">
+                              {extendedProfile.course_name}
+                              {extendedProfile.branch && ` - ${extendedProfile.branch}`}
+                              {extendedProfile.study_year && ` (${extendedProfile.study_year})`}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Professional Info */}
+                  {extendedProfile.user_type === "professional" && extendedProfile.company_name && (
+                    <>
+                      <div className="flex items-start gap-3">
+                        <Building2 className="w-4 h-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-muted-foreground text-xs">Company</p>
+                          <p className="text-foreground">{extendedProfile.company_name}</p>
+                        </div>
+                      </div>
+                      {extendedProfile.role && (
+                        <div className="flex items-start gap-3">
+                          <Briefcase className="w-4 h-4 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-muted-foreground text-xs">Role</p>
+                            <p className="text-foreground">
+                              {extendedProfile.role}
+                              {extendedProfile.experience && ` (${extendedProfile.experience})`}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Interested Features */}
+                {extendedProfile.interested_features && extendedProfile.interested_features.length > 0 && (
+                  <div className="pt-3 border-t border-border">
+                    <p className="text-muted-foreground text-xs mb-2">Interested in</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {extendedProfile.interested_features.slice(0, 5).map((feature) => (
+                        <Badge key={feature} variant="outline" className="text-xs capitalize">
+                          {feature.replace(/_/g, " ")}
+                        </Badge>
+                      ))}
+                      {extendedProfile.interested_features.length > 5 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{extendedProfile.interested_features.length - 5} more
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
           </motion.div>
 
           {/* Stats Grid */}
