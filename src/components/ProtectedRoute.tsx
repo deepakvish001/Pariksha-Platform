@@ -4,9 +4,14 @@ import { useAuth } from "@/contexts/AuthContext";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireOnboarding?: boolean;
+  allowSkipOnboarding?: boolean;
 }
 
-const ProtectedRoute = ({ children, requireOnboarding = false }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ 
+  children, 
+  requireOnboarding = false,
+  allowSkipOnboarding = false 
+}: ProtectedRouteProps) => {
   const { user, loading, onboardingCompleted } = useAuth();
   const location = useLocation();
 
@@ -25,9 +30,14 @@ const ProtectedRoute = ({ children, requireOnboarding = false }: ProtectedRouteP
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If route requires onboarding and user hasn't completed it, redirect to onboarding
-  if (requireOnboarding && !onboardingCompleted) {
-    return <Navigate to="/onboarding" replace />;
+  // If route requires onboarding and user hasn't completed it
+  // Redirect to onboarding unless coming from onboarding page (to allow skip)
+  if (requireOnboarding && !onboardingCompleted && !allowSkipOnboarding) {
+    // Check if user just skipped onboarding (session storage flag)
+    const skippedOnboarding = sessionStorage.getItem("skippedOnboarding");
+    if (!skippedOnboarding) {
+      return <Navigate to="/onboarding" replace />;
+    }
   }
 
   return <>{children}</>;

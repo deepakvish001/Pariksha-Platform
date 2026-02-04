@@ -163,7 +163,6 @@ interface FormErrors {
 
 const Onboarding = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isSkipping, setIsSkipping] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   
   // Form state
@@ -185,9 +184,16 @@ const Onboarding = () => {
   const [role, setRole] = useState("");
   const [experienceYears, setExperienceYears] = useState("");
 
-  const { user, profile } = useAuth();
+  const { user, profile, refreshExtendedProfile, onboardingCompleted } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Redirect to dashboard if onboarding is already completed
+  useEffect(() => {
+    if (onboardingCompleted) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [onboardingCompleted, navigate]);
 
   // Get user type based on experience selection
   const getUserType = () => {
@@ -341,31 +347,14 @@ const Onboarding = () => {
   };
 
   const handleSkip = async () => {
-    if (!user) return;
-    
-    setIsSkipping(true);
-
-    const { error } = await supabase.from("user_profiles_extended").insert({
-      user_id: user.id,
-      user_type: "other",
-      onboarding_completed: true,
+    // Set session flag to allow skipping for this session only
+    // Next login (new session), they'll be prompted again
+    sessionStorage.setItem("skippedOnboarding", "true");
+    toast({
+      title: "Skipped for now",
+      description: "We'll ask you to complete your profile next time you log in.",
     });
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    } else {
-      toast({
-        title: "Skipped onboarding",
-        description: "You can complete your profile anytime from settings.",
-      });
-      navigate("/dashboard", { replace: true });
-    }
-
-    setIsSkipping(false);
+    navigate("/dashboard", { replace: true });
   };
 
   const handleSubmit = async () => {
@@ -411,6 +400,8 @@ const Onboarding = () => {
         description: error.message,
       });
     } else {
+      // Refresh the extended profile to update onboardingCompleted state
+      await refreshExtendedProfile();
       toast({
         title: "Profile completed!",
         description: "Welcome to UniDash!",
@@ -440,14 +431,9 @@ const Onboarding = () => {
             <Button
               variant="ghost"
               onClick={handleSkip}
-              disabled={isSkipping}
               className="text-muted-foreground hover:text-foreground"
             >
-              {isSkipping ? (
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-              ) : (
-                <SkipForward className="w-4 h-4 mr-2" />
-              )}
+              <SkipForward className="w-4 h-4 mr-2" />
               Skip for now
             </Button>
           </div>
