@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, Sparkles, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
@@ -36,6 +37,8 @@ interface CategorySectionProps {
   categoryId: string;
   categoryName: string;
   questions: QuestionWithMeta[];
+  totalQuestionsInCategory: number;
+  isFiltered: boolean;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   isSolved: (questionId: number, categoryId: string) => boolean;
@@ -50,6 +53,8 @@ const CategorySection = ({
   categoryId,
   categoryName,
   questions,
+  totalQuestionsInCategory,
+  isFiltered,
   isOpen,
   onOpenChange,
   isSolved,
@@ -124,7 +129,12 @@ const CategorySection = ({
               <span className="font-medium text-sm md:text-base truncate">
                 {categoryName}
               </span>
-              {isComplete && (
+              {isFiltered && (
+                <Badge variant="secondary" className="text-xs h-5 px-1.5 bg-primary/10 text-primary">
+                  {questions.length} match{questions.length !== 1 ? "es" : ""}
+                </Badge>
+              )}
+              {isComplete && !isFiltered && (
                 <motion.div
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -138,13 +148,13 @@ const CategorySection = ({
             {/* Progress Bar */}
             <SectionProgressBar
               value={stats.solved}
-              total={stats.total}
+              total={isFiltered ? questions.length : totalQuestionsInCategory}
               className="hidden sm:flex"
             />
 
             {/* Mobile count */}
             <span className="sm:hidden text-xs font-medium text-muted-foreground">
-              {stats.solved}/{stats.total}
+              {stats.solved}/{isFiltered ? questions.length : totalQuestionsInCategory}
             </span>
           </button>
         </CollapsibleTrigger>
