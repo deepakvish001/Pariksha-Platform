@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LayoutGrid, CheckCircle2, Clock, Target, Zap, Star, Loader2 } from "lucide-react";
+import { LayoutGrid, CheckCircle2, Target, Zap, Star, Loader2, Flame } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 
 // Sheet definitions with total counts
 const sheetDefinitions = [
@@ -61,11 +62,19 @@ interface SheetProgress {
   revision: number;
 }
 
+interface DailyActivity {
+  date: string;
+  day: string;
+  count: number;
+}
+
 const DashboardMatrix = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [progressData, setProgressData] = useState<Map<string, SheetProgress>>(new Map());
+  const [streak, setStreak] = useState(0);
+  const [weeklyActivity, setWeeklyActivity] = useState<DailyActivity[]>([]);
 
   useEffect(() => {
     const loadProgress = async () => {
@@ -75,18 +84,21 @@ const DashboardMatrix = () => {
       }
 
       try {
+        // Fetch all progress data
         const { data, error } = await supabase
           .from("user_topic_progress")
-          .select("sheet_id, completed, is_revision")
+          .select("sheet_id, completed, is_revision, updated_at")
           .eq("user_id", user.id);
 
         if (error) throw error;
 
         // Aggregate progress by sheet
         const progressMap = new Map<string, SheetProgress>();
+        const activityDates = new Set<string>();
         
         if (data) {
           data.forEach((row) => {
+            // Sheet progress
             const existing = progressMap.get(row.sheet_id) || { 
               sheetId: row.sheet_id, 
               completed: 0, 
@@ -95,6 +107,9 @@ const DashboardMatrix = () => {
             
             if (row.completed) {
               existing.completed += 1;
+              // Track activity dates for completed items
+              const date = new Date(row.updated_at).toISOString().split('T')[0];
+              activityDates.add(date);
             }
             if (row.is_revision) {
               existing.revision += 1;
@@ -105,6 +120,53 @@ const DashboardMatrix = () => {
         }
 
         setProgressData(progressMap);
+
+        // Calculate streak
+        const sortedDates = Array.from(activityDates).sort().reverse();
+        let currentStreak = 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        for (let i = 0; i < sortedDates.length; i++) {
+          const checkDate = new Date(today);
+          checkDate.setDate(checkDate.getDate() - i);
+          const checkDateStr = checkDate.toISOString().split('T')[0];
+          
+          if (sortedDates.includes(checkDateStr)) {
+            currentStreak++;
+          } else if (i === 0) {
+            // If today has no activity, check if yesterday starts a streak
+            continue;
+          } else {
+            break;
+          }
+        }
+        setStreak(currentStreak);
+
+        // Calculate weekly activity
+        const weekData: DailyActivity[] = [];
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          
+          // Count completed items for this day
+          const count = data?.filter(row => {
+            if (!row.completed) return false;
+            const rowDate = new Date(row.updated_at).toISOString().split('T')[0];
+            return rowDate === dateStr;
+          }).length || 0;
+
+          weekData.push({
+            date: dateStr,
+            day: dayNames[date.getDay()],
+            count
+          });
+        }
+        setWeeklyActivity(weekData);
+
       } catch (error) {
         console.error("Failed to load progress:", error);
       } finally {
@@ -120,6 +182,7 @@ const DashboardMatrix = () => {
   const totalCompleted = Array.from(progressData.values()).reduce((acc, p) => acc + p.completed, 0);
   const totalRevision = Array.from(progressData.values()).reduce((acc, p) => acc + p.revision, 0);
   const overallProgress = totalQuestions > 0 ? Math.round((totalCompleted / totalQuestions) * 100) : 0;
+  const weeklyTotal = weeklyActivity.reduce((acc, d) => acc + d.count, 0);
 
   if (isLoading) {
     return (
@@ -153,7 +216,7 @@ const DashboardMatrix = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid gap-4 md:grid-cols-4"
+          className="grid gap-4 md:grid-cols-5"
         >
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
             <CardContent className="p-6">
@@ -162,7 +225,7 @@ const DashboardMatrix = () => {
                   <Target className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Questions</p>
+                  <p className="text-sm text-muted-foreground">Total</p>
                   <p className="text-2xl font-bold">{totalQuestions}</p>
                 </div>
               </div>
@@ -190,8 +253,22 @@ const DashboardMatrix = () => {
                   <Star className="h-6 w-6 text-yellow-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">For Revision</p>
+                  <p className="text-sm text-muted-foreground">Revision</p>
                   <p className="text-2xl font-bold">{totalRevision}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <Flame className="h-6 w-6 text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Streak</p>
+                  <p className="text-2xl font-bold">{streak} days</p>
                 </div>
               </div>
             </CardContent>
@@ -204,9 +281,84 @@ const DashboardMatrix = () => {
                   <Zap className="h-6 w-6 text-blue-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Overall Progress</p>
+                  <p className="text-sm text-muted-foreground">Progress</p>
                   <p className="text-2xl font-bold">{overallProgress}%</p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Weekly Activity Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Weekly Activity</CardTitle>
+                  <CardDescription>Topics completed in the last 7 days</CardDescription>
+                </div>
+                <Badge variant="secondary" className="text-lg px-3 py-1">
+                  {weeklyTotal} this week
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[200px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weeklyActivity} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <XAxis 
+                      dataKey="day" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    />
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      formatter={(value: number) => [`${value} topics`, 'Completed']}
+                      labelFormatter={(label) => `${label}`}
+                    />
+                    <Bar 
+                      dataKey="count" 
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Activity dots */}
+              <div className="flex justify-center gap-1 mt-4">
+                {weeklyActivity.map((day, i) => (
+                  <div
+                    key={day.date}
+                    className={`h-3 w-3 rounded-sm transition-colors ${
+                      day.count > 0 
+                        ? day.count >= 5 
+                          ? 'bg-primary' 
+                          : day.count >= 3 
+                            ? 'bg-primary/70' 
+                            : 'bg-primary/40'
+                        : 'bg-muted'
+                    }`}
+                    title={`${day.day}: ${day.count} topics`}
+                  />
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -225,7 +377,7 @@ const DashboardMatrix = () => {
                 key={sheet.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: 0.2 + index * 0.1 }}
               >
                 <Card 
                   className="hover:shadow-lg transition-shadow cursor-pointer group"
