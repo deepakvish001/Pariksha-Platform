@@ -8,8 +8,6 @@ import {
   FileSpreadsheet,
   Sparkles,
   Target,
-  Search,
-  Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,19 +29,10 @@ const MobileFAB = ({ onOpenGoals }: MobileFABProps) => {
 
   const actions: FABAction[] = [
     {
-      icon: <Home className="h-5 w-5" />,
-      label: "Progress",
+      icon: <LayoutGrid className="h-5 w-5" />,
+      label: "Dashboard",
       onClick: () => {
         navigate("/dashboard");
-        setIsOpen(false);
-      },
-      color: "bg-blue-500",
-    },
-    {
-      icon: <LayoutGrid className="h-5 w-5" />,
-      label: "Matrix",
-      onClick: () => {
-        navigate("/dashboard/matrix");
         setIsOpen(false);
       },
       color: "bg-purple-500",
@@ -81,8 +70,7 @@ const MobileFAB = ({ onOpenGoals }: MobileFABProps) => {
 
   // Filter out current page from actions
   const filteredActions = actions.filter((action) => {
-    if (action.label === "Progress" && location.pathname === "/dashboard") return false;
-    if (action.label === "Matrix" && location.pathname === "/dashboard/matrix") return false;
+    if (action.label === "Dashboard" && location.pathname === "/dashboard") return false;
     if (action.label === "Sheets" && location.pathname === "/dashboard/sheets") return false;
     if (action.label === "Astra AI" && location.pathname === "/platform/ai") return false;
     return true;

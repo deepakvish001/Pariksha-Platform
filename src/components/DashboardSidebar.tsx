@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
-  Home,
   LayoutGrid,
   FileSpreadsheet,
   User,
@@ -72,8 +71,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 const mainNavItems = [
-  { title: "Progress", url: "/dashboard", icon: Home },
-  { title: "Matrix", url: "/dashboard/matrix", icon: LayoutGrid },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
   { title: "Profile", url: "/dashboard/profile", icon: User },
 ];
