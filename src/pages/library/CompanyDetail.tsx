@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import {
@@ -16,9 +16,6 @@ import {
   FolderKanban,
   FileText,
   Mail,
-  ExternalLink,
-  Copy,
-  Check,
   Filter,
   X,
   ArrowLeft,
@@ -34,6 +31,12 @@ import {
 import CompanyCategorySection from "@/components/library/CompanyCategorySection";
 import CompanyQuestionTableRow from "@/components/library/CompanyQuestionTableRow";
 import ProgressSummaryCard from "@/components/library/ProgressSummaryCard";
+import {
+  JobPortalRow,
+  ProjectRow,
+  ResumeTemplateRow,
+  ColdDMRow,
+} from "@/components/library/ResourceTableRow";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -826,33 +829,136 @@ const CompanyDetail = () => {
             </motion.div>
           )}
 
-          {/* Resource Content (non-question tabs) */}
+          {/* Resource Content (non-question tabs) - Tabular Format */}
           {!isQuestionMode && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="space-y-4"
+              className="rounded-lg border border-border bg-card overflow-hidden"
             >
+              {/* Job Portals Table */}
               {activeTab === "job-portals" && (
-                <JobPortalsGrid
-                  portals={jobPortals}
-                  isSolved={isSolved}
-                  toggleSolved={handleToggleSolved}
-                  isLoggedIn={!!user}
-                />
+                jobPortals.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent bg-muted/20">
+                          <TableHead className="w-10 text-xs font-semibold">#</TableHead>
+                          <TableHead className="min-w-[150px] text-xs font-semibold">Portal</TableHead>
+                          <TableHead className="hidden sm:table-cell text-xs font-semibold">Description</TableHead>
+                          <TableHead className="hidden md:table-cell w-28 text-xs font-semibold">Location</TableHead>
+                          <TableHead className="w-20 text-center text-xs font-semibold">Link</TableHead>
+                          <TableHead className="w-14 text-center text-xs font-semibold">
+                            <span className="hidden sm:inline">Applied</span>
+                            <span className="sm:hidden">✓</span>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {jobPortals.map((portal, index) => (
+                          <JobPortalRow
+                            key={portal.id}
+                            portal={portal}
+                            index={index}
+                            isSolved={isSolved(portal.id)}
+                            isLoggedIn={!!user}
+                            onToggleSolved={() => handleToggleSolved(portal.id)}
+                          />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <EmptyResourceState icon={Globe} title="No job portals found" />
+                )
               )}
 
-              {activeTab === "projects" && <ProjectsGrid projects={projects} />}
+              {/* Projects Table */}
+              {activeTab === "projects" && (
+                projects.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent bg-muted/20">
+                          <TableHead className="w-10 text-xs font-semibold">#</TableHead>
+                          <TableHead className="min-w-[150px] text-xs font-semibold">Project</TableHead>
+                          <TableHead className="hidden sm:table-cell text-xs font-semibold">Description</TableHead>
+                          <TableHead className="text-xs font-semibold">Technologies</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {projects.map((project, index) => (
+                          <ProjectRow key={project.id} project={project} index={index} />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <EmptyResourceState icon={FolderKanban} title="No projects available" />
+                )
+              )}
 
-              {activeTab === "resume-templates" && <ResumeTemplatesGrid templates={resumeTemplates} />}
+              {/* Resume Templates Table */}
+              {activeTab === "resume-templates" && (
+                resumeTemplates.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent bg-muted/20">
+                          <TableHead className="w-10 text-xs font-semibold">#</TableHead>
+                          <TableHead className="min-w-[150px] text-xs font-semibold">Template</TableHead>
+                          <TableHead className="text-xs font-semibold">Style</TableHead>
+                          <TableHead className="w-24 text-center text-xs font-semibold">Preview</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {resumeTemplates.map((template, index) => (
+                          <ResumeTemplateRow key={template.id} template={template} index={index} />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <EmptyResourceState icon={FileText} title="No templates available" />
+                )
+              )}
 
+              {/* Cold DMs Table */}
               {activeTab === "cold-dms" && (
-                <ColdDMsGrid
-                  dms={coldDMs}
-                  isSolved={isSolved}
-                  toggleSolved={handleToggleSolved}
-                  isLoggedIn={!!user}
-                />
+                coldDMs.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent bg-muted/20">
+                          <TableHead className="w-10 text-xs font-semibold">#</TableHead>
+                          <TableHead className="min-w-[150px] text-xs font-semibold">Title</TableHead>
+                          <TableHead className="hidden sm:table-cell text-xs font-semibold">Message</TableHead>
+                          <TableHead className="hidden md:table-cell w-24 text-xs font-semibold">Category</TableHead>
+                          <TableHead className="hidden md:table-cell w-20 text-center text-xs font-semibold">Length</TableHead>
+                          <TableHead className="w-20 text-center text-xs font-semibold">Copy</TableHead>
+                          <TableHead className="w-14 text-center text-xs font-semibold">
+                            <span className="hidden sm:inline">Used</span>
+                            <span className="sm:hidden">✓</span>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {coldDMs.map((dm, index) => (
+                          <ColdDMRow
+                            key={dm.id}
+                            dm={dm}
+                            index={index}
+                            isSolved={isSolved(dm.id)}
+                            isLoggedIn={!!user}
+                            onToggleSolved={() => handleToggleSolved(dm.id)}
+                          />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <EmptyResourceState icon={Mail} title="No templates found" />
+                )
               )}
             </motion.div>
           )}
@@ -946,272 +1052,31 @@ const EmptyQuestionsState = () => (
   </motion.div>
 );
 
-// Resource Grid Components
-interface JobPortalsGridProps {
-  portals: JobPortal[];
-  isSolved: (id: number) => boolean;
-  toggleSolved: (id: number) => void;
-  isLoggedIn: boolean;
+// Empty Resource State
+interface EmptyResourceStateProps {
+  icon: React.ElementType;
+  title: string;
 }
 
-const JobPortalsGrid = ({ portals, isSolved, toggleSolved, isLoggedIn }: JobPortalsGridProps) => {
-  if (portals.length === 0) {
-    return (
-      <div className="border border-border/50 rounded-lg p-12 text-center">
-        <Globe className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-        <h3 className="font-medium text-foreground mb-1">No job portals found</h3>
-        <p className="text-sm text-muted-foreground">Check back later for updates</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {portals.map((portal, index) => (
-        <motion.div
-          key={portal.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}
-          className="group border border-border/50 rounded-xl p-5 hover:border-primary/50 hover:shadow-lg transition-all bg-card"
-        >
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Globe className="h-5 w-5 text-primary" />
-            </div>
-            <button
-              onClick={() => toggleSolved(portal.id)}
-              disabled={!isLoggedIn}
-              className={cn(
-                "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all",
-                isSolved(portal.id)
-                  ? "border-emerald-500 bg-emerald-500/20 text-emerald-500"
-                  : "border-border hover:border-emerald-500/50",
-                !isLoggedIn && "opacity-50 cursor-not-allowed"
-              )}
-              title={isLoggedIn ? (isSolved(portal.id) ? "Mark as not applied" : "Mark as applied") : "Sign in to track"}
-            >
-              {isSolved(portal.id) && <Check className="h-4 w-4" />}
-            </button>
-          </div>
-          <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">{portal.name}</h3>
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{portal.description}</p>
-          <div className="flex items-center justify-between">
-            <Badge variant="secondary" className="text-xs">
-              {portal.location}
-            </Badge>
-            {portal.url && (
-              <a
-                href={portal.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline flex items-center gap-1"
-              >
-                Visit <ExternalLink className="h-3 w-3" />
-              </a>
-            )}
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-};
-
-interface ProjectsGridProps {
-  projects: Project[];
-}
-
-const ProjectsGrid = ({ projects }: ProjectsGridProps) => {
-  if (projects.length === 0) {
-    return (
-      <div className="border border-border/50 rounded-lg p-12 text-center">
-        <FolderKanban className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-        <h3 className="font-medium text-foreground mb-1">No projects available</h3>
-        <p className="text-sm text-muted-foreground">Check back later for project ideas</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {projects.map((project, index) => (
-        <motion.div
-          key={project.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}
-          className="group border border-border/50 rounded-xl p-5 hover:border-primary/50 hover:shadow-lg transition-all bg-card"
-        >
-          <div className="flex items-start gap-3 mb-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <FolderKanban className="h-5 w-5 text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                {project.title}
-              </h3>
-              <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{project.description}</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border/50">
-            {project.technologies.slice(0, 5).map((tech) => (
-              <Badge key={tech} variant="outline" className="text-xs">
-                {tech}
-              </Badge>
-            ))}
-            {project.technologies.length > 5 && (
-              <Badge variant="secondary" className="text-xs">
-                +{project.technologies.length - 5}
-              </Badge>
-            )}
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-};
-
-interface ResumeTemplatesGridProps {
-  templates: ResumeTemplate[];
-}
-
-const ResumeTemplatesGrid = ({ templates }: ResumeTemplatesGridProps) => {
-  if (templates.length === 0) {
-    return (
-      <div className="border border-border/50 rounded-lg p-12 text-center">
-        <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-        <h3 className="font-medium text-foreground mb-1">No templates available</h3>
-        <p className="text-sm text-muted-foreground">Check back later for resume templates</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-      {templates.map((template, index) => (
-        <motion.div
-          key={template.id}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: index * 0.05 }}
-          className="group border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all bg-card cursor-pointer"
-        >
-          <div className="aspect-[3/4] bg-muted/30 flex items-center justify-center relative">
-            <FileText className="h-12 w-12 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <Button size="sm" variant="secondary" className="gap-2">
-                <ExternalLink className="h-3 w-3" />
-                Preview
-              </Button>
-            </div>
-          </div>
-          <div className="p-3">
-            <h4 className="font-medium text-sm mb-1 truncate">{template.name}</h4>
-            <Badge variant="secondary" className="text-xs">
-              {template.style}
-            </Badge>
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-};
-
-interface ColdDMsGridProps {
-  dms: ColdDM[];
-  isSolved: (id: number) => boolean;
-  toggleSolved: (id: number) => void;
-  isLoggedIn: boolean;
-}
-
-const ColdDMsGrid = ({ dms, isSolved, toggleSolved, isLoggedIn }: ColdDMsGridProps) => {
-  const [copiedId, setCopiedId] = useState<number | null>(null);
-
-  const handleCopy = async (dm: ColdDM) => {
-    await navigator.clipboard.writeText(dm.message);
-    setCopiedId(dm.id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  if (dms.length === 0) {
-    return (
-      <div className="border border-border/50 rounded-lg p-12 text-center">
-        <Mail className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-        <h3 className="font-medium text-foreground mb-1">No templates found</h3>
-        <p className="text-sm text-muted-foreground">Check back later for cold DM templates</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {dms.map((dm, index) => (
-        <motion.div
-          key={dm.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}
-          className={cn(
-            "group border rounded-xl p-5 transition-all bg-card",
-            copiedId === dm.id
-              ? "border-emerald-500/50 bg-emerald-500/5"
-              : "border-border/50 hover:border-primary/50"
-          )}
-        >
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Mail className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm text-foreground">{dm.title}</h3>
-                <Badge variant="secondary" className="text-xs mt-0.5">
-                  {dm.category}
-                </Badge>
-              </div>
-            </div>
-            <button
-              onClick={() => toggleSolved(dm.id)}
-              disabled={!isLoggedIn}
-              className={cn(
-                "h-7 w-7 rounded-full border-2 flex items-center justify-center transition-all shrink-0",
-                isSolved(dm.id) ? "border-emerald-500 bg-emerald-500/20 text-emerald-500" : "border-border hover:border-emerald-500/50",
-                !isLoggedIn && "opacity-50 cursor-not-allowed"
-              )}
-              title={isLoggedIn ? (isSolved(dm.id) ? "Mark as unused" : "Mark as used") : "Sign in to track"}
-            >
-              {isSolved(dm.id) && <Check className="h-3 w-3" />}
-            </button>
-          </div>
-          <p className="text-sm text-muted-foreground line-clamp-3 mb-3">{dm.message}</p>
-          <div className="flex items-center justify-between pt-3 border-t border-border/50">
-            <span className="text-xs text-muted-foreground font-medium">{dm.message.length} chars</span>
-            <Button
-              size="sm"
-              variant={copiedId === dm.id ? "default" : "outline"}
-              className={cn(
-                "gap-2 h-8 transition-all",
-                copiedId === dm.id && "bg-emerald-500 hover:bg-emerald-600"
-              )}
-              onClick={() => handleCopy(dm)}
-            >
-              {copiedId === dm.id ? (
-                <>
-                  <Check className="h-3 w-3" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3 w-3" />
-                  Copy
-                </>
-              )}
-            </Button>
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-};
+const EmptyResourceState = ({ icon: Icon, title }: EmptyResourceStateProps) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex flex-col items-center justify-center py-16 text-center px-4"
+  >
+    <motion.div
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      transition={{ type: "spring", stiffness: 200 }}
+      className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4"
+    >
+      <Icon className="h-8 w-8 text-muted-foreground" />
+    </motion.div>
+    <h3 className="text-lg font-medium">{title}</h3>
+    <p className="text-sm text-muted-foreground mt-1">
+      Check back later for updates
+    </p>
+  </motion.div>
+);
 
 export default CompanyDetail;
