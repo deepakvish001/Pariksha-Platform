@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
 import { 
   CheckSquare, 
-  Square,
+  Square, 
   Youtube, 
   FileText, 
   ExternalLink, 
@@ -15,7 +16,8 @@ import {
   Loader2,
   Search,
   Shuffle,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -662,7 +664,33 @@ function DifficultyBadge({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard
   );
 }
 
-// Topic row component
+// Animated Progress Bar component
+function AnimatedProgress({ value, className }: { value: number; className?: string }) {
+  return (
+    <div className={cn("relative h-1.5 w-full overflow-hidden rounded-full bg-secondary group", className)}>
+      <motion.div
+        className="h-full bg-primary rounded-full relative"
+        initial={{ width: 0 }}
+        animate={{ width: `${value}%` }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        {/* Shimmer effect on hover */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-[shimmer_1.5s_ease-in-out_infinite] transition-opacity" />
+      </motion.div>
+      {value === 100 && (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="absolute -right-1 -top-1"
+        >
+          <Sparkles className="h-3 w-3 text-primary" />
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+// Topic row component with hover animations
 function TopicRow({ 
   topic, 
   onToggle,
@@ -675,39 +703,79 @@ function TopicRow({
   onToggleRevision: (id: string) => void;
 }) {
   return (
-    <TableRow className="hover:bg-muted/30 transition-colors">
+    <motion.tr
+      className="border-b transition-colors hover:bg-muted/40 data-[state=selected]:bg-muted group"
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      whileHover={{ 
+        backgroundColor: "hsl(var(--muted) / 0.5)",
+        transition: { duration: 0.15 }
+      }}
+    >
       {/* Status */}
       <TableCell className="w-16">
-        <button
+        <motion.button
           onClick={() => onToggle(topic.id)}
           className="text-muted-foreground hover:text-foreground transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
         >
-          {topic.completed ? (
-            <CheckSquare className="h-5 w-5 text-primary" />
-          ) : (
-            <Square className="h-5 w-5" />
-          )}
-        </button>
+          <AnimatePresence mode="wait">
+            {topic.completed ? (
+              <motion.div
+                key="checked"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: 180 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CheckSquare className="h-5 w-5 text-primary" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="unchecked"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Square className="h-5 w-5" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
       </TableCell>
       
       {/* Problem Title */}
       <TableCell className="font-medium">
-        <span className={cn(topic.completed && "line-through text-muted-foreground")}>
+        <motion.span 
+          className={cn(
+            "inline-block transition-colors",
+            topic.completed && "line-through text-muted-foreground"
+          )}
+          animate={{ 
+            opacity: topic.completed ? 0.6 : 1,
+            x: topic.completed ? 5 : 0 
+          }}
+          transition={{ duration: 0.2 }}
+        >
           {topic.title}
-        </span>
+        </motion.span>
       </TableCell>
       
       {/* Solve Button */}
       <TableCell className="w-20">
         {topic.practiceUrl && (
-          <a 
+          <motion.a 
             href={topic.practiceUrl} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 text-sm font-medium"
+            className="text-primary hover:text-primary/80 text-sm font-medium inline-block"
+            whileHover={{ scale: 1.05, x: 2 }}
+            whileTap={{ scale: 0.95 }}
           >
             Solve
-          </a>
+          </motion.a>
         )}
       </TableCell>
       
@@ -717,14 +785,16 @@ function TopicRow({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <a 
+                <motion.a 
                   href={topic.resourceUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center w-8 h-8 rounded bg-primary/20 hover:bg-primary/30 transition-colors"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
                 >
                   <Youtube className="h-4 w-4 text-primary" />
-                </a>
+                </motion.a>
               </TooltipTrigger>
               <TooltipContent>Watch Video</TooltipContent>
             </Tooltip>
@@ -739,14 +809,16 @@ function TopicRow({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <a 
+                  <motion.a 
                     href={topic.articleUrl} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-muted-foreground hover:text-foreground transition-colors"
+                    whileHover={{ scale: 1.15, y: -2 }}
+                    whileTap={{ scale: 0.9 }}
                   >
                     <FileText className="h-4 w-4" />
-                  </a>
+                  </motion.a>
                 </TooltipTrigger>
                 <TooltipContent>Read Article</TooltipContent>
               </Tooltip>
@@ -756,14 +828,16 @@ function TopicRow({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <a 
+                  <motion.a 
                     href={topic.resourceUrl} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-red-500 hover:text-red-400 transition-colors"
+                    className="text-destructive hover:text-destructive/80 transition-colors"
+                    whileHover={{ scale: 1.15, y: -2 }}
+                    whileTap={{ scale: 0.9 }}
                   >
                     <Youtube className="h-4 w-4" />
-                  </a>
+                  </motion.a>
                 </TooltipTrigger>
                 <TooltipContent>Watch Video</TooltipContent>
               </Tooltip>
@@ -782,7 +856,7 @@ function TopicRow({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button 
+              <motion.button 
                 onClick={() => onOpenNote(topic)}
                 className={cn(
                   "p-1.5 rounded-full transition-colors",
@@ -790,9 +864,11 @@ function TopicRow({
                     ? "text-primary bg-primary/10" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
+                whileHover={{ scale: 1.15, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
               >
                 <PlusCircle className="h-4 w-4" />
-              </button>
+              </motion.button>
             </TooltipTrigger>
             <TooltipContent>{topic.note ? "Edit Note" : "Add Note"}</TooltipContent>
           </Tooltip>
@@ -801,7 +877,7 @@ function TopicRow({
       
       {/* Revision */}
       <TableCell className="w-20 text-center">
-        <button 
+        <motion.button 
           onClick={() => onToggleRevision(topic.id)}
           className={cn(
             "transition-colors",
@@ -809,16 +885,27 @@ function TopicRow({
               ? "text-yellow-500" 
               : "text-muted-foreground hover:text-yellow-500"
           )}
+          whileHover={{ scale: 1.2 }}
+          whileTap={{ scale: 0.9 }}
+          animate={topic.isRevision ? { 
+            rotate: [0, -10, 10, -5, 5, 0],
+          } : {}}
+          transition={{ duration: 0.5 }}
         >
           <Star className={cn("h-5 w-5", topic.isRevision && "fill-current")} />
-        </button>
+        </motion.button>
       </TableCell>
       
       {/* Difficulty */}
       <TableCell className="w-24">
-        <DifficultyBadge difficulty={topic.difficulty} />
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.15 }}
+        >
+          <DifficultyBadge difficulty={topic.difficulty} />
+        </motion.div>
       </TableCell>
-    </TableRow>
+    </motion.tr>
   );
 }
 
@@ -827,16 +914,28 @@ function SubSectionCard({
   subSection, 
   onToggleTopic,
   onOpenNote,
-  onToggleRevision
+  onToggleRevision,
+  onSectionComplete
 }: { 
   subSection: SubSection; 
   onToggleTopic: (id: string) => void;
   onOpenNote: (topic: Topic) => void;
   onToggleRevision: (id: string) => void;
+  onSectionComplete?: (title: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const completed = subSection.topics.filter(t => t.completed).length;
   const total = subSection.topics.length;
+  const prevCompletedRef = useRef(completed);
+  const isComplete = completed === total && total > 0;
+
+  // Check for section completion
+  useEffect(() => {
+    if (completed === total && total > 0 && prevCompletedRef.current < total) {
+      onSectionComplete?.(subSection.title);
+    }
+    prevCompletedRef.current = completed;
+  }, [completed, total, subSection.title, onSectionComplete]);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-b border-border/30 last:border-b-0">
@@ -849,10 +948,22 @@ function SubSectionCard({
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </motion.div>
           <span className="font-medium text-sm">{subSection.title}</span>
+          {isComplete && (
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <Sparkles className="h-4 w-4 text-primary" />
+            </motion.div>
+          )}
         </div>
         <div className="flex items-center gap-4">
-          <Progress value={(completed / total) * 100} className="w-24 h-1.5" />
-          <span className="text-sm text-muted-foreground min-w-[50px] text-right">
+          <AnimatedProgress value={(completed / total) * 100} className="w-24" />
+          <span className={cn(
+            "text-sm min-w-[50px] text-right transition-colors",
+            isComplete ? "text-primary font-medium" : "text-muted-foreground"
+          )}>
             {completed} / {total}
           </span>
         </div>
@@ -889,16 +1000,16 @@ function SubSectionCard({
                       <TableHead className="w-24 text-xs font-medium text-center">Difficulty</TableHead>
                     </TableRow>
                   </TableHeader>
-            <TableBody>
-              {subSection.topics.map(topic => (
-                <TopicRow 
-                  key={topic.id} 
-                  topic={topic} 
-                  onToggle={onToggleTopic} 
-                  onOpenNote={onOpenNote}
-                  onToggleRevision={onToggleRevision}
-                />
-              ))}
+                  <TableBody>
+                    {subSection.topics.map((topic, index) => (
+                      <TopicRow 
+                        key={topic.id} 
+                        topic={topic} 
+                        onToggle={onToggleTopic} 
+                        onOpenNote={onOpenNote}
+                        onToggleRevision={onToggleRevision}
+                      />
+                    ))}
                   </TableBody>
                 </Table>
               </div>
@@ -915,17 +1026,29 @@ function SectionCard({
   section, 
   onToggleTopic,
   onOpenNote,
-  onToggleRevision
+  onToggleRevision,
+  onSectionComplete
 }: { 
   section: Section; 
   onToggleTopic: (id: string) => void;
   onOpenNote: (topic: Topic) => void;
   onToggleRevision: (id: string) => void;
+  onSectionComplete?: (title: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const allTopics = section.subSections.flatMap(s => s.topics);
   const completed = allTopics.filter(t => t.completed).length;
   const total = allTopics.length;
+  const prevCompletedRef = useRef(completed);
+  const isComplete = completed === total && total > 0;
+
+  // Check for section completion
+  useEffect(() => {
+    if (completed === total && total > 0 && prevCompletedRef.current < total) {
+      onSectionComplete?.(section.title);
+    }
+    prevCompletedRef.current = completed;
+  }, [completed, total, section.title, onSectionComplete]);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-b border-border/50">
@@ -938,10 +1061,24 @@ function SectionCard({
             <ChevronDown className="h-5 w-5 text-muted-foreground" />
           </motion.div>
           <span className="font-medium">{section.title}</span>
+          {isComplete && (
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-medium text-primary">Complete!</span>
+            </motion.div>
+          )}
         </div>
         <div className="flex items-center gap-4">
-          <Progress value={(completed / total) * 100} className="w-32 h-1.5" />
-          <span className="text-sm text-muted-foreground min-w-[60px] text-right">
+          <AnimatedProgress value={(completed / total) * 100} className="w-32" />
+          <span className={cn(
+            "text-sm min-w-[60px] text-right transition-colors",
+            isComplete ? "text-primary font-medium" : "text-muted-foreground"
+          )}>
             {completed} / {total}
           </span>
         </div>
@@ -974,6 +1111,7 @@ function SectionCard({
                       onToggleTopic={onToggleTopic}
                       onOpenNote={onOpenNote}
                       onToggleRevision={onToggleRevision}
+                      onSectionComplete={onSectionComplete}
                     />
                   </motion.div>
                 ))}
@@ -1144,11 +1282,53 @@ export default function SheetDetail() {
 
   const filteredSections = getFilteredSections();
 
+  // Confetti celebration
+  const triggerConfetti = useCallback(() => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+    const randomInRange = (min: number, max: number) =>
+      Math.random() * (max - min) + min;
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        colors: ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#fff7ed'],
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        colors: ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#fff7ed'],
+      });
+    }, 250);
+  }, []);
+
+  const handleSectionComplete = useCallback((sectionTitle: string) => {
+    triggerConfetti();
+    toast({
+      title: "🎉 Section Complete!",
+      description: `Congratulations! You completed "${sectionTitle}"`,
+    });
+  }, [toast, triggerConfetti]);
+
   // Random problem
   const handleRandomProblem = () => {
     const uncompletedTopics = allTopics.filter(t => !t.completed);
     if (uncompletedTopics.length === 0) {
       toast({ title: "All problems completed!", description: "Great job!" });
+      triggerConfetti();
       return;
     }
     const randomTopic = uncompletedTopics[Math.floor(Math.random() * uncompletedTopics.length)];
@@ -1412,6 +1592,7 @@ export default function SheetDetail() {
                     onToggleTopic={handleToggleTopic} 
                     onOpenNote={handleOpenNote}
                     onToggleRevision={handleToggleRevision}
+                    onSectionComplete={handleSectionComplete}
                   />
                 ))
               ) : (
