@@ -48,13 +48,17 @@ export type Database = {
           company_name: string | null
           course_name: string | null
           created_at: string
+          current_experience: string | null
           experience: string | null
           id: string
+          interested_features: string[] | null
           mobile_number: string | null
           onboarding_completed: boolean | null
           other_description: string | null
+          referral_source: string | null
           role: string | null
           study_year: Database["public"]["Enums"]["study_year"] | null
+          target_goal: string | null
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
@@ -65,13 +69,17 @@ export type Database = {
           company_name?: string | null
           course_name?: string | null
           created_at?: string
+          current_experience?: string | null
           experience?: string | null
           id?: string
+          interested_features?: string[] | null
           mobile_number?: string | null
           onboarding_completed?: boolean | null
           other_description?: string | null
+          referral_source?: string | null
           role?: string | null
           study_year?: Database["public"]["Enums"]["study_year"] | null
+          target_goal?: string | null
           updated_at?: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
@@ -82,13 +90,17 @@ export type Database = {
           company_name?: string | null
           course_name?: string | null
           created_at?: string
+          current_experience?: string | null
           experience?: string | null
           id?: string
+          interested_features?: string[] | null
           mobile_number?: string | null
           onboarding_completed?: boolean | null
           other_description?: string | null
+          referral_source?: string | null
           role?: string | null
           study_year?: Database["public"]["Enums"]["study_year"] | null
+          target_goal?: string | null
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"]

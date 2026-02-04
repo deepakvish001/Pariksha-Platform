@@ -1,99 +1,127 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Phone, GraduationCap, Briefcase, User, ArrowRight, ArrowLeft, 
-  Building2, BookOpen, Calendar, Sparkles, CheckCircle
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { Settings, Mail } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
-type UserType = "student" | "professional" | "other";
-type StudyYear = "1st Year" | "2nd Year" | "3rd Year" | "4th Year" | "5th Year" | "Other";
+const experienceOptions = [
+  { value: "student", label: "Student (College/University)" },
+  { value: "recent_graduate", label: "Recent Graduate (0-1 years)" },
+  { value: "working_professional_1_3", label: "Working Professional (1-3 years)" },
+  { value: "mid_level", label: "Mid-level Developer (3-5 years)" },
+  { value: "senior", label: "Senior Developer (5-8 years)" },
+  { value: "tech_lead", label: "Tech Lead/Manager (8+ years)" },
+  { value: "career_switcher", label: "Career Switcher (Non-tech background)" },
+  { value: "freelancer", label: "Freelancer/Contractor" },
+  { value: "entrepreneur", label: "Entrepreneur/Founder" },
+];
+
+const goalOptions = [
+  { value: "find_jobs", label: "To find new jobs" },
+  { value: "learn_skills", label: "Learn new skills" },
+  { value: "build_projects", label: "Build personal projects" },
+  { value: "start_business", label: "Start a business" },
+  { value: "advance_career", label: "Advance current career" },
+  { value: "switch_careers", label: "Switch career paths" },
+  { value: "freelancing", label: "Freelancing opportunities" },
+  { value: "academic", label: "Academic purposes" },
+  { value: "hobby", label: "Hobby/Personal interest" },
+];
+
+const referralOptions = [
+  { value: "social_media", label: "Social Media" },
+  { value: "reddit", label: "Reddit" },
+  { value: "twitter", label: "Twitter/X" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "instagram", label: "Instagram" },
+  { value: "youtube", label: "YouTube" },
+  { value: "google", label: "Google Search" },
+  { value: "friend", label: "Friend/Colleague" },
+  { value: "github", label: "GitHub" },
+  { value: "stackoverflow", label: "Stack Overflow" },
+  { value: "blog", label: "Blog/Article" },
+  { value: "other", label: "Other" },
+];
+
+const featureOptions = [
+  { id: "quiz", title: "Quiz", description: "Test your knowledge with interactive quizzes" },
+  { id: "dsa", title: "DSA", description: "Master DSA with comprehensive practice" },
+  { id: "aptitude", title: "Aptitude", description: "Practice aptitude questions for placements" },
+  { id: "interview_questions", title: "Interview Questions", description: "Ace technical and behavioral interviews with..." },
+  { id: "cs_questions", title: "Computer Science Questions", description: "Master core CS subjects like OS, DBMS, and CN" },
+  { id: "handwritten_notes", title: "Handwritten Notes", description: "Access high-quality handwritten notes for quic..." },
+  { id: "projects", title: "Projects", description: "Build impressive projects to showcase your skills" },
+  { id: "cold_dms", title: "Cold DMs/ Emails", description: "Manage and track your outreach campaigns" },
+  { id: "job_portals", title: "Job Portals", description: "Find and apply to jobs from multiple platforms" },
+  { id: "roadmap", title: "Roadmap", description: "Follow structured learning paths for your goals" },
+  { id: "interview_copilot", title: "Interview Copilot", description: "AI-powered assistant for your interview preparation" },
+  { id: "companies", title: "Companies", description: "Explore company profiles and interview experiences" },
+];
 
 const Onboarding = () => {
-  const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   
   // Form state
-  const [mobileNumber, setMobileNumber] = useState("");
-  const [userType, setUserType] = useState<UserType | "">("");
-  
-  // Student fields
-  const [collegeName, setCollegeName] = useState("");
-  const [courseName, setCourseName] = useState("");
-  const [branch, setBranch] = useState("");
-  const [studyYear, setStudyYear] = useState<StudyYear | "">("");
-  
-  // Professional fields
-  const [companyName, setCompanyName] = useState("");
-  const [role, setRole] = useState("");
-  const [experience, setExperience] = useState("");
-  
-  // Other fields
-  const [otherDescription, setOtherDescription] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [currentExperience, setCurrentExperience] = useState("");
+  const [targetGoal, setTargetGoal] = useState("");
+  const [referralSource, setReferralSource] = useState("");
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const totalSteps = 3;
-
-  const handleNext = () => {
-    if (step === 1 && !mobileNumber) {
-      toast({ variant: "destructive", title: "Please enter your mobile number" });
-      return;
+  // Pre-fill full name from profile
+  useState(() => {
+    if (profile?.full_name) {
+      setFullName(profile.full_name);
     }
-    if (step === 2 && !userType) {
-      toast({ variant: "destructive", title: "Please select your profile type" });
-      return;
-    }
-    setStep(step + 1);
-  };
+  });
 
-  const handleBack = () => {
-    setStep(step - 1);
+  const toggleFeature = (featureId: string) => {
+    setSelectedFeatures(prev => 
+      prev.includes(featureId)
+        ? prev.filter(id => id !== featureId)
+        : [...prev, featureId]
+    );
   };
 
   const handleSubmit = async () => {
     if (!user) return;
 
-    // Validate step 3 fields based on user type
-    if (userType === "student" && (!collegeName || !courseName || !studyYear)) {
+    if (!currentExperience || !targetGoal || !referralSource) {
       toast({ variant: "destructive", title: "Please fill in all required fields" });
       return;
     }
-    if (userType === "professional" && (!companyName || !role)) {
-      toast({ variant: "destructive", title: "Please fill in all required fields" });
-      return;
-    }
-    if (userType === "other" && !otherDescription) {
-      toast({ variant: "destructive", title: "Please describe your role" });
+
+    if (selectedFeatures.length === 0) {
+      toast({ variant: "destructive", title: "Please select at least one feature you're interested in" });
       return;
     }
 
     setIsLoading(true);
 
+    // Update profile full_name if changed
+    if (fullName && fullName !== profile?.full_name) {
+      await supabase.from("profiles").update({ full_name: fullName }).eq("user_id", user.id);
+    }
+
     const { error } = await supabase.from("user_profiles_extended").insert({
       user_id: user.id,
-      mobile_number: mobileNumber,
-      user_type: userType as UserType,
-      college_name: userType === "student" ? collegeName : null,
-      course_name: userType === "student" ? courseName : null,
-      branch: userType === "student" ? branch : null,
-      study_year: userType === "student" ? studyYear as StudyYear : null,
-      company_name: userType === "professional" ? companyName : null,
-      role: userType === "professional" ? role : null,
-      experience: userType === "professional" ? experience : null,
-      other_description: userType === "other" ? otherDescription : null,
+      user_type: currentExperience === "student" ? "student" : 
+                 currentExperience === "freelancer" || currentExperience === "entrepreneur" ? "other" : "professional",
+      current_experience: currentExperience,
+      target_goal: targetGoal,
+      referral_source: referralSource,
+      interested_features: selectedFeatures,
       onboarding_completed: true,
     });
 
@@ -114,337 +142,152 @@ const Onboarding = () => {
     setIsLoading(false);
   };
 
-  const userTypeOptions = [
-    { value: "student", label: "Student", icon: GraduationCap, description: "Currently enrolled in a college or university" },
-    { value: "professional", label: "Professional", icon: Briefcase, description: "Working in a company or organization" },
-    { value: "other", label: "Other", icon: User, description: "Freelancer, Founder, or something else" },
-  ];
-
-  const yearOptions: StudyYear[] = ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year", "Other"];
-
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-
-      <main className="flex-1 flex items-center justify-center pt-16 py-12 px-4">
+    <div className="min-h-screen bg-background flex flex-col">
+      <main className="flex-1 flex flex-col items-center px-4 py-8 md:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-lg"
+          className="w-full max-w-4xl"
         >
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-4">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-foreground">Complete Your Profile</span>
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Welcome{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}! 👋
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Let's personalize your experience
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-foreground">Welcome to UniDash</h1>
+            <p className="text-muted-foreground mt-1">
+              Let's get you onboarded to customize your experience.
             </p>
           </div>
 
-          {/* Progress Bar */}
-          <div className="mb-8">
-            <div className="flex justify-between text-sm text-muted-foreground mb-2">
-              <span>Step {step} of {totalSteps}</span>
-              <span>{Math.round((step / totalSteps) * 100)}%</span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-primary"
-                initial={{ width: 0 }}
-                animate={{ width: `${(step / totalSteps) * 100}%` }}
-                transition={{ duration: 0.3 }}
+          {/* Main Form Card */}
+          <div className="rounded-xl border border-border bg-card/50 p-6 md:p-8 space-y-8">
+            {/* Full Name */}
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Full Name</Label>
+              <Input
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your full name"
+                className="h-12 bg-muted/50 border-border"
               />
+            </div>
+
+            {/* Experience & Goal Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Your current experience</Label>
+                <Select value={currentExperience} onValueChange={setCurrentExperience}>
+                  <SelectTrigger className="h-12 bg-muted/50 border-border">
+                    <SelectValue placeholder="Select your experience" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {experienceOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Your target/goal</Label>
+                <Select value={targetGoal} onValueChange={setTargetGoal}>
+                  <SelectTrigger className="h-12 bg-muted/50 border-border">
+                    <SelectValue placeholder="Select your goal" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {goalOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Referral Source */}
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Where did you find UniDash</Label>
+              <Select value={referralSource} onValueChange={setReferralSource}>
+                <SelectTrigger className="h-12 bg-muted/50 border-border w-full md:w-1/2">
+                  <SelectValue placeholder="Select source" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  {referralOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Features Section */}
+            <div className="space-y-4">
+              <Label className="text-primary">Feature you are interested to start using</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {featureOptions.map((feature) => (
+                  <motion.div
+                    key={feature.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => toggleFeature(feature.id)}
+                    className={`relative p-4 rounded-lg border cursor-pointer transition-all ${
+                      selectedFeatures.includes(feature.id)
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-muted/30 hover:border-muted-foreground/50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-foreground">{feature.title}</h3>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {feature.description}
+                        </p>
+                      </div>
+                      <Checkbox
+                        checked={selectedFeatures.includes(feature.id)}
+                        onCheckedChange={() => toggleFeature(feature.id)}
+                        className="mt-1"
+                      />
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-center pt-4">
+              <Button
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className="w-full md:w-96 h-12 bg-muted hover:bg-muted/80 text-foreground border border-border"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  "Proceed to UniDash"
+                )}
+              </Button>
             </div>
           </div>
 
-          {/* Card */}
-          <div className="card-dark">
-            <AnimatePresence mode="wait">
-              {/* Step 1: Mobile Number */}
-              {step === 1 && (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <div className="text-center">
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                      <Phone className="w-7 h-7 text-primary" />
-                    </div>
-                    <h2 className="text-xl font-semibold text-foreground">Contact Information</h2>
-                    <p className="text-sm text-muted-foreground mt-1">We'll use this to keep you updated</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="mobile">Mobile Number</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        id="mobile"
-                        type="tel"
-                        placeholder="+91 98765 43210"
-                        value={mobileNumber}
-                        onChange={(e) => setMobileNumber(e.target.value)}
-                        className="pl-10 h-12"
-                      />
-                    </div>
-                  </div>
-
-                  <Button onClick={handleNext} className="w-full h-12 btn-primary">
-                    Continue
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </motion.div>
-              )}
-
-              {/* Step 2: User Type */}
-              {step === 2 && (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <div className="text-center">
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                      <User className="w-7 h-7 text-primary" />
-                    </div>
-                    <h2 className="text-xl font-semibold text-foreground">What describes you best?</h2>
-                    <p className="text-sm text-muted-foreground mt-1">This helps us personalize your dashboard</p>
-                  </div>
-
-                  <RadioGroup value={userType} onValueChange={(v) => setUserType(v as UserType)}>
-                    <div className="space-y-3">
-                      {userTypeOptions.map((option) => (
-                        <label
-                          key={option.value}
-                          className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
-                            userType === option.value
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-primary/50"
-                          }`}
-                        >
-                          <RadioGroupItem value={option.value} id={option.value} />
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <option.icon className="w-5 h-5 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">{option.label}</p>
-                            <p className="text-sm text-muted-foreground">{option.description}</p>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </RadioGroup>
-
-                  <div className="flex gap-3">
-                    <Button onClick={handleBack} variant="outline" className="flex-1 h-12">
-                      <ArrowLeft className="w-5 h-5 mr-2" />
-                      Back
-                    </Button>
-                    <Button onClick={handleNext} className="flex-1 h-12 btn-primary">
-                      Continue
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 3: Details based on user type */}
-              {step === 3 && (
-                <motion.div
-                  key="step3"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  {/* Student Form */}
-                  {userType === "student" && (
-                    <>
-                      <div className="text-center">
-                        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                          <GraduationCap className="w-7 h-7 text-primary" />
-                        </div>
-                        <h2 className="text-xl font-semibold text-foreground">Academic Details</h2>
-                        <p className="text-sm text-muted-foreground mt-1">Tell us about your education</p>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="college">College/University Name *</Label>
-                          <div className="relative">
-                            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                            <Input
-                              id="college"
-                              placeholder="e.g., IIT Delhi"
-                              value={collegeName}
-                              onChange={(e) => setCollegeName(e.target.value)}
-                              className="pl-10 h-11"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="course">Course Name *</Label>
-                          <div className="relative">
-                            <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                            <Input
-                              id="course"
-                              placeholder="e.g., B.Tech, MBA, BCA"
-                              value={courseName}
-                              onChange={(e) => setCourseName(e.target.value)}
-                              className="pl-10 h-11"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="branch">Branch/Specialization</Label>
-                          <Input
-                            id="branch"
-                            placeholder="e.g., Computer Science"
-                            value={branch}
-                            onChange={(e) => setBranch(e.target.value)}
-                            className="h-11"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Year of Study *</Label>
-                          <Select value={studyYear} onValueChange={(v) => setStudyYear(v as StudyYear)}>
-                            <SelectTrigger className="h-11">
-                              <Calendar className="w-5 h-5 mr-2 text-muted-foreground" />
-                              <SelectValue placeholder="Select year" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {yearOptions.map((year) => (
-                                <SelectItem key={year} value={year}>{year}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Professional Form */}
-                  {userType === "professional" && (
-                    <>
-                      <div className="text-center">
-                        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                          <Briefcase className="w-7 h-7 text-primary" />
-                        </div>
-                        <h2 className="text-xl font-semibold text-foreground">Professional Details</h2>
-                        <p className="text-sm text-muted-foreground mt-1">Tell us about your work</p>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="company">Company Name *</Label>
-                          <div className="relative">
-                            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                            <Input
-                              id="company"
-                              placeholder="e.g., Google, TCS, Infosys"
-                              value={companyName}
-                              onChange={(e) => setCompanyName(e.target.value)}
-                              className="pl-10 h-11"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="role">Role/Designation *</Label>
-                          <Input
-                            id="role"
-                            placeholder="e.g., Software Engineer"
-                            value={role}
-                            onChange={(e) => setRole(e.target.value)}
-                            className="h-11"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Experience</Label>
-                          <Select value={experience} onValueChange={setExperience}>
-                            <SelectTrigger className="h-11">
-                              <SelectValue placeholder="Select experience" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="0-1 years">0-1 years</SelectItem>
-                              <SelectItem value="1-3 years">1-3 years</SelectItem>
-                              <SelectItem value="3-5 years">3-5 years</SelectItem>
-                              <SelectItem value="5-10 years">5-10 years</SelectItem>
-                              <SelectItem value="10+ years">10+ years</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Other Form */}
-                  {userType === "other" && (
-                    <>
-                      <div className="text-center">
-                        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                          <User className="w-7 h-7 text-primary" />
-                        </div>
-                        <h2 className="text-xl font-semibold text-foreground">Tell us about yourself</h2>
-                        <p className="text-sm text-muted-foreground mt-1">What do you do?</p>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="description">Describe your role *</Label>
-                          <Input
-                            id="description"
-                            placeholder="e.g., Freelancer, Founder, Content Creator"
-                            value={otherDescription}
-                            onChange={(e) => setOtherDescription(e.target.value)}
-                            className="h-11"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Examples: Freelancer, Founder, Entrepreneur, Content Creator, etc.
-                          </p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="flex gap-3">
-                    <Button onClick={handleBack} variant="outline" className="flex-1 h-12">
-                      <ArrowLeft className="w-5 h-5 mr-2" />
-                      Back
-                    </Button>
-                    <Button onClick={handleSubmit} className="flex-1 h-12 btn-primary" disabled={isLoading}>
-                      {isLoading ? (
-                        <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <>
-                          Complete
-                          <CheckCircle className="w-5 h-5 ml-2" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Footer Info */}
+          <div className="mt-6 flex flex-col items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card/50">
+              <Settings className="w-4 h-4" />
+              <span>logged in with {user?.email}</span>
+            </div>
+            <p>
+              Something went wrong? Please email us at{" "}
+              <a href="mailto:support@unidash.com" className="text-primary hover:underline">
+                support@unidash.com
+              </a>
+            </p>
           </div>
         </motion.div>
       </main>
-
-      <Footer />
     </div>
   );
 };
