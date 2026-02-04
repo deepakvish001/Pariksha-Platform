@@ -19,18 +19,24 @@ import {
   Building2,
   Phone,
   Target,
-  Sparkles
+  Sparkles,
+  Calendar
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 interface ExtendedProfile {
+  id: string;
   user_type: string;
   current_experience?: string;
   target_goal?: string;
@@ -43,7 +49,41 @@ interface ExtendedProfile {
   experience?: string;
   mobile_number?: string;
   interested_features?: string[];
+  referral_source?: string;
 }
+
+const experienceOptions = [
+  { value: "student", label: "Student (College/University)", type: "student" },
+  { value: "recent_graduate", label: "Recent Graduate (0-1 years)", type: "professional" },
+  { value: "working_professional_1_3", label: "Working Professional (1-3 years)", type: "professional" },
+  { value: "mid_level", label: "Mid-level Developer (3-5 years)", type: "professional" },
+  { value: "senior", label: "Senior Developer (5-8 years)", type: "professional" },
+  { value: "tech_lead", label: "Tech Lead/Manager (8+ years)", type: "professional" },
+  { value: "career_switcher", label: "Career Switcher (Non-tech background)", type: "professional" },
+  { value: "freelancer", label: "Freelancer/Contractor", type: "other" },
+  { value: "entrepreneur", label: "Entrepreneur/Founder", type: "other" },
+];
+
+const goalOptions = [
+  { value: "find_jobs", label: "To find new jobs" },
+  { value: "learn_skills", label: "Learn new skills" },
+  { value: "build_projects", label: "Build personal projects" },
+  { value: "start_business", label: "Start a business" },
+  { value: "advance_career", label: "Advance current career" },
+  { value: "switch_careers", label: "Switch career paths" },
+  { value: "freelancing", label: "Freelancing opportunities" },
+  { value: "academic", label: "Academic purposes" },
+  { value: "hobby", label: "Hobby/Personal interest" },
+];
+
+const yearOptions = [
+  { value: "1st Year", label: "1st Year" },
+  { value: "2nd Year", label: "2nd Year" },
+  { value: "3rd Year", label: "3rd Year" },
+  { value: "4th Year", label: "4th Year" },
+  { value: "5th Year", label: "5th Year" },
+  { value: "Other", label: "Other" },
+];
 
 const experienceLabels: Record<string, string> = {
   student: "Student",
@@ -69,6 +109,34 @@ const goalLabels: Record<string, string> = {
   hobby: "Hobby/Personal",
 };
 
+// Phone validation
+const validatePhoneNumber = (phone: string): boolean => {
+  if (!phone) return true;
+  const cleaned = phone.replace(/[\s\-\(\)]/g, "");
+  const indianPhoneRegex = /^(\+91|91)?[6-9]\d{9}$/;
+  const internationalRegex = /^\+?[1-9]\d{6,14}$/;
+  return indianPhoneRegex.test(cleaned) || internationalRegex.test(cleaned);
+};
+
+const formatPhoneNumber = (value: string): string => {
+  const cleaned = value.replace(/[^\d+]/g, "");
+  if (cleaned.startsWith("+91") && cleaned.length > 3) {
+    const rest = cleaned.slice(3);
+    if (rest.length <= 5) return `+91 ${rest}`;
+    return `+91 ${rest.slice(0, 5)} ${rest.slice(5, 10)}`;
+  }
+  if (cleaned.startsWith("91") && cleaned.length > 2 && !cleaned.startsWith("+")) {
+    const rest = cleaned.slice(2);
+    if (rest.length <= 5) return `+91 ${rest}`;
+    return `+91 ${rest.slice(0, 5)} ${rest.slice(5, 10)}`;
+  }
+  if (/^[6-9]/.test(cleaned) && cleaned.length <= 10) {
+    if (cleaned.length <= 5) return cleaned;
+    return `${cleaned.slice(0, 5)} ${cleaned.slice(5, 10)}`;
+  }
+  return cleaned;
+};
+
 const Dashboard = () => {
   const { user, profile, signOut, updateProfile } = useAuth();
   const { toast } = useToast();
@@ -78,6 +146,23 @@ const Dashboard = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [extendedProfile, setExtendedProfile] = useState<ExtendedProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  
+  // Edit profile modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    mobile_number: "",
+    current_experience: "",
+    target_goal: "",
+    college_name: "",
+    course_name: "",
+    branch: "",
+    study_year: "",
+    company_name: "",
+    role: "",
+    experience: "",
+  });
+  const [phoneError, setPhoneError] = useState("");
+  const [isSavingExtended, setIsSavingExtended] = useState(false);
 
   useEffect(() => {
     const fetchExtendedProfile = async () => {
@@ -91,6 +176,19 @@ const Dashboard = () => {
 
       if (!error && data) {
         setExtendedProfile(data as ExtendedProfile);
+        // Pre-fill edit form
+        setEditForm({
+          mobile_number: data.mobile_number || "",
+          current_experience: data.current_experience || "",
+          target_goal: data.target_goal || "",
+          college_name: data.college_name || "",
+          course_name: data.course_name || "",
+          branch: data.branch || "",
+          study_year: data.study_year || "",
+          company_name: data.company_name || "",
+          role: data.role || "",
+          experience: data.experience || "",
+        });
       }
       setLoadingProfile(false);
     };
@@ -126,6 +224,76 @@ const Dashboard = () => {
     setIsUpdating(false);
   };
 
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhoneNumber(value);
+    setEditForm(prev => ({ ...prev, mobile_number: formatted }));
+    setPhoneError("");
+  };
+
+  const getUserTypeFromExperience = (exp: string) => {
+    const option = experienceOptions.find(o => o.value === exp);
+    return option?.type || "other";
+  };
+
+  const handleSaveExtendedProfile = async () => {
+    if (!user || !extendedProfile) return;
+
+    // Validate phone
+    if (editForm.mobile_number && !validatePhoneNumber(editForm.mobile_number)) {
+      setPhoneError("Please enter a valid phone number");
+      return;
+    }
+
+    setIsSavingExtended(true);
+
+    const userType = getUserTypeFromExperience(editForm.current_experience);
+    const cleanedPhone = editForm.mobile_number.replace(/[\s\-\(\)]/g, "");
+
+    const { error } = await supabase
+      .from("user_profiles_extended")
+      .update({
+        mobile_number: cleanedPhone || null,
+        current_experience: editForm.current_experience || null,
+        target_goal: editForm.target_goal || null,
+        user_type: userType as "student" | "professional" | "other",
+        college_name: userType === "student" ? editForm.college_name : null,
+        course_name: userType === "student" ? editForm.course_name : null,
+        branch: userType === "student" ? editForm.branch : null,
+        study_year: userType === "student" ? editForm.study_year as any : null,
+        company_name: userType === "professional" ? editForm.company_name : null,
+        role: userType === "professional" ? editForm.role : null,
+        experience: userType === "professional" ? editForm.experience : null,
+      })
+      .eq("id", extendedProfile.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message,
+      });
+    } else {
+      // Refresh profile
+      const { data } = await supabase
+        .from("user_profiles_extended")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (data) {
+        setExtendedProfile(data as ExtendedProfile);
+      }
+
+      toast({
+        title: "Profile updated",
+        description: "Your extended profile has been updated.",
+      });
+      setIsEditModalOpen(false);
+    }
+
+    setIsSavingExtended(false);
+  };
+
   const getInitials = (name: string | null | undefined) => {
     if (!name) return user?.email?.charAt(0).toUpperCase() || "U";
     return name
@@ -143,6 +311,7 @@ const Dashboard = () => {
   };
 
   const UserTypeIcon = getUserTypeIcon();
+  const currentUserType = getUserTypeFromExperience(editForm.current_experience);
 
   const stats = [
     { label: "Courses", value: "12", icon: BookOpen, color: "text-blue-500" },
@@ -292,10 +461,203 @@ const Dashboard = () => {
                 transition={{ delay: 0.2 }}
                 className="card-dark space-y-4"
               >
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  Profile Details
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Profile Details
+                  </h3>
+                  <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8">
+                        <Edit2 className="w-3.5 h-3.5 mr-1" />
+                        Edit
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Edit Profile Details</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        {/* Mobile Number */}
+                        <div className="space-y-2">
+                          <Label>Mobile Number</Label>
+                          <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                              type="tel"
+                              value={editForm.mobile_number}
+                              onChange={(e) => handlePhoneChange(e.target.value)}
+                              placeholder="+91 98765 43210"
+                              className={cn("pl-9", phoneError && "border-destructive")}
+                            />
+                          </div>
+                          {phoneError && (
+                            <p className="text-sm text-destructive">{phoneError}</p>
+                          )}
+                        </div>
+
+                        {/* Experience */}
+                        <div className="space-y-2">
+                          <Label>Current Experience</Label>
+                          <Select 
+                            value={editForm.current_experience} 
+                            onValueChange={(v) => setEditForm(prev => ({ ...prev, current_experience: v }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select experience" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {experienceOptions.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Goal */}
+                        <div className="space-y-2">
+                          <Label>Target Goal</Label>
+                          <Select 
+                            value={editForm.target_goal} 
+                            onValueChange={(v) => setEditForm(prev => ({ ...prev, target_goal: v }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select goal" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {goalOptions.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Student Fields */}
+                        {currentUserType === "student" && (
+                          <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5">
+                            <div className="flex items-center gap-2 text-primary text-sm font-medium">
+                              <GraduationCap className="w-4 h-4" />
+                              Academic Details
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label>College/University</Label>
+                              <Input
+                                value={editForm.college_name}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, college_name: e.target.value }))}
+                                placeholder="e.g., IIT Delhi"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label>Course</Label>
+                                <Input
+                                  value={editForm.course_name}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, course_name: e.target.value }))}
+                                  placeholder="e.g., B.Tech"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Branch</Label>
+                                <Input
+                                  value={editForm.branch}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, branch: e.target.value }))}
+                                  placeholder="e.g., CSE"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Year of Study</Label>
+                              <Select 
+                                value={editForm.study_year} 
+                                onValueChange={(v) => setEditForm(prev => ({ ...prev, study_year: v }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select year" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {yearOptions.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Professional Fields */}
+                        {currentUserType === "professional" && (
+                          <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5">
+                            <div className="flex items-center gap-2 text-primary text-sm font-medium">
+                              <Briefcase className="w-4 h-4" />
+                              Professional Details
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label>Company</Label>
+                              <Input
+                                value={editForm.company_name}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, company_name: e.target.value }))}
+                                placeholder="e.g., Google"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label>Role</Label>
+                                <Input
+                                  value={editForm.role}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, role: e.target.value }))}
+                                  placeholder="e.g., Software Engineer"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Experience</Label>
+                                <Select 
+                                  value={editForm.experience} 
+                                  onValueChange={(v) => setEditForm(prev => ({ ...prev, experience: v }))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="0-1 years">0-1 years</SelectItem>
+                                    <SelectItem value="1-3 years">1-3 years</SelectItem>
+                                    <SelectItem value="3-5 years">3-5 years</SelectItem>
+                                    <SelectItem value="5-10 years">5-10 years</SelectItem>
+                                    <SelectItem value="10+ years">10+ years</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex justify-end gap-3 pt-4">
+                          <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={handleSaveExtendedProfile} disabled={isSavingExtended}>
+                            {isSavingExtended ? (
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                            ) : (
+                              <Check className="w-4 h-4 mr-2" />
+                            )}
+                            Save Changes
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
 
                 <div className="space-y-3 text-sm">
                   {/* Experience Level */}
