@@ -165,7 +165,10 @@ const CompanyDetail = () => {
         const firstQuestionId = questionsWithAnswers[0];
         const element = document.querySelector(`[data-question-id="${firstQuestionId}"]`);
         if (element) {
-          element.scrollIntoView({ behavior: "smooth", block: "start" });
+          const headerOffset = 80; // Account for sticky header height
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.scrollY - headerOffset;
+          window.scrollTo({ top: offsetPosition, behavior: "smooth" });
         }
       }, 100);
     }
