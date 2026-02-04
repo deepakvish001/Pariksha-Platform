@@ -1235,27 +1235,425 @@ FROM sales;
   },
   "ai-engineer": {
     "interview-questions": [
-      { id: 1, text: "What is the difference between supervised and unsupervised learning?", difficulty: "Easy" },
-      { id: 2, text: "Explain the bias-variance tradeoff.", difficulty: "Easy" },
-      { id: 3, text: "What is overfitting and how do you prevent it?", difficulty: "Easy" },
-      { id: 4, text: "Explain the concept of gradient descent.", difficulty: "Easy" },
+      { 
+        id: 1, 
+        text: "What is the difference between supervised and unsupervised learning?", 
+        difficulty: "Easy",
+        answer: `**Supervised Learning**
+- Uses labeled data (input → known output)
+- Goal: Learn mapping function f(x) → y
+- Examples: Classification, Regression
+
+\`\`\`python
+# Supervised: Predict house prices
+X = [[1500, 3], [2000, 4]]  # [sqft, bedrooms]
+y = [300000, 450000]         # prices (labels)
+model.fit(X, y)
+\`\`\`
+
+**Unsupervised Learning**
+- Uses unlabeled data (no known outputs)
+- Goal: Find hidden patterns/structure
+- Examples: Clustering, Dimensionality Reduction
+
+\`\`\`python
+# Unsupervised: Group customers
+X = [[25, 50000], [45, 80000], [22, 45000]]
+clusters = model.fit_predict(X)  # No labels!
+\`\`\`
+
+| Aspect | Supervised | Unsupervised |
+|--------|------------|--------------|
+| Data | Labeled | Unlabeled |
+| Goal | Predict outcomes | Find patterns |
+| Validation | Compare with labels | Domain expertise |
+| Examples | Spam detection, Price prediction | Customer segmentation, Anomaly detection |
+
+**Semi-supervised:** Uses both labeled and unlabeled data`
+      },
+      { 
+        id: 2, 
+        text: "Explain the bias-variance tradeoff.", 
+        difficulty: "Easy",
+        answer: `The bias-variance tradeoff is the balance between two sources of error:
+
+**Bias (Underfitting)**
+- Error from oversimplified assumptions
+- Model misses relevant patterns
+- High training AND test error
+
+**Variance (Overfitting)**
+- Error from sensitivity to training data fluctuations
+- Model memorizes noise
+- Low training error, HIGH test error
+
+**Total Error = Bias² + Variance + Irreducible Error**
+
+\`\`\`
+Complexity →
+         ↑
+Error    |  \\  Total Error  /
+         |   \\            /
+         |    \\__      __/
+         |       \\    /
+         |   Bias \\  / Variance
+         |         \\/
+         +-------------------→
+              Sweet Spot
+\`\`\`
+
+**Solutions:**
+| High Bias | High Variance |
+|-----------|---------------|
+| More features | More training data |
+| Complex model | Regularization (L1/L2) |
+| Less regularization | Simpler model |
+| Longer training | Dropout, Early stopping |
+
+**Key insight:** Find the optimal model complexity that minimizes total error.`
+      },
+      { 
+        id: 3, 
+        text: "What is overfitting and how do you prevent it?", 
+        difficulty: "Easy",
+        answer: `**Overfitting** = Model performs well on training data but poorly on new data (memorizes rather than learns).
+
+**Signs of Overfitting:**
+- Training accuracy >> Validation accuracy
+- Complex decision boundaries
+- Model captures noise as patterns
+
+**Prevention Techniques:**
+
+**1. More Training Data**
+\`\`\`python
+# Data augmentation for images
+augmented = ImageDataGenerator(
+    rotation_range=20,
+    horizontal_flip=True
+)
+\`\`\`
+
+**2. Regularization**
+\`\`\`python
+# L1 (Lasso) - Feature selection
+# L2 (Ridge) - Weight decay
+model = Ridge(alpha=1.0)
+\`\`\`
+
+**3. Dropout (Neural Networks)**
+\`\`\`python
+model.add(Dropout(0.5))  # 50% neurons dropped
+\`\`\`
+
+**4. Early Stopping**
+\`\`\`python
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=10
+)
+\`\`\`
+
+**5. Cross-Validation**
+\`\`\`python
+scores = cross_val_score(model, X, y, cv=5)
+\`\`\`
+
+**6. Simpler Model**
+- Fewer layers/neurons
+- Fewer features
+- Lower polynomial degree`
+      },
+      { 
+        id: 4, 
+        text: "Explain the concept of gradient descent.", 
+        difficulty: "Easy",
+        answer: `**Gradient Descent** is an optimization algorithm to minimize a loss function by iteratively moving toward the steepest descent.
+
+**Formula:**
+\`θ_new = θ_old - α * ∇L(θ)\`
+
+Where:
+- \`θ\` = model parameters (weights)
+- \`α\` = learning rate
+- \`∇L(θ)\` = gradient of loss function
+
+**Intuition:** Imagine rolling a ball downhill - it follows the steepest path to the bottom.
+
+\`\`\`python
+def gradient_descent(X, y, lr=0.01, epochs=1000):
+    weights = np.zeros(X.shape[1])
+    
+    for _ in range(epochs):
+        predictions = X @ weights
+        error = predictions - y
+        gradient = (2/len(X)) * X.T @ error
+        weights = weights - lr * gradient
+    
+    return weights
+\`\`\`
+
+**Variants:**
+
+| Type | Batch Size | Speed | Stability |
+|------|------------|-------|-----------|
+| Batch GD | All data | Slow | Stable |
+| Stochastic GD | 1 sample | Fast | Noisy |
+| Mini-batch GD | 32-256 | Balanced | Balanced |
+
+**Advanced Optimizers:**
+- **Adam**: Adaptive learning rate + momentum
+- **RMSprop**: Adaptive learning rate
+- **SGD + Momentum**: Accelerates convergence`
+      },
       { id: 5, text: "What are activation functions and why are they needed?", difficulty: "Easy" },
       { id: 6, text: "What is cross-validation?", difficulty: "Easy" },
-      { id: 7, text: "Explain precision, recall, and F1 score.", difficulty: "Easy" },
+      { 
+        id: 7, 
+        text: "Explain precision, recall, and F1 score.", 
+        difficulty: "Easy",
+        answer: `These metrics evaluate classification model performance, especially with imbalanced data.
+
+**Confusion Matrix:**
+\`\`\`
+              Predicted
+            |  Pos  |  Neg  |
+Actual Pos  |  TP   |  FN   |
+Actual Neg  |  FP   |  TN   |
+\`\`\`
+
+**Precision** = TP / (TP + FP)
+- "Of all predicted positives, how many are actually positive?"
+- High precision = Few false alarms
+- Use when: False positives are costly (spam detection)
+
+**Recall (Sensitivity)** = TP / (TP + FN)
+- "Of all actual positives, how many did we catch?"
+- High recall = Few missed positives
+- Use when: False negatives are costly (cancer detection)
+
+**F1 Score** = 2 × (Precision × Recall) / (Precision + Recall)
+- Harmonic mean of precision and recall
+- Balances both metrics
+- Use when: Both FP and FN matter equally
+
+\`\`\`python
+from sklearn.metrics import precision_recall_fscore_support
+
+precision, recall, f1, _ = precision_recall_fscore_support(
+    y_true, y_pred, average='binary'
+)
+\`\`\`
+
+**Example:** Fraud Detection
+- 1000 transactions, 10 frauds
+- Model predicts 15 as fraud, 8 are correct
+
+Precision = 8/15 = 53% (many false alarms)
+Recall = 8/10 = 80% (caught most frauds)
+F1 = 2×(0.53×0.80)/(0.53+0.80) = 64%`
+      },
       { id: 8, text: "What is regularization in machine learning?", difficulty: "Easy" },
       { id: 9, text: "Explain the difference between bagging and boosting.", difficulty: "Medium" },
-      { id: 10, text: "How do transformers work in NLP?", difficulty: "Medium" },
-      { id: 11, text: "What is attention mechanism?", difficulty: "Medium" },
+      { 
+        id: 10, 
+        text: "How do transformers work in NLP?", 
+        difficulty: "Medium",
+        answer: `Transformers are neural network architecture that revolutionized NLP using **self-attention** mechanism.
+
+**Key Innovation:** Process all tokens in parallel (unlike RNNs)
+
+**Architecture:**
+
+\`\`\`
+Input → Embedding + Positional Encoding
+      ↓
+   [Encoder] × N
+   - Multi-Head Self-Attention
+   - Feed-Forward Network
+   - Add & Norm (residual connections)
+      ↓
+   [Decoder] × N  
+   - Masked Self-Attention
+   - Cross-Attention (to encoder)
+   - Feed-Forward Network
+      ↓
+   Output Probabilities
+\`\`\`
+
+**Self-Attention Mechanism:**
+\`\`\`python
+# For each token, compute attention to all others
+Q = X @ W_q  # Query
+K = X @ W_k  # Key  
+V = X @ W_v  # Value
+
+attention = softmax(Q @ K.T / sqrt(d_k)) @ V
+\`\`\`
+
+**Multi-Head Attention:**
+- Multiple attention "heads" capture different relationships
+- Concatenate and project outputs
+
+**Why Transformers Work:**
+1. **Parallelization**: Process entire sequence at once
+2. **Long-range dependencies**: Direct attention between any tokens
+3. **Scalability**: Efficient for large models (GPT, BERT)
+
+**Applications:**
+- BERT: Bidirectional encoding for understanding
+- GPT: Autoregressive decoding for generation
+- T5: Encoder-decoder for seq2seq tasks`
+      },
+      { 
+        id: 11, 
+        text: "What is attention mechanism?", 
+        difficulty: "Medium",
+        answer: `**Attention** allows models to focus on relevant parts of input when producing output.
+
+**Intuition:** When translating "The cat sat on the mat", to generate "sat" the model should focus on "sat" in input, not "mat".
+
+**Basic Formula:**
+\`\`\`
+Attention(Q, K, V) = softmax(QK^T / √d_k) × V
+\`\`\`
+
+**Components:**
+- **Query (Q)**: "What am I looking for?"
+- **Key (K)**: "What do I contain?"
+- **Value (V)**: "What information do I provide?"
+
+\`\`\`python
+def attention(query, key, value):
+    d_k = query.shape[-1]
+    scores = query @ key.transpose(-2, -1) / math.sqrt(d_k)
+    weights = F.softmax(scores, dim=-1)
+    return weights @ value
+\`\`\`
+
+**Types of Attention:**
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| Self-Attention | Attend to same sequence | Transformers |
+| Cross-Attention | Attend to different sequence | Encoder-Decoder |
+| Causal/Masked | Only attend to past tokens | GPT (generation) |
+| Multi-Head | Multiple parallel attentions | Capture different patterns |
+
+**Benefits:**
+- Captures long-range dependencies
+- Interpretable (attention weights show focus)
+- Parallelizable computation`
+      },
       { id: 12, text: "Explain LSTM and GRU architectures.", difficulty: "Medium" },
       { id: 13, text: "How do you handle imbalanced datasets?", difficulty: "Medium" },
-      { id: 14, text: "What is transfer learning?", difficulty: "Medium" },
+      { 
+        id: 14, 
+        text: "What is transfer learning?", 
+        difficulty: "Medium",
+        answer: `**Transfer Learning** = Using knowledge from one task to improve performance on a related task.
+
+**Why it works:**
+- Early layers learn general features (edges, shapes)
+- Later layers learn task-specific features
+- Reuse general features, fine-tune specific ones
+
+**Approaches:**
+
+**1. Feature Extraction (Freeze base)**
+\`\`\`python
+base_model = VGG16(weights='imagenet', include_top=False)
+base_model.trainable = False  # Freeze!
+
+model = Sequential([
+    base_model,
+    Flatten(),
+    Dense(256, activation='relu'),
+    Dense(num_classes, activation='softmax')
+])
+\`\`\`
+
+**2. Fine-Tuning (Unfreeze some layers)**
+\`\`\`python
+# Unfreeze last few layers
+for layer in base_model.layers[-4:]:
+    layer.trainable = True
+
+# Train with low learning rate
+model.compile(optimizer=Adam(1e-5), ...)
+\`\`\`
+
+**Common Pretrained Models:**
+
+| Domain | Models |
+|--------|--------|
+| Vision | ResNet, VGG, EfficientNet |
+| NLP | BERT, GPT, RoBERTa |
+| Audio | Wav2Vec, Whisper |
+
+**When to use:**
+- Limited training data
+- Similar source and target domains
+- Expensive to train from scratch
+
+**Best Practice:** Start frozen, gradually unfreeze if more data available.`
+      },
       { id: 15, text: "Explain the architecture of a convolutional neural network.", difficulty: "Medium" },
       { id: 16, text: "What is batch normalization?", difficulty: "Medium" },
       { id: 17, text: "How do you deploy ML models in production?", difficulty: "Medium" },
       { id: 18, text: "What is MLOps?", difficulty: "Medium" },
       { id: 19, text: "Explain reinforcement learning concepts.", difficulty: "Hard" },
       { id: 20, text: "How do GANs work?", difficulty: "Hard" },
-      { id: 21, text: "What is RLHF in large language models?", difficulty: "Hard" },
+      { 
+        id: 21, 
+        text: "What is RLHF in large language models?", 
+        difficulty: "Hard",
+        answer: `**RLHF (Reinforcement Learning from Human Feedback)** aligns LLMs with human preferences.
+
+**Problem:** LLMs trained on internet text may generate harmful, biased, or unhelpful content.
+
+**Solution:** Use human feedback to guide the model toward desired behavior.
+
+**Three-Stage Process:**
+
+**1. Supervised Fine-Tuning (SFT)**
+\`\`\`
+Base Model → Train on human-written examples → SFT Model
+\`\`\`
+
+**2. Reward Model Training**
+\`\`\`
+- Show humans pairs of responses
+- Humans rank: Response A > Response B
+- Train reward model to predict human preferences
+
+reward_model.predict(prompt, response) → score
+\`\`\`
+
+**3. RL Optimization (PPO)**
+\`\`\`python
+for prompt in dataset:
+    response = policy_model.generate(prompt)
+    reward = reward_model.score(response)
+    
+    # Update policy to maximize reward
+    # while staying close to original model (KL penalty)
+    loss = -reward + β * KL(policy || reference)
+\`\`\`
+
+**Key Components:**
+- **Policy Model**: The LLM being optimized
+- **Reward Model**: Predicts human preference scores
+- **Reference Model**: Original SFT model (prevents drift)
+- **PPO**: Proximal Policy Optimization algorithm
+
+**Challenges:**
+- Expensive human annotation
+- Reward hacking (gaming the reward model)
+- Maintaining diversity in outputs
+
+**Used in:** ChatGPT, Claude, Gemini`
+      },
       { id: 22, text: "Explain the architecture of GPT models.", difficulty: "Hard" },
       { id: 23, text: "How do you fine-tune large language models?", difficulty: "Hard" },
       { id: 24, text: "What are embeddings and how are they created?", difficulty: "Hard" },
@@ -1304,16 +1702,422 @@ FROM sales;
   },
   "frontend-developer": {
     "interview-questions": [
-      { id: 1, text: "What is the virtual DOM and how does it work?", difficulty: "Easy" },
-      { id: 2, text: "Explain the difference between let, const, and var.", difficulty: "Easy" },
-      { id: 3, text: "What are React hooks?", difficulty: "Easy" },
+      { 
+        id: 1, 
+        text: "What is the virtual DOM and how does it work?", 
+        difficulty: "Easy",
+        answer: `The **Virtual DOM** is a lightweight JavaScript representation of the actual DOM.
+
+**How it works:**
+
+1. **Initial Render**: Create virtual DOM tree from components
+2. **State Change**: Create new virtual DOM tree
+3. **Diffing**: Compare old vs new virtual DOM
+4. **Patching**: Apply only the changes to real DOM
+
+\`\`\`javascript
+// Virtual DOM representation
+const vNode = {
+  type: 'div',
+  props: { className: 'container' },
+  children: [
+    { type: 'h1', props: {}, children: ['Hello'] },
+    { type: 'p', props: {}, children: ['World'] }
+  ]
+};
+\`\`\`
+
+**Why use Virtual DOM?**
+
+| Real DOM | Virtual DOM |
+|----------|-------------|
+| Slow updates | Fast diffing |
+| Reflows/repaints | Batch updates |
+| Direct manipulation | Declarative |
+
+**Reconciliation Process:**
+\`\`\`
+State Change → New VDOM → Diff with Old VDOM → Minimal DOM Updates
+\`\`\`
+
+**Key optimizations:**
+- **Keys**: Help identify which items changed in lists
+- **Batching**: Multiple state changes = single re-render
+- **Fiber**: Interruptible rendering (React 16+)
+
+**Note:** Virtual DOM isn't always faster than direct DOM—it's an abstraction that makes declarative programming efficient.`
+      },
+      { 
+        id: 2, 
+        text: "Explain the difference between let, const, and var.", 
+        difficulty: "Easy",
+        answer: `**var** (ES5 - avoid in modern JS)
+- Function-scoped
+- Hoisted to top (initialized as undefined)
+- Can be redeclared
+
+\`\`\`javascript
+console.log(x); // undefined (hoisted)
+var x = 5;
+var x = 10; // OK - redeclaration allowed
+
+function test() {
+  var y = 1;
+}
+console.log(y); // ReferenceError (function scoped)
+\`\`\`
+
+**let** (ES6 - use for reassignable values)
+- Block-scoped
+- Hoisted but NOT initialized (TDZ)
+- Cannot be redeclared
+
+\`\`\`javascript
+console.log(x); // ReferenceError (TDZ)
+let x = 5;
+let x = 10; // SyntaxError
+
+if (true) {
+  let y = 1;
+}
+console.log(y); // ReferenceError (block scoped)
+\`\`\`
+
+**const** (ES6 - use by default)
+- Block-scoped
+- Must be initialized at declaration
+- Cannot be reassigned (but objects are mutable!)
+
+\`\`\`javascript
+const x = 5;
+x = 10; // TypeError
+
+const obj = { a: 1 };
+obj.a = 2; // OK - object properties can change
+obj = {};  // TypeError - can't reassign
+\`\`\`
+
+**Best Practice:**
+1. Use \`const\` by default
+2. Use \`let\` when reassignment needed
+3. Never use \`var\``
+      },
+      { 
+        id: 3, 
+        text: "What are React hooks?", 
+        difficulty: "Easy",
+        answer: `**Hooks** are functions that let you use state and lifecycle features in functional components.
+
+**Core Hooks:**
+
+\`\`\`javascript
+// useState - Component state
+const [count, setCount] = useState(0);
+
+// useEffect - Side effects (data fetching, subscriptions)
+useEffect(() => {
+  document.title = \`Count: \${count}\`;
+  return () => cleanup(); // Optional cleanup
+}, [count]); // Dependency array
+
+// useContext - Access context without nesting
+const theme = useContext(ThemeContext);
+
+// useRef - Mutable reference (persists across renders)
+const inputRef = useRef(null);
+inputRef.current.focus();
+
+// useMemo - Memoize expensive calculations
+const sorted = useMemo(() => 
+  items.sort((a, b) => a - b), 
+  [items]
+);
+
+// useCallback - Memoize functions
+const handleClick = useCallback(() => {
+  doSomething(id);
+}, [id]);
+\`\`\`
+
+**Rules of Hooks:**
+1. Only call at top level (not in loops/conditions)
+2. Only call from React functions
+
+**Custom Hooks:**
+\`\`\`javascript
+function useWindowSize() {
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  return size;
+}
+\`\`\``
+      },
       { id: 4, text: "Explain CSS specificity.", difficulty: "Easy" },
       { id: 5, text: "What is the box model in CSS?", difficulty: "Easy" },
-      { id: 6, text: "How does event bubbling work?", difficulty: "Easy" },
-      { id: 7, text: "What is closure in JavaScript?", difficulty: "Easy" },
+      { 
+        id: 6, 
+        text: "How does event bubbling work?", 
+        difficulty: "Easy",
+        answer: `**Event Bubbling** = Events propagate from target element UP through ancestors.
+
+**Event Phases:**
+1. **Capture Phase**: Window → Target (top-down)
+2. **Target Phase**: Event at target
+3. **Bubble Phase**: Target → Window (bottom-up)
+
+\`\`\`html
+<div id="grandparent">
+  <div id="parent">
+    <button id="child">Click</button>
+  </div>
+</div>
+\`\`\`
+
+\`\`\`javascript
+// Default: Bubbling (3rd param false or omitted)
+child.addEventListener('click', () => console.log('Child'));
+parent.addEventListener('click', () => console.log('Parent'));
+grandparent.addEventListener('click', () => console.log('Grandparent'));
+
+// Click button → Child → Parent → Grandparent
+
+// Capture phase (3rd param true)
+grandparent.addEventListener('click', () => console.log('GP Capture'), true);
+// Now: GP Capture → Child → Parent → Grandparent
+\`\`\`
+
+**Stop Propagation:**
+\`\`\`javascript
+child.addEventListener('click', (e) => {
+  e.stopPropagation(); // Stops bubbling
+  console.log('Only child fires');
+});
+\`\`\`
+
+**Event Delegation (leveraging bubbling):**
+\`\`\`javascript
+// Instead of adding listener to each item
+document.querySelector('ul').addEventListener('click', (e) => {
+  if (e.target.matches('li')) {
+    console.log('List item clicked:', e.target.textContent);
+  }
+});
+\`\`\`
+
+**Benefits of delegation:**
+- Fewer event listeners
+- Works for dynamically added elements`
+      },
+      { 
+        id: 7, 
+        text: "What is closure in JavaScript?", 
+        difficulty: "Easy",
+        answer: `A **closure** is a function that remembers variables from its outer scope even after the outer function has returned.
+
+\`\`\`javascript
+function createCounter() {
+  let count = 0; // Enclosed variable
+  
+  return function() {
+    count++; // Accesses outer scope
+    return count;
+  };
+}
+
+const counter = createCounter();
+console.log(counter()); // 1
+console.log(counter()); // 2
+console.log(counter()); // 3
+\`\`\`
+
+**How it works:**
+- Inner function "closes over" outer variables
+- Variables persist in memory as long as closure exists
+
+**Common Use Cases:**
+
+**1. Data Privacy:**
+\`\`\`javascript
+function createBankAccount(initial) {
+  let balance = initial; // Private!
+  
+  return {
+    deposit: (amount) => balance += amount,
+    getBalance: () => balance
+  };
+}
+\`\`\`
+
+**2. Function Factories:**
+\`\`\`javascript
+function multiply(x) {
+  return (y) => x * y;
+}
+const double = multiply(2);
+console.log(double(5)); // 10
+\`\`\`
+
+**3. Event Handlers (common pitfall):**
+\`\`\`javascript
+// Bug: All buttons log 3
+for (var i = 0; i < 3; i++) {
+  buttons[i].onclick = () => console.log(i);
+}
+
+// Fix: Use let (block scope) or closure
+for (let i = 0; i < 3; i++) {
+  buttons[i].onclick = () => console.log(i);
+}
+\`\`\`
+
+**Memory:** Closures keep references alive—be mindful of memory leaks!`
+      },
       { id: 8, text: "Explain the difference between == and ===.", difficulty: "Easy" },
-      { id: 9, text: "What is the purpose of useEffect hook?", difficulty: "Medium" },
-      { id: 10, text: "How do you optimize React performance?", difficulty: "Medium" },
+      { 
+        id: 9, 
+        text: "What is the purpose of useEffect hook?", 
+        difficulty: "Medium",
+        answer: `**useEffect** handles side effects in functional components—things that happen outside React's rendering.
+
+**Syntax:**
+\`\`\`javascript
+useEffect(() => {
+  // Effect code
+  return () => cleanup(); // Optional cleanup
+}, [dependencies]); // Dependency array
+\`\`\`
+
+**Dependency Array Behavior:**
+
+\`\`\`javascript
+// 1. No array = Run after EVERY render
+useEffect(() => {
+  console.log('Runs every render');
+});
+
+// 2. Empty array = Run ONCE on mount
+useEffect(() => {
+  fetchData();
+}, []);
+
+// 3. With deps = Run when deps change
+useEffect(() => {
+  fetchUser(userId);
+}, [userId]);
+\`\`\`
+
+**Common Use Cases:**
+
+\`\`\`javascript
+// Data fetching
+useEffect(() => {
+  const loadData = async () => {
+    const data = await fetchData();
+    setData(data);
+  };
+  loadData();
+}, []);
+
+// Event listeners
+useEffect(() => {
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
+
+// Document title
+useEffect(() => {
+  document.title = \`\${unreadCount} messages\`;
+}, [unreadCount]);
+\`\`\`
+
+**Cleanup Function:**
+Runs before effect re-runs AND on unmount.
+
+\`\`\`javascript
+useEffect(() => {
+  const subscription = source.subscribe();
+  return () => subscription.unsubscribe(); // Cleanup!
+}, [source]);
+\`\`\`
+
+**Common Pitfalls:**
+- Missing dependencies → stale closures
+- Object/array deps → infinite loops (use useMemo)
+- Async in effect → use IIFE or separate function`
+      },
+      { 
+        id: 10, 
+        text: "How do you optimize React performance?", 
+        difficulty: "Medium",
+        answer: `**Key Optimization Strategies:**
+
+**1. Memoization:**
+\`\`\`javascript
+// React.memo - Prevent re-renders if props unchanged
+const ExpensiveComponent = React.memo(({ data }) => {
+  return <div>{/* complex UI */}</div>;
+});
+
+// useMemo - Memoize expensive calculations
+const sortedItems = useMemo(() => 
+  items.sort((a, b) => a.price - b.price),
+  [items]
+);
+
+// useCallback - Memoize callbacks
+const handleClick = useCallback(() => {
+  doSomething(id);
+}, [id]);
+\`\`\`
+
+**2. Code Splitting:**
+\`\`\`javascript
+const LazyComponent = React.lazy(() => import('./HeavyComponent'));
+
+<Suspense fallback={<Loading />}>
+  <LazyComponent />
+</Suspense>
+\`\`\`
+
+**3. Virtualization (large lists):**
+\`\`\`javascript
+import { FixedSizeList } from 'react-window';
+
+<FixedSizeList height={400} itemCount={10000} itemSize={35}>
+  {({ index, style }) => <Row style={style}>{items[index]}</Row>}
+</FixedSizeList>
+\`\`\`
+
+**4. Avoid Common Mistakes:**
+\`\`\`javascript
+// ❌ Creates new object every render
+<Component style={{ color: 'red' }} />
+
+// ✅ Define outside or useMemo
+const style = useMemo(() => ({ color: 'red' }), []);
+
+// ❌ Inline function in render
+<Button onClick={() => handleClick(id)} />
+
+// ✅ useCallback
+const onClick = useCallback(() => handleClick(id), [id]);
+\`\`\`
+
+**5. State Management:**
+- Lift state only when necessary
+- Colocate state near where it's used
+- Use context sparingly (causes re-renders)
+
+**Debugging:** React DevTools Profiler identifies slow components.`
+      },
       { id: 11, text: "Explain state management in React.", difficulty: "Medium" },
       { id: 12, text: "What is server-side rendering?", difficulty: "Medium" },
       { id: 13, text: "How do you handle async operations in JavaScript?", difficulty: "Medium" },
@@ -1324,15 +2128,192 @@ FROM sales;
       { id: 18, text: "Explain CSS-in-JS approaches.", difficulty: "Medium" },
       { id: 19, text: "What is React Fiber?", difficulty: "Hard" },
       { id: 20, text: "How does React concurrent mode work?", difficulty: "Hard" },
-      { id: 21, text: "Explain the event loop in JavaScript.", difficulty: "Hard" },
+      { 
+        id: 21, 
+        text: "Explain the event loop in JavaScript.", 
+        difficulty: "Hard",
+        answer: `The **Event Loop** enables JavaScript's non-blocking async behavior despite being single-threaded.
+
+**Components:**
+
+1. **Call Stack**: Executes synchronous code (LIFO)
+2. **Web APIs**: Handle async operations (setTimeout, fetch, DOM events)
+3. **Callback Queue (Task Queue)**: Holds callbacks from Web APIs
+4. **Microtask Queue**: Holds Promises, MutationObserver (higher priority)
+
+**How it works:**
+\`\`\`
+1. Execute code in Call Stack
+2. Async operations go to Web APIs
+3. Callbacks move to appropriate queue when ready
+4. Event Loop: If Stack empty, move tasks from queues to stack
+5. Microtasks first, then Tasks
+\`\`\`
+
+\`\`\`javascript
+console.log('1');
+
+setTimeout(() => console.log('2'), 0);
+
+Promise.resolve().then(() => console.log('3'));
+
+console.log('4');
+
+// Output: 1, 4, 3, 2
+// Why? Microtask (Promise) runs before Task (setTimeout)
+\`\`\`
+
+**Execution Order:**
+\`\`\`javascript
+console.log('script start');
+
+setTimeout(() => console.log('timeout'), 0);
+
+Promise.resolve()
+  .then(() => console.log('promise1'))
+  .then(() => console.log('promise2'));
+
+console.log('script end');
+
+// Output:
+// script start
+// script end
+// promise1
+// promise2
+// timeout
+\`\`\`
+
+**Key Insight:** 
+- Microtasks (Promises) execute between each task
+- Long-running code blocks the event loop
+- \`requestAnimationFrame\` runs before next repaint`
+      },
       { id: 22, text: "How do you implement micro-frontends?", difficulty: "Hard" },
       { id: 23, text: "What are service workers and PWAs?", difficulty: "Hard" },
       { id: 24, text: "Explain WebAssembly and its use cases.", difficulty: "Hard" },
       { id: 25, text: "How do you implement accessible components?", difficulty: "Hard" },
     ],
     "dsa-questions": [
-      { id: 1, text: "Implement debounce function.", difficulty: "Easy" },
-      { id: 2, text: "Implement throttle function.", difficulty: "Easy" },
+      { 
+        id: 1, 
+        text: "Implement debounce function.", 
+        difficulty: "Easy",
+        answer: `**Debounce** delays function execution until after a pause in calls.
+
+Use case: Search input (wait for user to stop typing)
+
+\`\`\`javascript
+function debounce(fn, delay) {
+  let timeoutId;
+  
+  return function(...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      fn.apply(this, args);
+    }, delay);
+  };
+}
+
+// Usage
+const searchInput = document.querySelector('input');
+const handleSearch = debounce((e) => {
+  console.log('Searching:', e.target.value);
+}, 300);
+
+searchInput.addEventListener('input', handleSearch);
+\`\`\`
+
+**With immediate option:**
+\`\`\`javascript
+function debounce(fn, delay, immediate = false) {
+  let timeoutId;
+  
+  return function(...args) {
+    const callNow = immediate && !timeoutId;
+    
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      timeoutId = null;
+      if (!immediate) fn.apply(this, args);
+    }, delay);
+    
+    if (callNow) fn.apply(this, args);
+  };
+}
+\`\`\`
+
+**Visual:**
+\`\`\`
+Calls:    ─●─●─●─●─────●─●─────
+Executes: ──────────●───────●──
+          (after 300ms pause)
+\`\`\``
+      },
+      { 
+        id: 2, 
+        text: "Implement throttle function.", 
+        difficulty: "Easy",
+        answer: `**Throttle** limits function execution to at most once per interval.
+
+Use case: Scroll events, resize events
+
+\`\`\`javascript
+function throttle(fn, limit) {
+  let inThrottle = false;
+  
+  return function(...args) {
+    if (!inThrottle) {
+      fn.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+}
+
+// Usage
+const handleScroll = throttle(() => {
+  console.log('Scroll position:', window.scrollY);
+}, 100);
+
+window.addEventListener('scroll', handleScroll);
+\`\`\`
+
+**With trailing call:**
+\`\`\`javascript
+function throttle(fn, limit) {
+  let lastCall = 0;
+  let lastArgs;
+  let timeoutId;
+  
+  return function(...args) {
+    const now = Date.now();
+    
+    if (now - lastCall >= limit) {
+      fn.apply(this, args);
+      lastCall = now;
+    } else {
+      lastArgs = args;
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        fn.apply(this, lastArgs);
+        lastCall = Date.now();
+      }, limit - (now - lastCall));
+    }
+  };
+}
+\`\`\`
+
+**Visual:**
+\`\`\`
+Calls:    ─●●●●●●●●●●●●●──
+Executes: ─●───●───●───●──
+          (every 100ms max)
+\`\`\`
+
+**Debounce vs Throttle:**
+- Debounce: Wait for pause → search input
+- Throttle: Max rate → scroll/resize`
+      },
       { id: 3, text: "Flatten a nested array.", difficulty: "Easy" },
       { id: 4, text: "Deep clone an object.", difficulty: "Easy" },
       { id: 5, text: "Implement array map from scratch.", difficulty: "Easy" },
@@ -1340,7 +2321,90 @@ FROM sales;
       { id: 7, text: "Create a deep comparison function.", difficulty: "Medium" },
       { id: 8, text: "Implement a pub-sub pattern.", difficulty: "Medium" },
       { id: 9, text: "Build a virtual DOM diff algorithm.", difficulty: "Hard" },
-      { id: 10, text: "Implement a promise from scratch.", difficulty: "Hard" },
+      { 
+        id: 10, 
+        text: "Implement a promise from scratch.", 
+        difficulty: "Hard",
+        answer: `A simplified Promise implementation following Promises/A+ spec:
+
+\`\`\`javascript
+class MyPromise {
+  constructor(executor) {
+    this.state = 'pending';
+    this.value = undefined;
+    this.handlers = [];
+    
+    const resolve = (value) => {
+      if (this.state !== 'pending') return;
+      this.state = 'fulfilled';
+      this.value = value;
+      this.handlers.forEach(h => h.onFulfilled(value));
+    };
+    
+    const reject = (reason) => {
+      if (this.state !== 'pending') return;
+      this.state = 'rejected';
+      this.value = reason;
+      this.handlers.forEach(h => h.onRejected(reason));
+    };
+    
+    try {
+      executor(resolve, reject);
+    } catch (error) {
+      reject(error);
+    }
+  }
+  
+  then(onFulfilled, onRejected) {
+    return new MyPromise((resolve, reject) => {
+      const handle = (handler, resolver) => {
+        return (value) => {
+          try {
+            const result = handler ? handler(value) : value;
+            if (result instanceof MyPromise) {
+              result.then(resolve, reject);
+            } else {
+              resolver(result);
+            }
+          } catch (error) {
+            reject(error);
+          }
+        };
+      };
+      
+      if (this.state === 'pending') {
+        this.handlers.push({
+          onFulfilled: handle(onFulfilled, resolve),
+          onRejected: handle(onRejected, reject)
+        });
+      } else if (this.state === 'fulfilled') {
+        queueMicrotask(() => handle(onFulfilled, resolve)(this.value));
+      } else {
+        queueMicrotask(() => handle(onRejected, reject)(this.value));
+      }
+    });
+  }
+  
+  catch(onRejected) {
+    return this.then(null, onRejected);
+  }
+  
+  static resolve(value) {
+    return new MyPromise(res => res(value));
+  }
+  
+  static reject(reason) {
+    return new MyPromise((_, rej) => rej(reason));
+  }
+}
+\`\`\`
+
+**Key concepts:**
+- State machine: pending → fulfilled/rejected
+- Handlers queue for async resolution
+- Chaining returns new Promise
+- \`queueMicrotask\` for async execution`
+      },
     ],
     "aptitude-questions": [
       { id: 1, text: "Calculate the time complexity of nested loops.", difficulty: "Easy" },
@@ -1519,19 +2583,299 @@ FROM sales;
   },
   "data-analyst": {
     "interview-questions": [
-      { id: 1, text: "What is data visualization?", difficulty: "Easy" },
-      { id: 2, text: "How do you clean dirty data?", difficulty: "Easy" },
+      { 
+        id: 1, 
+        text: "What is data visualization?", 
+        difficulty: "Easy",
+        answer: `**Data Visualization** transforms raw data into visual formats (charts, graphs, maps) to communicate insights effectively.
+
+**Why it matters:**
+- Humans process visuals 60,000x faster than text
+- Reveals patterns, trends, and outliers
+- Enables data-driven decision making
+
+**Key Principles:**
+1. **Choose the right chart type:**
+
+| Data Type | Chart |
+|-----------|-------|
+| Comparison | Bar, Column |
+| Trend over time | Line, Area |
+| Part of whole | Pie, Treemap |
+| Distribution | Histogram, Box plot |
+| Relationship | Scatter plot |
+| Geographic | Map, Choropleth |
+
+2. **Design best practices:**
+- Start Y-axis at 0 (usually)
+- Use consistent colors
+- Remove chart junk (unnecessary elements)
+- Label clearly
+- Tell a story
+
+**Tools:**
+- **Beginner:** Excel, Google Sheets
+- **Intermediate:** Tableau, Power BI, Looker
+- **Advanced:** D3.js, Python (Matplotlib, Seaborn, Plotly)
+
+**Example insight:**
+\`\`\`
+Before: "Sales increased 23% in Q2"
+After: [Line chart showing monthly growth with Q2 highlighted]
+\`\`\``
+      },
+      { 
+        id: 2, 
+        text: "How do you clean dirty data?", 
+        difficulty: "Easy",
+        answer: `**Data Cleaning** prepares raw data for analysis by fixing errors and inconsistencies.
+
+**Common Issues & Solutions:**
+
+**1. Missing Values**
+\`\`\`python
+# Drop rows with missing values
+df.dropna()
+
+# Fill with mean/median/mode
+df['column'].fillna(df['column'].mean(), inplace=True)
+
+# Forward/backward fill
+df.fillna(method='ffill')
+\`\`\`
+
+**2. Duplicates**
+\`\`\`python
+# Find duplicates
+df.duplicated().sum()
+
+# Remove duplicates
+df.drop_duplicates(subset=['email'], keep='first')
+\`\`\`
+
+**3. Inconsistent Formatting**
+\`\`\`python
+# Standardize text
+df['name'] = df['name'].str.strip().str.title()
+
+# Fix dates
+df['date'] = pd.to_datetime(df['date'], format='%m/%d/%Y')
+\`\`\`
+
+**4. Outliers**
+\`\`\`python
+# IQR method
+Q1, Q3 = df['value'].quantile([0.25, 0.75])
+IQR = Q3 - Q1
+df = df[(df['value'] >= Q1 - 1.5*IQR) & 
+        (df['value'] <= Q3 + 1.5*IQR)]
+\`\`\`
+
+**5. Data Type Issues**
+\`\`\`python
+df['price'] = df['price'].str.replace('$', '').astype(float)
+\`\`\`
+
+**Best Practice:** Document all cleaning steps for reproducibility!`
+      },
       { id: 3, text: "What tools do you use for data analysis?", difficulty: "Easy" },
       { id: 4, text: "Explain the difference between qualitative and quantitative data.", difficulty: "Easy" },
-      { id: 5, text: "What is a pivot table and how do you use it?", difficulty: "Easy" },
+      { 
+        id: 5, 
+        text: "What is a pivot table and how do you use it?", 
+        difficulty: "Easy",
+        answer: `A **Pivot Table** summarizes large datasets by grouping, aggregating, and reorganizing data interactively.
+
+**Key Components:**
+- **Rows**: Categories to group by
+- **Columns**: Secondary grouping
+- **Values**: Metrics to aggregate (sum, count, avg)
+- **Filters**: Slice data by criteria
+
+**Example:** Sales data analysis
+
+| Date | Region | Product | Revenue |
+|------|--------|---------|---------|
+| Jan | East | A | 100 |
+| Jan | West | B | 200 |
+| Feb | East | A | 150 |
+
+**Pivot Table Output:**
+| Region | Product A | Product B | Total |
+|--------|-----------|-----------|-------|
+| East | 250 | 0 | 250 |
+| West | 0 | 200 | 200 |
+
+**SQL Equivalent:**
+\`\`\`sql
+SELECT 
+  region,
+  SUM(CASE WHEN product = 'A' THEN revenue ELSE 0 END) AS product_a,
+  SUM(CASE WHEN product = 'B' THEN revenue ELSE 0 END) AS product_b,
+  SUM(revenue) AS total
+FROM sales
+GROUP BY region;
+\`\`\`
+
+**Python (pandas):**
+\`\`\`python
+pd.pivot_table(df, 
+               values='revenue',
+               index='region',
+               columns='product',
+               aggfunc='sum',
+               fill_value=0)
+\`\`\`
+
+**When to use:**
+- Summarize sales by region/time
+- Compare categories
+- Find patterns in large datasets`
+      },
       { id: 6, text: "How do you handle missing data?", difficulty: "Easy" },
-      { id: 7, text: "Explain different chart types and their use cases.", difficulty: "Medium" },
-      { id: 8, text: "How do you present findings to stakeholders?", difficulty: "Medium" },
+      { 
+        id: 7, 
+        text: "Explain different chart types and their use cases.", 
+        difficulty: "Medium",
+        answer: `Choose charts based on what you're trying to show:
+
+**COMPARISON**
+| Chart | Use When | Example |
+|-------|----------|---------|
+| Bar | Compare categories | Sales by region |
+| Grouped Bar | Compare subcategories | Sales by region & product |
+| Column | Compare over time periods | Monthly revenue |
+
+**TREND**
+| Chart | Use When | Example |
+|-------|----------|---------|
+| Line | Show change over time | Stock prices |
+| Area | Show volume over time | Website traffic |
+| Sparkline | Compact trend in cell | KPI dashboard |
+
+**COMPOSITION**
+| Chart | Use When | Example |
+|-------|----------|---------|
+| Pie | Parts of whole (< 6 slices) | Market share |
+| Stacked Bar | Composition + comparison | Revenue by source per quarter |
+| Treemap | Hierarchical composition | Budget breakdown |
+
+**DISTRIBUTION**
+| Chart | Use When | Example |
+|-------|----------|---------|
+| Histogram | Frequency distribution | Age distribution |
+| Box Plot | Compare distributions | Salary by department |
+| Scatter | Relationship between 2 variables | Price vs Sales |
+
+**GEOSPATIAL**
+| Chart | Use When | Example |
+|-------|----------|---------|
+| Choropleth | Regional data | COVID cases by state |
+| Bubble Map | Location + magnitude | Store sales by city |
+
+**❌ Avoid:**
+- 3D charts (distort perception)
+- Pie with many slices
+- Dual Y-axis (confusing scales)`
+      },
+      { 
+        id: 8, 
+        text: "How do you present findings to stakeholders?", 
+        difficulty: "Medium",
+        answer: `**Structure your presentation:**
+
+**1. Start with the "So What?"**
+- Lead with insights, not methodology
+- "Sales dropped 15% because..." not "I ran a regression..."
+
+**2. Know Your Audience**
+
+| Audience | Focus On |
+|----------|----------|
+| Executives | Key metrics, recommendations, impact |
+| Managers | Trends, actionable insights |
+| Technical team | Methodology, data quality |
+
+**3. Use the Pyramid Principle**
+\`\`\`
+       [Recommendation]
+      /        |        \\
+[Insight 1] [Insight 2] [Insight 3]
+    |            |            |
+ [Data]       [Data]       [Data]
+\`\`\`
+
+**4. Visualization Best Practices**
+- One insight per slide
+- Use annotations to guide attention
+- Compare to benchmarks (vs. last year, vs. target)
+
+**5. Template Structure:**
+1. **Executive Summary** (1 slide)
+2. **Key Findings** (3-5 slides)
+3. **Recommendations** (1-2 slides)
+4. **Appendix** (methodology, detailed data)
+
+**Communication Tips:**
+- Avoid jargon ("correlation" → "relationship")
+- Quantify impact ("saves $50K/month")
+- Anticipate questions
+- End with clear next steps
+
+**Tools:** PowerPoint, Google Slides, Tableau dashboards`
+      },
       { id: 9, text: "What is data normalization?", difficulty: "Medium" },
       { id: 10, text: "How do you validate data quality?", difficulty: "Medium" },
       { id: 11, text: "Explain the concept of data granularity.", difficulty: "Medium" },
       { id: 12, text: "How do you approach exploratory data analysis?", difficulty: "Medium" },
-      { id: 13, text: "What is the difference between correlation and causation?", difficulty: "Medium" },
+      { 
+        id: 13, 
+        text: "What is the difference between correlation and causation?", 
+        difficulty: "Medium",
+        answer: `**Correlation** = Two variables move together
+**Causation** = One variable directly causes changes in another
+
+**Key Difference:**
+\`\`\`
+Correlation: Ice cream sales ↔ Drowning deaths (both ↑ in summer)
+Causation: Smoking → Lung cancer (direct cause-effect)
+\`\`\`
+
+**Correlation Examples:**
+- Height and weight (correlated, not causal)
+- Study hours and test scores (correlated, likely causal)
+- Shoe size and reading ability in children (correlated via age, not causal)
+
+**How to Test for Causation:**
+
+**1. Randomized Controlled Trial (RCT)**
+\`\`\`
+Group A: Gets treatment → Measure outcome
+Group B: No treatment → Measure outcome
+Compare results
+\`\`\`
+
+**2. Natural Experiments**
+- Find situations where one variable changed naturally
+- Compare before/after or similar groups
+
+**3. Koch's Postulates (for causal claims):**
+1. Temporal precedence (cause before effect)
+2. Correlation (variables related)
+3. No alternative explanations
+
+**Correlation Strength:**
+\`\`\`
+r = +1.0  Perfect positive
+r = +0.7  Strong positive
+r = +0.3  Weak positive
+r = 0     No correlation
+r = -0.7  Strong negative
+\`\`\`
+
+**Famous fallacy:** "Correlation ≠ Causation"
+More pirates → Lower global temperatures 🏴‍☠️❄️`
+      },
       { id: 14, text: "How do you create effective dashboards?", difficulty: "Medium" },
       { id: 15, text: "Explain time series analysis basics.", difficulty: "Hard" },
       { id: 16, text: "How do you handle large datasets efficiently?", difficulty: "Hard" },
@@ -1540,7 +2884,69 @@ FROM sales;
     ],
     "dsa-questions": [
       { id: 1, text: "Write a function to detect outliers.", difficulty: "Medium" },
-      { id: 2, text: "Implement a moving average calculation.", difficulty: "Easy" },
+      { 
+        id: 2, 
+        text: "Implement a moving average calculation.", 
+        difficulty: "Easy",
+        answer: `**Moving Average** smooths data by averaging nearby points.
+
+**Simple Moving Average (SMA):**
+\`\`\`python
+def simple_moving_average(data, window):
+    result = []
+    for i in range(len(data)):
+        if i < window - 1:
+            result.append(None)  # Not enough data
+        else:
+            avg = sum(data[i - window + 1:i + 1]) / window
+            result.append(avg)
+    return result
+
+# Example
+prices = [10, 12, 11, 13, 15, 14, 16]
+sma_3 = simple_moving_average(prices, 3)
+# [None, None, 11.0, 12.0, 13.0, 14.0, 15.0]
+\`\`\`
+
+**Pandas Implementation:**
+\`\`\`python
+import pandas as pd
+
+df['SMA_7'] = df['price'].rolling(window=7).mean()
+df['SMA_30'] = df['price'].rolling(window=30).mean()
+\`\`\`
+
+**Exponential Moving Average (EMA):**
+More weight to recent values.
+\`\`\`python
+def ema(data, span):
+    alpha = 2 / (span + 1)
+    result = [data[0]]
+    for i in range(1, len(data)):
+        result.append(alpha * data[i] + (1 - alpha) * result[-1])
+    return result
+
+# Pandas
+df['EMA_7'] = df['price'].ewm(span=7).mean()
+\`\`\`
+
+**SQL:**
+\`\`\`sql
+SELECT 
+  date,
+  value,
+  AVG(value) OVER (
+    ORDER BY date 
+    ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+  ) AS moving_avg_7
+FROM metrics;
+\`\`\`
+
+**Use Cases:**
+- Stock price trends
+- Sales forecasting
+- Noise reduction in sensor data`
+      },
       { id: 3, text: "Create a function to calculate percentiles.", difficulty: "Medium" },
       { id: 4, text: "Write a data deduplication algorithm.", difficulty: "Medium" },
     ],
@@ -1552,7 +2958,61 @@ FROM sales;
       { id: 5, text: "Perform a break-even analysis.", difficulty: "Hard" },
     ],
     "sql-questions": [
-      { id: 1, text: "Write complex aggregation queries.", difficulty: "Medium" },
+      { 
+        id: 1, 
+        text: "Write complex aggregation queries.", 
+        difficulty: "Medium",
+        answer: `Complex aggregations combine multiple aggregate functions, groupings, and conditions.
+
+**Multi-level Aggregation:**
+\`\`\`sql
+SELECT 
+  region,
+  product_category,
+  COUNT(*) as order_count,
+  SUM(revenue) as total_revenue,
+  AVG(revenue) as avg_order_value,
+  MIN(order_date) as first_order,
+  MAX(order_date) as last_order
+FROM orders
+GROUP BY region, product_category
+HAVING SUM(revenue) > 10000
+ORDER BY total_revenue DESC;
+\`\`\`
+
+**Aggregation with CASE:**
+\`\`\`sql
+SELECT 
+  month,
+  SUM(CASE WHEN channel = 'online' THEN revenue ELSE 0 END) as online_rev,
+  SUM(CASE WHEN channel = 'store' THEN revenue ELSE 0 END) as store_rev,
+  SUM(revenue) as total_rev,
+  ROUND(SUM(CASE WHEN channel = 'online' THEN revenue ELSE 0 END) * 100.0 / 
+        SUM(revenue), 2) as online_pct
+FROM sales
+GROUP BY month;
+\`\`\`
+
+**Rollup for Subtotals:**
+\`\`\`sql
+SELECT 
+  COALESCE(region, 'TOTAL') as region,
+  COALESCE(category, 'ALL CATEGORIES') as category,
+  SUM(sales) as total_sales
+FROM orders
+GROUP BY ROLLUP(region, category);
+\`\`\`
+
+**Window + Aggregate:**
+\`\`\`sql
+SELECT 
+  date,
+  daily_sales,
+  SUM(daily_sales) OVER (ORDER BY date) as running_total,
+  AVG(daily_sales) OVER (ORDER BY date ROWS 6 PRECEDING) as weekly_avg
+FROM daily_metrics;
+\`\`\``
+      },
       { id: 2, text: "Create a dashboard-ready query.", difficulty: "Medium" },
       { id: 3, text: "Write a query to calculate running totals.", difficulty: "Medium" },
       { id: 4, text: "How do you pivot data using SQL?", difficulty: "Medium" },
@@ -1560,7 +3020,66 @@ FROM sales;
       { id: 6, text: "Create a query to identify trends over time.", difficulty: "Hard" },
     ],
     "core-cs-questions": [
-      { id: 1, text: "What are ETL processes?", difficulty: "Medium" },
+      { 
+        id: 1, 
+        text: "What are ETL processes?", 
+        difficulty: "Medium",
+        answer: `**ETL = Extract, Transform, Load**
+
+The process of moving data from source systems to a data warehouse.
+
+**1. Extract**
+Pull data from various sources:
+- Databases (MySQL, PostgreSQL)
+- APIs (REST, SOAP)
+- Files (CSV, JSON, Excel)
+- SaaS applications (Salesforce, HubSpot)
+
+\`\`\`python
+# Extract from database
+df = pd.read_sql("SELECT * FROM orders", connection)
+
+# Extract from API
+response = requests.get("https://api.example.com/data")
+data = response.json()
+\`\`\`
+
+**2. Transform**
+Clean and reshape data:
+- Remove duplicates
+- Handle missing values
+- Convert data types
+- Apply business rules
+- Join datasets
+
+\`\`\`python
+# Transform
+df['date'] = pd.to_datetime(df['date_string'])
+df = df.dropna(subset=['customer_id'])
+df['revenue'] = df['quantity'] * df['unit_price']
+\`\`\`
+
+**3. Load**
+Write to destination:
+- Data warehouse (Snowflake, BigQuery)
+- Data lake (S3, Azure Blob)
+- Database
+
+\`\`\`python
+# Load to database
+df.to_sql('orders_clean', engine, if_exists='replace')
+\`\`\`
+
+**ETL Tools:**
+- **Code-based:** Python, Apache Spark
+- **GUI-based:** Talend, Informatica, SSIS
+- **Cloud-native:** AWS Glue, Azure Data Factory
+- **Modern:** dbt, Fivetran, Airbyte
+
+**ELT vs ETL:**
+- ETL: Transform before loading (traditional)
+- ELT: Load raw, transform in warehouse (modern, scalable)`
+      },
       { id: 2, text: "Explain data warehousing concepts.", difficulty: "Medium" },
       { id: 3, text: "What is the difference between OLTP and OLAP?", difficulty: "Hard" },
     ],
