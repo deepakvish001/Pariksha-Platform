@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import {
-  User,
-  Mail,
   MapPin,
   Calendar,
   Globe,
@@ -11,7 +10,6 @@ import {
   Linkedin,
   Github,
   Instagram,
-  FileText,
   Code,
   ExternalLink,
   ArrowLeft,
@@ -19,7 +17,6 @@ import {
   UserX,
   Sparkles,
   Target,
-  BookOpen,
   Briefcase,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -257,8 +254,36 @@ const PublicProfile = () => {
     profile?.codechef_url ||
     profile?.geeksforgeeks_url;
 
+  const siteUrl = window.location.origin;
+  const profileUrl = `${siteUrl}/u/${profile?.username}`;
+  const profileTitle = `${profile?.full_name} (@${profile?.username}) | UniDash`;
+  const profileDescription = profile?.bio 
+    ? profile.bio.slice(0, 155) + (profile.bio.length > 155 ? "..." : "")
+    : `Check out ${profile?.full_name}'s profile on UniDash. ${profile?.occupation ? `${profile.occupation}` : ""} ${profile?.location ? `from ${profile.location}` : ""}`.trim();
+
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{profileTitle}</title>
+        <meta name="description" content={profileDescription} />
+        <link rel="canonical" href={profileUrl} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="profile" />
+        <meta property="og:url" content={profileUrl} />
+        <meta property="og:title" content={profileTitle} />
+        <meta property="og:description" content={profileDescription} />
+        {profile?.avatar_url && <meta property="og:image" content={profile.avatar_url} />}
+        <meta property="profile:username" content={profile?.username || ""} />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:url" content={profileUrl} />
+        <meta name="twitter:title" content={profileTitle} />
+        <meta name="twitter:description" content={profileDescription} />
+        {profile?.avatar_url && <meta name="twitter:image" content={profile.avatar_url} />}
+      </Helmet>
+      
       <Navbar />
 
       <main className="section-container py-12">
