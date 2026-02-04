@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -142,12 +143,14 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             className="flex w-full items-center justify-center px-2 py-2.5 text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 rounded-md transition-all duration-200 hover:scale-105"
             onClick={() => setIsOpen(!isOpen)}
           >
             {GroupIcon && <GroupIcon className="h-4 w-4 transition-transform duration-200" />}
-          </button>
+          </Button>
         </TooltipTrigger>
         <TooltipContent side="right" align="center">
           {title}
