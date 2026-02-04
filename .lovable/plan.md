@@ -1,231 +1,228 @@
 
-# UI/UX Improvement Plan: Companies and Startups Section
+# UI/UX Improvement Plan: Company Detail Pages
 
 ## Overview
-This plan transforms the Companies listing page and Company Detail pages into a more organized, professional, and user-friendly experience. The design will follow the established patterns from Position Resources while adding company-specific enhancements.
+This plan transforms the Company Detail pages into a cleaner, more organized, and professional design that follows the established patterns from Position Resources while being simpler and more focused on the company-specific content.
 
 ---
 
-## Part 1: Companies Listing Page (CompanyResources.tsx)
+## Current Issues Identified
 
-### Current Issues
-- Simple list-based layout lacks visual hierarchy
-- No progress tracking or statistics summary
-- Limited filtering options
-- Mobile experience could be better optimized
+### 1. Table Header Mismatch with Rows
+- The table header uses a fixed grid layout that doesn't visually align with the responsive row layout
+- Header is hidden on mobile but rows show different content, causing visual inconsistency
 
-### Proposed Changes
+### 2. Grid-Based Layout Complexity
+- The current `CompanyQuestionRow` uses a complex grid system that's hard to maintain
+- Different column counts between header and rows when `showCategory` is toggled
 
-**1.1 Add Global Statistics Card**
-Create a summary card at the top showing:
-- Total companies available
-- Companies by category breakdown (Product, Service, Startup)
-- Favorited companies count
-- Companies currently hiring count
+### 3. Tab Navigation Could Be Cleaner
+- Tabs work but could have better visual separation
+- Missing a clear active state indicator
 
-**1.2 Convert to Table-Based Layout**
-Transform the list into a proper data table with columns:
-| # | Star | Company Name | Category | Type | Status | Actions |
+### 4. Non-Question Tabs Are Card-Heavy
+- Job Portals, Projects, Resume Templates, and Cold DMs use card grids
+- Could benefit from a more unified table-based approach for consistency
 
-Features:
-- Sortable columns (by name, category, type)
-- Fixed header for better scrolling
-- Hover states with subtle background change
-- Row click navigates to detail page
-
-**1.3 Enhanced Filtering**
-- Add category dropdown filter (FinTech, Technology, E-commerce, etc.)
-- Add company type chips (Product, Service, Startup)
-- Keep existing tabs but improve visual design
-- Add "Clear All Filters" button when filters are active
-
-**1.4 Visual Improvements**
-- Consistent badge styling matching Position Resources
-- Better mobile responsiveness with collapsible columns
-- Smooth animations on filter/sort changes
-- Company logos placeholder icons by category
+### 5. Missing Features from Position Resources
+- No layout toggle (Sections vs Tabs view)
+- No difficulty filter dropdown
+- No "Random Question" feature
+- No Notes system for questions
 
 ---
 
-## Part 2: Company Detail Page (CompanyDetail.tsx)
+## Proposed Improvements
 
-### Current Issues
-- Table layout is rigid and doesn't adapt well to different content types
-- Limited visual feedback and interactivity
-- Tabs could be more visually distinct
-- Need better organization of content sections
+### Phase 1: Unified Table Component (High Priority)
 
-### Proposed Changes
+**1.1 Create Proper HTML Table Structure**
+Replace the grid-based `CompanyQuestionRow` with a proper `<Table>` component usage:
 
-**2.1 Enhanced Header Section**
-- Larger company icon with category-based gradient colors
-- Quick stats row: Total Questions | Solved | In Progress | Hiring Status
-- Progress bar showing overall completion percentage
-- Favorite button with animation feedback
+```
+| # | Question | Difficulty | Category* | Solved | Revision |
+```
 
-**2.2 Improved Tab Navigation**
-Replace current underline tabs with a more prominent tab design:
-- Icon + Label for each tab
-- Badge showing item count per tab
-- Active tab with filled background
-- Horizontal scroll on mobile
+- Use actual `<tr>`, `<td>` elements via shadcn Table components
+- Proper column alignment between header and rows
+- Responsive behavior: hide Category column on mobile
+- Clickable rows for answer expansion (keep current behavior)
 
-**2.3 Unified Question Table Component**
-Create a reusable table matching Position Resources style:
-- Consistent column widths across all question tabs
-- Proper table header with sortable columns
-- Checkbox-based solved/revision toggles
-- Inline answer expansion with smooth animations
-- Notes column with quick preview
+**1.2 Responsive Column Strategy**
+```
+Desktop (sm+):
+| # | Question | Difficulty | Category | ✓ | ★ |
 
-**2.4 Add Category Section View**
-For question tabs, add an optional "Section View" that groups questions by difficulty:
-- Easy section (collapsible)
-- Medium section (collapsible)  
-- Hard section (collapsible)
-- Each with its own progress bar
+Mobile (< sm):
+| # | Question | ✓/★ (stacked) |
+Difficulty + Category shown inline below question text
+```
 
-**2.5 Enhanced Non-Question Tabs**
+### Phase 2: Enhanced Tab Navigation
 
-**Job Portals Tab:**
-- Card-based grid layout
-- External link indicator
-- "Applied" status toggle
-- Location badges
+**2.1 Cleaner Tab Design**
+- Keep icons but improve spacing
+- Add subtle underline indicator for active tab
+- Improve wrapping behavior for narrow viewports
+- Group tabs logically:
+  - Questions: SQL | Interview | DSA | Aptitude
+  - Resources: Jobs | Projects | Resumes | DMs
 
-**Projects Tab:**
-- Larger project cards with technology badges
-- Difficulty indicator
-- Time estimate display
-- Expandable description
+**2.2 Add Tab Group Headers**
+```
+Questions
+[SQL] [Interview] [DSA] [Aptitude]
 
-**Resume Templates Tab:**
-- Gallery grid with preview thumbnails
-- Download/View buttons
-- Style category badges
-- Filter by style
+Resources  
+[Job Portals] [Projects] [Resume Templates] [Cold DMs]
+```
 
-**Cold DMs Tab:**
-- Card layout with copy button
-- Category tags
-- "Used" status toggle
-- Character count display
+### Phase 3: Question Tab Improvements
 
----
+**3.1 Add Difficulty Filter Dropdown**
+Same as Position Resources:
+- All Levels (default)
+- Easy (green dot)
+- Medium (amber dot)  
+- Hard (red dot)
 
-## Part 3: Shared Components
+**3.2 Add Results Count**
+Show "X questions found" below search bar with pending badge
 
-### 3.1 New Components to Create
+**3.3 Improved Empty States**
+Better visual design for "No questions found" with clear CTAs
 
-**CompanyStatsCard**
-- Displays company-level statistics
-- Progress ring showing completion percentage
-- Difficulty breakdown badges
+### Phase 4: Resource Tabs Improvements
 
-**CompanyQuestionTable**
-- Unified table for SQL, Interview, DSA, Aptitude
-- Matches QuestionRow component from Position Resources
-- Supports inline answer expansion
+**4.1 Job Portals - Keep Card Layout**
+Cards work well here, but improve:
+- Better hover states
+- Clearer "Applied" toggle visual
+- Mobile-optimized 1-column layout
 
-**CompanyResourceCard**
-- Reusable card for Job Portals, Projects, Templates, DMs
-- Configurable for different content types
-- Action buttons and status toggles
+**4.2 Projects - Enhance Cards**
+- Add difficulty indicator badge
+- Better technology tag overflow handling
+- Optional time estimate display
 
-### 3.2 Existing Components to Reuse
-- `QuestionRow` - Import and adapt for company context
-- `AnswerPanel` - Already integrated
-- `SectionProgressBar` - For difficulty sections
-- `CategorySection` - Adapt for difficulty grouping
+**4.3 Resume Templates - Gallery Style**
+- Keep current gallery, improve hover preview
+- Add "Download" action button
+- Style category filters
 
----
+**4.4 Cold DMs - Card with Better Copy UX**
+- Keep cards but improve copy feedback
+- Show character count more prominently
+- Add platform badges (LinkedIn, Email, etc.)
 
-## Technical Implementation
+### Phase 5: Overall Polish
 
-### File Changes
+**5.1 Consistent Card/Border Styling**
+- All sections use same `border-border/50` styling
+- Consistent `rounded-lg` corners
+- Uniform padding scale
 
-**src/pages/library/CompanyResources.tsx**
-- Add statistics summary card
-- Convert to proper Table component usage
-- Add category filter dropdown
-- Improve type filter chips
-- Enhanced mobile layout
+**5.2 Better Loading States**
+- Skeleton loaders for initial load
+- Smooth transitions between tabs
 
-**src/pages/library/CompanyDetail.tsx**
-- Refactor header with stats
-- Update tab design with icons and counts
-- Consolidate question tables to use shared component
-- Add section/list view toggle for questions
-- Redesign non-question tab layouts
-
-**src/components/library/CompanyStatsCard.tsx** (New)
-- Company progress summary
-- Difficulty breakdown
-- Quick action buttons
-
-**src/components/library/CompanyQuestionRow.tsx** (New)
-- Simplified version of QuestionRow for company context
-- Without notes column (keeps it simpler)
-- Same answer expansion behavior
-
-**src/data/companyDetailData.ts**
-- No changes needed - data structure supports new UI
+**5.3 Progress Stats Enhancement**
+Add to header card:
+- Questions by difficulty breakdown
+- Quick toggle for "Show solved only"
 
 ---
 
-## UI/UX Improvements Summary
+## Technical Implementation Details
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| Layout | Simple list rows | Proper data tables with headers |
-| Progress | None visible | Stats cards with progress bars |
-| Filtering | Basic tabs only | Tabs + dropdowns + chips |
-| Tables | Inconsistent styling | Unified component, consistent widths |
-| Answers | Expandable (done) | Keep current implementation |
-| Mobile | Basic responsive | Optimized columns, touch-friendly |
-| Animations | Basic | Smooth transitions, feedback |
-| Visual Hierarchy | Flat | Clear sections, emphasis on actions |
+### Files to Modify
+
+**1. `src/components/library/CompanyQuestionRow.tsx`**
+Major refactor to use proper Table components:
+- Import `TableCell` instead of using divs
+- Return `<tr>` element with proper `<td>` children
+- Keep answer expansion logic
+- Mobile-friendly responsive approach with CSS `hidden`/`block` classes
+
+**2. `src/pages/library/CompanyDetail.tsx`**
+Updates:
+- Replace `QuestionsSection` with proper `<Table>` structure
+- Add difficulty filter state and dropdown
+- Improve tab grouping with visual separators
+- Add results count below search
+- Better responsive column handling in table header
+
+**3. `src/components/ui/table.tsx`**
+Minor enhancement:
+- Remove `table-fixed` class to allow flexible column widths
+- Ensure proper overflow handling
+
+### New Component Structure
+
+```typescript
+// Updated QuestionsSection
+<div className="rounded-lg border border-border/50 overflow-hidden">
+  <Table>
+    <TableHeader>
+      <TableRow className="bg-muted/30">
+        <TableHead className="w-12">#</TableHead>
+        <TableHead>Question</TableHead>
+        <TableHead className="w-24">Difficulty</TableHead>
+        {showCategory && <TableHead className="hidden md:table-cell w-28">Category</TableHead>}
+        <TableHead className="w-16 text-center">Solved</TableHead>
+        <TableHead className="w-16 text-center">Revision</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {questions.map((q) => (
+        <CompanyQuestionRow key={q.id} {...props} />
+      ))}
+    </TableBody>
+  </Table>
+</div>
+```
+
+### Responsive Behavior Summary
+
+| Viewport | Columns Shown | Behavior |
+|----------|--------------|----------|
+| < 640px (mobile) | #, Question, Actions | Difficulty/Category inline, stacked actions |
+| 640-768px (sm) | #, Question, Difficulty, Solved, Revision | Category hidden |
+| 768px+ (md) | All columns | Full table layout |
 
 ---
 
-## Mobile-First Considerations
+## UI Before vs After
 
-- Table columns collapse intelligently (hide Category on mobile)
-- Tabs become horizontally scrollable
-- Action buttons sized for touch (min 44px tap targets)
-- Stats card stacks vertically on mobile
-- Filter chips wrap nicely
-- Swipe gestures for navigation (future enhancement)
-
----
-
-## Estimated Scope
-
-**Phase 1: Companies Listing Page**
-- Add stats summary card
-- Convert to table layout
-- Enhanced filters
-
-**Phase 2: Company Detail - Questions**
-- Header redesign with stats
-- Tab improvements with icons
-- Unified question table component
-- Section view toggle
-
-**Phase 3: Company Detail - Other Tabs**
-- Job Portals card grid
-- Projects enhanced cards
-- Resume templates gallery
-- Cold DMs card layout
+| Aspect | Current | Proposed |
+|--------|---------|----------|
+| Table Structure | Grid-based divs | Proper HTML table |
+| Column Alignment | Misaligned | Perfectly aligned |
+| Mobile Layout | Complex grid | Simplified 2-3 column |
+| Difficulty Filter | None | Dropdown selector |
+| Tab Groups | Flat list | Grouped by type |
+| Empty States | Basic | Polished with icons |
+| Results Count | None | "X questions found" |
 
 ---
 
-## Design Consistency
+## Implementation Order
 
-All changes will maintain consistency with:
-- Existing color palette (orange gradients, muted backgrounds)
-- Badge styling (difficulty colors: green/amber/red)
-- Animation patterns (Framer Motion, 0.2s transitions)
-- Typography scale (Tailwind defaults)
-- Dark/Light mode support
-- Existing component library (shadcn/ui)
+1. **Table Refactor** - Convert CompanyQuestionRow to use TableCell
+2. **Update QuestionsSection** - Use proper Table wrapper with aligned headers
+3. **Add Difficulty Filter** - State + dropdown UI
+4. **Improve Tab Navigation** - Better grouping and indicators
+5. **Polish Resource Tabs** - Minor enhancements to cards
+6. **Add Results Count & Empty States** - Final polish
+
+---
+
+## Summary
+
+This plan focuses on:
+1. Fixing table alignment issues with proper HTML table structure
+2. Adding missing features (difficulty filter, results count)
+3. Improving responsive behavior for sidebar open/closed states
+4. Polishing the overall design to match Position Resources quality
+
+The changes maintain full backward compatibility with existing features while significantly improving the user experience.
