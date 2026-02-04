@@ -238,11 +238,46 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
         <div className="flex items-center justify-end gap-2 mt-4">
           <span className="text-xs text-muted-foreground">Less</span>
           <div className="flex gap-[2px]">
-            <div className="h-[10px] w-[10px] rounded-[2px] bg-[#161b22]" />
-            <div className="h-[10px] w-[10px] rounded-[2px] bg-[#0e4429]" />
-            <div className="h-[10px] w-[10px] rounded-[2px] bg-[#006d32]" />
-            <div className="h-[10px] w-[10px] rounded-[2px] bg-[#26a641]" />
-            <div className="h-[10px] w-[10px] rounded-[2px] bg-[#39d353]" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="h-[10px] w-[10px] rounded-[2px] bg-[#161b22] cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                <p>No activity</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="h-[10px] w-[10px] rounded-[2px] bg-[#0e4429] cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                <p>1 submission</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="h-[10px] w-[10px] rounded-[2px] bg-[#006d32] cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                <p>2-3 submissions</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="h-[10px] w-[10px] rounded-[2px] bg-[#26a641] cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                <p>4-5 submissions</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="h-[10px] w-[10px] rounded-[2px] bg-[#39d353] cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                <p>6+ submissions</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
           <span className="text-xs text-muted-foreground">More</span>
         </div>
