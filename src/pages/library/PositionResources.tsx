@@ -310,78 +310,88 @@ const PositionResources = () => {
         </div>
       </header>
 
-      <main className="p-6 md:p-8 space-y-6">
-        {/* Role Tabs - Horizontally Scrollable */}
+      <main className="p-4 md:p-6 lg:p-8 space-y-4">
+        {/* Navigation Controls - Compact Grid Layout */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
+          className="space-y-3"
         >
-          <ScrollArea className="w-full whitespace-nowrap">
-            <div className="flex gap-2 pb-3">
-              {roles.map((role) => {
-                const IconComponent = iconMap[role.icon];
-                return (
-                  <Button
-                    key={role.id}
-                    variant={selectedRole === role.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedRole(role.id)}
-                    className={cn(
-                      "flex items-center gap-2 shrink-0 transition-all",
-                      selectedRole === role.id && "shadow-md"
-                    )}
-                  >
-                    {IconComponent && <IconComponent className="h-4 w-4" />}
-                    <span>{role.name}</span>
-                  </Button>
-                );
-              })}
-            </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          {/* Row 1: Role Select + View Mode */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Role Selector */}
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger className="w-full sm:w-72">
+                {(() => {
+                  const role = roles.find((r) => r.id === selectedRole);
+                  const IconComponent = role ? iconMap[role.icon] : null;
+                  return (
+                    <div className="flex items-center gap-2">
+                      {IconComponent && <IconComponent className="h-4 w-4" />}
+                      <span className="truncate">{role?.name || "Select Role"}</span>
+                    </div>
+                  );
+                })()}
+              </SelectTrigger>
+              <SelectContent>
+                {roles.map((role) => {
+                  const IconComponent = iconMap[role.icon];
+                  return (
+                    <SelectItem key={role.id} value={role.id}>
+                      <div className="flex items-center gap-2">
+                        {IconComponent && <IconComponent className="h-4 w-4" />}
+                        <span>{role.name}</span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
 
-          {/* View Mode + Category Tabs */}
-          <div className="flex flex-col sm:flex-row gap-4">
             {/* View Mode Toggle */}
-            <Tabs
-              value={viewMode}
-              onValueChange={(v) => setViewMode(v as ViewMode)}
-              className="shrink-0"
-            >
-              <TabsList className="bg-muted/50">
-                <TabsTrigger value="all" className="gap-2">
-                  <Layers className="h-4 w-4" />
-                  All Questions
-                </TabsTrigger>
-                <TabsTrigger value="revision" className="gap-2">
-                  <BookmarkCheck className="h-4 w-4" />
-                  Revision ({revisionQuestions.length})
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            {/* Category Tabs - Only show in "all" mode */}
-            {viewMode === "all" && (
-              <Tabs
-                value={selectedCategory}
-                onValueChange={setSelectedCategory}
-                className="flex-1"
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("all")}
+                className="flex-1 sm:flex-none gap-2"
               >
-                <TabsList className="w-full justify-start overflow-x-auto flex-nowrap bg-muted/50">
-                  {categories.map((category) => (
-                    <TabsTrigger
-                      key={category.id}
-                      value={category.id}
-                      className="shrink-0"
-                    >
-                      {category.name}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            )}
+                <Layers className="h-4 w-4" />
+                <span className="hidden sm:inline">All Questions</span>
+                <span className="sm:hidden">All</span>
+              </Button>
+              <Button
+                variant={viewMode === "revision" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("revision")}
+                className="flex-1 sm:flex-none gap-2"
+              >
+                <BookmarkCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">Revision</span>
+                <span className="sm:hidden">Rev</span>
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  {revisionQuestions.length}
+                </Badge>
+              </Button>
+            </div>
           </div>
+
+          {/* Row 2: Category Pills - Only show in "all" mode */}
+          {viewMode === "all" && (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(category.id)}
+                  className="text-xs sm:text-sm"
+                >
+                  {category.name}
+                </Button>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* Search and Filter Bar */}
