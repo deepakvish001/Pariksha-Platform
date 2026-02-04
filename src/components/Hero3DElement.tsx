@@ -1,42 +1,31 @@
 import { motion } from "framer-motion";
-import heroIllustration from "@/assets/hero-illustration-3d.png";
+import heroCharacter from "@/assets/hero-character.png";
 
 const Hero3DElement = () => {
   return (
-    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[400px] h-[500px] lg:w-[500px] lg:h-[650px] pointer-events-none hidden lg:block">
-      {/* Decorative background elements */}
+    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[350px] h-[450px] lg:w-[450px] lg:h-[580px] pointer-events-none hidden lg:block">
+      {/* Subtle glow behind character */}
       <motion.div
-        className="absolute top-10 right-20 w-72 h-72 bg-primary/20 rounded-full blur-3xl"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/30 rounded-full blur-3xl"
         animate={{
-          scale: [1, 1.1, 1],
+          scale: [1, 1.2, 1],
           opacity: [0.3, 0.5, 0.3],
         }}
         transition={{
-          duration: 4,
+          duration: 3,
           repeat: Infinity,
           ease: "easeInOut",
-        }}
-      />
-      <motion.div
-        className="absolute bottom-20 right-10 w-48 h-48 bg-orange-400/20 rounded-full blur-2xl"
-        animate={{
-          scale: [1, 1.15, 1],
-          opacity: [0.2, 0.4, 0.2],
-        }}
-        transition={{
-          duration: 5,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 1,
         }}
       />
 
-      {/* Floating decorative shapes */}
+      {/* Floating particles around character */}
       <motion.div
-        className="absolute top-20 right-8 w-4 h-4 bg-primary rounded-full"
+        className="absolute top-16 right-12 w-3 h-3 bg-primary rounded-full"
         animate={{
-          y: [-10, 10, -10],
-          opacity: [0.6, 1, 0.6],
+          y: [-15, 15, -15],
+          x: [-5, 5, -5],
+          opacity: [0.5, 1, 0.5],
+          scale: [1, 1.2, 1],
         }}
         transition={{
           duration: 3,
@@ -45,73 +34,107 @@ const Hero3DElement = () => {
         }}
       />
       <motion.div
-        className="absolute top-40 right-4 w-3 h-3 bg-orange-400 rounded-full"
+        className="absolute top-32 left-4 w-2 h-2 bg-orange-400 rounded-full"
         animate={{
           y: [10, -10, 10],
-          opacity: [0.5, 0.8, 0.5],
+          opacity: [0.4, 0.8, 0.4],
         }}
         transition={{
-          duration: 4,
+          duration: 2.5,
           repeat: Infinity,
           ease: "easeInOut",
-          delay: 0.5,
+          delay: 0.3,
         }}
       />
       <motion.div
-        className="absolute bottom-32 right-16 w-2 h-2 bg-primary/80 rounded-full"
+        className="absolute bottom-24 right-8 w-2.5 h-2.5 bg-primary/80 rounded-full"
         animate={{
-          y: [-8, 8, -8],
-          x: [-4, 4, -4],
-          opacity: [0.4, 0.7, 0.4],
+          y: [-10, 10, -10],
+          x: [5, -5, 5],
+          opacity: [0.6, 1, 0.6],
         }}
         transition={{
-          duration: 3.5,
+          duration: 2.8,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 0.6,
+        }}
+      />
+      <motion.div
+        className="absolute top-48 right-4 w-1.5 h-1.5 bg-orange-300 rounded-full"
+        animate={{
+          y: [8, -8, 8],
+          opacity: [0.3, 0.7, 0.3],
+        }}
+        transition={{
+          duration: 2,
           repeat: Infinity,
           ease: "easeInOut",
           delay: 1,
         }}
       />
 
-      {/* Main illustration with floating animation */}
+      {/* Main 3D character with dynamic animations */}
       <motion.div
         className="relative z-10 w-full h-full flex items-center justify-center"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.3 }}
+        initial={{ opacity: 0, scale: 0.8, y: 50 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
       >
         <motion.img
-          src={heroIllustration}
-          alt="Professional woman working"
-          className="w-full h-full object-contain drop-shadow-2xl"
+          src={heroCharacter}
+          alt="Professional 3D character"
+          className="w-full h-full object-contain"
           animate={{
-            y: [-8, 8, -8],
+            y: [-6, 6, -6],
+            rotate: [-1, 1, -1],
+            scale: [1, 1.02, 1],
           }}
           transition={{
-            duration: 5,
+            duration: 4,
             repeat: Infinity,
             ease: "easeInOut",
           }}
         />
       </motion.div>
 
-      {/* Decorative ring */}
+      {/* Sparkle effects */}
       <motion.div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[90%] border border-primary/10 rounded-full"
+        className="absolute top-20 right-20 w-1 h-1 bg-white rounded-full"
         animate={{
-          rotate: 360,
-          scale: [1, 1.02, 1],
+          opacity: [0, 1, 0],
+          scale: [0.5, 1.5, 0.5],
         }}
         transition={{
-          rotate: {
-            duration: 20,
-            repeat: Infinity,
-            ease: "linear",
-          },
-          scale: {
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut",
-          },
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+      <motion.div
+        className="absolute top-40 left-16 w-1 h-1 bg-white rounded-full"
+        animate={{
+          opacity: [0, 1, 0],
+          scale: [0.5, 1.5, 0.5],
+        }}
+        transition={{
+          duration: 2.5,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 0.8,
+        }}
+      />
+      <motion.div
+        className="absolute bottom-32 right-24 w-1 h-1 bg-white rounded-full"
+        animate={{
+          opacity: [0, 1, 0],
+          scale: [0.5, 1.5, 0.5],
+        }}
+        transition={{
+          duration: 1.8,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 1.5,
         }}
       />
     </div>
