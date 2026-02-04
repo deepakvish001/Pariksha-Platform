@@ -1,87 +1,142 @@
 
-
-# Enhanced Company Detail Page - Responsive & Professional Design
+# UI/UX Improvement Plan: Companies and Startups Section
 
 ## Overview
-Transform the individual company pages (e.g., `/library/companies/accenture`) into a more compact, professional, and fully responsive design that maximizes screen real estate and minimizes unnecessary scrolling.
+This plan transforms the Companies listing page and Company Detail pages into a more organized, professional, and user-friendly experience. The design will follow the established patterns from Position Resources while adding company-specific enhancements.
 
 ---
 
-## Current Issues Identified
+## Part 1: Companies Listing Page (CompanyResources.tsx)
 
-1. **Header Section**: Takes up significant vertical space with separate elements
-2. **Tab Navigation**: Occupies a full row with horizontal scrolling on mobile
-3. **Content Area**: Fixed padding and spacing that doesn't adapt well to different screen sizes
-4. **Stats Card**: Shown as a separate card, adding to vertical height
-5. **Search/Controls**: Takes another full row of space
-6. **Overall Layout**: Stacked vertically rather than utilizing available horizontal space
+### Current Issues
+- Simple list-based layout lacks visual hierarchy
+- No progress tracking or statistics summary
+- Limited filtering options
+- Mobile experience could be better optimized
+
+### Proposed Changes
+
+**1.1 Add Global Statistics Card**
+Create a summary card at the top showing:
+- Total companies available
+- Companies by category breakdown (Product, Service, Startup)
+- Favorited companies count
+- Companies currently hiring count
+
+**1.2 Convert to Table-Based Layout**
+Transform the list into a proper data table with columns:
+| # | Star | Company Name | Category | Type | Status | Actions |
+
+Features:
+- Sortable columns (by name, category, type)
+- Fixed header for better scrolling
+- Hover states with subtle background change
+- Row click navigates to detail page
+
+**1.3 Enhanced Filtering**
+- Add category dropdown filter (FinTech, Technology, E-commerce, etc.)
+- Add company type chips (Product, Service, Startup)
+- Keep existing tabs but improve visual design
+- Add "Clear All Filters" button when filters are active
+
+**1.4 Visual Improvements**
+- Consistent badge styling matching Position Resources
+- Better mobile responsiveness with collapsible columns
+- Smooth animations on filter/sort changes
+- Company logos placeholder icons by category
 
 ---
 
-## Proposed Solution: Dashboard-Style Compact Layout
+## Part 2: Company Detail Page (CompanyDetail.tsx)
 
-### 1. Compact Header with Inline Stats
+### Current Issues
+- Table layout is rigid and doesn't adapt well to different content types
+- Limited visual feedback and interactivity
+- Tabs could be more visually distinct
+- Need better organization of content sections
 
-**Before**: Separate header row + separate stats card
-**After**: Single integrated header with inline stats chips
+### Proposed Changes
 
-```text
-+------------------------------------------------------------------+
-| ☰ Companies / Accenture    [Technology] [Hiring]  45% ████░  ⭐ |
-+------------------------------------------------------------------+
-```
+**2.1 Enhanced Header Section**
+- Larger company icon with category-based gradient colors
+- Quick stats row: Total Questions | Solved | In Progress | Hiring Status
+- Progress bar showing overall completion percentage
+- Favorite button with animation feedback
 
-Changes:
-- Merge company info and stats into a single compact header row
-- Show progress as an inline mini-bar instead of a large card
-- Move favorite button to header
-- Remove the separate progress card (integrate into header)
+**2.2 Improved Tab Navigation**
+Replace current underline tabs with a more prominent tab design:
+- Icon + Label for each tab
+- Badge showing item count per tab
+- Active tab with filled background
+- Horizontal scroll on mobile
 
-### 2. Two-Panel Layout for Desktop
+**2.3 Unified Question Table Component**
+Create a reusable table matching Position Resources style:
+- Consistent column widths across all question tabs
+- Proper table header with sortable columns
+- Checkbox-based solved/revision toggles
+- Inline answer expansion with smooth animations
+- Notes column with quick preview
 
-**Before**: Full-width stacked content
-**After**: Sidebar tabs + main content panel
+**2.4 Add Category Section View**
+For question tabs, add an optional "Section View" that groups questions by difficulty:
+- Easy section (collapsible)
+- Medium section (collapsible)  
+- Hard section (collapsible)
+- Each with its own progress bar
 
-```text
-+------------------+----------------------------------------+
-| SQL Questions    |  [Search...]        [Expand] [Collapse]|
-| Interview (24)   |----------------------------------------|
-| DSA (12)         |  Question content with answers...      |
-| Aptitude (8)     |                                        |
-| Job Portals      |                                        |
-| Projects         |                                        |
-| Resumes          |                                        |
-| Cold DMs         |                                        |
-+------------------+----------------------------------------+
-```
+**2.5 Enhanced Non-Question Tabs**
 
-Benefits:
-- Tabs always visible on desktop (no horizontal scrolling)
-- Maximizes content viewing area
-- Professional dashboard aesthetic
-- On mobile: reverts to horizontal scrollable tabs
+**Job Portals Tab:**
+- Card-based grid layout
+- External link indicator
+- "Applied" status toggle
+- Location badges
 
-### 3. Virtualized/Compact Question List
+**Projects Tab:**
+- Larger project cards with technology badges
+- Difficulty indicator
+- Time estimate display
+- Expandable description
 
-- Reduce row height and padding
-- Use a more compact grid system
-- Show difficulty as colored dots instead of full badges on mobile
-- Inline checkboxes that don't take extra space
+**Resume Templates Tab:**
+- Gallery grid with preview thumbnails
+- Download/View buttons
+- Style category badges
+- Filter by style
 
-### 4. Responsive Breakpoint Optimization
+**Cold DMs Tab:**
+- Card layout with copy button
+- Category tags
+- "Used" status toggle
+- Character count display
 
-| Breakpoint | Layout |
-|------------|--------|
-| Desktop (lg+) | Two-panel: sidebar tabs + content |
-| Tablet (md) | Compact horizontal tabs + full-width content |
-| Mobile (sm) | Icon-only tabs + stacked content |
+---
 
-### 5. Viewport Height Optimization
+## Part 3: Shared Components
 
-- Use `h-[calc(100vh-header)]` for content area
-- Enable internal scrolling within content panels
-- Keep header and tabs fixed/sticky
-- Content area becomes the only scrollable region
+### 3.1 New Components to Create
+
+**CompanyStatsCard**
+- Displays company-level statistics
+- Progress ring showing completion percentage
+- Difficulty breakdown badges
+
+**CompanyQuestionTable**
+- Unified table for SQL, Interview, DSA, Aptitude
+- Matches QuestionRow component from Position Resources
+- Supports inline answer expansion
+
+**CompanyResourceCard**
+- Reusable card for Job Portals, Projects, Templates, DMs
+- Configurable for different content types
+- Action buttons and status toggles
+
+### 3.2 Existing Components to Reuse
+- `QuestionRow` - Import and adapt for company context
+- `AnswerPanel` - Already integrated
+- `SectionProgressBar` - For difficulty sections
+- `CategorySection` - Adapt for difficulty grouping
 
 ---
 
@@ -89,158 +144,88 @@ Benefits:
 
 ### File Changes
 
-**`src/pages/library/CompanyDetail.tsx`**
+**src/pages/library/CompanyResources.tsx**
+- Add statistics summary card
+- Convert to proper Table component usage
+- Add category filter dropdown
+- Improve type filter chips
+- Enhanced mobile layout
 
-1. **Header Redesign**
-   - Reduce height from 64px to 48px
-   - Inline progress indicator (mini progress bar)
-   - Compact breadcrumb navigation
-   - Favorite button moved inline
+**src/pages/library/CompanyDetail.tsx**
+- Refactor header with stats
+- Update tab design with icons and counts
+- Consolidate question tables to use shared component
+- Add section/list view toggle for questions
+- Redesign non-question tab layouts
 
-2. **Layout Restructure**
-   - Implement `grid grid-cols-[auto_1fr]` for desktop
-   - Sidebar width: 200px on lg, 180px on md
-   - Use `h-screen` with internal scroll containers
-   - Add `overflow-hidden` to main container
+**src/components/library/CompanyStatsCard.tsx** (New)
+- Company progress summary
+- Difficulty breakdown
+- Quick action buttons
 
-3. **Tab Navigation Component**
-   - Vertical sidebar for desktop with full labels + counts
-   - Horizontal compact tabs for tablet
-   - Icon-only tabs for mobile with tooltips
+**src/components/library/CompanyQuestionRow.tsx** (New)
+- Simplified version of QuestionRow for company context
+- Without notes column (keeps it simpler)
+- Same answer expansion behavior
 
-4. **Content Area**
-   - Use `ScrollArea` component for internal scrolling
-   - Reduce padding: from `p-6` to `p-4`
-   - Compact question rows with tighter spacing
-
-5. **Question Table Optimization**
-   - Reduce row height from ~60px to ~44px
-   - Tighter grid columns
-   - Show difficulty as colored indicator dots on mobile
-   - Compact checkbox and bookmark buttons
-
-### New Component: `CompanyDetailSidebar.tsx`
-
-A dedicated sidebar component for tab navigation:
-- Shows all tabs vertically
-- Active state with highlight
-- Item counts as badges
-- Icons + labels
-- Collapses to icon-only on medium screens
-
-### Updated Grid Layouts
-
-**Question Row (Compact)**
-```text
-Desktop:  [40px] [1fr] [80px] [100px] [50px] [50px]
-Tablet:   [30px] [1fr] [60px] [40px] [40px]
-Mobile:   [24px] [1fr] [40px] [32px]
-```
-
-**Non-Question Cards**
-- 4 columns on desktop
-- 3 columns on tablet
-- 2 columns on mobile
+**src/data/companyDetailData.ts**
+- No changes needed - data structure supports new UI
 
 ---
 
-## Specific UI Optimizations
+## UI/UX Improvements Summary
 
-### Header (Height: 48px)
-- Smaller company icon (32px instead of 64px)
-- Single-line title with inline badges
-- Progress shown as: `45% (18/40)` with mini bar
-- Favorite star button inline
-
-### Tabs Sidebar (Desktop)
-- Width: 180px fixed
-- Each tab: icon + label + count badge
-- Hover and active states
-- Sticky positioning
-
-### Content Panel
-- `max-h-[calc(100vh-120px)]` with `overflow-y-auto`
-- Search bar sticky at top of content
-- Expand/Collapse controls inline with search
-- Content scrolls independently
-
-### Question Rows
-- Reduce vertical padding: `py-4` to `py-2.5`
-- Smaller font size for descriptions
-- Tighter icon buttons (28px instead of 32px)
-- Answer panels maintain readability
-
-### Resource Cards (Job Portals, Projects, etc.)
-- Smaller card padding: `p-5` to `p-4`
-- More columns on larger screens
-- Compact badge styling
-- Smaller icons
+| Aspect | Before | After |
+|--------|--------|-------|
+| Layout | Simple list rows | Proper data tables with headers |
+| Progress | None visible | Stats cards with progress bars |
+| Filtering | Basic tabs only | Tabs + dropdowns + chips |
+| Tables | Inconsistent styling | Unified component, consistent widths |
+| Answers | Expandable (done) | Keep current implementation |
+| Mobile | Basic responsive | Optimized columns, touch-friendly |
+| Animations | Basic | Smooth transitions, feedback |
+| Visual Hierarchy | Flat | Clear sections, emphasis on actions |
 
 ---
 
-## Mobile-First Approach
+## Mobile-First Considerations
 
-### Mobile (< 640px)
-- Header: Icon + name only, progress hidden
-- Tabs: Horizontal scroll with icons only
-- Content: Full-width, reduced padding
-- Questions: 2-column (# + text | actions)
-
-### Tablet (640px - 1024px)
-- Header: Full info inline
-- Tabs: Horizontal with abbreviated labels
-- Content: Full-width with moderate padding
-- Questions: Full grid but compact
-
-### Desktop (> 1024px)
-- Header: Complete with all details
-- Tabs: Vertical sidebar
-- Content: Panel with scroll area
-- Questions: Full grid with comfortable spacing
+- Table columns collapse intelligently (hide Category on mobile)
+- Tabs become horizontally scrollable
+- Action buttons sized for touch (min 44px tap targets)
+- Stats card stacks vertically on mobile
+- Filter chips wrap nicely
+- Swipe gestures for navigation (future enhancement)
 
 ---
 
-## Animation & Polish
+## Estimated Scope
 
-- Smooth transitions on tab changes
-- Subtle hover effects on sidebar items
-- Spring animations on checkboxes
-- Content fade-in on tab switch
+**Phase 1: Companies Listing Page**
+- Add stats summary card
+- Convert to table layout
+- Enhanced filters
+
+**Phase 2: Company Detail - Questions**
+- Header redesign with stats
+- Tab improvements with icons
+- Unified question table component
+- Section view toggle
+
+**Phase 3: Company Detail - Other Tabs**
+- Job Portals card grid
+- Projects enhanced cards
+- Resume templates gallery
+- Cold DMs card layout
 
 ---
 
-## Summary of Changes
+## Design Consistency
 
-| Component | Before | After |
-|-----------|--------|-------|
-| Header Height | 64px + 140px stats | 48-56px integrated |
-| Tab Layout | Horizontal scroll | Vertical sidebar (desktop) |
-| Content Scroll | Page scroll | Panel scroll |
-| Row Height | ~60px | ~44px |
-| Grid Padding | p-6/p-8 | p-3/p-4 |
-| Overall Experience | Scroll-heavy | Dashboard-like, minimal scroll |
-
----
-
-## Files to Modify
-
-1. **`src/pages/library/CompanyDetail.tsx`**
-   - Complete layout restructure
-   - Integrated compact header
-   - Two-panel grid layout
-   - Optimized question sections
-   - Compact resource grids
-
-2. **`src/components/library/CompanyQuestionRow.tsx`**
-   - Reduced padding and heights
-   - Compact mobile view
-   - Smaller interactive elements
-
-3. **New: `src/components/library/CompanyTabSidebar.tsx`**
-   - Vertical tab navigation for desktop
-   - Icon + label + count
-   - Responsive visibility
-
-4. **`src/components/library/CompanyStatsCard.tsx`** (may be deprecated)
-   - Stats integrated into header instead
-
+All changes will maintain consistency with:
+- Existing color palette (orange gradients, muted backgrounds)
+- Badge styling (difficulty colors: green/amber/red)
+- Animation patterns (Framer Motion, 0.2s transitions)
+- Typography scale (Tailwind defaults)
+- Dark/Light mode support
+- Existing component library (shadcn/ui)
