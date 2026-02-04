@@ -23,7 +23,7 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
   const accountYear = accountCreatedAt ? new Date(accountCreatedAt).getFullYear() : currentYear;
   
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [selectedRange, setSelectedRange] = useState<'current' | '6months' | '3months'>('current');
+  
   
   // Generate available years from account creation to current
   const availableYears = useMemo(() => {
@@ -36,32 +36,10 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
 
   const { monthsData, stats } = useMemo(() => {
     const today = new Date();
-    const isCurrentYear = selectedYear === currentYear;
     
-    // Determine which months to show based on range
-    let startMonth: number;
-    let endMonth: number;
-    
-    if (selectedRange === 'current') {
-      startMonth = 0; // January
-      endMonth = 11; // December
-    } else if (selectedRange === '6months') {
-      if (isCurrentYear) {
-        startMonth = Math.max(0, today.getMonth() - 5);
-        endMonth = today.getMonth();
-      } else {
-        startMonth = 6;
-        endMonth = 11;
-      }
-    } else {
-      if (isCurrentYear) {
-        startMonth = Math.max(0, today.getMonth() - 2);
-        endMonth = today.getMonth();
-      } else {
-        startMonth = 9;
-        endMonth = 11;
-      }
-    }
+    // Always show full year (Jan to Dec)
+    const startMonth = 0;
+    const endMonth = 11;
     
     // Stats tracking
     let totalSubmissions = 0;
@@ -141,7 +119,7 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
         maxStreak,
       }
     };
-  }, [activityData, selectedRange, selectedYear, currentYear]);
+  }, [activityData, selectedYear, currentYear]);
 
   const getIntensityClass = (count: number, isInMonth: boolean) => {
     if (!isInMonth) return 'bg-transparent'; // Not in this month
@@ -161,21 +139,8 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
     });
   };
 
-  const getRangeLabel = () => {
-    switch (selectedRange) {
-      case 'current': return 'Current';
-      case '6months': return '6 Months';
-      case '3months': return '3 Months';
-    }
-  };
-
   const getPeriodText = () => {
-    const yearText = selectedYear === currentYear ? '' : ` in ${selectedYear}`;
-    switch (selectedRange) {
-      case 'current': return `year${yearText}`;
-      case '6months': return `six months${yearText}`;
-      case '3months': return `three months${yearText}`;
-    }
+    return selectedYear === currentYear ? 'year' : `${selectedYear}`;
   };
 
   return (
@@ -218,27 +183,6 @@ const CalendarHeatmap = ({ activityData, accountCreatedAt }: CalendarHeatmapProp
                   {year}
                 </DropdownMenuItem>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          {/* Range Filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1">
-                {getRangeLabel()}
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setSelectedRange('current')}>
-                Current (1 Year)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSelectedRange('6months')}>
-                6 Months
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSelectedRange('3months')}>
-                3 Months
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
