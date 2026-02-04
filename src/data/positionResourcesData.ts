@@ -176,8 +176,115 @@ app.use(cors({
 
 **Security tip:** Never use \`origin: '*'\` with \`credentials: true\``
       },
-      { id: 5, text: "How do you secure sensitive data at rest?", difficulty: "Easy" },
-      { id: 6, text: "What is a reverse proxy and why use one?", difficulty: "Easy" },
+      { 
+        id: 5, 
+        text: "How do you secure sensitive data at rest?", 
+        difficulty: "Easy",
+        answer: `**Data at rest** = stored data (databases, files, backups)
+
+**Encryption Methods:**
+
+**1. Database-Level Encryption (TDE)**
+\`\`\`sql
+-- Transparent Data Encryption (PostgreSQL)
+-- Encrypts entire database files
+CREATE EXTENSION pgcrypto;
+\`\`\`
+
+**2. Column-Level Encryption**
+\`\`\`javascript
+// Encrypt sensitive columns
+const crypto = require('crypto');
+
+function encrypt(text, key) {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
+  return { iv: iv.toString('hex'), data: encrypted.toString('hex'), tag: cipher.getAuthTag().toString('hex') };
+}
+
+// Store: SSN, credit cards, health data
+await db.query('INSERT INTO users (ssn_encrypted) VALUES ($1)', [encrypt(ssn, key)]);
+\`\`\`
+
+**3. Application-Level Encryption**
+- Encrypt before storing
+- Decrypt after retrieving
+- Key management crucial
+
+**Best Practices:**
+- **AES-256** for encryption
+- **Key rotation** periodically
+- **Separate key storage** (AWS KMS, HashiCorp Vault)
+- **Backup encryption**
+- **Disk encryption** for physical security
+
+**Key Management:**
+\`\`\`javascript
+// Never store keys in code!
+const key = await vault.getSecret('encryption-key');
+\`\`\``
+      },
+      { 
+        id: 6, 
+        text: "What is a reverse proxy and why use one?", 
+        difficulty: "Easy",
+        answer: `A **reverse proxy** sits between clients and servers, forwarding requests to backend servers.
+
+**How it works:**
+\`\`\`
+Client → Reverse Proxy → Backend Server(s)
+                      → Backend Server 2
+                      → Backend Server 3
+\`\`\`
+
+**Benefits:**
+
+**1. Load Balancing**
+\`\`\`nginx
+upstream backend {
+  server backend1.example.com weight=3;
+  server backend2.example.com;
+  server backend3.example.com backup;
+}
+\`\`\`
+
+**2. SSL Termination**
+- Handle HTTPS at proxy level
+- Backend uses HTTP internally
+
+**3. Caching**
+\`\`\`nginx
+proxy_cache_path /tmp/cache levels=1:2 keys_zone=my_cache:10m;
+location / {
+  proxy_cache my_cache;
+  proxy_pass http://backend;
+}
+\`\`\`
+
+**4. Security**
+- Hide backend server details
+- DDoS protection
+- Web Application Firewall (WAF)
+
+**5. Compression**
+\`\`\`nginx
+gzip on;
+gzip_types text/plain application/json;
+\`\`\`
+
+**Popular Reverse Proxies:**
+- **Nginx** - Fast, widely used
+- **HAProxy** - High availability focus
+- **Traefik** - Container-native
+- **Cloudflare** - CDN + proxy
+
+**When to use:**
+- Multiple backend servers
+- Need SSL offloading
+- Want caching layer
+- Require load balancing`
+      },
       { 
         id: 7, 
         text: "Explain JSON Web Tokens (JWT) structure.", 
@@ -226,10 +333,213 @@ HMACSHA256(
 3. Compare with received signature
 4. Check expiration time`
       },
-      { id: 8, text: "What is connection pooling and its benefits?", difficulty: "Easy" },
-      { id: 9, text: "Describe JSON vs. Protobuf for data serialization.", difficulty: "Easy" },
-      { id: 10, text: "What is TLS handshake and its purpose?", difficulty: "Easy" },
-      { id: 11, text: "Explain symbolic links and their use in deployment.", difficulty: "Easy" },
+      { 
+        id: 8, 
+        text: "What is connection pooling and its benefits?", 
+        difficulty: "Easy",
+        answer: `**Connection pooling** reuses database connections instead of creating new ones for each request.
+
+**Problem Without Pooling:**
+\`\`\`
+Request 1 → Open connection → Query → Close connection
+Request 2 → Open connection → Query → Close connection
+(Each connection takes ~50-100ms to establish)
+\`\`\`
+
+**With Pooling:**
+\`\`\`
+Pool: [Conn1, Conn2, Conn3, Conn4, Conn5]
+Request 1 → Borrow Conn1 → Query → Return Conn1
+Request 2 → Borrow Conn2 → Query → Return Conn2
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+// Node.js with pg-pool
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  host: 'localhost',
+  database: 'mydb',
+  max: 20,        // Max connections
+  min: 5,         // Min idle connections
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+// Use pool instead of individual connections
+const result = await pool.query('SELECT * FROM users');
+\`\`\`
+
+**Benefits:**
+| Aspect | Without Pool | With Pool |
+|--------|--------------|-----------|
+| Connection time | ~100ms each | Near instant |
+| Resource usage | High | Controlled |
+| Scalability | Poor | Excellent |
+| DB load | Spiky | Smooth |
+
+**Best Practices:**
+- Size pool based on workload
+- Monitor connection usage
+- Set appropriate timeouts`
+      },
+      { 
+        id: 9, 
+        text: "Describe JSON vs. Protobuf for data serialization.", 
+        difficulty: "Easy",
+        answer: `**JSON (JavaScript Object Notation)**
+\`\`\`json
+{"name": "John", "age": 30, "active": true}
+\`\`\`
+
+**Protocol Buffers (Protobuf)**
+\`\`\`protobuf
+message User {
+  string name = 1;
+  int32 age = 2;
+  bool active = 3;
+}
+\`\`\`
+
+**Comparison:**
+
+| Aspect | JSON | Protobuf |
+|--------|------|----------|
+| Format | Text | Binary |
+| Size | Larger (~30-50% more) | Smaller |
+| Speed | Slower parse | Faster parse |
+| Human readable | ✓ Yes | ✗ No |
+| Schema | Optional | Required |
+| Language support | Universal | Code generation |
+| Browser native | ✓ Yes | ✗ Needs library |
+
+**When to use JSON:**
+- Public APIs (human readable)
+- Web browsers
+- Debugging ease
+- Flexibility needed
+
+**When to use Protobuf:**
+- Internal microservices
+- High-performance systems
+- Mobile apps (bandwidth)
+- Strict schema enforcement
+
+**gRPC uses Protobuf:**
+\`\`\`protobuf
+service UserService {
+  rpc GetUser (UserRequest) returns (UserResponse);
+}
+\`\`\`
+
+**Alternatives:**
+- **MessagePack**: Binary JSON
+- **Avro**: Schema evolution
+- **Thrift**: Facebook's alternative`
+      },
+      { 
+        id: 10, 
+        text: "What is TLS handshake and its purpose?", 
+        difficulty: "Easy",
+        answer: `**TLS (Transport Layer Security)** encrypts data in transit. The handshake establishes a secure connection.
+
+**Purpose:**
+1. Authenticate server (optionally client)
+2. Agree on encryption algorithms
+3. Exchange keys securely
+
+**TLS 1.3 Handshake (simplified):**
+\`\`\`
+Client                              Server
+  |                                    |
+  |------ Client Hello --------------->|
+  |       (supported ciphers,          |
+  |        client random)              |
+  |                                    |
+  |<----- Server Hello + Certificate --|
+  |       (chosen cipher,              |
+  |        server random, cert)        |
+  |                                    |
+  |------ Key Exchange, Finished ----->|
+  |                                    |
+  |<----- Finished --------------------|
+  |                                    |
+  |====== Encrypted Data ==============>|
+\`\`\`
+
+**Key Steps:**
+1. **Client Hello**: "Here's what I support"
+2. **Server Hello**: "Let's use this cipher"
+3. **Certificate**: Server proves identity
+4. **Key Exchange**: Generate session keys
+5. **Finished**: Verify handshake integrity
+
+**Performance:**
+- TLS 1.2: 2 round trips
+- TLS 1.3: 1 round trip (faster!)
+- Session resumption: 0-RTT possible
+
+**Common Issues:**
+- Certificate expired
+- Hostname mismatch
+- Weak cipher suites
+- Mixed content (HTTP on HTTPS page)`
+      },
+      { 
+        id: 11, 
+        text: "Explain symbolic links and their use in deployment.", 
+        difficulty: "Easy",
+        answer: `A **symbolic link (symlink)** is a file that points to another file or directory.
+
+**Creating Symlinks:**
+\`\`\`bash
+# Create symlink
+ln -s /path/to/target /path/to/link
+
+# Example
+ln -s /var/www/releases/v2.0 /var/www/current
+\`\`\`
+
+**Zero-Downtime Deployment Pattern:**
+\`\`\`
+/var/www/
+├── releases/
+│   ├── v1.0/          # Previous version
+│   ├── v2.0/          # Current version
+│   └── v2.1/          # New version
+├── shared/            # Shared files (uploads, logs)
+│   ├── uploads/
+│   └── logs/
+└── current -> releases/v2.0  # Symlink!
+\`\`\`
+
+**Deployment Process:**
+\`\`\`bash
+# 1. Deploy new version
+cp -r app releases/v2.1/
+
+# 2. Link shared files
+ln -s /var/www/shared/uploads releases/v2.1/uploads
+
+# 3. Atomic switch (instant!)
+ln -sfn /var/www/releases/v2.1 /var/www/current
+
+# 4. Restart app server
+systemctl reload nginx
+\`\`\`
+
+**Benefits:**
+- **Atomic**: Switch is instant
+- **Rollback**: Point to previous release
+- **No downtime**: Old version serves until switch
+- **Shared resources**: Uploads persist across deploys
+
+**Tools using this pattern:**
+- Capistrano (Ruby)
+- Deployer (PHP)
+- Custom CI/CD scripts`
+      },
       { 
         id: 12, 
         text: "What are the core principles of RESTful API design?", 
@@ -275,10 +585,244 @@ Each request contains all information needed. No server-side sessions.
 - Plural resources: \`/users\` not \`/user\`
 - Kebab-case: \`/user-profiles\` not \`/userProfiles\``
       },
-      { id: 13, text: "Explain the concept of database normalization and its trade-offs.", difficulty: "Medium" },
-      { id: 14, text: "How would you implement pagination in a REST API?", difficulty: "Medium" },
-      { id: 15, text: "How do you handle file uploads in a backend application?", difficulty: "Medium" },
-      { id: 16, text: "Describe how webhooks work and how to implement retry logic.", difficulty: "Medium" },
+      { 
+        id: 13, 
+        text: "Explain the concept of database normalization and its trade-offs.", 
+        difficulty: "Medium",
+        answer: `**Normalization** organizes data to reduce redundancy and improve integrity.
+
+**Normal Forms:**
+
+**1NF (First Normal Form)**
+- Atomic values (no arrays in cells)
+- Each row unique
+
+**2NF (Second Normal Form)**
+- 1NF + No partial dependencies
+- All non-key columns depend on entire primary key
+
+**3NF (Third Normal Form)**
+- 2NF + No transitive dependencies
+- Non-key columns don't depend on other non-key columns
+
+**Example - Denormalized:**
+| OrderID | Customer | CustomerEmail | Product | Price |
+|---------|----------|---------------|---------|-------|
+| 1 | John | john@email.com | Laptop | 1000 |
+| 2 | John | john@email.com | Mouse | 25 |
+
+**Normalized (3NF):**
+\`\`\`sql
+-- Customers table
+| CustomerID | Name | Email |
+
+-- Products table  
+| ProductID | Name | Price |
+
+-- Orders table
+| OrderID | CustomerID | ProductID |
+\`\`\`
+
+**Trade-offs:**
+
+| Normalized | Denormalized |
+|------------|--------------|
+| Less redundancy | Faster reads (no joins) |
+| Data integrity | Data duplication |
+| More joins | Update anomalies |
+| Slower reads | Better for analytics |
+
+**When to denormalize:**
+- Read-heavy workloads
+- Reporting/analytics
+- Caching layers
+- NoSQL databases`
+      },
+      { 
+        id: 14, 
+        text: "How would you implement pagination in a REST API?", 
+        difficulty: "Medium",
+        answer: `**Pagination** breaks large result sets into manageable pages.
+
+**1. Offset-Based (Simple)**
+\`\`\`
+GET /api/users?page=2&limit=20
+GET /api/users?offset=20&limit=20
+\`\`\`
+
+\`\`\`sql
+SELECT * FROM users 
+ORDER BY created_at 
+LIMIT 20 OFFSET 20;
+\`\`\`
+
+**Pros:** Simple, familiar
+**Cons:** Slow for large offsets, inconsistent with real-time data
+
+---
+
+**2. Cursor-Based (Recommended)**
+\`\`\`
+GET /api/users?cursor=eyJpZCI6MTAwfQ&limit=20
+\`\`\`
+
+\`\`\`sql
+SELECT * FROM users 
+WHERE id > 100  -- cursor value
+ORDER BY id 
+LIMIT 20;
+\`\`\`
+
+**Pros:** Consistent results, fast at any page
+**Cons:** No random page access
+
+---
+
+**Response Format:**
+\`\`\`json
+{
+  "data": [...],
+  "pagination": {
+    "total": 1000,
+    "limit": 20,
+    "offset": 40,
+    "next_cursor": "eyJpZCI6MTIwfQ",
+    "has_more": true
+  },
+  "links": {
+    "next": "/api/users?cursor=xyz",
+    "prev": "/api/users?cursor=abc"
+  }
+}
+\`\`\`
+
+**Best Practices:**
+- Default limit (e.g., 20)
+- Maximum limit (e.g., 100)
+- Include total count (if performant)
+- Use HATEOAS links`
+      },
+      { 
+        id: 15, 
+        text: "How do you handle file uploads in a backend application?", 
+        difficulty: "Medium",
+        answer: `**File Upload Strategies:**
+
+**1. Direct Upload to Server**
+\`\`\`javascript
+// Express with multer
+const multer = require('multer');
+const upload = multer({ 
+  dest: 'uploads/',
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png'];
+    cb(null, allowed.includes(file.mimetype));
+  }
+});
+
+app.post('/upload', upload.single('file'), (req, res) => {
+  res.json({ filename: req.file.filename });
+});
+\`\`\`
+
+**2. Pre-signed URLs (Recommended for large files)**
+\`\`\`javascript
+// Generate pre-signed URL
+const s3 = new AWS.S3();
+const url = await s3.getSignedUrlPromise('putObject', {
+  Bucket: 'my-bucket',
+  Key: 'uploads/file.jpg',
+  Expires: 300, // 5 minutes
+  ContentType: 'image/jpeg'
+});
+
+// Client uploads directly to S3
+\`\`\`
+
+**Security Considerations:**
+- Validate file types (MIME + magic bytes)
+- Limit file size
+- Scan for malware
+- Generate unique filenames
+- Store outside web root
+
+**Processing Pipeline:**
+\`\`\`
+Upload → Validate → Store → Process (resize, etc.) → Serve via CDN
+\`\`\`
+
+**Storage Options:**
+- Local filesystem (simple, not scalable)
+- Cloud storage (S3, GCS, Azure Blob)
+- CDN for delivery`
+      },
+      { 
+        id: 16, 
+        text: "Describe how webhooks work and how to implement retry logic.", 
+        difficulty: "Medium",
+        answer: `**Webhooks** are HTTP callbacks that notify your app when events occur.
+
+**How they work:**
+\`\`\`
+1. Event happens (e.g., payment completed)
+2. Source sends POST to your endpoint
+3. Your server processes the event
+4. Return 2xx to acknowledge receipt
+\`\`\`
+
+**Receiving Webhooks:**
+\`\`\`javascript
+app.post('/webhooks/stripe', async (req, res) => {
+  // 1. Verify signature
+  const sig = req.headers['stripe-signature'];
+  const event = stripe.webhooks.constructEvent(
+    req.body, sig, webhookSecret
+  );
+  
+  // 2. Process event (idempotently!)
+  if (event.type === 'payment_intent.succeeded') {
+    await processPayment(event.data.object);
+  }
+  
+  // 3. Acknowledge quickly
+  res.status(200).send('OK');
+});
+\`\`\`
+
+**Sending Webhooks with Retry:**
+\`\`\`javascript
+async function sendWebhook(url, payload, attempt = 1) {
+  const maxAttempts = 5;
+  const delays = [0, 60, 300, 3600, 86400]; // seconds
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      timeout: 30000
+    });
+    
+    if (!response.ok) throw new Error(\`HTTP \${response.status}\`);
+    return true;
+    
+  } catch (error) {
+    if (attempt < maxAttempts) {
+      await sleep(delays[attempt] * 1000);
+      return sendWebhook(url, payload, attempt + 1);
+    }
+    throw error;
+  }
+}
+\`\`\`
+
+**Best Practices:**
+- **Idempotency**: Handle duplicate deliveries
+- **Signatures**: Verify webhook authenticity
+- **Async processing**: Queue heavy work
+- **Exponential backoff**: Increase delay between retries`
+      },
       { 
         id: 17, 
         text: "How do you implement rate limiting for APIs?", 
@@ -368,7 +912,68 @@ Committed transactions survive system failures. Data written to disk/WAL before 
 - NoSQL often sacrifices some ACID for scalability
 - Distributed systems use eventual consistency`
       },
-      { id: 19, text: "Describe how you would manage environment-specific configurations.", difficulty: "Medium" },
+      { 
+        id: 19, 
+        text: "Describe how you would manage environment-specific configurations.", 
+        difficulty: "Medium",
+        answer: `**Environment-specific config** ensures apps behave correctly in dev, staging, and production.
+
+**1. Environment Variables (Recommended)**
+\`\`\`javascript
+// .env files
+// .env.development
+DATABASE_URL=postgres://localhost/dev_db
+
+// .env.production  
+DATABASE_URL=postgres://prod-server/prod_db
+
+// Usage
+const dbUrl = process.env.DATABASE_URL;
+\`\`\`
+
+**2. Config Files by Environment**
+\`\`\`javascript
+// config/index.js
+const env = process.env.NODE_ENV || 'development';
+
+const configs = {
+  development: require('./development'),
+  production: require('./production'),
+  test: require('./test'),
+};
+
+module.exports = configs[env];
+\`\`\`
+
+**3. Secrets Management**
+\`\`\`javascript
+// Never commit secrets!
+// Use secret managers:
+// - AWS Secrets Manager
+// - HashiCorp Vault
+// - Azure Key Vault
+
+const secret = await secretsManager.getSecret('api-key');
+\`\`\`
+
+**Best Practices:**
+| Do | Don't |
+|----|-------|
+| Use .env.example | Commit .env files |
+| Validate on startup | Use defaults for secrets |
+| Encrypt secrets | Log sensitive values |
+| Use 12-factor principles | Hardcode configs |
+
+**Validation:**
+\`\`\`javascript
+const required = ['DATABASE_URL', 'API_KEY', 'JWT_SECRET'];
+required.forEach(key => {
+  if (!process.env[key]) {
+    throw new Error(\`Missing required env var: \${key}\`);
+  }
+});
+\`\`\``
+      },
       { 
         id: 20, 
         text: "What is a circuit breaker and how is it implemented?", 
@@ -435,11 +1040,300 @@ class CircuitBreaker {
 
 **Libraries:** Opossum (Node.js), Resilience4j (Java), Polly (.NET)`
       },
-      { id: 21, text: "Explain the CAP theorem and its implications for distributed systems.", difficulty: "Medium" },
-      { id: 22, text: "How would you implement health checks for microservices?", difficulty: "Medium" },
-      { id: 23, text: "What are the differences between monolithic and microservice architectures?", difficulty: "Medium" },
-      { id: 24, text: "Explain the role of message brokers in backend systems.", difficulty: "Medium" },
-      { id: 25, text: "Explain the concept of eventual consistency.", difficulty: "Medium" },
+      { 
+        id: 21, 
+        text: "Explain the CAP theorem and its implications for distributed systems.", 
+        difficulty: "Medium",
+        answer: `**CAP Theorem**: A distributed system can only guarantee 2 of 3 properties:
+
+- **C - Consistency**: Every read gets the most recent write
+- **A - Availability**: Every request gets a response
+- **P - Partition Tolerance**: System works despite network failures
+
+**Why only 2?**
+During a network partition, you must choose:
+- **Respond with stale data** (sacrifice Consistency for Availability)
+- **Wait/fail until partition heals** (sacrifice Availability for Consistency)
+
+**Database Classifications:**
+
+| Type | Guarantees | Examples |
+|------|------------|----------|
+| CP | Consistency + Partition | MongoDB, HBase, Redis Cluster |
+| AP | Availability + Partition | Cassandra, DynamoDB, CouchDB |
+| CA | Consistency + Availability | Traditional RDBMS (single node) |
+
+**Real-World Trade-offs:**
+\`\`\`
+Banking: CP preferred
+- Account balance MUST be consistent
+- Brief unavailability acceptable
+
+Social Media: AP preferred  
+- Likes count can be eventually consistent
+- Must always be available
+\`\`\`
+
+**PACELC Extension:**
+If **P**artition: choose **A** or **C**
+**E**lse (normal): choose **L**atency or **C**onsistency
+
+Most systems are configurable—you choose per operation.`
+      },
+      { 
+        id: 22, 
+        text: "How would you implement health checks for microservices?", 
+        difficulty: "Medium",
+        answer: `**Health checks** verify service availability and readiness.
+
+**Types:**
+
+**1. Liveness Check** - "Is the service running?"
+\`\`\`javascript
+app.get('/health/live', (req, res) => {
+  res.status(200).json({ status: 'alive' });
+});
+\`\`\`
+
+**2. Readiness Check** - "Can it handle traffic?"
+\`\`\`javascript
+app.get('/health/ready', async (req, res) => {
+  const checks = {
+    database: await checkDatabase(),
+    redis: await checkRedis(),
+    dependencies: await checkDependencies()
+  };
+  
+  const healthy = Object.values(checks).every(c => c.status === 'up');
+  
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? 'ready' : 'not_ready',
+    checks,
+    timestamp: new Date().toISOString()
+  });
+});
+
+async function checkDatabase() {
+  try {
+    await db.query('SELECT 1');
+    return { status: 'up', latency: 5 };
+  } catch (e) {
+    return { status: 'down', error: e.message };
+  }
+}
+\`\`\`
+
+**Kubernetes Configuration:**
+\`\`\`yaml
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: 8080
+  periodSeconds: 5
+  failureThreshold: 3
+\`\`\`
+
+**Response Format:**
+\`\`\`json
+{
+  "status": "healthy",
+  "version": "1.2.3",
+  "uptime": 86400,
+  "checks": {
+    "database": { "status": "up", "latency_ms": 5 },
+    "cache": { "status": "up", "latency_ms": 2 }
+  }
+}
+\`\`\``
+      },
+      { 
+        id: 23, 
+        text: "What are the differences between monolithic and microservice architectures?", 
+        difficulty: "Medium",
+        answer: `**Monolithic Architecture**
+Single deployable unit containing all functionality.
+\`\`\`
+┌─────────────────────────────┐
+│         Monolith            │
+│  ┌─────┐ ┌─────┐ ┌─────┐   │
+│  │Users│ │Orders│ │Payments│ │
+│  └─────┘ └─────┘ └─────┘   │
+│        Single Database      │
+└─────────────────────────────┘
+\`\`\`
+
+**Microservices Architecture**
+Independent services communicating via APIs.
+\`\`\`
+┌─────────┐  ┌─────────┐  ┌─────────┐
+│ Users   │  │ Orders  │  │Payments │
+│ Service │  │ Service │  │ Service │
+│   DB    │  │   DB    │  │   DB    │
+└────┬────┘  └────┬────┘  └────┬────┘
+     └────────────┴────────────┘
+           API Gateway
+\`\`\`
+
+**Comparison:**
+
+| Aspect | Monolith | Microservices |
+|--------|----------|---------------|
+| Deployment | All or nothing | Independent |
+| Scaling | Scale everything | Scale per service |
+| Development | Simpler initially | Complex coordination |
+| Technology | Single stack | Polyglot |
+| Failure | Entire app down | Isolated failures |
+| Testing | Easier E2E | Complex integration |
+
+**When to use Monolith:**
+- Early-stage startups
+- Small teams
+- Simple domains
+- Rapid prototyping
+
+**When to use Microservices:**
+- Large teams
+- Complex domains
+- Need independent scaling
+- Different tech requirements`
+      },
+      { 
+        id: 24, 
+        text: "Explain the role of message brokers in backend systems.", 
+        difficulty: "Medium",
+        answer: `**Message brokers** enable async communication between services.
+
+**How it works:**
+\`\`\`
+Producer → Message Broker → Consumer(s)
+           (Queue/Topic)
+\`\`\`
+
+**Patterns:**
+
+**1. Point-to-Point (Queue)**
+\`\`\`
+Producer → [Queue] → Consumer
+           One message, one consumer
+\`\`\`
+
+**2. Pub/Sub (Topic)**
+\`\`\`
+Publisher → [Topic] → Subscriber 1
+                   → Subscriber 2
+                   → Subscriber 3
+\`\`\`
+
+**Use Cases:**
+\`\`\`javascript
+// Order processing
+await messageQueue.publish('orders', {
+  orderId: '123',
+  action: 'process'
+});
+
+// Multiple consumers handle:
+// - Inventory update
+// - Payment processing  
+// - Email notification
+// - Analytics
+\`\`\`
+
+**Popular Brokers:**
+| Broker | Best For |
+|--------|----------|
+| RabbitMQ | Traditional queuing |
+| Apache Kafka | Event streaming, high volume |
+| AWS SQS | Managed, serverless |
+| Redis Pub/Sub | Simple, low latency |
+
+**Benefits:**
+- **Decoupling**: Services don't need to know each other
+- **Reliability**: Messages persist if consumer down
+- **Scalability**: Add consumers to handle load
+- **Async**: Don't block on slow operations
+
+**Example with RabbitMQ:**
+\`\`\`javascript
+// Producer
+channel.sendToQueue('tasks', Buffer.from(JSON.stringify(task)));
+
+// Consumer
+channel.consume('tasks', (msg) => {
+  const task = JSON.parse(msg.content.toString());
+  processTask(task);
+  channel.ack(msg);
+});
+\`\`\``
+      },
+      { 
+        id: 25, 
+        text: "Explain the concept of eventual consistency.", 
+        difficulty: "Medium",
+        answer: `**Eventual consistency** = All replicas will eventually have the same data, but not immediately.
+
+**Strong vs Eventual:**
+\`\`\`
+Strong Consistency:
+Write → All nodes update → Read returns new value
+(Slow, always consistent)
+
+Eventual Consistency:
+Write → Primary updates → Replicas sync later → Read may return old value
+(Fast, temporarily inconsistent)
+\`\`\`
+
+**Example Scenario:**
+\`\`\`
+User updates profile picture:
+1. Write to primary database (instant)
+2. Replicas in other regions update (1-5 seconds)
+3. User in different region may see old picture briefly
+4. Eventually, all see new picture
+\`\`\`
+
+**Where it's used:**
+- DNS propagation
+- CDN cache invalidation
+- Social media feeds
+- Shopping cart counts
+- NoSQL databases (Cassandra, DynamoDB)
+
+**Conflict Resolution:**
+\`\`\`
+What if two updates happen simultaneously?
+
+1. Last Write Wins (LWW)
+   - Use timestamps
+   - Simple but may lose data
+
+2. Vector Clocks
+   - Track causality
+   - Detect conflicts
+
+3. CRDTs (Conflict-free Replicated Data Types)
+   - Automatically merge
+   - No conflicts possible
+\`\`\`
+
+**When to use:**
+- High availability requirements
+- Geographic distribution
+- Read-heavy workloads
+- Non-critical data (likes, views)
+
+**When NOT to use:**
+- Financial transactions
+- Inventory management
+- Anything requiring immediate accuracy`
+      },
       { 
         id: 26, 
         text: "How do you prevent SQL injection vulnerabilities?", 
@@ -498,87 +1392,1468 @@ if (isNaN(userId)) {
 **5. Escape Special Characters (Last Resort)**
 Only use when parameterized queries aren't possible.`
       },
-      { id: 27, text: "What is the role of API gateways in microservice ecosystems?", difficulty: "Medium" },
-      { id: 28, text: "Explain the concept of idempotency and its importance in REST APIs.", difficulty: "Medium" },
-      { id: 29, text: "What is container orchestration and why use Kubernetes?", difficulty: "Medium" },
-      { id: 30, text: "Describe how you would handle long-running background jobs.", difficulty: "Medium" },
-      { id: 31, text: "What is the purpose of feature flags and how do you implement them?", difficulty: "Medium" },
-      { id: 32, text: "Explain how HTTP/2 improves performance over HTTP/1.1.", difficulty: "Medium" },
-      { id: 33, text: "How do you implement graceful shutdown in backend services?", difficulty: "Medium" },
-      { id: 34, text: "Describe best practices for API versioning.", difficulty: "Medium" },
-      { id: 35, text: "How do you optimize database query performance in high-traffic environments?", difficulty: "Hard" },
-      { id: 36, text: "What strategies ensure secure authentication for backend services?", difficulty: "Hard" },
-      { id: 37, text: "Describe how you would design a logging and monitoring system.", difficulty: "Hard" },
       { 
-        id: 38, 
-        text: "Explain the difference between optimistic and pessimistic locking.", 
-        difficulty: "Hard",
-        answer: `Both strategies handle concurrent access to shared resources.
+        id: 27, 
+        text: "What is the role of API gateways in microservice ecosystems?", 
+        difficulty: "Medium",
+        answer: `An **API Gateway** is a single entry point that routes requests to appropriate microservices.
 
-**Pessimistic Locking**
-Assume conflicts will happen. Lock resource before reading.
-
-\`\`\`sql
--- Lock the row until transaction completes
-BEGIN;
-SELECT * FROM products WHERE id = 1 FOR UPDATE;
-UPDATE products SET stock = stock - 1 WHERE id = 1;
-COMMIT;
+**Functions:**
+\`\`\`
+Client Request → API Gateway → Service A
+                            → Service B
+                            → Service C
 \`\`\`
 
-**Pros:** Guarantees no conflicts
-**Cons:** Blocks other transactions, potential deadlocks, reduced throughput
+**Key Features:**
 
----
-
-**Optimistic Locking**
-Assume conflicts are rare. Check for changes before committing.
-
-\`\`\`sql
--- Add version column to table
-SELECT id, stock, version FROM products WHERE id = 1;
--- version = 5, stock = 100
-
-UPDATE products 
-SET stock = 99, version = version + 1
-WHERE id = 1 AND version = 5;
--- If affected rows = 0, someone else modified it
+**1. Request Routing**
+\`\`\`yaml
+routes:
+  - path: /users/*
+    service: user-service
+  - path: /orders/*
+    service: order-service
 \`\`\`
 
+**2. Authentication/Authorization**
+- Validate JWT tokens once
+- Apply rate limiting
+- Check permissions
+
+**3. Request/Response Transformation**
 \`\`\`javascript
-// Application code
-const product = await getProduct(id);
-product.stock -= 1;
+// Aggregate multiple service calls
+GET /dashboard →
+  → GET /user-service/profile
+  → GET /order-service/recent
+  → GET /notification-service/unread
+  → Combined response
+\`\`\`
 
-const result = await db.query(
-  'UPDATE products SET stock = $1, version = version + 1 WHERE id = $2 AND version = $3',
-  [product.stock, id, product.version]
-);
+**4. Load Balancing & Circuit Breaking**
 
-if (result.rowCount === 0) {
-  throw new ConflictError('Product was modified by another user');
+**Popular API Gateways:**
+| Gateway | Type |
+|---------|------|
+| Kong | Open source |
+| AWS API Gateway | Managed |
+| NGINX | High performance |
+| Traefik | Container-native |
+
+**Benefits:**
+- Centralized security
+- Simplified client code
+- Cross-cutting concerns in one place
+- Service discovery`
+      },
+      { 
+        id: 28, 
+        text: "Explain the concept of idempotency and its importance in REST APIs.", 
+        difficulty: "Medium",
+        answer: `An operation is **idempotent** if calling it multiple times produces the same result as calling it once.
+
+**HTTP Methods:**
+| Method | Idempotent | Safe |
+|--------|------------|------|
+| GET | ✓ Yes | ✓ Yes |
+| PUT | ✓ Yes | ✗ No |
+| DELETE | ✓ Yes | ✗ No |
+| POST | ✗ No | ✗ No |
+| PATCH | Depends | ✗ No |
+
+**Why it matters:**
+\`\`\`
+Network timeout during payment:
+- Did the payment go through?
+- Safe to retry?
+
+With idempotency:
+- Retry safely with same idempotency key
+- Server recognizes duplicate, returns same result
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+app.post('/payments', async (req, res) => {
+  const idempotencyKey = req.headers['idempotency-key'];
+  
+  // Check if already processed
+  const existing = await cache.get(\`idem:\${idempotencyKey}\`);
+  if (existing) {
+    return res.json(JSON.parse(existing));
+  }
+  
+  // Process payment
+  const result = await processPayment(req.body);
+  
+  // Store result (24 hour TTL)
+  await cache.set(\`idem:\${idempotencyKey}\`, JSON.stringify(result), 86400);
+  
+  res.json(result);
+});
+\`\`\`
+
+**Best Practices:**
+- Client generates unique idempotency keys
+- Store results for reasonable TTL
+- Return same response for duplicates
+- Use for any mutating operations`
+      },
+      { 
+        id: 29, 
+        text: "What is container orchestration and why use Kubernetes?", 
+        difficulty: "Medium",
+        answer: `**Container orchestration** automates deployment, scaling, and management of containerized applications.
+
+**Why Kubernetes (K8s)?**
+
+**1. Automatic Scaling**
+\`\`\`yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+spec:
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 70
+\`\`\`
+
+**2. Self-Healing**
+- Restarts failed containers
+- Replaces unresponsive nodes
+- Kills containers that don't pass health checks
+
+**3. Service Discovery**
+\`\`\`yaml
+# Services find each other by name
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  selector:
+    app: user-service
+  ports:
+  - port: 80
+\`\`\`
+
+**4. Rolling Updates**
+\`\`\`bash
+kubectl set image deployment/app app=app:v2
+# Gradually replaces old pods with new ones
+\`\`\`
+
+**Key Concepts:**
+| Concept | Purpose |
+|---------|---------|
+| Pod | Smallest deployable unit |
+| Deployment | Manages pod replicas |
+| Service | Stable network endpoint |
+| Ingress | External access/routing |
+| ConfigMap | Configuration management |
+
+**When to use:**
+- Multiple services to manage
+- Need auto-scaling
+- High availability required
+- Microservices architecture`
+      },
+      { 
+        id: 30, 
+        text: "Describe how you would handle long-running background jobs.", 
+        difficulty: "Medium",
+        answer: `**Background jobs** run outside the request-response cycle for async processing.
+
+**Common Patterns:**
+
+**1. Job Queue (Redis/RabbitMQ)**
+\`\`\`javascript
+// Producer - Add job
+await queue.add('email', {
+  to: 'user@example.com',
+  template: 'welcome'
+});
+
+// Consumer - Process job
+queue.process('email', async (job) => {
+  await sendEmail(job.data);
+});
+\`\`\`
+
+**2. Scheduled Jobs (Cron)**
+\`\`\`javascript
+// node-cron
+cron.schedule('0 0 * * *', () => {
+  // Run daily at midnight
+  generateDailyReport();
+});
+\`\`\`
+
+**3. Worker Processes**
+\`\`\`
+Web Server → Queue → Worker 1
+                  → Worker 2
+                  → Worker 3
+\`\`\`
+
+**Best Practices:**
+\`\`\`javascript
+// 1. Idempotent jobs (safe to retry)
+async function processOrder(orderId) {
+  const order = await getOrder(orderId);
+  if (order.processed) return; // Already done
+  // Process...
+}
+
+// 2. Progress tracking
+job.progress(50);
+
+// 3. Dead letter queue for failures
+if (attempts >= maxAttempts) {
+  await deadLetterQueue.add(job);
+}
+
+// 4. Timeout handling
+const result = await Promise.race([
+  processJob(),
+  timeout(30000)
+]);
+\`\`\`
+
+**Tools:**
+- **Bull** (Node.js + Redis)
+- **Celery** (Python)
+- **Sidekiq** (Ruby)
+- **AWS SQS + Lambda**`
+      },
+      { 
+        id: 31, 
+        text: "What is the purpose of feature flags and how do you implement them?", 
+        difficulty: "Medium",
+        answer: `**Feature flags** (feature toggles) enable/disable features without deploying code.
+
+**Use Cases:**
+- Gradual rollouts
+- A/B testing
+- Kill switches
+- Beta features
+- Trunk-based development
+
+**Implementation:**
+\`\`\`javascript
+// Simple in-code flag
+const features = {
+  NEW_CHECKOUT: process.env.FEATURE_NEW_CHECKOUT === 'true',
+  DARK_MODE: true,
+};
+
+if (features.NEW_CHECKOUT) {
+  return <NewCheckout />;
+} else {
+  return <OldCheckout />;
 }
 \`\`\`
 
-**Pros:** No blocking, better for read-heavy workloads
-**Cons:** Must handle retry logic, conflicts detected late
+**Advanced with user targeting:**
+\`\`\`javascript
+// Using LaunchDarkly, Unleash, etc.
+const showNewFeature = await featureFlags.isEnabled(
+  'new-feature',
+  { 
+    userId: user.id,
+    email: user.email,
+    plan: user.plan
+  }
+);
+
+// Rules:
+// - 10% of users
+// - All premium users
+// - Users with @company.com email
+\`\`\`
+
+**Database-backed:**
+\`\`\`sql
+CREATE TABLE feature_flags (
+  name VARCHAR(100) PRIMARY KEY,
+  enabled BOOLEAN DEFAULT false,
+  percentage INT DEFAULT 0,
+  user_whitelist TEXT[]
+);
+\`\`\`
+
+**Best Practices:**
+- Clean up old flags
+- Document flag purpose
+- Set expiration dates
+- Have kill switch for emergencies
+- Log flag evaluations for debugging`
+      },
+      { 
+        id: 32, 
+        text: "Explain how HTTP/2 improves performance over HTTP/1.1.", 
+        difficulty: "Medium",
+        answer: `**HTTP/2** is a major revision that significantly improves performance.
+
+**Key Improvements:**
+
+**1. Multiplexing**
+\`\`\`
+HTTP/1.1:
+Req1 → Resp1 → Req2 → Resp2 → Req3 → Resp3 (sequential)
+
+HTTP/2:
+Req1 ─┐     ┌─ Resp1
+Req2 ─┼────►├─ Resp2  (parallel on single connection)
+Req3 ─┘     └─ Resp3
+\`\`\`
+
+**2. Header Compression (HPACK)**
+\`\`\`
+HTTP/1.1: Headers sent in full each time (~500-800 bytes)
+HTTP/2: Headers compressed + only differences sent
+\`\`\`
+
+**3. Server Push**
+\`\`\`
+Client requests: index.html
+Server sends: index.html + style.css + app.js (proactively)
+\`\`\`
+
+**4. Binary Protocol**
+- More efficient to parse
+- Less error-prone than text
+
+**5. Stream Prioritization**
+- Critical resources first
+- Dependent streams wait
+
+**Comparison:**
+| Feature | HTTP/1.1 | HTTP/2 |
+|---------|----------|--------|
+| Connections | Multiple (6 per domain) | Single |
+| Format | Text | Binary |
+| Headers | Repeated | Compressed |
+| Streams | Sequential | Parallel |
+
+**Migration:**
+- No code changes needed
+- Enable at server/load balancer level
+- Works over TLS (HTTPS required in browsers)
+
+**HTTP/3** (QUIC): Built on UDP, even faster handshakes`
+      },
+      { 
+        id: 33, 
+        text: "How do you implement graceful shutdown in backend services?", 
+        difficulty: "Medium",
+        answer: `**Graceful shutdown** allows in-flight requests to complete before stopping.
+
+\`\`\`javascript
+const server = app.listen(3000);
+
+// Track active connections
+let connections = new Set();
+server.on('connection', (conn) => {
+  connections.add(conn);
+  conn.on('close', () => connections.delete(conn));
+});
+
+// Shutdown handler
+async function gracefulShutdown(signal) {
+  console.log(\`Received \${signal}, starting graceful shutdown\`);
+  
+  // 1. Stop accepting new connections
+  server.close(async () => {
+    console.log('HTTP server closed');
+    
+    // 2. Close database connections
+    await db.end();
+    
+    // 3. Close other resources
+    await redis.quit();
+    await messageQueue.close();
+    
+    console.log('Graceful shutdown complete');
+    process.exit(0);
+  });
+  
+  // 4. Force close after timeout
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    connections.forEach(conn => conn.destroy());
+    process.exit(1);
+  }, 30000);
+}
+
+// Register handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+\`\`\`
+
+**Kubernetes Configuration:**
+\`\`\`yaml
+spec:
+  terminationGracePeriodSeconds: 30
+  containers:
+  - lifecycle:
+      preStop:
+        exec:
+          command: ["/bin/sh", "-c", "sleep 5"]
+\`\`\`
+
+**Checklist:**
+- [ ] Stop accepting new connections
+- [ ] Complete in-flight requests
+- [ ] Close database pools
+- [ ] Flush message queues
+- [ ] Deregister from service discovery
+- [ ] Force exit after timeout`
+      },
+      { 
+        id: 34, 
+        text: "Describe best practices for API versioning.", 
+        difficulty: "Medium",
+        answer: `**API versioning** manages breaking changes without disrupting clients.
+
+**Strategies:**
+
+**1. URL Path Versioning (Most Common)**
+\`\`\`
+GET /api/v1/users
+GET /api/v2/users
+\`\`\`
+✓ Clear, easy to route
+✗ Not truly RESTful
+
+**2. Query Parameter**
+\`\`\`
+GET /api/users?version=1
+GET /api/users?version=2
+\`\`\`
+✓ Optional versioning
+✗ Easy to forget
+
+**3. Header Versioning**
+\`\`\`
+GET /api/users
+Accept: application/vnd.company.v1+json
+\`\`\`
+✓ Clean URLs
+✗ Harder to test in browser
+
+**4. Content Negotiation**
+\`\`\`
+Accept: application/json; version=1
+\`\`\`
+
+**Best Practices:**
+\`\`\`javascript
+// 1. Only version when breaking changes
+// Breaking: Removing fields, changing types
+// Non-breaking: Adding fields, new endpoints
+
+// 2. Support multiple versions
+app.use('/api/v1', v1Routes);
+app.use('/api/v2', v2Routes);
+
+// 3. Deprecation headers
+res.set('Deprecation', 'true');
+res.set('Sunset', 'Sat, 31 Dec 2024 23:59:59 GMT');
+res.set('Link', '</api/v2/users>; rel="successor-version"');
+
+// 4. Version for at least 6-12 months
+// 5. Communicate deprecation timeline
+\`\`\`
+
+**Semantic Versioning for APIs:**
+- Major: Breaking changes (v1 → v2)
+- Minor: New features (backwards compatible)
+- Patch: Bug fixes`
+      },
+      { 
+        id: 35, 
+        text: "How do you optimize database query performance in high-traffic environments?", 
+        difficulty: "Hard",
+        answer: `**Query Optimization Strategies:**
+
+**1. Indexing**
+\`\`\`sql
+-- Single column index
+CREATE INDEX idx_users_email ON users(email);
+
+-- Composite index (order matters!)
+CREATE INDEX idx_orders_user_date ON orders(user_id, created_at DESC);
+
+-- Partial index (for frequent filters)
+CREATE INDEX idx_active_users ON users(email) WHERE status = 'active';
+\`\`\`
+
+**2. Query Analysis**
+\`\`\`sql
+EXPLAIN ANALYZE SELECT * FROM orders WHERE user_id = 123;
+-- Check: Seq Scan vs Index Scan, rows estimated vs actual
+\`\`\`
+
+**3. Query Optimization**
+\`\`\`sql
+-- ❌ Bad: SELECT *
+SELECT * FROM users;
+
+-- ✓ Good: Select needed columns
+SELECT id, name, email FROM users;
+
+-- ❌ Bad: N+1 queries
+users.forEach(u => getOrders(u.id));
+
+-- ✓ Good: JOIN or IN
+SELECT * FROM orders WHERE user_id IN (1, 2, 3);
+\`\`\`
+
+**4. Caching**
+\`\`\`javascript
+async function getUser(id) {
+  const cached = await redis.get(\`user:\${id}\`);
+  if (cached) return JSON.parse(cached);
+  
+  const user = await db.query('SELECT * FROM users WHERE id = $1', [id]);
+  await redis.set(\`user:\${id}\`, JSON.stringify(user), 'EX', 3600);
+  return user;
+}
+\`\`\`
+
+**5. Read Replicas**
+\`\`\`javascript
+const readDb = new Pool({ host: 'replica.db.com' });
+const writeDb = new Pool({ host: 'primary.db.com' });
+\`\`\`
+
+**6. Connection Pooling**
+**7. Query Pagination**
+**8. Denormalization for read-heavy tables**`
+      },
+      { 
+        id: 36, 
+        text: "What strategies ensure secure authentication for backend services?", 
+        difficulty: "Hard",
+        answer: `**Authentication Security Best Practices:**
+
+**1. Password Hashing**
+\`\`\`javascript
+const bcrypt = require('bcrypt');
+const hash = await bcrypt.hash(password, 12); // Cost factor 12
+const match = await bcrypt.compare(password, hash);
+\`\`\`
+
+**2. JWT Best Practices**
+\`\`\`javascript
+// Short-lived access tokens
+const accessToken = jwt.sign(payload, secret, { expiresIn: '15m' });
+
+// Long-lived refresh tokens (stored securely)
+const refreshToken = jwt.sign({ userId }, refreshSecret, { expiresIn: '7d' });
+
+// Rotate refresh tokens on use
+\`\`\`
+
+**3. Rate Limiting**
+\`\`\`javascript
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // 5 attempts per 15 min
+  skipSuccessfulRequests: true
+});
+\`\`\`
+
+**4. Multi-Factor Authentication (MFA)**
+\`\`\`javascript
+const speakeasy = require('speakeasy');
+const verified = speakeasy.totp.verify({
+  secret: user.totpSecret,
+  encoding: 'base32',
+  token: userProvidedCode
+});
+\`\`\`
+
+**5. Session Management**
+- HttpOnly, Secure, SameSite cookies
+- Regenerate session on login
+- Implement logout everywhere
+
+**6. OAuth 2.0 / OpenID Connect**
+- Use established providers
+- Validate tokens properly
+
+**Checklist:**
+- [ ] HTTPS everywhere
+- [ ] Strong password requirements
+- [ ] Account lockout after failures
+- [ ] Audit logging
+- [ ] Secure password reset flow
+- [ ] CSRF protection`
+      },
+      { 
+        id: 37, 
+        text: "Describe how you would design a logging and monitoring system.", 
+        difficulty: "Hard",
+        answer: `**Logging & Monitoring Architecture:**
+
+**1. Structured Logging**
+\`\`\`javascript
+const logger = require('pino')();
+
+logger.info({
+  event: 'order_created',
+  orderId: '123',
+  userId: 'abc',
+  amount: 99.99,
+  duration: 150
+});
+
+// Output: {"level":30,"time":1234,"event":"order_created",...}
+\`\`\`
+
+**2. Log Aggregation**
+\`\`\`
+App 1 ─┐
+App 2 ─┼──► Log Shipper ──► Elasticsearch ──► Kibana
+App 3 ─┘    (Filebeat)         (Store)        (Visualize)
+\`\`\`
+
+**3. Metrics Collection**
+\`\`\`javascript
+// Prometheus metrics
+const httpRequestDuration = new Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'HTTP request duration',
+  labelNames: ['method', 'route', 'status']
+});
+
+app.use((req, res, next) => {
+  const end = httpRequestDuration.startTimer();
+  res.on('finish', () => {
+    end({ method: req.method, route: req.path, status: res.statusCode });
+  });
+  next();
+});
+\`\`\`
+
+**4. Alerting**
+\`\`\`yaml
+# Prometheus alert rule
+- alert: HighErrorRate
+  expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+  for: 5m
+  annotations:
+    summary: "High error rate detected"
+\`\`\`
+
+**Stack Options:**
+| Component | Options |
+|-----------|---------|
+| Logging | ELK, Loki, CloudWatch |
+| Metrics | Prometheus, DataDog, New Relic |
+| Tracing | Jaeger, Zipkin, X-Ray |
+| Alerting | PagerDuty, Opsgenie |
+
+**Key Metrics:**
+- Request rate, error rate, latency (RED)
+- Saturation, errors, latency, traffic (USE)
+- Business metrics (orders/min, revenue)`
+      },
+      { 
+        id: 39, 
+        text: "What is CQRS and when would you use it?", 
+        difficulty: "Hard",
+        answer: `**CQRS (Command Query Responsibility Segregation)** separates read and write operations.
+
+**Traditional:**
+\`\`\`
+┌─────────────────────┐
+│    Single Model     │
+│  Read & Write       │
+│        ↕            │
+│    Database         │
+└─────────────────────┘
+\`\`\`
+
+**CQRS:**
+\`\`\`
+┌───────────┐     ┌───────────┐
+│ Commands  │     │  Queries  │
+│ (Write)   │     │  (Read)   │
+│     ↓     │     │     ↓     │
+│ Write DB  │ ──► │  Read DB  │
+└───────────┘     └───────────┘
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+// Commands (writes)
+class CreateOrderCommand {
+  constructor(userId, items) {
+    this.userId = userId;
+    this.items = items;
+  }
+}
+
+async function handleCreateOrder(cmd) {
+  const order = await writeDb.orders.create(cmd);
+  await eventBus.publish('OrderCreated', order);
+}
+
+// Queries (reads)
+async function getOrderSummary(userId) {
+  return readDb.query(\`
+    SELECT * FROM order_summaries WHERE user_id = $1
+  \`, [userId]);
+}
+\`\`\`
 
 **When to use:**
-- **Pessimistic:** High contention, short transactions (inventory, banking)
-- **Optimistic:** Low contention, long user sessions (editing documents)`
+- High read/write ratio imbalance
+- Complex read queries slowing writes
+- Different scaling needs
+- Event sourcing systems
+
+**When NOT to use:**
+- Simple CRUD applications
+- Low traffic systems
+- Teams unfamiliar with pattern
+
+**Trade-offs:**
+- ✓ Optimized read models
+- ✓ Independent scaling
+- ✗ Eventual consistency
+- ✗ Increased complexity`
       },
-      { id: 39, text: "What is CQRS and when would you use it?", difficulty: "Hard" },
-      { id: 40, text: "What considerations are important when designing microservices?", difficulty: "Hard" },
-      { id: 41, text: "How would you secure communication between microservices?", difficulty: "Hard" },
-      { id: 42, text: "What is database sharding and when would you use it?", difficulty: "Hard" },
-      { id: 43, text: "How do you implement transactional workflows spanning multiple services?", difficulty: "Hard" },
-      { id: 44, text: "How do you handle schema migrations in production databases?", difficulty: "Hard" },
-      { id: 45, text: "How do you ensure database migrations are zero-downtime?", difficulty: "Hard" },
-      { id: 46, text: "What is event sourcing and how does it differ from CRUD?", difficulty: "Hard" },
-      { id: 47, text: "Describe how OAuth2 authorization flows work.", difficulty: "Hard" },
-      { id: 48, text: "How do you implement database read replicas and sync strategies?", difficulty: "Hard" },
-      { id: 49, text: "How do you manage transactional integrity across NoSQL databases?", difficulty: "Hard" },
-      { id: 50, text: "What is service mesh and when would you use it?", difficulty: "Hard" },
+      { 
+        id: 40, 
+        text: "What considerations are important when designing microservices?", 
+        difficulty: "Hard",
+        answer: `**Microservices Design Principles:**
+
+**1. Single Responsibility**
+\`\`\`
+✓ Order Service: Order lifecycle only
+✗ Order Service: Orders + Users + Payments
+\`\`\`
+
+**2. Data Ownership**
+\`\`\`
+Each service owns its data
+No shared databases
+Communicate via APIs/events
+\`\`\`
+
+**3. API Design**
+\`\`\`javascript
+// Versioned, consistent APIs
+GET /api/v1/orders/{id}
+POST /api/v1/orders
+
+// Use events for async communication
+OrderCreated, PaymentCompleted, ShipmentSent
+\`\`\`
+
+**4. Failure Handling**
+\`\`\`javascript
+// Circuit breaker
+// Timeouts
+// Retry with backoff
+// Fallbacks
+\`\`\`
+
+**5. Observability**
+- Distributed tracing (correlation IDs)
+- Centralized logging
+- Metrics per service
+
+**6. Deployment Independence**
+\`\`\`yaml
+# Each service independently deployable
+services:
+  order-service:
+    image: orders:v2.1
+  user-service:
+    image: users:v1.5
+\`\`\`
+
+**Key Considerations:**
+| Aspect | Approach |
+|--------|----------|
+| Communication | Sync (REST/gRPC) vs Async (events) |
+| Discovery | DNS, Consul, Kubernetes |
+| Security | mTLS, service mesh |
+| Testing | Contract tests, E2E |
+
+**Anti-patterns:**
+- Distributed monolith
+- Shared databases
+- Tight coupling via sync calls
+- No monitoring`
+      },
+      { 
+        id: 41, 
+        text: "How would you secure communication between microservices?", 
+        difficulty: "Hard",
+        answer: `**Service-to-Service Security:**
+
+**1. Mutual TLS (mTLS)**
+\`\`\`
+Service A ←──TLS Certificate──► Service B
+Both verify each other's identity
+\`\`\`
+
+\`\`\`yaml
+# Istio service mesh auto-mTLS
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+spec:
+  mtls:
+    mode: STRICT
+\`\`\`
+
+**2. Service Mesh**
+\`\`\`
+Sidecar Proxy ↔ Sidecar Proxy
+(Envoy)          (Envoy)
+Handles: TLS, Auth, Observability
+\`\`\`
+
+**3. JWT Token Propagation**
+\`\`\`javascript
+// Gateway validates user JWT
+// Services pass service-to-service JWT
+const serviceToken = jwt.sign(
+  { service: 'order-service', permissions: ['user:read'] },
+  serviceSecret
+);
+
+axios.get('http://user-service/users/123', {
+  headers: { Authorization: \`Bearer \${serviceToken}\` }
+});
+\`\`\`
+
+**4. API Keys / Secrets**
+\`\`\`javascript
+// Service-specific API keys
+// Rotated regularly
+// Stored in secret manager
+\`\`\`
+
+**5. Network Policies (Kubernetes)**
+\`\`\`yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+spec:
+  podSelector:
+    matchLabels:
+      app: database
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: backend
+\`\`\`
+
+**Checklist:**
+- [ ] Encrypt all traffic (TLS)
+- [ ] Authenticate services
+- [ ] Authorize by least privilege
+- [ ] Audit all access
+- [ ] Rotate credentials`
+      },
+      { 
+        id: 42, 
+        text: "What is database sharding and when would you use it?", 
+        difficulty: "Hard",
+        answer: `**Sharding** horizontally partitions data across multiple databases.
+
+**How it works:**
+\`\`\`
+              ┌─► Shard 1 (Users A-H)
+User Request ─┼─► Shard 2 (Users I-P)
+              └─► Shard 3 (Users Q-Z)
+\`\`\`
+
+**Sharding Strategies:**
+
+**1. Range-based**
+\`\`\`
+Users 1-1M → Shard 1
+Users 1M-2M → Shard 2
+\`\`\`
+
+**2. Hash-based**
+\`\`\`javascript
+const shardId = hash(userId) % numShards;
+\`\`\`
+
+**3. Directory-based**
+\`\`\`sql
+-- Lookup table maps key to shard
+SELECT shard_id FROM shard_directory WHERE user_id = 123;
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+class ShardRouter {
+  getShard(userId) {
+    const shardId = userId % this.shards.length;
+    return this.shards[shardId];
+  }
+  
+  async getUser(userId) {
+    const shard = this.getShard(userId);
+    return shard.query('SELECT * FROM users WHERE id = $1', [userId]);
+  }
+}
+\`\`\`
+
+**Challenges:**
+| Challenge | Solution |
+|-----------|----------|
+| Cross-shard queries | Avoid or aggregate layer |
+| Rebalancing | Consistent hashing |
+| Transactions | Saga pattern |
+| Joins | Denormalization |
+
+**When to shard:**
+- Single database can't handle load
+- Data size exceeds single server
+- Geographic distribution needed
+
+**Alternatives first:**
+- Vertical scaling
+- Read replicas
+- Caching`
+      },
+      { 
+        id: 43, 
+        text: "How do you implement transactional workflows spanning multiple services?", 
+        difficulty: "Hard",
+        answer: `**Distributed transactions** across services use patterns like Saga.
+
+**The Problem:**
+\`\`\`
+Order Service → Payment Service → Inventory Service
+If Inventory fails, how to rollback Payment?
+\`\`\`
+
+**Saga Pattern:**
+
+**1. Choreography (Event-driven)**
+\`\`\`
+Order Created → Payment Charged → Inventory Reserved
+     ←── Payment Failed (compensate) ←──
+\`\`\`
+
+**2. Orchestration (Central coordinator)**
+\`\`\`javascript
+class OrderSaga {
+  async execute(orderData) {
+    try {
+      // Step 1
+      const payment = await paymentService.charge(orderData);
+      
+      // Step 2
+      const reservation = await inventoryService.reserve(orderData);
+      
+      // Step 3
+      await orderService.confirm(orderData);
+      
+    } catch (error) {
+      // Compensating transactions
+      await this.rollback(orderData);
+    }
+  }
+  
+  async rollback(orderData) {
+    await paymentService.refund(orderData);
+    await inventoryService.release(orderData);
+    await orderService.cancel(orderData);
+  }
+}
+\`\`\`
+
+**Key Principles:**
+- Each step is idempotent
+- Each step has a compensating action
+- Persist saga state for recovery
+
+**Alternative: Outbox Pattern**
+\`\`\`sql
+-- Atomic: Update + Event in same transaction
+BEGIN;
+  UPDATE orders SET status = 'confirmed';
+  INSERT INTO outbox (event_type, payload) VALUES ('OrderConfirmed', '{}');
+COMMIT;
+
+-- Separate process publishes outbox events
+\`\`\`
+
+**Tools:**
+- Temporal, Camunda (workflow orchestration)
+- Kafka (event-driven sagas)`
+      },
+      { 
+        id: 44, 
+        text: "How do you handle schema migrations in production databases?", 
+        difficulty: "Hard",
+        answer: `**Database Migration Best Practices:**
+
+**1. Version Control Migrations**
+\`\`\`
+migrations/
+├── 001_create_users.sql
+├── 002_add_email_column.sql
+├── 003_create_orders.sql
+\`\`\`
+
+**2. Idempotent Migrations**
+\`\`\`sql
+-- Good: Won't fail if run twice
+CREATE TABLE IF NOT EXISTS users (...);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+\`\`\`
+
+**3. Backwards-Compatible Changes**
+\`\`\`sql
+-- Phase 1: Add new column (nullable)
+ALTER TABLE users ADD COLUMN full_name VARCHAR(255);
+
+-- Phase 2: Backfill data
+UPDATE users SET full_name = first_name || ' ' || last_name;
+
+-- Phase 3: (After code deploys) Make non-null
+ALTER TABLE users ALTER COLUMN full_name SET NOT NULL;
+
+-- Phase 4: (Later) Drop old columns
+ALTER TABLE users DROP COLUMN first_name, DROP COLUMN last_name;
+\`\`\`
+
+**4. Use Migration Tools**
+\`\`\`javascript
+// Knex.js migration
+exports.up = function(knex) {
+  return knex.schema.createTable('users', (table) => {
+    table.increments('id');
+    table.string('email').unique();
+    table.timestamps();
+  });
+};
+
+exports.down = function(knex) {
+  return knex.schema.dropTable('users');
+};
+\`\`\`
+
+**5. Test Migrations**
+- Run against production copy
+- Test rollback
+- Measure execution time
+
+**Tools:**
+- Flyway, Liquibase (Java)
+- Knex, Prisma (Node.js)
+- Alembic (Python)
+- goose (Go)`
+      },
+      { 
+        id: 45, 
+        text: "How do you ensure database migrations are zero-downtime?", 
+        difficulty: "Hard",
+        answer: `**Zero-Downtime Migration Strategies:**
+
+**1. Expand-Contract Pattern**
+\`\`\`
+Phase 1 (Expand): Add new structure
+Phase 2: Dual-write to old + new
+Phase 3: Migrate reads to new
+Phase 4 (Contract): Remove old structure
+\`\`\`
+
+**2. Adding Columns**
+\`\`\`sql
+-- ✓ Safe: Add nullable column
+ALTER TABLE users ADD COLUMN phone VARCHAR(20);
+
+-- ✗ Dangerous: Add with default (locks table)
+ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT 'active';
+
+-- ✓ Safe alternative
+ALTER TABLE users ADD COLUMN status VARCHAR(20);
+UPDATE users SET status = 'active' WHERE status IS NULL;  -- In batches
+ALTER TABLE users ALTER COLUMN status SET DEFAULT 'active';
+\`\`\`
+
+**3. Renaming Columns**
+\`\`\`sql
+-- Don't rename directly! Use expand-contract:
+-- 1. Add new column
+ALTER TABLE users ADD COLUMN full_name VARCHAR(255);
+
+-- 2. Update code to write both columns
+-- 3. Backfill
+UPDATE users SET full_name = name WHERE full_name IS NULL;
+
+-- 4. Update code to read from new column
+-- 5. Drop old column
+ALTER TABLE users DROP COLUMN name;
+\`\`\`
+
+**4. Batch Updates**
+\`\`\`javascript
+// Process in batches to avoid locks
+let lastId = 0;
+while (true) {
+  const result = await db.query(\`
+    UPDATE users SET migrated = true
+    WHERE id > $1 AND migrated = false
+    ORDER BY id LIMIT 1000
+  \`, [lastId]);
+  
+  if (result.rowCount === 0) break;
+  lastId = result.rows[result.rows.length - 1].id;
+  await sleep(100); // Let other queries run
+}
+\`\`\`
+
+**5. Use Online Schema Tools**
+- gh-ost (GitHub)
+- pt-online-schema-change (Percona)`
+      },
+      { 
+        id: 46, 
+        text: "What is event sourcing and how does it differ from CRUD?", 
+        difficulty: "Hard",
+        answer: `**Event Sourcing** stores state changes as a sequence of events instead of current state.
+
+**CRUD Approach:**
+\`\`\`sql
+-- Current state only
+UPDATE accounts SET balance = 150 WHERE id = 1;
+-- History lost!
+\`\`\`
+
+**Event Sourcing:**
+\`\`\`javascript
+// Store all events
+events = [
+  { type: 'AccountCreated', balance: 0 },
+  { type: 'MoneyDeposited', amount: 200 },
+  { type: 'MoneyWithdrawn', amount: 50 },
+]
+// Current state: rebuild from events → balance: 150
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+class Account {
+  constructor(id) {
+    this.id = id;
+    this.balance = 0;
+    this.events = [];
+  }
+  
+  apply(event) {
+    switch (event.type) {
+      case 'MoneyDeposited':
+        this.balance += event.amount;
+        break;
+      case 'MoneyWithdrawn':
+        this.balance -= event.amount;
+        break;
+    }
+  }
+  
+  deposit(amount) {
+    const event = { type: 'MoneyDeposited', amount, timestamp: Date.now() };
+    this.events.push(event);
+    this.apply(event);
+  }
+  
+  static fromEvents(events) {
+    const account = new Account();
+    events.forEach(e => account.apply(e));
+    return account;
+  }
+}
+\`\`\`
+
+**Benefits:**
+- Complete audit trail
+- Time travel (rebuild state at any point)
+- Debug by replaying events
+- Easy analytics
+
+**Challenges:**
+- Event schema evolution
+- Performance (snapshotting helps)
+- Complexity
+
+**When to use:**
+- Audit requirements
+- Complex domain logic
+- Need to answer "how did we get here?"`
+      },
+      { 
+        id: 47, 
+        text: "Describe how OAuth2 authorization flows work.", 
+        difficulty: "Hard",
+        answer: `**OAuth2** is an authorization framework for delegated access.
+
+**Roles:**
+- **Resource Owner**: User
+- **Client**: Your app
+- **Authorization Server**: Issues tokens (Google, Auth0)
+- **Resource Server**: API with protected data
+
+**1. Authorization Code Flow (Most Secure)**
+\`\`\`
+User → App: "Login with Google"
+App → Google: Redirect to authorize?client_id=X&redirect_uri=Y&scope=email
+User → Google: Login & consent
+Google → App: Redirect to Y?code=ABC
+App → Google: POST /token (code=ABC, client_secret=Z)
+Google → App: access_token, refresh_token
+App → Google API: GET /userinfo (Authorization: Bearer access_token)
+\`\`\`
+
+**2. PKCE (for Public Clients)**
+\`\`\`javascript
+// Generate code verifier and challenge
+const verifier = randomString(64);
+const challenge = base64url(sha256(verifier));
+
+// Send challenge in authorize request
+// Send verifier in token request (no client_secret needed)
+\`\`\`
+
+**3. Client Credentials (Service-to-Service)**
+\`\`\`bash
+POST /token
+grant_type=client_credentials
+&client_id=X
+&client_secret=Y
+&scope=read:data
+\`\`\`
+
+**Token Types:**
+| Token | Purpose | Lifetime |
+|-------|---------|----------|
+| Access Token | API access | Short (15min-1hr) |
+| Refresh Token | Get new access tokens | Long (days-months) |
+| ID Token | User identity (OIDC) | Short |
+
+**Security:**
+- Always use HTTPS
+- Validate redirect URIs
+- Use PKCE for mobile/SPA
+- Store tokens securely`
+      },
+      { 
+        id: 48, 
+        text: "How do you implement database read replicas and sync strategies?", 
+        difficulty: "Hard",
+        answer: `**Read Replicas** distribute read load across multiple database copies.
+
+**Architecture:**
+\`\`\`
+Writes → Primary DB ──sync──► Replica 1
+                           ──► Replica 2
+Reads  ────────────────────► Replica 1/2
+\`\`\`
+
+**Replication Strategies:**
+
+**1. Synchronous Replication**
+\`\`\`
+Write to Primary → Wait for Replica ACK → Confirm to client
+✓ Strong consistency
+✗ Higher latency
+\`\`\`
+
+**2. Asynchronous Replication**
+\`\`\`
+Write to Primary → Confirm to client → Replicate later
+✓ Lower latency
+✗ Replica lag (eventual consistency)
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+const primary = new Pool({ host: 'primary.db.com' });
+const replica = new Pool({ host: 'replica.db.com' });
+
+async function query(sql, params, options = {}) {
+  const pool = options.write ? primary : replica;
+  return pool.query(sql, params);
+}
+
+// Usage
+await query('SELECT * FROM users WHERE id = $1', [id]); // Read from replica
+await query('UPDATE users SET name = $1', [name], { write: true }); // Write to primary
+\`\`\`
+
+**Handling Replica Lag:**
+\`\`\`javascript
+// Read-your-writes: Use primary after write
+async function updateAndRead(userId, newName) {
+  await primary.query('UPDATE users SET name = $1 WHERE id = $2', [newName, userId]);
+  // Read from primary to avoid stale data
+  return primary.query('SELECT * FROM users WHERE id = $1', [userId]);
+}
+\`\`\`
+
+**Managed Services:**
+- AWS RDS Read Replicas
+- Google Cloud SQL
+- Azure SQL Database`
+      },
+      { 
+        id: 49, 
+        text: "How do you manage transactional integrity across NoSQL databases?", 
+        difficulty: "Hard",
+        answer: `**NoSQL Transaction Strategies:**
+
+**1. Single Document Transactions**
+\`\`\`javascript
+// MongoDB: Atomic document operations
+await db.orders.updateOne(
+  { _id: orderId },
+  { 
+    $set: { status: 'paid' },
+    $push: { payments: paymentData }
+  }
+);
+// Entire operation is atomic
+\`\`\`
+
+**2. Multi-Document Transactions (MongoDB 4.0+)**
+\`\`\`javascript
+const session = client.startSession();
+try {
+  session.startTransaction();
+  
+  await orders.insertOne({ _id: orderId, ... }, { session });
+  await inventory.updateOne({ _id: productId, qty: { $gte: 1 } }, 
+    { $inc: { qty: -1 } }, { session });
+  
+  await session.commitTransaction();
+} catch (error) {
+  await session.abortTransaction();
+} finally {
+  session.endSession();
+}
+\`\`\`
+
+**3. Optimistic Concurrency**
+\`\`\`javascript
+// Version field prevents lost updates
+const doc = await db.findOne({ _id: id });
+const result = await db.updateOne(
+  { _id: id, version: doc.version },
+  { $set: { data: newData }, $inc: { version: 1 } }
+);
+
+if (result.modifiedCount === 0) {
+  throw new Error('Conflict - document was modified');
+}
+\`\`\`
+
+**4. Two-Phase Commit (Manual)**
+\`\`\`javascript
+// Phase 1: Prepare
+await order.update({ status: 'pending' });
+await payment.update({ status: 'pending' });
+
+// Phase 2: Commit
+await order.update({ status: 'confirmed' });
+await payment.update({ status: 'confirmed' });
+
+// Rollback on failure
+\`\`\`
+
+**5. Saga Pattern**
+See previous answer on distributed transactions.
+
+**Best Practices:**
+- Design for single-document operations when possible
+- Use idempotent operations
+- Implement compensating transactions
+- Accept eventual consistency where appropriate`
+      },
+      { 
+        id: 50, 
+        text: "What is service mesh and when would you use it?", 
+        difficulty: "Hard",
+        answer: `**Service Mesh** is a dedicated infrastructure layer for service-to-service communication.
+
+**Architecture:**
+\`\`\`
+┌─────────────────┐   ┌─────────────────┐
+│   Service A     │   │   Service B     │
+│  ┌───────────┐  │   │  ┌───────────┐  │
+│  │ App Code  │  │   │  │ App Code  │  │
+│  └─────┬─────┘  │   │  └─────┬─────┘  │
+│  ┌─────▼─────┐  │   │  ┌─────▼─────┐  │
+│  │  Sidecar  │◄─┼───┼──►  Sidecar  │  │
+│  │  (Envoy)  │  │   │  │  (Envoy)  │  │
+│  └───────────┘  │   │  └───────────┘  │
+└─────────────────┘   └─────────────────┘
+         │                    │
+         └────── Control Plane (Istio) ──────┘
+\`\`\`
+
+**Features:**
+
+**1. Traffic Management**
+\`\`\`yaml
+# Canary deployment
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+spec:
+  http:
+  - route:
+    - destination:
+        host: reviews
+        subset: v1
+      weight: 90
+    - destination:
+        host: reviews
+        subset: v2
+      weight: 10
+\`\`\`
+
+**2. Security (mTLS)**
+**3. Observability (Traces, Metrics)**
+**4. Resilience (Retries, Timeouts, Circuit Breaking)**
+
+**Popular Service Meshes:**
+| Mesh | Notes |
+|------|-------|
+| Istio | Feature-rich, complex |
+| Linkerd | Lightweight, simple |
+| Consul Connect | HashiCorp ecosystem |
+
+**When to use:**
+- 10+ microservices
+- Need consistent security policies
+- Complex traffic routing
+- Require detailed observability
+
+**When NOT to use:**
+- Few services
+- Simple deployment needs
+- Team lacks Kubernetes expertise
+- Performance overhead concerns`
+      },
     ],
     "dsa-questions": [
       { 
@@ -738,8 +3013,114 @@ function binarySearchRecursive(arr, target, left = 0, right = arr.length - 1) {
 **Common pitfall:** Integer overflow with \`(left + right) / 2\`
 **Fix:** \`left + Math.floor((right - left) / 2)\``
       },
-      { id: 5, text: "Find the maximum element in an array.", difficulty: "Easy" },
-      { id: 6, text: "Implement a stack using arrays.", difficulty: "Easy" },
+      { 
+        id: 5, 
+        text: "Find the maximum element in an array.", 
+        difficulty: "Easy",
+        answer: `**Find Maximum Element:**
+
+**Iterative Approach (O(n)):**
+\`\`\`javascript
+function findMax(arr) {
+  if (arr.length === 0) return undefined;
+  
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] > max) {
+      max = arr[i];
+    }
+  }
+  return max;
+}
+\`\`\`
+
+**Using Math.max:**
+\`\`\`javascript
+const max = Math.max(...arr);
+// Caution: Can cause stack overflow for very large arrays
+\`\`\`
+
+**Using reduce:**
+\`\`\`javascript
+const max = arr.reduce((a, b) => a > b ? a : b);
+\`\`\`
+
+**Time:** O(n) | **Space:** O(1)
+
+**Related:** Find min and max simultaneously:
+\`\`\`javascript
+function findMinMax(arr) {
+  let min = arr[0], max = arr[0];
+  for (const num of arr) {
+    if (num < min) min = num;
+    if (num > max) max = num;
+  }
+  return { min, max };
+}
+\`\`\``
+      },
+      { 
+        id: 6, 
+        text: "Implement a stack using arrays.", 
+        difficulty: "Easy",
+        answer: `**Stack** = LIFO (Last In, First Out) data structure.
+
+\`\`\`javascript
+class Stack {
+  constructor() {
+    this.items = [];
+  }
+  
+  // Add to top - O(1)
+  push(element) {
+    this.items.push(element);
+  }
+  
+  // Remove from top - O(1)
+  pop() {
+    if (this.isEmpty()) {
+      throw new Error('Stack is empty');
+    }
+    return this.items.pop();
+  }
+  
+  // View top element - O(1)
+  peek() {
+    if (this.isEmpty()) return undefined;
+    return this.items[this.items.length - 1];
+  }
+  
+  // Check if empty - O(1)
+  isEmpty() {
+    return this.items.length === 0;
+  }
+  
+  // Get size - O(1)
+  size() {
+    return this.items.length;
+  }
+  
+  // Clear stack - O(1)
+  clear() {
+    this.items = [];
+  }
+}
+
+// Usage
+const stack = new Stack();
+stack.push(1);
+stack.push(2);
+stack.push(3);
+console.log(stack.pop());  // 3
+console.log(stack.peek()); // 2
+\`\`\`
+
+**Use Cases:**
+- Undo/Redo operations
+- Browser history
+- Expression evaluation
+- Function call stack`
+      },
       { 
         id: 7, 
         text: "Check if parentheses are balanced.", 
@@ -779,9 +3160,151 @@ function isBalanced(str) {
 
 **Key insight:** Every closing bracket must match the most recent opening bracket (LIFO = Stack).`
       },
-      { id: 8, text: "Find the first non-repeating character in a string.", difficulty: "Easy" },
-      { id: 9, text: "Merge two sorted arrays.", difficulty: "Easy" },
-      { id: 10, text: "Count occurrences of an element in an array.", difficulty: "Easy" },
+      { 
+        id: 8, 
+        text: "Find the first non-repeating character in a string.", 
+        difficulty: "Easy",
+        answer: `**Using Hash Map (O(n)):**
+
+\`\`\`javascript
+function firstNonRepeating(str) {
+  const count = new Map();
+  
+  // Count occurrences
+  for (const char of str) {
+    count.set(char, (count.get(char) || 0) + 1);
+  }
+  
+  // Find first with count 1
+  for (const char of str) {
+    if (count.get(char) === 1) {
+      return char;
+    }
+  }
+  
+  return null; // No non-repeating character
+}
+
+// Examples
+firstNonRepeating("leetcode"); // "l"
+firstNonRepeating("aabbcc");   // null
+\`\`\`
+
+**One-liner:**
+\`\`\`javascript
+const firstUnique = str => 
+  [...str].find(c => str.indexOf(c) === str.lastIndexOf(c));
+\`\`\`
+
+**Time:** O(n) | **Space:** O(k) where k = unique characters`
+      },
+      { 
+        id: 9, 
+        text: "Merge two sorted arrays.", 
+        difficulty: "Easy",
+        answer: `**Two Pointer Approach (O(n+m)):**
+
+\`\`\`javascript
+function mergeSorted(arr1, arr2) {
+  const result = [];
+  let i = 0, j = 0;
+  
+  while (i < arr1.length && j < arr2.length) {
+    if (arr1[i] <= arr2[j]) {
+      result.push(arr1[i]);
+      i++;
+    } else {
+      result.push(arr2[j]);
+      j++;
+    }
+  }
+  
+  // Add remaining elements
+  while (i < arr1.length) result.push(arr1[i++]);
+  while (j < arr2.length) result.push(arr2[j++]);
+  
+  return result;
+}
+
+// Example
+mergeSorted([1, 3, 5], [2, 4, 6]); // [1, 2, 3, 4, 5, 6]
+\`\`\`
+
+**In-place merge (for merge sort):**
+\`\`\`javascript
+function mergeInPlace(arr, left, mid, right) {
+  const temp = [];
+  let i = left, j = mid + 1;
+  
+  while (i <= mid && j <= right) {
+    if (arr[i] <= arr[j]) temp.push(arr[i++]);
+    else temp.push(arr[j++]);
+  }
+  
+  while (i <= mid) temp.push(arr[i++]);
+  while (j <= right) temp.push(arr[j++]);
+  
+  for (let k = 0; k < temp.length; k++) {
+    arr[left + k] = temp[k];
+  }
+}
+\`\`\`
+
+**Time:** O(n+m) | **Space:** O(n+m)`
+      },
+      { 
+        id: 10, 
+        text: "Count occurrences of an element in an array.", 
+        difficulty: "Easy",
+        answer: `**Multiple Approaches:**
+
+**1. Using reduce:**
+\`\`\`javascript
+const count = (arr, target) => 
+  arr.reduce((acc, val) => val === target ? acc + 1 : acc, 0);
+\`\`\`
+
+**2. Using filter:**
+\`\`\`javascript
+const count = (arr, target) => 
+  arr.filter(x => x === target).length;
+\`\`\`
+
+**3. Using loop:**
+\`\`\`javascript
+function count(arr, target) {
+  let count = 0;
+  for (const item of arr) {
+    if (item === target) count++;
+  }
+  return count;
+}
+\`\`\`
+
+**4. For sorted array (Binary Search):**
+\`\`\`javascript
+function countSorted(arr, target) {
+  const firstIndex = findFirst(arr, target);
+  if (firstIndex === -1) return 0;
+  const lastIndex = findLast(arr, target);
+  return lastIndex - firstIndex + 1;
+}
+\`\`\`
+
+**Count all occurrences:**
+\`\`\`javascript
+function countAll(arr) {
+  const counts = {};
+  for (const item of arr) {
+    counts[item] = (counts[item] || 0) + 1;
+  }
+  return counts;
+}
+// countAll([1,2,2,3]) → {1: 1, 2: 2, 3: 1}
+\`\`\`
+
+**Time:** O(n) for unsorted, O(log n) for sorted`
+      },
       { 
         id: 11, 
         text: "Implement LRU Cache.", 
@@ -921,9 +3444,215 @@ function detectCycleStart(head) {
 
 **Time:** O(n) | **Space:** O(1)`
       },
-      { id: 14, text: "Implement BFS and DFS for a graph.", difficulty: "Medium" },
-      { id: 15, text: "Find the kth largest element in an array.", difficulty: "Medium" },
-      { id: 16, text: "Implement a min heap.", difficulty: "Medium" },
+      { 
+        id: 14, 
+        text: "Implement BFS and DFS for a graph.", 
+        difficulty: "Medium",
+        answer: `**Graph Traversal Algorithms:**
+
+**BFS (Breadth-First Search):**
+\`\`\`javascript
+function bfs(graph, start) {
+  const visited = new Set();
+  const queue = [start];
+  const result = [];
+  
+  while (queue.length > 0) {
+    const node = queue.shift();
+    
+    if (visited.has(node)) continue;
+    visited.add(node);
+    result.push(node);
+    
+    for (const neighbor of graph[node] || []) {
+      if (!visited.has(neighbor)) {
+        queue.push(neighbor);
+      }
+    }
+  }
+  
+  return result;
+}
+\`\`\`
+
+**DFS (Depth-First Search):**
+\`\`\`javascript
+function dfs(graph, start) {
+  const visited = new Set();
+  const result = [];
+  
+  function explore(node) {
+    if (visited.has(node)) return;
+    visited.add(node);
+    result.push(node);
+    
+    for (const neighbor of graph[node] || []) {
+      explore(neighbor);
+    }
+  }
+  
+  explore(start);
+  return result;
+}
+
+// Iterative DFS (using stack)
+function dfsIterative(graph, start) {
+  const visited = new Set();
+  const stack = [start];
+  const result = [];
+  
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (visited.has(node)) continue;
+    visited.add(node);
+    result.push(node);
+    
+    for (const neighbor of graph[node] || []) {
+      stack.push(neighbor);
+    }
+  }
+  return result;
+}
+\`\`\`
+
+**Use Cases:**
+- BFS: Shortest path (unweighted), level-order
+- DFS: Topological sort, cycle detection`
+      },
+      { 
+        id: 15, 
+        text: "Find the kth largest element in an array.", 
+        difficulty: "Medium",
+        answer: `**Multiple Approaches:**
+
+**1. Sort (O(n log n)):**
+\`\`\`javascript
+function kthLargest(arr, k) {
+  return arr.sort((a, b) => b - a)[k - 1];
+}
+\`\`\`
+
+**2. Min Heap (O(n log k)):**
+\`\`\`javascript
+function kthLargest(arr, k) {
+  const minHeap = new MinPriorityQueue();
+  
+  for (const num of arr) {
+    minHeap.enqueue(num);
+    if (minHeap.size() > k) {
+      minHeap.dequeue();
+    }
+  }
+  
+  return minHeap.front().element;
+}
+\`\`\`
+
+**3. QuickSelect (O(n) average):**
+\`\`\`javascript
+function quickSelect(arr, k) {
+  const target = arr.length - k; // kth largest = (n-k)th smallest
+  
+  function partition(left, right) {
+    const pivot = arr[right];
+    let i = left;
+    
+    for (let j = left; j < right; j++) {
+      if (arr[j] <= pivot) {
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+        i++;
+      }
+    }
+    [arr[i], arr[right]] = [arr[right], arr[i]];
+    return i;
+  }
+  
+  function select(left, right) {
+    const pivotIndex = partition(left, right);
+    
+    if (pivotIndex === target) return arr[pivotIndex];
+    if (pivotIndex < target) return select(pivotIndex + 1, right);
+    return select(left, pivotIndex - 1);
+  }
+  
+  return select(0, arr.length - 1);
+}
+\`\`\`
+
+**Time Complexity:**
+- Sort: O(n log n)
+- Heap: O(n log k)
+- QuickSelect: O(n) average, O(n²) worst`
+      },
+      { 
+        id: 16, 
+        text: "Implement a min heap.", 
+        difficulty: "Medium",
+        answer: `**Min Heap** = Complete binary tree where parent ≤ children.
+
+\`\`\`javascript
+class MinHeap {
+  constructor() {
+    this.heap = [];
+  }
+  
+  parent(i) { return Math.floor((i - 1) / 2); }
+  leftChild(i) { return 2 * i + 1; }
+  rightChild(i) { return 2 * i + 2; }
+  
+  swap(i, j) {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+  }
+  
+  // Add element - O(log n)
+  insert(value) {
+    this.heap.push(value);
+    this.bubbleUp(this.heap.length - 1);
+  }
+  
+  bubbleUp(index) {
+    while (index > 0 && this.heap[this.parent(index)] > this.heap[index]) {
+      this.swap(index, this.parent(index));
+      index = this.parent(index);
+    }
+  }
+  
+  // Remove minimum - O(log n)
+  extractMin() {
+    if (this.heap.length === 0) return null;
+    if (this.heap.length === 1) return this.heap.pop();
+    
+    const min = this.heap[0];
+    this.heap[0] = this.heap.pop();
+    this.bubbleDown(0);
+    return min;
+  }
+  
+  bubbleDown(index) {
+    let smallest = index;
+    const left = this.leftChild(index);
+    const right = this.rightChild(index);
+    
+    if (left < this.heap.length && this.heap[left] < this.heap[smallest]) {
+      smallest = left;
+    }
+    if (right < this.heap.length && this.heap[right] < this.heap[smallest]) {
+      smallest = right;
+    }
+    
+    if (smallest !== index) {
+      this.swap(index, smallest);
+      this.bubbleDown(smallest);
+    }
+  }
+  
+  peek() { return this.heap[0]; }
+  size() { return this.heap.length; }
+}
+\`\`\`
+
+**Use Cases:** Priority queues, Dijkstra's, heap sort`
+      },
       { 
         id: 17, 
         text: "Solve the two sum problem.", 
@@ -972,14 +3701,483 @@ function twoSumSorted(nums, target) {
 
 **Time:** O(n) hash, O(n log n) two-pointer (with sort)`
       },
-      { id: 18, text: "Find all permutations of a string.", difficulty: "Medium" },
-      { id: 19, text: "Implement quicksort algorithm.", difficulty: "Medium" },
-      { id: 20, text: "Find the longest common subsequence.", difficulty: "Medium" },
-      { id: 21, text: "Implement Dijkstra's shortest path algorithm.", difficulty: "Hard" },
-      { id: 22, text: "Solve the N-Queens problem.", difficulty: "Hard" },
-      { id: 23, text: "Implement a trie data structure.", difficulty: "Hard" },
-      { id: 24, text: "Find the longest palindromic substring.", difficulty: "Hard" },
-      { id: 25, text: "Solve the coin change problem using dynamic programming.", difficulty: "Hard" },
+      { 
+        id: 18, 
+        text: "Find all permutations of a string.", 
+        difficulty: "Medium",
+        answer: `**Backtracking Approach:**
+
+\`\`\`javascript
+function permutations(str) {
+  const result = [];
+  const chars = str.split('');
+  
+  function backtrack(start) {
+    if (start === chars.length) {
+      result.push(chars.join(''));
+      return;
+    }
+    
+    for (let i = start; i < chars.length; i++) {
+      // Swap
+      [chars[start], chars[i]] = [chars[i], chars[start]];
+      
+      // Recurse
+      backtrack(start + 1);
+      
+      // Backtrack (undo swap)
+      [chars[start], chars[i]] = [chars[i], chars[start]];
+    }
+  }
+  
+  backtrack(0);
+  return result;
+}
+
+// permutations("abc") → ["abc", "acb", "bac", "bca", "cab", "cba"]
+\`\`\`
+
+**With duplicates handling:**
+\`\`\`javascript
+function uniquePermutations(str) {
+  const result = [];
+  const chars = str.split('').sort();
+  const used = new Array(chars.length).fill(false);
+  
+  function backtrack(current) {
+    if (current.length === chars.length) {
+      result.push(current);
+      return;
+    }
+    
+    for (let i = 0; i < chars.length; i++) {
+      if (used[i]) continue;
+      if (i > 0 && chars[i] === chars[i-1] && !used[i-1]) continue;
+      
+      used[i] = true;
+      backtrack(current + chars[i]);
+      used[i] = false;
+    }
+  }
+  
+  backtrack('');
+  return result;
+}
+\`\`\`
+
+**Time:** O(n! × n) | **Space:** O(n)`
+      },
+      { 
+        id: 19, 
+        text: "Implement quicksort algorithm.", 
+        difficulty: "Medium",
+        answer: `**QuickSort** - Divide and conquer sorting algorithm.
+
+\`\`\`javascript
+function quickSort(arr, low = 0, high = arr.length - 1) {
+  if (low < high) {
+    const pivotIndex = partition(arr, low, high);
+    quickSort(arr, low, pivotIndex - 1);
+    quickSort(arr, pivotIndex + 1, high);
+  }
+  return arr;
+}
+
+function partition(arr, low, high) {
+  const pivot = arr[high]; // Choose last element as pivot
+  let i = low - 1;
+  
+  for (let j = low; j < high; j++) {
+    if (arr[j] < pivot) {
+      i++;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+  
+  [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+  return i + 1;
+}
+\`\`\`
+
+**With random pivot (better average case):**
+\`\`\`javascript
+function partitionRandom(arr, low, high) {
+  const randomIndex = Math.floor(Math.random() * (high - low + 1)) + low;
+  [arr[randomIndex], arr[high]] = [arr[high], arr[randomIndex]];
+  return partition(arr, low, high);
+}
+\`\`\`
+
+**Complexity:**
+| Case | Time | Space |
+|------|------|-------|
+| Best | O(n log n) | O(log n) |
+| Average | O(n log n) | O(log n) |
+| Worst | O(n²) | O(n) |
+
+**Worst case:** Already sorted array with bad pivot selection`
+      },
+      { 
+        id: 20, 
+        text: "Find the longest common subsequence.", 
+        difficulty: "Medium",
+        answer: `**LCS** - Classic dynamic programming problem.
+
+\`\`\`javascript
+function longestCommonSubsequence(text1, text2) {
+  const m = text1.length;
+  const n = text2.length;
+  
+  // Create DP table
+  const dp = Array(m + 1).fill(null)
+    .map(() => Array(n + 1).fill(0));
+  
+  // Fill table
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (text1[i - 1] === text2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+  
+  return dp[m][n];
+}
+
+// Get the actual subsequence:
+function getLCS(text1, text2) {
+  // ... build dp table first ...
+  
+  let lcs = '';
+  let i = m, j = n;
+  
+  while (i > 0 && j > 0) {
+    if (text1[i - 1] === text2[j - 1]) {
+      lcs = text1[i - 1] + lcs;
+      i--; j--;
+    } else if (dp[i - 1][j] > dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+  
+  return lcs;
+}
+\`\`\`
+
+**Example:**
+\`\`\`
+text1 = "ABCDGH"
+text2 = "AEDFHR"
+LCS = "ADH" (length 3)
+\`\`\`
+
+**Time:** O(m × n) | **Space:** O(m × n)`
+      },
+      { 
+        id: 21, 
+        text: "Implement Dijkstra's shortest path algorithm.", 
+        difficulty: "Hard",
+        answer: `**Dijkstra's Algorithm** finds shortest paths in weighted graphs.
+
+\`\`\`javascript
+function dijkstra(graph, start) {
+  const distances = {};
+  const visited = new Set();
+  const pq = new MinPriorityQueue({ priority: x => x.distance });
+  
+  // Initialize distances
+  for (const node in graph) {
+    distances[node] = Infinity;
+  }
+  distances[start] = 0;
+  
+  pq.enqueue({ node: start, distance: 0 });
+  
+  while (!pq.isEmpty()) {
+    const { node } = pq.dequeue().element;
+    
+    if (visited.has(node)) continue;
+    visited.add(node);
+    
+    for (const [neighbor, weight] of Object.entries(graph[node] || {})) {
+      const newDist = distances[node] + weight;
+      
+      if (newDist < distances[neighbor]) {
+        distances[neighbor] = newDist;
+        pq.enqueue({ node: neighbor, distance: newDist });
+      }
+    }
+  }
+  
+  return distances;
+}
+
+// Graph representation
+const graph = {
+  A: { B: 4, C: 2 },
+  B: { C: 1, D: 5 },
+  C: { B: 1, D: 8 },
+  D: {}
+};
+
+dijkstra(graph, 'A'); // { A: 0, B: 3, C: 2, D: 8 }
+\`\`\`
+
+**Limitations:**
+- No negative weights (use Bellman-Ford)
+- Single source shortest path
+
+**Time:** O((V + E) log V) with min-heap`
+      },
+      { 
+        id: 22, 
+        text: "Solve the N-Queens problem.", 
+        difficulty: "Hard",
+        answer: `**N-Queens** - Place N queens on N×N board with no attacks.
+
+\`\`\`javascript
+function solveNQueens(n) {
+  const result = [];
+  const board = Array(n).fill(null).map(() => Array(n).fill('.'));
+  
+  function isValid(row, col) {
+    // Check column
+    for (let i = 0; i < row; i++) {
+      if (board[i][col] === 'Q') return false;
+    }
+    
+    // Check diagonal (upper-left)
+    for (let i = row - 1, j = col - 1; i >= 0 && j >= 0; i--, j--) {
+      if (board[i][j] === 'Q') return false;
+    }
+    
+    // Check anti-diagonal (upper-right)
+    for (let i = row - 1, j = col + 1; i >= 0 && j < n; i--, j++) {
+      if (board[i][j] === 'Q') return false;
+    }
+    
+    return true;
+  }
+  
+  function backtrack(row) {
+    if (row === n) {
+      result.push(board.map(r => r.join('')));
+      return;
+    }
+    
+    for (let col = 0; col < n; col++) {
+      if (isValid(row, col)) {
+        board[row][col] = 'Q';
+        backtrack(row + 1);
+        board[row][col] = '.'; // Backtrack
+      }
+    }
+  }
+  
+  backtrack(0);
+  return result;
+}
+\`\`\`
+
+**Optimized with sets:**
+\`\`\`javascript
+const cols = new Set();
+const diag1 = new Set(); // row - col
+const diag2 = new Set(); // row + col
+\`\`\`
+
+**Time:** O(N!) | **Space:** O(N²)`
+      },
+      { 
+        id: 23, 
+        text: "Implement a trie data structure.", 
+        difficulty: "Hard",
+        answer: `**Trie (Prefix Tree)** - Efficient string storage and lookup.
+
+\`\`\`javascript
+class TrieNode {
+  constructor() {
+    this.children = {};
+    this.isEndOfWord = false;
+  }
+}
+
+class Trie {
+  constructor() {
+    this.root = new TrieNode();
+  }
+  
+  // Insert word - O(m)
+  insert(word) {
+    let node = this.root;
+    for (const char of word) {
+      if (!node.children[char]) {
+        node.children[char] = new TrieNode();
+      }
+      node = node.children[char];
+    }
+    node.isEndOfWord = true;
+  }
+  
+  // Search exact word - O(m)
+  search(word) {
+    const node = this.traverse(word);
+    return node !== null && node.isEndOfWord;
+  }
+  
+  // Check prefix exists - O(m)
+  startsWith(prefix) {
+    return this.traverse(prefix) !== null;
+  }
+  
+  traverse(str) {
+    let node = this.root;
+    for (const char of str) {
+      if (!node.children[char]) return null;
+      node = node.children[char];
+    }
+    return node;
+  }
+  
+  // Get all words with prefix
+  autocomplete(prefix) {
+    const results = [];
+    const node = this.traverse(prefix);
+    if (!node) return results;
+    
+    function dfs(node, path) {
+      if (node.isEndOfWord) results.push(path);
+      for (const [char, child] of Object.entries(node.children)) {
+        dfs(child, path + char);
+      }
+    }
+    
+    dfs(node, prefix);
+    return results;
+  }
+}
+\`\`\`
+
+**Use Cases:** Autocomplete, spell checker, IP routing`
+      },
+      { 
+        id: 24, 
+        text: "Find the longest palindromic substring.", 
+        difficulty: "Hard",
+        answer: `**Expand Around Center Approach (O(n²)):**
+
+\`\`\`javascript
+function longestPalindrome(s) {
+  if (s.length < 2) return s;
+  
+  let start = 0, maxLen = 1;
+  
+  function expandAroundCenter(left, right) {
+    while (left >= 0 && right < s.length && s[left] === s[right]) {
+      left--;
+      right++;
+    }
+    return right - left - 1; // Length of palindrome
+  }
+  
+  for (let i = 0; i < s.length; i++) {
+    // Odd length palindrome
+    const len1 = expandAroundCenter(i, i);
+    // Even length palindrome
+    const len2 = expandAroundCenter(i, i + 1);
+    
+    const len = Math.max(len1, len2);
+    if (len > maxLen) {
+      maxLen = len;
+      start = i - Math.floor((len - 1) / 2);
+    }
+  }
+  
+  return s.substring(start, start + maxLen);
+}
+\`\`\`
+
+**DP Approach:**
+\`\`\`javascript
+function longestPalindromeDP(s) {
+  const n = s.length;
+  const dp = Array(n).fill(null).map(() => Array(n).fill(false));
+  let start = 0, maxLen = 1;
+  
+  // All single chars are palindromes
+  for (let i = 0; i < n; i++) dp[i][i] = true;
+  
+  // Check substrings of length 2 to n
+  for (let len = 2; len <= n; len++) {
+    for (let i = 0; i <= n - len; i++) {
+      const j = i + len - 1;
+      
+      if (s[i] === s[j] && (len === 2 || dp[i+1][j-1])) {
+        dp[i][j] = true;
+        if (len > maxLen) {
+          start = i;
+          maxLen = len;
+        }
+      }
+    }
+  }
+  
+  return s.substring(start, start + maxLen);
+}
+\`\`\``
+      },
+      { 
+        id: 25, 
+        text: "Solve the coin change problem using dynamic programming.", 
+        difficulty: "Hard",
+        answer: `**Coin Change** - Find minimum coins to make amount.
+
+\`\`\`javascript
+function coinChange(coins, amount) {
+  // dp[i] = min coins needed for amount i
+  const dp = new Array(amount + 1).fill(Infinity);
+  dp[0] = 0;
+  
+  for (let i = 1; i <= amount; i++) {
+    for (const coin of coins) {
+      if (coin <= i && dp[i - coin] !== Infinity) {
+        dp[i] = Math.min(dp[i], dp[i - coin] + 1);
+      }
+    }
+  }
+  
+  return dp[amount] === Infinity ? -1 : dp[amount];
+}
+
+// Example
+coinChange([1, 2, 5], 11); // 3 (5 + 5 + 1)
+coinChange([2], 3);        // -1 (impossible)
+\`\`\`
+
+**Count ways to make change:**
+\`\`\`javascript
+function countWays(coins, amount) {
+  const dp = new Array(amount + 1).fill(0);
+  dp[0] = 1;
+  
+  for (const coin of coins) {
+    for (let i = coin; i <= amount; i++) {
+      dp[i] += dp[i - coin];
+    }
+  }
+  
+  return dp[amount];
+}
+
+countWays([1, 2, 5], 5); // 4 ways: [5], [2,2,1], [2,1,1,1], [1,1,1,1,1]
+\`\`\`
+
+**Time:** O(amount × coins) | **Space:** O(amount)`
+      },
     ],
     "aptitude-questions": [
       { id: 1, text: "A train 150m long crosses a pole in 15 seconds. Find its speed.", difficulty: "Easy" },
@@ -1218,19 +4416,470 @@ FROM sales;
       { id: 15, text: "How do you implement pagination efficiently for large datasets?", difficulty: "Hard" },
     ],
     "core-cs-questions": [
-      { id: 1, text: "What is the difference between process and thread?", difficulty: "Easy" },
-      { id: 2, text: "Explain the OSI model layers.", difficulty: "Easy" },
-      { id: 3, text: "What is virtual memory?", difficulty: "Easy" },
-      { id: 4, text: "Explain TCP vs UDP.", difficulty: "Easy" },
-      { id: 5, text: "What is a deadlock?", difficulty: "Easy" },
-      { id: 6, text: "Explain CPU scheduling algorithms.", difficulty: "Medium" },
-      { id: 7, text: "How does DNS resolution work?", difficulty: "Medium" },
-      { id: 8, text: "What is paging and segmentation?", difficulty: "Medium" },
-      { id: 9, text: "Explain the TCP three-way handshake.", difficulty: "Medium" },
-      { id: 10, text: "What are the SOLID principles?", difficulty: "Medium" },
-      { id: 11, text: "Explain different types of database indexes.", difficulty: "Hard" },
-      { id: 12, text: "How does garbage collection work in different languages?", difficulty: "Hard" },
-      { id: 13, text: "Explain the CAP theorem in distributed systems.", difficulty: "Hard" },
+      { 
+        id: 1, 
+        text: "What is the difference between process and thread?", 
+        difficulty: "Easy",
+        answer: `**Process** = Independent program in execution with its own memory space.
+**Thread** = Lightweight unit of execution within a process, sharing memory.
+
+| Aspect | Process | Thread |
+|--------|---------|--------|
+| Memory | Separate address space | Shared within process |
+| Creation | Expensive (fork) | Lightweight |
+| Communication | IPC (pipes, sockets) | Shared memory |
+| Crash impact | Isolated | Can crash entire process |
+| Context switch | Slow | Fast |
+
+**Example:**
+\`\`\`
+Chrome Browser (Process)
+├── Tab 1 (Process) 
+│   ├── Render Thread
+│   ├── JavaScript Thread
+│   └── Network Thread
+└── Tab 2 (Process)
+\`\`\`
+
+**When to use:**
+- **Processes:** Isolation needed, crash protection
+- **Threads:** Shared state, performance-critical`
+      },
+      { 
+        id: 2, 
+        text: "Explain the OSI model layers.", 
+        difficulty: "Easy",
+        answer: `**7 Layers of OSI Model:**
+
+| Layer | Name | Function | Protocols |
+|-------|------|----------|-----------|
+| 7 | Application | User interface | HTTP, FTP, SMTP |
+| 6 | Presentation | Encryption, compression | SSL, JPEG |
+| 5 | Session | Session management | NetBIOS |
+| 4 | Transport | Reliable delivery | TCP, UDP |
+| 3 | Network | Routing | IP, ICMP |
+| 2 | Data Link | MAC addressing | Ethernet |
+| 1 | Physical | Bits on wire | Cables, hubs |
+
+**Memory trick:** "All People Seem To Need Data Processing" (top-down)
+
+**TCP/IP Model (simpler, more practical):**
+\`\`\`
+Application  (OSI 5-7)
+Transport    (OSI 4)
+Internet     (OSI 3)
+Network      (OSI 1-2)
+\`\`\``
+      },
+      { 
+        id: 3, 
+        text: "What is virtual memory?", 
+        difficulty: "Easy",
+        answer: `**Virtual memory** allows programs to use more memory than physically available by using disk space.
+
+**How it works:**
+\`\`\`
+Program sees: Continuous virtual address space
+OS manages:   Maps virtual → physical pages
+              Swaps unused pages to disk
+\`\`\`
+
+**Key concepts:**
+- **Page:** Fixed-size memory block (4KB typical)
+- **Page table:** Maps virtual to physical addresses
+- **Page fault:** Access to page not in RAM → load from disk
+- **Swap space:** Disk area for storing inactive pages
+
+**Benefits:**
+- Programs larger than RAM can run
+- Memory isolation between processes
+- Efficient memory utilization
+
+**Trade-off:** Page faults cause disk I/O → performance hit (thrashing if excessive)`
+      },
+      { 
+        id: 4, 
+        text: "Explain TCP vs UDP.", 
+        difficulty: "Easy",
+        answer: `**TCP (Transmission Control Protocol)**
+- Connection-oriented
+- Reliable, ordered delivery
+- Flow control, congestion control
+- Higher overhead
+
+**UDP (User Datagram Protocol)**
+- Connectionless
+- No reliability guarantees
+- Faster, lower overhead
+- "Fire and forget"
+
+| Feature | TCP | UDP |
+|---------|-----|-----|
+| Connection | Required (3-way handshake) | None |
+| Reliability | Guaranteed | Best effort |
+| Ordering | Maintained | Not guaranteed |
+| Speed | Slower | Faster |
+| Header size | 20-60 bytes | 8 bytes |
+
+**When to use:**
+- **TCP:** Web, email, file transfer, APIs
+- **UDP:** Gaming, video streaming, DNS, VoIP
+
+**Real example:**
+- Netflix uses TCP for control, UDP for video
+- Online games: UDP for position updates, TCP for chat`
+      },
+      { 
+        id: 5, 
+        text: "What is a deadlock?", 
+        difficulty: "Easy",
+        answer: `**Deadlock** = Two or more processes waiting for each other indefinitely.
+
+**Example:**
+\`\`\`
+Process A: Holds Lock 1, waiting for Lock 2
+Process B: Holds Lock 2, waiting for Lock 1
+→ Neither can proceed!
+\`\`\`
+
+**Four conditions (all required):**
+1. **Mutual exclusion:** Resources can't be shared
+2. **Hold and wait:** Holding one, waiting for another
+3. **No preemption:** Can't force release
+4. **Circular wait:** Circular chain of waiting
+
+**Prevention strategies:**
+- Request all locks at once
+- Lock ordering (always acquire in same order)
+- Timeouts with retry
+- Deadlock detection + recovery
+
+\`\`\`javascript
+// Prevention: Lock ordering
+function transfer(from, to, amount) {
+  const [first, second] = from.id < to.id 
+    ? [from, to] : [to, from];
+  
+  lock(first);
+  lock(second);
+  // Transfer...
+  unlock(second);
+  unlock(first);
+}
+\`\`\``
+      },
+      { 
+        id: 6, 
+        text: "Explain CPU scheduling algorithms.", 
+        difficulty: "Medium",
+        answer: `**CPU Schedulers** decide which process runs next.
+
+**Algorithms:**
+
+**1. FCFS (First Come First Served)**
+- Simple queue
+- Problem: Convoy effect (long job blocks short ones)
+
+**2. SJF (Shortest Job First)**
+- Optimal average wait time
+- Problem: Starvation of long jobs
+
+**3. Round Robin**
+- Time slice (quantum) per process
+- Fair, good for interactive systems
+\`\`\`
+Process A [2ms] → B [2ms] → C [2ms] → A [2ms] → ...
+\`\`\`
+
+**4. Priority Scheduling**
+- Higher priority first
+- Problem: Starvation (solved by aging)
+
+**5. Multilevel Feedback Queue**
+- Multiple queues with different priorities
+- Processes move between queues based on behavior
+
+**Metrics:**
+- **Turnaround time:** Submission to completion
+- **Wait time:** Time in ready queue
+- **Response time:** First response`
+      },
+      { 
+        id: 7, 
+        text: "How does DNS resolution work?", 
+        difficulty: "Medium",
+        answer: `**DNS** translates domain names to IP addresses.
+
+**Resolution flow:**
+\`\`\`
+Browser: "google.com" → IP?
+
+1. Check browser cache
+2. Check OS cache
+3. Query local DNS resolver
+4. Resolver → Root DNS server
+5. Root → TLD server (.com)
+6. TLD → Authoritative server (google.com)
+7. Get IP address: 142.250.80.46
+8. Cache result, return to browser
+\`\`\`
+
+**Record types:**
+| Type | Purpose | Example |
+|------|---------|---------|
+| A | IPv4 address | 142.250.80.46 |
+| AAAA | IPv6 address | 2607:f8b0:... |
+| CNAME | Alias | www → example.com |
+| MX | Mail server | mail.example.com |
+| TXT | Text data | SPF, DKIM records |
+
+**TTL (Time To Live):** How long to cache the result
+
+\`\`\`bash
+# Check DNS records
+nslookup google.com
+dig google.com
+\`\`\``
+      },
+      { 
+        id: 8, 
+        text: "What is paging and segmentation?", 
+        difficulty: "Medium",
+        answer: `Memory management techniques for virtual memory.
+
+**Paging:**
+- Fixed-size blocks (pages, typically 4KB)
+- Simple allocation, no external fragmentation
+- May have internal fragmentation
+
+\`\`\`
+Virtual Page 0 → Physical Frame 5
+Virtual Page 1 → Physical Frame 2
+Virtual Page 2 → Disk (swapped out)
+\`\`\`
+
+**Segmentation:**
+- Variable-size blocks based on logical units
+- Code segment, data segment, stack segment
+- More meaningful to programmer
+- Can have external fragmentation
+
+\`\`\`
+Segment 0 (Code):    0x1000 - 0x2FFF
+Segment 1 (Data):    0x3000 - 0x4FFF
+Segment 2 (Stack):   0x5000 - 0x5FFF
+\`\`\`
+
+**Modern systems:** Combine both (segmented paging)
+- Segments divided into pages
+- Benefits of both approaches`
+      },
+      { 
+        id: 9, 
+        text: "Explain the TCP three-way handshake.", 
+        difficulty: "Medium",
+        answer: `**Three-way handshake** establishes TCP connection.
+
+\`\`\`
+Client                    Server
+  |                          |
+  |------- SYN seq=x ------->|
+  |                          |
+  |<-- SYN-ACK seq=y,ack=x+1-|
+  |                          |
+  |------ ACK ack=y+1 ------>|
+  |                          |
+  |====== Connected =========|
+\`\`\`
+
+**Steps:**
+1. **SYN:** Client sends sequence number x
+2. **SYN-ACK:** Server acknowledges x+1, sends its seq y
+3. **ACK:** Client acknowledges y+1
+
+**Why 3 steps?**
+- Both sides confirm send/receive capability
+- Exchange initial sequence numbers
+- Prevent old duplicate connections
+
+**Connection teardown (4-way):**
+\`\`\`
+FIN → ACK → FIN → ACK
+\`\`\`
+
+**Common issues:**
+- SYN flood attack (DDoS)
+- Half-open connections`
+      },
+      { 
+        id: 10, 
+        text: "What are the SOLID principles?", 
+        difficulty: "Medium",
+        answer: `**SOLID** = Five principles for maintainable OOP code.
+
+**S - Single Responsibility**
+\`\`\`javascript
+// Bad: One class does everything
+// Good: Separate classes for each concern
+class UserRepository { /* data access only */ }
+class EmailService { /* email only */ }
+\`\`\`
+
+**O - Open/Closed**
+Open for extension, closed for modification.
+\`\`\`javascript
+// Use inheritance/composition instead of modifying
+class Shape { area() {} }
+class Circle extends Shape { area() { return π * r² } }
+\`\`\`
+
+**L - Liskov Substitution**
+Subtypes must be substitutable for base types.
+\`\`\`javascript
+// Rectangle/Square problem
+// If Square extends Rectangle, setWidth/setHeight breaks
+\`\`\`
+
+**I - Interface Segregation**
+Many specific interfaces > one general interface.
+\`\`\`javascript
+// Bad: interface Worker { work(), eat() }
+// Good: interface Workable { work() }
+//       interface Eatable { eat() }
+\`\`\`
+
+**D - Dependency Inversion**
+Depend on abstractions, not concretions.
+\`\`\`javascript
+class Service {
+  constructor(repository) { // Inject dependency
+    this.repo = repository;
+  }
+}
+\`\`\``
+      },
+      { 
+        id: 11, 
+        text: "Explain different types of database indexes.", 
+        difficulty: "Hard",
+        answer: `**Database indexes** speed up queries at the cost of write performance.
+
+**1. B-Tree Index (Default)**
+\`\`\`sql
+CREATE INDEX idx_email ON users(email);
+-- Good for: =, <, >, BETWEEN, ORDER BY
+\`\`\`
+
+**2. Hash Index**
+\`\`\`sql
+CREATE INDEX idx_hash ON users USING HASH(email);
+-- Good for: = only (exact match)
+-- Faster than B-tree for equality
+\`\`\`
+
+**3. Composite Index**
+\`\`\`sql
+CREATE INDEX idx_name ON users(last_name, first_name);
+-- Uses leftmost prefix
+-- Works: WHERE last_name = 'Smith'
+-- Works: WHERE last_name = 'Smith' AND first_name = 'John'
+-- Doesn't work: WHERE first_name = 'John'
+\`\`\`
+
+**4. Partial Index**
+\`\`\`sql
+CREATE INDEX idx_active ON users(email) WHERE active = true;
+-- Smaller index, faster for filtered queries
+\`\`\`
+
+**5. GIN/GiST (PostgreSQL)**
+\`\`\`sql
+CREATE INDEX idx_tags ON posts USING GIN(tags);
+-- Good for: Arrays, full-text search, JSONB
+\`\`\`
+
+**When NOT to index:**
+- Small tables
+- Frequently updated columns
+- Low cardinality columns`
+      },
+      { 
+        id: 12, 
+        text: "How does garbage collection work in different languages?", 
+        difficulty: "Hard",
+        answer: `**Garbage Collection** automatically frees unused memory.
+
+**1. Reference Counting (Python, Swift)**
+\`\`\`
+object.ref_count++  // when referenced
+object.ref_count--  // when dereferenced
+if (ref_count == 0) free(object)
+\`\`\`
+Problem: Circular references
+
+**2. Mark and Sweep (JavaScript)**
+\`\`\`
+1. Mark: Start from roots, mark reachable objects
+2. Sweep: Free unmarked objects
+\`\`\`
+
+**3. Generational GC (Java, .NET)**
+\`\`\`
+Young Generation: Frequent, fast collection (minor GC)
+Old Generation: Infrequent, slower (major GC)
+
+Most objects die young → optimize for that
+\`\`\`
+
+**4. Concurrent/Incremental**
+- Run GC alongside application
+- Reduce pause times
+
+**Manual Memory (C, C++, Rust)**
+\`\`\`c
+int* p = malloc(sizeof(int));
+free(p);  // Must free manually
+\`\`\`
+
+**Rust:** Ownership model, no GC
+\`\`\`rust
+let s = String::from("hello");
+// s dropped automatically when out of scope
+\`\`\``
+      },
+      { 
+        id: 13, 
+        text: "Explain the CAP theorem in distributed systems.", 
+        difficulty: "Hard",
+        answer: `**CAP Theorem:** A distributed system can only provide 2 of 3 guarantees:
+
+**C - Consistency:** Every read receives the most recent write
+**A - Availability:** Every request receives a response
+**P - Partition Tolerance:** System continues despite network failures
+
+**Why only 2?**
+During a network partition:
+- Choose **Consistency:** Reject requests until partition heals
+- Choose **Availability:** Serve potentially stale data
+
+**Classifications:**
+| System | Type | Trade-off |
+|--------|------|-----------|
+| Traditional SQL | CA | Not partition tolerant |
+| MongoDB, HBase | CP | May be unavailable |
+| Cassandra, DynamoDB | AP | Eventually consistent |
+
+**Real-world:**
+- Network partitions are unavoidable
+- Most choose between CP and AP
+- Many systems are configurable per-operation
+
+**PACELC extension:**
+\`\`\`
+If Partition: Availability vs Consistency
+Else: Latency vs Consistency
+\`\`\``
+      },
     ],
   },
   "ai-engineer": {
