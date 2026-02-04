@@ -18,12 +18,22 @@ import {
   Sparkles,
   Target,
   Briefcase,
+  Share2,
+  Copy,
+  Check,
+  Facebook,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -124,6 +134,7 @@ const PublicProfile = () => {
   const [profile, setProfile] = useState<PublicProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -201,6 +212,49 @@ const PublicProfile = () => {
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const shareUrl = `${window.location.origin}/u/${profile?.username}`;
+  const shareText = `Check out ${profile?.full_name}'s profile on UniDash!`;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      toast.success("Link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handleShareTwitter = () => {
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareLinkedIn = () => {
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareFacebook = () => {
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${profile?.full_name}'s Profile`,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (error) {
+        // User cancelled or error occurred
+      }
+    }
   };
 
   if (isLoading) {
@@ -326,6 +380,46 @@ const PublicProfile = () => {
             <Card className="overflow-hidden">
               <div className="h-32 bg-gradient-to-r from-primary/30 via-primary/20 to-transparent" />
               <CardContent className="relative pt-0 pb-8">
+                {/* Share Button - positioned in top right */}
+                <div className="absolute top-4 right-4">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Share2 className="h-4 w-4" />
+                        Share
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={handleCopyLink} className="cursor-pointer">
+                        {copied ? (
+                          <Check className="h-4 w-4 mr-2 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4 mr-2" />
+                        )}
+                        Copy Link
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleShareTwitter} className="cursor-pointer">
+                        <Twitter className="h-4 w-4 mr-2" />
+                        Share on X
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleShareLinkedIn} className="cursor-pointer">
+                        <Linkedin className="h-4 w-4 mr-2" />
+                        Share on LinkedIn
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleShareFacebook} className="cursor-pointer">
+                        <Facebook className="h-4 w-4 mr-2" />
+                        Share on Facebook
+                      </DropdownMenuItem>
+                      {typeof navigator !== "undefined" && navigator.share && (
+                        <DropdownMenuItem onClick={handleNativeShare} className="cursor-pointer">
+                          <Share2 className="h-4 w-4 mr-2" />
+                          More Options
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
                 <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16">
                   {/* Avatar */}
                   <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
