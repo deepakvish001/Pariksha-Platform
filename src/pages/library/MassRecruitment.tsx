@@ -456,26 +456,72 @@ const MassRecruitment = () => {
         </header>
 
         <main className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
-          {/* Company Tabs - Horizontal Scrollable */}
-          <ScrollArea className="w-full">
-            <div className="flex gap-2 pb-2">
-              {massRecruitmentCompanies.map((company) => (
-                <Button
-                  key={company.id}
-                  variant={selectedCompanyId === company.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleCompanyChange(company.id)}
-                  className={cn(
-                    "shrink-0 text-xs md:text-sm",
-                    selectedCompanyId === company.id && "bg-primary text-primary-foreground"
-                  )}
-                >
-                  {company.shortName || company.name}
-                </Button>
-              ))}
+          {/* Company Selector - Responsive Grid with Search */}
+          <div className="space-y-3">
+            {/* Selected Company Header + Dropdown */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20">
+                  <span className="text-sm font-bold text-primary">
+                    {(selectedCompany?.shortName || selectedCompany?.name || "").slice(0, 2).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <h2 className="font-semibold text-lg">{selectedCompany?.name}</h2>
+                  <p className="text-xs text-muted-foreground">Mass Recruitment Preparation</p>
+                </div>
+              </div>
+              
+              {/* Quick Select Dropdown for Mobile */}
+              <div className="sm:hidden">
+                <Select value={selectedCompanyId} onValueChange={handleCompanyChange}>
+                  <SelectTrigger className="w-[160px] h-9">
+                    <SelectValue placeholder="Select company" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {massRecruitmentCompanies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.shortName || company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+
+            {/* Company Grid - Desktop/Tablet */}
+            <div className="hidden sm:grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-9 gap-2">
+              {massRecruitmentCompanies.map((company) => {
+                const isSelected = selectedCompanyId === company.id;
+                const isFav = favorites.has(company.id);
+                return (
+                  <motion.button
+                    key={company.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleCompanyChange(company.id)}
+                    className={cn(
+                      "relative p-3 rounded-lg border text-center transition-all duration-200",
+                      "hover:shadow-md hover:border-primary/40",
+                      isSelected
+                        ? "bg-primary text-primary-foreground border-primary shadow-md"
+                        : "bg-card border-border hover:bg-muted/50"
+                    )}
+                  >
+                    {isFav && (
+                      <Star className="absolute top-1 right-1 h-3 w-3 fill-amber-400 text-amber-400" />
+                    )}
+                    <span className={cn(
+                      "text-xs font-medium line-clamp-1",
+                      isSelected ? "text-primary-foreground" : "text-foreground"
+                    )}>
+                      {company.shortName || company.name}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Progress Summary Card */}
           {user && <ProgressSummaryCard stats={progressStats} />}
