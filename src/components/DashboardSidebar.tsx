@@ -146,9 +146,19 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
           <TooltipTrigger asChild>
             <SidebarMenuButton
               tooltip={title}
-              className="transition-all duration-200 hover:scale-105 justify-center"
+              className={cn(
+                "transition-all duration-200 hover:scale-105 justify-center",
+                isActiveGroup && "bg-sidebar-accent text-sidebar-accent-foreground"
+              )}
             >
-              {GroupIcon && <GroupIcon className="h-4 w-4 shrink-0" />}
+              {GroupIcon && (
+                <div className="relative">
+                  <GroupIcon className="h-4 w-4 shrink-0" />
+                  {isActiveGroup && (
+                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  )}
+                </div>
+              )}
             </SidebarMenuButton>
           </TooltipTrigger>
           <TooltipContent side="right" align="start" className="p-0 w-48">
