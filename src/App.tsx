@@ -21,6 +21,40 @@ import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
+// Library Pages
+import PositionResources from "./pages/library/PositionResources";
+import CompanyResources from "./pages/library/CompanyResources";
+import MassRecruitment from "./pages/library/MassRecruitment";
+import InterviewQuestions from "./pages/library/InterviewQuestions";
+import DSAQuestions from "./pages/library/DSAQuestions";
+import SQLQuestions from "./pages/library/SQLQuestions";
+import AptitudeQuestions from "./pages/library/AptitudeQuestions";
+import CoreCSSubjects from "./pages/library/CoreCSSubjects";
+import HandwrittenNotes from "./pages/library/HandwrittenNotes";
+import Quiz from "./pages/library/Quiz";
+
+// Fundamentals Pages
+import Language from "./pages/fundamentals/Language";
+import OOPsConcepts from "./pages/fundamentals/OOPsConcepts";
+
+// System Design Pages
+import HighLevelDesign from "./pages/system-design/HighLevelDesign";
+import LowLevelDesign from "./pages/system-design/LowLevelDesign";
+
+// Research Pages
+import JobPortals from "./pages/research/JobPortals";
+import Roadmap from "./pages/research/Roadmap";
+import ResumeTemplates from "./pages/research/ResumeTemplates";
+import ResumeAnalyser from "./pages/research/ResumeAnalyser";
+import ColdOutreach from "./pages/research/ColdOutreach";
+import MyActivity from "./pages/research/MyActivity";
+
+// Platform Pages
+import AstraAI from "./pages/platform/AstraAI";
+import Resources from "./pages/platform/Resources";
+import Collections from "./pages/platform/Collections";
+import Affiliate from "./pages/platform/Affiliate";
+
 const queryClient = new QueryClient();
 
 // Layout wrapper for dashboard routes
@@ -55,6 +89,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              
               {/* Dashboard routes with shared layout */}
               <Route path="/dashboard" element={<DashboardLayoutWrapper />}>
                 <Route index element={<Dashboard />} />
@@ -62,6 +97,52 @@ const App = () => (
                 <Route path="sheets" element={<DashboardSheets />} />
                 <Route path="profile" element={<DashboardProfile />} />
               </Route>
+
+              {/* Library routes */}
+              <Route path="/library" element={<DashboardLayoutWrapper />}>
+                <Route path="positions" element={<PositionResources />} />
+                <Route path="companies" element={<CompanyResources />} />
+                <Route path="recruitment" element={<MassRecruitment />} />
+                <Route path="interview" element={<InterviewQuestions />} />
+                <Route path="dsa" element={<DSAQuestions />} />
+                <Route path="sql" element={<SQLQuestions />} />
+                <Route path="aptitude" element={<AptitudeQuestions />} />
+                <Route path="cs" element={<CoreCSSubjects />} />
+                <Route path="notes" element={<HandwrittenNotes />} />
+                <Route path="quiz" element={<Quiz />} />
+              </Route>
+
+              {/* Fundamentals routes */}
+              <Route path="/fundamentals" element={<DashboardLayoutWrapper />}>
+                <Route path="language" element={<Language />} />
+                <Route path="oops" element={<OOPsConcepts />} />
+              </Route>
+
+              {/* System Design routes */}
+              <Route path="/system-design" element={<DashboardLayoutWrapper />}>
+                <Route path="hld" element={<HighLevelDesign />} />
+                <Route path="lld" element={<LowLevelDesign />} />
+              </Route>
+
+              {/* Research routes */}
+              <Route path="/research" element={<DashboardLayoutWrapper />}>
+                <Route path="jobs" element={<JobPortals />} />
+                <Route path="roadmap" element={<Roadmap />} />
+                <Route path="resume" element={<ResumeTemplates />} />
+                <Route path="analyser" element={<ResumeAnalyser />} />
+                <Route path="outreach" element={<ColdOutreach />} />
+                <Route path="activity" element={<MyActivity />} />
+              </Route>
+
+              {/* Platform routes */}
+              <Route path="/platform" element={<DashboardLayoutWrapper />}>
+                <Route path="ai" element={<AstraAI />} />
+                <Route path="resources" element={<Resources />} />
+                <Route path="collections" element={<Collections />} />
+                <Route path="affiliate" element={<Affiliate />} />
+              </Route>
+
+              {/* Settings */}
               <Route
                 path="/settings"
                 element={
@@ -72,6 +153,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
