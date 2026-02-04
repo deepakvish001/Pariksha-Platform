@@ -8,6 +8,7 @@ import Momentum from "@/components/Momentum";
 import Upcoming from "@/components/Upcoming";
 import Pricing from "@/components/Pricing";
 import CTA from "@/components/CTA";
+import Footer from "@/components/Footer";
 
 const Index = () => {
   return (
@@ -28,6 +29,7 @@ const Index = () => {
         <Pricing />
       </section>
       <CTA />
+      <Footer />
     </main>
   );
 };
