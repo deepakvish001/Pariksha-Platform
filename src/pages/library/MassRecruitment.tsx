@@ -22,11 +22,14 @@ import {
   BookmarkCheck,
   FileQuestion,
   TrendingUp,
+  Folder,
 } from "lucide-react";
 import CompanyCategorySection from "@/components/library/CompanyCategorySection";
 import CompanyQuestionTableRow from "@/components/library/CompanyQuestionTableRow";
 import ProgressSummaryCard from "@/components/library/ProgressSummaryCard";
 import SpacedRepetitionPanel from "@/components/library/SpacedRepetitionPanel";
+import FolderManager from "@/components/library/FolderManager";
+import AddToFolderButton from "@/components/library/AddToFolderButton";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,13 +65,14 @@ import {
 } from "@/data/massRecruitmentData";
 import type { Difficulty, Question } from "@/data/companyDetailData";
 import { useMassRecruitmentProgress } from "@/hooks/useMassRecruitmentProgress";
+import { useFolders } from "@/hooks/useFolders";
 
 // Local storage keys
 const FAVORITES_KEY = "mass-recruitment-favorites";
 const VIEW_MODE_STORAGE_KEY = "mass-recruitment-view-mode";
 
 // View modes
-type ViewMode = "all" | "revision";
+type ViewMode = "all" | "revision" | "folders";
 type LayoutMode = "sections" | "tabs";
 
 // Tab icons mapping
@@ -103,6 +107,7 @@ const MassRecruitment = () => {
     const saved = localStorage.getItem(FAVORITES_KEY);
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
   // Persist layout mode preference
   useEffect(() => {
@@ -128,6 +133,19 @@ const MassRecruitment = () => {
     dueQuestions,
     spacedRepetitionStats,
   } = useMassRecruitmentProgress(selectedCompanyId, activeTab);
+
+  // Folders hook - using company-specific source
+  const {
+    folders,
+    folderItems,
+    isLoading: foldersLoading,
+    createFolder,
+    updateFolder,
+    deleteFolder,
+    addToFolder,
+    removeFromFolder,
+    isInFolder,
+  } = useFolders(`mass-recruitment-${selectedCompanyId}`);
 
   // Save favorites
   useEffect(() => {
@@ -208,7 +226,33 @@ const MassRecruitment = () => {
     return questions;
   }, [allQuestions, isRevision]);
 
-  // Get questions grouped by category for section view
+  // Get questions in selected folder
+  const folderQuestions = useMemo(() => {
+    if (!selectedFolderId) return [];
+    const items = folderItems[selectedFolderId] || [];
+    const questionSource = `mass-recruitment-${selectedCompanyId}`;
+    const questionList: (Question & { categoryId: string; categoryName: string })[] = [];
+    
+    items
+      .filter((item) => item.question_source === questionSource)
+      .forEach((item) => {
+        // Find which category has this question
+        for (const cat of massRecruitmentCategories) {
+          const catQuestions = allQuestions[cat.id] || [];
+          const foundQuestion = catQuestions.find((q) => q.id === item.question_id);
+          if (foundQuestion) {
+            questionList.push({
+              ...foundQuestion,
+              categoryId: cat.id,
+              categoryName: cat.name,
+            });
+            break;
+          }
+        }
+      });
+    
+    return questionList;
+  }, [selectedFolderId, folderItems, selectedCompanyId, allQuestions]);
   const questionsByCategory = useMemo(() => {
     const result: Record<string, Question[]> = {};
     massRecruitmentCategories.forEach((cat) => {
@@ -260,9 +304,17 @@ const MassRecruitment = () => {
     }
   }, [searchQuery, layoutMode, questionsByCategory]);
 
-  // Filter questions for tabs mode
+  // Filter questions for tabs mode (including folders mode)
   const filteredTabQuestions = useMemo(() => {
-    let filtered = viewMode === "revision" ? revisionQuestions : currentTabQuestions;
+    let filtered: (Question & { categoryId?: string; categoryName?: string })[];
+    
+    if (viewMode === "folders" && selectedFolderId) {
+      filtered = folderQuestions;
+    } else if (viewMode === "revision") {
+      filtered = revisionQuestions;
+    } else {
+      filtered = currentTabQuestions;
+    }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -274,7 +326,7 @@ const MassRecruitment = () => {
     }
 
     return filtered;
-  }, [currentTabQuestions, revisionQuestions, searchQuery, difficultyFilter, viewMode]);
+  }, [currentTabQuestions, revisionQuestions, folderQuestions, searchQuery, difficultyFilter, viewMode, selectedFolderId]);
 
   // Section controls (accordion behavior)
   const toggleSection = useCallback((categoryId: string) => {
@@ -537,7 +589,18 @@ const MassRecruitment = () => {
             />
           )}
 
-          {/* Questions Section */}
+          {/* Folder Manager (for folders view mode) */}
+          {viewMode === "folders" && user && (
+            <FolderManager
+              folders={folders}
+              selectedFolderId={selectedFolderId}
+              onSelectFolder={setSelectedFolderId}
+              onCreateFolder={createFolder}
+              onUpdateFolder={updateFolder}
+              onDeleteFolder={deleteFolder}
+              isLoading={foldersLoading}
+            />
+          )}
           <section>
             {/* Section Header */}
             <div className="flex items-center gap-2 mb-3">
@@ -639,11 +702,16 @@ const MassRecruitment = () => {
                     )}
                   </div>
 
-                  {/* View Mode (All/Revision) */}
+                  {/* View Mode (All/Revision/Folders) */}
                   <div className="flex items-center gap-2">
                     <Tabs
                       value={viewMode}
-                      onValueChange={(v) => setViewMode(v as ViewMode)}
+                      onValueChange={(v) => {
+                        setViewMode(v as ViewMode);
+                        if (v !== "folders") {
+                          setSelectedFolderId(null);
+                        }
+                      }}
                       className="h-8"
                     >
                       <TabsList className="h-8 p-1">
@@ -653,6 +721,10 @@ const MassRecruitment = () => {
                         <TabsTrigger value="revision" className="text-xs h-6 px-3 gap-1">
                           <BookmarkCheck className="h-3 w-3" />
                           Revision
+                        </TabsTrigger>
+                        <TabsTrigger value="folders" className="text-xs h-6 px-3 gap-1">
+                          <Folder className="h-3 w-3" />
+                          Folders
                         </TabsTrigger>
                       </TabsList>
                     </Tabs>
@@ -800,7 +872,7 @@ const MassRecruitment = () => {
                         <TableRow className="hover:bg-transparent bg-muted/20">
                           <TableHead className="w-10 sm:w-12 text-xs font-semibold">#</TableHead>
                           <TableHead className="min-w-0 text-xs font-semibold">Question</TableHead>
-                          {viewMode === "revision" && (
+                          {(viewMode === "revision" || viewMode === "folders") && (
                             <TableHead className="hidden md:table-cell w-28 text-xs font-semibold">Category</TableHead>
                           )}
                           <TableHead className="hidden sm:table-cell w-20 sm:w-24 text-xs font-semibold">Difficulty</TableHead>
@@ -812,6 +884,11 @@ const MassRecruitment = () => {
                             <span className="hidden sm:inline">Revision</span>
                             <span className="sm:hidden">★</span>
                           </TableHead>
+                          {user && folders.length > 0 && viewMode !== "folders" && (
+                            <TableHead className="w-12 text-center text-xs font-semibold">
+                              <Folder className="h-3.5 w-3.5 mx-auto" />
+                            </TableHead>
+                          )}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -825,10 +902,22 @@ const MassRecruitment = () => {
                               isRevision={isRevision(question.id)}
                               isExpanded={expandedQuestionIds.has(question.id)}
                               isLoggedIn={!!user}
-                              showCategory={viewMode === "revision"}
+                              showCategory={viewMode === "revision" || viewMode === "folders"}
                               onToggleSolved={() => handleToggleSolved(question.id)}
                               onToggleRevision={() => handleToggleRevision(question.id)}
                               onToggleExpand={() => handleToggleExpand(question.id)}
+                              folderButton={
+                                user && folders.length > 0 && viewMode !== "folders" ? (
+                                  <AddToFolderButton
+                                    questionId={question.id}
+                                    questionSource={`mass-recruitment-${selectedCompanyId}`}
+                                    folders={folders}
+                                    isInFolder={isInFolder}
+                                    onAddToFolder={addToFolder}
+                                    onRemoveFromFolder={removeFromFolder}
+                                  />
+                                ) : undefined
+                              }
                             />
                           ))}
                         </AnimatePresence>
@@ -837,6 +926,10 @@ const MassRecruitment = () => {
                   </div>
                 ) : viewMode === "revision" ? (
                   <EmptyRevisionState onBrowseAll={() => setViewMode("all")} />
+                ) : viewMode === "folders" && !selectedFolderId ? (
+                  <EmptySelectFolderState />
+                ) : viewMode === "folders" && selectedFolderId ? (
+                  <EmptyFolderState onBrowseAll={() => setViewMode("all")} />
                 ) : hasActiveFilters ? (
                   <EmptySearchState onClearFilters={clearFilters} />
                 ) : (
@@ -910,6 +1003,51 @@ const EmptySearchState = ({ onClearFilters }: { onClearFilters: () => void }) =>
     </p>
     <Button variant="outline" onClick={onClearFilters} className="mt-4">
       Clear Filters
+    </Button>
+  </motion.div>
+);
+
+const EmptySelectFolderState = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex flex-col items-center justify-center py-16 text-center px-4"
+  >
+    <motion.div
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      transition={{ type: "spring", stiffness: 200 }}
+      className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4"
+    >
+      <Folder className="h-8 w-8 text-muted-foreground" />
+    </motion.div>
+    <h3 className="text-lg font-medium">Select a folder</h3>
+    <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+      Click on a folder above to view its questions, or create a new folder.
+    </p>
+  </motion.div>
+);
+
+const EmptyFolderState = ({ onBrowseAll }: { onBrowseAll: () => void }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex flex-col items-center justify-center py-16 text-center px-4"
+  >
+    <motion.div
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      transition={{ type: "spring", stiffness: 200 }}
+      className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4"
+    >
+      <Folder className="h-8 w-8 text-muted-foreground" />
+    </motion.div>
+    <h3 className="text-lg font-medium">No questions in this folder</h3>
+    <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+      Add questions to this folder using the folder icon next to each question.
+    </p>
+    <Button variant="outline" className="mt-4" onClick={onBrowseAll}>
+      Browse All Questions
     </Button>
   </motion.div>
 );
