@@ -11,8 +11,10 @@ import {
   Loader2, 
   Plus, 
   History, 
-  ChevronLeft,
-  MessageSquare
+  MessageSquare,
+  Pencil,
+  Check,
+  X
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAstraChat } from "@/hooks/useAstraChat";
+import { CodeBlock } from "@/components/CodeBlock";
 import { cn } from "@/lib/utils";
 
 const suggestedPrompts = [
@@ -33,6 +36,8 @@ const suggestedPrompts = [
 const AstraAI = () => {
   const [inputValue, setInputValue] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
   const { 
     messages, 
     conversations,
@@ -42,10 +47,12 @@ const AstraAI = () => {
     sendMessage, 
     loadConversation,
     newChat,
-    deleteConversation 
+    deleteConversation,
+    renameConversation
   } = useAstraChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -72,6 +79,25 @@ const AstraAI = () => {
   const handleLoadConversation = async (conversationId: string) => {
     await loadConversation(conversationId);
     setHistoryOpen(false);
+  };
+
+  const handleStartRename = (conv: { id: string; title: string | null }) => {
+    setEditingId(conv.id);
+    setEditTitle(conv.title || "");
+    setTimeout(() => editInputRef.current?.focus(), 50);
+  };
+
+  const handleSaveRename = async () => {
+    if (editingId && editTitle.trim()) {
+      await renameConversation(editingId, editTitle.trim());
+    }
+    setEditingId(null);
+    setEditTitle("");
+  };
+
+  const handleCancelRename = () => {
+    setEditingId(null);
+    setEditTitle("");
   };
 
   return (
@@ -121,28 +147,80 @@ const AstraAI = () => {
                           <div
                             key={conv.id}
                             className={cn(
-                              "group flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors",
+                              "group flex items-center gap-2 p-3 rounded-lg transition-colors",
+                              editingId === conv.id ? "" : "cursor-pointer",
                               currentConversationId === conv.id 
                                 ? "bg-primary/10 text-primary" 
                                 : "hover:bg-muted"
                             )}
-                            onClick={() => handleLoadConversation(conv.id)}
+                            onClick={() => editingId !== conv.id && handleLoadConversation(conv.id)}
                           >
-                            <MessageSquare className="h-4 w-4 shrink-0" />
-                            <span className="flex-1 text-sm truncate">
-                              {conv.title || "New conversation"}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteConversation(conv.id);
-                              }}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
+                            {editingId === conv.id ? (
+                              <>
+                                <Input
+                                  ref={editInputRef}
+                                  value={editTitle}
+                                  onChange={(e) => setEditTitle(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleSaveRename();
+                                    if (e.key === "Escape") handleCancelRename();
+                                  }}
+                                  className="h-7 text-sm flex-1"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSaveRename();
+                                  }}
+                                >
+                                  <Check className="h-3 w-3 text-green-500" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCancelRename();
+                                  }}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <MessageSquare className="h-4 w-4 shrink-0" />
+                                <span className="flex-1 text-sm truncate">
+                                  {conv.title || "New conversation"}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartRename(conv);
+                                  }}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteConversation(conv.id);
+                                  }}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         ))
                       )}
@@ -222,19 +300,22 @@ const AstraAI = () => {
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
                               components={{
-                                pre: ({ children }) => (
-                                  <pre className="bg-background/50 rounded-lg p-3 overflow-x-auto my-2">
-                                    {children}
-                                  </pre>
-                                ),
+                                pre: ({ children }) => <>{children}</>,
                                 code: ({ className, children, ...props }) => {
-                                  const isInline = !className;
-                                  return isInline ? (
+                                  const match = /language-(\w+)/.exec(className || "");
+                                  const codeString = String(children).replace(/\n$/, "");
+                                  
+                                  if (match) {
+                                    return (
+                                      <CodeBlock language={match[1]}>
+                                        {codeString}
+                                      </CodeBlock>
+                                    );
+                                  }
+                                  
+                                  // Inline code
+                                  return (
                                     <code className="bg-background/50 px-1.5 py-0.5 rounded text-sm" {...props}>
-                                      {children}
-                                    </code>
-                                  ) : (
-                                    <code className={className} {...props}>
                                       {children}
                                     </code>
                                   );
