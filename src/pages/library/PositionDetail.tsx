@@ -164,11 +164,8 @@ const PositionDetail = () => {
   const [noteText, setNoteText] = useState("");
   const [lastCompletedId, setLastCompletedId] = useState<string | null>(null);
   
-  // Section open states for collapsible view
-  const [openSections, setOpenSections] = useState<Set<string>>(() => {
-    // Open first category by default
-    return new Set([categories[0]?.id]);
-  });
+  // Section open states for collapsible view (accordion behavior - only one open at a time)
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
   // Persist layout mode preference
   useEffect(() => {
@@ -270,12 +267,13 @@ const PositionDetail = () => {
   const isFiltered = searchQuery.trim() !== "" || difficultyFilter !== "all" || hasNotesFilter;
 
   // Auto-expand sections with matches when searching
+  // Auto-expand section with search matches (open first matching section in accordion mode)
   useEffect(() => {
     if (layoutMode === "sections" && searchQuery.trim()) {
-      const sectionsWithMatches = categories
-        .filter((cat) => (questionsByCategory[cat.id]?.length || 0) > 0)
-        .map((cat) => cat.id);
-      setOpenSections(new Set(sectionsWithMatches));
+      const firstMatchingSection = categories.find(
+        (cat) => (questionsByCategory[cat.id]?.length || 0) > 0
+      );
+      setOpenSection(firstMatchingSection?.id || null);
     }
   }, [searchQuery, layoutMode, questionsByCategory]);
 
@@ -511,28 +509,21 @@ const PositionDetail = () => {
     }
   }, [filteredQuestions, isSolved]);
 
-  // Section controls
+  // Section controls (accordion behavior - only one section open at a time)
   const toggleSection = useCallback((categoryId: string) => {
-    setOpenSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(categoryId)) {
-        next.delete(categoryId);
-      } else {
-        next.add(categoryId);
-      }
-      return next;
-    });
+    setOpenSection((prev) => (prev === categoryId ? null : categoryId));
   }, []);
 
   const expandAllSections = useCallback(() => {
-    setOpenSections(new Set(categories.map((c) => c.id)));
+    // In accordion mode, expand first section
+    setOpenSection(categories[0]?.id || null);
   }, []);
 
   const collapseAllSections = useCallback(() => {
-    setOpenSections(new Set());
+    setOpenSection(null);
   }, []);
 
-  const allExpanded = openSections.size === categories.length;
+  const allExpanded = false; // Accordion mode doesn't support all expanded
 
   const hasActiveFilters = searchQuery.trim() !== "" || difficultyFilter !== "all" || hasNotesFilter;
   const unsolvedCount = filteredQuestions.filter((q) => !isSolved(q.id, q.categoryId)).length;
@@ -563,9 +554,9 @@ const PositionDetail = () => {
 
   // Scroll to a question in the list
   const scrollToQuestion = useCallback((questionId: number, categoryId: string) => {
-    // Expand the section if collapsed
-    if (!openSections.has(categoryId)) {
-      setOpenSections((prev) => new Set([...prev, categoryId]));
+    // Expand the section if collapsed (accordion mode - just set the section)
+    if (openSection !== categoryId) {
+      setOpenSection(categoryId);
     }
     
     // Scroll after a short delay for section to expand
@@ -581,7 +572,7 @@ const PositionDetail = () => {
         }, 2000);
       }
     }, 300);
-  }, [openSections]);
+  }, [openSection]);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -891,7 +882,7 @@ const PositionDetail = () => {
                         questions={categoryQuestions}
                         totalQuestionsInCategory={totalQuestionsPerCategory[category.id] || 0}
                         isFiltered={isFiltered}
-                        isOpen={openSections.has(category.id)}
+                        isOpen={openSection === category.id}
                         onOpenChange={() => toggleSection(category.id)}
                         isSolved={isSolved}
                         isRevision={isRevision}
