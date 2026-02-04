@@ -12,6 +12,7 @@ import {
   Briefcase,
   Loader2,
   ChevronDown,
+  ChevronsUpDown,
 } from "lucide-react";
 import AnswerPanel from "@/components/library/AnswerPanel";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -62,10 +63,16 @@ const CompanyDetail = () => {
 
   const [activeTab, setActiveTab] = useState(companyTabs[0].id);
   const [searchQuery, setSearchQuery] = useState("");
+  const [expandedQuestionId, setExpandedQuestionId] = useState<number | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(FAVORITES_KEY);
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
+
+  // Reset expanded question when switching tabs
+  useEffect(() => {
+    setExpandedQuestionId(null);
+  }, [activeTab]);
 
   // Use Supabase-synced progress
   const {
@@ -261,8 +268,47 @@ const CompanyDetail = () => {
           ))}
         </div>
 
-        {/* Search for question tabs */}
-        {["sql-questions", "interview-questions", "dsa-questions", "aptitude-questions", "cold-dms"].includes(activeTab) && (
+        {/* Search and controls for question tabs */}
+        {["sql-questions", "interview-questions", "dsa-questions", "aptitude-questions"].includes(activeTab) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col sm:flex-row gap-3 mb-6"
+          >
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={`Search ${companyTabs.find(t => t.id === activeTab)?.name.toLowerCase()}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <AnimatePresence>
+              {expandedQuestionId !== null && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setExpandedQuestionId(null)}
+                    className="gap-2 h-10 whitespace-nowrap"
+                  >
+                    <ChevronsUpDown className="h-4 w-4" />
+                    Collapse All
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+
+        {/* Search for cold-dms tab */}
+        {activeTab === "cold-dms" && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -270,7 +316,7 @@ const CompanyDetail = () => {
           >
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={`Search ${companyTabs.find(t => t.id === activeTab)?.name.toLowerCase()}...`}
+              placeholder="Search cold DMs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -298,6 +344,8 @@ const CompanyDetail = () => {
                 toggleSolved={handleToggleSolved}
                 toggleRevision={handleToggleRevision}
                 isLoggedIn={!!user}
+                expandedId={expandedQuestionId}
+                onToggleExpand={(id) => setExpandedQuestionId(expandedQuestionId === id ? null : id)}
               />
             )}
 
@@ -309,6 +357,8 @@ const CompanyDetail = () => {
                 toggleSolved={handleToggleSolved}
                 toggleRevision={handleToggleRevision}
                 isLoggedIn={!!user}
+                expandedId={expandedQuestionId}
+                onToggleExpand={(id) => setExpandedQuestionId(expandedQuestionId === id ? null : id)}
               />
             )}
 
@@ -320,6 +370,8 @@ const CompanyDetail = () => {
                 toggleSolved={handleToggleSolved}
                 toggleRevision={handleToggleRevision}
                 isLoggedIn={!!user}
+                expandedId={expandedQuestionId}
+                onToggleExpand={(id) => setExpandedQuestionId(expandedQuestionId === id ? null : id)}
               />
             )}
 
@@ -331,6 +383,8 @@ const CompanyDetail = () => {
                 toggleSolved={handleToggleSolved}
                 toggleRevision={handleToggleRevision}
                 isLoggedIn={!!user}
+                expandedId={expandedQuestionId}
+                onToggleExpand={(id) => setExpandedQuestionId(expandedQuestionId === id ? null : id)}
               />
             )}
 
@@ -391,6 +445,8 @@ interface QuestionsTableProps {
   toggleSolved: (id: number) => void;
   toggleRevision: (id: number) => void;
   isLoggedIn: boolean;
+  expandedId: number | null;
+  onToggleExpand: (id: number) => void;
 }
 
 const QuestionsTable = ({
@@ -401,13 +457,9 @@ const QuestionsTable = ({
   toggleSolved,
   toggleRevision,
   isLoggedIn,
+  expandedId,
+  onToggleExpand,
 }: QuestionsTableProps) => {
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-
-  const toggleExpand = (id: number) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
-
   return (
     <div className="border border-border/50 rounded-lg overflow-hidden">
       {/* Header */}
@@ -450,13 +502,13 @@ const QuestionsTable = ({
                         "flex items-start gap-2",
                         hasAnswer && "cursor-pointer group"
                       )}
-                      onClick={() => hasAnswer && toggleExpand(question.id)}
+                      onClick={() => hasAnswer && onToggleExpand(question.id)}
                       role={hasAnswer ? "button" : undefined}
                       tabIndex={hasAnswer ? 0 : undefined}
                       onKeyDown={(e) => {
                         if (hasAnswer && (e.key === "Enter" || e.key === " ")) {
                           e.preventDefault();
-                          toggleExpand(question.id);
+                          onToggleExpand(question.id);
                         }
                       }}
                     >
