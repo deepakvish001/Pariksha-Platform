@@ -1,4 +1,5 @@
- import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
  import { motion, AnimatePresence } from "framer-motion";
  import {
    Database,
@@ -54,18 +55,22 @@ import { Progress } from "@/components/ui/progress";
    getDifficultyStats,
  } from "@/data/sqlQuestionsData";
  import AnswerPanel from "@/components/library/AnswerPanel";
+import SpacedRepetitionPanel from "@/components/library/SpacedRepetitionPanel";
  
  type ViewMode = "all" | "solved" | "revision";
 
 const SQLQuestions = () => {
    const { user } = useAuth();
+  const navigate = useNavigate();
    const {
      isLoading,
      isSolved,
      isRevision,
      toggleSolved,
      toggleRevision,
-     progress,
+    markReviewed,
+    dueQuestions,
+    spacedRepetitionStats,
    } = useSQLProgress();
  
    const [viewMode, setViewMode] = useState<ViewMode>("all");
@@ -89,7 +94,7 @@ const SQLQuestions = () => {
        }
      });
      return { easy, medium, hard, total: easy + medium + hard };
-   }, [progress, isSolved]);
+  }, [isSolved]);
  
    // Filter questions based on current view and filters
    const filteredQuestions = useMemo(() => {
@@ -106,7 +111,47 @@ const SQLQuestions = () => {
      }
  
      return questions;
-   }, [categoryFilter, difficultyFilter, typeFilter, searchQuery, viewMode, progress, isSolved, isRevision]);
+  }, [categoryFilter, difficultyFilter, typeFilter, searchQuery, viewMode, isSolved, isRevision]);
+
+  // Get question details for spaced repetition panel
+  const getQuestionDetails = useCallback((questionId: number) => {
+    const question = sqlQuestions.find((q) => q.id === questionId);
+    if (!question) return undefined;
+
+    const category = sqlCategories.find((c) => c.id === question.categoryId);
+    return {
+      id: question.id,
+      text: question.title,
+      difficulty: question.difficulty as "Easy" | "Medium" | "Hard",
+      categoryId: "sql",
+      categoryName: category?.name || "General",
+    };
+  }, []);
+
+  const handleReviewQuestion = useCallback(
+    async (questionId: number) => {
+      if (!user) {
+        navigate("/login");
+        return;
+      }
+      await markReviewed(questionId);
+    },
+    [markReviewed, user, navigate]
+  );
+
+  const handleScrollToQuestion = useCallback((questionId: number) => {
+    setExpandedQuestionId(questionId);
+    setTimeout(() => {
+      const element = document.querySelector(`[data-question-id="${questionId}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.classList.add("ring-2", "ring-primary", "ring-offset-2");
+        setTimeout(() => {
+          element.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+        }, 2000);
+      }
+    }, 100);
+  }, []);
  
    const getDifficultyStyles = (difficulty: string) => {
      switch (difficulty) {
@@ -292,6 +337,17 @@ const SQLQuestions = () => {
              </motion.div>
            </div>
  
+          {/* Spaced Repetition Panel */}
+          {user && spacedRepetitionStats.total > 0 && (
+            <SpacedRepetitionPanel
+              dueQuestions={dueQuestions}
+              stats={spacedRepetitionStats}
+              getQuestionDetails={getQuestionDetails}
+              onReviewQuestion={handleReviewQuestion}
+              onScrollToQuestion={handleScrollToQuestion}
+            />
+          )}
+
            {/* Search and Filters */}
            <motion.div
              initial={{ opacity: 0, y: 20 }}
@@ -463,6 +519,7 @@ const SQLQuestions = () => {
    return (
      <>
        <motion.tr
+          data-question-id={question.id}
          initial={{ opacity: 0, y: 10 }}
          animate={{ opacity: 1, y: 0 }}
          transition={{ delay: index * 0.02, duration: 0.2 }}
