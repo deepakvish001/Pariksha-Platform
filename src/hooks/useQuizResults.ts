@@ -3,7 +3,7 @@
  import { useAuth } from "@/contexts/AuthContext";
  
  interface QuizResultData {
-   quizType: "aptitude" | "dsa" | "sql";
+  quizType: "aptitude" | "dsa" | "sql" | "cs";
    category: string;
    difficulty: string;
    score: number;

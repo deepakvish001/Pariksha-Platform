@@ -11,7 +11,7 @@ interface QuizPerformance {
   totalTimeSeconds: number;
   difficulty: string;
   isChallenge: boolean;
-  quizType: "aptitude" | "dsa" | "sql";
+  quizType: "aptitude" | "dsa" | "sql" | "cs";
 }
 
 export function useQuizAchievements() {
