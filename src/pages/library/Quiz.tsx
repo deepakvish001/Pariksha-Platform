@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { Trophy, Search, Filter, Clock, Users, History, Code, Cpu, Database, Brain, Calculator, X, Shuffle, Sparkles } from "lucide-react";
+import { Trophy, Search, Filter, Clock, Users, History, Code, Cpu, Database, Brain, Calculator, X, Shuffle, Sparkles, BarChart3 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DSAQuizMode from "@/components/library/DSAQuizMode";
 import CSQuizMode from "@/components/library/CSQuizMode";
 import AptitudeQuizMode from "@/components/library/AptitudeQuizMode";
@@ -14,6 +15,7 @@ import SQLQuizMode from "@/components/library/SQLQuizMode";
 import CombinedQuizMode from "@/components/library/CombinedQuizMode";
 import QuizSpacedRepetitionPanel from "@/components/library/QuizSpacedRepetitionPanel";
 import ReviewQuizMode from "@/components/library/ReviewQuizMode";
+import SRSStatsDashboard from "@/components/library/SRSStatsDashboard";
 import { type QuizReviewItem } from "@/hooks/useQuizSpacedRepetition";
 import { dsaQuestions } from "@/data/dsaQuestionsData";
 import { csQuestions } from "@/data/csSubjectsData";
@@ -64,6 +66,7 @@ const quizCategories = [
 const Quiz = () => {
   const [activeQuiz, setActiveQuiz] = useState<QuizType>(null);
   const [reviewItems, setReviewItems] = useState<QuizReviewItem[]>([]);
+  const [showStats, setShowStats] = useState(false);
 
   const handleStartReviewQuiz = (reviews: QuizReviewItem[]) => {
     setReviewItems(reviews);
@@ -131,18 +134,40 @@ const Quiz = () => {
                   History
                 </Button>
               </Link>
+              <Button 
+                variant={showStats ? "default" : "outline"} 
+                className="gap-2"
+                onClick={() => setShowStats(!showStats)}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Stats
+              </Button>
             </motion.div>
 
+            {/* Stats Dashboard */}
+            {showStats && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <SRSStatsDashboard />
+              </motion.div>
+            )}
+
             {/* Spaced Repetition Panel */}
-            <motion.div
+            {!showStats && (
+              <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-            >
+              >
               <QuizSpacedRepetitionPanel onStartReviewQuiz={handleStartReviewQuiz} />
-            </motion.div>
+              </motion.div>
+            )}
 
             {/* Featured Combined Quiz */}
+            {!showStats && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -174,7 +199,9 @@ const Quiz = () => {
                 </CardContent>
               </Card>
             </motion.div>
+            )}
 
+            {!showStats && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -219,6 +246,7 @@ const Quiz = () => {
                 ))}
               </div>
             </motion.div>
+            )}
           </>
         )}
       </main>
