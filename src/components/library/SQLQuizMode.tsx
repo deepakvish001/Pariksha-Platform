@@ -38,7 +38,9 @@ import { Link } from "react-router-dom";
  import { type SQLQuestion, sqlCategories } from "@/data/sqlQuestionsData";
  import { useAuth } from "@/contexts/AuthContext";
  import { useQuizResults } from "@/hooks/useQuizResults";
+import { useQuizAchievements } from "@/hooks/useQuizAchievements";
  import QuizLeaderboard from "./QuizLeaderboard";
+import QuizAchievementToast from "./QuizAchievementToast";
  
  interface QuizConfig {
    questionCount: number;
@@ -171,6 +173,7 @@ const SQL_TIMED_CHALLENGES: QuizPreset[] = [
  const SQLQuizMode: React.FC<SQLQuizModeProps> = ({ questions, onClose }) => {
    const { user } = useAuth();
    const { saveQuizResult } = useQuizResults();
+  const { checkAndAwardAchievements, newlyEarned, clearNewlyEarned } = useQuizAchievements();
    const [phase, setPhase] = useState<"config" | "quiz" | "results">("config");
    const [showLeaderboard, setShowLeaderboard] = useState(false);
    const [config, setConfig] = useState<QuizConfig>({
@@ -265,6 +268,16 @@ const SQL_TIMED_CHALLENGES: QuizPreset[] = [
          avgTimeSeconds: avgTime,
          totalTimeSeconds: totalTime,
        });
+
+      // Check for quiz achievements
+      checkAndAwardAchievements({
+        accuracy,
+        avgTimeSeconds: avgTime,
+        totalTimeSeconds: totalTime,
+        difficulty: config.difficulty,
+        isChallenge: isChallengeMode,
+        quizType: "sql",
+      });
      }
    }, [phase, results.length]);
  
@@ -483,7 +496,7 @@ const SQL_TIMED_CHALLENGES: QuizPreset[] = [
            )}
            <div className="flex gap-3 pt-4">
              <Button variant="outline" onClick={onClose}>Close</Button>
-             <Button onClick={() => { setPhase("config"); setResults([]); setShowLeaderboard(false); setIsChallengeMode(false); setChallengeId(null); }} className="flex-1 gap-2">
+             <Button onClick={() => { setPhase("config"); setResults([]); setShowLeaderboard(false); setIsChallengeMode(false); setChallengeId(null); clearNewlyEarned(); }} className="flex-1 gap-2">
                <RotateCcw className="h-4 w-4" />New Quiz
              </Button>
               <Link to="/library/quiz-history">
@@ -498,6 +511,9 @@ const SQL_TIMED_CHALLENGES: QuizPreset[] = [
              )}
            </div>
            {showLeaderboard && user && <QuizLeaderboard quizType="sql" currentUserId={user.id} challengeId={challengeId} />}
+
+          {/* Achievement Toast */}
+          <QuizAchievementToast achievements={newlyEarned} onClose={clearNewlyEarned} />
          </CardContent>
        </Card>
      );

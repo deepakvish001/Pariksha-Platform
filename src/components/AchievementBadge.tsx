@@ -10,7 +10,12 @@ import {
   Medal,
   Rocket,
   BookOpen,
-  GraduationCap
+  GraduationCap,
+  Timer,
+  CheckCircle,
+  Swords,
+  Brain,
+  Sparkles,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -21,7 +26,7 @@ export interface Achievement {
   icon: keyof typeof iconMap;
   color: string;
   requirement: {
-    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics';
+    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics' | 'quiz_perfect_score' | 'quiz_speed_demon' | 'quiz_challenge_complete' | 'quiz_accuracy' | 'quiz_streak';
     value: number;
   };
 }
@@ -37,6 +42,11 @@ const iconMap = {
   rocket: Rocket,
   book: BookOpen,
   graduation: GraduationCap,
+  timer: Timer,
+  check: CheckCircle,
+  swords: Swords,
+  brain: Brain,
+  sparkles: Sparkles,
 };
 
 export const achievements: Achievement[] = [
@@ -135,6 +145,63 @@ export const achievements: Achievement[] = [
     icon: 'medal',
     color: 'from-teal-500 to-cyan-500',
     requirement: { type: 'revision_topics', value: 50 }
+  },
+  // Quiz Achievements
+  {
+    id: 'quiz_perfect_score',
+    name: 'Perfect Score',
+    description: 'Get 100% accuracy in a quiz',
+    icon: 'check',
+    color: 'from-emerald-500 to-green-500',
+    requirement: { type: 'quiz_perfect_score', value: 1 }
+  },
+  {
+    id: 'quiz_speed_demon',
+    name: 'Speed Demon',
+    description: 'Complete a quiz with avg time under 15 seconds',
+    icon: 'timer',
+    color: 'from-orange-500 to-red-500',
+    requirement: { type: 'quiz_speed_demon', value: 1 }
+  },
+  {
+    id: 'quiz_brain_master',
+    name: 'Brain Master',
+    description: 'Complete 5 hard difficulty quizzes',
+    icon: 'brain',
+    color: 'from-purple-500 to-indigo-500',
+    requirement: { type: 'quiz_challenge_complete', value: 5 }
+  },
+  {
+    id: 'quiz_challenger',
+    name: 'Challenger',
+    description: 'Complete your first timed challenge',
+    icon: 'swords',
+    color: 'from-blue-500 to-cyan-500',
+    requirement: { type: 'quiz_challenge_complete', value: 1 }
+  },
+  {
+    id: 'quiz_accuracy_80',
+    name: 'Sharp Mind',
+    description: 'Achieve 80%+ accuracy in 10 quizzes',
+    icon: 'target',
+    color: 'from-amber-500 to-yellow-500',
+    requirement: { type: 'quiz_accuracy', value: 10 }
+  },
+  {
+    id: 'quiz_streak_5',
+    name: 'Quiz Streak',
+    description: 'Complete quizzes 5 days in a row',
+    icon: 'sparkles',
+    color: 'from-pink-500 to-rose-500',
+    requirement: { type: 'quiz_streak', value: 5 }
+  },
+  {
+    id: 'quiz_triple_crown',
+    name: 'Triple Crown',
+    description: 'Get perfect scores in Aptitude, DSA, and SQL quizzes',
+    icon: 'crown',
+    color: 'from-yellow-400 to-amber-500',
+    requirement: { type: 'quiz_perfect_score', value: 3 }
   },
 ];
 
