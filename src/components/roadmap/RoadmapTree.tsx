@@ -23,6 +23,7 @@ import {
   RotateCcw,
   Undo2,
   Share2,
+  FolderOpen,
 } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
@@ -40,10 +41,13 @@ import RoadmapSectionHeader from "./RoadmapSectionHeader";
 import RoadmapLegend from "./RoadmapLegend";
 import HorizontalBranch from "./HorizontalBranch";
 import SharePathDialog from "./SharePathDialog";
+import SavedPathsManager from "./SavedPathsManager";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoadmapConfetti } from "@/hooks/useRoadmapConfetti";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRoadmapNodeOrder } from "@/hooks/useRoadmapNodeOrder";
+import { useSavedPaths } from "@/hooks/useSavedPaths";
+import { useImportPathFromURL } from "@/hooks/useImportPathFromURL";
 import type { RoadmapTree as TreeType, RoadmapTreeNode as NodeType } from "@/data/roadmapTreesData";
 
 // Icon mapping for roadmap types
@@ -170,8 +174,26 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const { user } = useAuth();
   const { celebrateTopic, celebrateSection, trackProgress, resetCelebrations } = useRoadmapConfetti();
   const { customOrders, hasCustomOrder, isSaving, canUndo, saveOrder, resetToDefault, getOrderedNodes, undoLastAction, importOrders } = useRoadmapNodeOrder(tree.id);
+  const { 
+    savedPaths, 
+    activePath, 
+    isSaving: isSavingPath, 
+    savePath, 
+    activatePath, 
+    deletePath, 
+    updatePath 
+  } = useSavedPaths(tree.id);
   const prevProgressRef = useRef<Record<string, { completed: boolean; inProgress: boolean }>>({});
   const prevSectionStatsRef = useRef<Record<string, number>>({});
+  
+  // URL import handler
+  const handleImportFromURL = useCallback(async (orders: Record<string, string[]>) => {
+    await importOrders(orders);
+    setLocalNodeOrder({});
+  }, [importOrders]);
+  
+  // Auto-import from URL parameter
+  useImportPathFromURL(tree.id, handleImportFromURL);
   
   // DnD sensors
   const sensors = useSensors(
@@ -978,6 +1000,28 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                   <RotateCcw className={cn("h-3.5 w-3.5", isSaving && "animate-spin")} />
                   <span className="hidden sm:inline">Reset Order</span>
                 </Button>
+              )}
+
+              {/* Saved Paths Manager */}
+              {user && (
+                <SavedPathsManager
+                  savedPaths={savedPaths}
+                  activePath={activePath}
+                  currentOrders={customOrders}
+                  hasCustomOrder={hasCustomOrder}
+                  isSaving={isSavingPath}
+                  onSavePath={savePath}
+                  onActivatePath={async (pathId) => {
+                    const orders = await activatePath(pathId);
+                    if (orders) {
+                      await importOrders(orders);
+                      setLocalNodeOrder({});
+                    }
+                    return orders;
+                  }}
+                  onDeletePath={deletePath}
+                  onUpdatePath={updatePath}
+                />
               )}
 
               {/* Share Path Button */}
