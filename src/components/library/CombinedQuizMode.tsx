@@ -3,7 +3,7 @@
  import { 
    X, Clock, CheckCircle, XCircle, ArrowRight, Trophy, 
    Shuffle, Zap, Target, Settings, Play, Pause, RotateCcw,
-  Code, Cpu, Database, Calculator, Brain, BookOpen, ChevronLeft, ChevronRight, Eye, Flag
+  Code, Cpu, Database, Calculator, Brain, BookOpen, ChevronLeft, ChevronRight, Eye, Flag, PauseCircle, PlayCircle
  } from "lucide-react";
  import { Button } from "@/components/ui/button";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,6 +104,9 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
    });
    const [timedMode, setTimedMode] = useState(false);
    const [timeLimitMinutes, setTimeLimitMinutes] = useState(10);
+
+  // Pause state
+  const [pausedTime, setPausedTime] = useState(0);
 
   // Review state
   const [reviewIndex, setReviewIndex] = useState(0);
@@ -235,6 +238,18 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
      setQuizState("playing");
    };
  
+  const handlePause = () => {
+    setPausedTime(Date.now());
+    setQuizState("paused");
+  };
+
+  const handleResume = () => {
+    // Adjust question start time to account for pause duration
+    const pauseDuration = Date.now() - pausedTime;
+    setQuestionStartTime(prev => prev + pauseDuration);
+    setQuizState("playing");
+  };
+
   const toggleMarkForReview = (index: number) => {
     setMarkedForReview(prev => {
       const updated = new Set(prev);
@@ -483,6 +498,43 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
      );
    }
  
+  // Paused screen
+  if (quizState === "paused") {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center justify-center min-h-[400px] space-y-6"
+      >
+        <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+          <PauseCircle className="h-12 w-12 text-primary" />
+        </div>
+        
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold">Quiz Paused</h2>
+          <p className="text-muted-foreground">
+            Question {currentIndex + 1} of {questions.length}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Time elapsed: {formatTime(totalTime)}
+            {timeLimit > 0 && ` / ${formatTime(timeLimit)}`}
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={onClose}>
+            <X className="h-4 w-4 mr-2" />
+            Exit Quiz
+          </Button>
+          <Button onClick={handleResume} size="lg">
+            <PlayCircle className="h-5 w-5 mr-2" />
+            Resume Quiz
+          </Button>
+        </div>
+      </motion.div>
+    );
+  }
+
     // Review screen
     if (quizState === "review") {
       if (filteredReviewQuestions.length === 0) {
@@ -802,6 +854,9 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
              <Clock className="h-4 w-4" />
              {formatTime(timeLimit > 0 ? Math.max(0, timeLimit - totalTime) : totalTime)}
            </span>
+          <Button variant="ghost" size="icon" onClick={handlePause} title="Pause quiz">
+            <Pause className="h-5 w-5" />
+          </Button>
            <Button variant="ghost" size="icon" onClick={onClose}>
              <X className="h-5 w-5" />
            </Button>
