@@ -6,6 +6,7 @@ interface RoadmapSectionContainerProps {
   children: React.ReactNode;
   isExpanded: boolean;
   sectionIndex: number;
+  isCompact?: boolean;
   className?: string;
 }
 
@@ -23,6 +24,7 @@ const RoadmapSectionContainer: React.FC<RoadmapSectionContainerProps> = ({
   children,
   isExpanded,
   sectionIndex,
+  isCompact = false,
   className,
 }) => {
   const accent = sectionAccents[sectionIndex % sectionAccents.length];
@@ -37,9 +39,10 @@ const RoadmapSectionContainer: React.FC<RoadmapSectionContainerProps> = ({
     >
       <div
         className={cn(
-          "relative mt-4 rounded-2xl overflow-hidden",
+          "relative rounded-2xl overflow-hidden",
           "border-2 transition-colors duration-300",
           accent.border,
+          isCompact ? "mt-2" : "mt-4",
           className
         )}
       >
@@ -50,10 +53,17 @@ const RoadmapSectionContainer: React.FC<RoadmapSectionContainerProps> = ({
         )} />
         
         {/* Inner content area with clean background */}
-        <div className="relative bg-card/60 dark:bg-card/40 backdrop-blur-sm p-4 sm:p-5">
-          {/* Decorative corner accents */}
-          <div className="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 rounded-tl-xl border-inherit opacity-40" />
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 rounded-br-xl border-inherit opacity-40" />
+        <div className={cn(
+          "relative bg-card/60 dark:bg-card/40 backdrop-blur-sm",
+          isCompact ? "p-2 sm:p-3" : "p-4 sm:p-5"
+        )}>
+          {/* Decorative corner accents - hidden in compact mode */}
+          {!isCompact && (
+            <>
+              <div className="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 rounded-tl-xl border-inherit opacity-40" />
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 rounded-br-xl border-inherit opacity-40" />
+            </>
+          )}
           
           {children}
         </div>
