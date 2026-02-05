@@ -4,6 +4,7 @@
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  import { supabase } from "@/integrations/supabase/client";
  import AchievementBadge, { achievements, type Achievement } from "@/components/AchievementBadge";
+ import { useAchievementRarity } from "@/hooks/useAchievementRarity";
  
  interface EarnedAchievement {
    achievement_id: string;
@@ -17,6 +18,7 @@
  const PublicProfileAchievements = ({ userId }: PublicProfileAchievementsProps) => {
    const [earnedAchievements, setEarnedAchievements] = useState<EarnedAchievement[]>([]);
    const [isLoading, setIsLoading] = useState(true);
+   const { getRarity } = useAchievementRarity();
  
    useEffect(() => {
      const fetchAchievements = async () => {
@@ -94,6 +96,7 @@
                    earnedAt={earnedAt}
                    size="md"
                    showName={true}
+                   rarity={getRarity(achievement.id)}
                  />
                </motion.div>
              ))}
