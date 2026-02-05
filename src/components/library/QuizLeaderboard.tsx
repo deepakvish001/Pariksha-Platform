@@ -28,9 +28,18 @@ import { Trophy, Medal, Clock, Target, Crown, Users, Timer, Swords, Flame } from
  }
  
 const CHALLENGE_LABELS: Record<string, { name: string; icon: React.ReactNode }> = {
+  // Aptitude challenges
   "easy-sprint": { name: "Easy Sprint", icon: <Timer className="h-4 w-4 text-emerald-500" /> },
   "medium-blitz": { name: "Medium Blitz", icon: <Swords className="h-4 w-4 text-amber-500" /> },
   "hard-gauntlet": { name: "Hard Gauntlet", icon: <Flame className="h-4 w-4 text-red-500" /> },
+  // DSA challenges
+  "dsa-easy-sprint": { name: "DSA Easy Sprint", icon: <Timer className="h-4 w-4 text-emerald-500" /> },
+  "dsa-medium-blitz": { name: "DSA Medium Blitz", icon: <Swords className="h-4 w-4 text-amber-500" /> },
+  "dsa-hard-gauntlet": { name: "DSA Hard Gauntlet", icon: <Flame className="h-4 w-4 text-red-500" /> },
+  // SQL challenges
+  "sql-easy-sprint": { name: "SQL Easy Sprint", icon: <Timer className="h-4 w-4 text-emerald-500" /> },
+  "sql-medium-blitz": { name: "SQL Medium Blitz", icon: <Swords className="h-4 w-4 text-amber-500" /> },
+  "sql-hard-gauntlet": { name: "SQL Hard Gauntlet", icon: <Flame className="h-4 w-4 text-red-500" /> },
 };
 
 const QuizLeaderboard: React.FC<QuizLeaderboardProps> = ({ quizType, currentUserId, challengeId }) => {
