@@ -36,6 +36,7 @@ export const hldCategories: SystemDesignCategory[] = [
   { id: "databases", name: "Database Design", icon: "HardDrive", color: "from-purple-500 to-pink-500", description: "SQL, NoSQL, sharding, replication", type: "hld" },
   { id: "microservices", name: "Microservices", icon: "Boxes", color: "from-red-500 to-rose-500", description: "Service architecture and communication", type: "hld" },
   { id: "messaging", name: "Message Queues", icon: "MessageSquare", color: "from-indigo-500 to-blue-500", description: "Async communication patterns", type: "hld" },
+  { id: "hld-case-studies", name: "Case Studies", icon: "Globe", color: "from-rose-500 to-pink-500", description: "Design Twitter, Instagram, Netflix & more", type: "hld" },
 ];
 
 // LLD Categories
@@ -82,6 +83,13 @@ export const hldTopics: SystemDesignTopic[] = [
   { id: "message-brokers", name: "Message Brokers", categoryId: "messaging", description: "Kafka, RabbitMQ, SQS" },
   { id: "event-driven", name: "Event-Driven Architecture", categoryId: "messaging", description: "Event sourcing, CQRS" },
   { id: "exactly-once", name: "Exactly-Once Delivery", categoryId: "messaging", description: "Message delivery guarantees" },
+  
+  // HLD Case Studies
+  { id: "design-twitter", name: "Design Twitter", categoryId: "hld-case-studies", description: "Social media at scale" },
+  { id: "design-instagram", name: "Design Instagram", categoryId: "hld-case-studies", description: "Photo sharing platform" },
+  { id: "design-netflix", name: "Design Netflix", categoryId: "hld-case-studies", description: "Video streaming at scale" },
+  { id: "design-uber", name: "Design Uber", categoryId: "hld-case-studies", description: "Ride-sharing platform" },
+  { id: "design-whatsapp", name: "Design WhatsApp", categoryId: "hld-case-studies", description: "Real-time messaging" },
 ];
 
 // LLD Topics
@@ -1760,6 +1768,469 @@ Adding/removing server remaps almost all keys!
       { text: "Hashing that always gives same output", isCorrect: false },
       { text: "Encrypting data consistently across nodes", isCorrect: false },
       { text: "Simple modulo-based distribution", isCorrect: false },
+    ],
+  },
+  // Real-World Case Studies
+  {
+    id: 19,
+    title: "Design Twitter - Core Components",
+    text: "What are the essential components for designing Twitter's architecture?",
+    difficulty: "Hard",
+    categoryId: "hld-case-studies",
+    topicId: "design-twitter",
+    answer: `## Design Twitter
+
+### Functional Requirements
+- Post tweets (text, images, videos)
+- Follow users
+- View home timeline (tweets from followed users)
+- Search tweets and users
+
+### Core Components
+
+#### Tweet Service
+- Write-heavy for posting
+- Store tweet content, metadata
+- Tweet ID generator (Snowflake)
+
+#### Timeline Service
+- **Fan-out on Write**: Pre-compute timelines when tweet posted
+- **Fan-out on Read**: Compute timeline at read time
+- Hybrid approach for celebrities
+
+#### Social Graph Service
+- Store follow relationships
+- Handle follow/unfollow operations
+- Query followers/following
+
+### Data Flow
+\`\`\`
+User Posts Tweet → Tweet Service → Cache + DB
+                 ↓
+           Fan-out Service → Push to followers' timelines
+                 ↓
+           Timeline Cache (Redis)
+\`\`\`
+
+### Scale Considerations
+- 500M tweets/day = ~6000 tweets/sec
+- Read-heavy: 100x more reads than writes
+- Celebrity problem: 100M+ followers`,
+    options: [
+      { text: "Tweet Service, Timeline Service with fan-out, Social Graph for follows", isCorrect: true },
+      { text: "Single monolithic database handling all operations", isCorrect: false },
+      { text: "Only requires a CDN and static file storage", isCorrect: false },
+      { text: "Real-time computation for all timeline requests", isCorrect: false },
+    ],
+  },
+  {
+    id: 20,
+    title: "Twitter Timeline: Fan-out Strategies",
+    text: "How does Twitter handle timeline generation at scale?",
+    difficulty: "Hard",
+    categoryId: "hld-case-studies",
+    topicId: "design-twitter",
+    answer: `## Twitter Fan-out Strategies
+
+### Fan-out on Write (Push Model)
+When user posts tweet:
+1. Identify all followers
+2. Insert tweet into each follower's timeline cache
+3. Timeline ready when user opens app
+
+**Pros:**
+- Fast reads (O(1) for timeline)
+- Good for users with few followers
+
+**Cons:**
+- Celebrity problem (100M followers = 100M writes)
+- Wasted work if followers don't read
+
+### Fan-out on Read (Pull Model)
+When user opens timeline:
+1. Fetch list of followed users
+2. Query recent tweets from each
+3. Merge and sort
+
+**Pros:**
+- No wasted computation
+- Works for celebrities
+
+**Cons:**
+- Slow reads
+- High read amplification
+
+### Hybrid Approach (Twitter's Solution)
+- **Regular users**: Fan-out on write
+- **Celebrities** (>10K followers): Fan-out on read
+- Merge both at read time
+
+\`\`\`
+Home Timeline = Cached Timeline + Real-time Celebrity Tweets
+\`\`\`
+
+### Optimization
+- Use Redis for timeline cache
+- Keep only recent ~800 tweets per user
+- Lazy loading for older tweets`,
+    options: [
+      { text: "Hybrid: push for regular users, pull for celebrities, merge at read time", isCorrect: true },
+      { text: "Always compute timeline in real-time for accuracy", isCorrect: false },
+      { text: "Store complete timeline history for all users", isCorrect: false },
+      { text: "Use only fan-out on write for all users", isCorrect: false },
+    ],
+  },
+  {
+    id: 21,
+    title: "Design Instagram - Photo Storage",
+    text: "How would you design Instagram's photo storage and delivery system?",
+    difficulty: "Hard",
+    categoryId: "hld-case-studies",
+    topicId: "design-instagram",
+    answer: `## Design Instagram Photo Storage
+
+### Requirements
+- 500M+ DAU, 100M+ photos/day
+- Fast uploads and downloads
+- Multiple resolutions per image
+
+### Storage Architecture
+
+#### Object Storage (S3/Similar)
+- Store original high-res images
+- Generate multiple resolutions on upload
+- Typical sizes: thumbnail (150px), feed (640px), full (1080px)
+
+#### Metadata Database
+- PostgreSQL for user data, relationships
+- Photo metadata: owner, timestamp, location, filters
+
+### Upload Flow
+\`\`\`
+Client → Load Balancer → Upload Service
+                              ↓
+                        Image Processing
+                        (resize, filter, compress)
+                              ↓
+                        Object Storage (S3)
+                              ↓
+                        CDN Origin
+\`\`\`
+
+### Delivery Optimization
+- **CDN**: Edge caching worldwide
+- **Progressive JPEG**: Fast initial load
+- **WebP format**: 30% smaller than JPEG
+- **Lazy loading**: Load as user scrolls
+
+### Database Schema
+\`\`\`sql
+Photos: id, user_id, storage_path, created_at
+PhotoVersions: photo_id, size, path, width, height
+\`\`\`
+
+### Scale Numbers
+- 100M photos/day × 3 versions × 1MB avg = 300TB/day
+- CDN hit rate target: >95%`,
+    options: [
+      { text: "Object storage (S3), multiple resolutions, CDN for global delivery", isCorrect: true },
+      { text: "Store all photos in a relational database", isCorrect: false },
+      { text: "Only store one resolution and resize on-demand", isCorrect: false },
+      { text: "Use local disk storage on application servers", isCorrect: false },
+    ],
+  },
+  {
+    id: 22,
+    title: "Instagram Feed Generation",
+    text: "How does Instagram generate personalized feeds?",
+    difficulty: "Hard",
+    categoryId: "hld-case-studies",
+    topicId: "design-instagram",
+    answer: `## Instagram Feed Generation
+
+### Evolution
+- 2010-2016: Chronological feed
+- 2016+: Algorithmic ranking
+
+### Feed Architecture
+
+#### Candidate Generation
+1. Fetch posts from followed users (last 48 hours)
+2. Add recommended posts (Explore)
+3. Insert ads at intervals
+
+#### Ranking System (ML-based)
+\`\`\`
+Features:
+- User-author relationship (interaction history)
+- Post features (likes, comments, recency)
+- User features (past behavior, interests)
+- Context (time of day, device)
+
+Score = ML_Model(features) → probability of engagement
+\`\`\`
+
+#### Feed Composition
+\`\`\`
+Ranked Posts → Diversity Filter → Ad Insertion → Final Feed
+\`\`\`
+
+### Caching Strategy
+- Pre-compute top candidates for active users
+- Cache in Redis with TTL
+- Refresh on pull-to-refresh
+
+### Real-time Updates
+- WebSocket for new posts from close friends
+- Push notifications for high-priority content
+
+### A/B Testing
+- Constantly test ranking signals
+- Regional rollouts
+- Measure engagement metrics`,
+    options: [
+      { text: "ML-based ranking with candidate generation, diversity filtering, and caching", isCorrect: true },
+      { text: "Simple chronological ordering of all posts", isCorrect: false },
+      { text: "Random selection of posts from followed users", isCorrect: false },
+      { text: "Only showing posts with most likes", isCorrect: false },
+    ],
+  },
+  {
+    id: 23,
+    title: "Design Netflix - Video Streaming",
+    text: "How would you architect Netflix's video streaming infrastructure?",
+    difficulty: "Hard",
+    categoryId: "hld-case-studies",
+    topicId: "design-netflix",
+    answer: `## Design Netflix Streaming
+
+### Scale
+- 200M+ subscribers
+- 15% of global internet traffic
+- Available in 190+ countries
+
+### Core Architecture
+
+#### Content Preparation
+1. **Transcoding**: Convert to multiple formats/resolutions
+   - 1080p, 720p, 480p, 360p
+   - Different codecs (H.264, H.265, VP9, AV1)
+   - ~1200 files per movie
+
+2. **Chunking**: Split into small segments (4-8 seconds)
+
+#### Open Connect CDN
+- Netflix's own CDN
+- Appliances placed in ISP data centers
+- 90%+ traffic served from edge
+
+#### Adaptive Bitrate Streaming
+\`\`\`
+Client monitors bandwidth
+    ↓
+Requests appropriate quality chunks
+    ↓
+Seamless quality transitions
+\`\`\`
+
+### Playback Flow
+\`\`\`
+Client → Netflix API (AWS) → Get manifest file
+                ↓
+Client → Open Connect → Stream video chunks
+\`\`\`
+
+### Key Decisions
+- **CDN placement**: Inside ISPs reduces latency
+- **Pre-positioning**: Popular content cached everywhere
+- **Redundancy**: Multiple copies per region`,
+    options: [
+      { text: "Transcoding to multiple formats, own CDN in ISPs, adaptive bitrate streaming", isCorrect: true },
+      { text: "Streaming from single central data center", isCorrect: false },
+      { text: "Real-time transcoding during playback", isCorrect: false },
+      { text: "Using only public CDNs for delivery", isCorrect: false },
+    ],
+  },
+  {
+    id: 24,
+    title: "Netflix Recommendation System",
+    text: "How does Netflix personalize content recommendations?",
+    difficulty: "Hard",
+    categoryId: "hld-case-studies",
+    topicId: "design-netflix",
+    answer: `## Netflix Recommendation System
+
+### Scale
+- 80%+ of watched content is from recommendations
+- Saves $1B+ annually in customer retention
+
+### Recommendation Approaches
+
+#### Collaborative Filtering
+- Users who watched X also watched Y
+- Matrix factorization for latent features
+- Handle sparse data problem
+
+#### Content-Based Filtering
+- Analyze video metadata (genre, actors, director)
+- Match to user's viewing history
+- Netflix's extensive tagging system
+
+#### Hybrid Approach
+\`\`\`
+Final Score = α × CollaborativeScore + β × ContentScore + γ × PopularityScore
+\`\`\`
+
+### Personalization Layers
+
+#### Row Selection
+- Which categories to show (Action, Comedy, etc.)
+- Personalized per user
+
+#### Within-Row Ranking
+- Order within each row
+- Most likely to engage first
+
+#### Artwork Personalization
+- Different thumbnails per user
+- A/B tested extensively
+
+### Real-time Features
+- Recently watched affects recommendations
+- Time of day considerations
+- Device type influences suggestions
+
+### Architecture
+\`\`\`
+Offline Processing (Spark) → Model Training
+                           ↓
+           Feature Store → Real-time Serving
+                           ↓
+                      Personalized UI
+\`\`\``,
+    options: [
+      { text: "Hybrid of collaborative + content filtering, personalized rows and artwork", isCorrect: true },
+      { text: "Only using most-watched content globally", isCorrect: false },
+      { text: "Random content selection with no personalization", isCorrect: false },
+      { text: "Manual curation by Netflix employees", isCorrect: false },
+    ],
+  },
+  {
+    id: 25,
+    title: "Design WhatsApp - Real-time Messaging",
+    text: "What are the key components for designing WhatsApp's messaging architecture?",
+    difficulty: "Hard",
+    categoryId: "hld-case-studies",
+    topicId: "design-whatsapp",
+    answer: `## Design WhatsApp
+
+### Scale
+- 2B+ users, 100B+ messages/day
+- 99.9% uptime requirement
+- End-to-end encryption
+
+### Core Components
+
+#### Connection Gateway
+- WebSocket connections for real-time
+- MQTT protocol (low bandwidth)
+- Connection server per user
+
+#### Message Service
+\`\`\`
+Sender → Gateway → Message Service → Recipient Gateway → Recipient
+                        ↓
+                   Message Queue (if offline)
+\`\`\`
+
+#### Presence Service
+- Online/offline status
+- Last seen timestamp
+- Typing indicators
+
+### Message Delivery Flow
+1. Client sends message via WebSocket
+2. Server stores with status "sent"
+3. Push to recipient (or queue if offline)
+4. Recipient ACKs → status "delivered"
+5. Recipient reads → status "read"
+
+### Key Design Decisions
+- **Erlang/Elixir**: Handle millions of connections
+- **Mnesia DB**: Distributed, fault-tolerant
+- **No message storage**: Delete after delivery
+- **Signal Protocol**: E2E encryption
+
+### Group Messaging
+- Fan-out from sender
+- Group size limit (1024)
+- Admin controls`,
+    options: [
+      { text: "WebSocket connections, message queuing for offline, E2E encryption", isCorrect: true },
+      { text: "Polling-based message retrieval", isCorrect: false },
+      { text: "Store all messages permanently on servers", isCorrect: false },
+      { text: "HTTP-based request/response for each message", isCorrect: false },
+    ],
+  },
+  {
+    id: 26,
+    title: "Design Uber - Ride Matching",
+    text: "How would you design Uber's driver-rider matching system?",
+    difficulty: "Hard",
+    categoryId: "hld-case-studies",
+    topicId: "design-uber",
+    answer: `## Design Uber Ride Matching
+
+### Requirements
+- Match riders with nearby drivers in seconds
+- Handle millions of concurrent rides
+- Real-time location tracking
+
+### Location Tracking
+
+#### Driver Location Updates
+- GPS updates every 4 seconds
+- WebSocket for real-time push
+- Batch updates to reduce load
+
+#### Geospatial Indexing
+\`\`\`
+Options:
+- Geohash: String-based, good for proximity
+- QuadTree: Hierarchical, good for density
+- S2/H3: Hexagonal cells, uniform coverage
+\`\`\`
+
+### Matching Algorithm
+\`\`\`
+1. Rider requests ride
+2. Find drivers in radius (start with 1km, expand)
+3. Score drivers:
+   - Distance to pickup
+   - ETA to pickup
+   - Driver rating
+   - Vehicle type match
+4. Dispatch to best match
+5. Driver accepts/declines (timeout)
+6. Retry with next best if declined
+\`\`\`
+
+### Architecture
+\`\`\`
+Rider App → API Gateway → Ride Service → Matching Service
+                                              ↓
+Driver App → Location Service → Geo Index (Redis + Geo)
+\`\`\`
+
+### Surge Pricing
+- Demand/supply ratio per region
+- Dynamic multiplier
+- Updated every few minutes`,
+    options: [
+      { text: "Geospatial indexing (Geohash/S2), real-time location, multi-factor matching", isCorrect: true },
+      { text: "Random assignment of nearest driver", isCorrect: false },
+      { text: "Riders manually select from driver list", isCorrect: false },
+      { text: "Batch processing of ride requests", isCorrect: false },
     ],
   },
 ];
