@@ -22,7 +22,7 @@ import { Trophy, Medal, Clock, Target, Crown, Users, Timer, Swords, Flame } from
  }
  
  interface QuizLeaderboardProps {
-   quizType: "aptitude" | "dsa" | "sql";
+  quizType: "aptitude" | "dsa" | "sql" | "cs";
    currentUserId?: string;
   challengeId?: string | null;
  }
@@ -40,6 +40,10 @@ const CHALLENGE_LABELS: Record<string, { name: string; icon: React.ReactNode }> 
   "sql-easy-sprint": { name: "SQL Easy Sprint", icon: <Timer className="h-4 w-4 text-emerald-500" /> },
   "sql-medium-blitz": { name: "SQL Medium Blitz", icon: <Swords className="h-4 w-4 text-amber-500" /> },
   "sql-hard-gauntlet": { name: "SQL Hard Gauntlet", icon: <Flame className="h-4 w-4 text-red-500" /> },
+  // CS challenges
+  "cs-easy-sprint": { name: "CS Easy Sprint", icon: <Timer className="h-4 w-4 text-emerald-500" /> },
+  "cs-medium-blitz": { name: "CS Medium Blitz", icon: <Swords className="h-4 w-4 text-amber-500" /> },
+  "cs-hard-gauntlet": { name: "CS Hard Gauntlet", icon: <Flame className="h-4 w-4 text-red-500" /> },
 };
 
 const QuizLeaderboard: React.FC<QuizLeaderboardProps> = ({ quizType, currentUserId, challengeId }) => {
