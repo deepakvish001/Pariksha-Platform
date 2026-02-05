@@ -52,11 +52,11 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: isCompact ? 5 : 10 }}
+      initial={{ opacity: 0, y: isCompact ? 5 : 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "relative first:mt-0",
-        isCompact ? "my-3" : "my-6",
+        isCompact ? "my-2" : "my-4",
         className
       )}
     >
@@ -64,13 +64,13 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
       <button
         onClick={onToggle}
         className={cn(
-          "relative w-full flex items-center rounded-2xl",
-          "bg-card/90 dark:bg-card/80",
-          "border-2 border-border/60 dark:border-border/80",
-          "backdrop-blur-sm transition-all duration-300",
-          "hover:border-primary/30",
-          isCompact ? "gap-3 px-3 py-2" : "gap-4 px-5 py-4 shadow-lg hover:shadow-xl hover:-translate-y-0.5",
-          isComplete && "border-emerald-500/40 dark:border-emerald-500/50 shadow-emerald-500/10",
+          "relative w-full flex items-center rounded-xl",
+          "bg-card/95 dark:bg-card/90",
+          "border border-border/70 dark:border-border/60",
+          "backdrop-blur-sm transition-all duration-200",
+          "hover:border-primary/40 hover:shadow-md",
+          isCompact ? "gap-2.5 px-3 py-2" : "gap-3 px-4 py-3 shadow-sm",
+          isComplete && "border-emerald-400/50 dark:border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-500/5",
           onToggle && "cursor-pointer group"
         )}
       >

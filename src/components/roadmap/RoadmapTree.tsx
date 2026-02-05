@@ -1026,84 +1026,98 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           {/* Collapsible Legend - hidden in compact mode */}
           {!isCompactMode && <RoadmapLegend />}
 
-          {/* Unified Controls Bar */}
+          {/* Unified Controls Bar - Refined Organization */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="sticky top-0 z-20 p-4 -mx-1 rounded-2xl bg-background/95 backdrop-blur-lg border shadow-sm"
+            className="sticky top-0 z-20 rounded-2xl bg-background/98 backdrop-blur-xl border-2 border-border/60 shadow-lg"
           >
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              {/* Search & Filters */}
-              <RoadmapToolbar
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                difficultyFilter={difficultyFilter}
-                onDifficultyChange={setDifficultyFilter}
-                statusFilter={statusFilter}
-                onStatusChange={setStatusFilter}
-                matchCount={matchCount}
-                totalCount={allNodes.length}
-              />
-              
-              {/* View Controls - Grouped */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Layout Mode Toggle */}
-                <div className="flex items-center gap-0.5 p-1 rounded-xl bg-muted/60 border border-border/40">
-                  <button
-                    onClick={() => setLayoutMode('vertical')}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                      layoutMode === 'vertical' 
-                        ? "bg-background text-foreground shadow-sm border border-border/50" 
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <List className="h-4 w-4" />
-                    <span className="hidden sm:inline">List</span>
-                  </button>
-                  <button
-                    onClick={() => setLayoutMode('horizontal')}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                      layoutMode === 'horizontal' 
-                        ? "bg-background text-foreground shadow-sm border border-border/50" 
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                    <span className="hidden sm:inline">Cards</span>
-                  </button>
-                </div>
+            {/* Main controls row */}
+            <div className="p-3 sm:p-4">
+              <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
+                {/* Search & Filters */}
+                <RoadmapToolbar
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  difficultyFilter={difficultyFilter}
+                  onDifficultyChange={setDifficultyFilter}
+                  statusFilter={statusFilter}
+                  onStatusChange={setStatusFilter}
+                  matchCount={matchCount}
+                  totalCount={allNodes.length}
+                />
+                
+                {/* View Controls - Better Grouped */}
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  {/* Layout Mode Toggle - Pill Style */}
+                  <div className="flex items-center p-0.5 rounded-lg bg-muted/70 border border-border/50">
+                    <button
+                      onClick={() => setLayoutMode('vertical')}
+                      className={cn(
+                        "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all",
+                        layoutMode === 'vertical' 
+                          ? "bg-background text-foreground shadow-sm" 
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                      title="List view"
+                    >
+                      <List className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">List</span>
+                    </button>
+                    <button
+                      onClick={() => setLayoutMode('horizontal')}
+                      className={cn(
+                        "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all",
+                        layoutMode === 'horizontal' 
+                          ? "bg-background text-foreground shadow-sm" 
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                      title="Cards view"
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Cards</span>
+                    </button>
+                  </div>
 
-                {/* Compact Mode Toggle */}
-                <button
-                  onClick={() => setIsCompactMode(!isCompactMode)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border",
-                    isCompactMode 
-                      ? "bg-primary/10 text-primary border-primary/30" 
-                      : "bg-muted/50 text-muted-foreground border-border/50 hover:text-foreground hover:bg-muted"
-                  )}
-                  title={isCompactMode ? "Switch to normal view" : "Switch to compact view"}
-                >
-                  <Minimize2 className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">{isCompactMode ? "Normal" : "Compact"}</span>
-                </button>
+                  {/* Divider */}
+                  <div className="hidden sm:block w-px h-5 bg-border/60" />
 
-              {/* Drag Reorder Toggle */}
-              <button
-                onClick={() => setIsDragEnabled(!isDragEnabled)}
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border",
-                  isDragEnabled 
-                    ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700" 
-                    : "bg-muted/50 text-muted-foreground border-border/50 hover:text-foreground hover:bg-muted"
-                )}
-              >
-                <GripVertical className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{isDragEnabled ? "Done Reordering" : "Reorder"}</span>
-              </button>
+                  {/* View Mode Controls */}
+                  <div className="flex items-center gap-1">
+                    {/* Compact Mode Toggle */}
+                    <button
+                      onClick={() => setIsCompactMode(!isCompactMode)}
+                      className={cn(
+                        "flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all",
+                        isCompactMode 
+                          ? "bg-primary/15 text-primary border border-primary/30" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      )}
+                      title={isCompactMode ? "Switch to normal view" : "Switch to compact view"}
+                    >
+                      <Minimize2 className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{isCompactMode ? "Normal" : "Compact"}</span>
+                    </button>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="hidden sm:block w-px h-5 bg-border/60" />
+
+                  {/* Drag Reorder Toggle */}
+                  <button
+                    onClick={() => setIsDragEnabled(!isDragEnabled)}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all",
+                      isDragEnabled 
+                        ? "bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    )}
+                    title={isDragEnabled ? "Done reordering" : "Reorder topics"}
+                  >
+                    <GripVertical className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">{isDragEnabled ? "Done" : "Reorder"}</span>
+                  </button>
 
               {/* Undo Button - Only visible in drag mode and when undo is available */}
               {isDragEnabled && canUndo && (
@@ -1282,6 +1296,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
               >
                 Collapse All
               </button>
+                </div>
               </div>
             </div>
           </motion.div>

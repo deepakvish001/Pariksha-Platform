@@ -160,22 +160,22 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
           <div className="w-6" />
         )}
 
-        {/* Node Card - Enhanced with shimmer for recommended */}
+        {/* Node Card - Enhanced with refined styling */}
         <motion.div
           onClick={onClick}
-          whileHover={{ scale: 1.01, x: 2 }}
-          whileTap={{ scale: 0.99 }}
+          whileHover={{ scale: 1.005, x: 2 }}
+          whileTap={{ scale: 0.995 }}
           className={cn(
-            "relative flex-1 flex items-center gap-3 px-3 py-2 rounded-lg border-2 cursor-pointer transition-all",
+            "relative flex-1 flex items-center gap-3 px-3.5 py-2.5 rounded-xl border-2 cursor-pointer transition-all duration-200",
             nodeStyle.bg,
             nodeStyle.border,
             nodeStyle.hoverBg,
             nodeStyle.text,
-            `shadow-sm ${nodeStyle.shadow}`,
-            isHighlighted && "ring-2 ring-primary ring-offset-1 dark:ring-offset-background",
-            isInProgress && "ring-2 ring-amber-400 ring-offset-1 dark:ring-offset-background",
+            `shadow-md ${nodeStyle.shadow}`,
+            isHighlighted && "ring-2 ring-primary/70 ring-offset-2 dark:ring-offset-background",
+            isInProgress && "ring-2 ring-amber-400/70 ring-offset-2 dark:ring-offset-background",
             isOptional && "border-dashed",
-            showEffects && "shadow-lg shadow-amber-500/30 dark:shadow-amber-400/40"
+            showEffects && "shadow-lg shadow-amber-400/30 dark:shadow-amber-500/40"
           )}
         >
           {/* Shimmer and particle effects for recommended nodes */}
@@ -186,13 +186,13 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
             </>
           )}
           
-          {/* Icon - with enhanced visibility */}
+          {/* Icon - with enhanced visibility and refined styling */}
           <div className={cn(
-            "relative z-10 flex-shrink-0 h-8 w-8 rounded-md flex items-center justify-center",
+            "relative z-10 flex-shrink-0 h-9 w-9 rounded-lg flex items-center justify-center",
             `bg-gradient-to-br ${gradient}`,
-            "shadow-sm dark:shadow-md"
+            "shadow-md dark:shadow-lg ring-1 ring-white/20"
           )}>
-            <NodeIcon className="h-4 w-4 text-white drop-shadow-sm" />
+            <NodeIcon className="h-4.5 w-4.5 text-white drop-shadow-sm" />
           </div>
 
           {/* Content */}
