@@ -27,6 +27,7 @@ import {
   Navigation,
   ChevronDown,
   Check,
+  ArrowUp,
 } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
@@ -182,6 +183,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>('vertical');
   const [isDragEnabled, setIsDragEnabled] = useState(false);
   const [localNodeOrder, setLocalNodeOrder] = useState<Record<string, NodeType[]>>({});
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const treeRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -299,6 +301,16 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   useEffect(() => {
     setCollapsedSections(loadCollapsedSections(tree.id));
   }, [tree.id]);
+
+  // Scroll listener for back-to-top button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+    };
+    
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Auto-expand first level on mount and reset confetti celebrations
   useEffect(() => {
@@ -1333,28 +1345,56 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
         )}
       </div>
 
-      {/* Floating Jump to Next Button */}
-      {nextRecommendedId && stats.percentage < 100 && (
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          onClick={() => handleMiniMapNodeClick(nextRecommendedId)}
-          className={cn(
-            "fixed bottom-6 right-6 z-50",
-            "flex items-center gap-2 px-4 py-3 rounded-full",
-            "bg-primary text-primary-foreground shadow-lg",
-            "hover:shadow-xl hover:scale-105 transition-all duration-200",
-            "border border-primary-foreground/20"
+      {/* Floating Buttons Container */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
+        {/* Back to Top Button */}
+        <AnimatePresence>
+          {showBackToTop && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 20 }}
+              onClick={() => {
+                treeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={cn(
+                "flex items-center justify-center h-12 w-12 rounded-full",
+                "bg-muted/90 backdrop-blur-sm text-foreground shadow-lg",
+                "hover:bg-muted hover:shadow-xl hover:scale-105 transition-all duration-200",
+                "border border-border"
+              )}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Back to top"
+            >
+              <ArrowUp className="h-5 w-5" />
+            </motion.button>
           )}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Zap className="h-5 w-5" />
-          <span className="font-medium text-sm">Jump to Next</span>
-          <ChevronUp className="h-4 w-4 animate-bounce" />
-        </motion.button>
-      )}
+        </AnimatePresence>
+
+        {/* Jump to Next Button */}
+        {nextRecommendedId && stats.percentage < 100 && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            onClick={() => handleMiniMapNodeClick(nextRecommendedId)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 rounded-full",
+              "bg-primary text-primary-foreground shadow-lg",
+              "hover:shadow-xl hover:scale-105 transition-all duration-200",
+              "border border-primary-foreground/20"
+            )}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Zap className="h-5 w-5" />
+            <span className="font-medium text-sm">Jump to Next</span>
+            <ChevronUp className="h-4 w-4 animate-bounce" />
+          </motion.button>
+        )}
+      </div>
     </TooltipProvider>
   );
 };
