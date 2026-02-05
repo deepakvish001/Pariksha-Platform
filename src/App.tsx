@@ -42,6 +42,7 @@ import Quiz from "./pages/library/Quiz";
 // Fundamentals Pages
 import Language from "./pages/fundamentals/Language";
 import OOPsConcepts from "./pages/fundamentals/OOPsConcepts";
+import FundamentalsOverview from "./pages/fundamentals/Overview";
 
 // System Design Pages
 import HighLevelDesign from "./pages/system-design/HighLevelDesign";
@@ -132,6 +133,8 @@ const App = () => (
 
                 {/* Fundamentals routes */}
                 <Route path="/fundamentals" element={<DashboardLayoutWrapper />}>
+                  <Route index element={<FundamentalsOverview />} />
+                  <Route path="overview" element={<FundamentalsOverview />} />
                   <Route path="language" element={<Language />} />
                   <Route path="oops" element={<OOPsConcepts />} />
                 </Route>
