@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, X, SlidersHorizontal, ListFilter, Sparkles, ExternalLink, StickyNote, Zap } from "lucide-react";
+import { Search, X, SlidersHorizontal, ListFilter, Sparkles, ExternalLink, StickyNote, Zap, TrendingUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-export type QuickFilter = "none" | "has-resources" | "has-notes" | "recommended";
+export type QuickFilter = "none" | "has-resources" | "has-notes" | "recommended" | "near-complete";
 
 interface RoadmapToolbarProps {
   searchQuery: string;
@@ -37,6 +37,7 @@ interface RoadmapToolbarProps {
 
 const quickFilterOptions: { value: QuickFilter; label: string; icon: React.ReactNode; description: string }[] = [
   { value: "none", label: "No Quick Filter", icon: null, description: "Show all topics" },
+  { value: "near-complete", label: "Near Completion", icon: <TrendingUp className="h-3.5 w-3.5" />, description: "Topics in sections at 75%+ progress" },
   { value: "has-resources", label: "Has Resources", icon: <ExternalLink className="h-3.5 w-3.5" />, description: "Topics with learning resources" },
   { value: "has-notes", label: "Has Notes", icon: <StickyNote className="h-3.5 w-3.5" />, description: "Topics with your personal notes" },
   { value: "recommended", label: "Recommended", icon: <Sparkles className="h-3.5 w-3.5" />, description: "AI-recommended next topics" },
@@ -129,6 +130,7 @@ const RoadmapToolbar: React.FC<RoadmapToolbarProps> = ({
                     >
                       <div className={cn(
                         "flex-shrink-0 h-6 w-6 rounded-md flex items-center justify-center mt-0.5",
+                        option.value === "near-complete" && "bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-400",
                         option.value === "has-resources" && "bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400",
                         option.value === "has-notes" && "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400",
                         option.value === "recommended" && "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400",
