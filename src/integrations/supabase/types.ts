@@ -673,6 +673,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roadmap_node_order: {
+        Row: {
+          created_at: string
+          id: string
+          node_order: string[]
+          roadmap_id: string
+          section_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          node_order: string[]
+          roadmap_id: string
+          section_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          node_order?: string[]
+          roadmap_id?: string
+          section_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_topic_progress: {
         Row: {
           completed: boolean
