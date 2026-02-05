@@ -3,7 +3,7 @@
  import { 
    X, Clock, CheckCircle, XCircle, ArrowRight, Trophy, 
    Shuffle, Zap, Target, Settings, Play, Pause, RotateCcw,
-  Code, Cpu, Database, Calculator, Brain, BookOpen, ChevronLeft, ChevronRight, Eye
+  Code, Cpu, Database, Calculator, Brain, BookOpen, ChevronLeft, ChevronRight, Eye, Flag
  } from "lucide-react";
  import { Button } from "@/components/ui/button";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,7 +105,8 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
 
   // Review state
   const [reviewIndex, setReviewIndex] = useState(0);
-  const [reviewFilter, setReviewFilter] = useState<"all" | "incorrect" | "unanswered">("incorrect");
+  const [reviewFilter, setReviewFilter] = useState<"all" | "incorrect" | "unanswered" | "flagged">("incorrect");
+  const [markedForReview, setMarkedForReview] = useState<Set<number>>(new Set());
  
    // Prepare questions pool
    const allQuestions = useMemo(() => {
@@ -228,9 +229,22 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
      setTotalTime(0);
      setTimeLimit(limit);
      setQuestionStartTime(Date.now());
+      setMarkedForReview(new Set());
      setQuizState("playing");
    };
  
+  const toggleMarkForReview = (index: number) => {
+    setMarkedForReview(prev => {
+      const updated = new Set(prev);
+      if (updated.has(index)) {
+        updated.delete(index);
+      } else {
+        updated.add(index);
+      }
+      return updated;
+    });
+  };
+
    const handleAnswerSelect = (index: number) => {
      if (selectedAnswer !== null) return;
      setSelectedAnswer(index);
@@ -300,13 +314,15 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
       index: idx,
       isCorrect: answers[idx] !== null && q.options[answers[idx]!]?.isCorrect,
       isUnanswered: answers[idx] === null,
+      isMarked: markedForReview.has(idx),
     })).filter(item => {
       if (reviewFilter === "all") return true;
       if (reviewFilter === "incorrect") return !item.isCorrect;
       if (reviewFilter === "unanswered") return item.isUnanswered;
+      if (reviewFilter === "flagged") return item.isMarked;
       return true;
     });
-  }, [questions, answers, reviewFilter]);
+  }, [questions, answers, reviewFilter, markedForReview]);
 
   const currentReviewItem = filteredReviewQuestions[reviewIndex];
  
@@ -490,6 +506,10 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
                 <TabsList className="h-8">
                   <TabsTrigger value="incorrect" className="text-xs px-2">Incorrect</TabsTrigger>
                   <TabsTrigger value="unanswered" className="text-xs px-2">Skipped</TabsTrigger>
+                  <TabsTrigger value="flagged" className="text-xs px-2">
+                    <Flag className="h-3 w-3 mr-1" />
+                    Flagged
+                  </TabsTrigger>
                   <TabsTrigger value="all" className="text-xs px-2">All</TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -521,8 +541,16 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
                     <Badge variant="outline">{reviewQuestion.difficulty}</Badge>
                     {currentReviewItem.isUnanswered ? (
                       <Badge variant="secondary">Skipped</Badge>
-                    ) : (
+                    ) : !currentReviewItem.isCorrect ? (
                       <Badge variant="destructive">Incorrect</Badge>
+                    ) : (
+                      <Badge className="bg-green-500/10 text-green-600 border-0">Correct</Badge>
+                    )}
+                    {currentReviewItem.isMarked && (
+                      <Badge className="bg-amber-500/10 text-amber-600 border-0">
+                        <Flag className="h-3 w-3 mr-1" />
+                        Flagged
+                      </Badge>
                     )}
                   </div>
                   <CardTitle className="text-lg">{reviewQuestion.title}</CardTitle>
@@ -614,6 +642,8 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
 
    // Results screen
    if (quizState === "results") {
+      const markedCount = markedForReview.size;
+
       const incorrectCount = questions.filter((q, idx) => 
         answers[idx] === null || !q.options[answers[idx]!]?.isCorrect
       ).length;
@@ -645,6 +675,14 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
              </div>
              <h2 className="text-3xl font-bold mb-2">{score}/{questions.length}</h2>
              <p className="text-xl text-muted-foreground mb-4">{accuracy}% Accuracy</p>
+            {/* Marked for review indicator */}
+            {markedCount > 0 && (
+              <div className="flex items-center gap-2 text-sm text-amber-600">
+                <Flag className="h-4 w-4" />
+                <span>{markedCount} flagged for review</span>
+              </div>
+            )}
+
              <div className="flex justify-center gap-4 text-sm text-muted-foreground">
                <span className="flex items-center gap-1">
                  <Clock className="h-4 w-4" />
@@ -688,14 +726,18 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
            <Button variant="outline" onClick={onClose} className="flex-1">
              Exit
            </Button>
-            {incorrectCount > 0 && (
+            {(incorrectCount > 0 || markedCount > 0) && (
               <Button 
                 variant="outline" 
-                onClick={() => { setReviewIndex(0); setReviewFilter("incorrect"); setQuizState("review"); }}
+                onClick={() => { 
+                  setReviewIndex(0); 
+                  setReviewFilter(markedCount > 0 ? "flagged" : "incorrect"); 
+                  setQuizState("review"); 
+                }}
                 className="flex-1"
               >
                 <Eye className="h-4 w-4 mr-2" />
-                Review ({incorrectCount})
+                Review ({markedCount > 0 ? `${markedCount} flagged` : incorrectCount})
               </Button>
             )}
            <Button onClick={() => setQuizState("setup")} className="flex-1">
@@ -718,6 +760,12 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
              {categoryConfig[currentQuestion.category].label}
            </Badge>
            <Badge variant="outline">{currentQuestion.difficulty}</Badge>
+            {markedForReview.has(currentIndex) && (
+              <Badge className="bg-amber-500/10 text-amber-600 border-0">
+                <Flag className="h-3 w-3 mr-1" />
+                Flagged
+              </Badge>
+            )}
          </div>
          <div className="flex items-center gap-3">
            <span className="text-sm font-medium">
@@ -737,7 +785,31 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
        </div>
  
        {/* Progress */}
-       <Progress value={(currentIndex / questions.length) * 100} className="h-1.5" />
+        <div className="space-y-1">
+          <Progress value={(currentIndex / questions.length) * 100} className="h-1.5" />
+          {/* Question indicators */}
+          <div className="flex gap-1 flex-wrap">
+            {questions.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (idx < currentIndex || (idx === currentIndex && selectedAnswer !== null)) {
+                    // Allow navigating to answered questions only
+                  }
+                }}
+                className={cn(
+                  "w-2 h-2 rounded-full transition-all",
+                  idx < currentIndex && answers[idx] !== null && questions[idx].options[answers[idx]!]?.isCorrect && "bg-green-500",
+                  idx < currentIndex && answers[idx] !== null && !questions[idx].options[answers[idx]!]?.isCorrect && "bg-destructive",
+                  idx < currentIndex && answers[idx] === null && "bg-muted-foreground/50",
+                  idx === currentIndex && "bg-primary ring-2 ring-primary/30",
+                  idx > currentIndex && "bg-muted",
+                  markedForReview.has(idx) && "ring-2 ring-amber-500"
+                )}
+              />
+            ))}
+          </div>
+        </div>
  
        {/* Question */}
        <AnimatePresence mode="wait">
@@ -785,25 +857,37 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
          </motion.div>
        </AnimatePresence>
  
-       {/* Next button */}
-       <Button
-         onClick={handleNext}
-         disabled={selectedAnswer === null}
-         className="w-full"
-         size="lg"
-       >
-         {currentIndex < questions.length - 1 ? (
-           <>
-             Next Question
-             <ArrowRight className="h-4 w-4 ml-2" />
-           </>
-         ) : (
-           <>
-             View Results
-             <Trophy className="h-4 w-4 ml-2" />
-           </>
-         )}
-       </Button>
+        {/* Action buttons */}
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => toggleMarkForReview(currentIndex)}
+            className={cn(
+              "flex-shrink-0",
+              markedForReview.has(currentIndex) && "border-amber-500 bg-amber-500/10 text-amber-600"
+            )}
+          >
+            <Flag className={cn("h-4 w-4", markedForReview.has(currentIndex) ? "fill-amber-500" : "")} />
+          </Button>
+          <Button
+            onClick={handleNext}
+            disabled={selectedAnswer === null}
+            className="flex-1"
+            size="lg"
+          >
+            {currentIndex < questions.length - 1 ? (
+              <>
+                Next Question
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </>
+            ) : (
+              <>
+                View Results
+                <Trophy className="h-4 w-4 ml-2" />
+              </>
+            )}
+          </Button>
+        </div>
      </div>
    );
  };
