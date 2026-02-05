@@ -9,12 +9,19 @@ interface NodeOrderData {
   node_order: string[];
 }
 
+interface UndoState {
+  sectionId: string;
+  previousOrder: string[];
+}
+
 export const useRoadmapNodeOrder = (roadmapId: string) => {
   const { user } = useAuth();
   const [customOrders, setCustomOrders] = useState<Record<string, string[]>>({});
   const [hasCustomOrder, setHasCustomOrder] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [undoStack, setUndoStack] = useState<UndoState[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
 
   // Load custom orders from database
   useEffect(() => {
@@ -56,9 +63,18 @@ export const useRoadmapNodeOrder = (roadmapId: string) => {
     loadOrders();
   }, [user, roadmapId]);
 
-  // Save order for a section
-  const saveOrder = useCallback(async (sectionId: string, nodeOrder: string[]) => {
+  // Save order for a section (with optional undo tracking)
+  const saveOrder = useCallback(async (sectionId: string, nodeOrder: string[], trackUndo: boolean = true) => {
     if (!user) return;
+
+    // Track previous order for undo
+    if (trackUndo) {
+      const previousOrder = customOrders[sectionId];
+      if (previousOrder && previousOrder.length > 0) {
+        setUndoStack([{ sectionId, previousOrder }]);
+        setCanUndo(true);
+      }
+    }
 
     setIsSaving(true);
     try {
@@ -83,6 +99,73 @@ export const useRoadmapNodeOrder = (roadmapId: string) => {
       setHasCustomOrder(true);
     } catch (err) {
       console.error("Error saving node order:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [user, roadmapId, customOrders]);
+
+  // Undo the last drag action
+  const undoLastAction = useCallback(async () => {
+    if (undoStack.length === 0 || !user) return;
+
+    const lastAction = undoStack[undoStack.length - 1];
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("user_roadmap_node_order")
+        .upsert({
+          user_id: user.id,
+          roadmap_id: roadmapId,
+          section_id: lastAction.sectionId,
+          node_order: lastAction.previousOrder,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: "user_id,roadmap_id,section_id"
+        });
+
+      if (error) throw error;
+
+      setCustomOrders(prev => ({
+        ...prev,
+        [lastAction.sectionId]: lastAction.previousOrder
+      }));
+      setUndoStack([]);
+      setCanUndo(false);
+    } catch (err) {
+      console.error("Error undoing action:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [undoStack, user, roadmapId]);
+
+  // Import custom orders from shared data
+  const importOrders = useCallback(async (orders: Record<string, string[]>) => {
+    if (!user) return;
+
+    setIsSaving(true);
+    try {
+      // Save each section's order
+      for (const [sectionId, nodeOrder] of Object.entries(orders)) {
+        const { error } = await supabase
+          .from("user_roadmap_node_order")
+          .upsert({
+            user_id: user.id,
+            roadmap_id: roadmapId,
+            section_id: sectionId,
+            node_order: nodeOrder,
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: "user_id,roadmap_id,section_id"
+          });
+
+        if (error) throw error;
+      }
+
+      setCustomOrders(orders);
+      setHasCustomOrder(true);
+    } catch (err) {
+      console.error("Error importing orders:", err);
     } finally {
       setIsSaving(false);
     }
@@ -142,8 +225,11 @@ export const useRoadmapNodeOrder = (roadmapId: string) => {
     hasCustomOrder,
     isLoading,
     isSaving,
+    canUndo,
     saveOrder,
     resetToDefault,
     getOrderedNodes,
+    undoLastAction,
+    importOrders,
   };
 };

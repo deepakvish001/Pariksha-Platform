@@ -21,6 +21,8 @@ import {
   LayoutGrid,
   List,
   RotateCcw,
+  Undo2,
+  Share2,
 } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
@@ -37,6 +39,7 @@ import RoadmapCertificate from "./RoadmapCertificate";
 import RoadmapSectionHeader from "./RoadmapSectionHeader";
 import RoadmapLegend from "./RoadmapLegend";
 import HorizontalBranch from "./HorizontalBranch";
+import SharePathDialog from "./SharePathDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoadmapConfetti } from "@/hooks/useRoadmapConfetti";
 import { useAuth } from "@/contexts/AuthContext";
@@ -166,7 +169,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const { celebrateTopic, celebrateSection, trackProgress, resetCelebrations } = useRoadmapConfetti();
-  const { hasCustomOrder, isSaving, saveOrder, resetToDefault, getOrderedNodes } = useRoadmapNodeOrder(tree.id);
+  const { customOrders, hasCustomOrder, isSaving, canUndo, saveOrder, resetToDefault, getOrderedNodes, undoLastAction, importOrders } = useRoadmapNodeOrder(tree.id);
   const prevProgressRef = useRef<Record<string, { completed: boolean; inProgress: boolean }>>({});
   const prevSectionStatsRef = useRef<Record<string, number>>({});
   
@@ -942,6 +945,27 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                 <span className="hidden sm:inline">{isDragEnabled ? "Done Reordering" : "Reorder"}</span>
               </button>
 
+              {/* Undo Button - Only visible in drag mode and when undo is available */}
+              {isDragEnabled && canUndo && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    await undoLastAction();
+                    setLocalNodeOrder({});
+                    toast({
+                      title: "Undone!",
+                      description: "Your last reorder has been reversed.",
+                    });
+                  }}
+                  disabled={isSaving}
+                  className="flex items-center gap-1.5 h-7 text-xs text-muted-foreground hover:text-primary"
+                >
+                  <Undo2 className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Undo</span>
+                </Button>
+              )}
+
               {/* Reset to Default Order Button - Only visible in drag mode and when custom order exists */}
               {isDragEnabled && hasCustomOrder && (
                 <Button
@@ -955,6 +979,18 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                   <span className="hidden sm:inline">Reset Order</span>
                 </Button>
               )}
+
+              {/* Share Path Button */}
+              <SharePathDialog
+                roadmapId={tree.id}
+                roadmapTitle={tree.title}
+                customOrders={customOrders}
+                hasCustomOrder={hasCustomOrder}
+                onImportOrder={async (orders) => {
+                  await importOrders(orders);
+                  setLocalNodeOrder({});
+                }}
+              />
 
               <span className="text-muted-foreground/30 hidden sm:inline">|</span>
 
