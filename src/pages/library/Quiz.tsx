@@ -12,12 +12,15 @@ import CSQuizMode from "@/components/library/CSQuizMode";
 import AptitudeQuizMode from "@/components/library/AptitudeQuizMode";
 import SQLQuizMode from "@/components/library/SQLQuizMode";
 import CombinedQuizMode from "@/components/library/CombinedQuizMode";
+import QuizSpacedRepetitionPanel from "@/components/library/QuizSpacedRepetitionPanel";
+import ReviewQuizMode from "@/components/library/ReviewQuizMode";
+import { type QuizReviewItem } from "@/hooks/useQuizSpacedRepetition";
 import { dsaQuestions } from "@/data/dsaQuestionsData";
 import { csQuestions } from "@/data/csSubjectsData";
 import { aptitudeQuestions } from "@/data/aptitudeQuestionsData";
 import { sqlQuestions } from "@/data/sqlQuestionsData";
 
-type QuizType = "dsa" | "cs" | "aptitude" | "sql" | "combined" | null;
+type QuizType = "dsa" | "cs" | "aptitude" | "sql" | "combined" | "review" | null;
 
 const quizCategories = [
   {
@@ -60,6 +63,12 @@ const quizCategories = [
 
 const Quiz = () => {
   const [activeQuiz, setActiveQuiz] = useState<QuizType>(null);
+  const [reviewItems, setReviewItems] = useState<QuizReviewItem[]>([]);
+
+  const handleStartReviewQuiz = (reviews: QuizReviewItem[]) => {
+    setReviewItems(reviews);
+    setActiveQuiz("review");
+  };
 
   const renderQuizMode = () => {
     switch (activeQuiz) {
@@ -73,6 +82,8 @@ const Quiz = () => {
         return <SQLQuizMode questions={sqlQuestions} onClose={() => setActiveQuiz(null)} />;
       case "combined":
         return <CombinedQuizMode onClose={() => setActiveQuiz(null)} />;
+      case "review":
+        return <ReviewQuizMode reviews={reviewItems} onClose={() => setActiveQuiz(null)} />;
       default:
         return null;
     }
@@ -122,11 +133,20 @@ const Quiz = () => {
               </Link>
             </motion.div>
 
+            {/* Spaced Repetition Panel */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <QuizSpacedRepetitionPanel onStartReviewQuiz={handleStartReviewQuiz} />
+            </motion.div>
+
             {/* Featured Combined Quiz */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
+              transition={{ delay: 0.2 }}
             >
               <Card 
                 className="cursor-pointer hover:shadow-lg transition-all group border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5"
@@ -158,7 +178,7 @@ const Quiz = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.25 }}
             >
               <h2 className="text-lg font-semibold mb-4">Choose a Quiz Category</h2>
               <div className="grid gap-6 md:grid-cols-2">
@@ -167,7 +187,7 @@ const Quiz = () => {
                     key={category.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 + index * 0.1 }}
+                    transition={{ delay: 0.25 + index * 0.1 }}
                   >
                     <Card
                       className={`hover:shadow-lg transition-all cursor-pointer group border bg-gradient-to-br ${category.color}`}

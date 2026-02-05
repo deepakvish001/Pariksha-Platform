@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
  import { useAuth } from "@/contexts/AuthContext";
  import { supabase } from "@/integrations/supabase/client";
  import { useToast } from "@/hooks/use-toast";
+import { useQuizSpacedRepetition } from "@/hooks/useQuizSpacedRepetition";
  
  interface CombinedQuizModeProps {
    onClose: () => void;
@@ -81,6 +82,7 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
  const CombinedQuizMode = ({ onClose }: CombinedQuizModeProps) => {
    const { user } = useAuth();
    const { toast } = useToast();
+  const { scheduleForReview } = useQuizSpacedRepetition();
    const [quizState, setQuizState] = useState<QuizState>("setup");
    const [questions, setQuestions] = useState<QuizQuestion[]>([]);
    const [currentIndex, setCurrentIndex] = useState(0);
@@ -286,6 +288,28 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
          category: "all",
          difficulty: "all",
        });
+
+       // Schedule incorrect questions for spaced repetition review
+       const incorrectQuestions = questions
+         .map((q, idx) => ({ question: q, answer: finalAnswers[idx], idx }))
+         .filter(item => {
+           if (item.answer === null) return true; // Unanswered
+           return !item.question.options[item.answer]?.isCorrect;
+         })
+         .map(item => ({
+           questionId: item.question.id,
+           category: item.question.category,
+           title: item.question.title,
+         }));
+
+       if (incorrectQuestions.length > 0) {
+         await scheduleForReview(incorrectQuestions);
+         toast({
+           title: "Questions scheduled for review",
+           description: `${incorrectQuestions.length} question(s) added to your spaced repetition queue`,
+           duration: 4000,
+         });
+       }
      } catch (error) {
        console.error("Error saving quiz results:", error);
      }
