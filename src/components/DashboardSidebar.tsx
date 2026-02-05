@@ -69,6 +69,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import NotificationBell from "@/components/NotificationBell";
 
 const mainNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
@@ -250,11 +251,19 @@ export function DashboardSidebar() {
       <Sidebar collapsible="icon" className="overflow-hidden">
         {/* Header with Logo */}
         <SidebarHeader className="border-b border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
-          <Link to="/" className="flex items-center justify-center py-1">
-            <div className="w-10 h-10 rounded-xl bg-gradient-orange flex items-center justify-center transition-transform duration-200 hover:scale-105">
-              <span className="text-primary-foreground font-bold text-lg">U</span>
+          <div className="flex items-center justify-between">
+            <Link to="/" className="flex items-center justify-center py-1">
+              <div className="w-10 h-10 rounded-xl bg-gradient-orange flex items-center justify-center transition-transform duration-200 hover:scale-105">
+                <span className="text-primary-foreground font-bold text-lg">U</span>
+              </div>
+            </Link>
+            {!isCollapsed && <NotificationBell />}
+          </div>
+          {isCollapsed && (
+            <div className="flex justify-center mt-2">
+              <NotificationBell />
             </div>
-          </Link>
+          )}
         </SidebarHeader>
 
         <SidebarContent className="px-3 py-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3">
