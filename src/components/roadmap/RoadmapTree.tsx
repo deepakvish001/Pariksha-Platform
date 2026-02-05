@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Trophy, 
@@ -14,6 +14,7 @@ import {
   Brain,
   BarChart3,
   Flame,
+  Award,
 } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,10 @@ import RoadmapTreeNodeEnhanced from "./RoadmapTreeNodeEnhanced";
 import RoadmapNodeDetail from "./RoadmapNodeDetail";
 import RoadmapToolbar from "./RoadmapToolbar";
 import RoadmapMiniMap from "./RoadmapMiniMap";
+import RoadmapCertificate from "./RoadmapCertificate";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRoadmapConfetti } from "@/hooks/useRoadmapConfetti";
+import { useAuth } from "@/contexts/AuthContext";
 import type { RoadmapTree as TreeType, RoadmapTreeNode as NodeType } from "@/data/roadmapTreesData";
 
 // Icon mapping for roadmap types
@@ -34,6 +38,7 @@ interface RoadmapTreeProps {
   progress: Record<string, { completed: boolean; inProgress: boolean }>;
   onNodeComplete: (nodeId: string) => void;
   onNodeInProgress?: (nodeId: string) => void;
+  userName?: string;
 }
 
 // Flatten tree nodes helper
@@ -106,6 +111,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   progress,
   onNodeComplete,
   onNodeInProgress,
+  userName = "Learner",
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [selectedNode, setSelectedNode] = useState<NodeType | null>(null);
@@ -113,17 +119,53 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const treeRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const isMobile = useIsMobile();
+  const { celebrateTopic, trackProgress, resetCelebrations } = useRoadmapConfetti();
+  const prevProgressRef = useRef<Record<string, { completed: boolean; inProgress: boolean }>>({});
   
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Auto-expand first level on mount
-  React.useEffect(() => {
+  // Auto-expand first level on mount and reset confetti celebrations
+  useEffect(() => {
     const firstLevelIds = tree.nodes.map(n => n.id);
     setExpandedNodes(new Set(firstLevelIds));
-  }, [tree.id]);
+    resetCelebrations();
+  }, [tree.id, resetCelebrations]);
+
+  // Track progress changes and trigger confetti
+  useEffect(() => {
+    const prevProgress = prevProgressRef.current;
+    const allNodesList = flattenNodes(tree.nodes);
+    
+    // Check if any node was newly completed
+    let wasCompleted = false;
+    for (const node of allNodesList) {
+      const wasCompletedBefore = prevProgress[node.id]?.completed;
+      const isCompletedNow = progress[node.id]?.completed;
+      if (!wasCompletedBefore && isCompletedNow) {
+        wasCompleted = true;
+        break;
+      }
+    }
+
+    // Calculate current percentage
+    const completedCount = allNodesList.filter(n => progress[n.id]?.completed).length;
+    const currentPercentage = Math.round((completedCount / allNodesList.length) * 100) || 0;
+
+    // If a node was completed, trigger celebrations
+    if (wasCompleted) {
+      const celebrated = trackProgress(currentPercentage);
+      if (!celebrated) {
+        // Small celebration for individual topic
+        celebrateTopic();
+      }
+    }
+
+    // Update ref
+    prevProgressRef.current = progress;
+  }, [progress, tree.nodes, trackProgress, celebrateTopic]);
 
   // Calculate all flattened nodes
   const allNodes = useMemo(() => flattenNodes(tree.nodes), [tree.nodes]);
@@ -458,11 +500,27 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                 </div>
               </div>
 
-              {/* Progress Bar */}
+              {/* Progress Bar + Certificate Button */}
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs text-muted-foreground">
+                <div className="flex justify-between items-center text-xs text-muted-foreground">
                   <span>Learning Progress</span>
-                  <span>{stats.completed} of {stats.total} topics mastered</span>
+                  <div className="flex items-center gap-3">
+                    <span>{stats.completed} of {stats.total} topics mastered</span>
+                    <RoadmapCertificate
+                      roadmapTitle={tree.title}
+                      roadmapIcon={tree.icon === "Layout" ? "📐" : tree.icon === "Server" ? "🖥️" : tree.icon === "Layers" ? "📚" : "🎯"}
+                      completedCount={stats.completed}
+                      totalCount={stats.total}
+                      percentage={stats.percentage}
+                      userName={userName}
+                      trigger={
+                        <button className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                          <Award className="h-3.5 w-3.5" />
+                          Certificate
+                        </button>
+                      }
+                    />
+                  </div>
                 </div>
                 <div className="h-2.5 rounded-full bg-muted overflow-hidden">
                   <motion.div 
