@@ -28,7 +28,7 @@ export interface Achievement {
   icon: keyof typeof iconMap;
   color: string;
   requirement: {
-    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics' | 'quiz_perfect_score' | 'quiz_speed_demon' | 'quiz_challenge_complete' | 'quiz_accuracy' | 'quiz_streak' | 'fundamentals_quiz_count' | 'fundamentals_accuracy' | 'fundamentals_mastery' | 'fundamentals_streak' | 'system_design_quiz_count' | 'system_design_accuracy' | 'system_design_mastery';
+    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics' | 'quiz_perfect_score' | 'quiz_speed_demon' | 'quiz_challenge_complete' | 'quiz_accuracy' | 'quiz_streak' | 'fundamentals_quiz_count' | 'fundamentals_accuracy' | 'fundamentals_mastery' | 'fundamentals_streak' | 'system_design_quiz_count' | 'system_design_accuracy' | 'system_design_mastery' | 'research_quiz_count' | 'research_accuracy' | 'research_mastery';
     value: number;
   };
 }
@@ -352,6 +352,47 @@ export const achievements: Achievement[] = [
     icon: 'crown',
     color: 'from-yellow-400 to-amber-500',
     requirement: { type: 'system_design_mastery', value: 3 }
+  },
+  // Research Achievements
+  {
+    id: 'research_first_quiz',
+    name: 'Job Hunter',
+    description: 'Complete your first Job Portals quiz',
+    icon: 'rocket',
+    color: 'from-blue-500 to-cyan-500',
+    requirement: { type: 'research_quiz_count', value: 1 }
+  },
+  {
+    id: 'research_quiz_5',
+    name: 'Portal Pro',
+    description: 'Complete 5 Research quizzes',
+    icon: 'book',
+    color: 'from-rose-500 to-pink-500',
+    requirement: { type: 'research_quiz_count', value: 5 }
+  },
+  {
+    id: 'research_accuracy_90',
+    name: 'Career Navigator',
+    description: 'Score 90%+ on a Roadmap quiz',
+    icon: 'target',
+    color: 'from-emerald-500 to-teal-500',
+    requirement: { type: 'research_accuracy', value: 1 }
+  },
+  {
+    id: 'research_explorer',
+    name: 'Research Explorer',
+    description: 'Complete quizzes in both Job Portals and Roadmaps',
+    icon: 'sparkles',
+    color: 'from-violet-500 to-purple-500',
+    requirement: { type: 'research_mastery', value: 2 }
+  },
+  {
+    id: 'research_master',
+    name: 'Career Master',
+    description: 'Score 100% on both Job Portals and Roadmap quizzes',
+    icon: 'crown',
+    color: 'from-yellow-400 to-amber-500',
+    requirement: { type: 'research_mastery', value: 3 }
   },
 ];
 

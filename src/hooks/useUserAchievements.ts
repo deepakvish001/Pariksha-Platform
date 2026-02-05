@@ -39,6 +39,16 @@ interface AchievementProgress {
     hasHLDPerfect: boolean;
     hasLLDPerfect: boolean;
   };
+  researchQuizResults: {
+    total: number;
+    highAccuracyCount: number;
+    veryHighAccuracyCount: number;
+    hasPerfectScore: boolean;
+    hasJobPortalPerfect: boolean;
+    hasRoadmapPerfect: boolean;
+    hasJobPortalQuiz: boolean;
+    hasRoadmapQuiz: boolean;
+  };
 }
  
  export function useUserAchievements() {
@@ -180,42 +190,69 @@ interface AchievementProgress {
         const hasHLDPerfect = systemDesignQuizzes.some(
           (r) => r.quiz_type.startsWith("hld-") && r.accuracy === 100
         );
-        const hasLLDPerfect = systemDesignQuizzes.some(
-          (r) => r.quiz_type.startsWith("lld-") && r.accuracy === 100
-        );
+         const hasLLDPerfect = systemDesignQuizzes.some(
+           (r) => r.quiz_type.startsWith("lld-") && r.accuracy === 100
+         );
 
-        setProgress({
-          topicsCompleted,
-          streakDays,
-          revisionTopics,
-          quizResults: {
-            total: quizResults.length,
-            hardCount,
-            highAccuracyCount,
-            hasPerfectScore,
-            hasSpeedDemon,
-            hasChallenge,
-            perfectByType,
-            quizStreak,
-          },
-          fundamentalsQuizResults: {
-            total: fundamentalsTotal,
-            highAccuracyCount: fundamentalsHighAccuracy,
-            veryHighAccuracyCount: fundamentalsVeryHighAccuracy,
-            hasPerfectScore: fundamentalsHasPerfect,
-            hasLanguagePerfect,
-            hasOopsPerfect,
-          },
-          fundamentalsStreak,
-          systemDesignQuizResults: {
-            total: systemDesignTotal,
-            highAccuracyCount: systemDesignHighAccuracy,
-            veryHighAccuracyCount: systemDesignVeryHighAccuracy,
-            hasPerfectScore: systemDesignHasPerfect,
-            hasHLDPerfect,
-            hasLLDPerfect,
-          },
-        });
+         // Calculate research quiz stats (job-portal-* and roadmap-*)
+         const researchQuizzes = quizResults.filter(
+           (r) => r.quiz_type.startsWith("job-portal-") || r.quiz_type.startsWith("roadmap-")
+         );
+         const researchTotal = researchQuizzes.length;
+         const researchHighAccuracy = researchQuizzes.filter((r) => r.accuracy >= 80).length;
+         const researchVeryHighAccuracy = researchQuizzes.filter((r) => r.accuracy >= 90).length;
+         const researchHasPerfect = researchQuizzes.some((r) => r.accuracy === 100);
+         const hasJobPortalPerfect = researchQuizzes.some(
+           (r) => r.quiz_type.startsWith("job-portal-") && r.accuracy === 100
+         );
+         const hasRoadmapPerfect = researchQuizzes.some(
+           (r) => r.quiz_type.startsWith("roadmap-") && r.accuracy === 100
+         );
+         const hasJobPortalQuiz = researchQuizzes.some((r) => r.quiz_type.startsWith("job-portal-"));
+         const hasRoadmapQuiz = researchQuizzes.some((r) => r.quiz_type.startsWith("roadmap-"));
+
+         setProgress({
+           topicsCompleted,
+           streakDays,
+           revisionTopics,
+           quizResults: {
+             total: quizResults.length,
+             hardCount,
+             highAccuracyCount,
+             hasPerfectScore,
+             hasSpeedDemon,
+             hasChallenge,
+             perfectByType,
+             quizStreak,
+           },
+           fundamentalsQuizResults: {
+             total: fundamentalsTotal,
+             highAccuracyCount: fundamentalsHighAccuracy,
+             veryHighAccuracyCount: fundamentalsVeryHighAccuracy,
+             hasPerfectScore: fundamentalsHasPerfect,
+             hasLanguagePerfect,
+             hasOopsPerfect,
+           },
+           fundamentalsStreak,
+           systemDesignQuizResults: {
+             total: systemDesignTotal,
+             highAccuracyCount: systemDesignHighAccuracy,
+             veryHighAccuracyCount: systemDesignVeryHighAccuracy,
+             hasPerfectScore: systemDesignHasPerfect,
+             hasHLDPerfect,
+             hasLLDPerfect,
+           },
+           researchQuizResults: {
+             total: researchTotal,
+             highAccuracyCount: researchHighAccuracy,
+             veryHighAccuracyCount: researchVeryHighAccuracy,
+             hasPerfectScore: researchHasPerfect,
+             hasJobPortalPerfect,
+             hasRoadmapPerfect,
+             hasJobPortalQuiz,
+             hasRoadmapQuiz,
+           },
+         });
      } catch (error) {
        console.error("Error fetching achievements:", error);
      } finally {
@@ -292,6 +329,21 @@ interface AchievementProgress {
         const sdMasteryCount = (progress.systemDesignQuizResults.hasHLDPerfect ? 1 : 0) + 
                                (progress.systemDesignQuizResults.hasLLDPerfect ? 1 : 0);
         return { current: sdMasteryCount, target: 2 };
+      case "research_quiz_count":
+        return { current: Math.min(progress.researchQuizResults.total, value), target: value };
+      case "research_accuracy":
+        return { current: Math.min(progress.researchQuizResults.veryHighAccuracyCount, value), target: value };
+      case "research_mastery":
+        if (value === 2) {
+          // Research Explorer - need quizzes in both categories
+          const explorerCount = (progress.researchQuizResults.hasJobPortalQuiz ? 1 : 0) + 
+                                (progress.researchQuizResults.hasRoadmapQuiz ? 1 : 0);
+          return { current: explorerCount, target: 2 };
+        }
+        // Career Master (value: 3) - need perfect in both
+        const researchMasteryCount = (progress.researchQuizResults.hasJobPortalPerfect ? 1 : 0) + 
+                                     (progress.researchQuizResults.hasRoadmapPerfect ? 1 : 0);
+        return { current: researchMasteryCount, target: 2 };
        default:
          return { current: 0, target: value };
      }
