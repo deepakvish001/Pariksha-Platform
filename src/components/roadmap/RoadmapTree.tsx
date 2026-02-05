@@ -564,10 +564,18 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           totalCount={allNodes.length}
         />
 
-          {/* Tree Visualization */}
-          <div className="relative pl-2">
+          {/* Tree Visualization - Enhanced */}
+          <div className="relative pl-2 py-2">
+            {/* Decorative background pattern */}
+            <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
+              <div className="h-full w-full" style={{
+                backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                backgroundSize: '20px 20px'
+              }} />
+            </div>
+            
             {/* Nodes */}
-            <div className="space-y-1">
+            <div className="space-y-1 relative">
               {tree.nodes.map((node, index) => renderNode(node, 0, index === tree.nodes.length - 1))}
             </div>
           </div>
