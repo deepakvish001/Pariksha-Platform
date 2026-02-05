@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface PathPreviewThumbnailProps {
@@ -37,7 +38,14 @@ const PathPreviewThumbnail: React.FC<PathPreviewThumbnailProps> = ({
   ];
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ 
+        duration: 0.4, 
+        ease: [0.16, 1, 0.3, 1],
+        staggerChildren: 0.05
+      }}
       className={cn(
         "relative rounded-lg border bg-gradient-to-br from-background to-muted/50 overflow-hidden",
         className
@@ -60,9 +68,27 @@ const PathPreviewThumbnail: React.FC<PathPreviewThumbnailProps> = ({
         {/* Path visualization */}
         <div className="flex flex-col gap-1.5">
           {sections.map((section, sectionIndex) => (
-            <div key={section.id} className="flex items-center gap-1">
+            <motion.div
+              key={section.id}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ 
+                delay: 0.1 + sectionIndex * 0.05,
+                duration: 0.3,
+                ease: "easeOut"
+              }}
+              className="flex items-center gap-1"
+            >
               {/* Section indicator */}
-              <div
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ 
+                  delay: 0.15 + sectionIndex * 0.05,
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 15
+                }}
                 className={cn(
                   "w-2 h-2 rounded-full shrink-0",
                   sectionColors[sectionIndex % sectionColors.length]
@@ -74,7 +100,15 @@ const PathPreviewThumbnail: React.FC<PathPreviewThumbnailProps> = ({
                 {section.nodes.map((nodeId, nodeIndex) => (
                   <React.Fragment key={nodeId}>
                     {/* Node dot */}
-                    <div
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ 
+                        delay: 0.2 + sectionIndex * 0.05 + nodeIndex * 0.02,
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 20
+                      }}
                       className={cn(
                         "w-1.5 h-1.5 rounded-full",
                         nodeIndex === 0
@@ -84,18 +118,31 @@ const PathPreviewThumbnail: React.FC<PathPreviewThumbnailProps> = ({
                     />
                     {/* Connector line */}
                     {nodeIndex < section.nodes.length - 1 && (
-                      <div className="w-1 h-px bg-muted-foreground/20" />
+                      <motion.div
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ 
+                          delay: 0.25 + sectionIndex * 0.05 + nodeIndex * 0.02,
+                          duration: 0.15
+                        }}
+                        className="w-1 h-px bg-muted-foreground/20 origin-left"
+                      />
                     )}
                   </React.Fragment>
                 ))}
                 {/* More indicator */}
                 {section.nodeCount > 8 && (
-                  <span className="text-[8px] text-muted-foreground ml-0.5">
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 + sectionIndex * 0.05 }}
+                    className="text-[8px] text-muted-foreground ml-0.5"
+                  >
                     +{section.nodeCount - 8}
-                  </span>
+                  </motion.span>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
           
           {/* More sections indicator */}
@@ -119,7 +166,7 @@ const PathPreviewThumbnail: React.FC<PathPreviewThumbnailProps> = ({
 
       {/* Gradient fade at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
-    </div>
+    </motion.div>
   );
 };
 
