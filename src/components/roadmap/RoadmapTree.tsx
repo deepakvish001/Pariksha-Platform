@@ -24,10 +24,21 @@ import {
   Undo2,
   Share2,
   FolderOpen,
+  Navigation,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -173,6 +184,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const [localNodeOrder, setLocalNodeOrder] = useState<Record<string, NodeType[]>>({});
   const treeRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const { celebrateTopic, celebrateSection, trackProgress, resetCelebrations } = useRoadmapConfetti();
@@ -519,6 +531,30 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     }
   }, [tree.nodes]);
 
+  // Jump to section handler
+  const handleJumpToSection = useCallback((sectionId: string) => {
+    // Expand the section if collapsed
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      next.delete(sectionId);
+      saveCollapsedSections(tree.id, next);
+      return next;
+    });
+    
+    // Scroll to section after a short delay
+    setTimeout(() => {
+      const sectionElement = sectionRefs.current.get(sectionId);
+      if (sectionElement) {
+        sectionElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Brief highlight effect
+        sectionElement.classList.add("ring-2", "ring-primary", "ring-offset-4", "rounded-2xl");
+        setTimeout(() => {
+          sectionElement.classList.remove("ring-2", "ring-primary", "ring-offset-4", "rounded-2xl");
+        }, 2000);
+      }
+    }, 100);
+  }, [tree.id]);
+
   // Check if node should be visible based on filters
   const isNodeVisible = useCallback((node: NodeType): boolean => {
     if (!searchQuery && difficultyFilter === "all" && statusFilter === "all") return true;
@@ -657,11 +693,14 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     
     return (
       <motion.div 
-        key={node.id} 
+        key={node.id}
+        ref={(el) => {
+          if (el) sectionRefs.current.set(node.id, el);
+        }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: phaseIndex * 0.1 }}
-        className="mb-6"
+        className="mb-6 scroll-mt-24"
       >
         {/* Section Header */}
         <RoadmapSectionHeader
@@ -1096,6 +1135,70 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                   onClear={clearHistory}
                 />
               )}
+
+              {/* Quick Jump Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                    "bg-muted/50 text-muted-foreground border-border/50 hover:text-foreground hover:bg-muted"
+                  )}>
+                    <Navigation className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Jump to</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 max-h-80 overflow-y-auto bg-popover z-50">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    Quick Navigation
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {tree.nodes.map((node, index) => {
+                    const sectionStats = getSectionStats(node);
+                    const percentage = Math.round((sectionStats.completed / sectionStats.total) * 100) || 0;
+                    const isComplete = percentage === 100;
+                    
+                    return (
+                      <DropdownMenuItem 
+                        key={node.id}
+                        onClick={() => handleJumpToSection(node.id)}
+                        className="flex items-center gap-3 cursor-pointer"
+                      >
+                        <div className={cn(
+                          "flex-shrink-0 h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-bold",
+                          isComplete 
+                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
+                            : "bg-primary/10 text-primary"
+                        )}>
+                          {isComplete ? <Check className="h-3.5 w-3.5" /> : index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            "text-sm font-medium truncate",
+                            isComplete && "text-emerald-600 dark:text-emerald-400"
+                          )}>
+                            {node.title}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {sectionStats.completed}/{sectionStats.total} topics • {percentage}%
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0 w-10">
+                          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                            <div 
+                              className={cn(
+                                "h-full rounded-full transition-all",
+                                isComplete ? "bg-emerald-500" : "bg-primary"
+                              )}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <span className="text-muted-foreground/30 hidden sm:inline">|</span>
 
