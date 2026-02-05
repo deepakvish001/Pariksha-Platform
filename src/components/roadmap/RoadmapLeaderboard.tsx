@@ -1,12 +1,13 @@
-import React from "react";
-import { Trophy, Medal, Crown, Map, Clock, TrendingUp } from "lucide-react";
+import React, { useState } from "react";
+import { Trophy, Medal, Crown, Map, TrendingUp, Calendar, CalendarDays, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useRoadmapLeaderboard, type RoadmapLeaderboardEntry } from "@/hooks/useRoadmapLeaderboard";
+import { useRoadmapLeaderboard, type RoadmapLeaderboardEntry, type TimeFrame } from "@/hooks/useRoadmapLeaderboard";
 import { formatDistanceToNow } from "date-fns";
 
 interface RoadmapLeaderboardProps {
@@ -114,11 +115,12 @@ const RoadmapLeaderboard: React.FC<RoadmapLeaderboardProps> = ({
   currentUserId,
   limit = 20,
 }) => {
-  const { leaderboard, userRank, isLoading } = useRoadmapLeaderboard(limit);
+  const [timeFrame, setTimeFrame] = useState<TimeFrame>("all");
+  const { leaderboard, userRank, isLoading } = useRoadmapLeaderboard(timeFrame, limit);
 
   return (
     <Card className="h-full">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 space-y-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Trophy className="h-5 w-5 text-amber-500" />
@@ -129,6 +131,24 @@ const RoadmapLeaderboard: React.FC<RoadmapLeaderboardProps> = ({
             Top {limit}
           </Badge>
         </div>
+        
+        {/* Time Filter Tabs */}
+        <Tabs value={timeFrame} onValueChange={(v) => setTimeFrame(v as TimeFrame)} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 h-8">
+            <TabsTrigger value="all" className="text-xs gap-1">
+              <Clock className="h-3 w-3" />
+              All Time
+            </TabsTrigger>
+            <TabsTrigger value="month" className="text-xs gap-1">
+              <CalendarDays className="h-3 w-3" />
+              This Month
+            </TabsTrigger>
+            <TabsTrigger value="week" className="text-xs gap-1">
+              <Calendar className="h-3 w-3" />
+              This Week
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </CardHeader>
       <CardContent>
         {isLoading ? (

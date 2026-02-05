@@ -16,10 +16,14 @@ import {
   Swords,
   Brain,
   Sparkles,
-   Users,
+  Users,
+  Map,
+  Layout,
+  Server,
+  Smartphone,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
- import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 
 export interface Achievement {
   id: string;
@@ -28,7 +32,7 @@ export interface Achievement {
   icon: keyof typeof iconMap;
   color: string;
   requirement: {
-    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics' | 'quiz_perfect_score' | 'quiz_speed_demon' | 'quiz_challenge_complete' | 'quiz_accuracy' | 'quiz_streak' | 'fundamentals_quiz_count' | 'fundamentals_accuracy' | 'fundamentals_mastery' | 'fundamentals_streak' | 'system_design_quiz_count' | 'system_design_accuracy' | 'system_design_mastery' | 'research_quiz_count' | 'research_accuracy' | 'research_mastery';
+    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics' | 'quiz_perfect_score' | 'quiz_speed_demon' | 'quiz_challenge_complete' | 'quiz_accuracy' | 'quiz_streak' | 'fundamentals_quiz_count' | 'fundamentals_accuracy' | 'fundamentals_mastery' | 'fundamentals_streak' | 'system_design_quiz_count' | 'system_design_accuracy' | 'system_design_mastery' | 'research_quiz_count' | 'research_accuracy' | 'research_mastery' | 'roadmap_topics' | 'roadmap_path_complete' | 'roadmap_mastery';
     value: number;
   };
 }
@@ -50,6 +54,10 @@ const iconMap = {
   brain: Brain,
   sparkles: Sparkles,
   users: Users,
+  map: Map,
+  layout: Layout,
+  server: Server,
+  smartphone: Smartphone,
 };
 
 export const achievements: Achievement[] = [
@@ -393,6 +401,87 @@ export const achievements: Achievement[] = [
     icon: 'crown',
     color: 'from-yellow-400 to-amber-500',
     requirement: { type: 'research_mastery', value: 3 }
+  },
+  // Roadmap Achievements
+  {
+    id: 'roadmap_first_topic',
+    name: 'Path Finder',
+    description: 'Complete your first roadmap topic',
+    icon: 'map',
+    color: 'from-cyan-500 to-blue-500',
+    requirement: { type: 'roadmap_topics', value: 1 }
+  },
+  {
+    id: 'roadmap_topics_10',
+    name: 'Road Warrior',
+    description: 'Complete 10 roadmap topics',
+    icon: 'map',
+    color: 'from-blue-500 to-indigo-500',
+    requirement: { type: 'roadmap_topics', value: 10 }
+  },
+  {
+    id: 'roadmap_topics_25',
+    name: 'Journey Maker',
+    description: 'Complete 25 roadmap topics',
+    icon: 'star',
+    color: 'from-violet-500 to-purple-500',
+    requirement: { type: 'roadmap_topics', value: 25 }
+  },
+  {
+    id: 'roadmap_topics_50',
+    name: 'Roadmap Expert',
+    description: 'Complete 50 roadmap topics',
+    icon: 'trophy',
+    color: 'from-amber-500 to-orange-500',
+    requirement: { type: 'roadmap_topics', value: 50 }
+  },
+  {
+    id: 'roadmap_topics_100',
+    name: 'Career Architect',
+    description: 'Complete 100 roadmap topics',
+    icon: 'crown',
+    color: 'from-yellow-400 to-amber-500',
+    requirement: { type: 'roadmap_topics', value: 100 }
+  },
+  {
+    id: 'roadmap_frontend_master',
+    name: 'Frontend Master',
+    description: 'Complete all Frontend roadmap topics',
+    icon: 'layout',
+    color: 'from-cyan-400 to-blue-500',
+    requirement: { type: 'roadmap_path_complete', value: 1 }
+  },
+  {
+    id: 'roadmap_backend_master',
+    name: 'Backend Master',
+    description: 'Complete all Backend roadmap topics',
+    icon: 'server',
+    color: 'from-green-500 to-emerald-500',
+    requirement: { type: 'roadmap_path_complete', value: 2 }
+  },
+  {
+    id: 'roadmap_mobile_master',
+    name: 'Mobile Master',
+    description: 'Complete all Mobile roadmap topics',
+    icon: 'smartphone',
+    color: 'from-pink-500 to-rose-500',
+    requirement: { type: 'roadmap_path_complete', value: 3 }
+  },
+  {
+    id: 'roadmap_fullstack',
+    name: 'Full Stack Hero',
+    description: 'Complete both Frontend and Backend roadmaps',
+    icon: 'sparkles',
+    color: 'from-purple-500 to-pink-500',
+    requirement: { type: 'roadmap_mastery', value: 2 }
+  },
+  {
+    id: 'roadmap_triple_threat',
+    name: 'Triple Threat',
+    description: 'Complete Frontend, Backend, and Mobile roadmaps',
+    icon: 'crown',
+    color: 'from-yellow-400 to-amber-600',
+    requirement: { type: 'roadmap_mastery', value: 3 }
   },
 ];
 

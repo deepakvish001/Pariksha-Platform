@@ -1,27 +1,27 @@
- import { useState } from "react";
- import { motion } from "framer-motion";
-import { Trophy, Lock, Star, Flame, Target, Zap, Medal, CheckCircle, Loader2, Filter, Network } from "lucide-react";
- import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Trophy, Lock, Star, Flame, Target, Zap, Medal, CheckCircle, Loader2, Filter, Network, Map } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
- import { Badge } from "@/components/ui/badge";
- import { Progress } from "@/components/ui/progress";
- import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
- import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
- } from "@/components/ui/select";
- import { cn } from "@/lib/utils";
- import AchievementBadge, { achievements, type Achievement, type RarityTier } from "@/components/AchievementBadge";
- import { useUserAchievements } from "@/hooks/useUserAchievements";
- import { useAchievementRarity } from "@/hooks/useAchievementRarity";
- import ShareableAchievementCard from "@/components/ShareableAchievementCard";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import AchievementBadge, { achievements, type Achievement, type RarityTier } from "@/components/AchievementBadge";
+import { useUserAchievements } from "@/hooks/useUserAchievements";
+import { useAchievementRarity } from "@/hooks/useAchievementRarity";
+import ShareableAchievementCard from "@/components/ShareableAchievementCard";
 import AchievementLeaderboard from "@/components/AchievementLeaderboard";
 import StreakLeaderboard from "@/components/StreakLeaderboard";
 import AchievementComparison from "@/components/AchievementComparison";
- 
+
 const categories = [
   { id: "all", label: "All", icon: Trophy },
   { id: "topics", label: "Learning", icon: Star },
@@ -30,19 +30,21 @@ const categories = [
   { id: "fundamentals", label: "Fundamentals", icon: Zap },
   { id: "system_design", label: "System Design", icon: Network },
   { id: "research", label: "Research", icon: Medal },
+  { id: "roadmap", label: "Roadmaps", icon: Map },
 ];
- 
 
- const rarityFilters = [
-   { id: "all", label: "All Rarities" },
-   { id: "legendary", label: "Legendary" },
-   { id: "epic", label: "Epic" },
-   { id: "rare", label: "Rare" },
-   { id: "uncommon", label: "Uncommon" },
-   { id: "common", label: "Common" },
- ];
- 
+
+const rarityFilters = [
+  { id: "all", label: "All Rarities" },
+  { id: "legendary", label: "Legendary" },
+  { id: "epic", label: "Epic" },
+  { id: "rare", label: "Rare" },
+  { id: "uncommon", label: "Uncommon" },
+  { id: "common", label: "Common" },
+];
+
 const getCategoryFromAchievement = (achievement: Achievement): string => {
+  if (achievement.requirement.type.startsWith("roadmap")) return "roadmap";
   if (achievement.requirement.type.startsWith("research")) return "research";
   if (achievement.requirement.type.startsWith("system_design")) return "system_design";
   if (achievement.requirement.type.startsWith("fundamentals")) return "fundamentals";

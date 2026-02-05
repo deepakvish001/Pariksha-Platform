@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { startOfWeek, startOfMonth, isAfter } from "date-fns";
 
 export interface RoadmapLeaderboardEntry {
   user_id: string;
@@ -13,7 +14,9 @@ export interface RoadmapLeaderboardEntry {
   rank: number;
 }
 
-export function useRoadmapLeaderboard(limit: number = 20) {
+export type TimeFrame = "all" | "week" | "month";
+
+export function useRoadmapLeaderboard(timeFrame: TimeFrame = "all", limit: number = 20) {
   const { user } = useAuth();
   const [leaderboard, setLeaderboard] = useState<RoadmapLeaderboardEntry[]>([]);
   const [userRank, setUserRank] = useState<RoadmapLeaderboardEntry | null>(null);
@@ -34,7 +37,16 @@ export function useRoadmapLeaderboard(limit: number = 20) {
         return;
       }
 
-      // Aggregate by user
+      // Get time filter cutoff date
+      const now = new Date();
+      let cutoffDate: Date | null = null;
+      if (timeFrame === "week") {
+        cutoffDate = startOfWeek(now, { weekStartsOn: 1 }); // Monday
+      } else if (timeFrame === "month") {
+        cutoffDate = startOfMonth(now);
+      }
+
+      // Aggregate by user with time filter
       const userProgress = new Map<string, { 
         completed_topics: number; 
         roadmaps: Set<string>; 
@@ -42,6 +54,14 @@ export function useRoadmapLeaderboard(limit: number = 20) {
       }>();
 
       progressData?.forEach(item => {
+        // Apply time filter
+        if (cutoffDate && item.completed_at) {
+          const completedDate = new Date(item.completed_at);
+          if (!isAfter(completedDate, cutoffDate)) {
+            return; // Skip items before cutoff
+          }
+        }
+
         const existing = userProgress.get(item.user_id) || {
           completed_topics: 0,
           roadmaps: new Set<string>(),
@@ -151,7 +171,7 @@ export function useRoadmapLeaderboard(limit: number = 20) {
     } finally {
       setIsLoading(false);
     }
-  }, [limit, user]);
+  }, [limit, user, timeFrame]);
 
   useEffect(() => {
     fetchLeaderboard();
