@@ -39,6 +39,10 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
  import PublicProfileAchievements from "@/components/PublicProfileAchievements";
+import { useProfileFollowCounts } from "@/hooks/useProfileFollowCounts";
+import { useFollows } from "@/hooks/useFollows";
+import { useAuth } from "@/contexts/AuthContext";
+import { Users, Heart, UserPlus, UserMinus } from "lucide-react";
 
 interface PublicProfileData {
   username: string;
@@ -137,6 +141,10 @@ const PublicProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { user } = useAuth();
+  const { followersCount, followingCount, isLoading: isLoadingCounts } = useProfileFollowCounts(profile?.user_id);
+  const { isFollowing, followUser, unfollowUser } = useFollows();
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -257,6 +265,20 @@ const PublicProfile = () => {
       } catch (error) {
         // User cancelled or error occurred
       }
+    }
+  };
+
+  const handleFollowToggle = async () => {
+    if (!profile?.user_id || !user) return;
+    setIsFollowLoading(true);
+    try {
+      if (isFollowing(profile.user_id)) {
+        await unfollowUser(profile.user_id);
+      } else {
+        await followUser(profile.user_id);
+      }
+    } finally {
+      setIsFollowLoading(false);
     }
   };
 
@@ -472,6 +494,45 @@ const PublicProfile = () => {
                         Joined {new Date(profile?.created_at || "").toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                       </div>
                     </div>
+
+                  {/* Follow Stats */}
+                  <div className="flex items-center justify-center md:justify-start gap-6 mt-4">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-semibold">{isLoadingCounts ? "..." : followersCount}</span>
+                      <span className="text-muted-foreground text-sm">Followers</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Heart className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-semibold">{isLoadingCounts ? "..." : followingCount}</span>
+                      <span className="text-muted-foreground text-sm">Following</span>
+                    </div>
+                  </div>
+
+                  {/* Follow Button */}
+                  {user && profile?.user_id && user.id !== profile.user_id && (
+                    <div className="flex justify-center md:justify-start mt-4">
+                      <Button
+                        variant={isFollowing(profile.user_id) ? "outline" : "default"}
+                        size="sm"
+                        onClick={handleFollowToggle}
+                        disabled={isFollowLoading}
+                        className="gap-2"
+                      >
+                        {isFollowing(profile.user_id) ? (
+                          <>
+                            <UserMinus className="h-4 w-4" />
+                            Unfollow
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4" />
+                            Follow
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
                   </div>
                 </div>
               </CardContent>

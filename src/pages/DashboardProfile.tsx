@@ -70,6 +70,7 @@ import {
   validateGenericUrl,
   validateUsername,
 } from "@/lib/validation";
+import { useProfileFollowCounts } from "@/hooks/useProfileFollowCounts";
 
 interface ExtendedProfile {
   id: string;
@@ -190,6 +191,7 @@ const DashboardProfile = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { followersCount, followingCount, isLoading: isLoadingCounts } = useProfileFollowCounts(user?.id);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [extendedProfile, setExtendedProfile] = useState<ExtendedProfile | null>(null);
@@ -466,9 +468,9 @@ const DashboardProfile = () => {
   const incompleteFields = 16 - Math.round(completionPercent * 16 / 100);
 
   const stats = [
-    { label: "Courses Enrolled", value: "12", icon: BookOpen, color: "text-blue-500" },
+    { label: "Followers", value: isLoadingCounts ? "..." : followersCount.toString(), icon: User, color: "text-blue-500" },
+    { label: "Following", value: isLoadingCounts ? "..." : followingCount.toString(), icon: User, color: "text-red-500" },
     { label: "Achievements", value: "28", icon: Trophy, color: "text-yellow-500" },
-    { label: "Study Hours", value: "156", icon: Clock, color: "text-green-500" },
     { label: "Goals Completed", value: "8", icon: Target, color: "text-primary" },
   ];
 
