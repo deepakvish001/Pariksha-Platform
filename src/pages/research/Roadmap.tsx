@@ -38,6 +38,7 @@ import QuizLeaderboard from "@/components/library/QuizLeaderboard";
 import FundamentalsQuizMode from "@/components/library/FundamentalsQuizMode";
 import RoadmapTree from "@/components/roadmap/RoadmapTree";
 import RoadmapFAQ from "@/components/roadmap/RoadmapFAQ";
+import RoadmapLeaderboard from "@/components/roadmap/RoadmapLeaderboard";
 import { useRoadmapTreeProgress } from "@/hooks/useRoadmapTreeProgress";
 
 const difficultyColors = {
@@ -601,7 +602,10 @@ const Roadmap: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="leaderboard" className="mt-4">
-            <QuizLeaderboard quizType="roadmap" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RoadmapLeaderboard currentUserId={user?.id} limit={20} />
+              <QuizLeaderboard quizType="roadmap" currentUserId={user?.id} />
+            </div>
           </TabsContent>
         </Tabs>
       </main>
