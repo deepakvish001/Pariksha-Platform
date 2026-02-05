@@ -703,6 +703,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roadmap_notes: {
+        Row: {
+          created_at: string
+          id: string
+          node_id: string
+          note: string
+          roadmap_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          node_id: string
+          note?: string
+          roadmap_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          node_id?: string
+          note?: string
+          roadmap_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roadmap_saved_paths: {
         Row: {
           created_at: string
