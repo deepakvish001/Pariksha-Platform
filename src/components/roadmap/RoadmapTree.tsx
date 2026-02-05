@@ -29,6 +29,7 @@ import {
   ChevronDown,
   Check,
   ArrowUp,
+  Focus,
 } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
@@ -191,6 +192,8 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     const saved = localStorage.getItem('roadmap-compact-mode');
     return saved === 'true';
   });
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [focusedSectionId, setFocusedSectionId] = useState<string | null>(null);
   
   // Persist compact mode preference
   useEffect(() => {
@@ -724,6 +727,10 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
       ? getDisplayNodes(node.id, node.children)
       : [];
     
+    // Focus mode: determine if this section should be dimmed
+    const isFocused = !isFocusMode || focusedSectionId === node.id;
+    const isDimmed = isFocusMode && focusedSectionId && focusedSectionId !== node.id;
+    
     return (
       <motion.div 
         key={node.id}
@@ -731,9 +738,23 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           if (el) sectionRefs.current.set(node.id, el);
         }}
         initial={{ opacity: 0, y: isCompactMode ? 10 : 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: phaseIndex * (isCompactMode ? 0.05 : 0.1) }}
-        className={cn("scroll-mt-24", isCompactMode ? "mb-3" : "mb-6")}
+        animate={{ 
+          opacity: isDimmed ? 0.4 : 1, 
+          y: 0,
+          scale: isDimmed ? 0.98 : 1,
+        }}
+        transition={{ delay: phaseIndex * (isCompactMode ? 0.05 : 0.1), duration: 0.3 }}
+        className={cn(
+          "scroll-mt-24 transition-all duration-300",
+          isCompactMode ? "mb-3" : "mb-6",
+          isDimmed && "pointer-events-none grayscale-[30%]",
+          isFocusMode && isFocused && "relative z-10"
+        )}
+        onClick={() => {
+          if (isFocusMode && !isFocused) {
+            setFocusedSectionId(node.id);
+          }
+        }}
       >
         {/* Section Header */}
         <RoadmapSectionHeader
@@ -832,7 +853,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
         </AnimatePresence>
       </motion.div>
     );
-  }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection, expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, getChildProgress, isDragEnabled, user, sensors, handleDragEnd, getDisplayNodes, isCompactMode, hasNote]);
+  }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection, expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, getChildProgress, isDragEnabled, user, sensors, handleDragEnd, getDisplayNodes, isCompactMode, hasNote, isFocusMode, focusedSectionId]);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -1110,6 +1131,34 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                     >
                       <Minimize2 className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">{isCompactMode ? "Normal" : "Compact"}</span>
+                    </button>
+                    
+                    {/* Focus Mode Toggle */}
+                    <button
+                      onClick={() => {
+                        if (isFocusMode) {
+                          setIsFocusMode(false);
+                          setFocusedSectionId(null);
+                        } else {
+                          setIsFocusMode(true);
+                          // Auto-focus on section containing next recommended node or first section
+                          const nextSection = tree.nodes.find(section => {
+                            const sectionNodeIds = flattenNodes([section]).map(n => n.id);
+                            return nextRecommendedId && sectionNodeIds.includes(nextRecommendedId);
+                          });
+                          setFocusedSectionId(nextSection?.id || tree.nodes[0]?.id || null);
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all",
+                        isFocusMode 
+                          ? "bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      )}
+                      title={isFocusMode ? "Exit focus mode" : "Enter focus mode - dims other sections"}
+                    >
+                      <Focus className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{isFocusMode ? "Exit Focus" : "Focus"}</span>
                     </button>
                   </div>
 
@@ -1435,6 +1484,83 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
 
       {/* Floating Buttons Container */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
+        {/* Focus Mode Indicator */}
+        <AnimatePresence>
+          {isFocusMode && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-xl",
+                "bg-violet-100 dark:bg-violet-900/60 text-violet-700 dark:text-violet-300",
+                "border border-violet-300 dark:border-violet-700 shadow-lg backdrop-blur-sm"
+              )}
+            >
+              <Focus className="h-4 w-4" />
+              <span className="text-xs font-medium">
+                Focus: {tree.nodes.find(n => n.id === focusedSectionId)?.title || "None"}
+              </span>
+              <button
+                onClick={() => {
+                  setIsFocusMode(false);
+                  setFocusedSectionId(null);
+                }}
+                className="ml-1 h-5 w-5 rounded-md bg-violet-200 dark:bg-violet-800 hover:bg-violet-300 dark:hover:bg-violet-700 flex items-center justify-center transition-colors"
+              >
+                <span className="text-xs font-bold">×</span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {/* Section Navigation in Focus Mode */}
+        <AnimatePresence>
+          {isFocusMode && focusedSectionId && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="flex items-center gap-1"
+            >
+              <button
+                onClick={() => {
+                  const currentIndex = tree.nodes.findIndex(n => n.id === focusedSectionId);
+                  if (currentIndex > 0) {
+                    setFocusedSectionId(tree.nodes[currentIndex - 1].id);
+                  }
+                }}
+                disabled={tree.nodes.findIndex(n => n.id === focusedSectionId) === 0}
+                className={cn(
+                  "h-10 w-10 rounded-full flex items-center justify-center",
+                  "bg-muted/90 backdrop-blur-sm border border-border shadow-md",
+                  "hover:bg-muted transition-colors",
+                  "disabled:opacity-40 disabled:cursor-not-allowed"
+                )}
+              >
+                <ChevronUp className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => {
+                  const currentIndex = tree.nodes.findIndex(n => n.id === focusedSectionId);
+                  if (currentIndex < tree.nodes.length - 1) {
+                    setFocusedSectionId(tree.nodes[currentIndex + 1].id);
+                  }
+                }}
+                disabled={tree.nodes.findIndex(n => n.id === focusedSectionId) === tree.nodes.length - 1}
+                className={cn(
+                  "h-10 w-10 rounded-full flex items-center justify-center",
+                  "bg-muted/90 backdrop-blur-sm border border-border shadow-md",
+                  "hover:bg-muted transition-colors",
+                  "disabled:opacity-40 disabled:cursor-not-allowed"
+                )}
+              >
+                <ChevronDown className="h-5 w-5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Back to Top Button */}
         <AnimatePresence>
           {showBackToTop && (
