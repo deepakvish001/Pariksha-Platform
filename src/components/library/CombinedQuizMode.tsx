@@ -10,13 +10,14 @@ import { motion, AnimatePresence } from "framer-motion";
  import { useQuizSpacedRepetition } from "@/hooks/useQuizSpacedRepetition";
 import { useXPWithNotifications, XP_VALUES } from "@/hooks/useXPWithNotifications";
  
- import { type QuizQuestion, type QuizState, type ReviewFilter, type ReviewItem, type SummaryData } from "./quiz/types";
- import QuizSetup, { type QuizPreset } from "./quiz/QuizSetup";
- import QuizPlaying from "./quiz/QuizPlaying";
- import QuizPaused from "./quiz/QuizPaused";
- import QuizSummary from "./quiz/QuizSummary";
- import QuizResults from "./quiz/QuizResults";
- import QuizReview from "./quiz/QuizReview";
+import { type QuizQuestion, type QuizState, type ReviewFilter, type ReviewItem, type SummaryData } from "./quiz/types";
+import QuizSetup, { type QuizPreset } from "./quiz/QuizSetup";
+import QuizPlaying from "./quiz/QuizPlaying";
+import QuizPaused from "./quiz/QuizPaused";
+import QuizSummary from "./quiz/QuizSummary";
+import QuizResults from "./quiz/QuizResults";
+import QuizReview from "./quiz/QuizReview";
+import ReviewQuizMode from "./ReviewQuizMode";
  
  interface CombinedQuizModeProps {
    onClose: () => void;
@@ -25,9 +26,10 @@ import { useXPWithNotifications, XP_VALUES } from "@/hooks/useXPWithNotification
  const CombinedQuizMode = ({ onClose }: CombinedQuizModeProps) => {
    const { user } = useAuth();
    const { toast } = useToast();
-  const { scheduleForReview } = useQuizSpacedRepetition();
+  const { scheduleForReview, reviews } = useQuizSpacedRepetition();
   const { awardXP } = useXPWithNotifications();
-   const [quizState, setQuizState] = useState<QuizState>("setup");
+   const [quizState, setQuizState] = useState<QuizState | "srs_review">("setup");
+   const [showSRSReview, setShowSRSReview] = useState(false);
    const [questions, setQuestions] = useState<QuizQuestion[]>([]);
    const [currentIndex, setCurrentIndex] = useState(0);
    const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -461,6 +463,15 @@ import { useXPWithNotifications, XP_VALUES } from "@/hooks/useXPWithNotification
   };
 
    // Render based on quiz state
+   if (showSRSReview) {
+     return (
+       <ReviewQuizMode
+         reviews={reviews.filter(r => r.urgency === "critical" || r.urgency === "due" || r.urgency === "upcoming")}
+         onClose={() => setShowSRSReview(false)}
+       />
+     );
+   }
+
    if (quizState === "setup") {
      return (
        <AnimatePresence mode="wait">
@@ -475,6 +486,7 @@ import { useXPWithNotifications, XP_VALUES } from "@/hooks/useXPWithNotification
            <QuizSetup
              onClose={onClose}
              onStartQuiz={startQuiz}
+             onStartReviewMode={() => setShowSRSReview(true)}
              questionCount={questionCount}
              setQuestionCount={setQuestionCount}
              enabledCategories={enabledCategories}
