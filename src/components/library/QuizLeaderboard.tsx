@@ -1,5 +1,5 @@
  import React, { useEffect, useState } from "react";
- import { Trophy, Medal, Clock, Target, Crown, Users } from "lucide-react";
+import { Trophy, Medal, Clock, Target, Crown, Users, Timer, Swords, Flame } from "lucide-react";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
  import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,6 +15,7 @@
    total_questions: number;
    accuracy: number;
    avg_time_seconds: number;
+  total_time_seconds: number;
    completed_at: string;
    full_name?: string;
    avatar_url?: string;
@@ -23,9 +24,16 @@
  interface QuizLeaderboardProps {
    quizType: "aptitude" | "dsa" | "sql";
    currentUserId?: string;
+  challengeId?: string | null;
  }
  
- const QuizLeaderboard: React.FC<QuizLeaderboardProps> = ({ quizType, currentUserId }) => {
+const CHALLENGE_LABELS: Record<string, { name: string; icon: React.ReactNode }> = {
+  "easy-sprint": { name: "Easy Sprint", icon: <Timer className="h-4 w-4 text-emerald-500" /> },
+  "medium-blitz": { name: "Medium Blitz", icon: <Swords className="h-4 w-4 text-amber-500" /> },
+  "hard-gauntlet": { name: "Hard Gauntlet", icon: <Flame className="h-4 w-4 text-red-500" /> },
+};
+
+const QuizLeaderboard: React.FC<QuizLeaderboardProps> = ({ quizType, currentUserId, challengeId }) => {
    const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
    const [isLoading, setIsLoading] = useState(true);
    const [timeFilter, setTimeFilter] = useState<"all" | "week" | "today">("all");
@@ -38,10 +46,29 @@
            .from("quiz_results")
            .select("*")
            .eq("quiz_type", quizType)
-           .order("accuracy", { ascending: false })
-           .order("avg_time_seconds", { ascending: true })
            .limit(20);
  
+        // For challenges, filter by difficulty and sort by total time (speed matters!)
+        if (challengeId) {
+          const difficultyMap: Record<string, string> = {
+            "easy-sprint": "Easy",
+            "medium-blitz": "Medium",
+            "hard-gauntlet": "Hard",
+          };
+          const difficulty = difficultyMap[challengeId];
+          if (difficulty) {
+            query = query.eq("difficulty", difficulty);
+          }
+          // For challenges, prioritize accuracy first, then speed
+          query = query
+            .order("accuracy", { ascending: false })
+            .order("total_time_seconds", { ascending: true });
+        } else {
+          query = query
+            .order("accuracy", { ascending: false })
+            .order("avg_time_seconds", { ascending: true });
+        }
+
          if (timeFilter === "today") {
            const today = new Date();
            today.setHours(0, 0, 0, 0);
@@ -83,7 +110,7 @@
      };
  
      fetchLeaderboard();
-   }, [quizType, timeFilter]);
+  }, [quizType, timeFilter, challengeId]);
  
    const getRankIcon = (index: number) => {
      if (index === 0) return <Crown className="h-5 w-5 text-amber-500" />;
@@ -98,6 +125,8 @@
      sql: "SQL",
    };
  
+  const challengeLabel = challengeId ? CHALLENGE_LABELS[challengeId] : null;
+
    if (isLoading) {
      return (
        <Card className="bg-card/50">
@@ -114,7 +143,14 @@
          <div className="flex items-center justify-between">
            <CardTitle className="flex items-center gap-2 text-lg">
              <Trophy className="h-5 w-5 text-amber-500" />
-             {quizTypeLabel[quizType]} Quiz Leaderboard
+            {challengeLabel ? (
+              <>
+                {challengeLabel.icon}
+                {challengeLabel.name} Leaderboard
+              </>
+            ) : (
+              <>{quizTypeLabel[quizType]} Quiz Leaderboard</>
+            )}
            </CardTitle>
            <Badge variant="outline" className="gap-1">
              <Users className="h-3 w-3" />
@@ -175,7 +211,7 @@
                    </div>
                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
                      <Clock className="h-3 w-3" />
-                     {entry.avg_time_seconds}s avg
+                    {challengeId ? `${entry.total_time_seconds}s total` : `${entry.avg_time_seconds}s avg`}
                    </div>
                  </div>
                </div>
