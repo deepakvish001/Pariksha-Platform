@@ -1,84 +1,25 @@
  import { useState, useMemo, useEffect, useRef } from "react";
- import { motion, AnimatePresence } from "framer-motion";
- import { 
-   X, Clock, CheckCircle, XCircle, ArrowRight, Trophy, 
-   Shuffle, Zap, Target, Settings, Play, Pause, RotateCcw,
-  Code, Cpu, Database, Calculator, Brain, BookOpen, ChevronLeft, ChevronRight, Eye, Flag, PauseCircle, PlayCircle, SkipForward, AlertCircle, ListChecks, CircleDot
- } from "lucide-react";
- import { Button } from "@/components/ui/button";
- import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
- import { Badge } from "@/components/ui/badge";
- import { Progress } from "@/components/ui/progress";
- import { Slider } from "@/components/ui/slider";
- import { Switch } from "@/components/ui/switch";
- import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
- import { cn } from "@/lib/utils";
- import { dsaQuestions, type DSAQuestion } from "@/data/dsaQuestionsData";
- import { csQuestions, type CSQuestion } from "@/data/csSubjectsData";
- import { sqlQuestions, type SQLQuestion } from "@/data/sqlQuestionsData";
- import { aptitudeQuestions, type AptitudeQuestion } from "@/data/aptitudeQuestionsData";
+ import { dsaQuestions } from "@/data/dsaQuestionsData";
+ import { csQuestions } from "@/data/csSubjectsData";
+ import { sqlQuestions } from "@/data/sqlQuestionsData";
+ import { aptitudeQuestions } from "@/data/aptitudeQuestionsData";
  import { useAuth } from "@/contexts/AuthContext";
  import { supabase } from "@/integrations/supabase/client";
  import { useToast } from "@/hooks/use-toast";
-import { useQuizSpacedRepetition } from "@/hooks/useQuizSpacedRepetition";
-import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
+ import { useQuizSpacedRepetition } from "@/hooks/useQuizSpacedRepetition";
+ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
+ 
+ import { type QuizQuestion, type QuizState, type ReviewFilter, type ReviewItem, type SummaryData } from "./quiz/types";
+ import QuizSetup, { type QuizPreset } from "./quiz/QuizSetup";
+ import QuizPlaying from "./quiz/QuizPlaying";
+ import QuizPaused from "./quiz/QuizPaused";
+ import QuizSummary from "./quiz/QuizSummary";
+ import QuizResults from "./quiz/QuizResults";
+ import QuizReview from "./quiz/QuizReview";
  
  interface CombinedQuizModeProps {
    onClose: () => void;
  }
- 
- interface QuizQuestion {
-   id: number;
-   category: "dsa" | "cs" | "sql" | "aptitude";
-   title: string;
-   text: string;
-   options: { text: string; isCorrect: boolean }[];
-   difficulty: string;
-  answer?: string;
- }
- 
- type QuizState = "setup" | "playing" | "paused" | "summary" | "results" | "review";
- 
- const categoryConfig = {
-   dsa: { 
-     label: "DSA", 
-     icon: Code, 
-     color: "text-blue-500", 
-     bgColor: "bg-blue-500/10",
-     borderColor: "border-blue-500/30"
-   },
-   cs: { 
-     label: "CS Core", 
-     icon: Cpu, 
-     color: "text-purple-500", 
-     bgColor: "bg-purple-500/10",
-     borderColor: "border-purple-500/30"
-   },
-   sql: { 
-     label: "SQL", 
-     icon: Database, 
-     color: "text-emerald-500", 
-     bgColor: "bg-emerald-500/10",
-     borderColor: "border-emerald-500/30"
-   },
-   aptitude: { 
-     label: "Aptitude", 
-     icon: Calculator, 
-     color: "text-amber-500", 
-     bgColor: "bg-amber-500/10",
-     borderColor: "border-amber-500/30"
-   },
- };
- 
- const presets = [
-   { name: "Quick Mix", questions: 10, categories: ["dsa", "cs", "sql", "aptitude"] as const, timeLimit: 0 },
-   { name: "DSA Focus", questions: 15, categories: ["dsa", "cs"] as const, timeLimit: 0 },
-   { name: "Database Master", questions: 15, categories: ["sql", "cs"] as const, timeLimit: 0 },
-   { name: "Sprint (5 min)", questions: 10, categories: ["dsa", "cs", "sql", "aptitude"] as const, timeLimit: 300 },
-   { name: "Blitz (10 min)", questions: 20, categories: ["dsa", "cs", "sql", "aptitude"] as const, timeLimit: 600 },
- ];
  
  const CombinedQuizMode = ({ onClose }: CombinedQuizModeProps) => {
    const { user } = useAuth();
@@ -103,7 +44,7 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
      cs: true,
      sql: true,
      aptitude: true,
-   });
+  } as Record<string, boolean>);
    const [timedMode, setTimedMode] = useState(false);
    const [timeLimitMinutes, setTimeLimitMinutes] = useState(10);
 
@@ -112,7 +53,7 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
 
   // Review state
   const [reviewIndex, setReviewIndex] = useState(0);
-  const [reviewFilter, setReviewFilter] = useState<"all" | "incorrect" | "unanswered" | "flagged">("incorrect");
+ const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("incorrect");
   const [markedForReview, setMarkedForReview] = useState<Set<number>>(new Set());
 
   // Skip tracking
@@ -204,7 +145,6 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
  
    const handleTimeUp = () => {
      if (timerRef.current) clearInterval(timerRef.current);
-     // Auto-submit remaining as null
      const remaining = questions.length - currentIndex;
      const newAnswers = [...answers];
      for (let i = 0; i < remaining; i++) {
@@ -215,7 +155,7 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
      saveResults(newAnswers);
    };
  
-   const startQuiz = (preset?: typeof presets[0]) => {
+   const startQuiz = (preset?: QuizPreset) => {
      let count = questionCount;
      let cats = { ...enabledCategories };
      let limit = timedMode ? timeLimitMinutes * 60 : 0;
@@ -227,7 +167,6 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
        limit = preset.timeLimit;
      }
      
-     // Shuffle and pick questions
      const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
      const selected = shuffled.slice(0, Math.min(count, shuffled.length));
      
@@ -250,7 +189,6 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
   };
 
   const handleResume = () => {
-    // Adjust question start time to account for pause duration
     const pauseDuration = Date.now() - pausedTime;
     setQuestionStartTime(prev => prev + pauseDuration);
     setQuizState("playing");
@@ -271,10 +209,9 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
   const handleSkip = () => {
     const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
     setTimePerQuestion(prev => [...prev, timeTaken]);
-    setAnswers(prev => [...prev, null]); // Mark as unanswered
+   setAnswers(prev => [...prev, null]);
     setSkippedQuestions(prev => new Set(prev).add(currentIndex));
     
-    // Find the next unanswered question or go to results
     const nextUnanswered = findNextUnanswered(currentIndex + 1);
     
     if (nextUnanswered !== -1) {
@@ -282,14 +219,12 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
       setSelectedAnswer(null);
       setQuestionStartTime(Date.now());
     } else {
-      // Check if there are any skipped questions to revisit
       const firstSkipped = findFirstSkipped();
       if (firstSkipped !== -1) {
         setCurrentIndex(firstSkipped);
         setSelectedAnswer(null);
         setQuestionStartTime(Date.now());
       } else {
-        // All questions answered, go to results
         const finalAnswers = [...answers, null];
         setQuizState("results");
         saveResults(finalAnswers);
@@ -316,7 +251,6 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
   };
 
   const handleReturnToSkipped = (index: number) => {
-    // Save current answer state if needed
     if (selectedAnswer !== null && answers[currentIndex] === undefined) {
       const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
       setTimePerQuestion(prev => {
@@ -334,7 +268,6 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
     setCurrentIndex(index);
     setSelectedAnswer(null);
     setQuestionStartTime(Date.now());
-    // Remove from skipped when returning
     setSkippedQuestions(prev => {
       const updated = new Set(prev);
       updated.delete(index);
@@ -357,14 +290,12 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
        setSelectedAnswer(null);
        setQuestionStartTime(Date.now());
      } else {
-       // Go to summary screen before final submission
        setQuizState("summary");
      }
    };
 
    const handleSubmitFromSummary = () => {
      const finalAnswers = [...answers];
-     // Ensure all answers are recorded (fill in any missing with null)
      while (finalAnswers.length < questions.length) {
        finalAnswers.push(null);
      }
@@ -380,8 +311,7 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
      setQuizState("playing");
    };
 
-   // Summary calculations
-   const getSummaryData = () => {
+   const getSummaryData = (): SummaryData => {
      const answered: number[] = [];
      const skipped: number[] = [];
      const flagged: number[] = [];
@@ -429,7 +359,6 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
          difficulty: "all",
        });
 
-        // Award XP for quiz completion
         const quizXP = XP_VALUES.QUIZ_COMPLETE + (score * XP_VALUES.QUESTION_CORRECT);
         const isPerfect = score === questions.length;
         const totalXP = isPerfect ? quizXP + XP_VALUES.QUIZ_PERFECT : quizXP;
@@ -442,11 +371,10 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
             : `Quiz completed: ${score}/${questions.length} (${accuracy}%)`
         );
 
-       // Schedule incorrect questions for spaced repetition review
        const incorrectQuestions = questions
          .map((q, idx) => ({ question: q, answer: finalAnswers[idx], idx }))
          .filter(item => {
-           if (item.answer === null) return true; // Unanswered
+          if (item.answer === null) return true;
            return !item.question.options[item.answer]?.isCorrect;
          })
          .map(item => ({
@@ -468,23 +396,7 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
      }
    };
  
-   const calculateScore = () => {
-     return answers.reduce((acc, ans, idx) => {
-       if (ans === null) return acc;
-       return questions[idx]?.options[ans]?.isCorrect ? acc + 1 : acc;
-     }, 0);
-   };
- 
-   const formatTime = (seconds: number) => {
-     const mins = Math.floor(seconds / 60);
-     const secs = seconds % 60;
-     return `${mins}:${secs.toString().padStart(2, '0')}`;
-   };
- 
-   const currentQuestion = questions[currentIndex];
-   const CategoryIcon = currentQuestion ? categoryConfig[currentQuestion.category].icon : Brain;
-  
-  const filteredReviewQuestions = useMemo(() => {
+  const filteredReviewQuestions: ReviewItem[] = useMemo(() => {
     return questions.map((q, idx) => ({
       question: q,
       userAnswer: answers[idx],
@@ -501,849 +413,109 @@ import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
     });
   }, [questions, answers, reviewFilter, markedForReview]);
 
-  const skippedCount = skippedQuestions.size;
-  const remainingSkipped = Array.from(skippedQuestions).filter(i => answers[i] === null);
-
-  const currentReviewItem = filteredReviewQuestions[reviewIndex];
- 
-   // Setup screen
+   // Render based on quiz state
    if (quizState === "setup") {
      return (
-       <div className="space-y-6">
-         <div className="flex items-center justify-between">
-           <div className="flex items-center gap-3">
-             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-               <Shuffle className="h-6 w-6 text-primary" />
-             </div>
-             <div>
-               <h2 className="text-2xl font-bold">Combined Quiz</h2>
-               <p className="text-muted-foreground">Mix questions from all categories</p>
-             </div>
-           </div>
-           <Button variant="ghost" size="icon" onClick={onClose}>
-             <X className="h-5 w-5" />
-           </Button>
-         </div>
- 
-         {/* Quick Presets */}
-         <div>
-           <h3 className="text-lg font-semibold mb-3">Quick Start</h3>
-           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-             {presets.map((preset) => (
-               <Card 
-                 key={preset.name}
-                 className="cursor-pointer hover:border-primary/50 transition-colors"
-                 onClick={() => startQuiz(preset)}
-               >
-                 <CardContent className="p-4 text-center">
-                   <div className="flex items-center justify-center gap-1 mb-2">
-                     {preset.timeLimit > 0 ? (
-                       <Clock className="h-4 w-4 text-orange-500" />
-                     ) : (
-                       <Zap className="h-4 w-4 text-primary" />
-                     )}
-                   </div>
-                   <p className="font-medium text-sm">{preset.name}</p>
-                   <p className="text-xs text-muted-foreground">{preset.questions} questions</p>
-                 </CardContent>
-               </Card>
-             ))}
-           </div>
-         </div>
- 
-         {/* Custom Setup */}
-         <Card>
-           <CardHeader>
-             <CardTitle className="flex items-center gap-2">
-               <Settings className="h-5 w-5" />
-               Custom Quiz
-             </CardTitle>
-           </CardHeader>
-           <CardContent className="space-y-6">
-             {/* Categories */}
-             <div>
-               <Label className="text-sm font-medium mb-3 block">Categories</Label>
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                 {(Object.keys(categoryConfig) as Array<keyof typeof categoryConfig>).map((cat) => {
-                   const config = categoryConfig[cat];
-                   const Icon = config.icon;
-                   return (
-                     <div
-                       key={cat}
-                       onClick={() => setEnabledCategories(prev => ({ ...prev, [cat]: !prev[cat] }))}
-                       className={cn(
-                         "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
-                         enabledCategories[cat] 
-                           ? `${config.bgColor} ${config.borderColor}` 
-                           : "bg-muted/50 opacity-50"
-                       )}
-                     >
-                       <Icon className={cn("h-5 w-5", config.color)} />
-                       <span className="font-medium text-sm">{config.label}</span>
-                     </div>
-                   );
-                 })}
-               </div>
-             </div>
- 
-             {/* Question Count */}
-             <div>
-               <Label className="text-sm font-medium mb-3 block">
-                 Questions: {questionCount} (Available: {allQuestions.length})
-               </Label>
-               <Slider
-                 value={[questionCount]}
-                 onValueChange={([v]) => setQuestionCount(v)}
-                 min={5}
-                 max={Math.min(50, allQuestions.length)}
-                 step={5}
-               />
-             </div>
- 
-             {/* Timed Mode */}
-             <div className="flex items-center justify-between">
-               <div className="flex items-center gap-2">
-                 <Clock className="h-4 w-4 text-muted-foreground" />
-                 <Label>Timed Mode</Label>
-               </div>
-               <Switch checked={timedMode} onCheckedChange={setTimedMode} />
-             </div>
- 
-             {timedMode && (
-               <div>
-                 <Label className="text-sm font-medium mb-3 block">
-                   Time Limit: {timeLimitMinutes} minutes
-                 </Label>
-                 <Slider
-                   value={[timeLimitMinutes]}
-                   onValueChange={([v]) => setTimeLimitMinutes(v)}
-                   min={5}
-                   max={60}
-                   step={5}
-                 />
-               </div>
-             )}
- 
-             <Button 
-               className="w-full" 
-               size="lg"
-               onClick={() => startQuiz()}
-               disabled={Object.values(enabledCategories).every(v => !v) || allQuestions.length === 0}
-             >
-               <Play className="h-5 w-5 mr-2" />
-               Start Quiz
-             </Button>
-           </CardContent>
-         </Card>
-       </div>
+       <QuizSetup
+         onClose={onClose}
+         onStartQuiz={startQuiz}
+         questionCount={questionCount}
+         setQuestionCount={setQuestionCount}
+         enabledCategories={enabledCategories}
+         setEnabledCategories={setEnabledCategories}
+         timedMode={timedMode}
+         setTimedMode={setTimedMode}
+         timeLimitMinutes={timeLimitMinutes}
+         setTimeLimitMinutes={setTimeLimitMinutes}
+         allQuestionsCount={allQuestions.length}
+       />
      );
    }
  
-  // Paused screen
   if (quizState === "paused") {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center min-h-[400px] space-y-6"
-      >
-        <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-          <PauseCircle className="h-12 w-12 text-primary" />
-        </div>
-        
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold">Quiz Paused</h2>
-          <p className="text-muted-foreground">
-            Question {currentIndex + 1} of {questions.length}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Time elapsed: {formatTime(totalTime)}
-            {timeLimit > 0 && ` / ${formatTime(timeLimit)}`}
-          </p>
-        </div>
-
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={onClose}>
-            <X className="h-4 w-4 mr-2" />
-            Exit Quiz
-          </Button>
-          <Button onClick={handleResume} size="lg">
-            <PlayCircle className="h-5 w-5 mr-2" />
-            Resume Quiz
-          </Button>
-        </div>
-      </motion.div>
+      <QuizPaused
+        currentIndex={currentIndex}
+        questionsLength={questions.length}
+        totalTime={totalTime}
+        timeLimit={timeLimit}
+        onResume={handleResume}
+        onClose={onClose}
+      />
     );
   }
 
-   // Summary screen (before final submission)
    if (quizState === "summary") {
-     const summaryData = getSummaryData();
-     const allAnswered = summaryData.skipped.length === 0 && summaryData.unanswered.length === 0;
-     
      return (
-       <motion.div
-         initial={{ opacity: 0 }}
-         animate={{ opacity: 1 }}
-         className="space-y-6"
-       >
-         {/* Header */}
-         <div className="flex items-center justify-between">
-           <div className="flex items-center gap-3">
-             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-               <ListChecks className="h-6 w-6 text-primary" />
-             </div>
-             <div>
-               <h2 className="text-2xl font-bold">Quiz Summary</h2>
-               <p className="text-muted-foreground">Review before submitting</p>
-             </div>
-           </div>
-           <div className="flex items-center gap-2 text-sm">
-             <Clock className="h-4 w-4 text-muted-foreground" />
-             <span>{formatTime(totalTime)}</span>
-           </div>
-         </div>
- 
-         {/* Overview Cards */}
-         <div className="grid grid-cols-3 gap-4">
-           <Card className="border-green-500/30 bg-green-500/5">
-             <CardContent className="p-4 text-center">
-               <CheckCircle className="h-8 w-8 mx-auto text-green-500 mb-2" />
-               <p className="text-2xl font-bold text-green-600">{summaryData.answered.length}</p>
-               <p className="text-sm text-muted-foreground">Answered</p>
-             </CardContent>
-           </Card>
-           <Card className="border-amber-500/30 bg-amber-500/5">
-             <CardContent className="p-4 text-center">
-               <SkipForward className="h-8 w-8 mx-auto text-amber-500 mb-2" />
-               <p className="text-2xl font-bold text-amber-600">{summaryData.skipped.length}</p>
-               <p className="text-sm text-muted-foreground">Skipped</p>
-             </CardContent>
-           </Card>
-           <Card className="border-primary/30 bg-primary/5">
-             <CardContent className="p-4 text-center">
-               <Flag className="h-8 w-8 mx-auto text-primary mb-2" />
-               <p className="text-2xl font-bold text-primary">{summaryData.flagged.length}</p>
-               <p className="text-sm text-muted-foreground">Flagged</p>
-             </CardContent>
-           </Card>
-         </div>
- 
-         {/* Question Grid */}
-         <Card>
-           <CardHeader className="pb-3">
-             <CardTitle className="text-lg flex items-center gap-2">
-               <CircleDot className="h-5 w-5" />
-               Question Overview
-             </CardTitle>
-             <p className="text-sm text-muted-foreground">Click any question to review or change your answer</p>
-           </CardHeader>
-           <CardContent>
-             <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
-               {questions.map((q, idx) => {
-                 const hasAnswer = answers[idx] !== undefined && answers[idx] !== null;
-                 const isSkipped = skippedQuestions.has(idx) || !hasAnswer;
-                 const isFlagged = markedForReview.has(idx);
-                 const config = categoryConfig[q.category];
-                 
-                 return (
-                   <button
-                     key={idx}
-                     onClick={() => handleGoToQuestion(idx)}
-                     className={cn(
-                       "relative p-2 rounded-lg border text-sm font-medium transition-all hover:scale-105",
-                       hasAnswer && !isSkipped && "border-green-500/50 bg-green-500/10 text-green-600",
-                       isSkipped && "border-amber-500/50 bg-amber-500/10 text-amber-600",
-                       isFlagged && "ring-2 ring-primary"
-                     )}
-                   >
-                     <span>{idx + 1}</span>
-                     {isFlagged && (
-                       <Flag className="absolute -top-1 -right-1 h-3 w-3 text-primary fill-primary" />
-                     )}
-                   </button>
-                 );
-               })}
-             </div>
-             
-             {/* Legend */}
-             <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t text-xs text-muted-foreground">
-               <div className="flex items-center gap-1.5">
-                 <div className="w-4 h-4 rounded border border-green-500/50 bg-green-500/10" />
-                 <span>Answered</span>
-               </div>
-               <div className="flex items-center gap-1.5">
-                 <div className="w-4 h-4 rounded border border-amber-500/50 bg-amber-500/10" />
-                 <span>Skipped</span>
-               </div>
-               <div className="flex items-center gap-1.5">
-                 <div className="w-4 h-4 rounded border ring-2 ring-primary" />
-                 <span>Flagged</span>
-               </div>
-             </div>
-           </CardContent>
-         </Card>
- 
-         {/* Flagged Questions List */}
-         {summaryData.flagged.length > 0 && (
-           <Card className="border-primary/30">
-             <CardHeader className="pb-3">
-               <CardTitle className="text-lg flex items-center gap-2 text-primary">
-                 <Flag className="h-5 w-5" />
-                 Flagged for Review ({summaryData.flagged.length})
-               </CardTitle>
-             </CardHeader>
-             <CardContent>
-               <ScrollArea className="max-h-[200px]">
-                 <div className="space-y-2">
-                   {summaryData.flagged.map(idx => {
-                     const q = questions[idx];
-                     const config = categoryConfig[q.category];
-                     const Icon = config.icon;
-                     const hasAnswer = answers[idx] !== undefined && answers[idx] !== null;
-                     
-                     return (
-                       <button
-                         key={idx}
-                         onClick={() => handleGoToQuestion(idx)}
-                         className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors text-left"
-                       >
-                         <span className="text-sm font-bold text-muted-foreground w-8">Q{idx + 1}</span>
-                         <Badge className={cn(config.bgColor, config.color, "border-0 text-xs")}>
-                           <Icon className="h-3 w-3 mr-1" />
-                           {config.label}
-                         </Badge>
-                         <span className="flex-1 text-sm truncate">{q.title}</span>
-                         {hasAnswer ? (
-                           <Badge variant="outline" className="text-green-600 border-green-500/50">Answered</Badge>
-                         ) : (
-                           <Badge variant="outline" className="text-amber-600 border-amber-500/50">Skipped</Badge>
-                         )}
-                       </button>
-                     );
-                   })}
-                 </div>
-               </ScrollArea>
-             </CardContent>
-           </Card>
-         )}
- 
-         {/* Skipped Questions Warning */}
-         {summaryData.skipped.length > 0 && (
-           <Card className="border-amber-500/30 bg-amber-500/5">
-             <CardContent className="p-4">
-               <div className="flex items-start gap-3">
-                 <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
-                 <div>
-                   <p className="font-medium text-amber-600">
-                     You have {summaryData.skipped.length} unanswered question{summaryData.skipped.length !== 1 ? 's' : ''}
-                   </p>
-                   <p className="text-sm text-muted-foreground mt-1">
-                     Click on a question number above to go back and answer it, or submit now to finish.
-                   </p>
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
-         )}
- 
-         {/* Action Buttons */}
-         <div className="flex gap-3">
-           <Button 
-             variant="outline" 
-             onClick={() => {
-               setCurrentIndex(questions.length - 1);
-               setSelectedAnswer(answers[questions.length - 1] ?? null);
-               setQuestionStartTime(Date.now());
-               setQuizState("playing");
-             }}
-             className="flex-1"
-           >
-             <ChevronLeft className="h-4 w-4 mr-2" />
-             Back to Quiz
-           </Button>
-           <Button 
-             onClick={handleSubmitFromSummary}
-             className="flex-1"
-             size="lg"
-           >
-             <Trophy className="h-4 w-4 mr-2" />
-             Submit Quiz
-           </Button>
-         </div>
-       </motion.div>
+       <QuizSummary
+         questions={questions}
+         answers={answers}
+         totalTime={totalTime}
+         summaryData={getSummaryData()}
+         skippedQuestions={skippedQuestions}
+         markedForReview={markedForReview}
+         onGoToQuestion={handleGoToQuestion}
+         onBackToQuiz={() => {
+           setCurrentIndex(questions.length - 1);
+           setSelectedAnswer(answers[questions.length - 1] ?? null);
+           setQuestionStartTime(Date.now());
+           setQuizState("playing");
+         }}
+         onSubmit={handleSubmitFromSummary}
+       />
      );
    }
  
-   // Review screen
     if (quizState === "review") {
-      if (filteredReviewQuestions.length === 0) {
-        return (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-6"
-          >
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" onClick={() => setQuizState("results")}>
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                Back to Results
-              </Button>
-            </div>
-            <Card className="text-center py-12">
-              <CardContent>
-                <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
-                <h3 className="text-xl font-bold mb-2">Perfect Score!</h3>
-                <p className="text-muted-foreground">You answered all questions correctly. Nothing to review!</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        );
-      }
-
-      const reviewQuestion = currentReviewItem.question;
-      const userAnswer = currentReviewItem.userAnswer;
-      const ReviewCategoryIcon = categoryConfig[reviewQuestion.category].icon;
-
       return (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="space-y-4"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" onClick={() => setQuizState("results")}>
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Back to Results
-            </Button>
-            <div className="flex items-center gap-2">
-              <Tabs value={reviewFilter} onValueChange={(v) => { setReviewFilter(v as typeof reviewFilter); setReviewIndex(0); }}>
-                <TabsList className="h-8">
-                  <TabsTrigger value="incorrect" className="text-xs px-2">Incorrect</TabsTrigger>
-                  <TabsTrigger value="unanswered" className="text-xs px-2">Skipped</TabsTrigger>
-                  <TabsTrigger value="flagged" className="text-xs px-2">
-                    <Flag className="h-3 w-3 mr-1" />
-                    Flagged
-                  </TabsTrigger>
-                  <TabsTrigger value="all" className="text-xs px-2">All</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          </div>
-
-          {/* Progress */}
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Question {reviewIndex + 1} of {filteredReviewQuestions.length}</span>
-            <span>Original #{currentReviewItem.index + 1}</span>
-          </div>
-          <Progress value={((reviewIndex + 1) / filteredReviewQuestions.length) * 100} className="h-1.5" />
-
-          {/* Question Card */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={reviewIndex}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-            >
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge className={cn(categoryConfig[reviewQuestion.category].bgColor, categoryConfig[reviewQuestion.category].color, "border-0")}>
-                      <ReviewCategoryIcon className="h-3 w-3 mr-1" />
-                      {categoryConfig[reviewQuestion.category].label}
-                    </Badge>
-                    <Badge variant="outline">{reviewQuestion.difficulty}</Badge>
-                    {currentReviewItem.isUnanswered ? (
-                      <Badge variant="secondary">Skipped</Badge>
-                    ) : !currentReviewItem.isCorrect ? (
-                      <Badge variant="destructive">Incorrect</Badge>
-                    ) : (
-                      <Badge className="bg-green-500/10 text-green-600 border-0">Correct</Badge>
-                    )}
-                    {currentReviewItem.isMarked && (
-                      <Badge className="bg-amber-500/10 text-amber-600 border-0">
-                        <Flag className="h-3 w-3 mr-1" />
-                        Flagged
-                      </Badge>
-                    )}
-                  </div>
-                  <CardTitle className="text-lg">{reviewQuestion.title}</CardTitle>
-                  <p className="text-muted-foreground text-sm">{reviewQuestion.text}</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Options with correct/incorrect highlighting */}
-                  <div className="space-y-2">
-                    {reviewQuestion.options.map((option, idx) => {
-                      const isUserAnswer = userAnswer === idx;
-                      const isCorrect = option.isCorrect;
-                      return (
-                        <div
-                          key={idx}
-                          className={cn(
-                            "p-3 rounded-lg border text-sm",
-                            isCorrect && "border-green-500 bg-green-500/10",
-                            isUserAnswer && !isCorrect && "border-destructive bg-destructive/10"
-                          )}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span>{option.text}</span>
-                            <div className="flex items-center gap-2">
-                              {isUserAnswer && !isCorrect && (
-                                <span className="text-xs text-destructive flex items-center gap-1">
-                                  <XCircle className="h-4 w-4" />
-                                  Your answer
-                                </span>
-                              )}
-                              {isCorrect && (
-                                <span className="text-xs text-green-600 flex items-center gap-1">
-                                  <CheckCircle className="h-4 w-4" />
-                                  Correct
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Explanation */}
-                  {reviewQuestion.answer && (
-                    <div className="border-t pt-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <BookOpen className="h-4 w-4 text-primary" />
-                        <span className="font-medium text-sm">Explanation</span>
-                      </div>
-                      <ScrollArea className="h-[200px]">
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <pre className="whitespace-pre-wrap text-sm text-muted-foreground font-sans bg-muted/50 p-4 rounded-lg">
-                            {reviewQuestion.answer.replace(/```[\s\S]*?```/g, (match) => {
-                              return match.replace(/```\w*\n?/g, '').trim();
-                            }).replace(/##\s*/g, '').replace(/\*\*/g, '').replace(/`/g, '')}
-                          </pre>
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Navigation */}
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setReviewIndex(prev => Math.max(0, prev - 1))}
-              disabled={reviewIndex === 0}
-              className="flex-1"
-            >
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Previous
-            </Button>
-            <Button
-              onClick={() => setReviewIndex(prev => Math.min(filteredReviewQuestions.length - 1, prev + 1))}
-              disabled={reviewIndex === filteredReviewQuestions.length - 1}
-              className="flex-1"
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          </div>
-        </motion.div>
+        <QuizReview
+          filteredReviewQuestions={filteredReviewQuestions}
+          reviewIndex={reviewIndex}
+          reviewFilter={reviewFilter}
+          onSetReviewIndex={setReviewIndex}
+          onSetReviewFilter={setReviewFilter}
+          onBackToResults={() => setQuizState("results")}
+        />
       );
     }
 
-   // Results screen
    if (quizState === "results") {
-      const markedCount = markedForReview.size;
-
-      const incorrectCount = questions.filter((q, idx) => 
-        answers[idx] === null || !q.options[answers[idx]!]?.isCorrect
-      ).length;
-
-     const score = calculateScore();
-     const accuracy = Math.round((score / questions.length) * 100);
-     const categoryStats = questions.reduce((acc, q, idx) => {
-       if (!acc[q.category]) acc[q.category] = { correct: 0, total: 0 };
-       acc[q.category].total++;
-       if (answers[idx] !== null && q.options[answers[idx]!]?.isCorrect) {
-         acc[q.category].correct++;
-       }
-       return acc;
-     }, {} as Record<string, { correct: number; total: number }>);
- 
      return (
-       <motion.div
-         initial={{ opacity: 0, scale: 0.95 }}
-         animate={{ opacity: 1, scale: 1 }}
-         className="space-y-6"
-       >
-         <Card className="text-center">
-           <CardContent className="pt-8 pb-6">
-             <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-4">
-               <Trophy className={cn(
-                 "h-10 w-10",
-                 accuracy >= 80 ? "text-yellow-500" : accuracy >= 60 ? "text-blue-500" : "text-muted-foreground"
-               )} />
-             </div>
-             <h2 className="text-3xl font-bold mb-2">{score}/{questions.length}</h2>
-             <p className="text-xl text-muted-foreground mb-4">{accuracy}% Accuracy</p>
-            {/* Marked for review indicator */}
-            {markedCount > 0 && (
-              <div className="flex items-center gap-2 text-sm text-amber-600">
-                <Flag className="h-4 w-4" />
-                <span>{markedCount} flagged for review</span>
-              </div>
-            )}
-
-             <div className="flex justify-center gap-4 text-sm text-muted-foreground">
-               <span className="flex items-center gap-1">
-                 <Clock className="h-4 w-4" />
-                 {formatTime(totalTime)}
-               </span>
-               <span className="flex items-center gap-1">
-                 <Target className="h-4 w-4" />
-                 {Math.round(totalTime / questions.length)}s avg
-               </span>
-             </div>
-           </CardContent>
-         </Card>
- 
-         {/* Category breakdown */}
-         <Card>
-           <CardHeader>
-             <CardTitle className="text-lg">Category Breakdown</CardTitle>
-           </CardHeader>
-           <CardContent>
-             <div className="grid grid-cols-2 gap-4">
-               {Object.entries(categoryStats).map(([cat, stats]) => {
-                 const config = categoryConfig[cat as keyof typeof categoryConfig];
-                 const Icon = config.icon;
-                 const pct = Math.round((stats.correct / stats.total) * 100);
-                 return (
-                     <div key={cat} className={cn("p-4 rounded-lg", config.bgColor)}>
-                       <div className="flex items-center gap-2 mb-2">
-                         <Icon className={cn("h-5 w-5", config.color)} />
-                         <span className="font-medium">{config.label}</span>
-                       </div>
-                       <p className="text-2xl font-bold">{stats.correct}/{stats.total}</p>
-                       <Progress value={pct} className="h-1.5 mt-2" />
-                     </div>
-                 );
-               })}
-             </div>
-           </CardContent>
-         </Card>
- 
-         <div className="flex gap-3">
-           <Button variant="outline" onClick={onClose} className="flex-1">
-             Exit
-           </Button>
-            {(incorrectCount > 0 || markedCount > 0) && (
-              <Button 
-                variant="outline" 
-                onClick={() => { 
-                  setReviewIndex(0); 
-                  setReviewFilter(markedCount > 0 ? "flagged" : "incorrect"); 
-                  setQuizState("review"); 
-                }}
-                className="flex-1"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Review ({markedCount > 0 ? `${markedCount} flagged` : incorrectCount})
-              </Button>
-            )}
-           <Button onClick={() => setQuizState("setup")} className="flex-1">
-             <RotateCcw className="h-4 w-4 mr-2" />
-             New Quiz
-           </Button>
-         </div>
-       </motion.div>
+       <QuizResults
+         questions={questions}
+         answers={answers}
+         totalTime={totalTime}
+         markedForReview={markedForReview}
+         onClose={onClose}
+         onReview={() => {
+           setReviewIndex(0);
+           setReviewFilter(markedForReview.size > 0 ? "flagged" : "incorrect");
+           setQuizState("review");
+         }}
+         onNewQuiz={() => setQuizState("setup")}
+       />
      );
    }
  
    // Playing state
    return (
-     <div className="space-y-4">
-       {/* Header */}
-       <div className="flex items-center justify-between">
-         <div className="flex items-center gap-3">
-           <Badge className={cn(categoryConfig[currentQuestion.category].bgColor, categoryConfig[currentQuestion.category].color, "border-0")}>
-             <CategoryIcon className="h-3 w-3 mr-1" />
-             {categoryConfig[currentQuestion.category].label}
-           </Badge>
-           <Badge variant="outline">{currentQuestion.difficulty}</Badge>
-            {markedForReview.has(currentIndex) && (
-              <Badge className="bg-amber-500/10 text-amber-600 border-0">
-                <Flag className="h-3 w-3 mr-1" />
-                Flagged
-              </Badge>
-            )}
-         </div>
-         <div className="flex items-center gap-3">
-           <span className="text-sm font-medium">
-             {currentIndex + 1}/{questions.length}
-           </span>
-           <span className={cn(
-             "flex items-center gap-1 text-sm font-medium",
-             timeLimit > 0 && totalTime > timeLimit * 0.8 ? "text-destructive" : ""
-           )}>
-             <Clock className="h-4 w-4" />
-             {formatTime(timeLimit > 0 ? Math.max(0, timeLimit - totalTime) : totalTime)}
-           </span>
-          <Button variant="ghost" size="icon" onClick={handlePause} title="Pause quiz">
-            <Pause className="h-5 w-5" />
-          </Button>
-           <Button variant="ghost" size="icon" onClick={onClose}>
-             <X className="h-5 w-5" />
-           </Button>
-         </div>
-       </div>
- 
-       {/* Progress */}
-        <div className="space-y-1">
-          <Progress value={(currentIndex / questions.length) * 100} className="h-1.5" />
-          {/* Question indicators */}
-          <div className="flex gap-1 flex-wrap">
-            {questions.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  if (idx < currentIndex || (idx === currentIndex && selectedAnswer !== null)) {
-                    // Allow navigating to answered questions only
-                  }
-                }}
-                className={cn(
-                  "w-2 h-2 rounded-full transition-all",
-                  idx < currentIndex && answers[idx] !== null && questions[idx].options[answers[idx]!]?.isCorrect && "bg-green-500",
-                  idx < currentIndex && answers[idx] !== null && !questions[idx].options[answers[idx]!]?.isCorrect && "bg-destructive",
-                  idx < currentIndex && answers[idx] === null && "bg-muted-foreground/50",
-                  idx === currentIndex && "bg-primary ring-2 ring-primary/30",
-                  idx > currentIndex && "bg-muted",
-                  markedForReview.has(idx) && "ring-2 ring-amber-500"
-                )}
-              />
-            ))}
-          </div>
-        </div>
- 
-       {/* Question */}
-       <AnimatePresence mode="wait">
-         <motion.div
-           key={currentIndex}
-           initial={{ opacity: 0, x: 20 }}
-           animate={{ opacity: 1, x: 0 }}
-           exit={{ opacity: 0, x: -20 }}
-         >
-           <Card>
-             <CardContent className="pt-6">
-               <h3 className="text-lg font-semibold mb-2">{currentQuestion.title}</h3>
-               <p className="text-muted-foreground mb-6">{currentQuestion.text}</p>
- 
-               <div className="space-y-3">
-                 {currentQuestion.options.map((option, idx) => {
-                   const isSelected = selectedAnswer === idx;
-                   const isCorrect = option.isCorrect;
-                   const showResult = selectedAnswer !== null;
- 
-                   return (
-                     <button
-                       key={idx}
-                       onClick={() => handleAnswerSelect(idx)}
-                       disabled={selectedAnswer !== null}
-                       className={cn(
-                         "w-full p-4 rounded-lg border text-left transition-all",
-                         !showResult && "hover:border-primary/50 hover:bg-accent/50",
-                         isSelected && isCorrect && "border-green-500 bg-green-500/10",
-                         isSelected && !isCorrect && "border-destructive bg-destructive/10",
-                         !isSelected && showResult && isCorrect && "border-green-500/50 bg-green-500/5"
-                       )}
-                     >
-                       <div className="flex items-center justify-between">
-                         <span>{option.text}</span>
-                         {showResult && isCorrect && <CheckCircle className="h-5 w-5 text-green-500" />}
-                         {showResult && isSelected && !isCorrect && <XCircle className="h-5 w-5 text-destructive" />}
-                       </div>
-                     </button>
-                   );
-                 })}
-               </div>
-             </CardContent>
-           </Card>
-         </motion.div>
-       </AnimatePresence>
- 
-        {/* Action buttons */}
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => toggleMarkForReview(currentIndex)}
-            className={cn(
-              "flex-shrink-0",
-              markedForReview.has(currentIndex) && "border-amber-500 bg-amber-500/10 text-amber-600"
-            )}
-          >
-            <Flag className={cn("h-4 w-4", markedForReview.has(currentIndex) ? "fill-amber-500" : "")} />
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleSkip}
-            disabled={selectedAnswer !== null}
-            className="flex-shrink-0"
-            title="Skip and answer later"
-          >
-            <SkipForward className="h-4 w-4" />
-          </Button>
-          <Button
-            onClick={handleNext}
-            disabled={selectedAnswer === null}
-            className="flex-1"
-            size="lg"
-          >
-            {currentIndex < questions.length - 1 ? (
-              <>
-                Next Question
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </>
-            ) : (
-              <>
-                View Results
-                <Trophy className="h-4 w-4 ml-2" />
-              </>
-            )}
-          </Button>
-        </div>
-
-        {/* Skipped questions indicator */}
-        {remainingSkipped.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <AlertCircle className="h-4 w-4 text-amber-500" />
-              <span className="text-sm font-medium">{remainingSkipped.length} skipped question{remainingSkipped.length !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {remainingSkipped.map(idx => (
-                <Button
-                  key={idx}
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => handleReturnToSkipped(idx)}
-                >
-                  Q{idx + 1}
-                </Button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-     </div>
+     <QuizPlaying
+       questions={questions}
+       currentIndex={currentIndex}
+       selectedAnswer={selectedAnswer}
+       answers={answers}
+       totalTime={totalTime}
+       timeLimit={timeLimit}
+       markedForReview={markedForReview}
+       skippedQuestions={skippedQuestions}
+       onAnswerSelect={handleAnswerSelect}
+       onNext={handleNext}
+       onSkip={handleSkip}
+       onPause={handlePause}
+       onClose={onClose}
+       onToggleFlag={toggleMarkForReview}
+       onReturnToSkipped={handleReturnToSkipped}
+     />
    );
  };
  
