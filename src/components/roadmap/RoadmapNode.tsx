@@ -12,6 +12,7 @@ import {
   Zap,
   Gauge,
   Timer,
+  StickyNote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNodeIcon } from "./RoadmapIconMapping";
@@ -72,6 +73,7 @@ interface RoadmapNodeProps {
   isInProgress: boolean;
   isOnProgressPath: boolean;
   isHighlighted: boolean;
+  hasNote?: boolean;
   completedChildren?: number;
   totalChildren?: number;
   onToggle: () => void;
@@ -87,6 +89,7 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
   isInProgress,
   isOnProgressPath,
   isHighlighted,
+  hasNote = false,
   completedChildren = 0,
   totalChildren = 0,
   onToggle,
@@ -282,6 +285,13 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
               <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
                 <ExternalLink className="h-2.5 w-2.5" />
                 <span>{resourceCount}</span>
+              </div>
+            )}
+
+            {/* Notes indicator */}
+            {hasNote && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" title="Has personal note">
+                <StickyNote className="h-2.5 w-2.5" />
               </div>
             )}
 

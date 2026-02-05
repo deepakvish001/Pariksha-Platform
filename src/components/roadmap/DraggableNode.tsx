@@ -14,6 +14,7 @@ interface DraggableNodeProps {
   isInProgress: boolean;
   isOnProgressPath: boolean;
   isHighlighted: boolean;
+  hasNote?: boolean;
   completedChildren?: number;
   totalChildren?: number;
   onToggle: () => void;
@@ -30,6 +31,7 @@ const DraggableNode: React.FC<DraggableNodeProps> = ({
   isInProgress,
   isOnProgressPath,
   isHighlighted,
+  hasNote = false,
   completedChildren = 0,
   totalChildren = 0,
   onToggle,
@@ -89,6 +91,7 @@ const DraggableNode: React.FC<DraggableNodeProps> = ({
           isInProgress={isInProgress}
           isOnProgressPath={isOnProgressPath}
           isHighlighted={isHighlighted}
+          hasNote={hasNote}
           completedChildren={completedChildren}
           totalChildren={totalChildren}
           onToggle={onToggle}
