@@ -67,16 +67,21 @@ export const hldTopics: SystemDesignTopic[] = [
   { id: "sql-vs-nosql", name: "SQL vs NoSQL", categoryId: "databases", description: "Database type selection" },
   { id: "sharding", name: "Database Sharding", categoryId: "databases", description: "Horizontal partitioning" },
   { id: "replication", name: "Replication", categoryId: "databases", description: "Master-slave, multi-master" },
+  { id: "distributed-consensus", name: "Distributed Consensus", categoryId: "databases", description: "Raft, Paxos, leader election" },
+  { id: "cap-theorem", name: "CAP Theorem Deep Dive", categoryId: "databases", description: "Consistency, availability, partition tolerance" },
   
   // Microservices
   { id: "service-discovery", name: "Service Discovery", categoryId: "microservices", description: "Finding services dynamically" },
   { id: "api-gateway", name: "API Gateway", categoryId: "microservices", description: "Entry point for services" },
   { id: "circuit-breaker", name: "Circuit Breaker", categoryId: "microservices", description: "Fault tolerance pattern" },
+  { id: "saga-pattern", name: "Saga Pattern", categoryId: "microservices", description: "Distributed transactions" },
+  { id: "service-mesh", name: "Service Mesh", categoryId: "microservices", description: "Istio, Linkerd infrastructure" },
   
   // Messaging
   { id: "pub-sub", name: "Pub/Sub Pattern", categoryId: "messaging", description: "Publisher-subscriber model" },
   { id: "message-brokers", name: "Message Brokers", categoryId: "messaging", description: "Kafka, RabbitMQ, SQS" },
   { id: "event-driven", name: "Event-Driven Architecture", categoryId: "messaging", description: "Event sourcing, CQRS" },
+  { id: "exactly-once", name: "Exactly-Once Delivery", categoryId: "messaging", description: "Message delivery guarantees" },
 ];
 
 // LLD Topics
@@ -1072,7 +1077,695 @@ Static structure diagram showing classes, attributes, methods, and relationships
       { text: "Shows runtime object interactions", isCorrect: false },
     ],
   },
+  // Additional LLD Case Studies
+  {
+    id: 113,
+    title: "Design an Elevator System",
+    text: "What are the key components for a multi-elevator system?",
+    difficulty: "Hard",
+    categoryId: "case-studies",
+    topicId: "elevator",
+    answer: `## Elevator System Design
+
+### Key Classes
+\`\`\`
+ElevatorController
+├── elevators: Elevator[]
+├── floors: Floor[]
+├── dispatchRequest(request): void
+
+Elevator
+├── id: int
+├── currentFloor: int
+├── direction: Direction (UP, DOWN, IDLE)
+├── state: State (MOVING, STOPPED, MAINTENANCE)
+├── destinations: Set<int>
+├── move(): void
+├── openDoors(): void
+├── closeDoors(): void
+
+Request
+├── sourceFloor: int
+├── destinationFloor: int
+├── direction: Direction
+
+Floor
+├── floorNumber: int
+├── upButton: Button
+├── downButton: Button
+\`\`\`
+
+### Scheduling Algorithms
+- **FCFS**: First come, first served
+- **SCAN**: Elevator moves in one direction, serving all requests
+- **LOOK**: Like SCAN but reverses at last request
+- **Destination Dispatch**: Groups passengers by destination`,
+    options: [
+      { text: "ElevatorController, Elevator, Request, Floor with scheduling algorithms", isCorrect: true },
+      { text: "Just a single Elevator class handles everything", isCorrect: false },
+      { text: "Only database tables needed", isCorrect: false },
+      { text: "Simple queue for requests", isCorrect: false },
+    ],
+  },
+  {
+    id: 114,
+    title: "Design a Rate Limiter",
+    text: "What algorithms can be used for rate limiting?",
+    difficulty: "Medium",
+    categoryId: "case-studies",
+    topicId: "library",
+    answer: `## Rate Limiter Design
+
+### Common Algorithms
+
+#### Token Bucket
+- Tokens added at fixed rate
+- Request consumes token
+- Allows bursts up to bucket size
+
+#### Leaky Bucket
+- Requests enter bucket, processed at fixed rate
+- Overflow requests dropped
+- Smooth output rate
+
+#### Fixed Window Counter
+- Count requests in fixed time windows
+- Reset counter at window boundary
+- Simple but can allow 2x rate at boundary
+
+#### Sliding Window Log
+- Store timestamp of each request
+- Count requests in sliding window
+- Memory intensive
+
+#### Sliding Window Counter
+- Hybrid of fixed window and sliding log
+- Weighted count from current and previous window
+- Good balance of accuracy and efficiency
+
+### Implementation
+\`\`\`java
+class TokenBucket {
+    private int tokens;
+    private int maxTokens;
+    private long lastRefill;
+    private int refillRate; // tokens per second
+    
+    public synchronized boolean tryConsume() {
+        refill();
+        if (tokens > 0) {
+            tokens--;
+            return true;
+        }
+        return false;
+    }
+}
+\`\`\``,
+    options: [
+      { text: "Token Bucket, Leaky Bucket, Sliding Window algorithms", isCorrect: true },
+      { text: "Only simple counters are needed", isCorrect: false },
+      { text: "Rate limiting is handled by hardware only", isCorrect: false },
+      { text: "No algorithms, just reject random requests", isCorrect: false },
+    ],
+  },
+  {
+    id: 115,
+    title: "Design a URL Shortener",
+    text: "How would you design a service like bit.ly?",
+    difficulty: "Medium",
+    categoryId: "case-studies",
+    topicId: "atm",
+    answer: `## URL Shortener Design
+
+### Requirements
+- Shorten long URLs to short codes
+- Redirect short URLs to original
+- Handle billions of URLs
+- High availability
+
+### Key Components
+
+#### ID Generation
+- **Auto-increment**: Simple but predictable
+- **Base62 encoding**: a-z, A-Z, 0-9 (62 chars)
+- **Hash-based**: MD5/SHA256 with collision handling
+- **Distributed ID**: Snowflake ID for uniqueness
+
+#### Database Schema
+\`\`\`sql
+CREATE TABLE urls (
+    id BIGINT PRIMARY KEY,
+    short_code VARCHAR(10) UNIQUE,
+    original_url TEXT NOT NULL,
+    created_at TIMESTAMP,
+    expires_at TIMESTAMP,
+    user_id BIGINT
+);
+\`\`\`
+
+#### System Design
+\`\`\`
+Client → Load Balancer → API Servers → Cache (Redis)
+                                    ↓
+                              Database (Sharded)
+\`\`\`
+
+### Encoding Example
+\`\`\`
+ID: 125,322,764,568
+Base62: "dg2Xc8q"
+Short URL: bit.ly/dg2Xc8q
+\`\`\``,
+    options: [
+      { text: "Base62 encoding with distributed ID generation and caching", isCorrect: true },
+      { text: "Simply store URLs in a single table with auto-increment", isCorrect: false },
+      { text: "Use UUIDs directly as short codes", isCorrect: false },
+      { text: "Hash the entire URL and use as short code", isCorrect: false },
+    ],
+  },
+  {
+    id: 116,
+    title: "What is the Interface Segregation Principle?",
+    text: "Explain ISP from SOLID principles.",
+    difficulty: "Medium",
+    categoryId: "solid",
+    topicId: "isp",
+    answer: `## Interface Segregation Principle (ISP)
+
+Clients should not be forced to depend on interfaces they don't use.
+
+### Violation Example
+\`\`\`java
+interface Worker {
+    void work();
+    void eat();
+    void sleep();
+}
+
+class Robot implements Worker {
+    void work() { /* OK */ }
+    void eat() { /* Robots don't eat! */ }
+    void sleep() { /* Robots don't sleep! */ }
+}
+\`\`\`
+
+### Good Example
+\`\`\`java
+interface Workable {
+    void work();
+}
+
+interface Eatable {
+    void eat();
+}
+
+interface Sleepable {
+    void sleep();
+}
+
+class Human implements Workable, Eatable, Sleepable {
+    // Implements all
+}
+
+class Robot implements Workable {
+    // Only implements what it needs
+}
+\`\`\`
+
+### Benefits
+- Smaller, focused interfaces
+- Reduces coupling
+- Easier to implement and test
+- More flexible design`,
+    options: [
+      { text: "Clients should not depend on interfaces they don't use", isCorrect: true },
+      { text: "Interfaces should have many methods", isCorrect: false },
+      { text: "One interface for entire application", isCorrect: false },
+      { text: "Interfaces must match class hierarchies", isCorrect: false },
+    ],
+  },
+  {
+    id: 117,
+    title: "What is the Builder pattern?",
+    text: "Explain the Builder design pattern.",
+    difficulty: "Medium",
+    categoryId: "design-patterns",
+    topicId: "creational-patterns",
+    answer: `## Builder Pattern
+
+Separates the construction of a complex object from its representation.
+
+### Problem
+Constructors with many parameters are hard to use:
+\`\`\`java
+new Pizza(Size.LARGE, true, true, false, true, "thin", "tomato");
+\`\`\`
+
+### Solution
+\`\`\`java
+class Pizza {
+    private final Size size;
+    private final boolean cheese;
+    private final boolean pepperoni;
+    // ...
+    
+    private Pizza(Builder builder) {
+        this.size = builder.size;
+        this.cheese = builder.cheese;
+        // ...
+    }
+    
+    public static class Builder {
+        private Size size;
+        private boolean cheese;
+        
+        public Builder size(Size size) {
+            this.size = size;
+            return this;
+        }
+        
+        public Builder cheese(boolean cheese) {
+            this.cheese = cheese;
+            return this;
+        }
+        
+        public Pizza build() {
+            return new Pizza(this);
+        }
+    }
+}
+
+// Usage
+Pizza pizza = new Pizza.Builder()
+    .size(Size.LARGE)
+    .cheese(true)
+    .pepperoni(true)
+    .build();
+\`\`\`
+
+### Benefits
+- Readable construction
+- Immutable objects
+- Validation before building`,
+    options: [
+      { text: "Separates complex object construction with fluent interface", isCorrect: true },
+      { text: "Creates single instances of classes", isCorrect: false },
+      { text: "Converts one interface to another", isCorrect: false },
+      { text: "Defines algorithm skeletons", isCorrect: false },
+    ],
+  },
+  {
+    id: 118,
+    title: "What is a sequence diagram?",
+    text: "Explain UML sequence diagrams and their components.",
+    difficulty: "Easy",
+    categoryId: "uml",
+    topicId: "sequence-diagrams",
+    answer: `## UML Sequence Diagrams
+
+Shows how objects interact over time through message passing.
+
+### Components
+- **Lifeline**: Vertical dashed line (object's existence)
+- **Activation Bar**: Tall rectangle (object is active)
+- **Messages**: Horizontal arrows between lifelines
+  - Synchronous: Solid arrow, filled head
+  - Asynchronous: Solid arrow, open head
+  - Return: Dashed arrow
+
+### Example: Login Flow
+\`\`\`
+┌──────┐          ┌──────────┐          ┌────────┐
+│ User │          │Controller│          │Database│
+└──┬───┘          └────┬─────┘          └───┬────┘
+   │   login(u,p)      │                    │
+   │──────────────────>│                    │
+   │                   │   validate(u,p)    │
+   │                   │───────────────────>│
+   │                   │     user data      │
+   │                   │<───────────────────│
+   │   success/fail    │                    │
+   │<──────────────────│                    │
+\`\`\`
+
+### When to Use
+- Understanding complex interactions
+- API design documentation
+- Debugging message flow
+- Team communication`,
+    options: [
+      { text: "Shows object interactions over time through messages", isCorrect: true },
+      { text: "Shows class hierarchies and relationships", isCorrect: false },
+      { text: "Shows database table structures", isCorrect: false },
+      { text: "Shows deployment configurations", isCorrect: false },
+    ],
+  },
 ];
+
+// Additional HLD Questions for new topics
+export const additionalHLDQuestions: SystemDesignQuestion[] = [
+  {
+    id: 13,
+    title: "What is the Raft consensus algorithm?",
+    text: "Explain how Raft achieves distributed consensus.",
+    difficulty: "Hard",
+    categoryId: "databases",
+    topicId: "distributed-consensus",
+    answer: `## Raft Consensus Algorithm
+
+Raft is a consensus algorithm designed to be understandable. It ensures all nodes in a distributed system agree on the same state.
+
+### Key Concepts
+
+#### Leader Election
+- Nodes are: Leader, Follower, or Candidate
+- Leader sends heartbeats to maintain authority
+- If followers don't receive heartbeat, they become candidates
+- Candidate requests votes; majority wins
+
+#### Log Replication
+1. Client sends command to leader
+2. Leader appends to its log
+3. Leader replicates to followers
+4. Once majority confirms, entry is committed
+5. Leader applies and responds to client
+
+### Terms
+- **Term**: Logical clock, increments with each election
+- **Committed**: Entry replicated to majority
+- **Applied**: Entry executed on state machine
+
+### Safety Guarantees
+- Only one leader per term
+- Leaders never delete/overwrite entries
+- If entry committed, all future leaders have it
+
+### vs Paxos
+- Raft is more understandable
+- Raft has stronger leader
+- Similar performance in practice`,
+    options: [
+      { text: "Leader election, log replication, and safety through majority consensus", isCorrect: true },
+      { text: "All nodes vote on every decision equally", isCorrect: false },
+      { text: "Uses timestamps to order events", isCorrect: false },
+      { text: "Requires all nodes to be online", isCorrect: false },
+    ],
+  },
+  {
+    id: 14,
+    title: "Explain the CAP theorem trade-offs in detail",
+    text: "How do real systems choose between C, A, and P?",
+    difficulty: "Hard",
+    categoryId: "databases",
+    topicId: "cap-theorem",
+    answer: `## CAP Theorem Deep Dive
+
+### The Theorem
+During network partition, choose between:
+- **Consistency**: All reads get most recent write
+- **Availability**: Every request gets a response
+
+### Real-World Trade-offs
+
+#### CP Systems (Consistency + Partition Tolerance)
+- MongoDB, Redis Cluster, HBase, Zookeeper
+- Reject writes during partition
+- Better for: Financial transactions, inventory
+
+#### AP Systems (Availability + Partition Tolerance)
+- Cassandra, DynamoDB, CouchDB
+- Allow writes during partition, resolve later
+- Better for: Social media, analytics
+
+### Consistency Models
+
+| Model | Description |
+|-------|-------------|
+| Strong | Reads see latest write |
+| Eventual | Reads eventually see write |
+| Causal | Respects causality ordering |
+| Read-your-writes | See your own writes |
+
+### PACELC Extension
+- If Partition: choose A or C
+- Else (normal operation): choose Latency or Consistency
+- Example: Cassandra is PA/EL (AP, but tunable consistency normally)
+
+### Practical Considerations
+- Network partitions are rare but happen
+- Within datacenter: often CA is achievable
+- Across datacenters: must handle partitions`,
+    options: [
+      { text: "CP sacrifices availability during partitions, AP sacrifices consistency", isCorrect: true },
+      { text: "All three can be achieved with enough resources", isCorrect: false },
+      { text: "CAP only applies to NoSQL databases", isCorrect: false },
+      { text: "Partitions never happen in modern networks", isCorrect: false },
+    ],
+  },
+  {
+    id: 15,
+    title: "What is the Saga pattern?",
+    text: "Explain how Saga handles distributed transactions.",
+    difficulty: "Hard",
+    categoryId: "microservices",
+    topicId: "saga-pattern",
+    answer: `## Saga Pattern
+
+A saga is a sequence of local transactions where each transaction updates a service and publishes an event to trigger the next.
+
+### Problem
+Distributed transactions (2PC) don't scale well and create tight coupling.
+
+### Types of Sagas
+
+#### Choreography
+- Services listen to events and react
+- No central coordinator
+- Decentralized, loosely coupled
+- Harder to understand flow
+
+#### Orchestration
+- Central orchestrator directs the saga
+- Sends commands to services
+- Easier to understand and debug
+- Single point of failure risk
+
+### Example: Order Saga
+
+\`\`\`
+1. Order Service: Create order (PENDING)
+2. Payment Service: Reserve payment
+3. Inventory Service: Reserve stock
+4. Order Service: Confirm order (CONFIRMED)
+
+If step 3 fails:
+3a. Inventory: Rollback (no-op)
+2a. Payment: Compensate (release payment)
+1a. Order: Compensate (cancel order)
+\`\`\`
+
+### Compensating Transactions
+- Each step has a compensation action
+- Compensations undo the effect (semantically)
+- Must be idempotent
+
+### Challenges
+- Partial failures and compensation
+- Ordering guarantees
+- Observability and debugging`,
+    options: [
+      { text: "Sequence of local transactions with compensating actions for rollback", isCorrect: true },
+      { text: "Single distributed transaction across all services", isCorrect: false },
+      { text: "Retry failed operations indefinitely", isCorrect: false },
+      { text: "Ignore failures and continue", isCorrect: false },
+    ],
+  },
+  {
+    id: 16,
+    title: "What is a Service Mesh?",
+    text: "Explain service mesh architecture and benefits.",
+    difficulty: "Medium",
+    categoryId: "microservices",
+    topicId: "service-mesh",
+    answer: `## Service Mesh
+
+A dedicated infrastructure layer for handling service-to-service communication.
+
+### Architecture
+
+#### Data Plane
+- Sidecar proxies (e.g., Envoy)
+- Deployed alongside each service
+- Intercepts all network traffic
+- Handles: routing, load balancing, security
+
+#### Control Plane
+- Manages and configures proxies
+- Examples: Istio, Linkerd, Consul Connect
+- Provides: configuration, certificates, policies
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| Traffic Management | Routing, load balancing, retries |
+| Security | mTLS, authentication, authorization |
+| Observability | Metrics, tracing, logging |
+| Resilience | Circuit breakers, timeouts, retries |
+
+### Example: Istio Architecture
+\`\`\`
+┌─────────────────────────────────────┐
+│           Control Plane              │
+│  (Istiod: Pilot, Citadel, Galley)   │
+└───────────────┬─────────────────────┘
+                │ Config
+    ┌───────────┴───────────┐
+    ▼                       ▼
+┌─────────┐           ┌─────────┐
+│ Service │           │ Service │
+│    A    │◄─────────►│    B    │
+│ [Envoy] │   mTLS    │ [Envoy] │
+└─────────┘           └─────────┘
+\`\`\`
+
+### When to Use
+- Many microservices
+- Need consistent security/observability
+- Complex traffic management needs`,
+    options: [
+      { text: "Infrastructure layer with sidecar proxies for service communication", isCorrect: true },
+      { text: "A type of message queue for services", isCorrect: false },
+      { text: "Database replication technology", isCorrect: false },
+      { text: "Container orchestration platform", isCorrect: false },
+    ],
+  },
+  {
+    id: 17,
+    title: "What are message delivery guarantees?",
+    text: "Explain at-most-once, at-least-once, and exactly-once delivery.",
+    difficulty: "Hard",
+    categoryId: "messaging",
+    topicId: "exactly-once",
+    answer: `## Message Delivery Guarantees
+
+### At-Most-Once
+- Message delivered 0 or 1 time
+- Fire and forget
+- No retries
+- May lose messages
+- Use case: Metrics where loss is acceptable
+
+### At-Least-Once
+- Message delivered 1 or more times
+- Retry on failure
+- May duplicate messages
+- Consumer must be idempotent
+- Use case: Most applications
+
+### Exactly-Once
+- Message delivered exactly 1 time
+- Hardest to achieve
+- Usually involves transactions
+
+### Achieving Exactly-Once
+
+#### Idempotent Consumers
+\`\`\`java
+// Store processed message IDs
+if (processedIds.contains(messageId)) {
+    return; // Already processed
+}
+process(message);
+processedIds.add(messageId);
+\`\`\`
+
+#### Transactional Outbox
+1. Write to DB and outbox table in transaction
+2. Separate process reads outbox and publishes
+3. Delete from outbox after confirmation
+
+#### Kafka Exactly-Once
+- Idempotent producers (dedup by sequence number)
+- Transactional producers (atomic writes)
+- Read-process-write transactions
+
+### Trade-offs
+| Guarantee | Complexity | Performance | Use Case |
+|-----------|------------|-------------|----------|
+| At-most-once | Low | High | Metrics |
+| At-least-once | Medium | Medium | Most apps |
+| Exactly-once | High | Lower | Financial |`,
+    options: [
+      { text: "At-most-once may lose, at-least-once may duplicate, exactly-once is hardest", isCorrect: true },
+      { text: "All guarantees have same performance", isCorrect: false },
+      { text: "Exactly-once is easy to achieve", isCorrect: false },
+      { text: "Message brokers always guarantee exactly-once", isCorrect: false },
+    ],
+  },
+  {
+    id: 18,
+    title: "What is consistent hashing?",
+    text: "Explain consistent hashing for distributed systems.",
+    difficulty: "Medium",
+    categoryId: "scalability",
+    topicId: "database-scaling",
+    answer: `## Consistent Hashing
+
+A technique for distributing data across nodes where adding/removing nodes minimizes data movement.
+
+### Problem with Simple Hashing
+\`\`\`
+hash(key) % num_servers
+\`\`\`
+Adding/removing server remaps almost all keys!
+
+### Consistent Hashing Solution
+
+#### The Ring
+- Hash space forms a ring (0 to 2^32-1)
+- Nodes placed on ring by hash(node_id)
+- Keys placed on ring by hash(key)
+- Key goes to first node clockwise from its position
+
+#### Adding a Node
+- Only keys between new node and predecessor move
+- ~1/N keys need to move (vs almost all)
+
+#### Virtual Nodes
+- Each physical node gets multiple positions
+- Better load distribution
+- Handles heterogeneous nodes
+
+### Example
+\`\`\`
+        ┌───────────────┐
+        │     Key1      │
+        ▼               │
+    ┌──────┐        ┌──────┐
+    │Node A│        │Node C│
+    └──┬───┘        └──────┘
+       │        Ring
+       │     ┌──────┐
+       └────►│Node B│ ← Key1 stored here
+             └──────┘
+\`\`\`
+
+### Used In
+- DynamoDB, Cassandra
+- Memcached, Redis Cluster
+- Content delivery networks (CDNs)`,
+    options: [
+      { text: "Ring-based hashing where only 1/N keys move when nodes change", isCorrect: true },
+      { text: "Hashing that always gives same output", isCorrect: false },
+      { text: "Encrypting data consistently across nodes", isCorrect: false },
+      { text: "Simple modulo-based distribution", isCorrect: false },
+    ],
+  },
+];
+
+// Merge additional questions into main arrays
+hldQuestions.push(...additionalHLDQuestions);
 
 // Helper functions
 export const getHLDCategories = () => hldCategories;

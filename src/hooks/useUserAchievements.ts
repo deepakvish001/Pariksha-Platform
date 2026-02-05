@@ -31,6 +31,14 @@ interface AchievementProgress {
     hasOopsPerfect: boolean;
   };
   fundamentalsStreak: number;
+  systemDesignQuizResults: {
+    total: number;
+    highAccuracyCount: number;
+    veryHighAccuracyCount: number;
+    hasPerfectScore: boolean;
+    hasHLDPerfect: boolean;
+    hasLLDPerfect: boolean;
+  };
 }
  
  export function useUserAchievements() {
@@ -161,6 +169,21 @@ interface AchievementProgress {
           (r) => r.quiz_type.startsWith("oops-") && r.accuracy === 100
         );
 
+        // Calculate system design quiz stats (hld-* and lld-*)
+        const systemDesignQuizzes = quizResults.filter(
+          (r) => r.quiz_type.startsWith("hld-") || r.quiz_type.startsWith("lld-")
+        );
+        const systemDesignTotal = systemDesignQuizzes.length;
+        const systemDesignHighAccuracy = systemDesignQuizzes.filter((r) => r.accuracy >= 80).length;
+        const systemDesignVeryHighAccuracy = systemDesignQuizzes.filter((r) => r.accuracy >= 90).length;
+        const systemDesignHasPerfect = systemDesignQuizzes.some((r) => r.accuracy === 100);
+        const hasHLDPerfect = systemDesignQuizzes.some(
+          (r) => r.quiz_type.startsWith("hld-") && r.accuracy === 100
+        );
+        const hasLLDPerfect = systemDesignQuizzes.some(
+          (r) => r.quiz_type.startsWith("lld-") && r.accuracy === 100
+        );
+
         setProgress({
           topicsCompleted,
           streakDays,
@@ -184,6 +207,14 @@ interface AchievementProgress {
             hasOopsPerfect,
           },
           fundamentalsStreak,
+          systemDesignQuizResults: {
+            total: systemDesignTotal,
+            highAccuracyCount: systemDesignHighAccuracy,
+            veryHighAccuracyCount: systemDesignVeryHighAccuracy,
+            hasPerfectScore: systemDesignHasPerfect,
+            hasHLDPerfect,
+            hasLLDPerfect,
+          },
         });
      } catch (error) {
        console.error("Error fetching achievements:", error);
@@ -236,12 +267,31 @@ interface AchievementProgress {
           return { current: progress.fundamentalsQuizResults.hasPerfectScore ? 1 : 0, target: 1 };
         }
         // For fundamentals_master (value: 2), need both language and oops perfect
-        let masteryCount = 0;
-        if (progress.fundamentalsQuizResults.hasLanguagePerfect) masteryCount++;
-        if (progress.fundamentalsQuizResults.hasOopsPerfect) masteryCount++;
-        return { current: masteryCount, target: 2 };
+        const fundMasteryCount = (progress.fundamentalsQuizResults.hasLanguagePerfect ? 1 : 0) + 
+                                  (progress.fundamentalsQuizResults.hasOopsPerfect ? 1 : 0);
+        return { current: fundMasteryCount, target: 2 };
       case "fundamentals_streak":
         return { current: Math.min(progress.fundamentalsStreak, value), target: value };
+      case "system_design_quiz_count":
+        return { current: Math.min(progress.systemDesignQuizResults.total, value), target: value };
+      case "system_design_accuracy":
+        if (value === 5) {
+          return { current: Math.min(progress.systemDesignQuizResults.highAccuracyCount, value), target: value };
+        }
+        return { current: Math.min(progress.systemDesignQuizResults.veryHighAccuracyCount, value), target: value };
+      case "system_design_mastery":
+        if (value === 1) {
+          // HLD Expert - need HLD perfect
+          return { current: progress.systemDesignQuizResults.hasHLDPerfect ? 1 : 0, target: 1 };
+        }
+        if (value === 2) {
+          // LLD Expert - need LLD perfect
+          return { current: progress.systemDesignQuizResults.hasLLDPerfect ? 1 : 0, target: 1 };
+        }
+        // System Design Master (value: 3) - need both HLD and LLD perfect
+        const sdMasteryCount = (progress.systemDesignQuizResults.hasHLDPerfect ? 1 : 0) + 
+                               (progress.systemDesignQuizResults.hasLLDPerfect ? 1 : 0);
+        return { current: sdMasteryCount, target: 2 };
        default:
          return { current: 0, target: value };
      }

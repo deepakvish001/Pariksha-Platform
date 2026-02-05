@@ -1,6 +1,6 @@
  import { useState } from "react";
  import { motion } from "framer-motion";
-import { Trophy, Lock, Star, Flame, Target, Zap, Medal, CheckCircle, Loader2, Filter } from "lucide-react";
+import { Trophy, Lock, Star, Flame, Target, Zap, Medal, CheckCircle, Loader2, Filter, Network } from "lucide-react";
  import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ const categories = [
   { id: "streak", label: "Streaks", icon: Flame },
   { id: "quiz", label: "Quizzes", icon: Target },
   { id: "fundamentals", label: "Fundamentals", icon: Zap },
+  { id: "system_design", label: "System Design", icon: Network },
 ];
  
 
@@ -41,6 +42,7 @@ const categories = [
  ];
  
 const getCategoryFromAchievement = (achievement: Achievement): string => {
+  if (achievement.requirement.type.startsWith("system_design")) return "system_design";
   if (achievement.requirement.type.startsWith("fundamentals")) return "fundamentals";
   if (achievement.requirement.type.startsWith("quiz")) return "quiz";
   if (achievement.requirement.type === "streak_days") return "streak";
@@ -276,7 +278,7 @@ const getCategoryFromAchievement = (achievement: Achievement): string => {
          {/* Category Tabs */}
          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <TabsList className="grid w-full grid-cols-5 max-w-lg">
+              <TabsList className="grid w-full grid-cols-6 max-w-2xl">
                 {categories.map((cat) => (
                  <TabsTrigger key={cat.id} value={cat.id} className="flex items-center gap-1.5">
                    <cat.icon className="w-4 h-4" />
