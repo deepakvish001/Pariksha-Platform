@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 import RoadmapTreeNodeEnhanced from "./RoadmapTreeNodeEnhanced";
 import RoadmapNodeDetail from "./RoadmapNodeDetail";
 import RoadmapToolbar from "./RoadmapToolbar";
@@ -222,18 +223,46 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     // Check section milestones (25%, 50%, 75%, 100%)
     const sectionMilestones = [25, 50, 75, 100];
     let celebratedSectionMilestone = false;
+    let shownNearMilestoneToast = false;
 
     if (wasCompleted) {
       for (const sectionNode of tree.nodes) {
+        const sectionNodes = flattenNodes([sectionNode]);
+        const sectionTotal = sectionNodes.length;
+        const sectionCompleted = sectionNodes.filter(n => progress[n.id]?.completed).length;
         const prevSectionPercentage = prevSectionStatsRef.current[sectionNode.id] || 0;
-        const newSectionPercentage = getSectionPercentage(sectionNode);
+        const newSectionPercentage = Math.round((sectionCompleted / sectionTotal) * 100) || 0;
         
+        // Check if we hit a milestone
         for (const milestone of sectionMilestones) {
           if (prevSectionPercentage < milestone && newSectionPercentage >= milestone) {
             // Celebrate section milestone!
             celebrateSection(milestone);
             celebratedSectionMilestone = true;
+            toast({
+              title: `🎉 ${milestone}% Complete!`,
+              description: `You've reached ${milestone}% in "${sectionNode.title}"!`,
+            });
             break;
+          }
+        }
+        
+        // Check if we're close to a milestone (1-3 topics away)
+        if (!celebratedSectionMilestone && !shownNearMilestoneToast) {
+          for (const milestone of sectionMilestones) {
+            if (newSectionPercentage < milestone) {
+              const topicsNeededForMilestone = Math.ceil((milestone / 100) * sectionTotal);
+              const topicsAway = topicsNeededForMilestone - sectionCompleted;
+              
+              if (topicsAway >= 1 && topicsAway <= 3) {
+                toast({
+                  title: `🔥 Almost there!`,
+                  description: `${topicsAway} topic${topicsAway > 1 ? 's' : ''} away from ${milestone}% in "${sectionNode.title}"!`,
+                });
+                shownNearMilestoneToast = true;
+              }
+              break; // Only check the next milestone
+            }
           }
         }
         
