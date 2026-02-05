@@ -49,6 +49,18 @@ interface AchievementProgress {
     hasJobPortalQuiz: boolean;
     hasRoadmapQuiz: boolean;
   };
+  roadmapProgress: {
+    totalTopics: number;
+    frontendComplete: boolean;
+    backendComplete: boolean;
+    mobileComplete: boolean;
+    frontendTotal: number;
+    frontendCompleted: number;
+    backendTotal: number;
+    backendCompleted: number;
+    mobileTotal: number;
+    mobileCompleted: number;
+  };
 }
  
  export function useUserAchievements() {
@@ -72,24 +84,29 @@ interface AchievementProgress {
  
        setEarnedAchievements(achievementsData || []);
  
-       // Fetch progress data for unearned achievements
-       const [topicsResult, quizResultsData, fundamentalsTopicsResult] = await Promise.all([
-         supabase
-           .from("user_topic_progress")
-           .select("completed, is_revision, completed_at")
-           .eq("user_id", user.id),
-         supabase
-           .from("quiz_results")
-           .select("accuracy, difficulty, quiz_type, avg_time_seconds, completed_at, category")
-           .eq("user_id", user.id)
-           .order("completed_at", { ascending: false }),
-         supabase
-           .from("user_topic_progress")
-           .select("completed_at, sheet_id")
-           .eq("user_id", user.id)
-           .eq("completed", true)
-           .or("sheet_id.like.language-%,sheet_id.eq.oops-concepts"),
-       ]);
+        // Fetch progress data for unearned achievements
+        const [topicsResult, quizResultsData, fundamentalsTopicsResult, roadmapProgressResult] = await Promise.all([
+          supabase
+            .from("user_topic_progress")
+            .select("completed, is_revision, completed_at")
+            .eq("user_id", user.id),
+          supabase
+            .from("quiz_results")
+            .select("accuracy, difficulty, quiz_type, avg_time_seconds, completed_at, category")
+            .eq("user_id", user.id)
+            .order("completed_at", { ascending: false }),
+          supabase
+            .from("user_topic_progress")
+            .select("completed_at, sheet_id")
+            .eq("user_id", user.id)
+            .eq("completed", true)
+            .or("sheet_id.like.language-%,sheet_id.eq.oops-concepts"),
+          supabase
+            .from("user_topic_progress")
+            .select("sheet_id, completed")
+            .eq("user_id", user.id)
+            .like("sheet_id", "roadmap-tree-%"),
+        ]);
  
        const topics = topicsResult.data || [];
        const quizResults = quizResultsData.data || [];
@@ -208,51 +225,85 @@ interface AchievementProgress {
          const hasRoadmapPerfect = researchQuizzes.some(
            (r) => r.quiz_type.startsWith("roadmap-") && r.accuracy === 100
          );
-         const hasJobPortalQuiz = researchQuizzes.some((r) => r.quiz_type.startsWith("job-portal-"));
-         const hasRoadmapQuiz = researchQuizzes.some((r) => r.quiz_type.startsWith("roadmap-"));
+          const hasJobPortalQuiz = researchQuizzes.some((r) => r.quiz_type.startsWith("job-portal-"));
+          const hasRoadmapQuiz = researchQuizzes.some((r) => r.quiz_type.startsWith("roadmap-"));
 
-         setProgress({
-           topicsCompleted,
-           streakDays,
-           revisionTopics,
-           quizResults: {
-             total: quizResults.length,
-             hardCount,
-             highAccuracyCount,
-             hasPerfectScore,
-             hasSpeedDemon,
-             hasChallenge,
-             perfectByType,
-             quizStreak,
-           },
-           fundamentalsQuizResults: {
-             total: fundamentalsTotal,
-             highAccuracyCount: fundamentalsHighAccuracy,
-             veryHighAccuracyCount: fundamentalsVeryHighAccuracy,
-             hasPerfectScore: fundamentalsHasPerfect,
-             hasLanguagePerfect,
-             hasOopsPerfect,
-           },
-           fundamentalsStreak,
-           systemDesignQuizResults: {
-             total: systemDesignTotal,
-             highAccuracyCount: systemDesignHighAccuracy,
-             veryHighAccuracyCount: systemDesignVeryHighAccuracy,
-             hasPerfectScore: systemDesignHasPerfect,
-             hasHLDPerfect,
-             hasLLDPerfect,
-           },
-           researchQuizResults: {
-             total: researchTotal,
-             highAccuracyCount: researchHighAccuracy,
-             veryHighAccuracyCount: researchVeryHighAccuracy,
-             hasPerfectScore: researchHasPerfect,
-             hasJobPortalPerfect,
-             hasRoadmapPerfect,
-             hasJobPortalQuiz,
-             hasRoadmapQuiz,
-           },
-         });
+          // Calculate roadmap progress
+          const roadmapData = roadmapProgressResult.data || [];
+          const roadmapByPath = new Map<string, { total: number; completed: number }>();
+          
+          roadmapData.forEach((item) => {
+            // Extract roadmap path from sheet_id like "roadmap-tree-frontend"
+            const pathMatch = item.sheet_id.match(/roadmap-tree-(\w+)/);
+            if (pathMatch) {
+              const path = pathMatch[1];
+              const existing = roadmapByPath.get(path) || { total: 0, completed: 0 };
+              existing.total += 1;
+              if (item.completed) existing.completed += 1;
+              roadmapByPath.set(path, existing);
+            }
+          });
+
+          const frontendStats = roadmapByPath.get("frontend") || { total: 0, completed: 0 };
+          const backendStats = roadmapByPath.get("backend") || { total: 0, completed: 0 };
+          const mobileStats = roadmapByPath.get("mobile") || { total: 0, completed: 0 };
+          
+          const totalRoadmapTopics = roadmapData.filter(r => r.completed).length;
+
+          setProgress({
+            topicsCompleted,
+            streakDays,
+            revisionTopics,
+            quizResults: {
+              total: quizResults.length,
+              hardCount,
+              highAccuracyCount,
+              hasPerfectScore,
+              hasSpeedDemon,
+              hasChallenge,
+              perfectByType,
+              quizStreak,
+            },
+            fundamentalsQuizResults: {
+              total: fundamentalsTotal,
+              highAccuracyCount: fundamentalsHighAccuracy,
+              veryHighAccuracyCount: fundamentalsVeryHighAccuracy,
+              hasPerfectScore: fundamentalsHasPerfect,
+              hasLanguagePerfect,
+              hasOopsPerfect,
+            },
+            fundamentalsStreak,
+            systemDesignQuizResults: {
+              total: systemDesignTotal,
+              highAccuracyCount: systemDesignHighAccuracy,
+              veryHighAccuracyCount: systemDesignVeryHighAccuracy,
+              hasPerfectScore: systemDesignHasPerfect,
+              hasHLDPerfect,
+              hasLLDPerfect,
+            },
+            researchQuizResults: {
+              total: researchTotal,
+              highAccuracyCount: researchHighAccuracy,
+              veryHighAccuracyCount: researchVeryHighAccuracy,
+              hasPerfectScore: researchHasPerfect,
+              hasJobPortalPerfect,
+              hasRoadmapPerfect,
+              hasJobPortalQuiz,
+              hasRoadmapQuiz,
+            },
+            roadmapProgress: {
+              totalTopics: totalRoadmapTopics,
+              frontendComplete: frontendStats.total > 0 && frontendStats.completed === frontendStats.total,
+              backendComplete: backendStats.total > 0 && backendStats.completed === backendStats.total,
+              mobileComplete: mobileStats.total > 0 && mobileStats.completed === mobileStats.total,
+              frontendTotal: frontendStats.total,
+              frontendCompleted: frontendStats.completed,
+              backendTotal: backendStats.total,
+              backendCompleted: backendStats.completed,
+              mobileTotal: mobileStats.total,
+              mobileCompleted: mobileStats.completed,
+            },
+          });
      } catch (error) {
        console.error("Error fetching achievements:", error);
      } finally {
@@ -344,10 +395,44 @@ interface AchievementProgress {
         const researchMasteryCount = (progress.researchQuizResults.hasJobPortalPerfect ? 1 : 0) + 
                                      (progress.researchQuizResults.hasRoadmapPerfect ? 1 : 0);
         return { current: researchMasteryCount, target: 2 };
-       default:
-         return { current: 0, target: value };
-     }
-   };
+      
+      // Roadmap achievements
+      case "roadmap_topics":
+        return { current: Math.min(progress.roadmapProgress.totalTopics, value), target: value };
+      case "roadmap_path_complete":
+        if (value === 1) {
+          // Frontend Master
+          return { current: progress.roadmapProgress.frontendComplete ? 1 : 0, target: 1 };
+        }
+        if (value === 2) {
+          // Backend Master
+          return { current: progress.roadmapProgress.backendComplete ? 1 : 0, target: 1 };
+        }
+        if (value === 3) {
+          // Mobile Master
+          return { current: progress.roadmapProgress.mobileComplete ? 1 : 0, target: 1 };
+        }
+        return { current: 0, target: 1 };
+      case "roadmap_mastery":
+        if (value === 2) {
+          // Full Stack Hero - Frontend + Backend
+          const fullStackCount = (progress.roadmapProgress.frontendComplete ? 1 : 0) + 
+                                 (progress.roadmapProgress.backendComplete ? 1 : 0);
+          return { current: fullStackCount, target: 2 };
+        }
+        if (value === 3) {
+          // Triple Threat - all three
+          const tripleCount = (progress.roadmapProgress.frontendComplete ? 1 : 0) + 
+                              (progress.roadmapProgress.backendComplete ? 1 : 0) +
+                              (progress.roadmapProgress.mobileComplete ? 1 : 0);
+          return { current: tripleCount, target: 3 };
+        }
+        return { current: 0, target: value };
+      
+      default:
+        return { current: 0, target: value };
+    }
+  };
  
    const isEarned = (achievementId: string): boolean => {
      return earnedAchievements.some((a) => a.achievement_id === achievementId);
