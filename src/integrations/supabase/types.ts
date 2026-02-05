@@ -302,6 +302,42 @@ export type Database = {
           },
         ]
       }
+      study_plan_goals: {
+        Row: {
+          category: string
+          completed_at: string | null
+          id: string
+          is_completed: boolean
+          questions_practiced: number
+          started_at: string
+          target_questions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          completed_at?: string | null
+          id?: string
+          is_completed?: boolean
+          questions_practiced?: number
+          started_at?: string
+          target_questions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          completed_at?: string | null
+          id?: string
+          is_completed?: boolean
+          questions_practiced?: number
+          started_at?: string
+          target_questions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_achievements: {
         Row: {
           achievement_id: string
