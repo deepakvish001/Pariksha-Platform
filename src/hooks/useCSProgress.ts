@@ -4,6 +4,7 @@ import { differenceInHours } from "date-fns";
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "@/contexts/AuthContext";
  import { useToast } from "@/hooks/use-toast";
+ import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
  
  interface ProgressItem {
    question_id: number;
@@ -80,7 +81,7 @@ export interface CSSpacedRepetitionQuestion {
              revision: item.is_revision,
              review_count: item.review_count,
              completed_at: item.completed_at,
-           });
+         });
          });
          setProgress(progressMap);
        } catch (error) {
@@ -91,6 +92,73 @@ export interface CSSpacedRepetitionQuestion {
      };
  
      fetchProgress();
+   }, [user]);
+ 
+   // Real-time subscription for cross-device sync
+   useEffect(() => {
+     if (!user) return;
+ 
+     const channel = supabase
+       .channel(`cs-progress-${user.id}`)
+       .on(
+         "postgres_changes",
+         {
+           event: "*",
+           schema: "public",
+           table: "user_topic_progress",
+           filter: `user_id=eq.${user.id}`,
+         },
+         (payload: RealtimePostgresChangesPayload<{
+           topic_id: string;
+           sheet_id: string;
+           completed: boolean;
+           is_revision: boolean;
+           review_count: number;
+           completed_at: string | null;
+         }>) => {
+           const newRecord = payload.new as {
+             topic_id: string;
+             sheet_id: string;
+             completed: boolean;
+             is_revision: boolean;
+             review_count: number;
+             completed_at: string | null;
+           } | null;
+           const oldRecord = payload.old as { topic_id: string; sheet_id: string } | null;
+ 
+           // Only process CS subject progress
+           if (newRecord?.sheet_id !== SHEET_ID && oldRecord?.sheet_id !== SHEET_ID) {
+             return;
+           }
+ 
+           if (payload.eventType === "DELETE" && oldRecord) {
+             const questionId = parseInt(oldRecord.topic_id.replace("cs-", ""));
+             setProgress((prev) => {
+               const updated = new Map(prev);
+               updated.delete(questionId);
+               return updated;
+             });
+           } else if (newRecord && newRecord.sheet_id === SHEET_ID) {
+             const questionId = parseInt(newRecord.topic_id.replace("cs-", ""));
+             setProgress((prev) => {
+               const updated = new Map(prev);
+               updated.set(questionId, {
+                 question_id: questionId,
+                 solved: newRecord.completed,
+                 revision: newRecord.is_revision,
+                 review_count: newRecord.review_count,
+                 completed_at: newRecord.completed_at,
+               });
+               return updated;
+             });
+           }
+         }
+       )
+       .subscribe();
+ 
+     return () => {
+       supabase.removeChannel(channel);
+     };
    }, [user]);
  
    const isSolved = useCallback(
@@ -110,7 +178,7 @@ export interface CSSpacedRepetitionQuestion {
            variant: "destructive",
            title: "Sign in required",
            description: "Please sign in to track your progress.",
-         });
+       });
          return;
        }
  
@@ -126,7 +194,7 @@ export interface CSSpacedRepetitionQuestion {
            revision: current?.revision || false,
            review_count: current?.review_count || 0,
            completed_at: newSolved ? new Date().toISOString() : null,
-         });
+       });
          return updated;
        });
  
@@ -324,7 +392,7 @@ export interface CSSpacedRepetitionQuestion {
      toggleSolved,
      toggleRevision,
      progress,
-    markReviewed,
-    spacedRepetition,
+     markReviewed,
+     spacedRepetition,
    };
  }
