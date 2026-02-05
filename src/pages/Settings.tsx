@@ -17,6 +17,9 @@ import {
   AlertTriangle,
   Sun,
   Moon,
+  Brain,
+  RotateCcw,
+  Zap,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Slider } from "@/components/ui/slider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +48,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import PasswordStrengthIndicator from "@/components/PasswordStrengthIndicator";
+import { useSRSSettings, DEFAULT_SRS_INTERVALS, DEFAULT_MASTERY_THRESHOLD } from "@/hooks/useSRSSettings";
+import XPLevelBadge from "@/components/XPLevelBadge";
 
 interface ExtendedProfile {
   id: string;
@@ -190,6 +196,19 @@ const Settings = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // SRS Settings
+  const { settings: srsSettings, isLoading: srsLoading, isSaving: srsSaving, updateSettings: updateSRSSettings, resetToDefaults } = useSRSSettings();
+  const [localSRSIntervals, setLocalSRSIntervals] = useState<number[]>(DEFAULT_SRS_INTERVALS);
+  const [localMasteryThreshold, setLocalMasteryThreshold] = useState(DEFAULT_MASTERY_THRESHOLD);
+
+  // Sync local SRS state with fetched settings
+  useEffect(() => {
+    if (!srsLoading) {
+      setLocalSRSIntervals(srsSettings.intervals);
+      setLocalMasteryThreshold(srsSettings.masteryThreshold);
+    }
+  }, [srsLoading, srsSettings]);
 
   // Check if user signed up with OAuth
   useEffect(() => {
@@ -474,7 +493,7 @@ const Settings = () => {
       {/* Main Content */}
       <main className="section-container py-8 max-w-4xl mx-auto">
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="w-4 h-4" />
               <span className="hidden sm:inline">Profile</span>
@@ -486,6 +505,10 @@ const Settings = () => {
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="w-4 h-4" />
               <span className="hidden sm:inline">Notifications</span>
+            </TabsTrigger>
+            <TabsTrigger value="learning" className="flex items-center gap-2">
+              <Brain className="w-4 h-4" />
+              <span className="hidden sm:inline">Learning</span>
             </TabsTrigger>
             <TabsTrigger value="account" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
@@ -908,6 +931,116 @@ const Settings = () => {
                   )}
                   Save Notification Preferences
                 </Button>
+              </div>
+            </motion.div>
+          </TabsContent>
+
+          {/* Learning Tab */}
+          <TabsContent value="learning">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              {/* XP & Level */}
+              <div className="card-dark space-y-6">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Zap className="w-5 h-5" />
+                  XP & Level
+                </h2>
+                <XPLevelBadge showProgress />
+                <p className="text-sm text-muted-foreground">
+                  Earn XP by completing quizzes, mastering spaced repetition questions, and maintaining streaks.
+                  Level up to unlock titles and track your progress!
+                </p>
+              </div>
+
+              {/* Spaced Repetition Settings */}
+              <div className="card-dark space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Brain className="w-5 h-5" />
+                    Spaced Repetition Settings
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetToDefaults}
+                    disabled={srsSaving}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Reset to Defaults
+                  </Button>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-base">Mastery Threshold</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Number of consecutive correct answers to master a question
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Slider
+                        value={[localMasteryThreshold]}
+                        onValueChange={([v]) => setLocalMasteryThreshold(v)}
+                        min={2}
+                        max={5}
+                        step={1}
+                        className="flex-1"
+                      />
+                      <span className="text-2xl font-bold w-8 text-center">{localMasteryThreshold}</span>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-base">Review Intervals (days)</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Days between reviews for each correct answer streak
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-7 gap-2">
+                      {localSRSIntervals.map((interval, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <Label className="text-xs text-center block text-muted-foreground">
+                            {idx + 1}{idx === 0 ? 'st' : idx === 1 ? 'nd' : idx === 2 ? 'rd' : 'th'}
+                          </Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={120}
+                            value={interval}
+                            onChange={(e) => {
+                              const newIntervals = [...localSRSIntervals];
+                              newIntervals[idx] = Math.max(1, parseInt(e.target.value) || 1);
+                              setLocalSRSIntervals(newIntervals);
+                            }}
+                            className="text-center"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Current: {localSRSIntervals.join(' → ')} days
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={() => updateSRSSettings({
+                      intervals: localSRSIntervals,
+                      masteryThreshold: localMasteryThreshold,
+                    })}
+                    disabled={srsSaving}
+                    className="w-full"
+                  >
+                    {srsSaving ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                    ) : (
+                      <Check className="w-4 h-4 mr-2" />
+                    )}
+                    Save Learning Settings
+                  </Button>
+                </div>
               </div>
             </motion.div>
           </TabsContent>

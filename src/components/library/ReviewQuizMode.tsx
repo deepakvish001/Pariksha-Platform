@@ -15,6 +15,8 @@
  import { sqlQuestions } from "@/data/sqlQuestionsData";
  import { aptitudeQuestions } from "@/data/aptitudeQuestionsData";
  import { useQuizSpacedRepetition, type QuizReviewItem } from "@/hooks/useQuizSpacedRepetition";
+import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
+import { useToast } from "@/hooks/use-toast";
  
  interface ReviewQuizModeProps {
    reviews: QuizReviewItem[];
@@ -40,7 +42,9 @@
  };
  
  const ReviewQuizMode = ({ reviews, onClose }: ReviewQuizModeProps) => {
-   const { completeReview, refetch } = useQuizSpacedRepetition();
+  const { completeReview, refetch, masteryThreshold } = useQuizSpacedRepetition();
+  const { awardXP } = useXPSystem();
+  const { toast } = useToast();
    const [currentIndex, setCurrentIndex] = useState(0);
    const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
    const [results, setResults] = useState<{ correct: boolean; reviewId: string }[]>([]);
@@ -93,13 +97,33 @@
      setResults(prev => [...prev, { correct: isCorrect, reviewId: currentQuestion.reviewId }]);
      
      // Update spaced repetition
-     await completeReview(currentQuestion.reviewId, isCorrect);
+    const review = reviews.find(r => r.id === currentQuestion.reviewId);
+    const willMaster = review && isCorrect && (review.correctStreak + 1) >= masteryThreshold;
+
+    await completeReview(currentQuestion.reviewId, isCorrect);
+
+    // Award XP for correct SRS review answers
+    if (isCorrect) {
+      if (willMaster) {
+        await awardXP(XP_VALUES.SRS_MASTERED, "srs_mastered", `🎓 Mastered: ${currentQuestion.title}`);
+      } else {
+        await awardXP(XP_VALUES.SRS_REVIEW_CORRECT, "srs_review", `✓ Review correct: ${currentQuestion.title}`, false);
+      }
+    }
  
      if (currentIndex < questions.length - 1) {
        setCurrentIndex(prev => prev + 1);
        setSelectedAnswer(null);
      } else {
        setShowResults(true);
+      const correctCount = results.filter(r => r.correct).length + (isCorrect ? 1 : 0);
+      if (correctCount > 0) {
+        toast({
+          title: `+${correctCount * XP_VALUES.SRS_REVIEW_CORRECT} XP earned`,
+          description: `${correctCount} review${correctCount !== 1 ? 's' : ''} completed correctly`,
+          duration: 3000,
+        });
+      }
        await refetch();
      }
    };

@@ -3,18 +3,16 @@
  import { supabase } from "@/integrations/supabase/client";
  import { useToast } from "@/hooks/use-toast";
  import { differenceInHours, addDays } from "date-fns";
+import { useSRSSettings, DEFAULT_SRS_INTERVALS, DEFAULT_MASTERY_THRESHOLD } from "@/hooks/useSRSSettings";
  
- // Spaced repetition intervals in days (shorter for wrong answers)
- const INTERVALS = [1, 2, 4, 7, 14, 30, 60];
- 
- function getNextReviewDate(reviewCount: number, wasCorrect: boolean): Date {
+function getNextReviewDate(reviewCount: number, wasCorrect: boolean, intervals: number[]): Date {
    // If wrong, reset to beginning or reduce interval
    if (!wasCorrect) {
      return addDays(new Date(), 1); // Review tomorrow
    }
    // If correct, use increasing intervals
-   const index = Math.min(reviewCount, INTERVALS.length - 1);
-   return addDays(new Date(), INTERVALS[index]);
+  const index = Math.min(reviewCount, intervals.length - 1);
+  return addDays(new Date(), intervals[index]);
  }
  
  export interface QuizReviewItem {
@@ -41,9 +39,13 @@
  export function useQuizSpacedRepetition() {
    const { user } = useAuth();
    const { toast } = useToast();
+  const { settings } = useSRSSettings();
    const [reviews, setReviews] = useState<QuizReviewItem[]>([]);
    const [isLoading, setIsLoading] = useState(true);
  
+  const masteryThreshold = settings.masteryThreshold || DEFAULT_MASTERY_THRESHOLD;
+  const intervals = settings.intervals || DEFAULT_SRS_INTERVALS;
+
    // Fetch due reviews
    const fetchReviews = useCallback(async () => {
      if (!user) {
@@ -146,10 +148,10 @@
      try {
        const newReviewCount = review.reviewCount + 1;
        const newCorrectStreak = wasCorrect ? review.correctStreak + 1 : 0;
-       const nextReviewAt = getNextReviewDate(newCorrectStreak, wasCorrect);
+      const nextReviewAt = getNextReviewDate(newCorrectStreak, wasCorrect, intervals);
  
-       // If correct streak reaches threshold, remove from review
-       if (newCorrectStreak >= 3) {
+      // If correct streak reaches mastery threshold, remove from review
+      if (newCorrectStreak >= masteryThreshold) {
          await supabase
            .from("quiz_spaced_repetition")
            .delete()
@@ -174,7 +176,7 @@
          if (wasCorrect) {
            toast({
              title: "Good job!",
-             description: `${3 - newCorrectStreak} more correct to master`,
+            description: `${masteryThreshold - newCorrectStreak} more correct to master`,
              duration: 3000,
            });
          }
@@ -184,7 +186,7 @@
      } catch (error) {
        console.error("Error completing review:", error);
      }
-   }, [user, reviews, fetchReviews, toast]);
+  }, [user, reviews, fetchReviews, toast, masteryThreshold, intervals]);
  
    // Remove a question from review
    const removeFromReview = useCallback(async (reviewId: string) => {
@@ -213,6 +215,7 @@
      reviews,
      isLoading,
      stats,
+    masteryThreshold,
      scheduleForReview,
      completeReview,
      removeFromReview,
