@@ -22,6 +22,26 @@ interface MergeUndoState {
   mergedOrders: Record<string, string[]>;
 }
 
+export type PathOperationType = 
+  | "create" 
+  | "delete" 
+  | "activate" 
+  | "deactivate" 
+  | "update" 
+  | "duplicate" 
+  | "merge" 
+  | "undo-merge" 
+  | "redo-merge";
+
+export interface PathOperation {
+  id: string;
+  type: PathOperationType;
+  pathName: string;
+  pathId?: string;
+  details?: string;
+  timestamp: Date;
+}
+
 export const useSavedPaths = (roadmapId: string) => {
   const { user } = useAuth();
   const [savedPaths, setSavedPaths] = useState<SavedPath[]>([]);
@@ -32,6 +52,21 @@ export const useSavedPaths = (roadmapId: string) => {
   // Undo/Redo state for merge operations
   const [mergeUndoStack, setMergeUndoStack] = useState<MergeUndoState[]>([]);
   const [mergeRedoStack, setMergeRedoStack] = useState<MergeUndoState[]>([]);
+  
+  // Operation history
+  const [operationHistory, setOperationHistory] = useState<PathOperation[]>([]);
+  
+  const addToHistory = (type: PathOperationType, pathName: string, pathId?: string, details?: string) => {
+    const operation: PathOperation = {
+      id: crypto.randomUUID(),
+      type,
+      pathName,
+      pathId,
+      details,
+      timestamp: new Date(),
+    };
+    setOperationHistory((prev) => [operation, ...prev].slice(0, 50)); // Keep last 50 operations
+  };
 
   // Load saved paths from database
   useEffect(() => {
@@ -112,6 +147,8 @@ export const useSavedPaths = (roadmapId: string) => {
 
         setSavedPaths((prev) => [newPath, ...prev]);
         
+        addToHistory("create", name, data.id);
+        
         toast({
           title: "Path saved!",
           description: `"${name}" has been saved to your collection.`,
@@ -164,6 +201,8 @@ export const useSavedPaths = (roadmapId: string) => {
         const path = savedPaths.find((p) => p.id === pathId);
         setActivePath(path || null);
 
+        addToHistory("activate", path?.name || "Unknown", pathId);
+
         toast({
           title: "Path activated!",
           description: `Now using "${path?.name}" layout.`,
@@ -215,6 +254,8 @@ export const useSavedPaths = (roadmapId: string) => {
     async (pathId: string) => {
       if (!user) return;
 
+      const pathToDelete = savedPaths.find((p) => p.id === pathId);
+
       setIsSaving(true);
       try {
         const { error } = await supabase
@@ -230,6 +271,8 @@ export const useSavedPaths = (roadmapId: string) => {
           setActivePath(null);
         }
 
+        addToHistory("delete", pathToDelete?.name || "Unknown", pathId);
+
         toast({
           title: "Path deleted",
         });
@@ -243,7 +286,7 @@ export const useSavedPaths = (roadmapId: string) => {
         setIsSaving(false);
       }
     },
-    [user, activePath]
+    [user, activePath, savedPaths]
   );
 
   // Update a saved path
@@ -332,6 +375,8 @@ export const useSavedPaths = (roadmapId: string) => {
         };
 
         setSavedPaths((prev) => [newPath, ...prev]);
+
+        addToHistory("duplicate", newName, data.id, `from "${pathToDuplicate.name}"`);
 
         toast({
           title: "Path duplicated!",
@@ -476,6 +521,8 @@ export const useSavedPaths = (roadmapId: string) => {
         // Clear redo stack on new merge
         setMergeRedoStack([]);
 
+        addToHistory("merge", name, data.id, `from "${path1.name}" + "${path2.name}"`);
+
         toast({
           title: "Paths merged!",
           description: `Created "${name}" by combining two paths.`,
@@ -517,6 +564,8 @@ export const useSavedPaths = (roadmapId: string) => {
       // Move to redo stack
       setMergeRedoStack((prev) => [...prev, lastMerge]);
       setMergeUndoStack((prev) => prev.slice(0, -1));
+
+      addToHistory("undo-merge", lastMerge.name);
 
       toast({
         title: "Merge undone",
@@ -575,6 +624,8 @@ export const useSavedPaths = (roadmapId: string) => {
       setMergeUndoStack((prev) => [...prev, updatedState]);
       setMergeRedoStack((prev) => prev.slice(0, -1));
 
+      addToHistory("redo-merge", lastUndo.name, data.id);
+
       toast({
         title: "Merge redone",
         description: `"${lastUndo.name}" has been recreated.`,
@@ -589,6 +640,11 @@ export const useSavedPaths = (roadmapId: string) => {
       setIsSaving(false);
     }
   }, [mergeRedoStack, user, roadmapId, savedPaths]);
+
+  // Clear history
+  const clearHistory = useCallback(() => {
+    setOperationHistory([]);
+  }, []);
 
   return {
     savedPaths,
@@ -607,5 +663,8 @@ export const useSavedPaths = (roadmapId: string) => {
     canRedoMerge: mergeRedoStack.length > 0,
     undoMerge,
     redoMerge,
+    // History
+    operationHistory,
+    clearHistory,
   };
 };
