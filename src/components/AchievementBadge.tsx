@@ -16,8 +16,10 @@ import {
   Swords,
   Brain,
   Sparkles,
+   Users,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+ import { Badge } from "@/components/ui/badge";
 
 export interface Achievement {
   id: string;
@@ -205,12 +207,39 @@ export const achievements: Achievement[] = [
   },
 ];
 
+
+ export type RarityTier = "common" | "uncommon" | "rare" | "epic" | "legendary";
+ 
+ export interface RarityInfo {
+   earnedCount: number;
+   percentage: number;
+   rarity: RarityTier;
+ }
+ 
+ const rarityColors: Record<RarityTier, string> = {
+   common: "bg-slate-500/20 text-slate-400 border-slate-500/30",
+   uncommon: "bg-green-500/20 text-green-400 border-green-500/30",
+   rare: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+   epic: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+   legendary: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+ };
+ 
+ const rarityLabels: Record<RarityTier, string> = {
+   common: "Common",
+   uncommon: "Uncommon",
+   rare: "Rare",
+   epic: "Epic",
+   legendary: "Legendary",
+ };
+ 
 interface AchievementBadgeProps {
   achievement: Achievement;
   earned: boolean;
   earnedAt?: string;
   size?: 'sm' | 'md' | 'lg';
   showName?: boolean;
+   rarity?: RarityInfo;
+   showRarity?: boolean;
 }
 
 const AchievementBadge = ({ 
@@ -218,7 +247,9 @@ const AchievementBadge = ({
   earned, 
   earnedAt,
   size = 'md',
-  showName = true
+   showName = true,
+   rarity,
+   showRarity = false,
 }: AchievementBadgeProps) => {
   const Icon = iconMap[achievement.icon];
   
@@ -271,6 +302,17 @@ const AchievementBadge = ({
       <TooltipContent side="top" className="max-w-48">
         <p className="font-semibold">{achievement.name}</p>
         <p className="text-muted-foreground text-xs">{achievement.description}</p>
+         {rarity && (
+           <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
+             <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", rarityColors[rarity.rarity])}>
+               {rarityLabels[rarity.rarity]}
+             </Badge>
+             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+               <Users className="h-3 w-3" />
+               {rarity.earnedCount} ({rarity.percentage.toFixed(1)}%)
+             </span>
+           </div>
+         )}
         {earned && earnedAt && (
           <p className="text-xs text-primary mt-1">
             Earned {new Date(earnedAt).toLocaleDateString()}

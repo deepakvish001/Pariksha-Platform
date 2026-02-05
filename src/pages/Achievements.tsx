@@ -9,6 +9,7 @@
  import { cn } from "@/lib/utils";
  import AchievementBadge, { achievements, type Achievement } from "@/components/AchievementBadge";
  import { useUserAchievements } from "@/hooks/useUserAchievements";
+ import { useAchievementRarity } from "@/hooks/useAchievementRarity";
  
  const categories = [
    { id: "all", label: "All", icon: Trophy },
@@ -28,11 +29,13 @@
    earned,
    earnedAt,
    progress,
+   rarity,
  }: {
    achievement: Achievement;
    earned: boolean;
    earnedAt?: string;
    progress: { current: number; target: number };
+   rarity?: { earnedCount: number; percentage: number; rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" };
  }) => {
    const progressPercent = Math.round((progress.current / progress.target) * 100);
  
@@ -70,6 +73,7 @@
                earnedAt={earnedAt}
                size="lg"
                showName={false}
+                 rarity={rarity}
              />
  
              {/* Details */}
@@ -114,6 +118,7 @@
  const Achievements = () => {
    const [selectedCategory, setSelectedCategory] = useState("all");
    const { loading, isEarned, getEarnedAt, getAchievementProgress } = useUserAchievements();
+   const { getRarity, isLoading: rarityLoading } = useAchievementRarity();
  
    const filteredAchievements = achievements.filter((achievement) => {
      if (selectedCategory === "all") return true;
@@ -124,7 +129,7 @@
    const totalCount = achievements.length;
    const completionPercent = Math.round((earnedCount / totalCount) * 100);
  
-   if (loading) {
+   if (loading || rarityLoading) {
      return (
        <div className="min-h-screen bg-background flex items-center justify-center">
          <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -235,6 +240,7 @@
                          earned={true}
                          earnedAt={getEarnedAt(achievement.id)}
                          progress={getAchievementProgress(achievement)}
+                         rarity={getRarity(achievement.id)}
                        />
                      ))}
                  </div>
@@ -281,6 +287,7 @@
                          achievement={achievement}
                          earned={false}
                          progress={getAchievementProgress(achievement)}
+                         rarity={getRarity(achievement.id)}
                        />
                      ))}
                  </div>
