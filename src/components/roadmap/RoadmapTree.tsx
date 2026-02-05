@@ -1,10 +1,12 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import RoadmapTreeNode from "./RoadmapTreeNode";
 import RoadmapNodeDetail from "./RoadmapNodeDetail";
 import RoadmapToolbar from "./RoadmapToolbar";
+import RoadmapMiniMap from "./RoadmapMiniMap";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { RoadmapTree as TreeType, RoadmapTreeNode as NodeType } from "@/data/roadmapTreesData";
 
 interface RoadmapTreeProps {
@@ -88,6 +90,9 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [selectedNode, setSelectedNode] = useState<NodeType | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const treeRef = useRef<HTMLDivElement>(null);
+  const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const isMobile = useIsMobile();
   
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -182,6 +187,47 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     onNodeComplete(nodeId);
   }, [onNodeComplete]);
 
+  // Handle mini-map node click - scroll to and expand node
+  const handleMiniMapNodeClick = useCallback((nodeId: string) => {
+    // Find node and its ancestors to expand
+    const findAncestors = (nodes: NodeType[], targetId: string, ancestors: string[] = []): string[] | null => {
+      for (const node of nodes) {
+        if (node.id === targetId) {
+          return ancestors;
+        }
+        if (node.children) {
+          const result = findAncestors(node.children, targetId, [...ancestors, node.id]);
+          if (result) return result;
+        }
+      }
+      return null;
+    };
+
+    const ancestors = findAncestors(tree.nodes, nodeId, []);
+    if (ancestors) {
+      // Expand all ancestors
+      setExpandedNodes(prev => {
+        const next = new Set(prev);
+        ancestors.forEach(id => next.add(id));
+        next.add(nodeId);
+        return next;
+      });
+
+      // Scroll to node after a short delay to allow expansion
+      setTimeout(() => {
+        const nodeElement = nodeRefs.current.get(nodeId);
+        if (nodeElement) {
+          nodeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+          // Brief highlight effect
+          nodeElement.classList.add("ring-2", "ring-primary", "ring-offset-2");
+          setTimeout(() => {
+            nodeElement.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+          }, 1500);
+        }
+      }, 100);
+    }
+  }, [tree.nodes]);
+
   // Check if node should be visible based on filters
   const isNodeVisible = useCallback((node: NodeType): boolean => {
     if (!searchQuery && difficultyFilter === "all" && statusFilter === "all") return true;
@@ -208,7 +254,13 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     const visibleChildren = node.children?.filter(child => isNodeVisible(child)) || [];
     
     return (
-      <div key={node.id} className="relative">
+      <div 
+        key={node.id} 
+        className="relative"
+        ref={(el) => {
+          if (el) nodeRefs.current.set(node.id, el);
+        }}
+      >
         <RoadmapTreeNode
           node={node}
           depth={depth}
@@ -264,29 +316,31 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="space-y-6">
-        {/* Progress Header */}
-        <div className="p-4 rounded-lg bg-muted/50 border space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold">{tree.title}</h3>
-              <p className="text-sm text-muted-foreground">{tree.description}</p>
+      <div className="flex gap-4">
+        {/* Main Content */}
+        <div className="flex-1 space-y-6 min-w-0" ref={treeRef}>
+          {/* Progress Header */}
+          <div className="p-4 rounded-lg bg-muted/50 border space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">{tree.title}</h3>
+                <p className="text-sm text-muted-foreground">{tree.description}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold">{stats.percentage}%</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.completed} / {stats.total} topics
+                </p>
+              </div>
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold">{stats.percentage}%</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.completed} / {stats.total} topics
-              </p>
-            </div>
+            <Progress value={stats.percentage} className="h-2" />
           </div>
-          <Progress value={stats.percentage} className="h-2" />
-        </div>
 
-        {/* Search & Filter Toolbar */}
-        <RoadmapToolbar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          difficultyFilter={difficultyFilter}
+          {/* Search & Filter Toolbar */}
+          <RoadmapToolbar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            difficultyFilter={difficultyFilter}
           onDifficultyChange={setDifficultyFilter}
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
@@ -294,39 +348,53 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           totalCount={allNodes.length}
         />
 
-        {/* Tree Visualization */}
-        <div className="relative pl-2">
-          {/* Nodes */}
-          <div className="space-y-1">
-            {tree.nodes.map((node, index) => renderNode(node, 0, index === tree.nodes.length - 1))}
+          {/* Tree Visualization */}
+          <div className="relative pl-2">
+            {/* Nodes */}
+            <div className="space-y-1">
+              {tree.nodes.map((node, index) => renderNode(node, 0, index === tree.nodes.length - 1))}
+            </div>
           </div>
-        </div>
 
-        {/* No Results */}
-        {matchCount === 0 && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all") && (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No topics found matching your filters.</p>
-            <button 
-              onClick={() => {
-                setSearchQuery("");
-                setDifficultyFilter("all");
-                setStatusFilter("all");
-              }}
-              className="text-primary hover:underline mt-2"
-            >
-              Clear filters
-            </button>
-          </div>
-        )}
+          {/* No Results */}
+          {matchCount === 0 && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all") && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No topics found matching your filters.</p>
+              <button 
+                onClick={() => {
+                  setSearchQuery("");
+                  setDifficultyFilter("all");
+                  setStatusFilter("all");
+                }}
+                className="text-primary hover:underline mt-2"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
 
-        {/* Node Detail Panel */}
-        <RoadmapNodeDetail
+          {/* Node Detail Panel */}
+          <RoadmapNodeDetail
           node={selectedNode}
           open={detailOpen}
           onOpenChange={setDetailOpen}
-          isCompleted={selectedNode ? progress[selectedNode.id]?.completed || false : false}
-          onComplete={() => selectedNode && handleComplete(selectedNode.id)}
-        />
+            isCompleted={selectedNode ? progress[selectedNode.id]?.completed || false : false}
+            onComplete={() => selectedNode && handleComplete(selectedNode.id)}
+          />
+        </div>
+
+        {/* Mini Map - Hidden on mobile */}
+        {!isMobile && (
+          <div className="w-56 flex-shrink-0">
+            <RoadmapMiniMap
+              nodes={tree.nodes}
+              progress={progress}
+              nextRecommendedId={nextRecommendedId}
+              expandedNodes={expandedNodes}
+              onNodeClick={handleMiniMapNodeClick}
+            />
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );
