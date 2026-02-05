@@ -65,6 +65,7 @@ import QuizHistoryDetail from "@/components/library/QuizHistoryDetail";
   } from "recharts";
 import WeakAreasAnalysis from "@/components/library/WeakAreasAnalysis";
 import QuizResultExport from "@/components/library/QuizResultExport";
+import StudyPlanRecommendations from "@/components/library/StudyPlanRecommendations";
  interface QuizResult {
    id: string;
    quiz_type: string;
@@ -635,8 +636,11 @@ const ACHIEVEMENTS: Achievement[] = [
           </CardContent>
          </Card>
 
-        {/* Weak Areas Analysis */}
-        <WeakAreasAnalysis />
+        {/* Weak Areas Analysis & Study Plan */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <WeakAreasAnalysis />
+          <StudyPlanRecommendations />
+        </div>
 
        {/* Performance Chart */}
        {chartData.length > 1 && (
