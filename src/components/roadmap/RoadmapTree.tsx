@@ -17,16 +17,24 @@ import {
   Award,
   ChevronUp,
   Zap,
+  GripVertical,
+  LayoutGrid,
+  List,
 } from "lucide-react";
+import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import RoadmapNode from "./RoadmapNode";
+import DraggableNode from "./DraggableNode";
 import RoadmapNodeDetail from "./RoadmapNodeDetail";
 import RoadmapToolbar from "./RoadmapToolbar";
 import RoadmapMiniMap from "./RoadmapMiniMap";
 import RoadmapCertificate from "./RoadmapCertificate";
 import RoadmapSectionHeader from "./RoadmapSectionHeader";
+import RoadmapLegend from "./RoadmapLegend";
+import HorizontalBranch from "./HorizontalBranch";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoadmapConfetti } from "@/hooks/useRoadmapConfetti";
 import { useAuth } from "@/contexts/AuthContext";
@@ -147,12 +155,23 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => loadCollapsedSections(tree.id));
   const [selectedNode, setSelectedNode] = useState<NodeType | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>('vertical');
+  const [isDragEnabled, setIsDragEnabled] = useState(false);
   const treeRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const isMobile = useIsMobile();
   const { celebrateTopic, celebrateSection, trackProgress, resetCelebrations } = useRoadmapConfetti();
   const prevProgressRef = useRef<Record<string, { completed: boolean; inProgress: boolean }>>({});
   const prevSectionStatsRef = useRef<Record<string, number>>({});
+  
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
   
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -730,6 +749,9 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
             </div>
           </motion.div>
 
+          {/* Legend */}
+          <RoadmapLegend />
+
           {/* Search & Filter Toolbar */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
             <RoadmapToolbar
@@ -743,8 +765,53 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
               totalCount={allNodes.length}
             />
             
-            {/* Expand/Collapse All Sections */}
-            <div className="flex items-center gap-2">
+            {/* View Controls */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Layout Mode Toggle */}
+              <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border border-border/50">
+                <button
+                  onClick={() => setLayoutMode('vertical')}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all",
+                    layoutMode === 'vertical' 
+                      ? "bg-background text-foreground shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <List className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">List</span>
+                </button>
+                <button
+                  onClick={() => setLayoutMode('horizontal')}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all",
+                    layoutMode === 'horizontal' 
+                      ? "bg-background text-foreground shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Cards</span>
+                </button>
+              </div>
+
+              {/* Drag Reorder Toggle */}
+              <button
+                onClick={() => setIsDragEnabled(!isDragEnabled)}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                  isDragEnabled 
+                    ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700" 
+                    : "bg-muted/50 text-muted-foreground border-border/50 hover:text-foreground hover:bg-muted"
+                )}
+              >
+                <GripVertical className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{isDragEnabled ? "Done Reordering" : "Reorder"}</span>
+              </button>
+
+              <span className="text-muted-foreground/30 hidden sm:inline">|</span>
+
+              {/* Expand/Collapse All Sections */}
               <button
                 onClick={() => setCollapsedSections(new Set())}
                 className="text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-muted/50"
@@ -761,7 +828,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
             </div>
           </div>
 
-          {/* Tree Visualization - Enhanced with Section Headers */}
+          {/* Tree Visualization - Layout Mode Dependent */}
           <div className="relative py-2">
             {/* Decorative background pattern */}
             <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
@@ -771,10 +838,66 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
               }} />
             </div>
             
-            {/* Sections with Headers */}
-            <div className="space-y-2 relative">
-              {tree.nodes.map((node, index) => renderSection(node, index))}
-            </div>
+            {layoutMode === 'horizontal' ? (
+              /* Horizontal Card Layout */
+              <div className="space-y-6 relative">
+                {tree.nodes.map((node, index) => {
+                  if (!isNodeVisible(node)) return null;
+                  const isCollapsed = collapsedSections.has(node.id);
+                  const sectionStats = getSectionStats(node);
+                  
+                  return (
+                    <div key={node.id}>
+                      <RoadmapSectionHeader
+                        phase={index + 1}
+                        title={node.title}
+                        description={node.description}
+                        completed={sectionStats.completed}
+                        total={sectionStats.total}
+                        isCollapsed={isCollapsed}
+                        onToggle={() => toggleSection(node.id)}
+                      />
+                      
+                      <AnimatePresence initial={false}>
+                        {!isCollapsed && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                          >
+                            {/* Main node as horizontal card */}
+                            <HorizontalBranch
+                              nodes={[node]}
+                              progress={progress}
+                              onNodeClick={handleNodeClick}
+                              onNodeComplete={handleComplete}
+                            />
+                            
+                            {/* Children as horizontal scrollable cards */}
+                            {node.children && node.children.length > 0 && (
+                              <HorizontalBranch
+                                nodes={node.children}
+                                progress={progress}
+                                onNodeClick={handleNodeClick}
+                                onNodeComplete={handleComplete}
+                                title="Topics"
+                              />
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Vertical List Layout */
+              <div className="space-y-2 relative">
+                {tree.nodes.map((node, index) => renderSection(node, index))}
+              </div>
+            )}
           </div>
 
           {/* No Results */}
