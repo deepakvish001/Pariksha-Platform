@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Merge, ArrowRight, Shuffle, ArrowUp, ArrowDown, Undo2, Redo2, Share2, Copy, Check, Link2 } from "lucide-react";
+import { Merge, ArrowRight, Shuffle, ArrowUp, ArrowDown, Undo2, Redo2, Share2, Copy, Check, Link2, Eye } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { SavedPath } from "@/hooks/useSavedPaths";
 import { toast } from "@/hooks/use-toast";
+import PathPreviewThumbnail from "./PathPreviewThumbnail";
 
 type MergeStrategy = "interleave" | "prioritize-first" | "prioritize-second";
 
@@ -544,12 +545,24 @@ const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
           )}
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex-col gap-3">
           {mergedPath ? (
-            <>
-              {/* Success state - Show share options */}
-              <div className="flex-1 flex items-center gap-2 mr-auto">
-                <div className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
+            <div className="w-full space-y-3">
+              {/* Path Preview Thumbnail */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Eye className="h-3.5 w-3.5" />
+                  <span>Path Preview</span>
+                </div>
+                <PathPreviewThumbnail
+                  customOrders={mergedPath.customOrders}
+                  className="h-20"
+                />
+              </div>
+
+              {/* Success message and share options */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400 shrink-0">
                   <Check className="h-4 w-4" />
                   <span className="font-medium">Merged!</span>
                 </div>
@@ -587,8 +600,11 @@ const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
                   )}
                 </div>
               </div>
-              <Button onClick={handleDone}>Done</Button>
-            </>
+
+              <div className="flex justify-end">
+                <Button onClick={handleDone}>Done</Button>
+              </div>
+            </div>
           ) : (
             <>
               <Button variant="outline" onClick={() => setIsOpen(false)}>
