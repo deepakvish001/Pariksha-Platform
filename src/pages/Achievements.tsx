@@ -22,12 +22,13 @@ import AchievementLeaderboard from "@/components/AchievementLeaderboard";
 import StreakLeaderboard from "@/components/StreakLeaderboard";
 import AchievementComparison from "@/components/AchievementComparison";
  
- const categories = [
-   { id: "all", label: "All", icon: Trophy },
-   { id: "topics", label: "Learning", icon: Star },
-   { id: "streak", label: "Streaks", icon: Flame },
-   { id: "quiz", label: "Quizzes", icon: Target },
- ];
+const categories = [
+  { id: "all", label: "All", icon: Trophy },
+  { id: "topics", label: "Learning", icon: Star },
+  { id: "streak", label: "Streaks", icon: Flame },
+  { id: "quiz", label: "Quizzes", icon: Target },
+  { id: "fundamentals", label: "Fundamentals", icon: Zap },
+];
  
 
  const rarityFilters = [
@@ -39,11 +40,12 @@ import AchievementComparison from "@/components/AchievementComparison";
    { id: "common", label: "Common" },
  ];
  
- const getCategoryFromAchievement = (achievement: Achievement): string => {
-   if (achievement.requirement.type.startsWith("quiz")) return "quiz";
-   if (achievement.requirement.type === "streak_days") return "streak";
-   return "topics";
- };
+const getCategoryFromAchievement = (achievement: Achievement): string => {
+  if (achievement.requirement.type.startsWith("fundamentals")) return "fundamentals";
+  if (achievement.requirement.type.startsWith("quiz")) return "quiz";
+  if (achievement.requirement.type === "streak_days") return "streak";
+  return "topics";
+};
  
  const AchievementCard = ({
    achievement,
@@ -274,8 +276,8 @@ import AchievementComparison from "@/components/AchievementComparison";
          {/* Category Tabs */}
          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-             <TabsList className="grid w-full grid-cols-4 max-w-md">
-               {categories.map((cat) => (
+              <TabsList className="grid w-full grid-cols-5 max-w-lg">
+                {categories.map((cat) => (
                  <TabsTrigger key={cat.id} value={cat.id} className="flex items-center gap-1.5">
                    <cat.icon className="w-4 h-4" />
                    <span className="hidden sm:inline">{cat.label}</span>

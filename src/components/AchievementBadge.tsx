@@ -28,7 +28,7 @@ export interface Achievement {
   icon: keyof typeof iconMap;
   color: string;
   requirement: {
-    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics' | 'quiz_perfect_score' | 'quiz_speed_demon' | 'quiz_challenge_complete' | 'quiz_accuracy' | 'quiz_streak';
+    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics' | 'quiz_perfect_score' | 'quiz_speed_demon' | 'quiz_challenge_complete' | 'quiz_accuracy' | 'quiz_streak' | 'fundamentals_quiz_count' | 'fundamentals_accuracy' | 'fundamentals_mastery';
     value: number;
   };
 }
@@ -204,6 +204,63 @@ export const achievements: Achievement[] = [
     icon: 'crown',
     color: 'from-yellow-400 to-amber-500',
     requirement: { type: 'quiz_perfect_score', value: 3 }
+  },
+  // Fundamentals Quiz Achievements
+  {
+    id: 'fundamentals_first_quiz',
+    name: 'Code Explorer',
+    description: 'Complete your first Language or OOPs quiz',
+    icon: 'rocket',
+    color: 'from-cyan-500 to-blue-500',
+    requirement: { type: 'fundamentals_quiz_count', value: 1 }
+  },
+  {
+    id: 'fundamentals_quiz_5',
+    name: 'Fundamentals Fan',
+    description: 'Complete 5 Language or OOPs quizzes',
+    icon: 'book',
+    color: 'from-blue-500 to-indigo-500',
+    requirement: { type: 'fundamentals_quiz_count', value: 5 }
+  },
+  {
+    id: 'fundamentals_quiz_20',
+    name: 'Core Expert',
+    description: 'Complete 20 Language or OOPs quizzes',
+    icon: 'graduation',
+    color: 'from-indigo-500 to-purple-500',
+    requirement: { type: 'fundamentals_quiz_count', value: 20 }
+  },
+  {
+    id: 'fundamentals_accuracy_80',
+    name: 'Fundamentals Pro',
+    description: 'Achieve 80%+ accuracy in 5 fundamentals quizzes',
+    icon: 'target',
+    color: 'from-emerald-500 to-teal-500',
+    requirement: { type: 'fundamentals_accuracy', value: 5 }
+  },
+  {
+    id: 'fundamentals_accuracy_90',
+    name: 'Code Virtuoso',
+    description: 'Achieve 90%+ accuracy in 10 fundamentals quizzes',
+    icon: 'star',
+    color: 'from-amber-500 to-orange-500',
+    requirement: { type: 'fundamentals_accuracy', value: 10 }
+  },
+  {
+    id: 'fundamentals_perfect',
+    name: 'Flawless Fundamentals',
+    description: 'Get a perfect score in a fundamentals quiz',
+    icon: 'sparkles',
+    color: 'from-pink-500 to-rose-500',
+    requirement: { type: 'fundamentals_mastery', value: 1 }
+  },
+  {
+    id: 'fundamentals_master',
+    name: 'Fundamentals Master',
+    description: 'Get perfect scores in both Language and OOPs quizzes',
+    icon: 'crown',
+    color: 'from-yellow-500 to-amber-600',
+    requirement: { type: 'fundamentals_mastery', value: 2 }
   },
 ];
 

@@ -93,6 +93,7 @@ const libraryItems = [
 ];
 
 const fundamentalsItems = [
+  { title: "Overview", url: "/fundamentals", icon: TrendingUp },
   { title: "Language", url: "/fundamentals/language", icon: Code2 },
   { title: "OOPs Concepts", url: "/fundamentals/oops", icon: FolderOpen },
 ];

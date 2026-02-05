@@ -8,21 +8,29 @@
    earned_at: string;
  }
  
- interface AchievementProgress {
-   topicsCompleted: number;
-   streakDays: number;
-   revisionTopics: number;
-   quizResults: {
-     total: number;
-     hardCount: number;
-     highAccuracyCount: number;
-     hasPerfectScore: boolean;
-     hasSpeedDemon: boolean;
-     hasChallenge: boolean;
-     perfectByType: Set<string>;
-     quizStreak: number;
-   };
- }
+interface AchievementProgress {
+  topicsCompleted: number;
+  streakDays: number;
+  revisionTopics: number;
+  quizResults: {
+    total: number;
+    hardCount: number;
+    highAccuracyCount: number;
+    hasPerfectScore: boolean;
+    hasSpeedDemon: boolean;
+    hasChallenge: boolean;
+    perfectByType: Set<string>;
+    quizStreak: number;
+  };
+  fundamentalsQuizResults: {
+    total: number;
+    highAccuracyCount: number;
+    veryHighAccuracyCount: number;
+    hasPerfectScore: boolean;
+    hasLanguagePerfect: boolean;
+    hasOopsPerfect: boolean;
+  };
+}
  
  export function useUserAchievements() {
    const { user } = useAuth();
@@ -87,45 +95,68 @@
          }
        }
  
-       // Calculate quiz stats
-       const hardCount = quizResults.filter((r) => r.difficulty === "Hard").length;
-       const highAccuracyCount = quizResults.filter((r) => r.accuracy >= 80).length;
-       const hasPerfectScore = quizResults.some((r) => r.accuracy === 100);
-       const hasSpeedDemon = quizResults.some((r) => r.avg_time_seconds < 15);
-       const hasChallenge = quizResults.some((r) => r.category?.includes("-"));
-       const perfectByType = new Set(
-         quizResults.filter((r) => r.accuracy === 100).map((r) => r.quiz_type)
-       );
- 
-       // Calculate quiz streak
-       const quizDates = quizResults.map((r) => new Date(r.completed_at).toDateString());
-       const uniqueQuizDates = [...new Set(quizDates)];
-       let quizStreak = 0;
-       for (let i = 0; i < uniqueQuizDates.length; i++) {
-         const checkDate = new Date(today);
-         checkDate.setDate(checkDate.getDate() - i);
-         if (uniqueQuizDates.includes(checkDate.toDateString())) {
-           quizStreak++;
-         } else {
-           break;
-         }
-       }
- 
-       setProgress({
-         topicsCompleted,
-         streakDays,
-         revisionTopics,
-         quizResults: {
-           total: quizResults.length,
-           hardCount,
-           highAccuracyCount,
-           hasPerfectScore,
-           hasSpeedDemon,
-           hasChallenge,
-           perfectByType,
-           quizStreak,
-         },
-       });
+        // Calculate quiz stats
+        const hardCount = quizResults.filter((r) => r.difficulty === "Hard").length;
+        const highAccuracyCount = quizResults.filter((r) => r.accuracy >= 80).length;
+        const hasPerfectScore = quizResults.some((r) => r.accuracy === 100);
+        const hasSpeedDemon = quizResults.some((r) => r.avg_time_seconds < 15);
+        const hasChallenge = quizResults.some((r) => r.category?.includes("-"));
+        const perfectByType = new Set(
+          quizResults.filter((r) => r.accuracy === 100).map((r) => r.quiz_type)
+        );
+
+        // Calculate quiz streak
+        const quizDates = quizResults.map((r) => new Date(r.completed_at).toDateString());
+        const uniqueQuizDates = [...new Set(quizDates)];
+        let quizStreak = 0;
+        for (let i = 0; i < uniqueQuizDates.length; i++) {
+          const checkDate = new Date(today);
+          checkDate.setDate(checkDate.getDate() - i);
+          if (uniqueQuizDates.includes(checkDate.toDateString())) {
+            quizStreak++;
+          } else {
+            break;
+          }
+        }
+
+        // Calculate fundamentals quiz stats (language-* and oops-*)
+        const fundamentalsQuizzes = quizResults.filter(
+          (r) => r.quiz_type.startsWith("language-") || r.quiz_type.startsWith("oops-")
+        );
+        const fundamentalsTotal = fundamentalsQuizzes.length;
+        const fundamentalsHighAccuracy = fundamentalsQuizzes.filter((r) => r.accuracy >= 80).length;
+        const fundamentalsVeryHighAccuracy = fundamentalsQuizzes.filter((r) => r.accuracy >= 90).length;
+        const fundamentalsHasPerfect = fundamentalsQuizzes.some((r) => r.accuracy === 100);
+        const hasLanguagePerfect = fundamentalsQuizzes.some(
+          (r) => r.quiz_type.startsWith("language-") && r.accuracy === 100
+        );
+        const hasOopsPerfect = fundamentalsQuizzes.some(
+          (r) => r.quiz_type.startsWith("oops-") && r.accuracy === 100
+        );
+
+        setProgress({
+          topicsCompleted,
+          streakDays,
+          revisionTopics,
+          quizResults: {
+            total: quizResults.length,
+            hardCount,
+            highAccuracyCount,
+            hasPerfectScore,
+            hasSpeedDemon,
+            hasChallenge,
+            perfectByType,
+            quizStreak,
+          },
+          fundamentalsQuizResults: {
+            total: fundamentalsTotal,
+            highAccuracyCount: fundamentalsHighAccuracy,
+            veryHighAccuracyCount: fundamentalsVeryHighAccuracy,
+            hasPerfectScore: fundamentalsHasPerfect,
+            hasLanguagePerfect,
+            hasOopsPerfect,
+          },
+        });
      } catch (error) {
        console.error("Error fetching achievements:", error);
      } finally {
@@ -163,8 +194,24 @@
          return { current: progress.quizResults.hasChallenge ? 1 : 0, target: 1 };
        case "quiz_accuracy":
          return { current: Math.min(progress.quizResults.highAccuracyCount, value), target: value };
-       case "quiz_streak":
-         return { current: Math.min(progress.quizResults.quizStreak, value), target: value };
+      case "quiz_streak":
+        return { current: Math.min(progress.quizResults.quizStreak, value), target: value };
+      case "fundamentals_quiz_count":
+        return { current: Math.min(progress.fundamentalsQuizResults.total, value), target: value };
+      case "fundamentals_accuracy":
+        if (value === 5) {
+          return { current: Math.min(progress.fundamentalsQuizResults.highAccuracyCount, value), target: value };
+        }
+        return { current: Math.min(progress.fundamentalsQuizResults.veryHighAccuracyCount, value), target: value };
+      case "fundamentals_mastery":
+        if (value === 1) {
+          return { current: progress.fundamentalsQuizResults.hasPerfectScore ? 1 : 0, target: 1 };
+        }
+        // For fundamentals_master (value: 2), need both language and oops perfect
+        let masteryCount = 0;
+        if (progress.fundamentalsQuizResults.hasLanguagePerfect) masteryCount++;
+        if (progress.fundamentalsQuizResults.hasOopsPerfect) masteryCount++;
+        return { current: masteryCount, target: 2 };
        default:
          return { current: 0, target: value };
      }
