@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   History,
   Plus,
@@ -10,12 +10,20 @@ import {
   Redo2,
   Clock,
   X,
+  Filter,
 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +92,14 @@ const PathHistoryPanel: React.FC<PathHistoryPanelProps> = ({
   onClear,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [filterType, setFilterType] = useState<PathOperationType | "all">("all");
+
+  const filteredOperations = useMemo(() => {
+    if (filterType === "all") return operations;
+    return operations.filter((op) => op.type === filterType);
+  }, [operations, filterType]);
+
+  const activeFilterCount = filterType !== "all" ? 1 : 0;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -111,22 +127,63 @@ const PathHistoryPanel: React.FC<PathHistoryPanelProps> = ({
             <History className="h-4 w-4" />
             Recent Operations
           </h4>
-          {operations.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs text-muted-foreground hover:text-foreground"
-              onClick={onClear}
-            >
-              Clear
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {operations.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                onClick={onClear}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
         </div>
 
-        <ScrollArea className="h-[300px]">
-          {operations.length > 0 ? (
+        {/* Filter */}
+        {operations.length > 0 && (
+          <div className="px-3 py-2 border-b">
+            <div className="flex items-center gap-2">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select
+                value={filterType}
+                onValueChange={(value) => setFilterType(value as PathOperationType | "all")}
+              >
+                <SelectTrigger className="h-7 text-xs flex-1">
+                  <SelectValue placeholder="All operations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All operations</SelectItem>
+                  <SelectItem value="create">Created</SelectItem>
+                  <SelectItem value="delete">Deleted</SelectItem>
+                  <SelectItem value="activate">Activated</SelectItem>
+                  <SelectItem value="deactivate">Deactivated</SelectItem>
+                  <SelectItem value="update">Updated</SelectItem>
+                  <SelectItem value="duplicate">Duplicated</SelectItem>
+                  <SelectItem value="merge">Merged</SelectItem>
+                  <SelectItem value="undo-merge">Undo Merge</SelectItem>
+                  <SelectItem value="redo-merge">Redo Merge</SelectItem>
+                </SelectContent>
+              </Select>
+              {activeFilterCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setFilterType("all")}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <ScrollArea className="h-[260px]">
+          {filteredOperations.length > 0 ? (
             <div className="p-2 space-y-1">
-              {operations.map((op) => {
+              {filteredOperations.map((op) => {
                 const config = operationConfig[op.type];
                 const Icon = config.icon;
 
@@ -164,6 +221,14 @@ const PathHistoryPanel: React.FC<PathHistoryPanelProps> = ({
                   </div>
                 );
               })}
+            </div>
+          ) : operations.length > 0 ? (
+            <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
+              <Filter className="h-10 w-10 mb-3 opacity-30" />
+              <p className="text-sm font-medium">No matching operations</p>
+              <p className="text-xs mt-1">
+                Try a different filter
+              </p>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
