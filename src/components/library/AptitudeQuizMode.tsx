@@ -18,6 +18,8 @@ import { Link } from "react-router-dom";
    Sparkles,
    Medal,
   History,
+  Timer,
+  Swords,
  } from "lucide-react";
  import { Button } from "@/components/ui/button";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +84,7 @@ import { Link } from "react-router-dom";
    icon: React.ReactNode;
    config: QuizConfig;
    color: string;
+  isChallenge?: boolean;
  }
  
  const QUIZ_PRESETS: QuizPreset[] = [
@@ -127,6 +130,36 @@ import { Link } from "react-router-dom";
    },
  ];
  
+const TIMED_CHALLENGES: QuizPreset[] = [
+  {
+    id: "easy-sprint",
+    name: "Easy Sprint Challenge",
+    description: "10 easy questions, race against time!",
+    icon: <Timer className="h-5 w-5" />,
+    config: { questionCount: 10, timePerQuestion: 20, category: "all", difficulty: "Easy" },
+    color: "from-emerald-500/20 to-teal-500/20 border-emerald-500/30",
+    isChallenge: true,
+  },
+  {
+    id: "medium-blitz",
+    name: "Medium Blitz",
+    description: "15 medium questions, 25s each - compete globally!",
+    icon: <Swords className="h-5 w-5" />,
+    config: { questionCount: 15, timePerQuestion: 25, category: "all", difficulty: "Medium" },
+    color: "from-amber-500/20 to-orange-500/20 border-amber-500/30",
+    isChallenge: true,
+  },
+  {
+    id: "hard-gauntlet",
+    name: "Hard Gauntlet",
+    description: "20 hard questions - ultimate leaderboard challenge!",
+    icon: <Trophy className="h-5 w-5" />,
+    config: { questionCount: 20, timePerQuestion: 45, category: "all", difficulty: "Hard" },
+    color: "from-red-500/20 to-rose-500/20 border-red-500/30",
+    isChallenge: true,
+  },
+];
+
  const AptitudeQuizMode: React.FC<AptitudeQuizModeProps> = ({
    questions,
    onClose,
@@ -148,6 +181,8 @@ import { Link } from "react-router-dom";
    const [isPaused, setIsPaused] = useState(false);
    const [results, setResults] = useState<QuizResult[]>([]);
    const [questionStartTime, setQuestionStartTime] = useState(0);
+  const [isChallengeMode, setIsChallengeMode] = useState(false);
+  const [challengeId, setChallengeId] = useState<string | null>(null);
  
    // Filter and shuffle questions based on config
    const prepareQuiz = useCallback(() => {
@@ -248,6 +283,8 @@ import { Link } from "react-router-dom";
  
    const startPreset = (preset: QuizPreset) => {
      setConfig(preset.config);
+    setIsChallengeMode(preset.isChallenge || false);
+    setChallengeId(preset.isChallenge ? preset.id : null);
      setTimeout(() => prepareQuiz(), 0);
    };
  
@@ -261,11 +298,51 @@ import { Link } from "react-router-dom";
    if (phase === "config") {
      return (
        <div className="space-y-6">
+        {/* Timed Challenges Section */}
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Swords className="h-5 w-5 text-primary" />
+              Timed Challenges
+              <Badge variant="secondary" className="ml-2">Global Leaderboard</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Compete against other players! Your total time and accuracy determine your rank.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {TIMED_CHALLENGES.map((preset) => (
+                <button
+                  key={preset.id}
+                  onClick={() => startPreset(preset)}
+                  className={cn(
+                    "p-4 rounded-lg border text-left transition-all hover:scale-[1.02] active:scale-[0.98]",
+                    "bg-gradient-to-br relative overflow-hidden",
+                    preset.color
+                  )}
+                >
+                  <div className="absolute top-2 right-2">
+                    <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+                      Ranked
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    {preset.icon}
+                    <span className="font-semibold">{preset.name}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{preset.description}</p>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
          <Card className="border-primary/20 bg-card/80 backdrop-blur">
          <CardHeader>
            <CardTitle className="flex items-center gap-2">
              <Zap className="h-5 w-5 text-primary" />
-               Quick Start Presets
+              Practice Quizzes
            </CardTitle>
          </CardHeader>
            <CardContent>
@@ -395,7 +472,7 @@ import { Link } from "react-router-dom";
        </Card>
  
          {user && (
-           <QuizLeaderboard quizType="aptitude" currentUserId={user.id} />
+          <QuizLeaderboard quizType="aptitude" currentUserId={user.id} challengeId={challengeId} />
          )}
        </div>
      );
@@ -493,6 +570,8 @@ import { Link } from "react-router-dom";
                  setPhase("config");
                  setResults([]);
                  setShowLeaderboard(false);
+              setIsChallengeMode(false);
+              setChallengeId(null);
                }}
                className="flex-1 gap-2"
              >
@@ -518,7 +597,7 @@ import { Link } from "react-router-dom";
            </div>
            
            {showLeaderboard && user && (
-             <QuizLeaderboard quizType="aptitude" currentUserId={user.id} />
+          <QuizLeaderboard quizType="aptitude" currentUserId={user.id} challengeId={challengeId} />
            )}
          </CardContent>
        </Card>
