@@ -402,26 +402,32 @@ export type Database = {
         Row: {
           created_at: string
           daily_target: number
+          daily_xp_target: number | null
           id: string
           updated_at: string
           user_id: string
           weekly_target: number
+          weekly_xp_target: number | null
         }
         Insert: {
           created_at?: string
           daily_target?: number
+          daily_xp_target?: number | null
           id?: string
           updated_at?: string
           user_id: string
           weekly_target?: number
+          weekly_xp_target?: number | null
         }
         Update: {
           created_at?: string
           daily_target?: number
+          daily_xp_target?: number | null
           id?: string
           updated_at?: string
           user_id?: string
           weekly_target?: number
+          weekly_xp_target?: number | null
         }
         Relationships: []
       }
@@ -662,6 +668,18 @@ export type Database = {
           full_name: string | null
           revision_count: number | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      xp_leaderboard_view: {
+        Row: {
+          avatar_url: string | null
+          current_level: number | null
+          full_name: string | null
+          total_xp: number | null
+          user_id: string | null
+          username: string | null
+          xp_this_week: number | null
         }
         Relationships: []
       }
