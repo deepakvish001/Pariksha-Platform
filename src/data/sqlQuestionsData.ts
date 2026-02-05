@@ -1736,7 +1736,13 @@
  LEFT JOIN enrollments e ON c.id = e.course_id
  GROUP BY c.id, c.title;
  \`\`\``,
-   },
+    options: [
+      { text: "Junction table with foreign keys to both tables", isCorrect: true },
+      { text: "Add array column to store multiple IDs", isCorrect: false },
+      { text: "Create duplicate rows for each relationship", isCorrect: false },
+      { text: "Use a single foreign key column", isCorrect: false },
+    ],
+  },
    {
      id: 35,
      title: "What is the LAG and LEAD function?",
@@ -1783,6 +1789,12 @@
      ) as growth_percent
  FROM monthly_revenue;
  \`\`\``,
+    options: [
+      { text: "LAG: previous row; LEAD: next row values", isCorrect: true },
+      { text: "LAG: first row; LEAD: last row", isCorrect: false },
+      { text: "Both access the current row only", isCorrect: false },
+      { text: "LAG: sum; LEAD: average of values", isCorrect: false },
+    ],
    },
    {
      id: 36,
@@ -1824,6 +1836,12 @@
  
  ### Dynamic Pivot (Advanced)
  Requires dynamic SQL since column names aren't known at compile time.`,
+    options: [
+      { text: "CASE with aggregation or PIVOT operator", isCorrect: true },
+      { text: "Use UNION to combine columns", isCorrect: false },
+      { text: "Create separate tables for each column", isCorrect: false },
+      { text: "Apply GROUP BY on all columns", isCorrect: false },
+    ],
    },
    {
      id: 37,
@@ -1866,6 +1884,12 @@
  - **READ COMMITTED**: Default, good balance (PostgreSQL default)
  - **SERIALIZABLE**: Financial transactions, critical consistency
  - **READ UNCOMMITTED**: Rarely used, only for approximate counts`,
+    options: [
+      { text: "READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ, SERIALIZABLE", isCorrect: true },
+      { text: "LOW, MEDIUM, HIGH, CRITICAL", isCorrect: false },
+      { text: "OPEN, CLOSED, PENDING, COMPLETE", isCorrect: false },
+      { text: "PUBLIC, PRIVATE, PROTECTED, INTERNAL", isCorrect: false },
+    ],
    },
    {
      id: 38,
@@ -1918,6 +1942,12 @@
  FROM daily_sales
  HAVING gap_days > 0;
  \`\`\``,
+    options: [
+      { text: "LAG/LEAD window functions or self-join comparison", isCorrect: true },
+      { text: "Use COUNT(*) to find missing values", isCorrect: false },
+      { text: "GROUP BY with HAVING clause", isCorrect: false },
+      { text: "Simple WHERE clause filtering", isCorrect: false },
+    ],
    },
    {
      id: 39,
@@ -1976,6 +2006,12 @@
  )
  SELECT * FROM running;
  \`\`\``,
+    options: [
+      { text: "WITH RECURSIVE with anchor and recursive members", isCorrect: true },
+      { text: "Regular CTE with UNION", isCorrect: false },
+      { text: "Nested subqueries", isCorrect: false },
+      { text: "Self-join with LIMIT", isCorrect: false },
+    ],
    },
    {
      id: 40,
@@ -2016,6 +2052,12 @@
  **VARCHAR**: Variable-length data
  - Names, emails, addresses
  - Most text fields`,
+    options: [
+      { text: "CHAR: fixed-length padded; VARCHAR: variable-length", isCorrect: true },
+      { text: "CHAR is faster for all cases", isCorrect: false },
+      { text: "VARCHAR always uses more storage", isCorrect: false },
+      { text: "They are identical in behavior", isCorrect: false },
+    ],
    },
    {
      id: 41,
@@ -2025,6 +2067,12 @@
      categoryId: "basics",
      type: "conceptual",
      answer: "## DELETE vs TRUNCATE vs DROP\n\n| Command | Removes | Rollback | WHERE | Speed |\n|---------|---------|----------|-------|-------|\n| DELETE | Rows | Yes | Yes | Slow |\n| TRUNCATE | All Rows | No* | No | Fast |\n| DROP | Table | No | N/A | Instant |\n\n### DELETE\n```sql\nDELETE FROM orders WHERE status = 'cancelled';\n```\n\n### TRUNCATE\n```sql\nTRUNCATE TABLE temp_data;\n```\n\n### DROP\n```sql\nDROP TABLE IF EXISTS old_backups;\n```",
+    options: [
+      { text: "DELETE: rows; TRUNCATE: all rows; DROP: entire table", isCorrect: true },
+      { text: "All three do the same thing", isCorrect: false },
+      { text: "DROP only removes data not structure", isCorrect: false },
+      { text: "TRUNCATE can filter with WHERE", isCorrect: false },
+    ],
    },
    {
      id: 42,
@@ -2034,6 +2082,12 @@
      categoryId: "basics",
      type: "query",
      answer: "## SQL Aliases\n\n### Column Aliases\n```sql\nSELECT first_name AS \"First Name\", salary * 12 AS annual_salary FROM employees;\n```\n\n### Table Aliases\n```sql\nSELECT e.name, d.department_name FROM employees e JOIN departments d ON e.dept_id = d.id;\n```",
+    options: [
+      { text: "Temporary name for table or column in a query", isCorrect: true },
+      { text: "A permanent rename of the table", isCorrect: false },
+      { text: "A type of database index", isCorrect: false },
+      { text: "A stored procedure parameter", isCorrect: false },
+    ],
    },
    {
      id: 43,
@@ -2043,6 +2097,12 @@
      categoryId: "basics",
      type: "query",
      answer: "## UNION vs UNION ALL\n\n| Feature | UNION | UNION ALL |\n|---------|-------|----------|\n| Duplicates | Removed | Kept |\n| Performance | Slower | Faster |\n\n```sql\nSELECT city FROM customers UNION SELECT city FROM suppliers;\nSELECT city FROM customers UNION ALL SELECT city FROM suppliers;\n```",
+    options: [
+      { text: "UNION removes duplicates; UNION ALL keeps them", isCorrect: true },
+      { text: "UNION ALL is slower than UNION", isCorrect: false },
+      { text: "They produce identical results", isCorrect: false },
+      { text: "UNION keeps duplicates; UNION ALL removes them", isCorrect: false },
+    ],
    },
    {
      id: 44,
@@ -2052,6 +2112,12 @@
      categoryId: "basics",
      type: "query",
      answer: "## DISTINCT Keyword\n\n```sql\nSELECT DISTINCT country FROM customers;\nSELECT COUNT(DISTINCT category) FROM products;\n```",
+    options: [
+      { text: "Eliminates duplicate rows from results", isCorrect: true },
+      { text: "Sorts results in ascending order", isCorrect: false },
+      { text: "Filters NULL values", isCorrect: false },
+      { text: "Groups rows by column", isCorrect: false },
+    ],
    },
    {
      id: 45,
@@ -2061,6 +2127,12 @@
      categoryId: "basics",
      type: "query",
      answer: "## ORDER BY Clause\n\n```sql\nSELECT * FROM products ORDER BY price DESC;\nSELECT * FROM products ORDER BY category ASC, price DESC;\nSELECT * FROM employees ORDER BY manager_id NULLS FIRST;\n```",
+    options: [
+      { text: "Sorts query results by one or more columns", isCorrect: true },
+      { text: "Groups rows for aggregation", isCorrect: false },
+      { text: "Filters rows based on condition", isCorrect: false },
+      { text: "Limits the number of results", isCorrect: false },
+    ],
    },
    {
      id: 46,
@@ -2070,6 +2142,12 @@
      categoryId: "basics",
      type: "query",
      answer: "## LIMIT Clause\n\n```sql\nSELECT * FROM products ORDER BY sales DESC LIMIT 10;\nSELECT * FROM products ORDER BY id LIMIT 10 OFFSET 10; -- Page 2\n```",
+    options: [
+      { text: "Restricts number of rows returned", isCorrect: true },
+      { text: "Removes duplicate rows", isCorrect: false },
+      { text: "Sorts results by column", isCorrect: false },
+      { text: "Filters rows by condition", isCorrect: false },
+    ],
    },
    {
      id: 47,
@@ -2079,6 +2157,12 @@
      categoryId: "basics",
      type: "conceptual",
      answer: "## SQL Views\n\n```sql\nCREATE VIEW active_customers AS\nSELECT id, name, email FROM customers WHERE status = 'active';\n\nSELECT * FROM active_customers;\n```\n\n**Benefits**: Simplicity, Security, Consistency",
+    options: [
+      { text: "Virtual table based on a SELECT query", isCorrect: true },
+      { text: "A physical copy of a table", isCorrect: false },
+      { text: "A type of index", isCorrect: false },
+      { text: "A temporary variable", isCorrect: false },
+    ],
    },
    {
      id: 48,
@@ -2088,6 +2172,12 @@
      categoryId: "basics",
      type: "conceptual",
      answer: "## Stored Procedures\n\n```sql\nCREATE OR REPLACE PROCEDURE transfer_funds(sender_id INT, receiver_id INT, amount DECIMAL)\nLANGUAGE plpgsql AS $$\nBEGIN\n    UPDATE accounts SET balance = balance - amount WHERE id = sender_id;\n    UPDATE accounts SET balance = balance + amount WHERE id = receiver_id;\n    COMMIT;\nEND;\n$$;\n\nCALL transfer_funds(1, 2, 100.00);\n```",
+    options: [
+      { text: "Precompiled SQL code stored in database", isCorrect: true },
+      { text: "A type of database table", isCorrect: false },
+      { text: "An index optimization technique", isCorrect: false },
+      { text: "A backup mechanism", isCorrect: false },
+    ],
    },
    {
      id: 49,
@@ -2097,6 +2187,12 @@
      categoryId: "basics",
      type: "conceptual",
      answer: "## SQL Triggers\n\n```sql\nCREATE TRIGGER users_audit\nAFTER INSERT OR UPDATE OR DELETE ON users\nFOR EACH ROW EXECUTE FUNCTION audit_changes();\n```\n\n**Use Cases**: Audit trails, validation, auto-update timestamps",
+    options: [
+      { text: "Auto-executes on INSERT/UPDATE/DELETE events", isCorrect: true },
+      { text: "A type of constraint", isCorrect: false },
+      { text: "A scheduled job", isCorrect: false },
+      { text: "A view definition", isCorrect: false },
+    ],
    },
    {
      id: 50,
@@ -2106,6 +2202,12 @@
      categoryId: "basics",
      type: "conceptual",
      answer: "## Materialized Views\n\n```sql\nCREATE MATERIALIZED VIEW monthly_report AS\nSELECT DATE_TRUNC('month', date) AS month, SUM(amount) FROM orders GROUP BY 1;\n\nREFRESH MATERIALIZED VIEW monthly_report;\nREFRESH MATERIALIZED VIEW CONCURRENTLY monthly_report;\n```",
+    options: [
+      { text: "Stores query results physically, needs refresh", isCorrect: true },
+      { text: "Same as regular view", isCorrect: false },
+      { text: "Updates automatically in real-time", isCorrect: false },
+      { text: "Cannot be queried directly", isCorrect: false },
+    ],
    },
    {
      id: 51,
@@ -2115,6 +2217,12 @@
      categoryId: "filtering",
      type: "query",
      answer: "## IN Operator\n\n```sql\nSELECT * FROM products WHERE category IN ('Electronics', 'Clothing');\nSELECT * FROM orders WHERE status NOT IN ('cancelled', 'refunded');\nSELECT * FROM customers WHERE id IN (SELECT customer_id FROM orders);\n```",
+    options: [
+      { text: "Tests if value matches any in a list or subquery", isCorrect: true },
+      { text: "Checks if value is between two values", isCorrect: false },
+      { text: "Performs pattern matching", isCorrect: false },
+      { text: "Joins two tables", isCorrect: false },
+    ],
    },
    {
      id: 52,
@@ -2124,6 +2232,12 @@
      categoryId: "filtering",
      type: "query",
      answer: "## BETWEEN Operator\n\n```sql\nSELECT * FROM products WHERE price BETWEEN 10 AND 50;\nSELECT * FROM orders WHERE order_date BETWEEN '2024-01-01' AND '2024-01-31';\n```",
+    options: [
+      { text: "Filters values within an inclusive range", isCorrect: true },
+      { text: "Checks if value is in a list", isCorrect: false },
+      { text: "Performs pattern matching", isCorrect: false },
+      { text: "Excludes the boundary values", isCorrect: false },
+    ],
    },
    {
      id: 53,
@@ -2133,6 +2247,12 @@
      categoryId: "filtering",
      type: "query",
      answer: "## LIKE Pattern Matching\n\n```sql\nSELECT * FROM users WHERE name LIKE 'John%';  -- Starts with\nSELECT * FROM users WHERE name LIKE '%son';   -- Ends with\nSELECT * FROM users WHERE name ILIKE '%john%'; -- Case insensitive\n```",
+    options: [
+      { text: "% matches any sequence, _ matches one character", isCorrect: true },
+      { text: "* matches any, ? matches one", isCorrect: false },
+      { text: "Uses regular expressions", isCorrect: false },
+      { text: "Only matches exact values", isCorrect: false },
+    ],
    },
    {
      id: 54,
@@ -2142,6 +2262,12 @@
      categoryId: "filtering",
      type: "query",
      answer: "## EXISTS Operator\n\n```sql\nSELECT * FROM customers c\nWHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);\n\nSELECT * FROM customers c\nWHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);\n```",
+    options: [
+      { text: "Returns TRUE if subquery returns any rows", isCorrect: true },
+      { text: "Returns the count of matching rows", isCorrect: false },
+      { text: "Same as IN operator", isCorrect: false },
+      { text: "Checks if column exists in table", isCorrect: false },
+    ],
    },
    {
      id: 55,
@@ -2151,6 +2277,12 @@
      categoryId: "filtering",
      type: "query",
      answer: "## CASE Expressions\n\n```sql\nSELECT name,\n    CASE\n        WHEN salary >= 100000 THEN 'Executive'\n        WHEN salary >= 70000 THEN 'Senior'\n        ELSE 'Junior'\n    END AS level\nFROM employees;\n```",
+    options: [
+      { text: "If-then-else logic for conditional values", isCorrect: true },
+      { text: "A type of JOIN", isCorrect: false },
+      { text: "Creates a new table", isCorrect: false },
+      { text: "Defines table constraints", isCorrect: false },
+    ],
    },
    {
      id: 56,
@@ -2160,6 +2292,12 @@
      categoryId: "filtering",
      type: "query",
      answer: "## Filtering NULL Values\n\n```sql\nSELECT * FROM employees WHERE manager_id IS NULL;\nSELECT * FROM employees WHERE manager_id IS NOT NULL;\nSELECT name, COALESCE(phone, 'N/A') FROM customers;\n```",
+    options: [
+      { text: "Use IS NULL and IS NOT NULL operators", isCorrect: true },
+      { text: "Use = NULL to check", isCorrect: false },
+      { text: "Use LIKE '%NULL%'", isCorrect: false },
+      { text: "NULL values cannot be filtered", isCorrect: false },
+    ],
    },
    {
      id: 57,
@@ -2169,6 +2307,12 @@
      categoryId: "filtering",
      type: "query",
      answer: "## Date Range Filtering\n\n```sql\nWHERE order_date >= '2024-01-01' AND order_date < '2024-02-01'\nWHERE created_at >= CURRENT_DATE - INTERVAL '7 days'\nWHERE order_date >= DATE_TRUNC('month', CURRENT_DATE)\n```",
+    options: [
+      { text: "Use >= and < with proper date comparisons", isCorrect: true },
+      { text: "Use BETWEEN with time included", isCorrect: false },
+      { text: "Use LIKE for date patterns", isCorrect: false },
+      { text: "Date filtering is not possible in SQL", isCorrect: false },
+    ],
    },
    {
      id: 58,
@@ -2178,6 +2322,12 @@
      categoryId: "filtering",
      type: "query",
      answer: "## ANY and ALL\n\n```sql\nSELECT * FROM products WHERE price > ANY (SELECT price FROM electronics);\nSELECT * FROM products WHERE price > ALL (SELECT price FROM electronics);\n```\n\n| Expression | Equivalent |\n|------------|------------|\n| = ANY | IN |\n| > ANY | > MIN() |\n| > ALL | > MAX() |",
+    options: [
+      { text: "ANY: matches if any value; ALL: requires all values", isCorrect: true },
+      { text: "They are identical operators", isCorrect: false },
+      { text: "ANY returns count; ALL returns sum", isCorrect: false },
+      { text: "Used only with JOIN operations", isCorrect: false },
+    ],
    },
    {
      id: 59,
@@ -2187,6 +2337,12 @@
      categoryId: "filtering",
      type: "query",
      answer: "## Regular Expressions\n\n```sql\nSELECT * FROM users WHERE email ~ '^[a-z]+@gmail\\.com$';\nSELECT * FROM users WHERE name ~* 'john';  -- Case insensitive\nSELECT REGEXP_REPLACE(phone, '[^0-9]', '', 'g') FROM contacts;\n```",
+    options: [
+      { text: "Use ~ operator or SIMILAR TO for patterns", isCorrect: true },
+      { text: "Same as LIKE operator", isCorrect: false },
+      { text: "Not supported in SQL", isCorrect: false },
+      { text: "Only works with numeric data", isCorrect: false },
+    ],
    },
    {
      id: 60,
@@ -2196,6 +2352,12 @@
      categoryId: "filtering",
      type: "query",
      answer: "## AND vs OR\n\n```sql\nSELECT * FROM products WHERE category = 'Electronics' AND price < 500;\nSELECT * FROM products WHERE category = 'Electronics' OR category = 'Books';\n\n-- Use parentheses for clarity\nWHERE (a = 1 OR b = 2) AND c = 3\n```",
+    options: [
+      { text: "AND: all conditions true; OR: at least one", isCorrect: true },
+      { text: "They have the same precedence", isCorrect: false },
+      { text: "OR has higher precedence than AND", isCorrect: false },
+      { text: "Cannot combine AND and OR", isCorrect: false },
+    ],
    },
    {
      id: 61,
@@ -2205,6 +2367,12 @@
      categoryId: "joins",
      type: "query",
      answer: "## CROSS JOIN\n\n```sql\nSELECT * FROM colors CROSS JOIN sizes;\n```\n\nColors: Red, Blue × Sizes: S, M, L = 6 rows",
+    options: [
+      { text: "Cartesian product of all row combinations", isCorrect: true },
+      { text: "Same as INNER JOIN", isCorrect: false },
+      { text: "Only returns matching rows", isCorrect: false },
+      { text: "Removes duplicate combinations", isCorrect: false },
+    ],
    },
    {
      id: 62,
@@ -2214,6 +2382,12 @@
      categoryId: "joins",
      type: "query",
      answer: "## SELF JOIN\n\n```sql\nSELECT e.name AS employee, m.name AS manager\nFROM employees e LEFT JOIN employees m ON e.manager_id = m.id;\n```",
+    options: [
+      { text: "Join a table with itself using aliases", isCorrect: true },
+      { text: "Join two tables with same schema", isCorrect: false },
+      { text: "Create a copy of the table", isCorrect: false },
+      { text: "A recursive query", isCorrect: false },
+    ],
    },
    {
      id: 63,
@@ -2223,6 +2397,12 @@
      categoryId: "joins",
      type: "query",
      answer: "## NATURAL JOIN\n\n```sql\nSELECT * FROM orders NATURAL JOIN customers;\n```\n\n**Better Alternative**:\n```sql\nSELECT * FROM orders JOIN customers USING (customer_id);\n```",
+    options: [
+      { text: "Auto-joins on columns with same name", isCorrect: true },
+      { text: "Joins all columns regardless of name", isCorrect: false },
+      { text: "Same as CROSS JOIN", isCorrect: false },
+      { text: "Creates natural keys automatically", isCorrect: false },
+    ],
    },
    {
      id: 64,
@@ -2232,6 +2412,12 @@
      categoryId: "joins",
      type: "query",
      answer: "## Multi-Table Joins\n\n```sql\nSELECT o.id, c.name, p.name AS product\nFROM orders o\nJOIN customers c ON o.customer_id = c.id\nJOIN order_items oi ON o.id = oi.order_id\nJOIN products p ON oi.product_id = p.id;\n```",
+    options: [
+      { text: "Chain multiple JOIN clauses in sequence", isCorrect: true },
+      { text: "Use nested subqueries only", isCorrect: false },
+      { text: "Create temporary tables first", isCorrect: false },
+      { text: "Not possible to join more than 2 tables", isCorrect: false },
+    ],
    },
    {
      id: 65,
@@ -2241,6 +2427,12 @@
      categoryId: "joins",
      type: "query",
      answer: "## ON vs USING\n\n```sql\nSELECT * FROM orders o JOIN customers c ON o.customer_id = c.id;\nSELECT * FROM orders JOIN customers USING (customer_id);\n```",
+    options: [
+      { text: "ON: any condition; USING: identical column names", isCorrect: true },
+      { text: "They are completely identical", isCorrect: false },
+      { text: "USING is faster than ON", isCorrect: false },
+      { text: "ON only works with equality", isCorrect: false },
+    ],
    },
    {
      id: 66,
@@ -2250,6 +2442,12 @@
      categoryId: "joins",
      type: "query",
      answer: "## Finding Unmatched Rows\n\n```sql\nSELECT c.* FROM customers c\nLEFT JOIN orders o ON c.id = o.customer_id\nWHERE o.id IS NULL;\n\nSELECT * FROM customers c\nWHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);\n```",
+    options: [
+      { text: "LEFT JOIN with NULL check or NOT EXISTS", isCorrect: true },
+      { text: "Use INNER JOIN only", isCorrect: false },
+      { text: "Use DISTINCT clause", isCorrect: false },
+      { text: "Cannot find unmatched rows in SQL", isCorrect: false },
+    ],
    },
    {
      id: 67,
@@ -2259,6 +2457,12 @@
      categoryId: "joins",
      type: "query",
      answer: "## LATERAL Joins\n\n```sql\nSELECT c.name, recent.*\nFROM customers c\nCROSS JOIN LATERAL (\n    SELECT * FROM orders WHERE customer_id = c.id ORDER BY date DESC LIMIT 3\n) recent;\n```",
+    options: [
+      { text: "Subquery in FROM can reference preceding tables", isCorrect: true },
+      { text: "Same as regular subquery", isCorrect: false },
+      { text: "Only works with CROSS JOIN", isCorrect: false },
+      { text: "A type of self-join", isCorrect: false },
+    ],
    },
    {
      id: 68,
@@ -2268,6 +2472,12 @@
      categoryId: "joins",
      type: "conceptual",
      answer: "## Optimizing JOINs\n\n```sql\nCREATE INDEX idx_orders_customer ON orders(customer_id);\n\nEXPLAIN ANALYZE SELECT * FROM orders o JOIN customers c ON o.customer_id = c.id;\n```",
+    options: [
+      { text: "Index join columns, filter early, use EXPLAIN", isCorrect: true },
+      { text: "Always use CROSS JOIN", isCorrect: false },
+      { text: "Avoid using indexes", isCorrect: false },
+      { text: "Join performance cannot be improved", isCorrect: false },
+    ],
    },
    {
      id: 69,
@@ -2277,6 +2487,12 @@
      categoryId: "joins",
      type: "query",
      answer: "## Many-to-Many\n\n```sql\nCREATE TABLE enrollments (\n    student_id INT REFERENCES students(id),\n    course_id INT REFERENCES courses(id),\n    PRIMARY KEY (student_id, course_id)\n);\n```",
+    options: [
+      { text: "Junction table with foreign keys to both tables", isCorrect: true },
+      { text: "Add array column in one table", isCorrect: false },
+      { text: "Use single foreign key", isCorrect: false },
+      { text: "Duplicate rows in both tables", isCorrect: false },
+    ],
    },
    {
      id: 70,
@@ -2286,6 +2502,12 @@
      categoryId: "joins",
      type: "query",
      answer: "## FULL OUTER JOIN\n\n```sql\nSELECT * FROM table_a a FULL OUTER JOIN table_b b ON a.id = b.a_id;\n```\n\nUseful for data reconciliation between systems.",
+    options: [
+      { text: "Returns all rows from both tables with NULLs for non-matches", isCorrect: true },
+      { text: "Same as INNER JOIN", isCorrect: false },
+      { text: "Only returns matching rows", isCorrect: false },
+      { text: "Returns first table only", isCorrect: false },
+    ],
    },
    {
      id: 71,
@@ -2295,6 +2517,12 @@
      categoryId: "aggregations",
      type: "conceptual",
      answer: "## Aggregate Functions\n\n```sql\nSELECT COUNT(*), SUM(amount), AVG(amount), MIN(amount), MAX(amount)\nFROM orders;\n```",
+    options: [
+      { text: "Calculate single result from multiple rows", isCorrect: true },
+      { text: "Return each row individually", isCorrect: false },
+      { text: "Join tables together", isCorrect: false },
+      { text: "Filter rows by condition", isCorrect: false },
+    ],
    },
    {
      id: 72,
@@ -2304,6 +2532,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## GROUP BY\n\n```sql\nSELECT category, SUM(amount) FROM products GROUP BY category;\n```\n\n**Rule**: Every non-aggregate column in SELECT must be in GROUP BY.",
+    options: [
+      { text: "Divides rows into groups for aggregate calculations", isCorrect: true },
+      { text: "Sorts rows by column", isCorrect: false },
+      { text: "Filters rows before selection", isCorrect: false },
+      { text: "Joins multiple tables", isCorrect: false },
+    ],
    },
    {
      id: 73,
@@ -2313,6 +2547,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## COUNT Variations\n\n```sql\nSELECT COUNT(*) FROM users;           -- All rows\nSELECT COUNT(email) FROM users;       -- Non-NULL only\nSELECT COUNT(DISTINCT country) FROM users;  -- Unique\n```",
+    options: [
+      { text: "COUNT(*): all rows; COUNT(column): non-NULL only", isCorrect: true },
+      { text: "They return the same result", isCorrect: false },
+      { text: "COUNT(*) excludes NULL rows", isCorrect: false },
+      { text: "COUNT(column) counts all rows", isCorrect: false },
+    ],
    },
    {
      id: 74,
@@ -2322,6 +2562,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## Running Totals\n\n```sql\nSELECT date, amount,\n    SUM(amount) OVER (ORDER BY date) AS running_total\nFROM orders;\n```",
+    options: [
+      { text: "SUM() with OVER(ORDER BY) window function", isCorrect: true },
+      { text: "Use GROUP BY with SUM", isCorrect: false },
+      { text: "Use recursive CTE", isCorrect: false },
+      { text: "Not possible in standard SQL", isCorrect: false },
+    ],
    },
    {
      id: 75,
@@ -2331,6 +2577,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## ROLLUP\n\n```sql\nSELECT region, product, SUM(sales)\nFROM sales GROUP BY ROLLUP(region, product);\n```\n\nReturns: detail rows, region subtotals, and grand total.",
+    options: [
+      { text: "Generates subtotals and grand totals", isCorrect: true },
+      { text: "Same as regular GROUP BY", isCorrect: false },
+      { text: "Removes duplicate groups", isCorrect: false },
+      { text: "Sorts results by group", isCorrect: false },
+    ],
    },
    {
      id: 76,
@@ -2340,6 +2592,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## CUBE\n\n```sql\nSELECT region, category, SUM(sales)\nFROM sales GROUP BY CUBE(region, category);\n```\n\nROLLUP(a,b): (a,b), (a), ()\nCUBE(a,b): (a,b), (a), (b), ()",
+    options: [
+      { text: "All possible grouping combinations including subtotals", isCorrect: true },
+      { text: "Same as ROLLUP", isCorrect: false },
+      { text: "Only generates grand total", isCorrect: false },
+      { text: "Removes NULL groups", isCorrect: false },
+    ],
    },
    {
      id: 77,
@@ -2349,6 +2607,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## Calculating Percentages\n\n```sql\nSELECT category, sales,\n    ROUND(100.0 * sales / SUM(sales) OVER (), 2) AS pct_of_total\nFROM category_sales;\n```",
+    options: [
+      { text: "Divide value by SUM() OVER() for total percentage", isCorrect: true },
+      { text: "Use COUNT(*) for percentage", isCorrect: false },
+      { text: "Multiply by 100 only", isCorrect: false },
+      { text: "Percentages cannot be calculated in SQL", isCorrect: false },
+    ],
    },
    {
      id: 78,
@@ -2358,6 +2622,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## Top N Per Group\n\n```sql\nWITH ranked AS (\n    SELECT *, ROW_NUMBER() OVER (PARTITION BY category ORDER BY sales DESC) AS rank\n    FROM products\n)\nSELECT * FROM ranked WHERE rank <= 3;\n```",
+    options: [
+      { text: "ROW_NUMBER() with PARTITION BY, then filter by rank", isCorrect: true },
+      { text: "Use LIMIT with GROUP BY", isCorrect: false },
+      { text: "Use MAX() aggregate function", isCorrect: false },
+      { text: "Create separate queries for each group", isCorrect: false },
+    ],
    },
    {
      id: 79,
@@ -2367,6 +2637,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## STRING_AGG\n\n```sql\nSELECT department, STRING_AGG(employee_name, ', ') AS employees\nFROM employees GROUP BY department;\n```",
+    options: [
+      { text: "Concatenates values from multiple rows into one string", isCorrect: true },
+      { text: "Splits a string into rows", isCorrect: false },
+      { text: "Counts string occurrences", isCorrect: false },
+      { text: "Formats strings with padding", isCorrect: false },
+    ],
    },
    {
      id: 80,
@@ -2376,6 +2652,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## Divide by Zero\n\n```sql\nSELECT revenue / NULLIF(costs, 0) AS efficiency FROM departments;\nSELECT COALESCE(profit / NULLIF(cost, 0), 0) AS margin FROM products;\n```",
+    options: [
+      { text: "Use NULLIF to convert zero to NULL", isCorrect: true },
+      { text: "SQL handles it automatically", isCorrect: false },
+      { text: "Use TRY_DIVIDE function", isCorrect: false },
+      { text: "Cannot prevent divide by zero", isCorrect: false },
+    ],
    },
    {
      id: 81,
@@ -2385,6 +2667,12 @@
      categoryId: "subqueries",
      type: "query",
      answer: "## Correlated Subqueries\n\n```sql\nSELECT e.name, e.salary FROM employees e\nWHERE e.salary > (SELECT AVG(salary) FROM employees WHERE department = e.department);\n```",
+    options: [
+      { text: "References outer query and runs for each outer row", isCorrect: true },
+      { text: "Same as regular subquery", isCorrect: false },
+      { text: "Runs only once", isCorrect: false },
+      { text: "Cannot reference outer query", isCorrect: false },
+    ],
    },
    {
      id: 82,
@@ -2394,6 +2682,12 @@
      categoryId: "subqueries",
      type: "query",
      answer: "## Derived Tables\n\n```sql\nSELECT * FROM (\n    SELECT category, AVG(price) AS avg_price FROM products GROUP BY category\n) AS category_stats WHERE avg_price > 100;\n```",
+    options: [
+      { text: "Subquery in FROM clause acting as temporary table", isCorrect: true },
+      { text: "A permanent table", isCorrect: false },
+      { text: "Same as a view", isCorrect: false },
+      { text: "A type of CTE", isCorrect: false },
+    ],
    },
    {
      id: 83,

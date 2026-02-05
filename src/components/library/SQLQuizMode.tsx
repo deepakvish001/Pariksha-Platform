@@ -117,11 +117,16 @@
  ];
  
  const generateOptionsForQuestion = (question: SQLQuestion): { text: string; isCorrect: boolean }[] => {
+  // Use predefined options if available
+  if (question.options && question.options.length === 4) {
+    return question.options;
+  }
+  // Fallback: generate generic options based on question type
    const options = [
-     { text: "SELECT * FROM table", isCorrect: false },
-     { text: "JOIN ON condition", isCorrect: false },
-     { text: "GROUP BY with HAVING", isCorrect: false },
-     { text: "Subquery in WHERE clause", isCorrect: false },
+    { text: "Use SELECT with proper filtering", isCorrect: false },
+    { text: "Apply JOIN or subquery technique", isCorrect: false },
+    { text: "Utilize aggregation or window function", isCorrect: false },
+    { text: "Implement with constraints or indexes", isCorrect: false },
    ];
    const correctIdx = question.id % 4;
    options[correctIdx].isCorrect = true;
@@ -272,6 +277,18 @@
                    <div className="flex items-center gap-2 mb-2">
                      {preset.icon}
                      <span className="font-semibold">{preset.name}</span>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "ml-auto text-xs",
+                          preset.config.difficulty === "Easy" && "bg-emerald-500/20 text-emerald-500 border-emerald-500/30",
+                          preset.config.difficulty === "Medium" && "bg-amber-500/20 text-amber-500 border-amber-500/30",
+                          preset.config.difficulty === "Hard" && "bg-red-500/20 text-red-500 border-red-500/30",
+                          preset.config.difficulty === "all" && "bg-primary/20 text-primary border-primary/30"
+                        )}
+                      >
+                        {preset.config.difficulty === "all" ? "Mixed" : preset.config.difficulty}
+                      </Badge>
                    </div>
                    <p className="text-sm text-muted-foreground">{preset.description}</p>
                  </button>
