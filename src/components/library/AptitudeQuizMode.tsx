@@ -41,7 +41,9 @@ import { Link } from "react-router-dom";
  } from "@/data/aptitudeQuestionsData";
  import { useAuth } from "@/contexts/AuthContext";
  import { useQuizResults } from "@/hooks/useQuizResults";
+import { useQuizAchievements } from "@/hooks/useQuizAchievements";
  import QuizLeaderboard from "./QuizLeaderboard";
+import QuizAchievementToast from "./QuizAchievementToast";
  
  // Generate options for questions that don't have predefined options
  const generateOptionsForQuestion = (question: AptitudeQuestion): { text: string; isCorrect: boolean }[] => {
@@ -166,6 +168,7 @@ const TIMED_CHALLENGES: QuizPreset[] = [
  }) => {
    const { user } = useAuth();
    const { saveQuizResult } = useQuizResults();
+  const { checkAndAwardAchievements, newlyEarned, clearNewlyEarned } = useQuizAchievements();
    const [phase, setPhase] = useState<"config" | "quiz" | "results">("config");
    const [showLeaderboard, setShowLeaderboard] = useState(false);
    const [config, setConfig] = useState<QuizConfig>({
@@ -278,6 +281,16 @@ const TIMED_CHALLENGES: QuizPreset[] = [
          avgTimeSeconds: avgTime,
          totalTimeSeconds: totalTime,
        });
+
+      // Check for quiz achievements
+      checkAndAwardAchievements({
+        accuracy,
+        avgTimeSeconds: avgTime,
+        totalTimeSeconds: totalTime,
+        difficulty: config.difficulty,
+        isChallenge: isChallengeMode,
+        quizType: "aptitude",
+      });
      }
    }, [phase, results.length]);
  
@@ -572,6 +585,7 @@ const TIMED_CHALLENGES: QuizPreset[] = [
                  setShowLeaderboard(false);
               setIsChallengeMode(false);
               setChallengeId(null);
+             clearNewlyEarned();
                }}
                className="flex-1 gap-2"
              >
@@ -599,6 +613,9 @@ const TIMED_CHALLENGES: QuizPreset[] = [
            {showLeaderboard && user && (
           <QuizLeaderboard quizType="aptitude" currentUserId={user.id} challengeId={challengeId} />
            )}
+
+          {/* Achievement Toast */}
+          <QuizAchievementToast achievements={newlyEarned} onClose={clearNewlyEarned} />
          </CardContent>
        </Card>
      );
