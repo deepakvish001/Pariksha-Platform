@@ -832,38 +832,70 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                 </div>
               </div>
 
-              {/* Stats Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                  <Trophy className="h-4 w-4 text-emerald-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Completed</p>
-                    <p className="font-semibold text-emerald-600 dark:text-emerald-400">{stats.completed}</p>
+              {/* Stats Row - Enhanced with modern card design */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="group relative flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 hover:border-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/10"
+                >
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                    <Trophy className="h-6 w-6 text-white" />
                   </div>
-                </div>
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-primary/10 border border-primary/20">
-                  <Target className="h-4 w-4 text-primary" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Remaining</p>
-                    <p className="font-semibold text-primary">{stats.total - stats.completed}</p>
+                    <p className="text-xs text-muted-foreground font-medium">Completed</p>
+                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.completed}</p>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                  <Clock className="h-4 w-4 text-amber-500" />
+                  <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                </motion.div>
+                
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="group relative flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 hover:border-primary/40 transition-all hover:shadow-lg hover:shadow-primary/10"
+                >
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-violet-500 flex items-center justify-center shadow-lg shadow-primary/25">
+                    <Target className="h-6 w-6 text-white" />
+                  </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Est. Time</p>
-                    <p className="font-semibold text-amber-600 dark:text-amber-400">
+                    <p className="text-xs text-muted-foreground font-medium">Remaining</p>
+                    <p className="text-2xl font-bold text-primary">{stats.total - stats.completed}</p>
+                  </div>
+                </motion.div>
+                
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="group relative flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 hover:border-amber-500/40 transition-all hover:shadow-lg hover:shadow-amber-500/10"
+                >
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">Est. Time</p>
+                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                       {Math.ceil((stats.total - stats.completed) * 0.5)}w
                     </p>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20">
-                  <TrendingUp className="h-4 w-4 text-violet-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total Topics</p>
-                    <p className="font-semibold text-violet-600 dark:text-violet-400">{stats.total}</p>
+                </motion.div>
+                
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="group relative flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-violet-500/10 via-violet-500/5 to-transparent border border-violet-500/20 hover:border-violet-500/40 transition-all hover:shadow-lg hover:shadow-violet-500/10"
+                >
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                    <TrendingUp className="h-6 w-6 text-white" />
                   </div>
-                </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">Total Topics</p>
+                    <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">{stats.total}</p>
+                  </div>
+                </motion.div>
               </div>
 
               {/* Progress Bar + Certificate Button */}
