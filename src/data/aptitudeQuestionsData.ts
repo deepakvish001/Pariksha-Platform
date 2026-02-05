@@ -9,6 +9,7 @@
    categoryId: string;
    type: "conceptual" | "calculation" | "logical";
    answer: string;
+   options?: { text: string; isCorrect: boolean }[];
  }
  
  export interface AptitudeCategory {

@@ -11,6 +11,7 @@
    TrendingUp,
    Folder,
    FolderPlus,
+   Zap,
  } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
  import { Card, CardContent } from "@/components/ui/card";
@@ -60,8 +61,10 @@ import { Badge } from "@/components/ui/badge";
  import SpacedRepetitionPanel from "@/components/library/SpacedRepetitionPanel";
  import FolderManager from "@/components/library/FolderManager";
  import AddToFolderButton from "@/components/library/AddToFolderButton";
+ import AptitudeQuizMode from "@/components/library/AptitudeQuizMode";
  
  type ViewMode = "all" | "solved" | "revision" | "folders";
+ type PageMode = "browse" | "quiz";
 
 const AptitudeQuestions = () => {
    const { user } = useAuth();
@@ -96,6 +99,7 @@ const AptitudeQuestions = () => {
    const [typeFilter, setTypeFilter] = useState<string>("all");
    const [expandedQuestionId, setExpandedQuestionId] = useState<number | null>(null);
    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+   const [pageMode, setPageMode] = useState<PageMode>("browse");
  
    const difficultyStats = getDifficultyStats();
  
@@ -185,6 +189,20 @@ const AptitudeQuestions = () => {
      }
    };
  
+   // Quiz mode view
+   if (pageMode === "quiz") {
+     return (
+       <TooltipProvider>
+         <div className="min-h-screen bg-background p-4 md:p-6">
+           <AptitudeQuizMode
+             questions={aptitudeQuestions}
+             onClose={() => setPageMode("browse")}
+           />
+         </div>
+       </TooltipProvider>
+     );
+   }
+ 
   return (
      <TooltipProvider>
        <div className="min-h-screen bg-background">
@@ -209,8 +227,17 @@ const AptitudeQuestions = () => {
                  <TrendingUp className="h-4 w-4" />
                  <span className="hidden sm:inline">My progress</span>
                </Button>
+               <Button
+                 variant="default"
+                 size="sm"
+                 className="gap-2"
+                 onClick={() => setPageMode("quiz")}
+               >
+                 <Zap className="h-4 w-4" />
+                 <span className="hidden sm:inline">Quiz Mode</span>
+               </Button>
                {user && (
-                 <Button variant="default" size="sm" className="gap-2" onClick={() => setViewMode("folders")}>
+                 <Button variant="outline" size="sm" className="gap-2" onClick={() => setViewMode("folders")}>
                    <FolderPlus className="h-4 w-4" />
                    <span className="hidden sm:inline">Create Folder</span>
                  </Button>
