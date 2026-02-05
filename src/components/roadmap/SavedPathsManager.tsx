@@ -7,6 +7,8 @@ import {
   Plus,
   Edit2,
   MoreVertical,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   Dialog,
@@ -22,6 +24,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +52,118 @@ interface SavedPathsManagerProps {
   trigger?: React.ReactNode;
 }
 
+// Visual thumbnail showing topic order
+const PathThumbnail: React.FC<{ customOrders: Record<string, string[]> }> = ({ customOrders }) => {
+  const allTopics = Object.values(customOrders).flat();
+  const displayCount = Math.min(allTopics.length, 8);
+  const hasMore = allTopics.length > 8;
+
+  if (allTopics.length === 0) {
+    return (
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <span className="italic">No custom order</span>
+      </div>
+    );
+  }
+
+  // Generate colors based on section index
+  const sectionColors = [
+    "bg-amber-400",
+    "bg-violet-400", 
+    "bg-emerald-400",
+    "bg-blue-400",
+    "bg-rose-400",
+    "bg-cyan-400",
+  ];
+
+  // Build a map of topic to section color
+  const topicColorMap: Record<string, string> = {};
+  Object.entries(customOrders).forEach(([sectionId, topics], sectionIndex) => {
+    const color = sectionColors[sectionIndex % sectionColors.length];
+    topics.forEach(topic => {
+      topicColorMap[topic] = color;
+    });
+  });
+
+  return (
+    <div className="flex items-center gap-0.5 mt-2">
+      {allTopics.slice(0, displayCount).map((topicId, index) => (
+        <div
+          key={`${topicId}-${index}`}
+          className={cn(
+            "w-3 h-3 rounded-sm transition-transform hover:scale-125",
+            topicColorMap[topicId] || "bg-muted-foreground"
+          )}
+          title={topicId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+        />
+      ))}
+      {hasMore && (
+        <span className="text-xs text-muted-foreground ml-1">
+          +{allTopics.length - 8}
+        </span>
+      )}
+    </div>
+  );
+};
+
+// Expanded view showing full topic list
+const PathTopicList: React.FC<{ customOrders: Record<string, string[]> }> = ({ customOrders }) => {
+  const sections = Object.entries(customOrders);
+
+  if (sections.length === 0) {
+    return <p className="text-xs text-muted-foreground italic">No topics in this path</p>;
+  }
+
+  const sectionColors = [
+    "border-amber-400 bg-amber-50 dark:bg-amber-950/30",
+    "border-violet-400 bg-violet-50 dark:bg-violet-950/30",
+    "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30",
+    "border-blue-400 bg-blue-50 dark:bg-blue-950/30",
+    "border-rose-400 bg-rose-50 dark:bg-rose-950/30",
+    "border-cyan-400 bg-cyan-50 dark:bg-cyan-950/30",
+  ];
+
+  const dotColors = [
+    "bg-amber-400",
+    "bg-violet-400",
+    "bg-emerald-400",
+    "bg-blue-400",
+    "bg-rose-400",
+    "bg-cyan-400",
+  ];
+
+  return (
+    <div className="space-y-2 mt-3">
+      {sections.map(([sectionId, topics], sectionIndex) => (
+        <div 
+          key={sectionId}
+          className={cn(
+            "rounded-md border-l-2 p-2",
+            sectionColors[sectionIndex % sectionColors.length]
+          )}
+        >
+          <p className="text-xs font-medium text-muted-foreground mb-1.5 capitalize">
+            {sectionId.replace(/-/g, ' ')}
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {topics.map((topic, topicIndex) => (
+              <div 
+                key={`${topic}-${topicIndex}`}
+                className="flex items-center gap-1 text-xs bg-background/80 rounded px-1.5 py-0.5 border"
+              >
+                <span className="font-medium text-muted-foreground">{topicIndex + 1}.</span>
+                <span className="capitalize truncate max-w-[120px]">
+                  {topic.replace(/-/g, ' ')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const SavedPathsManager: React.FC<SavedPathsManagerProps> = ({
   savedPaths,
   activePath,
@@ -60,6 +179,7 @@ const SavedPathsManager: React.FC<SavedPathsManagerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [showSaveForm, setShowSaveForm] = useState(false);
   const [editingPath, setEditingPath] = useState<SavedPath | null>(null);
+  const [expandedPathId, setExpandedPathId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
@@ -98,6 +218,10 @@ const SavedPathsManager: React.FC<SavedPathsManagerProps> = ({
     setEditingPath(null);
     setName("");
     setDescription("");
+  };
+
+  const toggleExpanded = (pathId: string) => {
+    setExpandedPathId(prev => prev === pathId ? null : pathId);
   };
 
   return (
@@ -185,72 +309,121 @@ const SavedPathsManager: React.FC<SavedPathsManagerProps> = ({
 
           {/* Saved Paths List */}
           {savedPaths.length > 0 ? (
-            <ScrollArea className="max-h-[300px]">
-              <div className="space-y-2">
-                {savedPaths.map((path) => (
-                  <div
-                    key={path.id}
-                    className={cn(
-                      "p-3 border rounded-lg transition-colors",
-                      path.isActive && "border-primary bg-primary/5"
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium truncate">{path.name}</span>
-                          {path.isActive && (
-                            <Badge variant="default" className="text-xs">
-                              Active
-                            </Badge>
-                          )}
-                        </div>
-                        {path.description && (
-                          <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
-                            {path.description}
-                          </p>
+            <ScrollArea className="max-h-[400px]">
+              <div className="space-y-2 pr-2">
+                {savedPaths.map((path) => {
+                  const isExpanded = expandedPathId === path.id;
+                  const topicCount = Object.values(path.customOrders).flat().length;
+                  const sectionCount = Object.keys(path.customOrders).length;
+
+                  return (
+                    <Collapsible
+                      key={path.id}
+                      open={isExpanded}
+                      onOpenChange={() => toggleExpanded(path.id)}
+                    >
+                      <div
+                        className={cn(
+                          "border rounded-lg transition-colors overflow-hidden",
+                          path.isActive && "border-primary bg-primary/5"
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Saved {formatDistanceToNow(new Date(path.createdAt), { addSuffix: true })}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {!path.isActive && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onActivatePath(path.id)}
-                            disabled={isSaving}
-                            className="h-8 px-2"
-                          >
-                            <Check className="h-3.5 w-3.5 mr-1" />
-                            Use
-                          </Button>
-                        )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => startEditing(path)}>
-                              <Edit2 className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => onDeletePath(path.id)}
-                              className="text-destructive"
+                      >
+                        <div className="p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium truncate">{path.name}</span>
+                                {path.isActive && (
+                                  <Badge variant="default" className="text-xs">
+                                    Active
+                                  </Badge>
+                                )}
+                              </div>
+                              {path.description && (
+                                <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
+                                  {path.description}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-3 mt-1">
+                                <p className="text-xs text-muted-foreground">
+                                  {sectionCount} section{sectionCount !== 1 ? 's' : ''} • {topicCount} topic{topicCount !== 1 ? 's' : ''}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(path.createdAt), { addSuffix: true })}
+                                </p>
+                              </div>
+                              
+                              {/* Thumbnail Preview */}
+                              <PathThumbnail customOrders={path.customOrders} />
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {!path.isActive && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onActivatePath(path.id)}
+                                  disabled={isSaving}
+                                  className="h-8 px-2"
+                                >
+                                  <Check className="h-3.5 w-3.5 mr-1" />
+                                  Use
+                                </Button>
+                              )}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => startEditing(path)}>
+                                    <Edit2 className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => onDeletePath(path.id)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+                          
+                          {/* Expand/Collapse Button */}
+                          <CollapsibleTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full mt-2 h-6 text-xs text-muted-foreground hover:text-foreground"
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp className="h-3 w-3 mr-1" />
+                                  Hide topics
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="h-3 w-3 mr-1" />
+                                  Show all topics
+                                </>
+                              )}
+                            </Button>
+                          </CollapsibleTrigger>
+                        </div>
+                        
+                        {/* Expanded Topic List */}
+                        <CollapsibleContent>
+                          <div className="px-3 pb-3 border-t bg-muted/20">
+                            <PathTopicList customOrders={path.customOrders} />
+                          </div>
+                        </CollapsibleContent>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    </Collapsible>
+                  );
+                })}
               </div>
             </ScrollArea>
           ) : (
