@@ -186,6 +186,8 @@ const QuizHistory: React.FC = () => {
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [quizzesWithDetails, setQuizzesWithDetails] = useState<Set<string>>(new Set());
+  const [detailFilter, setDetailFilter] = useState<string>("all");
+  const [isDeletingOld, setIsDeletingOld] = useState(false);
  
    const fetchResults = async () => {
      if (!user) return;
@@ -427,6 +429,47 @@ const QuizHistory: React.FC = () => {
        toast.error("Failed to clear history");
      }
    };
+
+   const handleDeleteOldQuizzes = async () => {
+     if (!user) return;
+     
+     // Get IDs of quizzes WITHOUT detailed responses
+     const quizzesWithoutDetails = results
+       .filter((r) => !quizzesWithDetails.has(r.id))
+       .map((r) => r.id);
+     
+     if (quizzesWithoutDetails.length === 0) {
+       toast.info("No old quizzes without details to delete");
+       return;
+     }
+
+     setIsDeletingOld(true);
+     try {
+       const { error } = await supabase
+         .from("quiz_results")
+         .delete()
+         .in("id", quizzesWithoutDetails);
+       
+       if (error) throw error;
+       toast.success(`Deleted ${quizzesWithoutDetails.length} old quiz${quizzesWithoutDetails.length > 1 ? "zes" : ""} without detailed tracking`);
+       fetchResults();
+     } catch (err) {
+       console.error("Error deleting old quizzes:", err);
+       toast.error("Failed to delete old quizzes");
+     } finally {
+       setIsDeletingOld(false);
+     }
+   };
+
+   // Filter results based on detail availability
+   const filteredResults = results.filter((r) => {
+     if (detailFilter === "all") return true;
+     if (detailFilter === "detailed") return quizzesWithDetails.has(r.id);
+     if (detailFilter === "summary") return !quizzesWithDetails.has(r.id);
+     return true;
+   });
+
+   const quizzesWithoutDetailsCount = results.filter((r) => !quizzesWithDetails.has(r.id)).length;
  
    const getQuizTypeBadge = (type: string) => {
      const styles = {
@@ -529,6 +572,16 @@ const QuizHistory: React.FC = () => {
                <SelectItem value="today">Today</SelectItem>
                <SelectItem value="week">This Week</SelectItem>
                <SelectItem value="month">This Month</SelectItem>
+             </SelectContent>
+           </Select>
+           <Select value={detailFilter} onValueChange={setDetailFilter}>
+             <SelectTrigger className="w-[140px]">
+               <SelectValue placeholder="Detail Level" />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="all">All Quizzes</SelectItem>
+               <SelectItem value="detailed">With Details</SelectItem>
+               <SelectItem value="summary">Summary Only</SelectItem>
              </SelectContent>
            </Select>
          </div>
@@ -714,47 +767,85 @@ const QuizHistory: React.FC = () => {
  
        {/* Results List */}
        <Card className="bg-card/50 border-primary/20">
-         <CardHeader className="flex flex-row items-center justify-between">
+         <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
            <CardTitle className="flex items-center gap-2 text-lg">
              <Calendar className="h-5 w-5 text-primary" />
-             Quiz Attempts ({results.length})
+             Quiz Attempts ({filteredResults.length}{filteredResults.length !== results.length ? ` of ${results.length}` : ""})
            </CardTitle>
-           {results.length > 0 && (
-             <AlertDialog>
-               <AlertDialogTrigger asChild>
-                 <Button variant="outline" size="sm" className="text-destructive">
-                   <Trash2 className="h-4 w-4 mr-1" />
-                   Clear All
-                 </Button>
-               </AlertDialogTrigger>
-               <AlertDialogContent>
-                 <AlertDialogHeader>
-                   <AlertDialogTitle>Clear all quiz history?</AlertDialogTitle>
-                   <AlertDialogDescription>
-                     This will permanently delete all your quiz results. This action cannot
-                     be undone.
-                   </AlertDialogDescription>
-                 </AlertDialogHeader>
-                 <AlertDialogFooter>
-                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                   <AlertDialogAction onClick={handleClearAll}>
+           <div className="flex items-center gap-2">
+             {quizzesWithoutDetailsCount > 0 && (
+               <AlertDialog>
+                 <AlertDialogTrigger asChild>
+                   <Button 
+                     variant="outline" 
+                     size="sm" 
+                     className="text-amber-600 border-amber-500/30 hover:bg-amber-500/10"
+                     disabled={isDeletingOld}
+                   >
+                     {isDeletingOld ? (
+                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                     ) : (
+                       <Trash2 className="h-4 w-4 mr-1" />
+                     )}
+                     Delete Old ({quizzesWithoutDetailsCount})
+                   </Button>
+                 </AlertDialogTrigger>
+                 <AlertDialogContent>
+                   <AlertDialogHeader>
+                     <AlertDialogTitle>Delete old quizzes without details?</AlertDialogTitle>
+                     <AlertDialogDescription>
+                       This will permanently delete {quizzesWithoutDetailsCount} quiz{quizzesWithoutDetailsCount > 1 ? "zes" : ""} that don't have detailed question-by-question tracking. 
+                       Quizzes with detailed review will be kept. This action cannot be undone.
+                     </AlertDialogDescription>
+                   </AlertDialogHeader>
+                   <AlertDialogFooter>
+                     <AlertDialogCancel>Cancel</AlertDialogCancel>
+                     <AlertDialogAction onClick={handleDeleteOldQuizzes}>
+                       Delete Old Quizzes
+                     </AlertDialogAction>
+                   </AlertDialogFooter>
+                 </AlertDialogContent>
+               </AlertDialog>
+             )}
+             {results.length > 0 && (
+               <AlertDialog>
+                 <AlertDialogTrigger asChild>
+                   <Button variant="outline" size="sm" className="text-destructive">
+                     <Trash2 className="h-4 w-4 mr-1" />
                      Clear All
-                   </AlertDialogAction>
-                 </AlertDialogFooter>
-               </AlertDialogContent>
-             </AlertDialog>
-           )}
+                   </Button>
+                 </AlertDialogTrigger>
+                 <AlertDialogContent>
+                   <AlertDialogHeader>
+                     <AlertDialogTitle>Clear all quiz history?</AlertDialogTitle>
+                     <AlertDialogDescription>
+                       This will permanently delete all your quiz results. This action cannot
+                       be undone.
+                     </AlertDialogDescription>
+                   </AlertDialogHeader>
+                   <AlertDialogFooter>
+                     <AlertDialogCancel>Cancel</AlertDialogCancel>
+                     <AlertDialogAction onClick={handleClearAll}>
+                       Clear All
+                     </AlertDialogAction>
+                   </AlertDialogFooter>
+                 </AlertDialogContent>
+               </AlertDialog>
+             )}
+           </div>
          </CardHeader>
          <CardContent>
            {isLoading ? (
              <div className="text-center py-8 text-muted-foreground">Loading...</div>
-           ) : results.length === 0 ? (
+           ) : filteredResults.length === 0 ? (
              <div className="text-center py-8 text-muted-foreground">
-               No quiz attempts yet. Take a quiz to see your history here!
+               {results.length === 0 
+                 ? "No quiz attempts yet. Take a quiz to see your history here!"
+                 : "No quizzes match the current filters."}
              </div>
            ) : (
              <div className="space-y-3 max-h-[500px] overflow-y-auto">
-               {results.map((result) => {
+               {filteredResults.map((result) => {
                  const hasDetails = quizzesWithDetails.has(result.id);
                  return (
                    <div
