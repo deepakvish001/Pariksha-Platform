@@ -181,7 +181,8 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     savePath, 
     activatePath, 
     deletePath, 
-    updatePath 
+    updatePath,
+    duplicatePath,
   } = useSavedPaths(tree.id);
   const prevProgressRef = useRef<Record<string, { completed: boolean; inProgress: boolean }>>({});
   const prevSectionStatsRef = useRef<Record<string, number>>({});
@@ -1021,6 +1022,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                   }}
                   onDeletePath={deletePath}
                   onUpdatePath={updatePath}
+                  onDuplicatePath={duplicatePath}
                 />
               )}
 
