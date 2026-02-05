@@ -656,7 +656,13 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
       : [];
     
     return (
-      <div key={node.id} className="mb-4">
+      <motion.div 
+        key={node.id} 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: phaseIndex * 0.1 }}
+        className="mb-6"
+      >
         {/* Section Header */}
         <RoadmapSectionHeader
           phase={phaseIndex + 1}
@@ -678,7 +684,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
               transition={{ duration: 0.3, ease: "easeInOut" }}
               className="overflow-hidden"
             >
-              <div className="mt-4 pl-2">
+              <div className="mt-4 p-4 rounded-xl bg-muted/20 border border-border/40">
                 {/* Section main node */}
                 <RoadmapNode
                   node={node}
@@ -703,11 +709,11 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="overflow-hidden relative"
+                      className="overflow-hidden relative mt-2"
                     >
                       {/* Vertical continuation line for children */}
                       <div 
-                        className="absolute w-0.5 bg-slate-300 dark:bg-slate-600"
+                        className="absolute w-0.5 bg-border/60 dark:bg-border"
                         style={{
                           left: 20,
                           top: 0,
@@ -757,153 +763,123 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     );
   }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection, expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, getChildProgress, isDragEnabled, user, sensors, handleDragEnd, getDisplayNodes]);
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex gap-4">
+      <div className="flex gap-4 lg:gap-6">
         {/* Main Content */}
-        <div className="flex-1 space-y-6 min-w-0" ref={treeRef}>
-          {/* Enhanced Progress Header */}
+        <div className="flex-1 space-y-8 min-w-0" ref={treeRef}>
+          {/* Compact Progress Header Card */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
-              "relative overflow-hidden rounded-2xl border-2",
-              "bg-gradient-to-br from-card via-card to-muted/30"
+              "relative overflow-hidden rounded-2xl border",
+              "bg-card/80 backdrop-blur-xl",
+              "shadow-lg dark:shadow-2xl dark:shadow-primary/5"
             )}
           >
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-5">
-              <div className="absolute inset-0" style={{
-                backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-                backgroundSize: '24px 24px'
-              }} />
-            </div>
+            {/* Subtle gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
 
-            <div className="relative p-5 space-y-4">
-              {/* Header Row */}
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  {/* Colorful Icon */}
+            <div className="relative p-6 space-y-6">
+              {/* Title Row with Progress Circle */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                  {/* Icon Badge */}
                   <div className={cn(
-                    "h-14 w-14 rounded-xl flex items-center justify-center shadow-lg",
+                    "h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0",
                     `bg-gradient-to-br ${tree.color}`
                   )}>
                     {(() => {
                       const IconComponent = roadmapIcons[tree.icon] || Layout;
-                      return <IconComponent className="h-7 w-7 text-white" />;
+                      return <IconComponent className="h-7 w-7 text-white drop-shadow-md" />;
                     })()}
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold">{tree.title}</h3>
-                    <p className="text-sm text-muted-foreground">{tree.description}</p>
+                  <div className="min-w-0">
+                    <h3 className="text-xl font-bold truncate">{tree.title}</h3>
+                    <p className="text-sm text-muted-foreground line-clamp-1">{tree.description}</p>
                   </div>
                 </div>
 
-                {/* Progress Circle */}
-                <div className="text-center">
-                  <div className="relative">
-                    <svg className="h-16 w-16 -rotate-90">
-                      <circle
-                        cx="32"
-                        cy="32"
-                        r="28"
-                        className="fill-none stroke-muted stroke-[4]"
-                      />
-                      <motion.circle
-                        cx="32"
-                        cy="32"
-                        r="28"
-                        className="fill-none stroke-primary stroke-[4]"
-                        strokeLinecap="round"
-                        strokeDasharray={176}
-                        initial={{ strokeDashoffset: 176 }}
-                        animate={{ strokeDashoffset: 176 - (176 * stats.percentage) / 100 }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-lg font-bold">{stats.percentage}%</span>
-                    </div>
+                {/* Circular Progress */}
+                <div className="relative flex-shrink-0">
+                  <svg className="h-16 w-16 -rotate-90">
+                    <circle
+                      cx="32" cy="32" r="28"
+                      className="fill-none stroke-muted/50 stroke-[4]"
+                    />
+                    <motion.circle
+                      cx="32" cy="32" r="28"
+                      className="fill-none stroke-[4]"
+                      stroke={stats.percentage === 100 ? "#22c55e" : "hsl(var(--primary))"}
+                      strokeLinecap="round"
+                      strokeDasharray={176}
+                      initial={{ strokeDashoffset: 176 }}
+                      animate={{ strokeDashoffset: 176 - (176 * stats.percentage) / 100 }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className={cn(
+                      "text-lg font-bold",
+                      stats.percentage === 100 && "text-emerald-500"
+                    )}>{stats.percentage}%</span>
                   </div>
                 </div>
               </div>
 
-              {/* Stats Row - Enhanced with modern card design */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="group relative flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 hover:border-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/10"
-                >
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                    <Trophy className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Completed</p>
-                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.completed}</p>
-                  </div>
-                  <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                </motion.div>
-                
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 }}
-                  className="group relative flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 hover:border-primary/40 transition-all hover:shadow-lg hover:shadow-primary/10"
-                >
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-violet-500 flex items-center justify-center shadow-lg shadow-primary/25">
-                    <Target className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Remaining</p>
-                    <p className="text-2xl font-bold text-primary">{stats.total - stats.completed}</p>
-                  </div>
-                </motion.div>
-                
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="group relative flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 hover:border-amber-500/40 transition-all hover:shadow-lg hover:shadow-amber-500/10"
-                >
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
-                    <Clock className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Est. Time</p>
-                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                      {Math.ceil((stats.total - stats.completed) * 0.5)}w
-                    </p>
-                  </div>
-                </motion.div>
-                
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 }}
-                  className="group relative flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-violet-500/10 via-violet-500/5 to-transparent border border-violet-500/20 hover:border-violet-500/40 transition-all hover:shadow-lg hover:shadow-violet-500/10"
-                >
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
-                    <TrendingUp className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Total Topics</p>
-                    <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">{stats.total}</p>
-                  </div>
-                </motion.div>
+              {/* Stats Grid - Compact 4-column */}
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { icon: Trophy, label: "Done", value: stats.completed, color: "emerald" },
+                  { icon: Target, label: "Left", value: stats.total - stats.completed, color: "primary" },
+                  { icon: Clock, label: "Est.", value: `${Math.ceil((stats.total - stats.completed) * 0.5)}w`, color: "amber" },
+                  { icon: TrendingUp, label: "Total", value: stats.total, color: "violet" },
+                ].map((stat, i) => (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + i * 0.05 }}
+                    className={cn(
+                      "relative flex flex-col items-center p-3 rounded-xl text-center",
+                      "border bg-gradient-to-b from-muted/30 to-transparent",
+                      stat.color === "emerald" && "border-emerald-500/20 hover:border-emerald-500/40",
+                      stat.color === "primary" && "border-primary/20 hover:border-primary/40",
+                      stat.color === "amber" && "border-amber-500/20 hover:border-amber-500/40",
+                      stat.color === "violet" && "border-violet-500/20 hover:border-violet-500/40",
+                      "transition-colors"
+                    )}
+                  >
+                    <stat.icon className={cn(
+                      "h-5 w-5 mb-1",
+                      stat.color === "emerald" && "text-emerald-500",
+                      stat.color === "primary" && "text-primary",
+                      stat.color === "amber" && "text-amber-500",
+                      stat.color === "violet" && "text-violet-500"
+                    )} />
+                    <span className={cn(
+                      "text-lg font-bold",
+                      stat.color === "emerald" && "text-emerald-600 dark:text-emerald-400",
+                      stat.color === "primary" && "text-primary",
+                      stat.color === "amber" && "text-amber-600 dark:text-amber-400",
+                      stat.color === "violet" && "text-violet-600 dark:text-violet-400"
+                    )}>{stat.value}</span>
+                    <span className="text-[10px] text-muted-foreground font-medium">{stat.label}</span>
+                  </motion.div>
+                ))}
               </div>
 
-              {/* Progress Bar + Certificate Button */}
-              <div className="space-y-1.5">
+              {/* Progress Bar + Certificate */}
+              <div className="space-y-2">
                 <div className="flex justify-between items-center text-xs text-muted-foreground">
-                  <span>Learning Progress</span>
+                  <span className="font-medium">Progress</span>
                   <div className="flex items-center gap-3">
-                    <span>{stats.completed} of {stats.total} topics mastered</span>
+                    <span>{stats.completed}/{stats.total} topics</span>
                     <RoadmapCertificate
                       roadmapTitle={tree.title}
                       roadmapIcon={tree.icon === "Layout" ? "📐" : tree.icon === "Server" ? "🖥️" : tree.icon === "Layers" ? "📚" : "🎯"}
@@ -912,7 +888,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                       percentage={stats.percentage}
                       userName={userName}
                       trigger={
-                        <button className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                        <button className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
                           <Award className="h-3.5 w-3.5" />
                           Certificate
                         </button>
@@ -920,9 +896,14 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                     />
                   </div>
                 </div>
-                <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                <div className="h-2 rounded-full bg-muted/60 overflow-hidden">
                   <motion.div 
-                    className="h-full rounded-full bg-gradient-to-r from-primary via-primary to-emerald-500"
+                    className={cn(
+                      "h-full rounded-full",
+                      stats.percentage === 100 
+                        ? "bg-gradient-to-r from-emerald-500 to-teal-500" 
+                        : "bg-gradient-to-r from-primary via-primary to-primary/80"
+                    )}
                     initial={{ width: 0 }}
                     animate={{ width: `${stats.percentage}%` }}
                     transition={{ duration: 1, ease: "easeOut" }}
@@ -930,71 +911,80 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                 </div>
               </div>
 
-              {/* Next Step Hint */}
+              {/* Next Step Hint - Compact */}
               {nextRecommendedId && stats.percentage < 100 && (
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20"
                 >
-                  <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">Next up: </span>
-                    <span className="font-medium text-primary">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">Next recommended</p>
+                    <p className="text-sm font-semibold text-primary truncate">
                       {allNodes.find(n => n.id === nextRecommendedId)?.title}
-                    </span>
-                  </p>
+                    </p>
+                  </div>
                 </motion.div>
               )}
             </div>
           </motion.div>
 
-          {/* Legend */}
+          {/* Collapsible Legend */}
           <RoadmapLegend />
 
-          {/* Search & Filter Toolbar */}
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-            <RoadmapToolbar
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              difficultyFilter={difficultyFilter}
-              onDifficultyChange={setDifficultyFilter}
-              statusFilter={statusFilter}
-              onStatusChange={setStatusFilter}
-              matchCount={matchCount}
-              totalCount={allNodes.length}
-            />
-            
-            {/* View Controls */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Layout Mode Toggle */}
-              <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border border-border/50">
-                <button
-                  onClick={() => setLayoutMode('vertical')}
-                  className={cn(
-                    "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all",
-                    layoutMode === 'vertical' 
-                      ? "bg-background text-foreground shadow-sm" 
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <List className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">List</span>
-                </button>
-                <button
-                  onClick={() => setLayoutMode('horizontal')}
-                  className={cn(
-                    "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all",
-                    layoutMode === 'horizontal' 
-                      ? "bg-background text-foreground shadow-sm" 
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <LayoutGrid className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Cards</span>
-                </button>
-              </div>
+          {/* Unified Controls Bar */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="sticky top-0 z-20 p-4 -mx-1 rounded-2xl bg-background/95 backdrop-blur-lg border shadow-sm"
+          >
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+              {/* Search & Filters */}
+              <RoadmapToolbar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                difficultyFilter={difficultyFilter}
+                onDifficultyChange={setDifficultyFilter}
+                statusFilter={statusFilter}
+                onStatusChange={setStatusFilter}
+                matchCount={matchCount}
+                totalCount={allNodes.length}
+              />
+              
+              {/* View Controls - Grouped */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Layout Mode Toggle */}
+                <div className="flex items-center gap-0.5 p-1 rounded-xl bg-muted/60 border border-border/40">
+                  <button
+                    onClick={() => setLayoutMode('vertical')}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                      layoutMode === 'vertical' 
+                        ? "bg-background text-foreground shadow-sm border border-border/50" 
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <List className="h-4 w-4" />
+                    <span className="hidden sm:inline">List</span>
+                  </button>
+                  <button
+                    onClick={() => setLayoutMode('horizontal')}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                      layoutMode === 'horizontal' 
+                        ? "bg-background text-foreground shadow-sm border border-border/50" 
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                    <span className="hidden sm:inline">Cards</span>
+                  </button>
+                </div>
 
               {/* Drag Reorder Toggle */}
               <button
@@ -1123,8 +1113,9 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
               >
                 Collapse All
               </button>
+              </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Tree Visualization - Layout Mode Dependent */}
           <div className="relative py-2">
