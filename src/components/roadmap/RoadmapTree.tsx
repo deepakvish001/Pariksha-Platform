@@ -286,7 +286,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [quickFilter, setQuickFilter] = useState<"none" | "has-resources" | "has-notes" | "recommended">("none");
+  const [quickFilter, setQuickFilter] = useState<"none" | "has-resources" | "has-notes" | "recommended" | "near-complete">("none");
 
   // Toggle section collapse with localStorage persistence
   const toggleSection = useCallback((sectionId: string) => {
@@ -464,6 +464,21 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
         matchesQuickFilter = hasNote(node.id);
       } else if (quickFilter === "recommended") {
         matchesQuickFilter = node.isRecommended === true;
+      } else if (quickFilter === "near-complete") {
+        // Find which section this node belongs to
+        const parentSection = tree.nodes.find(section => {
+          const sectionNodes = flattenNodes([section]);
+          return sectionNodes.some(n => n.id === node.id);
+        });
+        if (parentSection) {
+          const sectionNodes = flattenNodes([parentSection]);
+          const completedCount = sectionNodes.filter(n => progress[n.id]?.completed).length;
+          const sectionPercentage = Math.round((completedCount / sectionNodes.length) * 100) || 0;
+          // Show only incomplete nodes in sections that are 75%+ complete
+          matchesQuickFilter = sectionPercentage >= 75 && !progress[node.id]?.completed;
+        } else {
+          matchesQuickFilter = false;
+        }
       }
       
       if (matchesSearch && matchesDifficulty && matchesStatus && matchesQuickFilter) {
