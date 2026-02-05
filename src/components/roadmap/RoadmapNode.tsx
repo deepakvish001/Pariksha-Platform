@@ -15,6 +15,52 @@ import { getNodeIcon } from "./RoadmapIconMapping";
 import { getNodeStyle, badgeStyles } from "./RoadmapNodeStyles";
 import type { RoadmapTreeNode as NodeType } from "@/data/roadmapTreesData";
 
+// Shimmer effect component for recommended nodes
+const ShimmerEffect = () => (
+  <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
+    <motion.div
+      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent dark:via-white/20"
+      initial={{ x: "-100%" }}
+      animate={{ x: "200%" }}
+      transition={{
+        duration: 2,
+        repeat: Infinity,
+        repeatDelay: 3,
+        ease: "easeInOut",
+      }}
+    />
+  </div>
+);
+
+// Floating particles for recommended nodes
+const FloatingParticles = () => (
+  <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
+    {[...Array(4)].map((_, i) => (
+      <motion.div
+        key={i}
+        className="absolute w-1 h-1 rounded-full bg-amber-300 dark:bg-amber-200"
+        initial={{ 
+          x: `${20 + i * 20}%`, 
+          y: "100%", 
+          opacity: 0,
+          scale: 0.5 
+        }}
+        animate={{ 
+          y: "-20%", 
+          opacity: [0, 0.8, 0],
+          scale: [0.5, 1, 0.5]
+        }}
+        transition={{
+          duration: 2.5,
+          repeat: Infinity,
+          delay: i * 0.6,
+          ease: "easeOut",
+        }}
+      />
+    ))}
+  </div>
+);
+
 interface RoadmapNodeProps {
   node: NodeType;
   depth: number;
@@ -51,6 +97,7 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
   const isPrimary = node.type === 'primary';
   const isCheckpoint = node.type === 'checkpoint';
   const resourceCount = node.resources?.length || 0;
+  const showEffects = node.isRecommended && !isCompleted;
 
   // Calculate indent based on depth
   const indent = depth * 28;
@@ -113,34 +160,43 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
           <div className="w-6" />
         )}
 
-        {/* Node Card - Cleaner roadmap.sh style */}
+        {/* Node Card - Enhanced with shimmer for recommended */}
         <motion.div
           onClick={onClick}
           whileHover={{ scale: 1.01, x: 2 }}
           whileTap={{ scale: 0.99 }}
           className={cn(
-            "flex-1 flex items-center gap-3 px-3 py-2 rounded-lg border-2 cursor-pointer transition-all",
+            "relative flex-1 flex items-center gap-3 px-3 py-2 rounded-lg border-2 cursor-pointer transition-all",
             nodeStyle.bg,
             nodeStyle.border,
             nodeStyle.hoverBg,
             nodeStyle.text,
             `shadow-sm ${nodeStyle.shadow}`,
-            isHighlighted && "ring-2 ring-primary ring-offset-1",
-            isInProgress && "ring-2 ring-amber-400 ring-offset-1",
-            isOptional && "border-dashed"
+            isHighlighted && "ring-2 ring-primary ring-offset-1 dark:ring-offset-background",
+            isInProgress && "ring-2 ring-amber-400 ring-offset-1 dark:ring-offset-background",
+            isOptional && "border-dashed",
+            showEffects && "shadow-lg shadow-amber-500/30 dark:shadow-amber-400/40"
           )}
         >
-          {/* Icon - Smaller, cleaner */}
+          {/* Shimmer and particle effects for recommended nodes */}
+          {showEffects && (
+            <>
+              <ShimmerEffect />
+              <FloatingParticles />
+            </>
+          )}
+          
+          {/* Icon - with enhanced visibility */}
           <div className={cn(
-            "flex-shrink-0 h-8 w-8 rounded-md flex items-center justify-center",
+            "relative z-10 flex-shrink-0 h-8 w-8 rounded-md flex items-center justify-center",
             `bg-gradient-to-br ${gradient}`,
-            "shadow-sm"
+            "shadow-sm dark:shadow-md"
           )}>
-            <NodeIcon className="h-4 w-4 text-white" />
+            <NodeIcon className="h-4 w-4 text-white drop-shadow-sm" />
           </div>
 
           {/* Content */}
-          <div className="flex-1 min-w-0">
+          <div className="relative z-10 flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className={cn(
                 "font-semibold text-sm leading-tight",
@@ -149,15 +205,21 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
                 {node.title}
               </span>
 
-              {/* Badges */}
+              {/* Badges with enhanced styling */}
               {node.isRecommended && !isCompleted && (
-                <span className={cn(
-                  "inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border",
-                  badgeStyles.recommended
-                )}>
-                  <Star className="h-2.5 w-2.5" />
+                <motion.span 
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded border shadow-sm",
+                    badgeStyles.recommended
+                  )}
+                  animate={{ 
+                    boxShadow: ["0 0 0 0 rgba(251, 191, 36, 0)", "0 0 8px 2px rgba(251, 191, 36, 0.4)", "0 0 0 0 rgba(251, 191, 36, 0)"]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Star className="h-2.5 w-2.5 fill-current" />
                   Recommended
-                </span>
+                </motion.span>
               )}
               
               {isOptional && (
@@ -190,7 +252,7 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
           </div>
 
           {/* Metadata - Right side */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="relative z-10 flex items-center gap-2 flex-shrink-0">
             {/* Time estimate */}
             {node.estimatedTime && (
               <div className="hidden sm:flex items-center gap-1 text-[10px] opacity-60">
