@@ -40,6 +40,7 @@ import SavedPathsManager from "./SavedPathsManager";
 import PathComparisonDialog from "./PathComparisonDialog";
 import MergePathsDialog from "./MergePathsDialog";
 import PathHistoryPanel from "./PathHistoryPanel";
+import RoadmapMobileFAB from "./RoadmapMobileFAB";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoadmapConfetti } from "@/hooks/useRoadmapConfetti";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1444,6 +1445,33 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           </motion.button>
         )}
       </div>
+
+      {/* Mobile FAB for quick actions */}
+      <RoadmapMobileFAB
+        isCompactMode={isCompactMode}
+        onToggleCompact={() => setIsCompactMode(!isCompactMode)}
+        isFocusMode={isFocusMode}
+        onToggleFocus={() => {
+          if (!isFocusMode) {
+            const recommendedSection = tree.nodes.find(node => {
+              const nodeList = flattenNodes([node]);
+              return nodeList.some(n => n.id === nextRecommendedId);
+            });
+            setFocusedSectionId(recommendedSection?.id || tree.nodes[0]?.id);
+          } else {
+            setFocusedSectionId(null);
+          }
+          setIsFocusMode(!isFocusMode);
+        }}
+        layoutMode={layoutMode}
+        onLayoutModeChange={setLayoutMode}
+        onScrollToTop={() => {
+          treeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        onResetOrder={hasCustomOrder ? handleResetOrder : undefined}
+        showResetOrder={hasCustomOrder}
+      />
     </TooltipProvider>
   );
 };
