@@ -3,7 +3,7 @@
  import { 
    X, Clock, CheckCircle, XCircle, ArrowRight, Trophy, 
    Shuffle, Zap, Target, Settings, Play, Pause, RotateCcw,
-  Code, Cpu, Database, Calculator, Brain, BookOpen, ChevronLeft, ChevronRight, Eye, Flag, PauseCircle, PlayCircle
+  Code, Cpu, Database, Calculator, Brain, BookOpen, ChevronLeft, ChevronRight, Eye, Flag, PauseCircle, PlayCircle, SkipForward, AlertCircle
  } from "lucide-react";
  import { Button } from "@/components/ui/button";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -112,6 +112,9 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
   const [reviewIndex, setReviewIndex] = useState(0);
   const [reviewFilter, setReviewFilter] = useState<"all" | "incorrect" | "unanswered" | "flagged">("incorrect");
   const [markedForReview, setMarkedForReview] = useState<Set<number>>(new Set());
+
+  // Skip tracking
+  const [skippedQuestions, setSkippedQuestions] = useState<Set<number>>(new Set());
  
    // Prepare questions pool
    const allQuestions = useMemo(() => {
@@ -235,6 +238,7 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
      setTimeLimit(limit);
      setQuestionStartTime(Date.now());
       setMarkedForReview(new Set());
+      setSkippedQuestions(new Set());
      setQuizState("playing");
    };
  
@@ -258,6 +262,80 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
       } else {
         updated.add(index);
       }
+      return updated;
+    });
+  };
+
+  const handleSkip = () => {
+    const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
+    setTimePerQuestion(prev => [...prev, timeTaken]);
+    setAnswers(prev => [...prev, null]); // Mark as unanswered
+    setSkippedQuestions(prev => new Set(prev).add(currentIndex));
+    
+    // Find the next unanswered question or go to results
+    const nextUnanswered = findNextUnanswered(currentIndex + 1);
+    
+    if (nextUnanswered !== -1) {
+      setCurrentIndex(nextUnanswered);
+      setSelectedAnswer(null);
+      setQuestionStartTime(Date.now());
+    } else {
+      // Check if there are any skipped questions to revisit
+      const firstSkipped = findFirstSkipped();
+      if (firstSkipped !== -1) {
+        setCurrentIndex(firstSkipped);
+        setSelectedAnswer(null);
+        setQuestionStartTime(Date.now());
+      } else {
+        // All questions answered, go to results
+        const finalAnswers = [...answers, null];
+        setQuizState("results");
+        saveResults(finalAnswers);
+      }
+    }
+  };
+
+  const findNextUnanswered = (startFrom: number): number => {
+    for (let i = startFrom; i < questions.length; i++) {
+      if (answers[i] === undefined) {
+        return i;
+      }
+    }
+    return -1;
+  };
+
+  const findFirstSkipped = (): number => {
+    for (let i = 0; i < questions.length; i++) {
+      if (skippedQuestions.has(i) && answers[i] === null) {
+        return i;
+      }
+    }
+    return -1;
+  };
+
+  const handleReturnToSkipped = (index: number) => {
+    // Save current answer state if needed
+    if (selectedAnswer !== null && answers[currentIndex] === undefined) {
+      const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
+      setTimePerQuestion(prev => {
+        const updated = [...prev];
+        updated[currentIndex] = timeTaken;
+        return updated;
+      });
+      setAnswers(prev => {
+        const updated = [...prev];
+        updated[currentIndex] = selectedAnswer;
+        return updated;
+      });
+    }
+    
+    setCurrentIndex(index);
+    setSelectedAnswer(null);
+    setQuestionStartTime(Date.now());
+    // Remove from skipped when returning
+    setSkippedQuestions(prev => {
+      const updated = new Set(prev);
+      updated.delete(index);
       return updated;
     });
   };
@@ -362,6 +440,9 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
       return true;
     });
   }, [questions, answers, reviewFilter, markedForReview]);
+
+  const skippedCount = skippedQuestions.size;
+  const remainingSkipped = Array.from(skippedQuestions).filter(i => answers[i] === null);
 
   const currentReviewItem = filteredReviewQuestions[reviewIndex];
  
@@ -949,6 +1030,15 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
             <Flag className={cn("h-4 w-4", markedForReview.has(currentIndex) ? "fill-amber-500" : "")} />
           </Button>
           <Button
+            variant="outline"
+            onClick={handleSkip}
+            disabled={selectedAnswer !== null}
+            className="flex-shrink-0"
+            title="Skip and answer later"
+          >
+            <SkipForward className="h-4 w-4" />
+          </Button>
+          <Button
             onClick={handleNext}
             disabled={selectedAnswer === null}
             className="flex-1"
@@ -967,6 +1057,33 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
             )}
           </Button>
         </div>
+
+        {/* Skipped questions indicator */}
+        {remainingSkipped.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <span className="text-sm font-medium">{remainingSkipped.length} skipped question{remainingSkipped.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {remainingSkipped.map(idx => (
+                <Button
+                  key={idx}
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => handleReturnToSkipped(idx)}
+                >
+                  Q{idx + 1}
+                </Button>
+              ))}
+            </div>
+          </motion.div>
+        )}
      </div>
    );
  };
