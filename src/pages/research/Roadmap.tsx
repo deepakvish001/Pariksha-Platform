@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Map, Search, ChevronDown, Play, Trophy, CheckCircle, RotateCcw } from "lucide-react";
+import { Map, Search, ChevronDown, Play, Trophy, CheckCircle, RotateCcw, GitBranch } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,10 +31,14 @@ import {
   type RoadmapQuestion,
   type RoadmapCategory,
 } from "@/data/roadmapsData";
+import { roadmapTrees, getRoadmapTreeById } from "@/data/roadmapTreesData";
 import AnswerPanel from "@/components/library/AnswerPanel";
 import FundamentalsStreakCard from "@/components/FundamentalsStreakCard";
 import QuizLeaderboard from "@/components/library/QuizLeaderboard";
 import FundamentalsQuizMode from "@/components/library/FundamentalsQuizMode";
+import RoadmapTree from "@/components/roadmap/RoadmapTree";
+import RoadmapFAQ from "@/components/roadmap/RoadmapFAQ";
+import { useRoadmapTreeProgress } from "@/hooks/useRoadmapTreeProgress";
 
 const difficultyColors = {
   Easy: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
@@ -47,11 +51,22 @@ const Roadmap: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<"questions" | "quiz" | "leaderboard">("questions");
+  const [activeTab, setActiveTab] = useState<"questions" | "visual" | "quiz" | "leaderboard">("questions");
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
   const [progress, setProgress] = useState<Record<string, { solved: boolean; revision: boolean }>>({});
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set(["frontend"]));
   const [isQuizMode, setIsQuizMode] = useState(false);
+  const [selectedTreeId, setSelectedTreeId] = useState<string>("frontend");
+
+  // Get the selected tree for visual roadmap
+  const selectedTree = getRoadmapTreeById(selectedTreeId);
+  
+  // Tree progress hook
+  const { 
+    progress: treeProgress, 
+    toggleNodeComplete,
+    stats: treeStats,
+  } = useRoadmapTreeProgress(selectedTreeId, selectedTree?.nodes || []);
 
   // Fetch progress from database
   useEffect(() => {
@@ -253,10 +268,14 @@ const Roadmap: React.FC = () => {
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <TabsList>
+            <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="questions" className="gap-2">
                 <Map className="h-4 w-4" />
                 Roadmaps
+              </TabsTrigger>
+              <TabsTrigger value="visual" className="gap-2">
+                <GitBranch className="h-4 w-4" />
+                Visual Map
               </TabsTrigger>
               <TabsTrigger value="quiz" className="gap-2">
                 <Play className="h-4 w-4" />
@@ -434,6 +453,51 @@ const Roadmap: React.FC = () => {
                 );
               })}
             </div>
+          </TabsContent>
+
+          {/* Visual Roadmap Tab */}
+          <TabsContent value="visual" className="space-y-6 mt-4">
+            {/* Tree Selector */}
+            <div className="flex flex-wrap gap-2">
+              {roadmapTrees.map((tree) => (
+                <Button
+                  key={tree.id}
+                  variant={selectedTreeId === tree.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTreeId(tree.id)}
+                  className="gap-2"
+                >
+                  <div className={cn(
+                    "h-2 w-2 rounded-full bg-gradient-to-r",
+                    tree.color
+                  )} />
+                  {tree.title.replace(" Development", "").replace(" & ", "/")}
+                </Button>
+              ))}
+            </div>
+
+            {/* Visual Tree */}
+            {selectedTree && (
+              <>
+                <RoadmapTree
+                  tree={selectedTree}
+                  progress={treeProgress}
+                  onNodeComplete={toggleNodeComplete}
+                />
+                
+                {/* FAQ Section */}
+                {selectedTree.faqs && selectedTree.faqs.length > 0 && (
+                  <Card className="mt-8">
+                    <CardContent className="pt-6">
+                      <RoadmapFAQ 
+                        faqs={selectedTree.faqs} 
+                        title={`${selectedTree.title} FAQs`}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="quiz" className="mt-4">
