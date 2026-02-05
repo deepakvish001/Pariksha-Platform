@@ -42,6 +42,7 @@ import RoadmapLegend from "./RoadmapLegend";
 import HorizontalBranch from "./HorizontalBranch";
 import SharePathDialog from "./SharePathDialog";
 import SavedPathsManager from "./SavedPathsManager";
+import PathComparisonDialog from "./PathComparisonDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoadmapConfetti } from "@/hooks/useRoadmapConfetti";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1024,6 +1025,11 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                   onUpdatePath={updatePath}
                   onDuplicatePath={duplicatePath}
                 />
+              )}
+
+              {/* Compare Paths Button */}
+              {user && savedPaths.length >= 2 && (
+                <PathComparisonDialog savedPaths={savedPaths} />
               )}
 
               {/* Share Path Button */}
