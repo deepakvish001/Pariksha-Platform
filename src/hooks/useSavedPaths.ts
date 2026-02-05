@@ -340,6 +340,137 @@ export const useSavedPaths = (roadmapId: string) => {
     [user, roadmapId, savedPaths]
   );
 
+  // Merge two paths together
+  const mergePaths = useCallback(
+    async (
+      pathId1: string,
+      pathId2: string,
+      name: string,
+      strategy: "interleave" | "prioritize-first" | "prioritize-second"
+    ) => {
+      if (!user) return null;
+
+      const path1 = savedPaths.find((p) => p.id === pathId1);
+      const path2 = savedPaths.find((p) => p.id === pathId2);
+
+      if (!path1 || !path2) return null;
+
+      // Merge the custom orders based on strategy
+      const mergedOrders: Record<string, string[]> = {};
+      const allSections = new Set([
+        ...Object.keys(path1.customOrders),
+        ...Object.keys(path2.customOrders),
+      ]);
+
+      allSections.forEach((sectionId) => {
+        const order1 = path1.customOrders[sectionId] || [];
+        const order2 = path2.customOrders[sectionId] || [];
+
+        if (order1.length === 0) {
+          mergedOrders[sectionId] = order2;
+        } else if (order2.length === 0) {
+          mergedOrders[sectionId] = order1;
+        } else {
+          // Merge based on strategy
+          const merged: string[] = [];
+          const seen = new Set<string>();
+
+          if (strategy === "interleave") {
+            // Alternate between the two lists
+            const maxLen = Math.max(order1.length, order2.length);
+            for (let i = 0; i < maxLen; i++) {
+              if (i < order1.length && !seen.has(order1[i])) {
+                merged.push(order1[i]);
+                seen.add(order1[i]);
+              }
+              if (i < order2.length && !seen.has(order2[i])) {
+                merged.push(order2[i]);
+                seen.add(order2[i]);
+              }
+            }
+          } else if (strategy === "prioritize-first") {
+            // Take all from first, then add any unique from second
+            order1.forEach((id) => {
+              if (!seen.has(id)) {
+                merged.push(id);
+                seen.add(id);
+              }
+            });
+            order2.forEach((id) => {
+              if (!seen.has(id)) {
+                merged.push(id);
+                seen.add(id);
+              }
+            });
+          } else {
+            // prioritize-second: Take all from second, then add any unique from first
+            order2.forEach((id) => {
+              if (!seen.has(id)) {
+                merged.push(id);
+                seen.add(id);
+              }
+            });
+            order1.forEach((id) => {
+              if (!seen.has(id)) {
+                merged.push(id);
+                seen.add(id);
+              }
+            });
+          }
+
+          mergedOrders[sectionId] = merged;
+        }
+      });
+
+      setIsSaving(true);
+      try {
+        const { data, error } = await supabase
+          .from("user_roadmap_saved_paths")
+          .insert({
+            user_id: user.id,
+            roadmap_id: roadmapId,
+            name,
+            description: `Merged from "${path1.name}" and "${path2.name}"`,
+            custom_orders: mergedOrders,
+            is_active: false,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const newPath: SavedPath = {
+          id: data.id,
+          name: data.name,
+          description: data.description,
+          customOrders: (data.custom_orders as Record<string, string[]>) || {},
+          isActive: data.is_active,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        };
+
+        setSavedPaths((prev) => [newPath, ...prev]);
+
+        toast({
+          title: "Paths merged!",
+          description: `Created "${name}" by combining two paths.`,
+        });
+
+        return newPath;
+      } catch (err) {
+        console.error("Error merging paths:", err);
+        toast({
+          title: "Failed to merge paths",
+          variant: "destructive",
+        });
+        return null;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [user, roadmapId, savedPaths]
+  );
+
   return {
     savedPaths,
     activePath,
@@ -351,5 +482,6 @@ export const useSavedPaths = (roadmapId: string) => {
     deletePath,
     updatePath,
     duplicatePath,
+    mergePaths,
   };
 };
