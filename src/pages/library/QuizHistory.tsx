@@ -13,7 +13,10 @@ import { Link } from "react-router-dom";
    Award,
     BarChart3,
     ArrowUpDown,
-   Trash2,
+    Trash2,
+    CheckSquare,
+    Square,
+    X,
   Flame,
   Star,
   Zap,
@@ -190,6 +193,9 @@ const QuizHistory: React.FC = () => {
   const [detailFilter, setDetailFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("date-desc");
   const [isDeletingOld, setIsDeletingOld] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeletingSelected, setIsDeletingSelected] = useState(false);
  
    const fetchResults = async () => {
      if (!user) return;
@@ -608,17 +614,53 @@ const QuizHistory: React.FC = () => {
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[150px]">
-                <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectTrigger className={cn(
+                "w-[150px]",
+                sortBy !== "date-desc" && "border-primary/50 bg-primary/5"
+              )}>
+                <ArrowUpDown className={cn(
+                  "h-4 w-4 mr-2",
+                  sortBy !== "date-desc" && "text-primary"
+                )} />
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="date-desc">Newest First</SelectItem>
-                <SelectItem value="date-asc">Oldest First</SelectItem>
-                <SelectItem value="accuracy-desc">Highest Accuracy</SelectItem>
-                <SelectItem value="accuracy-asc">Lowest Accuracy</SelectItem>
-                <SelectItem value="score-desc">Highest Score</SelectItem>
-                <SelectItem value="score-asc">Lowest Score</SelectItem>
+                <SelectItem value="date-desc">
+                  <span className="flex items-center gap-2">
+                    Newest First
+                    {sortBy === "date-desc" && <span className="text-primary">✓</span>}
+                  </span>
+                </SelectItem>
+                <SelectItem value="date-asc">
+                  <span className="flex items-center gap-2">
+                    Oldest First
+                    {sortBy === "date-asc" && <span className="text-primary">✓</span>}
+                  </span>
+                </SelectItem>
+                <SelectItem value="accuracy-desc">
+                  <span className="flex items-center gap-2">
+                    Highest Accuracy
+                    {sortBy === "accuracy-desc" && <span className="text-primary">✓</span>}
+                  </span>
+                </SelectItem>
+                <SelectItem value="accuracy-asc">
+                  <span className="flex items-center gap-2">
+                    Lowest Accuracy
+                    {sortBy === "accuracy-asc" && <span className="text-primary">✓</span>}
+                  </span>
+                </SelectItem>
+                <SelectItem value="score-desc">
+                  <span className="flex items-center gap-2">
+                    Highest Score
+                    {sortBy === "score-desc" && <span className="text-primary">✓</span>}
+                  </span>
+                </SelectItem>
+                <SelectItem value="score-asc">
+                  <span className="flex items-center gap-2">
+                    Lowest Score
+                    {sortBy === "score-asc" && <span className="text-primary">✓</span>}
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
          </div>
@@ -809,74 +851,190 @@ const QuizHistory: React.FC = () => {
              <Calendar className="h-5 w-5 text-primary" />
              Quiz Attempts ({filteredResults.length}{filteredResults.length !== results.length ? ` of ${results.length}` : ""})
            </CardTitle>
-           <div className="flex items-center gap-2">
-             {quizzesWithoutDetailsCount > 0 && (
-               <AlertDialog>
-                 <AlertDialogTrigger asChild>
-                   <Button 
-                     variant="outline" 
-                     size="sm" 
-                     className="text-amber-600 border-amber-500/30 hover:bg-amber-500/10"
-                     disabled={isDeletingOld}
-                   >
-                     {isDeletingOld ? (
-                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                     ) : (
-                       <Trash2 className="h-4 w-4 mr-1" />
-                     )}
-                     Delete Old ({quizzesWithoutDetailsCount})
-                   </Button>
-                 </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete old quizzes without details?</AlertDialogTitle>
-                      <AlertDialogDescription className="space-y-2">
-                        <span className="block">
-                          This will permanently delete <strong>{quizzesWithoutDetailsCount}</strong> quiz{quizzesWithoutDetailsCount > 1 ? "zes" : ""} that don't have detailed question-by-question tracking.
-                        </span>
-                        <span className="block text-emerald-600 dark:text-emerald-400">
-                          ✓ <strong>{quizzesWithDetailsCount}</strong> quiz{quizzesWithDetailsCount !== 1 ? "zes" : ""} with detailed review will remain.
-                        </span>
-                        <span className="block text-muted-foreground text-xs mt-2">
-                          This action cannot be undone.
-                        </span>
-                      </AlertDialogDescription>
-                   </AlertDialogHeader>
-                   <AlertDialogFooter>
-                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                     <AlertDialogAction onClick={handleDeleteOldQuizzes}>
-                       Delete Old Quizzes
-                     </AlertDialogAction>
-                   </AlertDialogFooter>
-                 </AlertDialogContent>
-               </AlertDialog>
-             )}
-             {results.length > 0 && (
-               <AlertDialog>
-                 <AlertDialogTrigger asChild>
-                   <Button variant="outline" size="sm" className="text-destructive">
-                     <Trash2 className="h-4 w-4 mr-1" />
-                     Clear All
-                   </Button>
-                 </AlertDialogTrigger>
-                 <AlertDialogContent>
-                   <AlertDialogHeader>
-                     <AlertDialogTitle>Clear all quiz history?</AlertDialogTitle>
-                     <AlertDialogDescription>
-                       This will permanently delete all your quiz results. This action cannot
-                       be undone.
-                     </AlertDialogDescription>
-                   </AlertDialogHeader>
-                   <AlertDialogFooter>
-                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                     <AlertDialogAction onClick={handleClearAll}>
-                       Clear All
-                     </AlertDialogAction>
-                   </AlertDialogFooter>
-                 </AlertDialogContent>
-               </AlertDialog>
-             )}
-           </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Selection mode controls */}
+              {isSelectionMode ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsSelectionMode(false);
+                      setSelectedIds(new Set());
+                    }}
+                    className="gap-1"
+                  >
+                    <X className="h-4 w-4" />
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (selectedIds.size === filteredResults.length) {
+                        setSelectedIds(new Set());
+                      } else {
+                        setSelectedIds(new Set(filteredResults.map((r) => r.id)));
+                      }
+                    }}
+                    className="gap-1"
+                  >
+                    {selectedIds.size === filteredResults.length ? (
+                      <>
+                        <Square className="h-4 w-4" />
+                        Deselect All
+                      </>
+                    ) : (
+                      <>
+                        <CheckSquare className="h-4 w-4" />
+                        Select All ({filteredResults.length})
+                      </>
+                    )}
+                  </Button>
+                  {selectedIds.size > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={isDeletingSelected}
+                          className="gap-1"
+                        >
+                          {isDeletingSelected ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                          Delete Selected ({selectedIds.size})
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete selected quizzes?</AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-2">
+                            <span className="block">
+                              This will permanently delete <strong>{selectedIds.size}</strong> selected quiz{selectedIds.size > 1 ? "zes" : ""}.
+                            </span>
+                            <span className="block text-muted-foreground">
+                              {results.length - selectedIds.size} quiz{results.length - selectedIds.size !== 1 ? "zes" : ""} will remain.
+                            </span>
+                            <span className="block text-muted-foreground text-xs mt-2">
+                              This action cannot be undone.
+                            </span>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={async () => {
+                              setIsDeletingSelected(true);
+                              try {
+                                const { error } = await supabase
+                                  .from("quiz_results")
+                                  .delete()
+                                  .in("id", Array.from(selectedIds));
+                                if (error) throw error;
+                                toast.success(`Deleted ${selectedIds.size} quiz${selectedIds.size > 1 ? "zes" : ""}`);
+                                setSelectedIds(new Set());
+                                setIsSelectionMode(false);
+                                fetchResults();
+                              } catch (err) {
+                                console.error("Error deleting selected quizzes:", err);
+                                toast.error("Failed to delete selected quizzes");
+                              } finally {
+                                setIsDeletingSelected(false);
+                              }
+                            }}
+                          >
+                            Delete Selected
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </>
+              ) : (
+                <>
+                  {filteredResults.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsSelectionMode(true)}
+                      className="gap-1"
+                    >
+                      <CheckSquare className="h-4 w-4" />
+                      Select
+                    </Button>
+                  )}
+                  {quizzesWithoutDetailsCount > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-amber-600 border-amber-500/30 hover:bg-amber-500/10"
+                          disabled={isDeletingOld}
+                        >
+                          {isDeletingOld ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4 mr-1" />
+                          )}
+                          Delete Old ({quizzesWithoutDetailsCount})
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete old quizzes without details?</AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-2">
+                            <span className="block">
+                              This will permanently delete <strong>{quizzesWithoutDetailsCount}</strong> quiz{quizzesWithoutDetailsCount > 1 ? "zes" : ""} that don't have detailed question-by-question tracking.
+                            </span>
+                            <span className="block text-emerald-600 dark:text-emerald-400">
+                              ✓ <strong>{quizzesWithDetailsCount}</strong> quiz{quizzesWithDetailsCount !== 1 ? "zes" : ""} with detailed review will remain.
+                            </span>
+                            <span className="block text-muted-foreground text-xs mt-2">
+                              This action cannot be undone.
+                            </span>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteOldQuizzes}>
+                            Delete Old Quizzes
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                  {results.length > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Clear All
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Clear all quiz history?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete all your quiz results. This action cannot
+                            be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleClearAll}>
+                            Clear All
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </>
+              )}
+            </div>
          </CardHeader>
          <CardContent>
            {isLoading ? (
@@ -890,13 +1048,40 @@ const QuizHistory: React.FC = () => {
            ) : (
              <div className="space-y-3 max-h-[500px] overflow-y-auto">
                {filteredResults.map((result) => {
-                 const hasDetails = quizzesWithDetails.has(result.id);
-                 return (
-                   <div
-                     key={result.id}
-                     className="flex items-center gap-4 p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
-                   >
-                     <div className="flex-1 min-w-0">
+                  const hasDetails = quizzesWithDetails.has(result.id);
+                  const isSelected = selectedIds.has(result.id);
+                  return (
+                    <div
+                      key={result.id}
+                      className={cn(
+                        "flex items-center gap-4 p-4 rounded-lg border transition-colors",
+                        isSelected 
+                          ? "bg-primary/10 border-primary/30" 
+                          : "bg-muted/30 hover:bg-muted/50",
+                        isSelectionMode && "cursor-pointer"
+                      )}
+                      onClick={isSelectionMode ? () => {
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(result.id)) {
+                            next.delete(result.id);
+                          } else {
+                            next.add(result.id);
+                          }
+                          return next;
+                        });
+                      } : undefined}
+                    >
+                      {isSelectionMode && (
+                        <div className="flex-shrink-0">
+                          {isSelected ? (
+                            <CheckSquare className="h-5 w-5 text-primary" />
+                          ) : (
+                            <Square className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
                        <div className="flex items-center gap-2 flex-wrap">
                          <Badge variant="outline" className={getQuizTypeBadge(result.quiz_type)}>
                            {result.quiz_type.toUpperCase()}
