@@ -18,6 +18,7 @@ import {
   ChevronUp,
   Zap,
   GripVertical,
+  Minimize2,
   LayoutGrid,
   List,
   RotateCcw,
@@ -185,6 +186,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const [isDragEnabled, setIsDragEnabled] = useState(false);
   const [localNodeOrder, setLocalNodeOrder] = useState<Record<string, NodeType[]>>({});
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isCompactMode, setIsCompactMode] = useState(false);
   const treeRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -710,10 +712,10 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
         ref={(el) => {
           if (el) sectionRefs.current.set(node.id, el);
         }}
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: isCompactMode ? 10 : 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: phaseIndex * 0.1 }}
-        className="mb-6 scroll-mt-24"
+        transition={{ delay: phaseIndex * (isCompactMode ? 0.05 : 0.1) }}
+        className={cn("scroll-mt-24", isCompactMode ? "mb-3" : "mb-6")}
       >
         {/* Section Header */}
         <RoadmapSectionHeader
@@ -723,13 +725,14 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           completed={sectionStats.completed}
           total={sectionStats.total}
           isCollapsed={isCollapsed}
+          isCompact={isCompactMode}
           onToggle={() => toggleSection(node.id)}
         />
         
         {/* Section Content - Enhanced Container */}
         <AnimatePresence initial={false}>
           {!isCollapsed && (
-            <RoadmapSectionContainer isExpanded={!isCollapsed} sectionIndex={phaseIndex}>
+            <RoadmapSectionContainer isExpanded={!isCollapsed} sectionIndex={phaseIndex} isCompact={isCompactMode}>
               {/* Section main node */}
               <RoadmapNode
                 node={node}
@@ -809,13 +812,13 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
         </AnimatePresence>
       </motion.div>
     );
-  }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection, expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, getChildProgress, isDragEnabled, user, sensors, handleDragEnd, getDisplayNodes]);
+  }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection, expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, getChildProgress, isDragEnabled, user, sensors, handleDragEnd, getDisplayNodes, isCompactMode]);
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex gap-4 lg:gap-6">
+      <div className={cn("flex gap-4 lg:gap-6", isCompactMode && "gap-2 lg:gap-4")}>
         {/* Main Content */}
-        <div className="flex-1 space-y-8 min-w-0" ref={treeRef}>
+        <div className={cn("flex-1 min-w-0", isCompactMode ? "space-y-4" : "space-y-8")} ref={treeRef}>
           {/* Compact Progress Header Card - Enhanced */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
@@ -830,29 +833,32 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
             {/* Subtle gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
 
-            <div className="relative p-5 sm:p-6 space-y-5">
+            <div className={cn("relative", isCompactMode ? "p-3 sm:p-4 space-y-3" : "p-5 sm:p-6 space-y-5")}>
               {/* Title Row with Progress Circle */}
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                   {/* Icon Badge */}
                   <div className={cn(
-                    "h-12 w-12 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0",
-                    `bg-gradient-to-br ${tree.color}`
+                    "rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0",
+                    `bg-gradient-to-br ${tree.color}`,
+                    isCompactMode ? "h-10 w-10" : "h-12 w-12 sm:h-14 sm:w-14"
                   )}>
                     {(() => {
                       const IconComponent = roadmapIcons[tree.icon] || Layout;
-                      return <IconComponent className="h-6 w-6 sm:h-7 sm:w-7 text-white drop-shadow-sm" />;
+                      return <IconComponent className={cn("text-white drop-shadow-sm", isCompactMode ? "h-5 w-5" : "h-6 w-6 sm:h-7 sm:w-7")} />;
                     })()}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-lg sm:text-xl font-bold truncate">{tree.title}</h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{tree.description}</p>
+                    <h3 className={cn("font-bold truncate", isCompactMode ? "text-base" : "text-lg sm:text-xl")}>{tree.title}</h3>
+                    {!isCompactMode && (
+                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{tree.description}</p>
+                    )}
                   </div>
                 </div>
 
                 {/* Circular Progress */}
                 <div className="relative flex-shrink-0">
-                  <svg className="h-14 w-14 sm:h-16 sm:w-16 -rotate-90">
+                  <svg className={cn("-rotate-90", isCompactMode ? "h-12 w-12" : "h-14 w-14 sm:h-16 sm:w-16")}>
                     <circle
                       cx="50%" cy="50%" r="42%"
                       className="fill-none stroke-muted/40 stroke-[4]"
@@ -870,90 +876,125 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className={cn(
-                      "text-base sm:text-lg font-bold",
+                      "font-bold",
+                      isCompactMode ? "text-sm" : "text-base sm:text-lg",
                       stats.percentage === 100 && "text-emerald-500"
                     )}>{stats.percentage}%</span>
                   </div>
                 </div>
               </div>
 
-              {/* Stats Grid - Clean 4-column */}
-              <div className="grid grid-cols-4 gap-2 sm:gap-3">
-                {[
-                  { icon: Trophy, label: "Done", value: stats.completed, color: "emerald" },
-                  { icon: Target, label: "Left", value: stats.total - stats.completed, color: "primary" },
-                  { icon: Clock, label: "Est.", value: `${Math.ceil((stats.total - stats.completed) * 0.5)}w`, color: "amber" },
-                  { icon: TrendingUp, label: "Total", value: stats.total, color: "violet" },
-                ].map((stat, i) => (
-                  <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 + i * 0.05 }}
-                    className={cn(
-                      "relative flex flex-col items-center p-2 sm:p-3 rounded-xl text-center",
-                      "bg-muted/30 dark:bg-muted/20 border border-border/50",
-                      "transition-colors hover:bg-muted/50"
-                    )}
-                  >
-                    <stat.icon className={cn(
-                      "h-4 w-4 sm:h-5 sm:w-5 mb-1",
-                      stat.color === "emerald" && "text-emerald-500",
-                      stat.color === "primary" && "text-primary",
-                      stat.color === "amber" && "text-amber-500",
-                      stat.color === "violet" && "text-violet-500"
-                    )} />
-                    <span className={cn(
-                      "text-base sm:text-lg font-bold",
-                      stat.color === "emerald" && "text-emerald-600 dark:text-emerald-400",
-                      stat.color === "primary" && "text-primary",
-                      stat.color === "amber" && "text-amber-600 dark:text-amber-400",
-                      stat.color === "violet" && "text-violet-600 dark:text-violet-400"
-                    )}>{stat.value}</span>
-                    <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium">{stat.label}</span>
-                  </motion.div>
-                ))}
-              </div>
+              {/* Stats Grid - Clean 4-column (hidden in compact mode) */}
+              {!isCompactMode && (
+                <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                  {[
+                    { icon: Trophy, label: "Done", value: stats.completed, color: "emerald" },
+                    { icon: Target, label: "Left", value: stats.total - stats.completed, color: "primary" },
+                    { icon: Clock, label: "Est.", value: `${Math.ceil((stats.total - stats.completed) * 0.5)}w`, color: "amber" },
+                    { icon: TrendingUp, label: "Total", value: stats.total, color: "violet" },
+                  ].map((stat, i) => (
+                    <motion.div
+                      key={stat.label}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 + i * 0.05 }}
+                      className={cn(
+                        "relative flex flex-col items-center p-2 sm:p-3 rounded-xl text-center",
+                        "bg-muted/30 dark:bg-muted/20 border border-border/50",
+                        "transition-colors hover:bg-muted/50"
+                      )}
+                    >
+                      <stat.icon className={cn(
+                        "h-4 w-4 sm:h-5 sm:w-5 mb-1",
+                        stat.color === "emerald" && "text-emerald-500",
+                        stat.color === "primary" && "text-primary",
+                        stat.color === "amber" && "text-amber-500",
+                        stat.color === "violet" && "text-violet-500"
+                      )} />
+                      <span className={cn(
+                        "text-base sm:text-lg font-bold",
+                        stat.color === "emerald" && "text-emerald-600 dark:text-emerald-400",
+                        stat.color === "primary" && "text-primary",
+                        stat.color === "amber" && "text-amber-600 dark:text-amber-400",
+                        stat.color === "violet" && "text-violet-600 dark:text-violet-400"
+                      )}>{stat.value}</span>
+                      <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium">{stat.label}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              {/* Compact stats row for compact mode */}
+              {isCompactMode && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1">
+                      <Trophy className="h-3.5 w-3.5 text-emerald-500" />
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{stats.completed}</span> done
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Target className="h-3.5 w-3.5 text-primary" />
+                      <span className="font-semibold text-primary">{stats.total - stats.completed}</span> left
+                    </span>
+                  </div>
+                  <RoadmapCertificate
+                    roadmapTitle={tree.title}
+                    roadmapIcon={tree.icon === "Layout" ? "📐" : tree.icon === "Server" ? "🖥️" : tree.icon === "Layers" ? "📚" : "🎯"}
+                    completedCount={stats.completed}
+                    totalCount={stats.total}
+                    percentage={stats.percentage}
+                    userName={userName}
+                    trigger={
+                      <button className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                        <Award className="h-3 w-3" />
+                        Certificate
+                      </button>
+                    }
+                  />
+                </div>
+              )}
 
               {/* Progress Bar + Certificate */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-xs text-muted-foreground">
-                  <span className="font-medium">Progress</span>
-                  <div className="flex items-center gap-3">
-                    <span>{stats.completed}/{stats.total} topics</span>
-                    <RoadmapCertificate
-                      roadmapTitle={tree.title}
-                      roadmapIcon={tree.icon === "Layout" ? "📐" : tree.icon === "Server" ? "🖥️" : tree.icon === "Layers" ? "📚" : "🎯"}
-                      completedCount={stats.completed}
-                      totalCount={stats.total}
-                      percentage={stats.percentage}
-                      userName={userName}
-                      trigger={
-                        <button className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
-                          <Award className="h-3.5 w-3.5" />
-                          Certificate
-                        </button>
-                      }
+              {!isCompactMode && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span className="font-medium">Progress</span>
+                    <div className="flex items-center gap-3">
+                      <span>{stats.completed}/{stats.total} topics</span>
+                      <RoadmapCertificate
+                        roadmapTitle={tree.title}
+                        roadmapIcon={tree.icon === "Layout" ? "📐" : tree.icon === "Server" ? "🖥️" : tree.icon === "Layers" ? "📚" : "🎯"}
+                        completedCount={stats.completed}
+                        totalCount={stats.total}
+                        percentage={stats.percentage}
+                        userName={userName}
+                        trigger={
+                          <button className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                            <Award className="h-3.5 w-3.5" />
+                            Certificate
+                          </button>
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="h-2.5 rounded-full bg-muted/60 overflow-hidden">
+                    <motion.div 
+                      className={cn(
+                        "h-full rounded-full",
+                        stats.percentage === 100 
+                          ? "bg-gradient-to-r from-emerald-500 to-teal-500" 
+                          : "bg-gradient-to-r from-primary via-primary to-primary/80"
+                      )}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${stats.percentage}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
                     />
                   </div>
                 </div>
-                <div className="h-2.5 rounded-full bg-muted/60 overflow-hidden">
-                  <motion.div 
-                    className={cn(
-                      "h-full rounded-full",
-                      stats.percentage === 100 
-                        ? "bg-gradient-to-r from-emerald-500 to-teal-500" 
-                        : "bg-gradient-to-r from-primary via-primary to-primary/80"
-                    )}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${stats.percentage}%` }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                  />
-                </div>
-              </div>
+              )}
 
-              {/* Next Step Hint - Compact */}
-              {nextRecommendedId && stats.percentage < 100 && (
+              {/* Next Step Hint - Compact (hidden in compact mode) */}
+              {nextRecommendedId && stats.percentage < 100 && !isCompactMode && (
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -974,8 +1015,8 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
             </div>
           </motion.div>
 
-          {/* Collapsible Legend */}
-          <RoadmapLegend />
+          {/* Collapsible Legend - hidden in compact mode */}
+          {!isCompactMode && <RoadmapLegend />}
 
           {/* Unified Controls Bar */}
           <motion.div 
@@ -1026,6 +1067,21 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                     <span className="hidden sm:inline">Cards</span>
                   </button>
                 </div>
+
+                {/* Compact Mode Toggle */}
+                <button
+                  onClick={() => setIsCompactMode(!isCompactMode)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                    isCompactMode 
+                      ? "bg-primary/10 text-primary border-primary/30" 
+                      : "bg-muted/50 text-muted-foreground border-border/50 hover:text-foreground hover:bg-muted"
+                  )}
+                  title={isCompactMode ? "Switch to normal view" : "Switch to compact view"}
+                >
+                  <Minimize2 className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{isCompactMode ? "Normal" : "Compact"}</span>
+                </button>
 
               {/* Drag Reorder Toggle */}
               <button
