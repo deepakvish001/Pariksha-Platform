@@ -130,6 +130,53 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_question_responses: {
+        Row: {
+          created_at: string
+          id: string
+          is_correct: boolean
+          question_category: string
+          question_id: number
+          question_index: number
+          quiz_result_id: string
+          selected_answer_index: number | null
+          time_taken_seconds: number | null
+          was_flagged: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question_category: string
+          question_id: number
+          question_index: number
+          quiz_result_id: string
+          selected_answer_index?: number | null
+          time_taken_seconds?: number | null
+          was_flagged?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question_category?: string
+          question_id?: number
+          question_index?: number
+          quiz_result_id?: string
+          selected_answer_index?: number | null
+          time_taken_seconds?: number | null
+          was_flagged?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_question_responses_quiz_result_id_fkey"
+            columns: ["quiz_result_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_results: {
         Row: {
           accuracy: number
