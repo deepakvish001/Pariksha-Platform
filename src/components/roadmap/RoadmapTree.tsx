@@ -48,6 +48,7 @@ import DraggableNode from "./DraggableNode";
 import RoadmapNodeDetail from "./RoadmapNodeDetail";
 import RoadmapToolbar from "./RoadmapToolbar";
 import RoadmapMiniMap from "./RoadmapMiniMap";
+import RoadmapSectionContainer from "./RoadmapSectionContainer";
 import RoadmapCertificate from "./RoadmapCertificate";
 import RoadmapSectionHeader from "./RoadmapSectionHeader";
 import RoadmapLegend from "./RoadmapLegend";
@@ -725,93 +726,85 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           onToggle={() => toggleSection(node.id)}
         />
         
-        {/* Section Content */}
+        {/* Section Content - Enhanced Container */}
         <AnimatePresence initial={false}>
           {!isCollapsed && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="overflow-hidden"
-            >
-              <div className="mt-4 p-4 rounded-xl bg-muted/20 border border-border/40">
-                {/* Section main node */}
-                <RoadmapNode
-                  node={node}
-                  depth={0}
-                  isExpanded={expandedNodes.has(node.id)}
-                  isCompleted={progress[node.id]?.completed || false}
-                  isInProgress={progress[node.id]?.inProgress || false}
-                  isOnProgressPath={progressPath.has(node.id) && node.id === nextRecommendedId}
-                  isHighlighted={Boolean(filteredNodeIds.has(node.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all"))}
-                  completedChildren={getChildProgress(node).completed}
-                  totalChildren={getChildProgress(node).total}
-                  onToggle={() => toggleExpand(node.id)}
-                  onClick={() => handleNodeClick(node)}
-                  onComplete={() => handleComplete(node.id)}
-                />
-                
-                {/* Children with DnD support when enabled */}
-                <AnimatePresence>
-                  {expandedNodes.has(node.id) && orderedChildren.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden relative mt-2"
-                    >
-                      {/* Vertical continuation line for children */}
-                      <div 
-                        className="absolute w-0.5 bg-border/60 dark:bg-border"
-                        style={{
-                          left: 20,
-                          top: 0,
-                          bottom: 20,
-                        }}
-                      />
-                      
-                      {isDragEnabled && user ? (
-                        <DndContext
-                          sensors={sensors}
-                          collisionDetection={closestCenter}
-                          onDragEnd={(event) => handleDragEnd(event, node.id, orderedChildren)}
+            <RoadmapSectionContainer isExpanded={!isCollapsed} sectionIndex={phaseIndex}>
+              {/* Section main node */}
+              <RoadmapNode
+                node={node}
+                depth={0}
+                isExpanded={expandedNodes.has(node.id)}
+                isCompleted={progress[node.id]?.completed || false}
+                isInProgress={progress[node.id]?.inProgress || false}
+                isOnProgressPath={progressPath.has(node.id) && node.id === nextRecommendedId}
+                isHighlighted={Boolean(filteredNodeIds.has(node.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all"))}
+                completedChildren={getChildProgress(node).completed}
+                totalChildren={getChildProgress(node).total}
+                onToggle={() => toggleExpand(node.id)}
+                onClick={() => handleNodeClick(node)}
+                onComplete={() => handleComplete(node.id)}
+              />
+              
+              {/* Children with DnD support when enabled */}
+              <AnimatePresence>
+                {expandedNodes.has(node.id) && orderedChildren.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden relative mt-3 pt-3 border-t border-border/30"
+                  >
+                    {/* Vertical continuation line for children */}
+                    <div 
+                      className="absolute w-0.5 rounded-full bg-gradient-to-b from-border via-border/60 to-transparent"
+                      style={{
+                        left: 20,
+                        top: 12,
+                        bottom: 20,
+                      }}
+                    />
+                    
+                    {isDragEnabled && user ? (
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={(event) => handleDragEnd(event, node.id, orderedChildren)}
+                      >
+                        <SortableContext
+                          items={orderedChildren.map(n => n.id)}
+                          strategy={verticalListSortingStrategy}
                         >
-                          <SortableContext
-                            items={orderedChildren.map(n => n.id)}
-                            strategy={verticalListSortingStrategy}
-                          >
-                            {orderedChildren.map((child) => (
-                              <DraggableNode
-                                key={child.id}
-                                node={child}
-                                depth={1}
-                                isExpanded={expandedNodes.has(child.id)}
-                                isCompleted={progress[child.id]?.completed || false}
-                                isInProgress={progress[child.id]?.inProgress || false}
-                                isOnProgressPath={progressPath.has(child.id) && child.id === nextRecommendedId}
-                                isHighlighted={Boolean(filteredNodeIds.has(child.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all"))}
-                                completedChildren={getChildProgress(child).completed}
-                                totalChildren={getChildProgress(child).total}
-                                onToggle={() => toggleExpand(child.id)}
-                                onClick={() => handleNodeClick(child)}
-                                onComplete={() => handleComplete(child.id)}
-                                isDragEnabled={isDragEnabled}
-                              />
-                            ))}
-                          </SortableContext>
-                        </DndContext>
-                      ) : (
-                        orderedChildren.map((child, index) => 
-                          renderNode(child, 1, index === orderedChildren.length - 1)
-                        )
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
+                          {orderedChildren.map((child) => (
+                            <DraggableNode
+                              key={child.id}
+                              node={child}
+                              depth={1}
+                              isExpanded={expandedNodes.has(child.id)}
+                              isCompleted={progress[child.id]?.completed || false}
+                              isInProgress={progress[child.id]?.inProgress || false}
+                              isOnProgressPath={progressPath.has(child.id) && child.id === nextRecommendedId}
+                              isHighlighted={Boolean(filteredNodeIds.has(child.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all"))}
+                              completedChildren={getChildProgress(child).completed}
+                              totalChildren={getChildProgress(child).total}
+                              onToggle={() => toggleExpand(child.id)}
+                              onClick={() => handleNodeClick(child)}
+                              onComplete={() => handleComplete(child.id)}
+                              isDragEnabled={isDragEnabled}
+                            />
+                          ))}
+                        </SortableContext>
+                      </DndContext>
+                    ) : (
+                      orderedChildren.map((child, index) => 
+                        renderNode(child, 1, index === orderedChildren.length - 1)
+                      )
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </RoadmapSectionContainer>
           )}
         </AnimatePresence>
       </motion.div>
@@ -823,48 +816,49 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
       <div className="flex gap-4 lg:gap-6">
         {/* Main Content */}
         <div className="flex-1 space-y-8 min-w-0" ref={treeRef}>
-          {/* Compact Progress Header Card */}
+          {/* Compact Progress Header Card - Enhanced */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
-              "relative overflow-hidden rounded-2xl border",
-              "bg-card/80 backdrop-blur-xl",
-              "shadow-lg dark:shadow-2xl dark:shadow-primary/5"
+              "relative overflow-hidden rounded-2xl border-2",
+              "bg-card/95 backdrop-blur-xl",
+              "shadow-lg dark:shadow-xl",
+              stats.percentage === 100 && "border-emerald-500/40"
             )}
           >
             {/* Subtle gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
 
-            <div className="relative p-6 space-y-6">
+            <div className="relative p-5 sm:p-6 space-y-5">
               {/* Title Row with Progress Circle */}
               <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4 min-w-0">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                   {/* Icon Badge */}
                   <div className={cn(
-                    "h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0",
+                    "h-12 w-12 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0",
                     `bg-gradient-to-br ${tree.color}`
                   )}>
                     {(() => {
                       const IconComponent = roadmapIcons[tree.icon] || Layout;
-                      return <IconComponent className="h-7 w-7 text-white drop-shadow-md" />;
+                      return <IconComponent className="h-6 w-6 sm:h-7 sm:w-7 text-white drop-shadow-sm" />;
                     })()}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-xl font-bold truncate">{tree.title}</h3>
-                    <p className="text-sm text-muted-foreground line-clamp-1">{tree.description}</p>
+                    <h3 className="text-lg sm:text-xl font-bold truncate">{tree.title}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{tree.description}</p>
                   </div>
                 </div>
 
                 {/* Circular Progress */}
                 <div className="relative flex-shrink-0">
-                  <svg className="h-16 w-16 -rotate-90">
+                  <svg className="h-14 w-14 sm:h-16 sm:w-16 -rotate-90">
                     <circle
-                      cx="32" cy="32" r="28"
-                      className="fill-none stroke-muted/50 stroke-[4]"
+                      cx="50%" cy="50%" r="42%"
+                      className="fill-none stroke-muted/40 stroke-[4]"
                     />
                     <motion.circle
-                      cx="32" cy="32" r="28"
+                      cx="50%" cy="50%" r="42%"
                       className="fill-none stroke-[4]"
                       stroke={stats.percentage === 100 ? "#22c55e" : "hsl(var(--primary))"}
                       strokeLinecap="round"
@@ -876,15 +870,15 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className={cn(
-                      "text-lg font-bold",
+                      "text-base sm:text-lg font-bold",
                       stats.percentage === 100 && "text-emerald-500"
                     )}>{stats.percentage}%</span>
                   </div>
                 </div>
               </div>
 
-              {/* Stats Grid - Compact 4-column */}
-              <div className="grid grid-cols-4 gap-3">
+              {/* Stats Grid - Clean 4-column */}
+              <div className="grid grid-cols-4 gap-2 sm:gap-3">
                 {[
                   { icon: Trophy, label: "Done", value: stats.completed, color: "emerald" },
                   { icon: Target, label: "Left", value: stats.total - stats.completed, color: "primary" },
@@ -897,30 +891,26 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 + i * 0.05 }}
                     className={cn(
-                      "relative flex flex-col items-center p-3 rounded-xl text-center",
-                      "border bg-gradient-to-b from-muted/30 to-transparent",
-                      stat.color === "emerald" && "border-emerald-500/20 hover:border-emerald-500/40",
-                      stat.color === "primary" && "border-primary/20 hover:border-primary/40",
-                      stat.color === "amber" && "border-amber-500/20 hover:border-amber-500/40",
-                      stat.color === "violet" && "border-violet-500/20 hover:border-violet-500/40",
-                      "transition-colors"
+                      "relative flex flex-col items-center p-2 sm:p-3 rounded-xl text-center",
+                      "bg-muted/30 dark:bg-muted/20 border border-border/50",
+                      "transition-colors hover:bg-muted/50"
                     )}
                   >
                     <stat.icon className={cn(
-                      "h-5 w-5 mb-1",
+                      "h-4 w-4 sm:h-5 sm:w-5 mb-1",
                       stat.color === "emerald" && "text-emerald-500",
                       stat.color === "primary" && "text-primary",
                       stat.color === "amber" && "text-amber-500",
                       stat.color === "violet" && "text-violet-500"
                     )} />
                     <span className={cn(
-                      "text-lg font-bold",
+                      "text-base sm:text-lg font-bold",
                       stat.color === "emerald" && "text-emerald-600 dark:text-emerald-400",
                       stat.color === "primary" && "text-primary",
                       stat.color === "amber" && "text-amber-600 dark:text-amber-400",
                       stat.color === "violet" && "text-violet-600 dark:text-violet-400"
                     )}>{stat.value}</span>
-                    <span className="text-[10px] text-muted-foreground font-medium">{stat.label}</span>
+                    <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium">{stat.label}</span>
                   </motion.div>
                 ))}
               </div>
@@ -947,7 +937,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                     />
                   </div>
                 </div>
-                <div className="h-2 rounded-full bg-muted/60 overflow-hidden">
+                <div className="h-2.5 rounded-full bg-muted/60 overflow-hidden">
                   <motion.div 
                     className={cn(
                       "h-full rounded-full",
@@ -1233,12 +1223,12 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           </motion.div>
 
           {/* Tree Visualization - Layout Mode Dependent */}
-          <div className="relative py-2">
-            {/* Decorative background pattern */}
-            <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
+          <div className="relative py-4">
+            {/* Subtle dot pattern background for visual depth */}
+            <div className="absolute inset-0 opacity-[0.015] dark:opacity-[0.03] pointer-events-none">
               <div className="h-full w-full" style={{
-                backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-                backgroundSize: '20px 20px'
+                backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--foreground)) 1px, transparent 0)`,
+                backgroundSize: '24px 24px'
               }} />
             </div>
             
