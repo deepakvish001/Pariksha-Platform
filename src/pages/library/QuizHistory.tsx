@@ -21,6 +21,7 @@ import { Link } from "react-router-dom";
   Sparkles,
   Mail,
   Loader2,
+   Eye,
  } from "lucide-react";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,7 @@ import { Link } from "react-router-dom";
  import { toast } from "sonner";
 import StreakMilestoneToast from "@/components/StreakMilestoneToast";
 import { useStreakMilestone } from "@/hooks/useStreakMilestone";
+import QuizHistoryDetail from "@/components/library/QuizHistoryDetail";
  import {
    LineChart,
    Line,
@@ -177,6 +179,8 @@ const ACHIEVEMENTS: Achievement[] = [
   const [quizStreak, setQuizStreak] = useState({ current: 0, longest: 0 });
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const { showMilestone, milestoneStreak, closeMilestone } = useStreakMilestone();
+  const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
  
    const fetchResults = async () => {
      if (!user) return;
@@ -327,6 +331,16 @@ const ACHIEVEMENTS: Achievement[] = [
     }
   }, [results]);
 
+  const handleViewDetails = (quizId: string) => {
+    setSelectedQuizId(quizId);
+    setIsDetailOpen(true);
+  };
+
+  const handleCloseDetail = () => {
+    setIsDetailOpen(false);
+    setSelectedQuizId(null);
+  };
+
   const earnedAchievements = ACHIEVEMENTS.filter((a) =>
     a.condition(stats, results)
   );
@@ -445,6 +459,11 @@ const ACHIEVEMENTS: Achievement[] = [
         streak={milestoneStreak}
         isVisible={showMilestone}
         onClose={closeMilestone}
+      />
+      <QuizHistoryDetail
+        quizResultId={selectedQuizId}
+        isOpen={isDetailOpen}
+        onClose={handleCloseDetail}
       />
       <div className="space-y-6 p-4 md:p-6">
        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -761,6 +780,15 @@ const ACHIEVEMENTS: Achievement[] = [
                        <div className="font-semibold">{result.avg_time_seconds}s</div>
                        <div className="text-xs text-muted-foreground">Avg Time</div>
                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleViewDetails(result.id)}
+                        className="text-muted-foreground hover:text-primary"
+                        title="View Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                      <AlertDialog>
                        <AlertDialogTrigger asChild>
                          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">

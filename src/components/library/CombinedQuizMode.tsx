@@ -148,12 +148,14 @@ import { useXPWithNotifications, XP_VALUES } from "@/hooks/useXPWithNotification
      if (timerRef.current) clearInterval(timerRef.current);
      const remaining = questions.length - currentIndex;
      const newAnswers = [...answers];
+     const newTimes = [...timePerQuestion];
      for (let i = 0; i < remaining; i++) {
        newAnswers.push(null);
+       newTimes.push(0);
      }
      setAnswers(newAnswers);
      setQuizState("results");
-     saveResults(newAnswers);
+      saveResults(newAnswers, newTimes);
    };
  
    const startQuiz = (preset?: QuizPreset) => {
@@ -227,8 +229,9 @@ import { useXPWithNotifications, XP_VALUES } from "@/hooks/useXPWithNotification
         setQuestionStartTime(Date.now());
       } else {
         const finalAnswers = [...answers, null];
+        const finalTimes = [...timePerQuestion, timeTaken];
         setQuizState("results");
-        saveResults(finalAnswers);
+        saveResults(finalAnswers, finalTimes);
       }
     }
   };
@@ -297,12 +300,14 @@ import { useXPWithNotifications, XP_VALUES } from "@/hooks/useXPWithNotification
 
    const handleSubmitFromSummary = () => {
      const finalAnswers = [...answers];
+     const finalTimes = [...timePerQuestion];
      while (finalAnswers.length < questions.length) {
        finalAnswers.push(null);
+       finalTimes.push(0);
      }
      setAnswers(finalAnswers);
      setQuizState("results");
-     saveResults(finalAnswers);
+      saveResults(finalAnswers, finalTimes);
    };
 
    const handleGoToQuestion = (index: number) => {
@@ -337,7 +342,7 @@ import { useXPWithNotifications, XP_VALUES } from "@/hooks/useXPWithNotification
      return { answered, skipped, flagged, unanswered };
    };
  
-   const saveResults = async (finalAnswers: (number | null)[]) => {
+    const saveResults = async (finalAnswers: (number | null)[], questionTimes: number[]) => {
      if (!user) return;
      
      const score = finalAnswers.reduce((acc, ans, idx) => {
@@ -348,7 +353,10 @@ import { useXPWithNotifications, XP_VALUES } from "@/hooks/useXPWithNotification
       const accuracy = Math.round((score / questions.length) * 100);
      
      try {
-       await supabase.from("quiz_results").insert({
+        // Insert quiz result and get the ID
+        const { data: quizResultData, error: quizError } = await supabase
+          .from("quiz_results")
+          .insert({
          user_id: user.id,
          quiz_type: "combined",
          score,
@@ -358,7 +366,33 @@ import { useXPWithNotifications, XP_VALUES } from "@/hooks/useXPWithNotification
          avg_time_seconds: Math.round(totalTime / questions.length),
          category: "all",
          difficulty: "all",
-       });
+          })
+          .select("id")
+          .single();
+
+        if (quizError) throw quizError;
+
+        // Save individual question responses for history detail view
+        if (quizResultData?.id) {
+          const questionResponses = questions.map((q, idx) => ({
+            quiz_result_id: quizResultData.id,
+            question_id: q.id,
+            question_category: q.category,
+            question_index: idx + 1,
+            selected_answer_index: finalAnswers[idx],
+            is_correct: finalAnswers[idx] !== null && q.options[finalAnswers[idx]!]?.isCorrect,
+            time_taken_seconds: questionTimes[idx] || 0,
+            was_flagged: markedForReview.has(idx),
+          }));
+
+          const { error: responsesError } = await supabase
+            .from("quiz_question_responses")
+            .insert(questionResponses);
+
+          if (responsesError) {
+            console.error("Error saving question responses:", responsesError);
+          }
+        }
 
         const quizXP = XP_VALUES.QUIZ_COMPLETE + (score * XP_VALUES.QUESTION_CORRECT);
         const isPerfect = score === questions.length;
