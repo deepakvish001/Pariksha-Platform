@@ -33,7 +33,7 @@ import {
 } from "@/data/roadmapsData";
 import { roadmapTrees, getRoadmapTreeById } from "@/data/roadmapTreesData";
 import AnswerPanel from "@/components/library/AnswerPanel";
-import FundamentalsStreakCard from "@/components/FundamentalsStreakCard";
+import RoadmapStreakCard from "@/components/roadmap/RoadmapStreakCard";
 import QuizLeaderboard from "@/components/library/QuizLeaderboard";
 import FundamentalsQuizMode from "@/components/library/FundamentalsQuizMode";
 import RoadmapTree from "@/components/roadmap/RoadmapTree";
@@ -284,7 +284,7 @@ const Roadmap: React.FC = () => {
         </motion.div>
 
         {/* Streak Card */}
-        <FundamentalsStreakCard compact />
+        <RoadmapStreakCard compact />
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
