@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   Check, 
@@ -22,6 +22,10 @@ import {
   CheckCircle2,
   Circle,
   Layers,
+  StickyNote,
+  Save,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import {
   Sheet,
@@ -33,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { getNodeIcon } from "./RoadmapIconMapping";
 import type { RoadmapTreeNode, RoadmapResource } from "@/data/roadmapTreesData";
@@ -43,6 +48,12 @@ interface RoadmapNodeDetailProps {
   onOpenChange: (open: boolean) => void;
   isCompleted: boolean;
   onComplete: () => void;
+  // Notes props
+  initialNote?: string;
+  onSaveNote?: (note: string) => void;
+  onDeleteNote?: () => void;
+  isSavingNote?: boolean;
+  isDeletingNote?: boolean;
 }
 
 const difficultyConfig = {
@@ -131,7 +142,36 @@ const RoadmapNodeDetail: React.FC<RoadmapNodeDetailProps> = ({
   onOpenChange,
   isCompleted,
   onComplete,
+  initialNote = "",
+  onSaveNote,
+  onDeleteNote,
+  isSavingNote = false,
+  isDeletingNote = false,
 }) => {
+  const [noteText, setNoteText] = useState(initialNote);
+  const [isEditing, setIsEditing] = useState(false);
+  
+  // Reset note text when node changes or initial note updates
+  useEffect(() => {
+    setNoteText(initialNote);
+    setIsEditing(false);
+  }, [initialNote, node?.id]);
+
+  const handleSaveNote = () => {
+    if (onSaveNote && noteText.trim()) {
+      onSaveNote(noteText.trim());
+      setIsEditing(false);
+    }
+  };
+
+  const handleDeleteNote = () => {
+    if (onDeleteNote) {
+      onDeleteNote();
+      setNoteText("");
+      setIsEditing(false);
+    }
+  };
+
   if (!node) return null;
 
   const nodeType = nodeTypeConfig[node.type];
@@ -140,6 +180,7 @@ const RoadmapNodeDetail: React.FC<RoadmapNodeDetailProps> = ({
   const difficulty = node.difficulty ? difficultyConfig[node.difficulty] : null;
   const childrenCount = node.children?.length || 0;
   const resourcesCount = node.resources?.length || 0;
+  const hasNote = noteText.trim().length > 0;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -321,6 +362,85 @@ const RoadmapNodeDetail: React.FC<RoadmapNodeDetailProps> = ({
                         )}
                       </motion.div>
                     ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Personal Notes Section */}
+            {onSaveNote && (
+              <>
+                <Separator />
+                <div>
+                  <SectionHeader icon={StickyNote} title="Personal Notes" />
+                  <div className="space-y-3">
+                    {isEditing || !hasNote ? (
+                      <>
+                        <Textarea
+                          value={noteText}
+                          onChange={(e) => setNoteText(e.target.value)}
+                          placeholder="Add your personal notes, key takeaways, or reminders..."
+                          className="min-h-[100px] text-sm resize-none"
+                          onFocus={() => setIsEditing(true)}
+                        />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={handleSaveNote}
+                            disabled={isSavingNote || !noteText.trim()}
+                            className="gap-1.5"
+                          >
+                            {isSavingNote ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Save className="h-3.5 w-3.5" />
+                            )}
+                            Save Note
+                          </Button>
+                          {hasNote && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setNoteText(initialNote);
+                                setIsEditing(false);
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="relative group">
+                        <div 
+                          onClick={() => setIsEditing(true)}
+                          className="p-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 cursor-pointer hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors"
+                        >
+                          <p className="text-sm text-violet-900 dark:text-violet-100 whitespace-pre-wrap">
+                            {noteText}
+                          </p>
+                          <p className="text-[10px] text-violet-500 dark:text-violet-400 mt-2">
+                            Click to edit
+                          </p>
+                        </div>
+                        {onDeleteNote && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={handleDeleteNote}
+                            disabled={isDeletingNote}
+                            className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            {isDeletingNote ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </>

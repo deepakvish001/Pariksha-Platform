@@ -65,6 +65,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRoadmapNodeOrder } from "@/hooks/useRoadmapNodeOrder";
 import { useSavedPaths } from "@/hooks/useSavedPaths";
 import { useImportPathFromURL } from "@/hooks/useImportPathFromURL";
+import { useRoadmapNotes } from "@/hooks/useRoadmapNotes";
 import type { RoadmapTree as TreeType, RoadmapTreeNode as NodeType } from "@/data/roadmapTreesData";
 
 // Icon mapping for roadmap types
@@ -219,6 +220,13 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     operationHistory,
     clearHistory,
   } = useSavedPaths(tree.id);
+  const { 
+    getNoteForNode, 
+    saveNote, 
+    deleteNote, 
+    isSaving: isSavingNote, 
+    isDeleting: isDeletingNote 
+  } = useRoadmapNotes(tree.id);
   const prevProgressRef = useRef<Record<string, { completed: boolean; inProgress: boolean }>>({});
   const prevSectionStatsRef = useRef<Record<string, number>>({});
   
@@ -1392,11 +1400,16 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
 
           {/* Node Detail Panel */}
           <RoadmapNodeDetail
-          node={selectedNode}
-          open={detailOpen}
-          onOpenChange={setDetailOpen}
+            node={selectedNode}
+            open={detailOpen}
+            onOpenChange={setDetailOpen}
             isCompleted={selectedNode ? progress[selectedNode.id]?.completed || false : false}
             onComplete={() => selectedNode && handleComplete(selectedNode.id)}
+            initialNote={selectedNode ? getNoteForNode(selectedNode.id) : ""}
+            onSaveNote={user && selectedNode ? (note) => saveNote({ nodeId: selectedNode.id, note }) : undefined}
+            onDeleteNote={user && selectedNode ? () => deleteNote(selectedNode.id) : undefined}
+            isSavingNote={isSavingNote}
+            isDeletingNote={isDeletingNote}
           />
         </div>
 
