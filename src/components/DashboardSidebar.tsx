@@ -74,6 +74,7 @@ const mainNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
   { title: "Profile", url: "/dashboard/profile", icon: User },
+  { title: "Achievements", url: "/dashboard/achievements", icon: Trophy },
 ];
 
 const libraryItems = [
