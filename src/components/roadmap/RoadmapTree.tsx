@@ -286,6 +286,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [quickFilter, setQuickFilter] = useState<"none" | "has-resources" | "has-notes" | "recommended">("none");
 
   // Toggle section collapse with localStorage persistence
   const toggleSection = useCallback((sectionId: string) => {
@@ -436,7 +437,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
 
   // Filter nodes based on search and filters
   const { filteredNodeIds, matchCount } = useMemo(() => {
-    if (!searchQuery && difficultyFilter === "all" && statusFilter === "all") {
+    if (!searchQuery && difficultyFilter === "all" && statusFilter === "all" && quickFilter === "none") {
       return { filteredNodeIds: new Set(allNodes.map(n => n.id)), matchCount: allNodes.length };
     }
 
@@ -455,17 +456,27 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
       else if (statusFilter === "in-progress") matchesStatus = nodeProgress?.inProgress || false;
       else if (statusFilter === "not-started") matchesStatus = !nodeProgress?.completed && !nodeProgress?.inProgress;
       
-      if (matchesSearch && matchesDifficulty && matchesStatus) {
+      // Quick filter logic
+      let matchesQuickFilter = true;
+      if (quickFilter === "has-resources") {
+        matchesQuickFilter = (node.resources?.length || 0) > 0;
+      } else if (quickFilter === "has-notes") {
+        matchesQuickFilter = hasNote(node.id);
+      } else if (quickFilter === "recommended") {
+        matchesQuickFilter = node.isRecommended === true;
+      }
+      
+      if (matchesSearch && matchesDifficulty && matchesStatus && matchesQuickFilter) {
         matchingIds.add(node.id);
       }
     });
 
     return { filteredNodeIds: matchingIds, matchCount: matchingIds.size };
-  }, [allNodes, searchQuery, difficultyFilter, statusFilter, progress]);
+  }, [allNodes, searchQuery, difficultyFilter, statusFilter, quickFilter, progress, hasNote]);
 
   // Auto-expand to show matching nodes
   React.useEffect(() => {
-    if (searchQuery || difficultyFilter !== "all" || statusFilter !== "all") {
+    if (searchQuery || difficultyFilter !== "all" || statusFilter !== "all" || quickFilter !== "none") {
       // Find parent nodes that need to be expanded to show matches
       const nodesToExpand = new Set<string>();
       
@@ -483,7 +494,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
       findParents(tree.nodes);
       setExpandedNodes(prev => new Set([...prev, ...nodesToExpand]));
     }
-  }, [searchQuery, difficultyFilter, statusFilter, filteredNodeIds, tree.nodes]);
+  }, [searchQuery, difficultyFilter, statusFilter, quickFilter, filteredNodeIds, tree.nodes]);
 
   const toggleExpand = useCallback((nodeId: string) => {
     setExpandedNodes(prev => {
@@ -583,7 +594,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     }
     
     return false;
-  }, [filteredNodeIds, searchQuery, difficultyFilter, statusFilter]);
+  }, [filteredNodeIds, searchQuery, difficultyFilter, statusFilter, quickFilter]);
 
   // Calculate completed children for a node
   const getChildProgress = useCallback((node: NodeType): { completed: number; total: number } => {
@@ -608,7 +619,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     const isExpanded = expandedNodes.has(node.id);
     const nodeProgress = progress[node.id] || { completed: false, inProgress: false };
     const isOnProgressPath = progressPath.has(node.id);
-    const isHighlighted = filteredNodeIds.has(node.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all");
+    const isHighlighted = filteredNodeIds.has(node.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all" || quickFilter !== "none");
     
     const visibleChildren = node.children?.filter(child => isNodeVisible(child)) || [];
     const childProgress = getChildProgress(node);
@@ -761,7 +772,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                 isCompleted={progress[node.id]?.completed || false}
                 isInProgress={progress[node.id]?.inProgress || false}
                 isOnProgressPath={progressPath.has(node.id) && node.id === nextRecommendedId}
-                isHighlighted={Boolean(filteredNodeIds.has(node.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all"))}
+                isHighlighted={Boolean(filteredNodeIds.has(node.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all" || quickFilter !== "none"))}
                 hasNote={hasNote(node.id)}
                 completedChildren={getChildProgress(node).completed}
                 totalChildren={getChildProgress(node).total}
@@ -809,7 +820,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                               isCompleted={progress[child.id]?.completed || false}
                               isInProgress={progress[child.id]?.inProgress || false}
                               isOnProgressPath={progressPath.has(child.id) && child.id === nextRecommendedId}
-                              isHighlighted={Boolean(filteredNodeIds.has(child.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all"))}
+                              isHighlighted={Boolean(filteredNodeIds.has(child.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all" || quickFilter !== "none"))}
                               hasNote={hasNote(child.id)}
                               completedChildren={getChildProgress(child).completed}
                               totalChildren={getChildProgress(child).total}
@@ -834,7 +845,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
         </AnimatePresence>
       </motion.div>
     );
-  }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection, expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, getChildProgress, isDragEnabled, user, sensors, handleDragEnd, getDisplayNodes, isCompactMode, hasNote, isFocusMode, focusedSectionId]);
+  }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection, expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, quickFilter, toggleExpand, handleNodeClick, handleComplete, getChildProgress, isDragEnabled, user, sensors, handleDragEnd, getDisplayNodes, isCompactMode, hasNote, isFocusMode, focusedSectionId]);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -1057,6 +1068,8 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                 onDifficultyChange={setDifficultyFilter}
                 statusFilter={statusFilter}
                 onStatusChange={setStatusFilter}
+                quickFilter={quickFilter}
+                onQuickFilterChange={setQuickFilter}
                 matchCount={matchCount}
                 totalCount={allNodes.length}
               />
