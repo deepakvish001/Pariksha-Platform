@@ -22,6 +22,8 @@ import { Link } from "react-router-dom";
   Mail,
   Loader2,
    Eye,
+   EyeOff,
+   FileText,
  } from "lucide-react";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
@@ -164,7 +166,7 @@ const ACHIEVEMENTS: Achievement[] = [
   },
 ];
 
- const QuizHistory: React.FC = () => {
+const QuizHistory: React.FC = () => {
    const { user } = useAuth();
    const [results, setResults] = useState<QuizResult[]>([]);
    const [isLoading, setIsLoading] = useState(true);
@@ -183,6 +185,7 @@ const ACHIEVEMENTS: Achievement[] = [
   const { showMilestone, milestoneStreak, closeMilestone } = useStreakMilestone();
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [quizzesWithDetails, setQuizzesWithDetails] = useState<Set<string>>(new Set());
  
    const fetchResults = async () => {
      if (!user) return;
@@ -214,10 +217,24 @@ const ACHIEVEMENTS: Achievement[] = [
        }
  
        const { data, error } = await query;
- 
+
        if (error) throw error;
- 
+
        setResults(data || []);
+
+       // Fetch which quizzes have detailed responses
+       if (data && data.length > 0) {
+         const quizIds = data.map((r) => r.id);
+         const { data: responseCounts } = await supabase
+           .from("quiz_question_responses")
+           .select("quiz_result_id")
+           .in("quiz_result_id", quizIds);
+
+         if (responseCounts) {
+           const idsWithDetails = new Set(responseCounts.map((r) => r.quiz_result_id));
+           setQuizzesWithDetails(idsWithDetails);
+         }
+       }
  
        // Calculate stats
        if (data && data.length > 0) {
@@ -737,67 +754,84 @@ const ACHIEVEMENTS: Achievement[] = [
              </div>
            ) : (
              <div className="space-y-3 max-h-[500px] overflow-y-auto">
-               {results.map((result) => (
-                 <div
-                   key={result.id}
-                   className="flex items-center gap-4 p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
-                 >
-                   <div className="flex-1 min-w-0">
-                     <div className="flex items-center gap-2 flex-wrap">
-                       <Badge variant="outline" className={getQuizTypeBadge(result.quiz_type)}>
-                         {result.quiz_type.toUpperCase()}
-                       </Badge>
-                       {result.difficulty && result.difficulty !== "all" && (
-                         <Badge variant="outline" className={getDifficultyBadge(result.difficulty)}>
-                           {result.difficulty}
+               {results.map((result) => {
+                 const hasDetails = quizzesWithDetails.has(result.id);
+                 return (
+                   <div
+                     key={result.id}
+                     className="flex items-center gap-4 p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
+                   >
+                     <div className="flex-1 min-w-0">
+                       <div className="flex items-center gap-2 flex-wrap">
+                         <Badge variant="outline" className={getQuizTypeBadge(result.quiz_type)}>
+                           {result.quiz_type.toUpperCase()}
                          </Badge>
-                       )}
-                       {result.category && result.category !== "all" && (
-                         <Badge variant="outline" className="text-xs">
-                           {result.category}
-                         </Badge>
-                       )}
-                     </div>
-                     <div className="text-sm text-muted-foreground mt-1">
-                       {format(new Date(result.completed_at), "MMM d, yyyy 'at' h:mm a")}
-                     </div>
-                   </div>
-                   <div className="flex items-center gap-4 text-right">
-                     <div>
-                       <div className="font-semibold">
-                         {result.score}/{result.total_questions}
-                       </div>
-                       <div className="text-xs text-muted-foreground">Correct</div>
-                     </div>
-                     <div>
-                       <div
-                         className={cn(
-                           "font-semibold",
-                           Number(result.accuracy) >= 80
-                             ? "text-emerald-500"
-                             : Number(result.accuracy) >= 50
-                               ? "text-amber-500"
-                               : "text-red-500"
+                         {result.difficulty && result.difficulty !== "all" && (
+                           <Badge variant="outline" className={getDifficultyBadge(result.difficulty)}>
+                             {result.difficulty}
+                           </Badge>
                          )}
-                       >
-                         {result.accuracy}%
+                         {result.category && result.category !== "all" && (
+                           <Badge variant="outline" className="text-xs">
+                             {result.category}
+                           </Badge>
+                         )}
+                         {hasDetails ? (
+                           <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs gap-1">
+                             <FileText className="h-3 w-3" />
+                             Detailed
+                           </Badge>
+                         ) : (
+                           <Badge variant="outline" className="text-xs text-muted-foreground gap-1">
+                             <EyeOff className="h-3 w-3" />
+                             Summary only
+                           </Badge>
+                         )}
                        </div>
-                       <div className="text-xs text-muted-foreground">Accuracy</div>
+                       <div className="text-sm text-muted-foreground mt-1">
+                         {format(new Date(result.completed_at), "MMM d, yyyy 'at' h:mm a")}
+                       </div>
                      </div>
-                     <div>
-                       <div className="font-semibold">{result.avg_time_seconds}s</div>
-                       <div className="text-xs text-muted-foreground">Avg Time</div>
-                     </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleViewDetails(result.id)}
-                        className="text-muted-foreground hover:text-primary"
-                        title="View Details"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <QuizResultExport result={result} />
+                     <div className="flex items-center gap-4 text-right">
+                       <div>
+                         <div className="font-semibold">
+                           {result.score}/{result.total_questions}
+                         </div>
+                         <div className="text-xs text-muted-foreground">Correct</div>
+                       </div>
+                       <div>
+                         <div
+                           className={cn(
+                             "font-semibold",
+                             Number(result.accuracy) >= 80
+                               ? "text-emerald-500"
+                               : Number(result.accuracy) >= 50
+                                 ? "text-amber-500"
+                                 : "text-red-500"
+                           )}
+                         >
+                           {result.accuracy}%
+                         </div>
+                         <div className="text-xs text-muted-foreground">Accuracy</div>
+                       </div>
+                       <div>
+                         <div className="font-semibold">{result.avg_time_seconds}s</div>
+                         <div className="text-xs text-muted-foreground">Avg Time</div>
+                       </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleViewDetails(result.id)}
+                          className={cn(
+                            hasDetails 
+                              ? "text-primary hover:text-primary" 
+                              : "text-muted-foreground/50 hover:text-muted-foreground"
+                          )}
+                          title={hasDetails ? "View detailed review" : "Detailed review not available"}
+                        >
+                          {hasDetails ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        </Button>
+                        <QuizResultExport result={result} />
                      <AlertDialog>
                        <AlertDialogTrigger asChild>
                          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">
@@ -821,7 +855,8 @@ const ACHIEVEMENTS: Achievement[] = [
                      </AlertDialog>
                    </div>
                  </div>
-               ))}
+               );
+               })}
              </div>
            )}
          </CardContent>
