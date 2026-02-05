@@ -44,6 +44,7 @@ import SharePathDialog from "./SharePathDialog";
 import SavedPathsManager from "./SavedPathsManager";
 import PathComparisonDialog from "./PathComparisonDialog";
 import MergePathsDialog from "./MergePathsDialog";
+import PathHistoryPanel from "./PathHistoryPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoadmapConfetti } from "@/hooks/useRoadmapConfetti";
 import { useAuth } from "@/contexts/AuthContext";
@@ -190,6 +191,8 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     canRedoMerge,
     undoMerge,
     redoMerge,
+    operationHistory,
+    clearHistory,
   } = useSavedPaths(tree.id);
   const prevProgressRef = useRef<Record<string, { completed: boolean; inProgress: boolean }>>({});
   const prevSectionStatsRef = useRef<Record<string, number>>({});
@@ -1063,6 +1066,14 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                   setLocalNodeOrder({});
                 }}
               />
+
+              {/* Path History Panel */}
+              {user && (
+                <PathHistoryPanel
+                  operations={operationHistory}
+                  onClear={clearHistory}
+                />
+              )}
 
               <span className="text-muted-foreground/30 hidden sm:inline">|</span>
 
