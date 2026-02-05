@@ -29,6 +29,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,7 +57,7 @@ interface SavedPathsManagerProps {
   trigger?: React.ReactNode;
 }
 
-// Visual thumbnail showing topic order
+// Visual thumbnail showing topic order with tooltips
 const PathThumbnail: React.FC<{ customOrders: Record<string, string[]> }> = ({ customOrders }) => {
   const allTopics = Object.values(customOrders).flat();
   const displayCount = Math.min(allTopics.length, 8);
@@ -76,31 +81,57 @@ const PathThumbnail: React.FC<{ customOrders: Record<string, string[]> }> = ({ c
     "bg-cyan-400",
   ];
 
-  // Build a map of topic to section color
-  const topicColorMap: Record<string, string> = {};
+  // Build a map of topic to section info
+  const topicInfoMap: Record<string, { color: string; sectionName: string; index: number }> = {};
   Object.entries(customOrders).forEach(([sectionId, topics], sectionIndex) => {
     const color = sectionColors[sectionIndex % sectionColors.length];
-    topics.forEach(topic => {
-      topicColorMap[topic] = color;
+    const sectionName = sectionId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    topics.forEach((topic, topicIndex) => {
+      topicInfoMap[topic] = { color, sectionName, index: topicIndex + 1 };
     });
   });
 
+  // Format topic name for display
+  const formatTopicName = (topicId: string) => {
+    return topicId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   return (
     <div className="flex items-center gap-0.5 mt-2">
-      {allTopics.slice(0, displayCount).map((topicId, index) => (
-        <div
-          key={`${topicId}-${index}`}
-          className={cn(
-            "w-3 h-3 rounded-sm transition-transform hover:scale-125",
-            topicColorMap[topicId] || "bg-muted-foreground"
-          )}
-          title={topicId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-        />
-      ))}
+      {allTopics.slice(0, displayCount).map((topicId, index) => {
+        const info = topicInfoMap[topicId];
+        return (
+          <Tooltip key={`${topicId}-${index}`}>
+            <TooltipTrigger asChild>
+              <div
+                className={cn(
+                  "w-3 h-3 rounded-sm cursor-pointer transition-transform hover:scale-150 hover:z-10",
+                  info?.color || "bg-muted-foreground"
+                )}
+              />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[200px]">
+              <div className="text-xs">
+                <p className="font-medium">{formatTopicName(topicId)}</p>
+                <p className="text-muted-foreground">
+                  #{info?.index} in {info?.sectionName}
+                </p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
       {hasMore && (
-        <span className="text-xs text-muted-foreground ml-1">
-          +{allTopics.length - 8}
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="text-xs text-muted-foreground ml-1 cursor-help">
+              +{allTopics.length - 8}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <p className="text-xs">{allTopics.length - 8} more topics</p>
+          </TooltipContent>
+        </Tooltip>
       )}
     </div>
   );
