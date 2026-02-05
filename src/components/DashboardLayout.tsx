@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
+import StreakReminderProvider from "@/components/StreakReminderProvider";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -9,10 +10,12 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
-      <DashboardSidebar />
-      <SidebarInset>
-        {children}
-      </SidebarInset>
+      <StreakReminderProvider>
+        <DashboardSidebar />
+        <SidebarInset>
+          {children}
+        </SidebarInset>
+      </StreakReminderProvider>
     </SidebarProvider>
   );
 }
