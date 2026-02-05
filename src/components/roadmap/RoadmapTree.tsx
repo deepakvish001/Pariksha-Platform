@@ -222,6 +222,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   } = useSavedPaths(tree.id);
   const { 
     getNoteForNode, 
+    hasNote,
     saveNote, 
     deleteNote, 
     isSaving: isSavingNote, 
@@ -644,6 +645,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           isInProgress={nodeProgress.inProgress}
           isOnProgressPath={isOnProgressPath && node.id === nextRecommendedId}
           isHighlighted={Boolean(isHighlighted)}
+          hasNote={hasNote(node.id)}
           completedChildren={childProgress.completed}
           totalChildren={childProgress.total}
           onToggle={() => toggleExpand(node.id)}
@@ -677,7 +679,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
         </AnimatePresence>
       </div>
     );
-  }, [expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, isNodeVisible, getChildProgress]);
+  }, [expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, isNodeVisible, getChildProgress, hasNote]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -758,6 +760,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                 isInProgress={progress[node.id]?.inProgress || false}
                 isOnProgressPath={progressPath.has(node.id) && node.id === nextRecommendedId}
                 isHighlighted={Boolean(filteredNodeIds.has(node.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all"))}
+                hasNote={hasNote(node.id)}
                 completedChildren={getChildProgress(node).completed}
                 totalChildren={getChildProgress(node).total}
                 onToggle={() => toggleExpand(node.id)}
@@ -805,6 +808,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                               isInProgress={progress[child.id]?.inProgress || false}
                               isOnProgressPath={progressPath.has(child.id) && child.id === nextRecommendedId}
                               isHighlighted={Boolean(filteredNodeIds.has(child.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all"))}
+                              hasNote={hasNote(child.id)}
                               completedChildren={getChildProgress(child).completed}
                               totalChildren={getChildProgress(child).total}
                               onToggle={() => toggleExpand(child.id)}
@@ -828,7 +832,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
         </AnimatePresence>
       </motion.div>
     );
-  }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection, expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, getChildProgress, isDragEnabled, user, sensors, handleDragEnd, getDisplayNodes, isCompactMode]);
+  }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection, expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, getChildProgress, isDragEnabled, user, sensors, handleDragEnd, getDisplayNodes, isCompactMode, hasNote]);
 
   return (
     <TooltipProvider delayDuration={300}>
