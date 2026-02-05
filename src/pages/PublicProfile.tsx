@@ -38,9 +38,11 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
+ import PublicProfileAchievements from "@/components/PublicProfileAchievements";
 
 interface PublicProfileData {
   username: string;
+   user_id: string;
   full_name: string;
   avatar_url: string | null;
   bio: string | null;
@@ -173,6 +175,7 @@ const PublicProfile = () => {
 
         setProfile({
           username: extendedData.username || username,
+           user_id: extendedData.user_id,
           full_name: basicData.full_name || "Anonymous",
           avatar_url: basicData.avatar_url,
           bio: extendedData.bio,
@@ -658,6 +661,11 @@ const PublicProfile = () => {
                 </Card>
               </motion.div>
             )}
+
+             {/* Achievements */}
+             {profile?.user_id && (
+               <PublicProfileAchievements userId={profile.user_id} />
+             )}
           </div>
         </div>
       </main>
