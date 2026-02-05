@@ -76,6 +76,7 @@ interface RoadmapNodeProps {
   hasNote?: boolean;
   completedChildren?: number;
   totalChildren?: number;
+  isCompact?: boolean;
   onToggle: () => void;
   onClick: () => void;
   onComplete: () => void;
@@ -92,6 +93,7 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
   hasNote = false,
   completedChildren = 0,
   totalChildren = 0,
+  isCompact = false,
   onToggle,
   onClick,
   onComplete,
@@ -104,8 +106,8 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
   const resourceCount = node.resources?.length || 0;
   const showEffects = node.isRecommended && !isCompleted;
 
-  // Calculate indent based on depth
-  const indent = depth * 20;
+  // Calculate indent based on depth and compact mode
+  const indent = isCompact ? depth * 16 : depth * 20;
 
   return (
     <motion.div
@@ -137,7 +139,10 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
       )}
 
       <div
-        className="flex items-center gap-1.5 py-0.5"
+        className={cn(
+          "flex items-center gap-1.5",
+          isCompact ? "py-0.5" : "py-1"
+        )}
         style={{ marginLeft: indent }}
       >
         {/* Expand/Collapse Button */}
@@ -167,7 +172,7 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
           whileHover={{ scale: 1.002 }}
           whileTap={{ scale: 0.998 }}
           className={cn(
-            "relative flex-1 flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg border cursor-pointer",
+            "relative flex-1 flex items-center border cursor-pointer",
             "transition-all duration-150",
             nodeStyle.bg,
             nodeStyle.border,
@@ -176,7 +181,10 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
             isHighlighted && "ring-2 ring-primary/50 ring-offset-1 dark:ring-offset-background",
             isInProgress && "ring-2 ring-amber-400/50 ring-offset-1 dark:ring-offset-background",
             isOptional && "border-dashed",
-            showEffects && "shadow-md shadow-amber-400/20 dark:shadow-amber-500/25"
+            showEffects && "shadow-md shadow-amber-400/20 dark:shadow-amber-500/25",
+            isCompact 
+              ? "gap-2 px-2 py-1 rounded-md" 
+              : "gap-2.5 px-2.5 py-1.5 rounded-lg"
           )}
         >
           {/* Effects for recommended nodes */}
@@ -189,18 +197,23 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
           
           {/* Icon container */}
           <div className={cn(
-            "relative z-10 flex-shrink-0 h-7 w-7 rounded-md flex items-center justify-center",
+            "relative z-10 flex-shrink-0 rounded-md flex items-center justify-center",
             `bg-gradient-to-br ${gradient}`,
-            "shadow-sm"
+            "shadow-sm",
+            isCompact ? "h-6 w-6" : "h-7 w-7"
           )}>
-            <NodeIcon className="h-3.5 w-3.5 text-white drop-shadow-sm" />
+            <NodeIcon className={cn(
+              "text-white drop-shadow-sm",
+              isCompact ? "h-3 w-3" : "h-3.5 w-3.5"
+            )} />
           </div>
 
           {/* Content area */}
           <div className="relative z-10 flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className={cn(
-                "font-medium text-[13px] leading-tight",
+                "font-medium leading-tight",
+                isCompact ? "text-xs" : "text-[13px]",
                 isCompleted && "line-through opacity-50"
               )}>
                 {node.title}

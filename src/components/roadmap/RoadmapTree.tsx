@@ -28,8 +28,7 @@ import { toast } from "@/hooks/use-toast";
 import RoadmapNode from "./RoadmapNode";
 import DraggableNode from "./DraggableNode";
 import RoadmapNodeDetail from "./RoadmapNodeDetail";
-import RoadmapToolbar from "./RoadmapToolbar";
-import RoadmapControlsBar from "./RoadmapControlsBar";
+import RoadmapUnifiedHeader from "./RoadmapUnifiedHeader";
 import RoadmapMiniMap from "./RoadmapMiniMap";
 import RoadmapSectionContainer from "./RoadmapSectionContainer";
 import RoadmapCertificate from "./RoadmapCertificate";
@@ -658,6 +657,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           hasNote={hasNote(node.id)}
           completedChildren={childProgress.completed}
           totalChildren={childProgress.total}
+          isCompact={isCompactMode}
           onToggle={() => toggleExpand(node.id)}
           onClick={() => handleNodeClick(node)}
           onComplete={() => handleComplete(node.id)}
@@ -689,7 +689,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
         </AnimatePresence>
       </div>
     );
-  }, [expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, isNodeVisible, getChildProgress, hasNote]);
+  }, [expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, isNodeVisible, getChildProgress, hasNote, isCompactMode]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -791,6 +791,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                 hasNote={hasNote(node.id)}
                 completedChildren={getChildProgress(node).completed}
                 totalChildren={getChildProgress(node).total}
+                isCompact={isCompactMode}
                 onToggle={() => toggleExpand(node.id)}
                 onClick={() => handleNodeClick(node)}
                 onComplete={() => handleComplete(node.id)}
@@ -839,6 +840,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                               hasNote={hasNote(child.id)}
                               completedChildren={getChildProgress(child).completed}
                               totalChildren={getChildProgress(child).total}
+                              isCompact={isCompactMode}
                               onToggle={() => toggleExpand(child.id)}
                               onClick={() => handleNodeClick(child)}
                               onComplete={() => handleComplete(child.id)}
@@ -1066,149 +1068,133 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           {/* Collapsible Legend - hidden in compact mode */}
           {!isCompactMode && <RoadmapLegend />}
 
-          {/* Unified Controls Bar - Refined Organization */}
+          {/* Unified Controls Bar - Consolidated Header */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="sticky top-0 z-20 rounded-xl bg-background/98 backdrop-blur-xl border border-border/60 shadow-md"
+            className="sticky top-0 z-20 rounded-xl bg-background/98 backdrop-blur-xl border border-border/60 shadow-md overflow-hidden"
           >
-            {/* Main controls row */}
-            <div className="p-3 space-y-3">
-              {/* Search & Filters */}
-              <RoadmapToolbar
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                difficultyFilter={difficultyFilter}
-                onDifficultyChange={setDifficultyFilter}
-                statusFilter={statusFilter}
-                onStatusChange={setStatusFilter}
-                quickFilter={quickFilter}
-                onQuickFilterChange={setQuickFilter}
-                matchCount={matchCount}
-                totalCount={allNodes.length}
-              />
-              
-              {/* View Controls Row */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/40">
-                <RoadmapControlsBar
-                  layoutMode={layoutMode}
-                  onLayoutModeChange={setLayoutMode}
-                  isCompactMode={isCompactMode}
-                  onCompactModeChange={setIsCompactMode}
-                  isFocusMode={isFocusMode}
-                  onFocusModeChange={(value) => {
-                    if (value) {
-                      setIsFocusMode(true);
-                      const nextSection = tree.nodes.find(section => {
-                        const sectionNodeIds = flattenNodes([section]).map(n => n.id);
-                        return nextRecommendedId && sectionNodeIds.includes(nextRecommendedId);
-                      });
-                      setFocusedSectionId(nextSection?.id || tree.nodes[0]?.id || null);
-                    } else {
-                      setIsFocusMode(false);
-                      setFocusedSectionId(null);
-                    }
-                  }}
-                  isDragEnabled={isDragEnabled}
-                  onDragEnabledChange={setIsDragEnabled}
-                  canUndo={canUndo}
-                  onUndo={async () => {
-                    await undoLastAction();
-                    setLocalNodeOrder({});
-                    toast({
-                      title: "Undone!",
-                      description: "Your last reorder has been reversed.",
-                    });
-                  }}
+            <RoadmapUnifiedHeader
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              difficultyFilter={difficultyFilter}
+              onDifficultyChange={setDifficultyFilter}
+              statusFilter={statusFilter}
+              onStatusChange={setStatusFilter}
+              quickFilter={quickFilter}
+              onQuickFilterChange={setQuickFilter}
+              matchCount={matchCount}
+              totalCount={allNodes.length}
+              layoutMode={layoutMode}
+              onLayoutModeChange={setLayoutMode}
+              isCompactMode={isCompactMode}
+              onCompactModeChange={setIsCompactMode}
+              isFocusMode={isFocusMode}
+              onFocusModeChange={(value) => {
+                if (value) {
+                  setIsFocusMode(true);
+                  const nextSection = tree.nodes.find(section => {
+                    const sectionNodeIds = flattenNodes([section]).map(n => n.id);
+                    return nextRecommendedId && sectionNodeIds.includes(nextRecommendedId);
+                  });
+                  setFocusedSectionId(nextSection?.id || tree.nodes[0]?.id || null);
+                } else {
+                  setIsFocusMode(false);
+                  setFocusedSectionId(null);
+                }
+              }}
+              isDragEnabled={isDragEnabled}
+              onDragEnabledChange={setIsDragEnabled}
+              canUndo={canUndo}
+              onUndo={async () => {
+                await undoLastAction();
+                setLocalNodeOrder({});
+                toast({
+                  title: "Undone!",
+                  description: "Your last reorder has been reversed.",
+                });
+              }}
+              hasCustomOrder={hasCustomOrder}
+              onResetOrder={handleResetOrder}
+              isSaving={isSaving}
+              sections={tree.nodes.map(node => {
+                const stats = getSectionStats(node);
+                return { id: node.id, title: node.title, completed: stats.completed, total: stats.total };
+              })}
+              onJumpToSection={handleJumpToSection}
+              onExpandAll={() => setCollapsedSections(new Set())}
+              onCollapseAll={() => setCollapsedSections(new Set(tree.nodes.map(n => n.id)))}
+              focusedSectionIndex={focusedSectionId ? tree.nodes.findIndex(n => n.id === focusedSectionId) : 0}
+              totalSections={tree.nodes.length}
+              onNavigateFocus={(direction) => {
+                const currentIndex = tree.nodes.findIndex(n => n.id === focusedSectionId);
+                if (direction === 'up' && currentIndex > 0) {
+                  setFocusedSectionId(tree.nodes[currentIndex - 1].id);
+                } else if (direction === 'down' && currentIndex < tree.nodes.length - 1) {
+                  setFocusedSectionId(tree.nodes[currentIndex + 1].id);
+                }
+              }}
+              isMobile={isMobile}
+            />
+            
+            {/* Path Management Tools - Compact secondary row */}
+            {user && (
+              <div className="flex items-center gap-1.5 px-3 pb-2 pt-1 border-t border-border/30 overflow-x-auto">
+                <SavedPathsManager
+                  savedPaths={savedPaths}
+                  activePath={activePath}
+                  currentOrders={customOrders}
                   hasCustomOrder={hasCustomOrder}
-                  onResetOrder={handleResetOrder}
-                  isSaving={isSaving}
-                  sections={tree.nodes.map(node => {
-                    const stats = getSectionStats(node);
-                    return { id: node.id, title: node.title, completed: stats.completed, total: stats.total };
-                  })}
-                  onJumpToSection={handleJumpToSection}
-                  onExpandAll={() => setCollapsedSections(new Set())}
-                  onCollapseAll={() => setCollapsedSections(new Set(tree.nodes.map(n => n.id)))}
-                  focusedSectionIndex={focusedSectionId ? tree.nodes.findIndex(n => n.id === focusedSectionId) : 0}
-                  totalSections={tree.nodes.length}
-                  onNavigateFocus={(direction) => {
-                    const currentIndex = tree.nodes.findIndex(n => n.id === focusedSectionId);
-                    if (direction === 'up' && currentIndex > 0) {
-                      setFocusedSectionId(tree.nodes[currentIndex - 1].id);
-                    } else if (direction === 'down' && currentIndex < tree.nodes.length - 1) {
-                      setFocusedSectionId(tree.nodes[currentIndex + 1].id);
+                  isSaving={isSavingPath}
+                  onSavePath={savePath}
+                  onActivatePath={async (pathId) => {
+                    const orders = await activatePath(pathId);
+                    if (orders) {
+                      await importOrders(orders);
+                      setLocalNodeOrder({});
                     }
+                    return orders;
+                  }}
+                  onDeletePath={deletePath}
+                  onUpdatePath={updatePath}
+                  onDuplicatePath={duplicatePath}
+                />
+
+                {savedPaths.length >= 2 && (
+                  <PathComparisonDialog savedPaths={savedPaths} />
+                )}
+
+                {savedPaths.length >= 2 && (
+                  <MergePathsDialog 
+                    savedPaths={savedPaths}
+                    roadmapId={tree.id}
+                    roadmapTitle={tree.title}
+                    onMerge={mergePaths}
+                    canUndo={canUndoMerge}
+                    canRedo={canRedoMerge}
+                    onUndo={undoMerge}
+                    onRedo={redoMerge}
+                  />
+                )}
+
+                <SharePathDialog
+                  roadmapId={tree.id}
+                  roadmapTitle={tree.title}
+                  customOrders={customOrders}
+                  hasCustomOrder={hasCustomOrder}
+                  onImportOrder={async (orders) => {
+                    await importOrders(orders);
+                    setLocalNodeOrder({});
                   }}
                 />
 
-                {/* Path Management - Secondary Row */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {/* Saved Paths Manager */}
-                  {user && (
-                    <SavedPathsManager
-                      savedPaths={savedPaths}
-                      activePath={activePath}
-                      currentOrders={customOrders}
-                      hasCustomOrder={hasCustomOrder}
-                      isSaving={isSavingPath}
-                      onSavePath={savePath}
-                      onActivatePath={async (pathId) => {
-                        const orders = await activatePath(pathId);
-                        if (orders) {
-                          await importOrders(orders);
-                          setLocalNodeOrder({});
-                        }
-                        return orders;
-                      }}
-                      onDeletePath={deletePath}
-                      onUpdatePath={updatePath}
-                      onDuplicatePath={duplicatePath}
-                    />
-                  )}
-
-                  {/* Compare Paths Button */}
-                  {user && savedPaths.length >= 2 && (
-                    <PathComparisonDialog savedPaths={savedPaths} />
-                  )}
-
-                  {/* Merge Paths Button */}
-                  {user && savedPaths.length >= 2 && (
-                    <MergePathsDialog 
-                      savedPaths={savedPaths}
-                      roadmapId={tree.id}
-                      roadmapTitle={tree.title}
-                      onMerge={mergePaths}
-                      canUndo={canUndoMerge}
-                      canRedo={canRedoMerge}
-                      onUndo={undoMerge}
-                      onRedo={redoMerge}
-                    />
-                  )}
-
-                  {/* Share Path Button */}
-                  <SharePathDialog
-                    roadmapId={tree.id}
-                    roadmapTitle={tree.title}
-                    customOrders={customOrders}
-                    hasCustomOrder={hasCustomOrder}
-                    onImportOrder={async (orders) => {
-                      await importOrders(orders);
-                      setLocalNodeOrder({});
-                    }}
-                  />
-
-                  {/* Path History Panel */}
-                  {user && (
-                    <PathHistoryPanel
-                      operations={operationHistory}
-                      onClear={clearHistory}
-                    />
-                  )}
-                </div>
+                <PathHistoryPanel
+                  operations={operationHistory}
+                  onClear={clearHistory}
+                />
               </div>
-            </div>
+            )}
           </motion.div>
 
           {/* Tree Visualization - Layout Mode Dependent */}
