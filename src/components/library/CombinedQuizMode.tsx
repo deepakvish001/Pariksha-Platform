@@ -3,7 +3,7 @@
  import { 
    X, Clock, CheckCircle, XCircle, ArrowRight, Trophy, 
    Shuffle, Zap, Target, Settings, Play, Pause, RotateCcw,
-   Code, Cpu, Database, Calculator, Brain
+  Code, Cpu, Database, Calculator, Brain, BookOpen, ChevronLeft, ChevronRight, Eye
  } from "lucide-react";
  import { Button } from "@/components/ui/button";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,8 @@
  import { Slider } from "@/components/ui/slider";
  import { Switch } from "@/components/ui/switch";
  import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
  import { cn } from "@/lib/utils";
  import { dsaQuestions, type DSAQuestion } from "@/data/dsaQuestionsData";
  import { csQuestions, type CSQuestion } from "@/data/csSubjectsData";
@@ -32,9 +34,10 @@
    text: string;
    options: { text: string; isCorrect: boolean }[];
    difficulty: string;
+  answer?: string;
  }
  
- type QuizState = "setup" | "playing" | "paused" | "results";
+type QuizState = "setup" | "playing" | "paused" | "results" | "review";
  
  const categoryConfig = {
    dsa: { 
@@ -99,6 +102,10 @@
    });
    const [timedMode, setTimedMode] = useState(false);
    const [timeLimitMinutes, setTimeLimitMinutes] = useState(10);
+
+  // Review state
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [reviewFilter, setReviewFilter] = useState<"all" | "incorrect" | "unanswered">("incorrect");
  
    // Prepare questions pool
    const allQuestions = useMemo(() => {
@@ -113,6 +120,7 @@
            text: q.text,
            options: q.options!,
            difficulty: q.difficulty,
+            answer: q.answer,
          });
        });
      }
@@ -126,6 +134,7 @@
            text: q.text,
            options: q.options!,
            difficulty: q.difficulty,
+            answer: q.answer,
          });
        });
      }
@@ -139,6 +148,7 @@
            text: q.text,
            options: q.options!,
            difficulty: q.difficulty,
+            answer: q.answer,
          });
        });
      }
@@ -152,6 +162,7 @@
            text: q.text,
            options: q.options!,
            difficulty: q.difficulty,
+            answer: q.answer,
          });
        });
      }
@@ -281,6 +292,23 @@
  
    const currentQuestion = questions[currentIndex];
    const CategoryIcon = currentQuestion ? categoryConfig[currentQuestion.category].icon : Brain;
+  
+  const filteredReviewQuestions = useMemo(() => {
+    return questions.map((q, idx) => ({
+      question: q,
+      userAnswer: answers[idx],
+      index: idx,
+      isCorrect: answers[idx] !== null && q.options[answers[idx]!]?.isCorrect,
+      isUnanswered: answers[idx] === null,
+    })).filter(item => {
+      if (reviewFilter === "all") return true;
+      if (reviewFilter === "incorrect") return !item.isCorrect;
+      if (reviewFilter === "unanswered") return item.isUnanswered;
+      return true;
+    });
+  }, [questions, answers, reviewFilter]);
+
+  const currentReviewItem = filteredReviewQuestions[reviewIndex];
  
    // Setup screen
    if (quizState === "setup") {
@@ -415,8 +443,181 @@
      );
    }
  
+    // Review screen
+    if (quizState === "review") {
+      if (filteredReviewQuestions.length === 0) {
+        return (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-6"
+          >
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" onClick={() => setQuizState("results")}>
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Back to Results
+              </Button>
+            </div>
+            <Card className="text-center py-12">
+              <CardContent>
+                <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
+                <h3 className="text-xl font-bold mb-2">Perfect Score!</h3>
+                <p className="text-muted-foreground">You answered all questions correctly. Nothing to review!</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        );
+      }
+
+      const reviewQuestion = currentReviewItem.question;
+      const userAnswer = currentReviewItem.userAnswer;
+      const ReviewCategoryIcon = categoryConfig[reviewQuestion.category].icon;
+
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="space-y-4"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" onClick={() => setQuizState("results")}>
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Back to Results
+            </Button>
+            <div className="flex items-center gap-2">
+              <Tabs value={reviewFilter} onValueChange={(v) => { setReviewFilter(v as typeof reviewFilter); setReviewIndex(0); }}>
+                <TabsList className="h-8">
+                  <TabsTrigger value="incorrect" className="text-xs px-2">Incorrect</TabsTrigger>
+                  <TabsTrigger value="unanswered" className="text-xs px-2">Skipped</TabsTrigger>
+                  <TabsTrigger value="all" className="text-xs px-2">All</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+
+          {/* Progress */}
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>Question {reviewIndex + 1} of {filteredReviewQuestions.length}</span>
+            <span>Original #{currentReviewItem.index + 1}</span>
+          </div>
+          <Progress value={((reviewIndex + 1) / filteredReviewQuestions.length) * 100} className="h-1.5" />
+
+          {/* Question Card */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={reviewIndex}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className={cn(categoryConfig[reviewQuestion.category].bgColor, categoryConfig[reviewQuestion.category].color, "border-0")}>
+                      <ReviewCategoryIcon className="h-3 w-3 mr-1" />
+                      {categoryConfig[reviewQuestion.category].label}
+                    </Badge>
+                    <Badge variant="outline">{reviewQuestion.difficulty}</Badge>
+                    {currentReviewItem.isUnanswered ? (
+                      <Badge variant="secondary">Skipped</Badge>
+                    ) : (
+                      <Badge variant="destructive">Incorrect</Badge>
+                    )}
+                  </div>
+                  <CardTitle className="text-lg">{reviewQuestion.title}</CardTitle>
+                  <p className="text-muted-foreground text-sm">{reviewQuestion.text}</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Options with correct/incorrect highlighting */}
+                  <div className="space-y-2">
+                    {reviewQuestion.options.map((option, idx) => {
+                      const isUserAnswer = userAnswer === idx;
+                      const isCorrect = option.isCorrect;
+                      return (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "p-3 rounded-lg border text-sm",
+                            isCorrect && "border-green-500 bg-green-500/10",
+                            isUserAnswer && !isCorrect && "border-destructive bg-destructive/10"
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{option.text}</span>
+                            <div className="flex items-center gap-2">
+                              {isUserAnswer && !isCorrect && (
+                                <span className="text-xs text-destructive flex items-center gap-1">
+                                  <XCircle className="h-4 w-4" />
+                                  Your answer
+                                </span>
+                              )}
+                              {isCorrect && (
+                                <span className="text-xs text-green-600 flex items-center gap-1">
+                                  <CheckCircle className="h-4 w-4" />
+                                  Correct
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Explanation */}
+                  {reviewQuestion.answer && (
+                    <div className="border-t pt-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <BookOpen className="h-4 w-4 text-primary" />
+                        <span className="font-medium text-sm">Explanation</span>
+                      </div>
+                      <ScrollArea className="h-[200px]">
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <pre className="whitespace-pre-wrap text-sm text-muted-foreground font-sans bg-muted/50 p-4 rounded-lg">
+                            {reviewQuestion.answer.replace(/```[\s\S]*?```/g, (match) => {
+                              return match.replace(/```\w*\n?/g, '').trim();
+                            }).replace(/##\s*/g, '').replace(/\*\*/g, '').replace(/`/g, '')}
+                          </pre>
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Navigation */}
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setReviewIndex(prev => Math.max(0, prev - 1))}
+              disabled={reviewIndex === 0}
+              className="flex-1"
+            >
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+            <Button
+              onClick={() => setReviewIndex(prev => Math.min(filteredReviewQuestions.length - 1, prev + 1))}
+              disabled={reviewIndex === filteredReviewQuestions.length - 1}
+              className="flex-1"
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        </motion.div>
+      );
+    }
+
    // Results screen
    if (quizState === "results") {
+      const incorrectCount = questions.filter((q, idx) => 
+        answers[idx] === null || !q.options[answers[idx]!]?.isCorrect
+      ).length;
+
      const score = calculateScore();
      const accuracy = Math.round((score / questions.length) * 100);
      const categoryStats = questions.reduce((acc, q, idx) => {
@@ -487,6 +688,16 @@
            <Button variant="outline" onClick={onClose} className="flex-1">
              Exit
            </Button>
+            {incorrectCount > 0 && (
+              <Button 
+                variant="outline" 
+                onClick={() => { setReviewIndex(0); setReviewFilter("incorrect"); setQuizState("review"); }}
+                className="flex-1"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Review ({incorrectCount})
+              </Button>
+            )}
            <Button onClick={() => setQuizState("setup")} className="flex-1">
              <RotateCcw className="h-4 w-4 mr-2" />
              New Quiz
