@@ -344,13 +344,13 @@ import ReviewQuizMode from "./ReviewQuizMode";
      return { answered, skipped, flagged, unanswered };
    };
  
-    const saveResults = async (finalAnswers: (number | null)[], questionTimes: number[]) => {
-     if (!user) return;
-     
-     const score = finalAnswers.reduce((acc, ans, idx) => {
-       if (ans === null) return acc;
-       return questions[idx]?.options[ans]?.isCorrect ? acc + 1 : acc;
-     }, 0);
+   const saveResults = async (finalAnswers: (number | null)[], questionTimes: number[]) => {
+    if (!user) return;
+    
+    const score = finalAnswers.reduce((acc, ans, idx) => {
+      if (ans === null) return acc;
+      return questions[idx]?.options[ans]?.isCorrect ? acc + 1 : acc;
+    }, 0);
 
       const accuracy = Math.round((score / questions.length) * 100);
      
@@ -393,6 +393,45 @@ import ReviewQuizMode from "./ReviewQuizMode";
 
           if (responsesError) {
             console.error("Error saving question responses:", responsesError);
+          }
+        }
+
+        // Auto-update study plan goals progress
+        const categoryCounts: Record<string, number> = {};
+        questions.forEach((q) => {
+          categoryCounts[q.category] = (categoryCounts[q.category] || 0) + 1;
+        });
+
+        // Fetch active goals for categories in this quiz
+        const { data: activeGoals } = await supabase
+          .from("study_plan_goals")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("is_completed", false)
+          .in("category", Object.keys(categoryCounts));
+
+        if (activeGoals && activeGoals.length > 0) {
+          for (const goal of activeGoals) {
+            const questionsInCategory = categoryCounts[goal.category] || 0;
+            const newPracticed = goal.questions_practiced + questionsInCategory;
+            const isNowCompleted = newPracticed >= goal.target_questions;
+
+            await supabase
+              .from("study_plan_goals")
+              .update({
+                questions_practiced: newPracticed,
+                is_completed: isNowCompleted,
+                completed_at: isNowCompleted ? new Date().toISOString() : null,
+              })
+              .eq("id", goal.id);
+
+            if (isNowCompleted) {
+              toast({
+                title: "🎉 Study Goal Completed!",
+                description: `You've completed your ${goal.category.toUpperCase()} study goal!`,
+                duration: 5000,
+              });
+            }
           }
         }
 
