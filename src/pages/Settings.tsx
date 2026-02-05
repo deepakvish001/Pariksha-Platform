@@ -862,8 +862,10 @@ const Settings = () => {
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label className="text-base">Weekly Digest</Label>
-                      <p className="text-sm text-muted-foreground">Get a summary of your progress every week</p>
+                      <Label className="text-base">Weekly Quiz Summary</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Receive a weekly email with your quiz stats, streak, and achievements (sent every Sunday)
+                      </p>
                     </div>
                     <Switch
                       checked={editForm.weekly_digest_enabled}

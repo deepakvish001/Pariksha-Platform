@@ -48,6 +48,8 @@ import { Link } from "react-router-dom";
  import { useAuth } from "@/contexts/AuthContext";
  import { cn } from "@/lib/utils";
  import { toast } from "sonner";
+import StreakMilestoneToast from "@/components/StreakMilestoneToast";
+import { useStreakMilestone } from "@/hooks/useStreakMilestone";
  import {
    LineChart,
    Line,
@@ -174,6 +176,7 @@ const ACHIEVEMENTS: Achievement[] = [
    });
   const [quizStreak, setQuizStreak] = useState({ current: 0, longest: 0 });
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const { showMilestone, milestoneStreak, closeMilestone } = useStreakMilestone();
  
    const fetchResults = async () => {
      if (!user) return;
@@ -437,7 +440,13 @@ const ACHIEVEMENTS: Achievement[] = [
    }
  
    return (
-     <div className="space-y-6 p-4 md:p-6">
+    <>
+      <StreakMilestoneToast
+        streak={milestoneStreak}
+        isVisible={showMilestone}
+        onClose={closeMilestone}
+      />
+      <div className="space-y-6 p-4 md:p-6">
        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
          <div>
            <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -781,7 +790,8 @@ const ACHIEVEMENTS: Achievement[] = [
          </CardContent>
        </Card>
      </div>
-   );
+    </>
+  );
  };
  
  export default QuizHistory;
