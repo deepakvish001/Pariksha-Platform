@@ -1,71 +1,71 @@
-// Roadmap.sh-inspired node styling system with enhanced dark mode contrast
+// Roadmap.sh-inspired node styling system with semantic design tokens
 import { cn } from "@/lib/utils";
 
-// Node type color schemes with improved dark mode contrast
+// Node type color schemes using semantic tokens where possible
 export const nodeColors = {
-  // Yellow/Gold - Main topics and checkpoints
+  // Primary - Main topics and checkpoints (amber theme)
   primary: {
-    bg: "bg-amber-400 dark:bg-amber-500/90",
-    border: "border-amber-500 dark:border-amber-300",
-    text: "text-amber-950 dark:text-amber-950",
-    hoverBg: "hover:bg-amber-300 dark:hover:bg-amber-400",
-    shadow: "shadow-amber-500/20 dark:shadow-amber-400/30",
+    bg: "bg-amber-100 dark:bg-amber-500/20",
+    border: "border-amber-400 dark:border-amber-400/60",
+    text: "text-amber-900 dark:text-amber-100",
+    hoverBg: "hover:bg-amber-50 dark:hover:bg-amber-500/30",
+    shadow: "shadow-amber-500/15 dark:shadow-amber-400/20",
   },
-  // Purple/Violet - Alternative options
+  // Alternative - violet accent for optional paths
   alternative: {
-    bg: "bg-violet-400 dark:bg-violet-400/90",
-    border: "border-violet-500 dark:border-violet-300",
-    text: "text-violet-950 dark:text-violet-950",
-    hoverBg: "hover:bg-violet-300 dark:hover:bg-violet-300",
-    shadow: "shadow-violet-500/20 dark:shadow-violet-400/30",
+    bg: "bg-violet-100 dark:bg-violet-500/20",
+    border: "border-violet-400 dark:border-violet-400/60",
+    text: "text-violet-900 dark:text-violet-100",
+    hoverBg: "hover:bg-violet-50 dark:hover:bg-violet-500/30",
+    shadow: "shadow-violet-500/15 dark:shadow-violet-400/20",
   },
-  // Light gray - Secondary/regular topics (enhanced dark mode)
+  // Secondary - regular topics using semantic tokens
   secondary: {
-    bg: "bg-slate-100 dark:bg-slate-700/90",
-    border: "border-slate-300 dark:border-slate-400",
-    text: "text-slate-800 dark:text-slate-50",
-    hoverBg: "hover:bg-slate-50 dark:hover:bg-slate-600",
-    shadow: "shadow-slate-500/10 dark:shadow-slate-400/20",
+    bg: "bg-muted/60 dark:bg-muted/40",
+    border: "border-border dark:border-border",
+    text: "text-foreground dark:text-foreground",
+    hoverBg: "hover:bg-muted dark:hover:bg-muted/60",
+    shadow: "shadow-muted/20 dark:shadow-muted/10",
   },
-  // Green - Completed nodes (brighter in dark mode)
+  // Completed - success state
   completed: {
-    bg: "bg-emerald-100 dark:bg-emerald-500/20",
-    border: "border-emerald-500 dark:border-emerald-400",
-    text: "text-emerald-800 dark:text-emerald-100",
-    hoverBg: "hover:bg-emerald-50 dark:hover:bg-emerald-500/30",
-    shadow: "shadow-emerald-500/20 dark:shadow-emerald-400/40",
+    bg: "bg-emerald-50 dark:bg-emerald-500/15",
+    border: "border-emerald-400 dark:border-emerald-500/60",
+    text: "text-emerald-800 dark:text-emerald-200",
+    hoverBg: "hover:bg-emerald-100/80 dark:hover:bg-emerald-500/25",
+    shadow: "shadow-emerald-500/20 dark:shadow-emerald-400/25",
   },
-  // Dashed outline - Optional topics
+  // Optional - dashed outline for skip-able topics
   optional: {
-    bg: "bg-slate-50/80 dark:bg-slate-800/70",
-    border: "border-dashed border-slate-400 dark:border-slate-400",
-    text: "text-slate-600 dark:text-slate-200",
-    hoverBg: "hover:bg-slate-100 dark:hover:bg-slate-700",
-    shadow: "shadow-slate-400/10 dark:shadow-slate-500/20",
+    bg: "bg-secondary/50 dark:bg-secondary/30",
+    border: "border-dashed border-muted-foreground/40 dark:border-muted-foreground/30",
+    text: "text-muted-foreground dark:text-muted-foreground",
+    hoverBg: "hover:bg-secondary dark:hover:bg-secondary/50",
+    shadow: "shadow-none",
   },
-  // Blue - Resource nodes
+  // Resource - informational nodes
   resource: {
-    bg: "bg-sky-100 dark:bg-sky-500/20",
-    border: "border-sky-400 dark:border-sky-400",
-    text: "text-sky-800 dark:text-sky-100",
-    hoverBg: "hover:bg-sky-50 dark:hover:bg-sky-500/30",
-    shadow: "shadow-sky-500/15 dark:shadow-sky-400/30",
+    bg: "bg-sky-50 dark:bg-sky-500/15",
+    border: "border-sky-400 dark:border-sky-500/60",
+    text: "text-sky-800 dark:text-sky-200",
+    hoverBg: "hover:bg-sky-100/80 dark:hover:bg-sky-500/25",
+    shadow: "shadow-sky-500/15 dark:shadow-sky-400/20",
   },
-  // Checkpoint - Important milestones
+  // Checkpoint - milestone markers
   checkpoint: {
-    bg: "bg-fuchsia-100 dark:bg-fuchsia-500/20",
-    border: "border-fuchsia-400 dark:border-fuchsia-400",
-    text: "text-fuchsia-800 dark:text-fuchsia-100",
-    hoverBg: "hover:bg-fuchsia-50 dark:hover:bg-fuchsia-500/30",
-    shadow: "shadow-fuchsia-500/15 dark:shadow-fuchsia-400/30",
+    bg: "bg-fuchsia-50 dark:bg-fuchsia-500/15",
+    border: "border-fuchsia-400 dark:border-fuchsia-500/60",
+    text: "text-fuchsia-800 dark:text-fuchsia-200",
+    hoverBg: "hover:bg-fuchsia-100/80 dark:hover:bg-fuchsia-500/25",
+    shadow: "shadow-fuchsia-500/15 dark:shadow-fuchsia-400/20",
   },
-  // Recommended - Special styling with shimmer effect support
+  // Recommended - special highlight with primary accent
   recommended: {
-    bg: "bg-gradient-to-r from-amber-400 via-orange-400 to-amber-400 dark:from-amber-500 dark:via-orange-500 dark:to-amber-500",
-    border: "border-amber-500 dark:border-amber-300",
-    text: "text-amber-950 dark:text-amber-950",
-    hoverBg: "hover:from-amber-300 hover:via-orange-300 hover:to-amber-300 dark:hover:from-amber-400 dark:hover:via-orange-400 dark:hover:to-amber-400",
-    shadow: "shadow-amber-500/30 dark:shadow-amber-400/50",
+    bg: "bg-gradient-to-r from-amber-100 via-orange-100 to-amber-100 dark:from-amber-500/25 dark:via-orange-500/25 dark:to-amber-500/25",
+    border: "border-amber-500 dark:border-amber-400",
+    text: "text-amber-900 dark:text-amber-100",
+    hoverBg: "hover:from-amber-50 hover:via-orange-50 hover:to-amber-50 dark:hover:from-amber-500/35 dark:hover:via-orange-500/35 dark:hover:to-amber-500/35",
+    shadow: "shadow-amber-500/25 dark:shadow-amber-400/35",
   },
 };
 
@@ -97,19 +97,19 @@ export const getNodeStyle = (
   }
 };
 
-// Badge styles with enhanced dark mode contrast
+// Badge styles with semantic tokens
 export const badgeStyles = {
-  recommended: "bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 border-amber-400 dark:from-amber-900/60 dark:to-orange-900/60 dark:text-amber-200 dark:border-amber-500",
-  alternative: "bg-violet-100 text-violet-700 border-violet-400 dark:bg-violet-900/60 dark:text-violet-200 dark:border-violet-400",
-  optional: "bg-slate-100 text-slate-700 border-slate-400 border-dashed dark:bg-slate-800/80 dark:text-slate-200 dark:border-slate-400",
-  checkpoint: "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-400 dark:bg-fuchsia-900/60 dark:text-fuchsia-200 dark:border-fuchsia-400",
-  done: "bg-emerald-100 text-emerald-700 border-emerald-400 dark:bg-emerald-900/60 dark:text-emerald-200 dark:border-emerald-400",
+  recommended: "bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 border-amber-400 dark:from-amber-900/50 dark:to-orange-900/50 dark:text-amber-200 dark:border-amber-500/60",
+  alternative: "bg-violet-100 text-violet-700 border-violet-400 dark:bg-violet-900/50 dark:text-violet-200 dark:border-violet-500/60",
+  optional: "bg-muted text-muted-foreground border-muted-foreground/30 border-dashed",
+  checkpoint: "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-400 dark:bg-fuchsia-900/50 dark:text-fuchsia-200 dark:border-fuchsia-500/60",
+  done: "bg-emerald-100 text-emerald-700 border-emerald-400 dark:bg-emerald-900/50 dark:text-emerald-200 dark:border-emerald-500/60",
 };
 
-// Connector line colors with better dark mode visibility
+// Connector line colors with semantic tokens
 export const lineColors = {
-  default: "stroke-slate-300 dark:stroke-slate-500",
-  active: "stroke-amber-400 dark:stroke-amber-400",
-  completed: "stroke-emerald-400 dark:stroke-emerald-400",
-  progress: "stroke-primary dark:stroke-primary",
+  default: "stroke-border",
+  active: "stroke-amber-400 dark:stroke-amber-500",
+  completed: "stroke-emerald-400 dark:stroke-emerald-500",
+  progress: "stroke-primary",
 };
