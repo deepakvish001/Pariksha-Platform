@@ -1735,15 +1735,15 @@
  FROM courses c
  LEFT JOIN enrollments e ON c.id = e.course_id
  GROUP BY c.id, c.title;
- \`\`\``,
-    options: [
-      { text: "Junction table with foreign keys to both tables", isCorrect: true },
-      { text: "Add array column to store multiple IDs", isCorrect: false },
-      { text: "Create duplicate rows for each relationship", isCorrect: false },
-      { text: "Use a single foreign key column", isCorrect: false },
-    ],
-  },
-   {
+\`\`\``,
+      options: [
+        { text: "Junction table with foreign keys to both tables", isCorrect: true },
+        { text: "Add array column to store multiple IDs", isCorrect: false },
+        { text: "Create duplicate rows for each relationship", isCorrect: false },
+        { text: "Use a single foreign key column", isCorrect: false },
+      ],
+    },
+    {
      id: 35,
      title: "What is the LAG and LEAD function?",
      text: "LAG accesses data from a previous row, while LEAD accesses data from a following row within the same result set. They're window functions useful for comparing values between consecutive rows.",
@@ -2291,13 +2291,13 @@
      difficulty: "Easy",
      categoryId: "filtering",
      type: "query",
-     answer: "## Filtering NULL Values\n\n```sql\nSELECT * FROM employees WHERE manager_id IS NULL;\nSELECT * FROM employees WHERE manager_id IS NOT NULL;\nSELECT name, COALESCE(phone, 'N/A') FROM customers;\n```",
-    options: [
-      { text: "Use IS NULL and IS NOT NULL operators", isCorrect: true },
-      { text: "Use = NULL to check", isCorrect: false },
-      { text: "Use LIKE '%NULL%'", isCorrect: false },
-      { text: "NULL values cannot be filtered", isCorrect: false },
-    ],
+      answer: "## Filtering NULL Values\n\n```sql\nSELECT * FROM employees WHERE manager_id IS NULL;\nSELECT * FROM employees WHERE manager_id IS NOT NULL;\nSELECT name, COALESCE(phone, 'N/A') FROM customers;\n```",
+      options: [
+        { text: "Use IS NULL and IS NOT NULL operators", isCorrect: true },
+        { text: "Use = NULL to check", isCorrect: false },
+        { text: "Use LIKE '%NULL%'", isCorrect: false },
+        { text: "NULL values cannot be filtered", isCorrect: false },
+      ],
    },
    {
      id: 57,
@@ -2805,6 +2805,12 @@
      categoryId: "window-functions",
      type: "query",
      answer: "## PARTITION BY\n\n```sql\nSELECT name, department, salary,\n    SUM(salary) OVER (PARTITION BY department) AS dept_total\nFROM employees;\n```",
+      options: [
+        { text: "Divides rows into groups for window calculations", isCorrect: true },
+        { text: "Same as GROUP BY clause", isCorrect: false },
+        { text: "Filters rows by partition value", isCorrect: false },
+        { text: "Creates separate tables for each partition", isCorrect: false },
+      ],
    },
    {
      id: 96,
@@ -2814,6 +2820,12 @@
      categoryId: "window-functions",
      type: "query",
      answer: "## Window Frames\n\n```sql\nSUM(x) OVER (ORDER BY date ROWS UNBOUNDED PRECEDING)  -- Running total\nAVG(x) OVER (ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)  -- 7-day avg\n```",
+      options: [
+        { text: "ROWS or RANGE to define included rows", isCorrect: true },
+        { text: "Same as WHERE clause", isCorrect: false },
+        { text: "Only works with SUM function", isCorrect: false },
+        { text: "Cannot specify preceding rows", isCorrect: false },
+      ],
    },
    {
      id: 97,
@@ -2823,6 +2835,12 @@
      categoryId: "window-functions",
      type: "query",
      answer: "## NTILE\n\n```sql\nSELECT name, salary, NTILE(4) OVER (ORDER BY salary) AS quartile\nFROM employees;\n```",
+      options: [
+        { text: "Divides rows into N equal groups with bucket numbers", isCorrect: true },
+        { text: "Returns the Nth row only", isCorrect: false },
+        { text: "Same as ROW_NUMBER function", isCorrect: false },
+        { text: "Creates N copies of each row", isCorrect: false },
+      ],
    },
    {
      id: 98,
@@ -2832,6 +2850,12 @@
      categoryId: "window-functions",
      type: "query",
      answer: "## CUME_DIST / PERCENT_RANK\n\n```sql\nSELECT name, salary,\n    CUME_DIST() OVER (ORDER BY salary) AS cume_dist,\n    PERCENT_RANK() OVER (ORDER BY salary) AS pct_rank\nFROM employees;\n```",
+      options: [
+        { text: "CUME_DIST: cumulative distribution; PERCENT_RANK: relative rank", isCorrect: true },
+        { text: "They return the same values", isCorrect: false },
+        { text: "Both return absolute row counts", isCorrect: false },
+        { text: "Only work with numeric columns", isCorrect: false },
+      ],
    },
    {
      id: 99,
@@ -2841,6 +2865,12 @@
      categoryId: "window-functions",
      type: "query",
      answer: "## Named Windows\n\n```sql\nSELECT name, AVG(salary) OVER w, RANK() OVER w\nFROM employees\nWINDOW w AS (PARTITION BY department ORDER BY salary DESC);\n```",
+      options: [
+        { text: "WINDOW clause defines reusable window definitions", isCorrect: true },
+        { text: "Use alias in SELECT clause", isCorrect: false },
+        { text: "Create a view instead", isCorrect: false },
+        { text: "Windows cannot be named", isCorrect: false },
+      ],
    },
    {
      id: 100,
@@ -2850,6 +2880,12 @@
      categoryId: "window-functions",
      type: "query",
      answer: "## Year-over-Year\n\n```sql\nSELECT year, month, sales,\n    LAG(sales, 12) OVER (ORDER BY year, month) AS last_year\nFROM monthly_sales;\n```",
+      options: [
+        { text: "LAG with 12-month offset or self-join on dates", isCorrect: true },
+        { text: "Use LEAD function only", isCorrect: false },
+        { text: "Subtract current year from previous", isCorrect: false },
+        { text: "Group by year and compare", isCorrect: false },
+      ],
    },
    {
      id: 101,
@@ -2859,6 +2895,12 @@
      categoryId: "constraints",
      type: "conceptual",
      answer: "## SQL Constraints\n\n```sql\nCREATE TABLE employees (\n    id SERIAL PRIMARY KEY,\n    name VARCHAR(100) NOT NULL,\n    email VARCHAR(255) UNIQUE,\n    salary DECIMAL CHECK (salary > 0),\n    status VARCHAR(20) DEFAULT 'active'\n);\n```",
+      options: [
+        { text: "PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL, CHECK, DEFAULT", isCorrect: true },
+        { text: "Only PRIMARY KEY and FOREIGN KEY", isCorrect: false },
+        { text: "INDEX is a type of constraint", isCorrect: false },
+        { text: "Constraints are optional and not enforced", isCorrect: false },
+      ],
    },
    {
      id: 102,
@@ -2868,6 +2910,12 @@
      categoryId: "constraints",
      type: "conceptual",
      answer: "## UNIQUE Constraint\n\n```sql\nCREATE TABLE users (email VARCHAR(255) UNIQUE);\nCREATE TABLE enrollments (\n    student_id INT, course_id INT,\n    UNIQUE (student_id, course_id)\n);\n```",
+      options: [
+        { text: "Ensures distinct values, allows multiple NULLs", isCorrect: true },
+        { text: "Same as PRIMARY KEY", isCorrect: false },
+        { text: "Prevents NULL values", isCorrect: false },
+        { text: "Only works on single columns", isCorrect: false },
+      ],
    },
    {
      id: 103,
@@ -2877,6 +2925,12 @@
      categoryId: "constraints",
      type: "query",
      answer: "## CHECK Constraint\n\n```sql\nCREATE TABLE products (\n    price DECIMAL CHECK (price > 0),\n    discount DECIMAL CHECK (discount BETWEEN 0 AND 100)\n);\nCREATE TABLE events (\n    start_date DATE, end_date DATE,\n    CHECK (end_date >= start_date)\n);\n```",
+      options: [
+        { text: "Enforces a condition that must be true for all rows", isCorrect: true },
+        { text: "Validates data types only", isCorrect: false },
+        { text: "Same as WHERE clause", isCorrect: false },
+        { text: "Cannot span multiple columns", isCorrect: false },
+      ],
    },
    {
      id: 104,
@@ -2886,6 +2940,12 @@
      categoryId: "constraints",
      type: "conceptual",
      answer: "## Referential Actions\n\n```sql\nCREATE TABLE orders (\n    user_id INT REFERENCES users(id)\n        ON DELETE CASCADE\n        ON UPDATE CASCADE\n);\n```",
+      options: [
+        { text: "CASCADE, SET NULL, RESTRICT, NO ACTION actions", isCorrect: true },
+        { text: "Only CASCADE is available", isCorrect: false },
+        { text: "These are trigger types", isCorrect: false },
+        { text: "Used for index maintenance", isCorrect: false },
+      ],
    },
    {
      id: 105,
@@ -2895,6 +2955,12 @@
      categoryId: "constraints",
      type: "conceptual",
      answer: "## Composite Keys\n\n```sql\nCREATE TABLE order_items (\n    order_id INT, product_id INT, quantity INT,\n    PRIMARY KEY (order_id, product_id)\n);\n```",
+      options: [
+        { text: "Multiple columns combined to uniquely identify rows", isCorrect: true },
+        { text: "A key that references multiple tables", isCorrect: false },
+        { text: "Two separate primary keys", isCorrect: false },
+        { text: "Same as multiple UNIQUE constraints", isCorrect: false },
+      ],
    },
    {
      id: 106,
@@ -2904,6 +2970,12 @@
      categoryId: "constraints",
      type: "query",
      answer: "## Managing Constraints\n\n```sql\nALTER TABLE users ADD CONSTRAINT uq_email UNIQUE (email);\nALTER TABLE users DROP CONSTRAINT uq_email;\nALTER TABLE users ALTER COLUMN email SET NOT NULL;\n```",
+      options: [
+        { text: "ALTER TABLE ADD CONSTRAINT / DROP CONSTRAINT", isCorrect: true },
+        { text: "Use CREATE CONSTRAINT statement", isCorrect: false },
+        { text: "Constraints cannot be modified after creation", isCorrect: false },
+        { text: "Use UPDATE TABLE command", isCorrect: false },
+      ],
    },
    {
      id: 107,
@@ -2913,6 +2985,12 @@
      categoryId: "constraints",
      type: "conceptual",
      answer: "## NOT NULL\n\n```sql\nCREATE TABLE users (email VARCHAR(255) NOT NULL);\nALTER TABLE users ALTER COLUMN phone SET NOT NULL;\n```",
+      options: [
+        { text: "Ensures a column must always have a value", isCorrect: true },
+        { text: "Sets default value to empty string", isCorrect: false },
+        { text: "Same as UNIQUE constraint", isCorrect: false },
+        { text: "Prevents zero values", isCorrect: false },
+      ],
    },
    {
      id: 108,
@@ -2922,6 +3000,12 @@
      categoryId: "constraints",
      type: "conceptual",
      answer: "## DEFAULT\n\n```sql\nCREATE TABLE orders (\n    status VARCHAR(20) DEFAULT 'pending',\n    created_at TIMESTAMP DEFAULT NOW(),\n    uuid UUID DEFAULT gen_random_uuid()\n);\n```",
+      options: [
+        { text: "Provides automatic values when not specified in INSERT", isCorrect: true },
+        { text: "Makes the column required", isCorrect: false },
+        { text: "Creates an index on the column", isCorrect: false },
+        { text: "Only works with numeric types", isCorrect: false },
+      ],
    },
    {
      id: 109,
@@ -2931,6 +3015,12 @@
      categoryId: "constraints",
      type: "conceptual",
      answer: "## Deferrable Constraints\n\n```sql\nCREATE TABLE employees (\n    department_id INT REFERENCES departments(id)\n        DEFERRABLE INITIALLY DEFERRED\n);\n```\n\nUseful for circular references.",
+      options: [
+        { text: "Postpones validation until transaction commit", isCorrect: true },
+        { text: "Makes constraint optional", isCorrect: false },
+        { text: "Disables the constraint", isCorrect: false },
+        { text: "Delays index creation", isCorrect: false },
+      ],
    },
    {
      id: 110,
@@ -2940,6 +3030,12 @@
      categoryId: "constraints",
      type: "query",
      answer: "## Exclusion Constraints\n\n```sql\nCREATE TABLE room_bookings (\n    room_id INT, start_time TIMESTAMP, end_time TIMESTAMP,\n    EXCLUDE USING gist (room_id WITH =, tsrange(start_time, end_time) WITH &&)\n);\n```",
+      options: [
+        { text: "Prevents overlapping ranges using GiST index", isCorrect: true },
+        { text: "Same as UNIQUE constraint", isCorrect: false },
+        { text: "Excludes rows from queries", isCorrect: false },
+        { text: "Only works with integer columns", isCorrect: false },
+      ],
    },
    {
      id: 111,
@@ -2949,6 +3045,12 @@
      categoryId: "database-design",
      type: "conceptual",
      answer: "## ER Diagrams\n\n**Components**: Entities (tables), Attributes (columns), Relationships (FKs)\n\n**Cardinality**: 1:1, 1:N, M:N",
+      options: [
+        { text: "Visualizes entities, attributes, and relationships", isCorrect: true },
+        { text: "A type of database query", isCorrect: false },
+        { text: "Shows only table indexes", isCorrect: false },
+        { text: "Displays SQL execution plans", isCorrect: false },
+      ],
    },
    {
      id: 112,
@@ -2958,6 +3060,12 @@
      categoryId: "database-design",
      type: "conceptual",
      answer: "## Surrogate vs Natural Keys\n\n**Surrogate**: id SERIAL PRIMARY KEY\n**Natural**: code CHAR(2) PRIMARY KEY\n\n**Best Practice**: Use surrogate PK + unique constraint on natural key.",
+      options: [
+        { text: "Surrogate: system-generated; Natural: existing data", isCorrect: true },
+        { text: "They are the same concept", isCorrect: false },
+        { text: "Surrogate keys are always UUIDs", isCorrect: false },
+        { text: "Natural keys are always faster", isCorrect: false },
+      ],
    },
    {
      id: 113,
@@ -2967,6 +3075,12 @@
      categoryId: "database-design",
      type: "conceptual",
      answer: "## UUID vs Sequential\n\n**Sequential**: Smaller, faster indexing, reveals count\n**UUID**: Globally unique, secure, better for distributed systems",
+      options: [
+        { text: "UUID: globally unique, secure; Sequential: smaller, faster", isCorrect: true },
+        { text: "Always use UUIDs", isCorrect: false },
+        { text: "Sequential IDs are more secure", isCorrect: false },
+        { text: "They have identical performance", isCorrect: false },
+      ],
    },
    {
      id: 114,
@@ -2976,6 +3090,12 @@
      categoryId: "database-design",
      type: "conceptual",
      answer: "## Partitioning\n\n```sql\nCREATE TABLE orders (id SERIAL, order_date DATE)\nPARTITION BY RANGE (order_date);\n\nCREATE TABLE orders_2024 PARTITION OF orders\n    FOR VALUES FROM ('2024-01-01') TO ('2025-01-01');\n```",
+      options: [
+        { text: "Divides large tables into smaller physical pieces", isCorrect: true },
+        { text: "Same as database sharding", isCorrect: false },
+        { text: "Creates multiple copies of data", isCorrect: false },
+        { text: "Only works with primary keys", isCorrect: false },
+      ],
    },
    {
      id: 115,
@@ -2985,6 +3105,12 @@
      categoryId: "database-design",
      type: "query",
      answer: "## Soft Deletes\n\n```sql\nALTER TABLE users ADD COLUMN deleted_at TIMESTAMP NULL;\nUPDATE users SET deleted_at = NOW() WHERE id = 1;\nSELECT * FROM users WHERE deleted_at IS NULL;\n```",
+      options: [
+        { text: "Add deleted_at column, filter by NULL in queries", isCorrect: true },
+        { text: "Use DELETE with CASCADE", isCorrect: false },
+        { text: "Move to separate archive table", isCorrect: false },
+        { text: "Set a boolean is_deleted column only", isCorrect: false },
+      ],
    },
    {
      id: 116,
@@ -2994,6 +3120,12 @@
      categoryId: "database-design",
      type: "query",
      answer: "## Hierarchical Data\n\n```sql\nCREATE TABLE categories (id INT, name VARCHAR, parent_id INT REFERENCES categories(id));\n\nWITH RECURSIVE tree AS (...) SELECT * FROM tree;\n```",
+      options: [
+        { text: "Adjacency list, materialized path, or closure table", isCorrect: true },
+        { text: "Use multiple tables for each level", isCorrect: false },
+        { text: "Store as JSON only", isCorrect: false },
+        { text: "Hierarchical data cannot be stored in SQL", isCorrect: false },
+      ],
    },
    {
      id: 117,
@@ -3003,6 +3135,12 @@
      categoryId: "database-design",
      type: "query",
      answer: "## Audit Tables\n\n```sql\nCREATE TABLE audit_log (\n    table_name VARCHAR, record_id TEXT, operation VARCHAR,\n    old_data JSONB, new_data JSONB, changed_by UUID, changed_at TIMESTAMP\n);\n```",
+      options: [
+        { text: "Track old/new values, operation, timestamp, user", isCorrect: true },
+        { text: "Only store the latest change", isCorrect: false },
+        { text: "Use triggers on every column", isCorrect: false },
+        { text: "Audit tables are not recommended", isCorrect: false },
+      ],
    },
    {
      id: 118,
@@ -3012,6 +3150,12 @@
      categoryId: "indexing",
      type: "conceptual",
      answer: "## Indexes\n\n```sql\nCREATE INDEX idx_users_email ON users(email);\nCREATE UNIQUE INDEX idx_users_username ON users(username);\n```\n\n**Index on**: WHERE columns, JOIN columns, ORDER BY columns",
+      options: [
+        { text: "Speeds up data retrieval with quick lookup paths", isCorrect: true },
+        { text: "Stores copies of table data", isCorrect: false },
+        { text: "Always improves all query types", isCorrect: false },
+        { text: "Required for every column", isCorrect: false },
+      ],
    },
    {
      id: 119,
@@ -3021,6 +3165,12 @@
      categoryId: "indexing",
      type: "conceptual",
      answer: "## Index Types\n\n```sql\nCREATE INDEX idx USING btree(column);  -- Default\nCREATE INDEX idx USING gin(tags);      -- Arrays, JSONB\nCREATE INDEX idx USING brin(date);     -- Time-series\n```",
+      options: [
+        { text: "B-tree, Hash, GiST, GIN, BRIN", isCorrect: true },
+        { text: "Only B-tree is available", isCorrect: false },
+        { text: "All indexes work the same way", isCorrect: false },
+        { text: "Hash is the default type", isCorrect: false },
+      ],
    },
    {
      id: 120,
@@ -3030,6 +3180,12 @@
      categoryId: "indexing",
      type: "query",
      answer: "## Composite Indexes\n\n```sql\nCREATE INDEX idx ON orders(customer_id, order_date);\n```\n\n**Uses index**: WHERE customer_id = 1\n**No index**: WHERE order_date = '2024-01-01' (missing leftmost)",
+      options: [
+        { text: "Covers multiple columns, leftmost column order matters", isCorrect: true },
+        { text: "Multiple separate indexes on each column", isCorrect: false },
+        { text: "Column order doesn't affect usage", isCorrect: false },
+        { text: "Always faster than single-column indexes", isCorrect: false },
+      ],
    },
    {
      id: 121,
@@ -3039,6 +3195,12 @@
      categoryId: "indexing",
      type: "query",
      answer: "## Partial Indexes\n\n```sql\nCREATE INDEX idx_active ON users(email) WHERE status = 'active';\nCREATE UNIQUE INDEX uq_email ON users(email) WHERE deleted_at IS NULL;\n```",
+      options: [
+        { text: "Includes only rows matching a WHERE condition", isCorrect: true },
+        { text: "Indexes only part of a column value", isCorrect: false },
+        { text: "Same as composite index", isCorrect: false },
+        { text: "Cannot be combined with UNIQUE", isCorrect: false },
+      ],
    },
    {
      id: 122,
@@ -3048,6 +3210,12 @@
      categoryId: "indexing",
      type: "query",
      answer: "## Covering Indexes\n\n```sql\nCREATE INDEX idx ON users(email) INCLUDE (name, created_at);\n```\n\nLook for \"Index Only Scan\" in EXPLAIN output.",
+      options: [
+        { text: "Includes all columns needed for index-only scans", isCorrect: true },
+        { text: "Indexes all columns in the table", isCorrect: false },
+        { text: "Same as partial index", isCorrect: false },
+        { text: "Only works with B-tree indexes", isCorrect: false },
+      ],
    },
    {
      id: 123,
@@ -3057,6 +3225,12 @@
      categoryId: "indexing",
      type: "query",
      answer: "## EXPLAIN\n\n```sql\nEXPLAIN SELECT * FROM orders WHERE customer_id = 1;\nEXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 1;\n```\n\n**Good**: Index Scan | **Bad**: Seq Scan on large table",
+      options: [
+        { text: "EXPLAIN: plan; EXPLAIN ANALYZE: actual timing", isCorrect: true },
+        { text: "EXPLAIN executes the query", isCorrect: false },
+        { text: "Only works with SELECT statements", isCorrect: false },
+        { text: "Shows index statistics only", isCorrect: false },
+      ],
    },
    {
      id: 124,
@@ -3066,6 +3240,12 @@
      categoryId: "indexing",
      type: "query",
      answer: "## Expression Indexes\n\n```sql\nCREATE INDEX idx ON users(LOWER(email));\nSELECT * FROM users WHERE LOWER(email) = 'test@email.com';\n```",
+      options: [
+        { text: "Indexes computed values like LOWER(column)", isCorrect: true },
+        { text: "Same as regular column index", isCorrect: false },
+        { text: "Cannot use functions in indexes", isCorrect: false },
+        { text: "Only works with text columns", isCorrect: false },
+      ],
    },
    {
      id: 125,
@@ -3075,6 +3255,12 @@
      categoryId: "indexing",
      type: "query",
      answer: "## Indexing JSONB\n\n```sql\nCREATE INDEX idx USING gin(data);  -- Flexible\nCREATE INDEX idx ON items((data->>'status'));  -- Specific key\n```",
+      options: [
+        { text: "GIN for flexible queries, expression for specific keys", isCorrect: true },
+        { text: "B-tree works for all JSONB queries", isCorrect: false },
+        { text: "JSONB cannot be indexed", isCorrect: false },
+        { text: "Only hash indexes work with JSONB", isCorrect: false },
+      ],
    },
    {
      id: 126,
@@ -3084,6 +3270,12 @@
      categoryId: "indexing",
      type: "query",
      answer: "## Concurrent Indexes\n\n```sql\nCREATE INDEX CONCURRENTLY idx ON users(email);\nREINDEX INDEX CONCURRENTLY idx;\n```\n\nEssential for production databases.",
+      options: [
+        { text: "CONCURRENTLY builds indexes without locking writes", isCorrect: true },
+        { text: "Creates multiple indexes at once", isCorrect: false },
+        { text: "Faster than regular index creation", isCorrect: false },
+        { text: "Only works inside transactions", isCorrect: false },
+      ],
    },
    {
      id: 127,
@@ -3093,6 +3285,12 @@
      categoryId: "transactions",
      type: "conceptual",
      answer: "## ACID\n\n**Atomicity**: All or nothing\n**Consistency**: Valid states only\n**Isolation**: No interference\n**Durability**: Committed = persisted",
+      options: [
+        { text: "Atomicity, Consistency, Isolation, Durability", isCorrect: true },
+        { text: "All Commits In Database", isCorrect: false },
+        { text: "Only applies to NoSQL databases", isCorrect: false },
+        { text: "Automatic, Concurrent, Immediate, Distributed", isCorrect: false },
+      ],
    },
    {
      id: 128,
@@ -3102,6 +3300,12 @@
      categoryId: "transactions",
      type: "conceptual",
      answer: "## Isolation Levels\n\n```sql\nBEGIN ISOLATION LEVEL SERIALIZABLE;\n```\n\n| Level | Dirty Read | Non-repeatable | Phantom |\n|-------|------------|----------------|---------|\n| READ COMMITTED | ✗ | ✓ | ✓ |\n| SERIALIZABLE | ✗ | ✗ | ✗ |",
+      options: [
+        { text: "READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ, SERIALIZABLE", isCorrect: true },
+        { text: "LOW, MEDIUM, HIGH, MAXIMUM", isCorrect: false },
+        { text: "Only SERIALIZABLE is available", isCorrect: false },
+        { text: "Isolation levels are database-specific", isCorrect: false },
+      ],
    },
    {
      id: 129,
@@ -3111,6 +3315,12 @@
      categoryId: "transactions",
      type: "conceptual",
      answer: "## Deadlocks\n\n**Prevention**:\n1. Lock in consistent order\n2. Keep transactions short\n3. Use timeouts",
+      options: [
+        { text: "Transactions waiting for each other, prevent with consistent lock order", isCorrect: true },
+        { text: "A type of database error", isCorrect: false },
+        { text: "Occurs only in distributed systems", isCorrect: false },
+        { text: "Cannot be prevented", isCorrect: false },
+      ],
    },
    {
      id: 130,
@@ -3120,6 +3330,12 @@
      categoryId: "transactions",
      type: "query",
      answer: "## Savepoints\n\n```sql\nBEGIN;\nINSERT INTO orders ...;\nSAVEPOINT before_items;\nINSERT INTO items ...;  -- Error!\nROLLBACK TO before_items;\nCOMMIT;\n```",
+      options: [
+        { text: "Marker to roll back to within a transaction", isCorrect: true },
+        { text: "Saves the entire database state", isCorrect: false },
+        { text: "Same as COMMIT", isCorrect: false },
+        { text: "Creates a backup of the table", isCorrect: false },
+      ],
    },
    {
      id: 131,
@@ -3129,6 +3345,12 @@
      categoryId: "transactions",
      type: "conceptual",
      answer: "## Locking Strategies\n\n**Pessimistic**: SELECT ... FOR UPDATE\n**Optimistic**: UPDATE ... WHERE version = 5",
+      options: [
+        { text: "Pessimistic: locks before access; Optimistic: checks at commit", isCorrect: true },
+        { text: "They are the same concept", isCorrect: false },
+        { text: "Optimistic always locks rows", isCorrect: false },
+        { text: "Pessimistic is always faster", isCorrect: false },
+      ],
    },
    {
      id: 132,
@@ -3138,6 +3360,12 @@
      categoryId: "transactions",
      type: "query",
      answer: "## SELECT FOR UPDATE\n\n```sql\nBEGIN;\nSELECT * FROM accounts WHERE id = 1 FOR UPDATE;\nUPDATE accounts SET balance = balance - 100 WHERE id = 1;\nCOMMIT;\n```",
+      options: [
+        { text: "Locks selected rows until transaction ends", isCorrect: true },
+        { text: "Updates the selected rows immediately", isCorrect: false },
+        { text: "Same as regular SELECT", isCorrect: false },
+        { text: "Only works with single-row queries", isCorrect: false },
+      ],
    },
    {
      id: 133,
@@ -3147,6 +3375,12 @@
      categoryId: "transactions",
      type: "conceptual",
      answer: "## Error Handling\n\n**Retryable errors**: Deadlock (40P01), Serialization (40001)\n\n**Strategy**: Catch, backoff, retry up to N times.",
+      options: [
+        { text: "Catch retryable errors, retry with exponential backoff", isCorrect: true },
+        { text: "Always rollback and fail", isCorrect: false },
+        { text: "Ignore errors and continue", isCorrect: false },
+        { text: "Errors cannot be handled in SQL", isCorrect: false },
+      ],
    },
    {
      id: 134,
@@ -3156,6 +3390,12 @@
      categoryId: "database-design",
      type: "conceptual",
      answer: "## Sharding\n\n**Strategies**: Range-based, Hash-based, Directory-based\n\n**Challenges**: Cross-shard queries, distributed transactions",
+      options: [
+        { text: "Distributes data across multiple servers for horizontal scaling", isCorrect: true },
+        { text: "Same as partitioning", isCorrect: false },
+        { text: "Replicates data for redundancy", isCorrect: false },
+        { text: "Only works with NoSQL databases", isCorrect: false },
+      ],
    },
    {
      id: 135,
@@ -3165,6 +3405,12 @@
      categoryId: "database-design",
      type: "conceptual",
      answer: "## Star vs Snowflake\n\n**Star**: Fewer joins, faster queries, more redundancy\n**Snowflake**: More joins, normalized dimensions, less redundancy",
+      options: [
+        { text: "Star: direct joins, redundancy; Snowflake: normalized dimensions", isCorrect: true },
+        { text: "They produce the same query performance", isCorrect: false },
+        { text: "Star schema is always better", isCorrect: false },
+        { text: "Snowflake has more redundancy", isCorrect: false },
+      ],
    },
    {
      id: 136,
@@ -3174,6 +3420,12 @@
      categoryId: "database-design",
      type: "conceptual",
      answer: "## Higher Normal Forms\n\n**BCNF**: Every determinant is a candidate key\n**4NF**: No multi-valued dependencies\n**5NF**: No join dependencies",
+      options: [
+        { text: "BCNF, 4NF, 5NF for stricter normalization", isCorrect: true },
+        { text: "3NF is the highest form", isCorrect: false },
+        { text: "Higher forms are less normalized", isCorrect: false },
+        { text: "Only BCNF exists beyond 3NF", isCorrect: false },
+      ],
    },
    {
      id: 137,
@@ -3183,6 +3435,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## Median\n\n```sql\nSELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY salary) FROM employees;\n```",
+      options: [
+        { text: "PERCENTILE_CONT(0.5) or window functions", isCorrect: true },
+        { text: "Use AVG() function", isCorrect: false },
+        { text: "Median is not supported in SQL", isCorrect: false },
+        { text: "Use MODE() function", isCorrect: false },
+      ],
    },
    {
      id: 138,
@@ -3192,6 +3450,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## Pivoting\n\n```sql\nSELECT product,\n    SUM(CASE WHEN month = 'Jan' THEN sales END) AS jan,\n    SUM(CASE WHEN month = 'Feb' THEN sales END) AS feb\nFROM monthly_sales GROUP BY product;\n```",
+      options: [
+        { text: "CASE expressions with aggregation to transform rows to columns", isCorrect: true },
+        { text: "Use PIVOT keyword directly", isCorrect: false },
+        { text: "Pivoting is not possible in SQL", isCorrect: false },
+        { text: "Use UNION to combine columns", isCorrect: false },
+      ],
    },
    {
      id: 139,
@@ -3201,6 +3465,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## FILTER Clause\n\n```sql\nSELECT\n    COUNT(*) AS total,\n    COUNT(*) FILTER (WHERE status = 'active') AS active\nFROM users;\n```",
+      options: [
+        { text: "Applies condition to specific aggregate only", isCorrect: true },
+        { text: "Same as WHERE clause", isCorrect: false },
+        { text: "Filters results after aggregation", isCorrect: false },
+        { text: "Only works with COUNT", isCorrect: false },
+      ],
    },
    {
      id: 140,
@@ -3210,6 +3480,12 @@
      categoryId: "window-functions",
      type: "query",
      answer: "## Gaps and Islands\n\n```sql\nWITH grouped AS (\n    SELECT date, date - (ROW_NUMBER() OVER (ORDER BY date)) * INTERVAL '1 day' AS grp\n    FROM attendance\n)\nSELECT MIN(date), MAX(date), COUNT(*) FROM grouped GROUP BY grp;\n```",
+      options: [
+        { text: "ROW_NUMBER difference technique to identify sequences", isCorrect: true },
+        { text: "Use simple GROUP BY", isCorrect: false },
+        { text: "Cannot identify gaps in SQL", isCorrect: false },
+        { text: "Use DISTINCT only", isCorrect: false },
+      ],
    },
    {
      id: 141,
@@ -3219,6 +3495,12 @@
      categoryId: "joins",
      type: "conceptual",
      answer: "## Join Elimination\n\nIf FK exists and no columns selected from joined table, optimizer may skip it.",
+      options: [
+        { text: "Optimizer removes joins when joined columns aren't needed", isCorrect: true },
+        { text: "Manually removing unnecessary joins", isCorrect: false },
+        { text: "Same as LEFT JOIN", isCorrect: false },
+        { text: "Prevents duplicate rows", isCorrect: false },
+      ],
    },
    {
      id: 142,
@@ -3228,6 +3510,12 @@
      categoryId: "joins",
      type: "conceptual",
      answer: "## Semi/Anti-Join\n\n**Semi**: SELECT * FROM a WHERE EXISTS (SELECT 1 FROM b WHERE ...)\n**Anti**: SELECT * FROM a WHERE NOT EXISTS (...)",
+      options: [
+        { text: "Semi: EXISTS match; Anti: NOT EXISTS", isCorrect: true },
+        { text: "Types of OUTER JOIN", isCorrect: false },
+        { text: "Same as INNER and LEFT JOIN", isCorrect: false },
+        { text: "Used for data validation only", isCorrect: false },
+      ],
    },
    {
      id: 143,
@@ -3237,6 +3525,12 @@
      categoryId: "indexing",
      type: "conceptual",
      answer: "## Index Bloat\n\n```sql\nREINDEX INDEX CONCURRENTLY idx_users_email;\nVACUUM ANALYZE users;\n```",
+      options: [
+        { text: "Dead entries from updates/deletes, fix with REINDEX", isCorrect: true },
+        { text: "Index growing too large", isCorrect: false },
+        { text: "Cannot be fixed", isCorrect: false },
+        { text: "Caused by too many indexes", isCorrect: false },
+      ],
    },
    {
      id: 144,
@@ -3246,6 +3540,12 @@
      categoryId: "window-functions",
      type: "query",
      answer: "## NULLs in Windows\n\n```sql\nLAG(price) IGNORE NULLS OVER (ORDER BY date)\nCOALESCE(value, LAG(value) OVER (ORDER BY date), 0)\n```",
+      options: [
+        { text: "IGNORE NULLS or COALESCE to handle NULL values", isCorrect: true },
+        { text: "NULLs are automatically ignored", isCorrect: false },
+        { text: "Window functions don't work with NULLs", isCorrect: false },
+        { text: "Use IS NOT NULL in PARTITION BY", isCorrect: false },
+      ],
    },
    {
      id: 145,
@@ -3255,6 +3555,12 @@
      categoryId: "window-functions",
      type: "conceptual",
      answer: "## Window vs Aggregate\n\n**Aggregate**: GROUP BY collapses rows\n**Window**: OVER() preserves all rows while adding computed columns",
+      options: [
+        { text: "Aggregates collapse rows; Windows preserve all rows", isCorrect: true },
+        { text: "They produce identical results", isCorrect: false },
+        { text: "Windows are faster than aggregates", isCorrect: false },
+        { text: "Aggregates cannot use GROUP BY", isCorrect: false },
+      ],
    },
    {
      id: 146,
@@ -3264,6 +3570,12 @@
      categoryId: "joins",
      type: "query",
      answer: "## Implicit Join\n\n```sql\nSELECT o.id, c.name FROM orders o, customers c WHERE o.customer_id = c.id;\n```\n\nExplicit JOIN is preferred for clarity.",
+      options: [
+        { text: "Comma-separated tables with WHERE conditions", isCorrect: true },
+        { text: "Use UNION instead", isCorrect: false },
+        { text: "Cannot join without JOIN keyword", isCorrect: false },
+        { text: "Use subqueries only", isCorrect: false },
+      ],
    },
    {
      id: 147,
@@ -3273,6 +3585,12 @@
      categoryId: "joins",
      type: "conceptual",
      answer: "## Equi vs Non-Equi\n\n**Equi**: ON a.id = b.id\n**Non-equi**: ON e.salary BETWEEN s.min AND s.max",
+      options: [
+        { text: "Equi: equality operator; Non-equi: BETWEEN, <, >", isCorrect: true },
+        { text: "They are the same", isCorrect: false },
+        { text: "Non-equi is not supported", isCorrect: false },
+        { text: "Equi is slower than non-equi", isCorrect: false },
+      ],
    },
    {
      id: 148,
@@ -3282,6 +3600,12 @@
      categoryId: "joins",
      type: "query",
      answer: "## Multiple Join Conditions\n\n```sql\nSELECT * FROM items i JOIN inventory inv\n    ON i.product_id = inv.product_id AND i.warehouse_id = inv.warehouse_id;\n```",
+      options: [
+        { text: "Combine conditions with AND in the ON clause", isCorrect: true },
+        { text: "Use multiple JOIN statements", isCorrect: false },
+        { text: "Only one condition per JOIN", isCorrect: false },
+        { text: "Use OR for multiple conditions", isCorrect: false },
+      ],
    },
    {
      id: 149,
@@ -3291,6 +3615,12 @@
      categoryId: "aggregations",
      type: "query",
      answer: "## Finding Mode\n\n```sql\nSELECT category FROM products GROUP BY category ORDER BY COUNT(*) DESC LIMIT 1;\n```",
+      options: [
+        { text: "Count occurrences, select highest count value", isCorrect: true },
+        { text: "Use MODE() function", isCorrect: false },
+        { text: "Use MEDIAN() function", isCorrect: false },
+        { text: "Mode cannot be calculated in SQL", isCorrect: false },
+      ],
    },
    {
      id: 150,
@@ -3300,6 +3630,12 @@
      categoryId: "subqueries",
      type: "conceptual",
      answer: "## Subquery Performance\n\n**Efficient**: EXISTS, scalar subqueries\n**Potentially slow**: Correlated subqueries (run per row)\n\nUse EXPLAIN to analyze.",
+      options: [
+        { text: "EXISTS/scalar efficient; Correlated may run per row", isCorrect: true },
+        { text: "All subqueries have the same performance", isCorrect: false },
+        { text: "Correlated subqueries are always fastest", isCorrect: false },
+        { text: "Subqueries should always be avoided", isCorrect: false },
+      ],
    },
    {
      id: 151,
@@ -3309,6 +3645,12 @@
      categoryId: "window-functions",
      type: "conceptual",
      answer: "## Window Optimization\n\n1. Index ORDER BY columns\n2. Filter before windowing\n3. Reuse window definitions with WINDOW clause",
+      options: [
+        { text: "Index ORDER BY columns, filter early, use named windows", isCorrect: true },
+        { text: "Window functions cannot be optimized", isCorrect: false },
+        { text: "Use GROUP BY instead", isCorrect: false },
+        { text: "Avoid PARTITION BY for speed", isCorrect: false },
+      ],
    },
    {
      id: 152,
@@ -3318,6 +3660,12 @@
      categoryId: "window-functions",
      type: "query",
      answer: "## ROWS vs RANGE\n\n**ROWS**: Physical row count\n**RANGE**: Value-based grouping\n\n```sql\nROWS BETWEEN 2 PRECEDING AND CURRENT ROW  -- Exactly 3 rows\nRANGE BETWEEN INTERVAL '7 days' PRECEDING AND CURRENT ROW  -- All within 7 days\n```",
+      options: [
+        { text: "ROWS: physical count; RANGE: value-based grouping", isCorrect: true },
+        { text: "They are interchangeable", isCorrect: false },
+        { text: "RANGE is always faster", isCorrect: false },
+        { text: "ROWS only works with integers", isCorrect: false },
+      ],
    },
  ];
  
