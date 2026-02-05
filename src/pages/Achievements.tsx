@@ -19,6 +19,8 @@ import { Card, CardContent } from "@/components/ui/card";
  import { useAchievementRarity } from "@/hooks/useAchievementRarity";
  import ShareableAchievementCard from "@/components/ShareableAchievementCard";
 import AchievementLeaderboard from "@/components/AchievementLeaderboard";
+import StreakLeaderboard from "@/components/StreakLeaderboard";
+import AchievementComparison from "@/components/AchievementComparison";
  
  const categories = [
    { id: "all", label: "All", icon: Trophy },
@@ -261,7 +263,13 @@ import AchievementLeaderboard from "@/components/AchievementLeaderboard";
          </motion.div>
  
           {/* Leaderboard */}
-          <AchievementLeaderboard />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <AchievementLeaderboard />
+            <StreakLeaderboard />
+          </div>
+
+          {/* Comparison */}
+          <AchievementComparison />
 
          {/* Category Tabs */}
          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
