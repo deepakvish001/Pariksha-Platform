@@ -20,10 +20,12 @@ import {
   GripVertical,
   LayoutGrid,
   List,
+  RotateCcw,
 } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import RoadmapNode from "./RoadmapNode";
@@ -38,6 +40,7 @@ import HorizontalBranch from "./HorizontalBranch";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoadmapConfetti } from "@/hooks/useRoadmapConfetti";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRoadmapNodeOrder } from "@/hooks/useRoadmapNodeOrder";
 import type { RoadmapTree as TreeType, RoadmapTreeNode as NodeType } from "@/data/roadmapTreesData";
 
 // Icon mapping for roadmap types
@@ -157,10 +160,13 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const [detailOpen, setDetailOpen] = useState(false);
   const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>('vertical');
   const [isDragEnabled, setIsDragEnabled] = useState(false);
+  const [localNodeOrder, setLocalNodeOrder] = useState<Record<string, NodeType[]>>({});
   const treeRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const { celebrateTopic, celebrateSection, trackProgress, resetCelebrations } = useRoadmapConfetti();
+  const { hasCustomOrder, isSaving, saveOrder, resetToDefault, getOrderedNodes } = useRoadmapNodeOrder(tree.id);
   const prevProgressRef = useRef<Record<string, { completed: boolean; inProgress: boolean }>>({});
   const prevSectionStatsRef = useRef<Record<string, number>>({});
   
@@ -172,6 +178,55 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
       },
     })
   );
+
+  // Handle drag end
+  const handleDragEnd = useCallback((event: DragEndEvent, sectionId: string, nodes: NodeType[]) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+    
+    const oldIndex = nodes.findIndex(n => n.id === active.id);
+    const newIndex = nodes.findIndex(n => n.id === over.id);
+    
+    if (oldIndex === -1 || newIndex === -1) return;
+    
+    const reorderedNodes = arrayMove(nodes, oldIndex, newIndex);
+    
+    // Update local state immediately for responsive UI
+    setLocalNodeOrder(prev => ({
+      ...prev,
+      [sectionId]: reorderedNodes
+    }));
+    
+    // Persist to database
+    const nodeIds = reorderedNodes.map(n => n.id);
+    saveOrder(sectionId, nodeIds);
+    
+    toast({
+      title: "Order saved",
+      description: "Your custom learning path has been saved.",
+    });
+  }, [saveOrder]);
+
+  // Reset order handler
+  const handleResetOrder = useCallback(async () => {
+    await resetToDefault();
+    setLocalNodeOrder({});
+    toast({
+      title: "Order reset",
+      description: "Topics are now in default order.",
+    });
+  }, [resetToDefault]);
+
+  // Get nodes with custom order applied
+  const getDisplayNodes = useCallback((sectionId: string, nodes: NodeType[]): NodeType[] => {
+    // First check local state (for immediate UI updates)
+    if (localNodeOrder[sectionId]) {
+      return localNodeOrder[sectionId];
+    }
+    // Then check database order
+    return getOrderedNodes(sectionId, nodes);
+  }, [localNodeOrder, getOrderedNodes]);
   
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -552,12 +607,17 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     return { completed, total };
   }, [progress]);
 
-  // Render section with header and collapsible content
+  // Render section with header, collapsible content, and DnD support
   const renderSection = useCallback((node: NodeType, phaseIndex: number): React.ReactNode => {
     if (!isNodeVisible(node)) return null;
     
     const isCollapsed = collapsedSections.has(node.id);
     const sectionStats = getSectionStats(node);
+    
+    // Get children with custom ordering applied
+    const orderedChildren = node.children 
+      ? getDisplayNodes(node.id, node.children)
+      : [];
     
     return (
       <div key={node.id} className="mb-4">
@@ -583,14 +643,87 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
               className="overflow-hidden"
             >
               <div className="mt-4 pl-2">
-                {renderNode(node, 0, false)}
+                {/* Section main node */}
+                <RoadmapNode
+                  node={node}
+                  depth={0}
+                  isExpanded={expandedNodes.has(node.id)}
+                  isCompleted={progress[node.id]?.completed || false}
+                  isInProgress={progress[node.id]?.inProgress || false}
+                  isOnProgressPath={progressPath.has(node.id) && node.id === nextRecommendedId}
+                  isHighlighted={Boolean(filteredNodeIds.has(node.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all"))}
+                  completedChildren={getChildProgress(node).completed}
+                  totalChildren={getChildProgress(node).total}
+                  onToggle={() => toggleExpand(node.id)}
+                  onClick={() => handleNodeClick(node)}
+                  onComplete={() => handleComplete(node.id)}
+                />
+                
+                {/* Children with DnD support when enabled */}
+                <AnimatePresence>
+                  {expandedNodes.has(node.id) && orderedChildren.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden relative"
+                    >
+                      {/* Vertical continuation line for children */}
+                      <div 
+                        className="absolute w-0.5 bg-slate-300 dark:bg-slate-600"
+                        style={{
+                          left: 20,
+                          top: 0,
+                          bottom: 20,
+                        }}
+                      />
+                      
+                      {isDragEnabled && user ? (
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={(event) => handleDragEnd(event, node.id, orderedChildren)}
+                        >
+                          <SortableContext
+                            items={orderedChildren.map(n => n.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {orderedChildren.map((child) => (
+                              <DraggableNode
+                                key={child.id}
+                                node={child}
+                                depth={1}
+                                isExpanded={expandedNodes.has(child.id)}
+                                isCompleted={progress[child.id]?.completed || false}
+                                isInProgress={progress[child.id]?.inProgress || false}
+                                isOnProgressPath={progressPath.has(child.id) && child.id === nextRecommendedId}
+                                isHighlighted={Boolean(filteredNodeIds.has(child.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all"))}
+                                completedChildren={getChildProgress(child).completed}
+                                totalChildren={getChildProgress(child).total}
+                                onToggle={() => toggleExpand(child.id)}
+                                onClick={() => handleNodeClick(child)}
+                                onComplete={() => handleComplete(child.id)}
+                                isDragEnabled={isDragEnabled}
+                              />
+                            ))}
+                          </SortableContext>
+                        </DndContext>
+                      ) : (
+                        orderedChildren.map((child, index) => 
+                          renderNode(child, 1, index === orderedChildren.length - 1)
+                        )
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
     );
-  }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection]);
+  }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection, expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, getChildProgress, isDragEnabled, user, sensors, handleDragEnd, getDisplayNodes]);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -808,6 +941,20 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                 <GripVertical className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{isDragEnabled ? "Done Reordering" : "Reorder"}</span>
               </button>
+
+              {/* Reset to Default Order Button - Only visible in drag mode and when custom order exists */}
+              {isDragEnabled && hasCustomOrder && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetOrder}
+                  disabled={isSaving}
+                  className="flex items-center gap-1.5 h-7 text-xs text-muted-foreground hover:text-destructive"
+                >
+                  <RotateCcw className={cn("h-3.5 w-3.5", isSaving && "animate-spin")} />
+                  <span className="hidden sm:inline">Reset Order</span>
+                </Button>
+              )}
 
               <span className="text-muted-foreground/30 hidden sm:inline">|</span>
 
