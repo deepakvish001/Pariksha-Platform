@@ -62,8 +62,9 @@ import QuizHistoryDetail from "@/components/library/QuizHistoryDetail";
    ResponsiveContainer,
    AreaChart,
    Area,
- } from "recharts";
- 
+  } from "recharts";
+import WeakAreasAnalysis from "@/components/library/WeakAreasAnalysis";
+import QuizResultExport from "@/components/library/QuizResultExport";
  interface QuizResult {
    id: string;
    quiz_type: string;
@@ -632,7 +633,10 @@ const ACHIEVEMENTS: Achievement[] = [
               ))}
             </div>
           </CardContent>
-        </Card>
+         </Card>
+
+        {/* Weak Areas Analysis */}
+        <WeakAreasAnalysis />
 
        {/* Performance Chart */}
        {chartData.length > 1 && (
@@ -789,6 +793,7 @@ const ACHIEVEMENTS: Achievement[] = [
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
+                      <QuizResultExport result={result} />
                      <AlertDialog>
                        <AlertDialogTrigger asChild>
                          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">
