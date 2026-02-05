@@ -4,7 +4,7 @@ import {
   Code2, Search, Filter, ChevronDown, ChevronRight, CheckCircle, 
   Circle, BookOpen, Play, Trophy, Target, Clock, BarChart3, 
   Bookmark, ArrowLeft, Coffee, FileCode, Cpu, Braces, Rabbit, Shield,
-  TrendingUp, Sparkles
+  TrendingUp, Sparkles, Timer
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,7 @@ import {
   type Language as LanguageType, type LanguageQuestion 
 } from "@/data/languagesData";
 import AnswerPanel from "@/components/library/AnswerPanel";
+import FundamentalsQuizMode from "@/components/library/FundamentalsQuizMode";
 
 const iconMap: Record<string, React.ReactNode> = {
   Coffee: <Coffee className="h-5 w-5" />,
@@ -50,6 +51,7 @@ const Language: React.FC = () => {
   const [expandedAnswer, setExpandedAnswer] = useState<number | null>(null);
   const [progress, setProgress] = useState<TopicProgress>({});
   const [activeTab, setActiveTab] = useState("all");
+  const [showQuizMode, setShowQuizMode] = useState(false);
 
   // Load progress from Supabase
   useEffect(() => {
@@ -223,15 +225,29 @@ const Language: React.FC = () => {
   const overallProgress = getOverallProgress();
 
   if (selectedLanguage) {
+    const quizQuestions = getQuestionsForLanguage(selectedLanguage.id).filter(q => q.options && q.options.length > 0);
+    
     return (
       <div className="min-h-screen bg-background">
+        {/* Quiz Mode */}
+        <AnimatePresence>
+          {showQuizMode && (
+            <FundamentalsQuizMode
+              title={selectedLanguage.name}
+              questions={quizQuestions}
+              sheetId={`language-${selectedLanguage.id}`}
+              onClose={() => setShowQuizMode(false)}
+            />
+          )}
+        </AnimatePresence>
+
         <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
           <div className="flex h-16 items-center gap-4 px-6">
             <SidebarTrigger />
             <Button variant="ghost" size="icon" onClick={() => setSelectedLanguage(null)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-1">
               <div className={cn("h-10 w-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-white", selectedLanguage.color)}>
                 {iconMap[selectedLanguage.icon]}
               </div>
@@ -240,6 +256,10 @@ const Language: React.FC = () => {
                 <p className="text-sm text-muted-foreground">{selectedLanguage.description}</p>
               </div>
             </div>
+            <Button onClick={() => setShowQuizMode(true)} className="gap-2">
+              <Timer className="h-4 w-4" />
+              Start Quiz
+            </Button>
           </div>
         </header>
 

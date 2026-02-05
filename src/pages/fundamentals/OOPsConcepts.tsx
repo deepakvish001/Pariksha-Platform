@@ -4,7 +4,7 @@ import {
   FolderOpen, Search, ChevronDown, ChevronRight, CheckCircle, 
   Circle, BookOpen, Play, Trophy, Target, Bookmark, ArrowLeft,
   Box, GitBranch, Shapes, Lock, Layers, Diamond, Puzzle, Network,
-  Sparkles
+  Sparkles, Timer
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,7 @@ import {
   type OOPsConcept, type OOPsQuestion 
 } from "@/data/oopsConceptsData";
 import AnswerPanel from "@/components/library/AnswerPanel";
+import FundamentalsQuizMode from "@/components/library/FundamentalsQuizMode";
 
 const iconMap: Record<string, React.ReactNode> = {
   Box: <Box className="h-5 w-5" />,
@@ -50,6 +51,7 @@ const OOPsConcepts: React.FC = () => {
   const [expandedAnswer, setExpandedAnswer] = useState<number | null>(null);
   const [progress, setProgress] = useState<TopicProgress>({});
   const [activeTab, setActiveTab] = useState("all");
+  const [showQuizMode, setShowQuizMode] = useState(false);
 
   // Load progress from Supabase
   useEffect(() => {
@@ -217,16 +219,29 @@ const OOPsConcepts: React.FC = () => {
 
   if (selectedConcept) {
     const conceptProgress = getConceptProgress(selectedConcept.id);
+    const quizQuestions = getQuestionsForConcept(selectedConcept.id).filter(q => q.options && q.options.length > 0);
     
     return (
       <div className="min-h-screen bg-background">
+        {/* Quiz Mode */}
+        <AnimatePresence>
+          {showQuizMode && (
+            <FundamentalsQuizMode
+              title={selectedConcept.name}
+              questions={quizQuestions}
+              sheetId={`oops-${selectedConcept.id}`}
+              onClose={() => setShowQuizMode(false)}
+            />
+          )}
+        </AnimatePresence>
+
         <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
           <div className="flex h-16 items-center gap-4 px-6">
             <SidebarTrigger />
             <Button variant="ghost" size="icon" onClick={() => setSelectedConcept(null)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-1">
               <div className={cn("h-10 w-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-white", selectedConcept.color)}>
                 {iconMap[selectedConcept.icon]}
               </div>
@@ -235,6 +250,10 @@ const OOPsConcepts: React.FC = () => {
                 <p className="text-sm text-muted-foreground">{selectedConcept.description}</p>
               </div>
             </div>
+            <Button onClick={() => setShowQuizMode(true)} className="gap-2">
+              <Timer className="h-4 w-4" />
+              Start Quiz
+            </Button>
           </div>
         </header>
 
