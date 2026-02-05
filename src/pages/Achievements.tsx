@@ -1,8 +1,8 @@
  import { useState } from "react";
  import { motion } from "framer-motion";
- import { Trophy, Lock, Star, Flame, Target, Zap, Medal, CheckCircle, Loader2, Filter, Share2 } from "lucide-react";
+import { Trophy, Lock, Star, Flame, Target, Zap, Medal, CheckCircle, Loader2, Filter } from "lucide-react";
  import { SidebarTrigger } from "@/components/ui/sidebar";
- import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
  import { Progress } from "@/components/ui/progress";
  import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +18,7 @@
  import { useUserAchievements } from "@/hooks/useUserAchievements";
  import { useAchievementRarity } from "@/hooks/useAchievementRarity";
  import ShareableAchievementCard from "@/components/ShareableAchievementCard";
+import AchievementLeaderboard from "@/components/AchievementLeaderboard";
  
  const categories = [
    { id: "all", label: "All", icon: Trophy },
@@ -259,6 +260,9 @@
            </Card>
          </motion.div>
  
+          {/* Leaderboard */}
+          <AchievementLeaderboard />
+
          {/* Category Tabs */}
          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
