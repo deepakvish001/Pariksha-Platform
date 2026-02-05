@@ -57,6 +57,7 @@ const Roadmap: React.FC = () => {
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set(["frontend"]));
   const [isQuizMode, setIsQuizMode] = useState(false);
   const [selectedTreeId, setSelectedTreeId] = useState<string>("frontend");
+  const [userName, setUserName] = useState<string>("Learner");
 
   // Get the selected tree for visual roadmap
   const selectedTree = getRoadmapTreeById(selectedTreeId);
@@ -67,6 +68,25 @@ const Roadmap: React.FC = () => {
     toggleNodeComplete,
     stats: treeStats,
   } = useRoadmapTreeProgress(selectedTreeId, selectedTree?.nodes || []);
+
+  // Fetch user profile name
+  useEffect(() => {
+    const fetchUserName = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (data?.full_name) {
+        setUserName(data.full_name);
+      }
+    };
+    
+    fetchUserName();
+  }, [user]);
 
   // Fetch progress from database
   useEffect(() => {
@@ -526,6 +546,7 @@ const Roadmap: React.FC = () => {
                   tree={selectedTree}
                   progress={treeProgress}
                   onNodeComplete={toggleNodeComplete}
+                  userName={userName}
                 />
                 
                 {/* FAQ Section */}
