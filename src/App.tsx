@@ -50,6 +50,7 @@ import LowLevelDesign from "./pages/system-design/LowLevelDesign";
 import SystemDesignOverview from "./pages/system-design/SystemDesignOverview";
 
 // Research Pages
+import ResearchOverview from "./pages/research/Overview";
 import JobPortals from "./pages/research/JobPortals";
 import Roadmap from "./pages/research/Roadmap";
 import ResumeTemplates from "./pages/research/ResumeTemplates";
@@ -150,6 +151,8 @@ const App = () => (
 
                 {/* Research routes */}
                 <Route path="/research" element={<DashboardLayoutWrapper />}>
+                  <Route index element={<ResearchOverview />} />
+                  <Route path="overview" element={<ResearchOverview />} />
                   <Route path="jobs" element={<JobPortals />} />
                   <Route path="roadmap" element={<Roadmap />} />
                   <Route path="resume" element={<ResumeTemplates />} />

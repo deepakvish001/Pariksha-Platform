@@ -29,6 +29,7 @@ const categories = [
   { id: "quiz", label: "Quizzes", icon: Target },
   { id: "fundamentals", label: "Fundamentals", icon: Zap },
   { id: "system_design", label: "System Design", icon: Network },
+  { id: "research", label: "Research", icon: Medal },
 ];
  
 
@@ -42,6 +43,7 @@ const categories = [
  ];
  
 const getCategoryFromAchievement = (achievement: Achievement): string => {
+  if (achievement.requirement.type.startsWith("research")) return "research";
   if (achievement.requirement.type.startsWith("system_design")) return "system_design";
   if (achievement.requirement.type.startsWith("fundamentals")) return "fundamentals";
   if (achievement.requirement.type.startsWith("quiz")) return "quiz";
@@ -278,7 +280,7 @@ const getCategoryFromAchievement = (achievement: Achievement): string => {
          {/* Category Tabs */}
          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <TabsList className="grid w-full grid-cols-6 max-w-2xl">
+              <TabsList className="grid w-full grid-cols-7 max-w-3xl">
                 {categories.map((cat) => (
                  <TabsTrigger key={cat.id} value={cat.id} className="flex items-center gap-1.5">
                    <cat.icon className="w-4 h-4" />

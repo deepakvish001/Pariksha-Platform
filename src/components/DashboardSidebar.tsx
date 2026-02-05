@@ -105,6 +105,7 @@ const systemDesignItems = [
 ];
 
 const researchItems = [
+  { title: "Overview", url: "/research", icon: TrendingUp },
   { title: "Job Portals", url: "/research/jobs", icon: List },
   { title: "Roadmap", url: "/research/roadmap", icon: Map },
   { title: "Resume Templates", url: "/research/resume", icon: FileCheck },
