@@ -9,6 +9,7 @@ import {
   MoreVertical,
   ChevronDown,
   ChevronUp,
+  Copy,
 } from "lucide-react";
 import {
   Dialog,
@@ -54,6 +55,7 @@ interface SavedPathsManagerProps {
   onActivatePath: (pathId: string) => Promise<Record<string, string[]> | null>;
   onDeletePath: (pathId: string) => Promise<void>;
   onUpdatePath: (pathId: string, updates: { name?: string; description?: string }) => Promise<void>;
+  onDuplicatePath: (pathId: string) => Promise<SavedPath | null>;
   trigger?: React.ReactNode;
 }
 
@@ -205,6 +207,7 @@ const SavedPathsManager: React.FC<SavedPathsManagerProps> = ({
   onActivatePath,
   onDeletePath,
   onUpdatePath,
+  onDuplicatePath,
   trigger,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -410,6 +413,10 @@ const SavedPathsManager: React.FC<SavedPathsManagerProps> = ({
                                   <DropdownMenuItem onClick={() => startEditing(path)}>
                                     <Edit2 className="h-4 w-4 mr-2" />
                                     Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => onDuplicatePath(path.id)}>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Duplicate
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => onDeletePath(path.id)}

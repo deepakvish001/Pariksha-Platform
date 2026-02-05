@@ -281,6 +281,65 @@ export const useSavedPaths = (roadmapId: string) => {
     [user]
   );
 
+  // Duplicate a saved path
+  const duplicatePath = useCallback(
+    async (pathId: string) => {
+      if (!user) return null;
+
+      const pathToDuplicate = savedPaths.find((p) => p.id === pathId);
+      if (!pathToDuplicate) return null;
+
+      setIsSaving(true);
+      try {
+        const newName = `${pathToDuplicate.name} (Copy)`;
+        
+        const { data, error } = await supabase
+          .from("user_roadmap_saved_paths")
+          .insert({
+            user_id: user.id,
+            roadmap_id: roadmapId,
+            name: newName,
+            description: pathToDuplicate.description,
+            custom_orders: pathToDuplicate.customOrders,
+            is_active: false,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const newPath: SavedPath = {
+          id: data.id,
+          name: data.name,
+          description: data.description,
+          customOrders: (data.custom_orders as Record<string, string[]>) || {},
+          isActive: data.is_active,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        };
+
+        setSavedPaths((prev) => [newPath, ...prev]);
+
+        toast({
+          title: "Path duplicated!",
+          description: `Created "${newName}" from "${pathToDuplicate.name}".`,
+        });
+
+        return newPath;
+      } catch (err) {
+        console.error("Error duplicating path:", err);
+        toast({
+          title: "Failed to duplicate path",
+          variant: "destructive",
+        });
+        return null;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [user, roadmapId, savedPaths]
+  );
+
   return {
     savedPaths,
     activePath,
@@ -291,5 +350,6 @@ export const useSavedPaths = (roadmapId: string) => {
     deactivateAllPaths,
     deletePath,
     updatePath,
+    duplicatePath,
   };
 };
