@@ -10,7 +10,7 @@
  import { Progress } from "@/components/ui/progress";
  import { ScrollArea } from "@/components/ui/scroll-area";
  import { cn } from "@/lib/utils";
- import { useQuizSpacedRepetition, type QuizReviewItem } from "@/hooks/useQuizSpacedRepetition";
+import { useQuizSpacedRepetition, type QuizReviewItem } from "@/hooks/useQuizSpacedRepetition";
  import { dsaQuestions } from "@/data/dsaQuestionsData";
  import { csQuestions } from "@/data/csSubjectsData";
  import { sqlQuestions } from "@/data/sqlQuestionsData";
@@ -46,7 +46,7 @@
  }
  
  const QuizSpacedRepetitionPanel = ({ onStartReviewQuiz }: QuizSpacedRepetitionPanelProps) => {
-   const { reviews, stats, isLoading, removeFromReview } = useQuizSpacedRepetition();
+  const { reviews, stats, isLoading, removeFromReview, masteryThreshold } = useQuizSpacedRepetition();
    const [expandedId, setExpandedId] = useState<string | null>(null);
  
    if (isLoading) {
@@ -154,9 +154,9 @@
                      </div>
                      <div className="flex items-center gap-1">
                        <span className="text-xs text-muted-foreground">
-                         {review.correctStreak}/3
+                        {review.correctStreak}/{masteryThreshold}
                        </span>
-                       <Progress value={(review.correctStreak / 3) * 100} className="w-8 h-1.5" />
+                      <Progress value={(review.correctStreak / masteryThreshold) * 100} className="w-8 h-1.5" />
                      </div>
                    </div>
  
@@ -170,7 +170,7 @@
                        >
                          <div className="pt-3 mt-3 border-t flex items-center justify-between">
                            <p className="text-xs text-muted-foreground">
-                             Reviewed {review.reviewCount} time(s) • Streak: {review.correctStreak}/3
+                            Reviewed {review.reviewCount} time(s) • Streak: {review.correctStreak}/{masteryThreshold}
                            </p>
                            <Button 
                              size="sm" 

@@ -437,6 +437,7 @@ export type Database = {
           course_name: string | null
           created_at: string
           current_experience: string | null
+          current_level: number | null
           email_notifications_enabled: boolean | null
           experience: string | null
           geeksforgeeks_url: string | null
@@ -447,6 +448,7 @@ export type Database = {
           instagram_url: string | null
           interested_features: string[] | null
           interests: string[] | null
+          last_xp_reset_at: string | null
           leetcode_url: string | null
           linkedin_url: string | null
           location: string | null
@@ -462,8 +464,11 @@ export type Database = {
           resume_url: string | null
           role: string | null
           skills: string[] | null
+          srs_intervals: number[] | null
+          srs_mastery_threshold: number | null
           study_year: Database["public"]["Enums"]["study_year"] | null
           target_goal: string | null
+          total_xp: number | null
           twitter_url: string | null
           updated_at: string
           user_id: string
@@ -471,6 +476,7 @@ export type Database = {
           username: string | null
           website: string | null
           weekly_digest_enabled: boolean | null
+          xp_this_week: number | null
         }
         Insert: {
           aspirations?: string[] | null
@@ -483,6 +489,7 @@ export type Database = {
           course_name?: string | null
           created_at?: string
           current_experience?: string | null
+          current_level?: number | null
           email_notifications_enabled?: boolean | null
           experience?: string | null
           geeksforgeeks_url?: string | null
@@ -493,6 +500,7 @@ export type Database = {
           instagram_url?: string | null
           interested_features?: string[] | null
           interests?: string[] | null
+          last_xp_reset_at?: string | null
           leetcode_url?: string | null
           linkedin_url?: string | null
           location?: string | null
@@ -508,8 +516,11 @@ export type Database = {
           resume_url?: string | null
           role?: string | null
           skills?: string[] | null
+          srs_intervals?: number[] | null
+          srs_mastery_threshold?: number | null
           study_year?: Database["public"]["Enums"]["study_year"] | null
           target_goal?: string | null
+          total_xp?: number | null
           twitter_url?: string | null
           updated_at?: string
           user_id: string
@@ -517,6 +528,7 @@ export type Database = {
           username?: string | null
           website?: string | null
           weekly_digest_enabled?: boolean | null
+          xp_this_week?: number | null
         }
         Update: {
           aspirations?: string[] | null
@@ -529,6 +541,7 @@ export type Database = {
           course_name?: string | null
           created_at?: string
           current_experience?: string | null
+          current_level?: number | null
           email_notifications_enabled?: boolean | null
           experience?: string | null
           geeksforgeeks_url?: string | null
@@ -539,6 +552,7 @@ export type Database = {
           instagram_url?: string | null
           interested_features?: string[] | null
           interests?: string[] | null
+          last_xp_reset_at?: string | null
           leetcode_url?: string | null
           linkedin_url?: string | null
           location?: string | null
@@ -554,8 +568,11 @@ export type Database = {
           resume_url?: string | null
           role?: string | null
           skills?: string[] | null
+          srs_intervals?: number[] | null
+          srs_mastery_threshold?: number | null
           study_year?: Database["public"]["Enums"]["study_year"] | null
           target_goal?: string | null
+          total_xp?: number | null
           twitter_url?: string | null
           updated_at?: string
           user_id?: string
@@ -563,6 +580,7 @@ export type Database = {
           username?: string | null
           website?: string | null
           weekly_digest_enabled?: boolean | null
+          xp_this_week?: number | null
         }
         Relationships: []
       }
@@ -604,6 +622,33 @@ export type Database = {
           sheet_id?: string
           topic_id?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      xp_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          source: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          source?: string
           user_id?: string
         }
         Relationships: []

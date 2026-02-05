@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
  import { supabase } from "@/integrations/supabase/client";
  import { useToast } from "@/hooks/use-toast";
 import { useQuizSpacedRepetition } from "@/hooks/useQuizSpacedRepetition";
+import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
  
  interface CombinedQuizModeProps {
    onClose: () => void;
@@ -83,6 +84,7 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
    const { user } = useAuth();
    const { toast } = useToast();
   const { scheduleForReview } = useQuizSpacedRepetition();
+  const { awardXP } = useXPSystem();
    const [quizState, setQuizState] = useState<QuizState>("setup");
    const [questions, setQuestions] = useState<QuizQuestion[]>([]);
    const [currentIndex, setCurrentIndex] = useState(0);
@@ -368,6 +370,8 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
        if (ans === null) return acc;
        return questions[idx]?.options[ans]?.isCorrect ? acc + 1 : acc;
      }, 0);
+
+      const accuracy = Math.round((score / questions.length) * 100);
      
      try {
        await supabase.from("quiz_results").insert({
@@ -375,12 +379,25 @@ type QuizState = "setup" | "playing" | "paused" | "results" | "review";
          quiz_type: "combined",
          score,
          total_questions: questions.length,
-         accuracy: Math.round((score / questions.length) * 100),
+          accuracy,
          total_time_seconds: totalTime,
          avg_time_seconds: Math.round(totalTime / questions.length),
          category: "all",
          difficulty: "all",
        });
+
+        // Award XP for quiz completion
+        const quizXP = XP_VALUES.QUIZ_COMPLETE + (score * XP_VALUES.QUESTION_CORRECT);
+        const isPerfect = score === questions.length;
+        const totalXP = isPerfect ? quizXP + XP_VALUES.QUIZ_PERFECT : quizXP;
+        
+        await awardXP(
+          totalXP, 
+          "quiz_complete", 
+          isPerfect 
+            ? `🎯 Perfect score! ${score}/${questions.length}` 
+            : `Quiz completed: ${score}/${questions.length} (${accuracy}%)`
+        );
 
        // Schedule incorrect questions for spaced repetition review
        const incorrectQuestions = questions

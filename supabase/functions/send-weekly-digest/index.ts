@@ -154,6 +154,39 @@
            }
          }
  
+          // Fetch achievements earned this week
+          const { data: achievements } = await supabase
+            .from("user_achievements")
+            .select("achievement_id, earned_at")
+            .eq("user_id", user.user_id)
+            .gte("earned_at", weekAgo.toISOString());
+ 
+          const achievementsThisWeek = achievements || [];
+ 
+          // Fetch XP data
+          const { data: xpProfile } = await supabase
+            .from("user_profiles_extended")
+            .select("total_xp, current_level, xp_this_week")
+            .eq("user_id", user.user_id)
+            .single();
+ 
+          const xpData = xpProfile || { total_xp: 0, current_level: 1, xp_this_week: 0 };
+ 
+          // Build achievements section
+          const achievementsSection = achievementsThisWeek.length > 0 ? `
+          <div style="margin-bottom: 32px;">
+            <h3 style="margin: 0 0 16px; font-size: 18px; color: #e5e7eb;">🏆 Achievements Earned</h3>
+            <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; border: 1px solid rgba(255,255,255,0.1);">
+              ${achievementsThisWeek.map(a => `
+                <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  <span style="font-size: 20px;">🎖️</span>
+                  <span style="font-weight: 500;">${a.achievement_id.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ` : '';
+ 
          // Build email
          const emailHtml = `
  <!DOCTYPE html>
@@ -171,6 +204,13 @@
      </div>
      
      <div style="padding: 32px;">
+        <!-- XP & Level Section -->
+        <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center; border: 1px solid rgba(147, 51, 234, 0.3);">
+          <div style="font-size: 14px; color: #c084fc; margin-bottom: 8px;">⚡ Level ${xpData.current_level}</div>
+          <div style="font-size: 32px; font-weight: 700; color: #f0abfc;">+${xpData.xp_this_week} XP</div>
+          <div style="font-size: 12px; color: #9ca3af;">this week • ${xpData.total_xp.toLocaleString()} total</div>
+        </div>
+
        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 32px;">
          <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
            <div style="font-size: 36px; font-weight: 700; color: #f97316;">${totalQuizzes}</div>
@@ -190,6 +230,8 @@
          </div>
        </div>
        
+        ${achievementsSection}
+
        ${Object.keys(byType).length > 0 ? `
        <div style="margin-bottom: 32px;">
          <h3 style="margin: 0 0 16px; font-size: 18px; color: #e5e7eb;">Quiz Breakdown</h3>
