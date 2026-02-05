@@ -1,6 +1,7 @@
  import { useState, useEffect } from "react";
  import { supabase } from "@/integrations/supabase/client";
  import { achievements } from "@/components/AchievementBadge";
+import { useAuth } from "@/contexts/AuthContext";
  
  interface LeaderboardEntry {
    userId: string;
@@ -15,6 +16,8 @@
    achievements: string[];
  }
  
+export type SortMode = "rarity" | "total";
+
  // Rarity weights for scoring
  const RARITY_WEIGHTS = {
    legendary: 100,
@@ -32,12 +35,16 @@
    return "legendary";
  };
  
- export function useAchievementLeaderboard() {
+export function useAchievementLeaderboard(sortMode: SortMode = "rarity") {
    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [allEntries, setAllEntries] = useState<LeaderboardEntry[]>([]);
+  const [currentUserRank, setCurrentUserRank] = useState<{ rank: number; entry: LeaderboardEntry } | null>(null);
    const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
  
    useEffect(() => {
      const fetchLeaderboard = async () => {
+      setIsLoading(true);
        try {
          // Get all user achievements
          const { data: allAchievements, error: achievementsError } = await supabase
@@ -95,8 +102,8 @@
  
          // Build leaderboard entries
          const entries: LeaderboardEntry[] = [];
-         userAchievements.forEach((achievementIds, oderId) => {
-           const profile = profileMap.get(oderId);
+        userAchievements.forEach((achievementIds, odId) => {
+          const profile = profileMap.get(odId);
            let rarityScore = 0;
            let legendaryCount = 0;
            let epicCount = 0;
@@ -111,10 +118,10 @@
            });
  
            entries.push({
-             userId: oderId,
+            userId: odId,
              fullName: profile?.full_name || "Anonymous",
              avatarUrl: profile?.avatar_url || null,
-             username: usernameMap.get(oderId) || null,
+            username: usernameMap.get(odId) || null,
              totalAchievements: achievementIds.length,
              rarityScore,
              legendaryCount,
@@ -124,10 +131,7 @@
            });
          });
  
-         // Sort by rarity score (highest first)
-         entries.sort((a, b) => b.rarityScore - a.rarityScore);
- 
-         setLeaderboard(entries.slice(0, 50)); // Top 50
+        setAllEntries(entries);
        } catch (error) {
          console.error("Error fetching achievement leaderboard:", error);
        } finally {
@@ -138,5 +142,29 @@
      fetchLeaderboard();
    }, []);
  
-   return { leaderboard, isLoading };
+  // Sort and slice based on mode
+  useEffect(() => {
+    if (allEntries.length === 0) return;
+
+    const sorted = [...allEntries].sort((a, b) => {
+      if (sortMode === "rarity") {
+        return b.rarityScore - a.rarityScore;
+      }
+      return b.totalAchievements - a.totalAchievements;
+    });
+
+    // Find current user's rank
+    if (user) {
+      const userIndex = sorted.findIndex((e) => e.userId === user.id);
+      if (userIndex !== -1) {
+        setCurrentUserRank({ rank: userIndex + 1, entry: sorted[userIndex] });
+      } else {
+        setCurrentUserRank(null);
+      }
+    }
+
+    setLeaderboard(sorted.slice(0, 50));
+  }, [allEntries, sortMode, user]);
+
+  return { leaderboard, currentUserRank, isLoading };
  }
