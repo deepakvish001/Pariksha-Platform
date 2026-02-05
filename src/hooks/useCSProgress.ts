@@ -137,6 +137,11 @@ export interface CSSpacedRepetitionQuestion {
                updated.delete(questionId);
                return updated;
              });
+              toast({
+                title: "Progress synced",
+                description: "Your progress was updated from another device",
+                duration: 3000,
+              });
            } else if (newRecord && newRecord.sheet_id === SHEET_ID) {
              const questionId = parseInt(newRecord.topic_id.replace("cs-", ""));
              setProgress((prev) => {
@@ -150,6 +155,11 @@ export interface CSSpacedRepetitionQuestion {
                });
                return updated;
              });
+              toast({
+                title: "Progress synced",
+                description: "Your progress was updated from another device",
+                duration: 3000,
+              });
            }
          }
        )

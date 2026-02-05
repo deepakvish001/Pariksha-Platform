@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import {
   SpacedRepetitionQuestion,
   calculateDueDate,
@@ -39,6 +40,7 @@ interface UseInterviewProgressReturn {
 
 export function useInterviewProgress(): UseInterviewProgressReturn {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [progress, setProgress] = useState<ProgressState>({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -128,6 +130,11 @@ export function useInterviewProgress(): UseInterviewProgressReturn {
               delete updated[oldRecord.item_id];
               return updated;
             });
+            toast({
+              title: "Progress synced",
+              description: "Your progress was updated from another device",
+              duration: 3000,
+            });
           } else if (newRecord && newRecord.company_id === "interview-questions") {
             setProgress((prev) => ({
               ...prev,
@@ -138,6 +145,11 @@ export function useInterviewProgress(): UseInterviewProgressReturn {
                 reviewCount: prev[newRecord.item_id]?.reviewCount || 0,
               },
             }));
+            toast({
+              title: "Progress synced",
+              description: "Your progress was updated from another device",
+              duration: 3000,
+            });
           }
         }
       )
