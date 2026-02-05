@@ -23,7 +23,9 @@ import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import CalendarHeatmap from "@/components/CalendarHeatmap";
 import AchievementBadge, { achievements } from "@/components/AchievementBadge";
+ import RecentAchievements from "@/components/RecentAchievements";
 import MobileFAB from "@/components/MobileFAB";
+ import confetti from "canvas-confetti";
 
 // Sheet definitions with total counts
 const sheetDefinitions = [
@@ -331,6 +333,13 @@ const DashboardMatrix = () => {
         newAchievements.forEach(id => {
           const achievement = achievements.find(a => a.id === id);
           if (achievement) {
+             // Trigger confetti celebration
+             confetti({
+               particleCount: 80,
+               spread: 60,
+               origin: { y: 0.7 },
+               colors: ["#fbbf24", "#f59e0b", "#d97706", "#10b981", "#8b5cf6"],
+             });
             toast({
               title: `🏆 Achievement Unlocked!`,
               description: `${achievement.name}: ${achievement.description}`,
@@ -538,32 +547,7 @@ const DashboardMatrix = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
         >
-          <Card className="w-full">
-            <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0">
-                  <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                </div>
-                <div className="min-w-0">
-                  <CardTitle className="text-base sm:text-lg">Achievements</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">{earnedCount} of {achievements.length} unlocked</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-              <div className="flex flex-wrap gap-2 sm:gap-4 justify-center sm:justify-start">
-                {achievements.map((achievement) => (
-                  <AchievementBadge
-                    key={achievement.id}
-                    achievement={achievement}
-                    earned={earnedAchievements.has(achievement.id)}
-                    earnedAt={earnedAchievements.get(achievement.id)}
-                    size="md"
-                  />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+           <RecentAchievements earnedAchievements={earnedAchievements} maxDisplay={6} />
         </motion.div>
 
         {/* Calendar Heatmap */}

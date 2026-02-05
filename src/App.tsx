@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
+ import { AchievementNotificationProvider } from "@/contexts/AchievementNotificationContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
@@ -78,6 +79,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <AuthProvider>
+          <AchievementNotificationProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -173,6 +175,7 @@ const App = () => (
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
+          </AchievementNotificationProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
