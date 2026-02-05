@@ -198,6 +198,31 @@ const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
     }
   };
 
+  const canNativeShare = typeof navigator !== "undefined" && !!navigator.share;
+
+  const handleNativeShare = async () => {
+    if (!canNativeShare || !mergedPath) return;
+
+    try {
+      await navigator.share({
+        title: `Learning Path: ${mergedPath.name}`,
+        text: `Check out my custom learning path "${mergedPath.name}" - a merged combination of learning paths!`,
+        url: shareUrl,
+      });
+      toast({
+        title: "Shared successfully!",
+      });
+    } catch (err) {
+      // User cancelled or share failed
+      if ((err as Error).name !== "AbortError") {
+        toast({
+          title: "Share failed",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const handleDone = () => {
     setIsOpen(false);
     setPath1Id("");
@@ -546,9 +571,20 @@ const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
                       <Copy className="h-3.5 w-3.5" />
                     )}
                     <span className="hidden sm:inline">
-                      {copied ? "Copied!" : "Copy Link"}
+                      {copied ? "Copied!" : "Copy"}
                     </span>
                   </Button>
+                  {canNativeShare && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 shrink-0"
+                      onClick={handleNativeShare}
+                    >
+                      <Share2 className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Share</span>
+                    </Button>
+                  )}
                 </div>
               </div>
               <Button onClick={handleDone}>Done</Button>
