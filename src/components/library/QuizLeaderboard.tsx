@@ -1,0 +1,190 @@
+ import React, { useEffect, useState } from "react";
+ import { Trophy, Medal, Clock, Target, Crown, Users } from "lucide-react";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Badge } from "@/components/ui/badge";
+ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+ import { supabase } from "@/integrations/supabase/client";
+ import { cn } from "@/lib/utils";
+ 
+ interface LeaderboardEntry {
+   id: string;
+   user_id: string;
+   quiz_type: string;
+   score: number;
+   total_questions: number;
+   accuracy: number;
+   avg_time_seconds: number;
+   completed_at: string;
+   full_name?: string;
+   avatar_url?: string;
+ }
+ 
+ interface QuizLeaderboardProps {
+   quizType: "aptitude" | "dsa" | "sql";
+   currentUserId?: string;
+ }
+ 
+ const QuizLeaderboard: React.FC<QuizLeaderboardProps> = ({ quizType, currentUserId }) => {
+   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+   const [isLoading, setIsLoading] = useState(true);
+   const [timeFilter, setTimeFilter] = useState<"all" | "week" | "today">("all");
+ 
+   useEffect(() => {
+     const fetchLeaderboard = async () => {
+       setIsLoading(true);
+       try {
+         let query = supabase
+           .from("quiz_results")
+           .select("*")
+           .eq("quiz_type", quizType)
+           .order("accuracy", { ascending: false })
+           .order("avg_time_seconds", { ascending: true })
+           .limit(20);
+ 
+         if (timeFilter === "today") {
+           const today = new Date();
+           today.setHours(0, 0, 0, 0);
+           query = query.gte("completed_at", today.toISOString());
+         } else if (timeFilter === "week") {
+           const weekAgo = new Date();
+           weekAgo.setDate(weekAgo.getDate() - 7);
+           query = query.gte("completed_at", weekAgo.toISOString());
+         }
+ 
+         const { data: results, error } = await query;
+ 
+         if (error) {
+           console.error("Error fetching leaderboard:", error);
+           return;
+         }
+ 
+         // Fetch profile info for each user
+         const userIds = [...new Set(results?.map((r) => r.user_id) || [])];
+         const { data: profiles } = await supabase
+           .from("profiles")
+           .select("user_id, full_name, avatar_url")
+           .in("user_id", userIds);
+ 
+         const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
+ 
+         const enrichedEntries = results?.map((r) => ({
+           ...r,
+           full_name: profileMap.get(r.user_id)?.full_name || "Anonymous",
+           avatar_url: profileMap.get(r.user_id)?.avatar_url,
+         })) || [];
+ 
+         setEntries(enrichedEntries);
+       } catch (err) {
+         console.error("Error:", err);
+       } finally {
+         setIsLoading(false);
+       }
+     };
+ 
+     fetchLeaderboard();
+   }, [quizType, timeFilter]);
+ 
+   const getRankIcon = (index: number) => {
+     if (index === 0) return <Crown className="h-5 w-5 text-amber-500" />;
+     if (index === 1) return <Medal className="h-5 w-5 text-slate-400" />;
+     if (index === 2) return <Medal className="h-5 w-5 text-amber-700" />;
+     return <span className="text-sm text-muted-foreground font-medium w-5 text-center">{index + 1}</span>;
+   };
+ 
+   const quizTypeLabel = {
+     aptitude: "Aptitude",
+     dsa: "DSA",
+     sql: "SQL",
+   };
+ 
+   if (isLoading) {
+     return (
+       <Card className="bg-card/50">
+         <CardContent className="p-6 text-center text-muted-foreground">
+           Loading leaderboard...
+         </CardContent>
+       </Card>
+     );
+   }
+ 
+   return (
+     <Card className="bg-card/50 border-primary/20">
+       <CardHeader className="pb-3">
+         <div className="flex items-center justify-between">
+           <CardTitle className="flex items-center gap-2 text-lg">
+             <Trophy className="h-5 w-5 text-amber-500" />
+             {quizTypeLabel[quizType]} Quiz Leaderboard
+           </CardTitle>
+           <Badge variant="outline" className="gap-1">
+             <Users className="h-3 w-3" />
+             {entries.length} players
+           </Badge>
+         </div>
+       </CardHeader>
+       <CardContent className="space-y-4">
+         <Tabs value={timeFilter} onValueChange={(v) => setTimeFilter(v as typeof timeFilter)}>
+           <TabsList className="w-full">
+             <TabsTrigger value="all" className="flex-1">All Time</TabsTrigger>
+             <TabsTrigger value="week" className="flex-1">This Week</TabsTrigger>
+             <TabsTrigger value="today" className="flex-1">Today</TabsTrigger>
+           </TabsList>
+         </Tabs>
+ 
+         {entries.length === 0 ? (
+           <div className="text-center py-8 text-muted-foreground">
+             No quiz results yet. Be the first to compete!
+           </div>
+         ) : (
+           <div className="space-y-2 max-h-80 overflow-y-auto">
+             {entries.map((entry, index) => (
+               <div
+                 key={entry.id}
+                 className={cn(
+                   "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                   entry.user_id === currentUserId
+                     ? "bg-primary/10 border-primary/30"
+                     : "bg-muted/30 border-border/50",
+                   index < 3 && "border-amber-500/30"
+                 )}
+               >
+                 <div className="flex items-center justify-center w-8">
+                   {getRankIcon(index)}
+                 </div>
+                 <Avatar className="h-8 w-8">
+                   <AvatarImage src={entry.avatar_url || undefined} />
+                   <AvatarFallback className="text-xs">
+                     {entry.full_name?.charAt(0) || "?"}
+                   </AvatarFallback>
+                 </Avatar>
+                 <div className="flex-1 min-w-0">
+                   <div className="font-medium truncate text-sm">
+                     {entry.full_name}
+                     {entry.user_id === currentUserId && (
+                       <Badge variant="secondary" className="ml-2 text-xs">You</Badge>
+                     )}
+                   </div>
+                   <div className="text-xs text-muted-foreground">
+                     {entry.score}/{entry.total_questions} correct
+                   </div>
+                 </div>
+                 <div className="text-right">
+                   <div className="flex items-center gap-1 text-sm font-semibold">
+                     <Target className="h-3 w-3 text-primary" />
+                     {entry.accuracy}%
+                   </div>
+                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                     <Clock className="h-3 w-3" />
+                     {entry.avg_time_seconds}s avg
+                   </div>
+                 </div>
+               </div>
+             ))}
+           </div>
+         )}
+       </CardContent>
+     </Card>
+   );
+ };
+ 
+ export default QuizLeaderboard;

@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
    TrendingUp,
    Folder,
    FolderPlus,
+   Zap,
  } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
  import { Card, CardContent } from "@/components/ui/card";
@@ -62,8 +63,10 @@ import { Progress } from "@/components/ui/progress";
 import SpacedRepetitionPanel from "@/components/library/SpacedRepetitionPanel";
  import FolderManager from "@/components/library/FolderManager";
  import AddToFolderButton from "@/components/library/AddToFolderButton";
+ import SQLQuizMode from "@/components/library/SQLQuizMode";
  
  type ViewMode = "all" | "solved" | "revision" | "folders";
+ type PageMode = "browse" | "quiz";
 
 const SQLQuestions = () => {
    const { user } = useAuth();
@@ -91,6 +94,7 @@ const SQLQuestions = () => {
      isInFolder,
    } = useFolders("sql");
  
+   const [pageMode, setPageMode] = useState<PageMode>("browse");
    const [viewMode, setViewMode] = useState<ViewMode>("all");
    const [searchQuery, setSearchQuery] = useState("");
    const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -207,6 +211,20 @@ const SQLQuestions = () => {
      }
    };
  
+   // Quiz mode view
+   if (pageMode === "quiz") {
+     return (
+       <TooltipProvider>
+         <div className="min-h-screen bg-background p-4 md:p-6">
+           <SQLQuizMode
+             questions={sqlQuestions}
+             onClose={() => setPageMode("browse")}
+           />
+         </div>
+       </TooltipProvider>
+     );
+   }
+ 
   return (
      <TooltipProvider>
        <div className="min-h-screen bg-background">
@@ -228,13 +246,22 @@ const SQLQuestions = () => {
                </div>
             </div>
              <div className="flex items-center gap-2">
-               <Button variant="outline" size="sm" className="gap-2">
+               <Button
+                 variant="default"
+                 size="sm"
+                 className="gap-2"
+                 onClick={() => setPageMode("quiz")}
+               >
+                 <Zap className="h-4 w-4" />
+                 <span className="hidden sm:inline">Quiz Mode</span>
+               </Button>
+               <Button variant="outline" size="sm" className="gap-2 hidden md:flex">
                  <TrendingUp className="h-4 w-4" />
                  <span className="hidden sm:inline">My progress</span>
                </Button>
                {user && (
                  <Button
-                   variant="default"
+                   variant="outline"
                    size="sm"
                    className="gap-2"
                    onClick={() => setViewMode("folders")}
