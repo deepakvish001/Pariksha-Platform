@@ -186,6 +186,10 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     updatePath,
     duplicatePath,
     mergePaths,
+    canUndoMerge,
+    canRedoMerge,
+    undoMerge,
+    redoMerge,
   } = useSavedPaths(tree.id);
   const prevProgressRef = useRef<Record<string, { completed: boolean; inProgress: boolean }>>({});
   const prevSectionStatsRef = useRef<Record<string, number>>({});
@@ -1036,7 +1040,14 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
 
               {/* Merge Paths Button */}
               {user && savedPaths.length >= 2 && (
-                <MergePathsDialog savedPaths={savedPaths} onMerge={mergePaths} />
+                <MergePathsDialog 
+                  savedPaths={savedPaths} 
+                  onMerge={mergePaths}
+                  canUndo={canUndoMerge}
+                  canRedo={canRedoMerge}
+                  onUndo={undoMerge}
+                  onRedo={redoMerge}
+                />
               )}
 
               {/* Share Path Button */}

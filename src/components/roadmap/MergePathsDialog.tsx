@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Merge, ArrowRight, Shuffle, ArrowUp, ArrowDown } from "lucide-react";
+import { Merge, ArrowRight, Shuffle, ArrowUp, ArrowDown, Undo2, Redo2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { SavedPath } from "@/hooks/useSavedPaths";
 
@@ -35,6 +40,10 @@ interface MergePathsDialogProps {
     name: string,
     strategy: MergeStrategy
   ) => Promise<SavedPath | null>;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
   trigger?: React.ReactNode;
 }
 
@@ -45,6 +54,10 @@ const formatTopicName = (topicId: string) => {
 const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
   savedPaths,
   onMerge,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo,
   trigger,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -173,14 +186,56 @@ const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
         if (!open) resetDialog();
       }}
     >
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <Merge className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Merge</span>
-          </Button>
+      <div className="flex items-center gap-1">
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Merge className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Merge</span>
+            </Button>
+          )}
+        </DialogTrigger>
+        
+        {/* Undo/Redo buttons outside dialog */}
+        {(canUndo || canRedo) && (
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={!canUndo}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUndo?.();
+                  }}
+                >
+                  <Undo2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Undo last merge</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={!canRedo}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRedo?.();
+                  }}
+                >
+                  <Redo2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Redo last merge</TooltipContent>
+            </Tooltip>
+          </>
         )}
-      </DialogTrigger>
+      </div>
       <DialogContent className="sm:max-w-2xl max-h-[85vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

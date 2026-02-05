@@ -13,12 +13,25 @@ export interface SavedPath {
   updatedAt: string;
 }
 
+interface MergeUndoState {
+  mergedPathId: string;
+  pathId1: string;
+  pathId2: string;
+  name: string;
+  strategy: "interleave" | "prioritize-first" | "prioritize-second";
+  mergedOrders: Record<string, string[]>;
+}
+
 export const useSavedPaths = (roadmapId: string) => {
   const { user } = useAuth();
   const [savedPaths, setSavedPaths] = useState<SavedPath[]>([]);
   const [activePath, setActivePath] = useState<SavedPath | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Undo/Redo state for merge operations
+  const [mergeUndoStack, setMergeUndoStack] = useState<MergeUndoState[]>([]);
+  const [mergeRedoStack, setMergeRedoStack] = useState<MergeUndoState[]>([]);
 
   // Load saved paths from database
   useEffect(() => {
@@ -451,6 +464,18 @@ export const useSavedPaths = (roadmapId: string) => {
 
         setSavedPaths((prev) => [newPath, ...prev]);
 
+        // Track for undo
+        setMergeUndoStack((prev) => [...prev, {
+          mergedPathId: data.id,
+          pathId1,
+          pathId2,
+          name,
+          strategy,
+          mergedOrders,
+        }]);
+        // Clear redo stack on new merge
+        setMergeRedoStack([]);
+
         toast({
           title: "Paths merged!",
           description: `Created "${name}" by combining two paths.`,
@@ -471,6 +496,100 @@ export const useSavedPaths = (roadmapId: string) => {
     [user, roadmapId, savedPaths]
   );
 
+  // Undo merge operation
+  const undoMerge = useCallback(async () => {
+    if (mergeUndoStack.length === 0 || !user) return;
+
+    const lastMerge = mergeUndoStack[mergeUndoStack.length - 1];
+    
+    setIsSaving(true);
+    try {
+      // Delete the merged path
+      const { error } = await supabase
+        .from("user_roadmap_saved_paths")
+        .delete()
+        .eq("id", lastMerge.mergedPathId);
+
+      if (error) throw error;
+
+      setSavedPaths((prev) => prev.filter((p) => p.id !== lastMerge.mergedPathId));
+      
+      // Move to redo stack
+      setMergeRedoStack((prev) => [...prev, lastMerge]);
+      setMergeUndoStack((prev) => prev.slice(0, -1));
+
+      toast({
+        title: "Merge undone",
+        description: "The merged path has been removed.",
+      });
+    } catch (err) {
+      console.error("Error undoing merge:", err);
+      toast({
+        title: "Failed to undo merge",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [mergeUndoStack, user]);
+
+  // Redo merge operation
+  const redoMerge = useCallback(async () => {
+    if (mergeRedoStack.length === 0 || !user) return;
+
+    const lastUndo = mergeRedoStack[mergeRedoStack.length - 1];
+    const path1 = savedPaths.find((p) => p.id === lastUndo.pathId1);
+    const path2 = savedPaths.find((p) => p.id === lastUndo.pathId2);
+
+    setIsSaving(true);
+    try {
+      const { data, error } = await supabase
+        .from("user_roadmap_saved_paths")
+        .insert({
+          user_id: user.id,
+          roadmap_id: roadmapId,
+          name: lastUndo.name,
+          description: `Merged from "${path1?.name || 'Path 1'}" and "${path2?.name || 'Path 2'}"`,
+          custom_orders: lastUndo.mergedOrders,
+          is_active: false,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newPath: SavedPath = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        customOrders: (data.custom_orders as Record<string, string[]>) || {},
+        isActive: data.is_active,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+
+      setSavedPaths((prev) => [newPath, ...prev]);
+      
+      // Update undo state with new path ID and move back to undo stack
+      const updatedState = { ...lastUndo, mergedPathId: data.id };
+      setMergeUndoStack((prev) => [...prev, updatedState]);
+      setMergeRedoStack((prev) => prev.slice(0, -1));
+
+      toast({
+        title: "Merge redone",
+        description: `"${lastUndo.name}" has been recreated.`,
+      });
+    } catch (err) {
+      console.error("Error redoing merge:", err);
+      toast({
+        title: "Failed to redo merge",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [mergeRedoStack, user, roadmapId, savedPaths]);
+
   return {
     savedPaths,
     activePath,
@@ -483,5 +602,10 @@ export const useSavedPaths = (roadmapId: string) => {
     updatePath,
     duplicatePath,
     mergePaths,
+    // Undo/Redo for merge
+    canUndoMerge: mergeUndoStack.length > 0,
+    canRedoMerge: mergeRedoStack.length > 0,
+    undoMerge,
+    redoMerge,
   };
 };
