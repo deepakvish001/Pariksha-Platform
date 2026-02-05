@@ -3,7 +3,7 @@
  import { achievements } from "@/components/AchievementBadge";
  import { useAuth } from "@/contexts/AuthContext";
  
- interface ComparisonUser {
+export interface ComparisonUser {
    userId: string;
    fullName: string;
    avatarUrl: string | null;
@@ -23,10 +23,79 @@
    const { user } = useAuth();
    const [searchQuery, setSearchQuery] = useState("");
    const [searchResults, setSearchResults] = useState<ComparisonUser[]>([]);
+  const [followedUsers, setFollowedUsers] = useState<ComparisonUser[]>([]);
    const [selectedUser, setSelectedUser] = useState<ComparisonUser | null>(null);
    const [comparison, setComparison] = useState<ComparisonResult | null>(null);
    const [isSearching, setIsSearching] = useState(false);
    const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingFollowed, setIsLoadingFollowed] = useState(true);
+
+  // Fetch followed users on mount
+  useEffect(() => {
+    const fetchFollowedUsers = async () => {
+      if (!user) {
+        setFollowedUsers([]);
+        setIsLoadingFollowed(false);
+        return;
+      }
+
+      try {
+        // Get users I'm following
+        const { data: followingData } = await supabase
+          .from("user_follows")
+          .select("following_id")
+          .eq("follower_id", user.id);
+
+        const followingIds = followingData?.map((f) => f.following_id) || [];
+
+        if (followingIds.length === 0) {
+          setFollowedUsers([]);
+          setIsLoadingFollowed(false);
+          return;
+        }
+
+        // Get profiles
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, avatar_url")
+          .in("user_id", followingIds);
+
+        const { data: extendedProfiles } = await supabase
+          .from("user_profiles_extended")
+          .select("user_id, username")
+          .in("user_id", followingIds);
+
+        const { data: userAchievements } = await supabase
+          .from("user_achievements")
+          .select("user_id, achievement_id")
+          .in("user_id", followingIds);
+
+        const usernameMap = new Map(extendedProfiles?.map((p) => [p.user_id, p.username]) || []);
+        const achievementMap = new Map<string, string[]>();
+        userAchievements?.forEach((a) => {
+          const existing = achievementMap.get(a.user_id) || [];
+          existing.push(a.achievement_id);
+          achievementMap.set(a.user_id, existing);
+        });
+
+        const users: ComparisonUser[] = (profiles || []).map((p) => ({
+          userId: p.user_id,
+          fullName: p.full_name || "Anonymous",
+          avatarUrl: p.avatar_url,
+          username: usernameMap.get(p.user_id) || null,
+          earnedAchievements: achievementMap.get(p.user_id) || [],
+        }));
+
+        setFollowedUsers(users);
+      } catch (error) {
+        console.error("Error fetching followed users:", error);
+      } finally {
+        setIsLoadingFollowed(false);
+      }
+    };
+
+    fetchFollowedUsers();
+  }, [user]);
  
    // Search for users
    const searchUsers = async (query: string) => {
@@ -152,6 +221,8 @@
      setSearchQuery,
      searchUsers,
      searchResults,
+    followedUsers,
+    isLoadingFollowed,
      isSearching,
      selectedUser,
      compareWith,

@@ -1,6 +1,6 @@
  import { useState } from "react";
  import { motion } from "framer-motion";
-import { Trophy, Crown, Medal, Award, ChevronDown, ChevronUp, ExternalLink, Sparkles, Hash, Calendar } from "lucide-react";
+import { Trophy, Crown, Medal, Award, ChevronDown, ChevronUp, ExternalLink, Sparkles, Hash, Calendar, UserPlus, Heart } from "lucide-react";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
  import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/select";
  import { cn } from "@/lib/utils";
 import { useAchievementLeaderboard, SortMode, TimeFilter } from "@/hooks/useAchievementLeaderboard";
+import { useFollows } from "@/hooks/useFollows";
+import { useAuth } from "@/contexts/AuthContext";
  import { Link } from "react-router-dom";
  
  const getRankIcon = (rank: number) => {
@@ -36,6 +38,8 @@ import { useAchievementLeaderboard, SortMode, TimeFilter } from "@/hooks/useAchi
   const [sortMode, setSortMode] = useState<SortMode>("rarity");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const { leaderboard, currentUserRank, isLoading } = useAchievementLeaderboard(sortMode, timeFilter);
+  const { isFollowing, followUser, unfollowUser } = useFollows();
+  const { user } = useAuth();
    const [expanded, setExpanded] = useState(false);
  
    const displayedEntries = expanded ? leaderboard : leaderboard.slice(0, 5);
@@ -45,6 +49,16 @@ import { useAchievementLeaderboard, SortMode, TimeFilter } from "@/hooks/useAchi
     all: "All Time",
     month: "This Month",
     week: "This Week",
+  };
+
+  const handleFollow = async (e: React.MouseEvent, userId: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (isFollowing(userId)) {
+      await unfollowUser(userId);
+    } else {
+      await followUser(userId);
+    }
   };
 
    if (isLoading) {
@@ -174,6 +188,20 @@ import { useAchievementLeaderboard, SortMode, TimeFilter } from "@/hooks/useAchi
                      <ExternalLink className="h-3 w-3" />
                    </Link>
                  )}
+              {user && entry.userId !== user.id && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 ml-1"
+                  onClick={(e) => handleFollow(e, entry.userId)}
+                >
+                  {isFollowing(entry.userId) ? (
+                    <Heart className="h-3 w-3 fill-red-500 text-red-500" />
+                  ) : (
+                    <UserPlus className="h-3 w-3" />
+                  )}
+                </Button>
+              )}
                </div>
                <div className="flex items-center gap-1.5 mt-0.5">
                  {entry.legendaryCount > 0 && (
