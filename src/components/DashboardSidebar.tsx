@@ -99,6 +99,7 @@ const fundamentalsItems = [
 ];
 
 const systemDesignItems = [
+  { title: "Overview", url: "/system-design", icon: Layers },
   { title: "High Level Design", url: "/system-design/hld", icon: Network },
   { title: "Low Level Design", url: "/system-design/lld", icon: LayoutGrid },
 ];

@@ -28,7 +28,7 @@ export interface Achievement {
   icon: keyof typeof iconMap;
   color: string;
   requirement: {
-    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics' | 'quiz_perfect_score' | 'quiz_speed_demon' | 'quiz_challenge_complete' | 'quiz_accuracy' | 'quiz_streak' | 'fundamentals_quiz_count' | 'fundamentals_accuracy' | 'fundamentals_mastery';
+    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics' | 'quiz_perfect_score' | 'quiz_speed_demon' | 'quiz_challenge_complete' | 'quiz_accuracy' | 'quiz_streak' | 'fundamentals_quiz_count' | 'fundamentals_accuracy' | 'fundamentals_mastery' | 'fundamentals_streak';
     value: number;
   };
 }
@@ -261,6 +261,31 @@ export const achievements: Achievement[] = [
     icon: 'crown',
     color: 'from-yellow-500 to-amber-600',
     requirement: { type: 'fundamentals_mastery', value: 2 }
+  },
+  // Fundamentals Streak Achievements
+  {
+    id: 'fundamentals_streak_7',
+    name: 'Code Consistent',
+    description: 'Maintain a 7-day fundamentals study streak',
+    icon: 'flame',
+    color: 'from-orange-400 to-red-400',
+    requirement: { type: 'fundamentals_streak', value: 7 }
+  },
+  {
+    id: 'fundamentals_streak_14',
+    name: 'Dedicated Developer',
+    description: 'Maintain a 14-day fundamentals study streak',
+    icon: 'flame',
+    color: 'from-orange-500 to-red-500',
+    requirement: { type: 'fundamentals_streak', value: 14 }
+  },
+  {
+    id: 'fundamentals_streak_30',
+    name: 'Code Champion',
+    description: 'Maintain a 30-day fundamentals study streak',
+    icon: 'zap',
+    color: 'from-purple-500 to-pink-500',
+    requirement: { type: 'fundamentals_streak', value: 30 }
   },
 ];
 

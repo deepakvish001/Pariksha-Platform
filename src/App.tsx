@@ -47,6 +47,7 @@ import FundamentalsOverview from "./pages/fundamentals/Overview";
 // System Design Pages
 import HighLevelDesign from "./pages/system-design/HighLevelDesign";
 import LowLevelDesign from "./pages/system-design/LowLevelDesign";
+import SystemDesignOverview from "./pages/system-design/SystemDesignOverview";
 
 // Research Pages
 import JobPortals from "./pages/research/JobPortals";
@@ -141,6 +142,8 @@ const App = () => (
 
                 {/* System Design routes */}
                 <Route path="/system-design" element={<DashboardLayoutWrapper />}>
+                  <Route index element={<SystemDesignOverview />} />
+                  <Route path="overview" element={<SystemDesignOverview />} />
                   <Route path="hld" element={<HighLevelDesign />} />
                   <Route path="lld" element={<LowLevelDesign />} />
                 </Route>

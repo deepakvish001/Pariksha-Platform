@@ -30,6 +30,7 @@ interface AchievementProgress {
     hasLanguagePerfect: boolean;
     hasOopsPerfect: boolean;
   };
+  fundamentalsStreak: number;
 }
  
  export function useUserAchievements() {
@@ -54,7 +55,7 @@ interface AchievementProgress {
        setEarnedAchievements(achievementsData || []);
  
        // Fetch progress data for unearned achievements
-       const [topicsResult, quizResultsData] = await Promise.all([
+       const [topicsResult, quizResultsData, fundamentalsTopicsResult] = await Promise.all([
          supabase
            .from("user_topic_progress")
            .select("completed, is_revision, completed_at")
@@ -64,15 +65,22 @@ interface AchievementProgress {
            .select("accuracy, difficulty, quiz_type, avg_time_seconds, completed_at, category")
            .eq("user_id", user.id)
            .order("completed_at", { ascending: false }),
+         supabase
+           .from("user_topic_progress")
+           .select("completed_at, sheet_id")
+           .eq("user_id", user.id)
+           .eq("completed", true)
+           .or("sheet_id.like.language-%,sheet_id.eq.oops-concepts"),
        ]);
  
        const topics = topicsResult.data || [];
        const quizResults = quizResultsData.data || [];
- 
+       const fundamentalsTopics = fundamentalsTopicsResult.data || [];
+
        // Calculate topics stats
        const topicsCompleted = topics.filter((t) => t.completed).length;
        const revisionTopics = topics.filter((t) => t.is_revision).length;
- 
+
        // Calculate streak from topics
        const completedDates = topics
          .filter((t) => t.completed && t.completed_at)
@@ -80,16 +88,35 @@ interface AchievementProgress {
        const uniqueDates = [...new Set(completedDates)].sort(
          (a, b) => new Date(b).getTime() - new Date(a).getTime()
        );
- 
+
        let streakDays = 0;
        const today = new Date();
        today.setHours(0, 0, 0, 0);
- 
+
        for (let i = 0; i < uniqueDates.length; i++) {
          const checkDate = new Date(today);
          checkDate.setDate(checkDate.getDate() - i);
          if (uniqueDates.includes(checkDate.toDateString())) {
            streakDays++;
+         } else {
+           break;
+         }
+       }
+
+       // Calculate fundamentals streak (language-* and oops-concepts topics)
+       const fundamentalsDates = fundamentalsTopics
+         .filter((t) => t.completed_at)
+         .map((t) => new Date(t.completed_at!).toDateString());
+       const uniqueFundamentalsDates = [...new Set(fundamentalsDates)].sort(
+         (a, b) => new Date(b).getTime() - new Date(a).getTime()
+       );
+
+       let fundamentalsStreak = 0;
+       for (let i = 0; i < uniqueFundamentalsDates.length; i++) {
+         const checkDate = new Date(today);
+         checkDate.setDate(checkDate.getDate() - i);
+         if (uniqueFundamentalsDates.includes(checkDate.toDateString())) {
+           fundamentalsStreak++;
          } else {
            break;
          }
@@ -156,6 +183,7 @@ interface AchievementProgress {
             hasLanguagePerfect,
             hasOopsPerfect,
           },
+          fundamentalsStreak,
         });
      } catch (error) {
        console.error("Error fetching achievements:", error);
@@ -212,6 +240,8 @@ interface AchievementProgress {
         if (progress.fundamentalsQuizResults.hasLanguagePerfect) masteryCount++;
         if (progress.fundamentalsQuizResults.hasOopsPerfect) masteryCount++;
         return { current: masteryCount, target: 2 };
+      case "fundamentals_streak":
+        return { current: Math.min(progress.fundamentalsStreak, value), target: value };
        default:
          return { current: 0, target: value };
      }
