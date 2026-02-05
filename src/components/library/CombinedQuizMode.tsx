@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
  import { supabase } from "@/integrations/supabase/client";
  import { useToast } from "@/hooks/use-toast";
  import { useQuizSpacedRepetition } from "@/hooks/useQuizSpacedRepetition";
- import { useXPSystem, XP_VALUES } from "@/hooks/useXPSystem";
+import { useXPWithNotifications, XP_VALUES } from "@/hooks/useXPWithNotifications";
  
  import { type QuizQuestion, type QuizState, type ReviewFilter, type ReviewItem, type SummaryData } from "./quiz/types";
  import QuizSetup, { type QuizPreset } from "./quiz/QuizSetup";
@@ -26,7 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
    const { user } = useAuth();
    const { toast } = useToast();
   const { scheduleForReview } = useQuizSpacedRepetition();
-  const { awardXP } = useXPSystem();
+  const { awardXP } = useXPWithNotifications();
    const [quizState, setQuizState] = useState<QuizState>("setup");
    const [questions, setQuestions] = useState<QuizQuestion[]>([]);
    const [currentIndex, setCurrentIndex] = useState(0);

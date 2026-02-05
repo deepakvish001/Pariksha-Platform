@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
  import { AchievementNotificationProvider } from "@/contexts/AchievementNotificationContext";
+import { LevelUpProvider } from "@/contexts/LevelUpContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
@@ -80,6 +81,7 @@ const App = () => (
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <AuthProvider>
           <AchievementNotificationProvider>
+          <LevelUpProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -175,6 +177,7 @@ const App = () => (
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
+          </LevelUpProvider>
           </AchievementNotificationProvider>
         </AuthProvider>
       </ThemeProvider>

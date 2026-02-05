@@ -1,7 +1,6 @@
  import { useState, useEffect, useCallback, useMemo } from "react";
  import { useAuth } from "@/contexts/AuthContext";
  import { supabase } from "@/integrations/supabase/client";
- import { useToast } from "@/hooks/use-toast";
  
  // XP values for different actions
  export const XP_VALUES = {
@@ -86,12 +85,12 @@
  
  export function useXPSystem() {
    const { user } = useAuth();
-   const { toast } = useToast();
    const [totalXP, setTotalXP] = useState(0);
    const [currentLevel, setCurrentLevel] = useState(1);
    const [xpThisWeek, setXpThisWeek] = useState(0);
    const [isLoading, setIsLoading] = useState(true);
    const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [pendingLevelUp, setPendingLevelUp] = useState<number | null>(null);
  
    // Fetch XP data
    const fetchXPData = useCallback(async () => {
@@ -171,27 +170,20 @@
        setCurrentLevel(newLevel);
        setXpThisWeek(xpThisWeek + amount);
  
-       if (showToast) {
-         if (leveledUp) {
-           toast({
-             title: `🎉 Level Up! You're now Level ${newLevel}`,
-             description: `${LEVEL_TITLES[newLevel - 1]} - +${amount} XP`,
-             duration: 5000,
-           });
-         } else {
-           toast({
-             title: `+${amount} XP`,
-             description: description || source,
-             duration: 2000,
-           });
-         }
+      // Set pending level up for celebration
+      if (leveledUp) {
+        setPendingLevelUp(newLevel);
        }
  
        return { leveledUp, newLevel, newTotalXP };
      } catch (error) {
        console.error("Error awarding XP:", error);
      }
-   }, [user, totalXP, currentLevel, xpThisWeek, toast]);
+  }, [user, totalXP, currentLevel, xpThisWeek]);
+
+  const clearPendingLevelUp = useCallback(() => {
+    setPendingLevelUp(null);
+  }, []);
  
    const progress = useMemo(() => getXPProgress(totalXP, currentLevel), [totalXP, currentLevel]);
    const title = LEVEL_TITLES[currentLevel - 1] || "Ultimate";
@@ -204,6 +196,8 @@
      progress,
      isLoading,
      recentTransactions,
+    pendingLevelUp,
+    clearPendingLevelUp,
      awardXP,
      refetch: fetchXPData,
    };
