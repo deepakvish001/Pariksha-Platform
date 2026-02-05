@@ -1,10 +1,11 @@
-import { BookOpen, Target, Clock, Zap, ArrowRight, Brain, TrendingUp } from "lucide-react";
+import { BookOpen, Target, Clock, Zap, ArrowRight, Brain, TrendingUp, Check, RotateCcw, Play } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useWeakAreasAnalysis } from "@/hooks/useWeakAreasAnalysis";
+import { useStudyPlanGoals } from "@/hooks/useStudyPlanGoals";
 import { categoryConfig } from "./quiz/types";
 import { useNavigate } from "react-router-dom";
 
@@ -21,9 +22,10 @@ interface StudyRecommendation {
 
 const StudyPlanRecommendations = () => {
   const { categoryStats, overallAccuracy, isLoading, error } = useWeakAreasAnalysis();
+  const { goals, startGoal, markCompleted, resetGoal, getGoalForCategory, isLoading: goalsLoading } = useStudyPlanGoals();
   const navigate = useNavigate();
 
-  if (isLoading) {
+  if (isLoading || goalsLoading) {
     return (
       <Card className="bg-card/50 border-primary/20">
         <CardContent className="py-8 text-center text-muted-foreground">
@@ -117,11 +119,22 @@ const StudyPlanRecommendations = () => {
     });
 
   const highPriorityCount = recommendations.filter((r) => r.priority === "high").length;
-  const totalEstimatedQuestions = recommendations.reduce((sum, r) => sum + r.questionsToReview, 0);
-  const totalEstimatedMinutes = totalEstimatedQuestions * 2;
+  const completedGoalsCount = goals.filter((g) => g.is_completed).length;
+  const activeGoalsCount = goals.filter((g) => !g.is_completed).length;
+
+  const handleStartGoal = async (category: string, targetQuestions: number) => {
+    await startGoal(category, targetQuestions);
+  };
+
+  const handleMarkCompleted = async (category: string) => {
+    await markCompleted(category);
+  };
+
+  const handleResetGoal = async (category: string) => {
+    await resetGoal(category);
+  };
 
   const handleStartPractice = (category: string) => {
-    // Navigate to quiz page - the quiz setup will be shown
     navigate("/library/quiz");
   };
 
@@ -167,9 +180,16 @@ const StudyPlanRecommendations = () => {
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 text-lg font-bold text-primary">
               <Target className="h-4 w-4" />
-              {recommendations.length}
+              {activeGoalsCount}
             </div>
-            <p className="text-xs text-muted-foreground">Topics</p>
+            <p className="text-xs text-muted-foreground">Active</p>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 text-lg font-bold text-emerald-500">
+              <Check className="h-4 w-4" />
+              {completedGoalsCount}
+            </div>
+            <p className="text-xs text-muted-foreground">Completed</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 text-lg font-bold text-amber-500">
@@ -177,15 +197,6 @@ const StudyPlanRecommendations = () => {
               {highPriorityCount}
             </div>
             <p className="text-xs text-muted-foreground">Priority</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1 text-lg font-bold text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              {totalEstimatedMinutes >= 60
-                ? `${Math.floor(totalEstimatedMinutes / 60)}h`
-                : `${totalEstimatedMinutes}m`}
-            </div>
-            <p className="text-xs text-muted-foreground">Est. Time</p>
           </div>
         </div>
 
@@ -195,67 +206,134 @@ const StudyPlanRecommendations = () => {
             const config = categoryConfig[rec.category as keyof typeof categoryConfig];
             const Icon = config?.icon;
             const styles = getPriorityStyles(rec.priority);
+            const goal = getGoalForCategory(rec.category);
+            const hasActiveGoal = goal && !goal.is_completed;
+            const isGoalCompleted = goal?.is_completed;
+            const progressPercent = goal ? Math.min(100, Math.round((goal.questions_practiced / goal.target_questions) * 100)) : 0;
 
             return (
               <div
                 key={rec.category}
                 className={cn(
                   "p-4 rounded-lg border bg-card/50 space-y-3",
-                  styles.border
+                  isGoalCompleted ? "border-emerald-500/30 bg-emerald-500/5" : styles.border
                 )}
               >
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    {Icon && <Icon className={cn("h-5 w-5 shrink-0", config?.color)} />}
+                    {Icon && <Icon className={cn("h-5 w-5 shrink-0", isGoalCompleted ? "text-emerald-500" : config?.color)} />}
                     <div className="min-w-0">
                       <h4 className="font-medium text-sm">{rec.label}</h4>
-                      <p className="text-xs text-muted-foreground truncate">{rec.reason}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {isGoalCompleted ? "Goal completed! 🎉" : rec.reason}
+                      </p>
                     </div>
                   </div>
-                  <Badge className={cn("shrink-0 text-xs capitalize", styles.badge)}>
-                    {rec.priority}
-                  </Badge>
+                  {isGoalCompleted ? (
+                    <Badge className="shrink-0 text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                      <Check className="h-3 w-3 mr-1" />
+                      Done
+                    </Badge>
+                  ) : (
+                    <Badge className={cn("shrink-0 text-xs capitalize", styles.badge)}>
+                      {rec.priority}
+                    </Badge>
+                  )}
                 </div>
 
-                {/* Progress */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Current Accuracy</span>
-                    <span className={cn("font-medium", styles.icon)}>{rec.accuracy}%</span>
+                {/* Goal Progress (if active) */}
+                {hasActiveGoal && goal && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        {goal.questions_practiced}/{goal.target_questions} questions
+                      </span>
+                      <span className="font-medium text-primary">{progressPercent}%</span>
+                    </div>
+                    <Progress value={progressPercent} className="h-2 [&>div]:bg-primary" />
                   </div>
-                  <Progress
-                    value={rec.accuracy}
-                    className={cn(
-                      "h-1.5",
-                      rec.priority === "high" && "[&>div]:bg-destructive",
-                      rec.priority === "medium" && "[&>div]:bg-amber-500",
-                      rec.priority === "low" && "[&>div]:bg-emerald-500"
-                    )}
-                  />
-                </div>
+                )}
 
-                {/* Action Items */}
+                {/* Accuracy Progress (if no active goal) */}
+                {!hasActiveGoal && !isGoalCompleted && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Current Accuracy</span>
+                      <span className={cn("font-medium", styles.icon)}>{rec.accuracy}%</span>
+                    </div>
+                    <Progress
+                      value={rec.accuracy}
+                      className={cn(
+                        "h-1.5",
+                        rec.priority === "high" && "[&>div]:bg-destructive",
+                        rec.priority === "medium" && "[&>div]:bg-amber-500",
+                        rec.priority === "low" && "[&>div]:bg-emerald-500"
+                      )}
+                    />
+                  </div>
+                )}
+
+                {/* Action Buttons */}
                 <div className="flex items-center justify-between gap-2 pt-1">
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Brain className="h-3 w-3" />
-                      {rec.questionsToReview} questions
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {rec.estimatedTime}
-                    </span>
+                    {!isGoalCompleted && (
+                      <>
+                        <span className="flex items-center gap-1">
+                          <Brain className="h-3 w-3" />
+                          {hasActiveGoal && goal ? `${goal.target_questions - goal.questions_practiced} left` : `${rec.questionsToReview} questions`}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {rec.estimatedTime}
+                        </span>
+                      </>
+                    )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs gap-1 text-primary hover:text-primary"
-                    onClick={() => handleStartPractice(rec.category)}
-                  >
-                    {rec.action}
-                    <ArrowRight className="h-3 w-3" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    {isGoalCompleted ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => handleResetGoal(rec.category)}
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Restart
+                      </Button>
+                    ) : hasActiveGoal ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs gap-1 text-emerald-600 hover:text-emerald-600"
+                          onClick={() => handleMarkCompleted(rec.category)}
+                        >
+                          <Check className="h-3 w-3" />
+                          Complete
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs gap-1 text-primary hover:text-primary"
+                          onClick={() => handleStartPractice(rec.category)}
+                        >
+                          <Play className="h-3 w-3" />
+                          Practice
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs gap-1 text-primary hover:text-primary"
+                        onClick={() => handleStartGoal(rec.category, rec.questionsToReview)}
+                      >
+                        <ArrowRight className="h-3 w-3" />
+                        Start Goal
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -263,7 +341,7 @@ const StudyPlanRecommendations = () => {
         </div>
 
         {/* Weekly Goal Suggestion */}
-        {highPriorityCount > 0 && (
+        {highPriorityCount > 0 && activeGoalsCount === 0 && (
           <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
             <div className="flex items-start gap-2">
               <TrendingUp className="h-4 w-4 text-primary shrink-0 mt-0.5" />
@@ -271,7 +349,22 @@ const StudyPlanRecommendations = () => {
                 <p className="text-sm font-medium">Weekly Goal Suggestion</p>
                 <p className="text-xs text-muted-foreground">
                   Focus on your {highPriorityCount} high-priority {highPriorityCount === 1 ? "topic" : "topics"} first.
-                  Aim for at least 15-20 questions per day to see improvement within a week.
+                  Click "Start Goal" to begin tracking your progress.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeGoalsCount > 0 && (
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="flex items-start gap-2">
+              <Target className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Keep Going!</p>
+                <p className="text-xs text-muted-foreground">
+                  You have {activeGoalsCount} active {activeGoalsCount === 1 ? "goal" : "goals"}. 
+                  Complete quizzes to make progress, or mark goals as complete when done.
                 </p>
               </div>
             </div>
