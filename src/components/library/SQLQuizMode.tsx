@@ -1,4 +1,5 @@
  import React, { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
  import { motion, AnimatePresence } from "framer-motion";
  import {
    Clock,
@@ -16,6 +17,7 @@
    Sparkles,
    Medal,
    Database,
+  History,
  } from "lucide-react";
  import { Button } from "@/components/ui/button";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -406,6 +408,11 @@
              <Button onClick={() => { setPhase("config"); setResults([]); setShowLeaderboard(false); }} className="flex-1 gap-2">
                <RotateCcw className="h-4 w-4" />New Quiz
              </Button>
+              <Link to="/library/quiz-history">
+                <Button variant="outline" className="gap-2">
+                  <History className="h-4 w-4" />History
+                </Button>
+              </Link>
              {user && (
                <Button variant={showLeaderboard ? "secondary" : "outline"} onClick={() => setShowLeaderboard(!showLeaderboard)} className="gap-2">
                  <Trophy className="h-4 w-4" />Leaderboard

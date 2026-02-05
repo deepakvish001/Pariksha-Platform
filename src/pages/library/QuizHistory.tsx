@@ -1,5 +1,6 @@
  import React, { useEffect, useState } from "react";
  import { format } from "date-fns";
+import { Link } from "react-router-dom";
  import {
    History,
    Trophy,
@@ -12,6 +13,12 @@
    Award,
    BarChart3,
    Trash2,
+  Flame,
+  Star,
+  Zap,
+  Medal,
+  Crown,
+  Sparkles,
  } from "lucide-react";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
@@ -73,6 +80,82 @@
    trend: "up" | "down" | "stable";
  }
  
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  condition: (stats: Stats, results: QuizResult[]) => boolean;
+  color: string;
+}
+
+const ACHIEVEMENTS: Achievement[] = [
+  {
+    id: "first_quiz",
+    name: "First Steps",
+    description: "Complete your first quiz",
+    icon: <Star className="h-5 w-5" />,
+    condition: (stats) => stats.totalQuizzes >= 1,
+    color: "from-blue-500/20 to-cyan-500/20 border-blue-500/50 text-blue-500",
+  },
+  {
+    id: "quiz_enthusiast",
+    name: "Quiz Enthusiast",
+    description: "Complete 10 quizzes",
+    icon: <Zap className="h-5 w-5" />,
+    condition: (stats) => stats.totalQuizzes >= 10,
+    color: "from-purple-500/20 to-pink-500/20 border-purple-500/50 text-purple-500",
+  },
+  {
+    id: "quiz_master",
+    name: "Quiz Master",
+    description: "Complete 50 quizzes",
+    icon: <Crown className="h-5 w-5" />,
+    condition: (stats) => stats.totalQuizzes >= 50,
+    color: "from-amber-500/20 to-orange-500/20 border-amber-500/50 text-amber-500",
+  },
+  {
+    id: "perfectionist",
+    name: "Perfectionist",
+    description: "Score 100% on any quiz",
+    icon: <Trophy className="h-5 w-5" />,
+    condition: (_, results) => results.some((r) => Number(r.accuracy) === 100),
+    color: "from-emerald-500/20 to-green-500/20 border-emerald-500/50 text-emerald-500",
+  },
+  {
+    id: "consistent",
+    name: "Consistent Performer",
+    description: "Maintain 80%+ average accuracy",
+    icon: <Medal className="h-5 w-5" />,
+    condition: (stats) => stats.avgAccuracy >= 80 && stats.totalQuizzes >= 5,
+    color: "from-indigo-500/20 to-violet-500/20 border-indigo-500/50 text-indigo-500",
+  },
+  {
+    id: "speed_demon",
+    name: "Speed Demon",
+    description: "Average under 30s per question",
+    icon: <Flame className="h-5 w-5" />,
+    condition: (stats) => stats.avgTimePerQuestion > 0 && stats.avgTimePerQuestion < 30 && stats.totalQuizzes >= 3,
+    color: "from-red-500/20 to-rose-500/20 border-red-500/50 text-red-500",
+  },
+  {
+    id: "improving",
+    name: "On The Rise",
+    description: "Show upward trend in performance",
+    icon: <TrendingUp className="h-5 w-5" />,
+    condition: (stats) => stats.trend === "up",
+    color: "from-teal-500/20 to-cyan-500/20 border-teal-500/50 text-teal-500",
+  },
+  {
+    id: "century",
+    name: "Century Club",
+    description: "Answer 100 questions correctly",
+    icon: <Sparkles className="h-5 w-5" />,
+    condition: (_, results) => results.reduce((sum, r) => sum + r.score, 0) >= 100,
+    color: "from-yellow-500/20 to-amber-500/20 border-yellow-500/50 text-yellow-500",
+  },
+];
+
  const QuizHistory: React.FC = () => {
    const { user } = useAuth();
    const [results, setResults] = useState<QuizResult[]>([]);
@@ -87,6 +170,7 @@
      avgTimePerQuestion: 0,
      trend: "stable",
    });
+  const [quizStreak, setQuizStreak] = useState({ current: 0, longest: 0 });
  
    const fetchResults = async () => {
      if (!user) return;
@@ -170,9 +254,79 @@
      }
    };
  
+  // Calculate quiz streak based on consecutive days with quizzes
+  const calculateQuizStreak = (data: QuizResult[]) => {
+    if (!data || data.length === 0) {
+      setQuizStreak({ current: 0, longest: 0 });
+      return;
+    }
+
+    const uniqueDates = [
+      ...new Set(
+        data.map((item) => {
+          const date = new Date(item.completed_at);
+          return date.toLocaleDateString("en-CA");
+        })
+      ),
+    ].sort((a, b) => b.localeCompare(a));
+
+    const today = new Date().toLocaleDateString("en-CA");
+    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString("en-CA");
+
+    let currentStreak = 0;
+    let checkDate = uniqueDates[0] === today ? today : yesterday;
+
+    if (uniqueDates[0] !== today && uniqueDates[0] !== yesterday) {
+      currentStreak = 0;
+    } else {
+      for (let i = 0; i < uniqueDates.length; i++) {
+        if (uniqueDates[i] === checkDate) {
+          currentStreak++;
+          const prevDate = new Date(checkDate);
+          prevDate.setDate(prevDate.getDate() - 1);
+          checkDate = prevDate.toLocaleDateString("en-CA");
+        } else if (uniqueDates[i] < checkDate) {
+          break;
+        }
+      }
+    }
+
+    let longestStreak = 0;
+    let tempStreak = 1;
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const currentDate = new Date(uniqueDates[i - 1]);
+      const prevDate = new Date(uniqueDates[i]);
+      const diffDays = Math.round(
+        (currentDate.getTime() - prevDate.getTime()) / 86400000
+      );
+      if (diffDays === 1) {
+        tempStreak++;
+      } else {
+        longestStreak = Math.max(longestStreak, tempStreak);
+        tempStreak = 1;
+      }
+    }
+    longestStreak = Math.max(longestStreak, tempStreak, currentStreak);
+
+    setQuizStreak({ current: currentStreak, longest: longestStreak });
+  };
+
    useEffect(() => {
      fetchResults();
    }, [user, quizTypeFilter, timeFilter]);
+
+  useEffect(() => {
+    if (results.length > 0) {
+      calculateQuizStreak(results);
+    }
+  }, [results]);
+
+  const earnedAchievements = ACHIEVEMENTS.filter((a) =>
+    a.condition(stats, results)
+  );
+  const lockedAchievements = ACHIEVEMENTS.filter(
+    (a) => !a.condition(stats, results)
+  );
  
    const handleDeleteResult = async (id: string) => {
      try {
@@ -283,7 +437,18 @@
        </div>
  
        {/* Stats Cards */}
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+          <Card className="bg-card/50 border-primary/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Quiz Streak</p>
+                  <p className="text-2xl font-bold">{quizStreak.current} 🔥</p>
+                </div>
+                <Flame className="h-8 w-8 text-orange-500/50" />
+              </div>
+            </CardContent>
+          </Card>
          <Card className="bg-card/50 border-primary/20">
            <CardContent className="p-4">
              <div className="flex items-center justify-between">
@@ -341,6 +506,55 @@
          </Card>
        </div>
  
+        {/* Achievements Section */}
+        <Card className="bg-card/50 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Award className="h-5 w-5 text-amber-500" />
+              Achievements ({earnedAchievements.length}/{ACHIEVEMENTS.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+              {earnedAchievements.map((achievement) => (
+                <div
+                  key={achievement.id}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-lg border bg-gradient-to-r",
+                    achievement.color
+                  )}
+                >
+                  <div className="flex-shrink-0">{achievement.icon}</div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{achievement.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {achievement.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {lockedAchievements.map((achievement) => (
+                <div
+                  key={achievement.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-muted/30 opacity-50"
+                >
+                  <div className="flex-shrink-0 text-muted-foreground">
+                    {achievement.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm text-muted-foreground truncate">
+                      {achievement.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {achievement.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
        {/* Performance Chart */}
        {chartData.length > 1 && (
          <Card className="bg-card/50 border-primary/20">
