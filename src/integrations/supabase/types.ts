@@ -175,6 +175,48 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_spaced_repetition: {
+        Row: {
+          correct_streak: number
+          created_at: string
+          id: string
+          last_answered_at: string
+          next_review_at: string
+          question_category: string
+          question_id: number
+          question_title: string
+          review_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          correct_streak?: number
+          created_at?: string
+          id?: string
+          last_answered_at?: string
+          next_review_at: string
+          question_category: string
+          question_id: number
+          question_title: string
+          review_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          correct_streak?: number
+          created_at?: string
+          id?: string
+          last_answered_at?: string
+          next_review_at?: string
+          question_category?: string
+          question_id?: number
+          question_title?: string
+          review_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       shared_folders: {
         Row: {
           allow_copy: boolean
