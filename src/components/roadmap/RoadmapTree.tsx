@@ -13,11 +13,11 @@ import {
   Smartphone,
   Brain,
   BarChart3,
+  Flame,
 } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import RoadmapTreeNode from "./RoadmapTreeNode";
+import RoadmapTreeNodeEnhanced from "./RoadmapTreeNodeEnhanced";
 import RoadmapNodeDetail from "./RoadmapNodeDetail";
 import RoadmapToolbar from "./RoadmapToolbar";
 import RoadmapMiniMap from "./RoadmapMiniMap";
@@ -262,6 +262,22 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     return false;
   }, [filteredNodeIds, searchQuery, difficultyFilter, statusFilter]);
 
+  // Calculate completed children for a node
+  const getChildProgress = useCallback((node: NodeType): { completed: number; total: number } => {
+    if (!node.children) return { completed: 0, total: 0 };
+    let completed = 0;
+    let total = 0;
+    const countRecursive = (nodes: NodeType[]) => {
+      for (const n of nodes) {
+        total++;
+        if (progress[n.id]?.completed) completed++;
+        if (n.children) countRecursive(n.children);
+      }
+    };
+    countRecursive(node.children);
+    return { completed, total };
+  }, [progress]);
+
   // Render tree recursively
   const renderNode = useCallback((node: NodeType, depth: number = 0, isLastChild: boolean = false): React.ReactNode => {
     if (!isNodeVisible(node)) return null;
@@ -272,6 +288,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     const isHighlighted = filteredNodeIds.has(node.id) && (searchQuery || difficultyFilter !== "all" || statusFilter !== "all");
     
     const visibleChildren = node.children?.filter(child => isNodeVisible(child)) || [];
+    const childProgress = getChildProgress(node);
     
     return (
       <div 
@@ -281,7 +298,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           if (el) nodeRefs.current.set(node.id, el);
         }}
       >
-        <RoadmapTreeNode
+        <RoadmapTreeNodeEnhanced
           node={node}
           depth={depth}
           isExpanded={isExpanded}
@@ -290,6 +307,8 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           isOnProgressPath={isOnProgressPath && node.id === nextRecommendedId}
           isHighlighted={Boolean(isHighlighted)}
           hasLockedPrerequisites={false}
+          completedChildren={childProgress.completed}
+          totalChildren={childProgress.total}
           onToggle={() => toggleExpand(node.id)}
           onClick={() => handleNodeClick(node)}
           onComplete={() => handleComplete(node.id)}
@@ -308,9 +327,9 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
               <div 
                 className="absolute w-0.5 bg-border"
                 style={{
-                  left: depth * 28 + 14,
+                  left: depth * 32 + 16,
                   top: 0,
-                  bottom: 24,
+                  bottom: 28,
                 }}
               />
               {visibleChildren.map((child, index) => 
@@ -321,7 +340,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
         </AnimatePresence>
       </div>
     );
-  }, [expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, isNodeVisible]);
+  }, [expandedNodes, progress, progressPath, nextRecommendedId, filteredNodeIds, searchQuery, difficultyFilter, statusFilter, toggleExpand, handleNodeClick, handleComplete, isNodeVisible, getChildProgress]);
 
   // Calculate stats
   const stats = useMemo(() => {
