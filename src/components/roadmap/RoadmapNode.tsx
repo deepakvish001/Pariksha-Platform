@@ -105,60 +105,59 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
   const resourceCount = node.resources?.length || 0;
   const showEffects = node.isRecommended && !isCompleted;
 
-  // Calculate indent based on depth
-  const indent = depth * 28;
+  // Calculate indent based on depth - refined spacing
+  const indent = depth * 24;
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -10 }}
+      initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.2, delay: depth * 0.015 }}
+      transition={{ duration: 0.2, delay: depth * 0.02 }}
       className="relative"
     >
-      {/* Connecting Line */}
+      {/* Connecting Line - refined bezier curve */}
       {depth > 0 && (
         <div 
           className="absolute top-0 bottom-1/2"
-          style={{ left: indent - 14 }}
+          style={{ left: indent - 12 }}
         >
-          <svg width="20" height="28" className="overflow-visible">
+          <svg width="16" height="24" className="overflow-visible">
             <path
-              d={`M 0 0 L 0 14 Q 0 20, 6 20 L 14 20`}
+              d={`M 0 0 L 0 12 Q 0 16, 4 16 L 12 16`}
               fill="none"
               className={cn(
-                "stroke-[2]",
+                "stroke-[1.5]",
                 isCompleted ? "stroke-emerald-400 dark:stroke-emerald-500" :
-                isOnProgressPath ? "stroke-amber-400 dark:stroke-amber-500" :
-                "stroke-slate-300 dark:stroke-slate-600"
+                isOnProgressPath ? "stroke-primary/60 dark:stroke-primary/50" :
+                "stroke-border dark:stroke-border/60"
               )}
               strokeLinecap="round"
             />
             {isCompleted && (
-              <circle cx="0" cy="7" r="2.5" className="fill-emerald-400 dark:fill-emerald-500" />
+              <circle cx="0" cy="6" r="2" className="fill-emerald-400 dark:fill-emerald-500" />
             )}
           </svg>
         </div>
       )}
 
       <div
-        className="flex items-center gap-2 py-1.5"
+        className="flex items-center gap-2 py-1"
         style={{ marginLeft: indent }}
       >
-        {/* Expand/Collapse */}
+        {/* Expand/Collapse Button - refined */}
         {hasChildren ? (
           <button
             onClick={onToggle}
             className={cn(
-              "flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-md transition-all",
-              "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700",
-              "border border-slate-200 dark:border-slate-600",
-              isExpanded && "bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700"
+              "flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-lg transition-all duration-200",
+              "bg-muted/60 hover:bg-muted border border-border/60",
+              isExpanded && "bg-primary/10 border-primary/30 text-primary"
             )}
           >
             <ChevronRight
               className={cn(
-                "h-3.5 w-3.5 text-slate-500 dark:text-slate-400 transition-transform duration-150",
-                isExpanded && "rotate-90 text-amber-600 dark:text-amber-400"
+                "h-3.5 w-3.5 transition-transform duration-200",
+                isExpanded ? "rotate-90" : "text-muted-foreground"
               )}
             />
           </button>
@@ -166,25 +165,27 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
           <div className="w-6" />
         )}
 
-        {/* Node Card - Enhanced with refined styling */}
+        {/* Node Card - refined styling */}
         <motion.div
           onClick={onClick}
-          whileHover={{ scale: 1.005, x: 2 }}
-          whileTap={{ scale: 0.995 }}
+          whileHover={{ scale: 1.003, x: 1 }}
+          whileTap={{ scale: 0.998 }}
           className={cn(
-            "relative flex-1 flex items-center gap-3 px-3.5 py-2.5 rounded-xl border-2 cursor-pointer transition-all duration-200",
+            "relative flex-1 flex items-center gap-3 px-3 py-2 rounded-xl border-2 cursor-pointer",
+            "transition-all duration-200",
             nodeStyle.bg,
             nodeStyle.border,
             nodeStyle.hoverBg,
             nodeStyle.text,
-            `shadow-md ${nodeStyle.shadow}`,
-            isHighlighted && "ring-2 ring-primary/70 ring-offset-2 dark:ring-offset-background",
-            isInProgress && "ring-2 ring-amber-400/70 ring-offset-2 dark:ring-offset-background",
+            "shadow-sm hover:shadow-md",
+            nodeStyle.shadow,
+            isHighlighted && "ring-2 ring-primary/60 ring-offset-1 dark:ring-offset-background",
+            isInProgress && "ring-2 ring-amber-400/60 ring-offset-1 dark:ring-offset-background",
             isOptional && "border-dashed",
-            showEffects && "shadow-lg shadow-amber-400/30 dark:shadow-amber-500/40"
+            showEffects && "shadow-lg shadow-amber-400/25 dark:shadow-amber-500/30"
           )}
         >
-          {/* Shimmer and particle effects for recommended nodes */}
+          {/* Effects for recommended nodes */}
           {showEffects && (
             <>
               <ShimmerEffect />
@@ -192,97 +193,97 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
             </>
           )}
           
-          {/* Icon - with enhanced visibility and refined styling */}
+          {/* Icon container - refined size */}
           <div className={cn(
-            "relative z-10 flex-shrink-0 h-9 w-9 rounded-lg flex items-center justify-center",
+            "relative z-10 flex-shrink-0 h-8 w-8 rounded-lg flex items-center justify-center",
             `bg-gradient-to-br ${gradient}`,
-            "shadow-md dark:shadow-lg ring-1 ring-white/20"
+            "shadow-sm ring-1 ring-white/20"
           )}>
-            <NodeIcon className="h-4.5 w-4.5 text-white drop-shadow-sm" />
+            <NodeIcon className="h-4 w-4 text-white drop-shadow-sm" />
           </div>
 
-          {/* Content */}
+          {/* Content area */}
           <div className="relative z-10 flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className={cn(
-                "font-semibold text-sm leading-tight",
-                isCompleted && "line-through opacity-70"
+                "font-semibold text-[13px] leading-tight",
+                isCompleted && "line-through opacity-60"
               )}>
                 {node.title}
               </span>
 
-              {/* Badges with enhanced styling */}
+              {/* Status badges - inline with title */}
               {node.isRecommended && !isCompleted && (
                 <motion.span 
                   className={cn(
-                    "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded border shadow-sm",
+                    "inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-md",
                     badgeStyles.recommended
                   )}
                   animate={{ 
-                    boxShadow: ["0 0 0 0 rgba(251, 191, 36, 0)", "0 0 8px 2px rgba(251, 191, 36, 0.4)", "0 0 0 0 rgba(251, 191, 36, 0)"]
+                    boxShadow: ["0 0 0 0 rgba(251, 191, 36, 0)", "0 0 6px 1px rgba(251, 191, 36, 0.3)", "0 0 0 0 rgba(251, 191, 36, 0)"]
                   }}
-                  transition={{ duration: 2, repeat: Infinity }}
+                  transition={{ duration: 2.5, repeat: Infinity }}
                 >
                   <Star className="h-2.5 w-2.5 fill-current" />
-                  Recommended
+                  <span className="hidden sm:inline">Next</span>
                 </motion.span>
               )}
               
               {isOptional && (
                 <span className={cn(
-                  "inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border",
+                  "inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-md",
                   badgeStyles.optional
                 )}>
-                  <GitBranch className="h-2.5 w-2.5" />
-                  Optional
+                  <GitBranch className="h-2 w-2" />
+                  <span className="hidden sm:inline">Optional</span>
                 </span>
               )}
 
               {isCheckpoint && (
                 <span className={cn(
-                  "inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border",
+                  "inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-md",
                   badgeStyles.checkpoint
                 )}>
-                  <Bookmark className="h-2.5 w-2.5" />
-                  Checkpoint
+                  <Bookmark className="h-2 w-2" />
+                  <span className="hidden sm:inline">Checkpoint</span>
                 </span>
               )}
             </div>
 
-            {/* Description for primary nodes */}
+            {/* Description - only for primary nodes */}
             {node.description && isPrimary && (
-              <p className="text-xs opacity-70 line-clamp-1 mt-0.5">
+              <p className="text-[11px] opacity-60 line-clamp-1 mt-0.5">
                 {node.description}
               </p>
             )}
           </div>
 
-          {/* Metadata Indicators - Enhanced visibility */}
-          <div className="relative z-10 flex items-center gap-1.5 flex-shrink-0">
-            {/* Difficulty Badge */}
+          {/* Metadata pills - compact row */}
+          <div className="relative z-10 flex items-center gap-1 flex-shrink-0">
+            {/* Difficulty indicator */}
             {node.difficulty && (
               <div className={cn(
-                "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium",
-                node.difficulty === 'Easy' && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-                node.difficulty === 'Medium' && "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-                node.difficulty === 'Hard' && "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
+                "flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-medium",
+                node.difficulty === 'Easy' && "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+                node.difficulty === 'Medium' && "bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+                node.difficulty === 'Hard' && "bg-rose-100/80 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
               )}>
                 <Gauge className="h-2.5 w-2.5" />
-                <span className="hidden sm:inline">{node.difficulty}</span>
+                <span className="hidden md:inline">{node.difficulty}</span>
               </div>
             )}
 
-            {/* Time Estimate Badge */}
+            {/* Time estimate */}
             {node.estimatedTime && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+              <div className="hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-medium bg-sky-100/80 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
                 <Timer className="h-2.5 w-2.5" />
-                <span className="hidden sm:inline">{node.estimatedTime}</span>
+                <span className="hidden lg:inline">{node.estimatedTime}</span>
               </div>
             )}
 
-            {/* Resources count */}
+            {/* Resource count */}
             {resourceCount > 0 && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+              <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-medium bg-violet-100/80 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
                 <ExternalLink className="h-2.5 w-2.5" />
                 <span>{resourceCount}</span>
               </div>
@@ -290,18 +291,21 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
 
             {/* Notes indicator */}
             {hasNote && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" title="Has personal note">
+              <div 
+                className="flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-medium bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" 
+                title="Has personal note"
+              >
                 <StickyNote className="h-2.5 w-2.5" />
               </div>
             )}
 
-            {/* Child progress count */}
+            {/* Child progress */}
             {hasChildren && (
               <div className={cn(
-                "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                "text-[9px] font-semibold px-1.5 py-0.5 rounded-md",
                 completedChildren === totalChildren 
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                  : "bg-muted/80 text-muted-foreground dark:bg-muted/60"
+                  ? "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                  : "bg-muted/70 text-muted-foreground"
               )}>
                 {completedChildren}/{totalChildren}
               </div>
@@ -314,15 +318,15 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
                 onComplete();
               }}
               className={cn(
-                "flex-shrink-0 h-6 w-6 rounded-md border-2 flex items-center justify-center transition-all",
+                "flex-shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all duration-200",
                 isCompleted
-                  ? "bg-emerald-500 border-emerald-500 text-white"
+                  ? "bg-emerald-500 border-emerald-500 text-white shadow-sm"
                   : isInProgress
-                  ? "border-amber-400 bg-amber-100 dark:bg-amber-900/30"
-                  : "border-slate-300 dark:border-slate-600 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                  ? "border-amber-400 bg-amber-50 dark:bg-amber-900/30"
+                  : "border-border hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
               )}
             >
-              {isCompleted && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+              {isCompleted && <Check className="h-3 w-3" strokeWidth={3} />}
             </button>
           </div>
         </motion.div>

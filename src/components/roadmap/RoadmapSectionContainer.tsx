@@ -10,36 +10,32 @@ interface RoadmapSectionContainerProps {
   className?: string;
 }
 
-// Enhanced section accent colors with better visual distinction
+// Enhanced section accent colors with refined visual distinction
 const sectionAccents = [
-  { border: "border-amber-400/25 dark:border-amber-500/30", bg: "from-amber-500/6 via-transparent to-transparent", glow: "shadow-amber-500/5" },
-  { border: "border-violet-400/25 dark:border-violet-500/30", bg: "from-violet-500/6 via-transparent to-transparent", glow: "shadow-violet-500/5" },
-  { border: "border-emerald-400/25 dark:border-emerald-500/30", bg: "from-emerald-500/6 via-transparent to-transparent", glow: "shadow-emerald-500/5" },
-  { border: "border-blue-400/25 dark:border-blue-500/30", bg: "from-blue-500/6 via-transparent to-transparent", glow: "shadow-blue-500/5" },
-  { border: "border-rose-400/25 dark:border-rose-500/30", bg: "from-rose-500/6 via-transparent to-transparent", glow: "shadow-rose-500/5" },
-  { border: "border-cyan-400/25 dark:border-cyan-500/30", bg: "from-cyan-500/6 via-transparent to-transparent", glow: "shadow-cyan-500/5" },
+  { border: "border-amber-500/20", accent: "from-amber-500/8 to-orange-500/4", line: "from-amber-500 via-orange-400 to-transparent" },
+  { border: "border-violet-500/20", accent: "from-violet-500/8 to-purple-500/4", line: "from-violet-500 via-purple-400 to-transparent" },
+  { border: "border-emerald-500/20", accent: "from-emerald-500/8 to-teal-500/4", line: "from-emerald-500 via-teal-400 to-transparent" },
+  { border: "border-blue-500/20", accent: "from-blue-500/8 to-indigo-500/4", line: "from-blue-500 via-indigo-400 to-transparent" },
+  { border: "border-rose-500/20", accent: "from-rose-500/8 to-pink-500/4", line: "from-rose-500 via-pink-400 to-transparent" },
+  { border: "border-cyan-500/20", accent: "from-cyan-500/8 to-sky-500/4", line: "from-cyan-500 via-sky-400 to-transparent" },
 ];
 
-// Animation variants for smooth expand/collapse
+// Refined animation variants
 const containerVariants = {
   collapsed: {
     opacity: 0,
     height: 0,
-    scale: 0.98,
     transition: {
-      height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] as const },
-      opacity: { duration: 0.2 },
-      scale: { duration: 0.2 },
+      height: { duration: 0.25, ease: [0.4, 0, 0.2, 1] as const },
+      opacity: { duration: 0.15 },
     },
   },
   expanded: {
     opacity: 1,
     height: "auto" as const,
-    scale: 1,
     transition: {
-      height: { duration: 0.4, ease: [0.4, 0, 0.2, 1] as const },
-      opacity: { duration: 0.3, delay: 0.1 },
-      scale: { duration: 0.3, delay: 0.05 },
+      height: { duration: 0.35, ease: [0.4, 0, 0.2, 1] as const },
+      opacity: { duration: 0.25, delay: 0.1 },
     },
   },
 };
@@ -47,13 +43,13 @@ const containerVariants = {
 const contentVariants = {
   collapsed: {
     opacity: 0,
-    y: -8,
-    transition: { duration: 0.15 },
+    y: -6,
+    transition: { duration: 0.1 },
   },
   expanded: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, delay: 0.15 },
+    transition: { duration: 0.25, delay: 0.1 },
   },
 };
 
@@ -79,42 +75,47 @@ const RoadmapSectionContainer: React.FC<RoadmapSectionContainerProps> = ({
         >
           <div
             className={cn(
-              "relative rounded-xl overflow-hidden",
-              "border transition-all duration-300",
+              "relative rounded-2xl overflow-hidden",
+              "border-2 transition-all duration-300",
+              "bg-card/50 dark:bg-card/30 backdrop-blur-sm",
               accent.border,
-              `shadow-md ${accent.glow}`,
-              isCompact ? "mt-2" : "mt-3",
+              "shadow-sm hover:shadow-md",
+              isCompact ? "mt-1.5" : "mt-2",
               className
             )}
           >
-            {/* Subtle gradient background */}
+            {/* Gradient accent on left edge */}
             <div className={cn(
-              "absolute inset-0 bg-gradient-to-br pointer-events-none",
-              accent.bg
+              "absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl",
+              `bg-gradient-to-b ${accent.line}`
             )} />
             
-            {/* Inner content area with clean background */}
+            {/* Subtle corner gradient */}
+            <div className={cn(
+              "absolute top-0 left-0 w-32 h-32 opacity-60 pointer-events-none",
+              `bg-gradient-to-br ${accent.accent}`
+            )} />
+            
+            {/* Content area */}
             <motion.div 
               variants={contentVariants}
               className={cn(
-                "relative bg-card/70 dark:bg-card/50 backdrop-blur-sm",
-                isCompact ? "p-2 sm:p-3" : "p-3 sm:p-4"
+                "relative",
+                isCompact ? "p-2 pl-3 sm:p-3 sm:pl-4" : "p-3 pl-4 sm:p-4 sm:pl-5"
               )}
             >
-              {/* Decorative top accent line - subtle visual cue */}
-              {!isCompact && (
-                <motion.div 
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.2, duration: 0.4 }}
-                  className={cn(
-                    "absolute top-0 left-4 right-4 h-px",
-                    "bg-gradient-to-r from-transparent via-border/60 to-transparent"
-                  )}
-                />
-              )}
+              {/* Decorative grid pattern - very subtle */}
+              <div 
+                className="absolute inset-0 pointer-events-none opacity-[0.015] dark:opacity-[0.03]"
+                style={{
+                  backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                  backgroundSize: '24px 24px',
+                }}
+              />
               
-              {children}
+              <div className="relative">
+                {children}
+              </div>
             </motion.div>
           </div>
         </motion.div>
