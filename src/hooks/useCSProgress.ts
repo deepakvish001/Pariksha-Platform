@@ -1,6 +1,5 @@
- import { useState, useEffect, useCallback } from "react";
-import { useMemo } from "react";
-import { differenceInHours } from "date-fns";
+ import { useState, useEffect, useCallback, useMemo } from "react";
+ import { differenceInHours } from "date-fns";
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "@/contexts/AuthContext";
  import { useToast } from "@/hooks/use-toast";
@@ -81,7 +80,7 @@ export interface CSSpacedRepetitionQuestion {
              revision: item.is_revision,
              review_count: item.review_count,
              completed_at: item.completed_at,
-         });
+           });
          });
          setProgress(progressMap);
        } catch (error) {
@@ -178,7 +177,7 @@ export interface CSSpacedRepetitionQuestion {
            variant: "destructive",
            title: "Sign in required",
            description: "Please sign in to track your progress.",
-       });
+         });
          return;
        }
  
@@ -194,7 +193,7 @@ export interface CSSpacedRepetitionQuestion {
            revision: current?.revision || false,
            review_count: current?.review_count || 0,
            completed_at: newSolved ? new Date().toISOString() : null,
-       });
+         });
          return updated;
        });
  
