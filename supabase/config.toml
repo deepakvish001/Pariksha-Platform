@@ -1,1 +1,7 @@
 project_id = "lvnpvfxlmzbnylwkvgnq"
+
+[functions.astra-chat]
+verify_jwt = false
+
+[functions.send-quiz-summary]
+verify_jwt = false

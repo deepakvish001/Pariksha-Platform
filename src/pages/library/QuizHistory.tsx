@@ -19,6 +19,8 @@ import { Link } from "react-router-dom";
   Medal,
   Crown,
   Sparkles,
+  Mail,
+  Loader2,
  } from "lucide-react";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
@@ -171,6 +173,7 @@ const ACHIEVEMENTS: Achievement[] = [
      trend: "stable",
    });
   const [quizStreak, setQuizStreak] = useState({ current: 0, longest: 0 });
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
  
    const fetchResults = async () => {
      if (!user) return;
@@ -328,6 +331,41 @@ const ACHIEVEMENTS: Achievement[] = [
     (a) => !a.condition(stats, results)
   );
  
+  const handleSendWeeklySummary = async () => {
+    if (!user?.email) {
+      toast.error("No email address found for your account");
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .single();
+
+      const response = await supabase.functions.invoke("send-quiz-summary", {
+        body: {
+          userId: user.id,
+          email: user.email,
+          userName: profile?.full_name || user.email.split("@")[0],
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      toast.success("Weekly summary sent to your email!");
+    } catch (error: any) {
+      console.error("Error sending weekly summary:", error);
+      toast.error(error.message || "Failed to send weekly summary");
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
    const handleDeleteResult = async (id: string) => {
      try {
        const { error } = await supabase.from("quiz_results").delete().eq("id", id);
@@ -411,6 +449,19 @@ const ACHIEVEMENTS: Achievement[] = [
            </p>
          </div>
          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleSendWeeklySummary}
+              disabled={isSendingEmail || results.length === 0}
+              className="gap-2"
+            >
+              {isSendingEmail ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="h-4 w-4" />
+              )}
+              Email Summary
+            </Button>
            <Select value={quizTypeFilter} onValueChange={setQuizTypeFilter}>
              <SelectTrigger className="w-[130px]">
                <SelectValue placeholder="Quiz Type" />
