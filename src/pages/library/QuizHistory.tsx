@@ -11,7 +11,8 @@ import { Link } from "react-router-dom";
    Minus,
    Calendar,
    Award,
-   BarChart3,
+    BarChart3,
+    ArrowUpDown,
    Trash2,
   Flame,
   Star,
@@ -187,6 +188,7 @@ const QuizHistory: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [quizzesWithDetails, setQuizzesWithDetails] = useState<Set<string>>(new Set());
   const [detailFilter, setDetailFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("date-desc");
   const [isDeletingOld, setIsDeletingOld] = useState(false);
  
    const fetchResults = async () => {
@@ -462,14 +464,35 @@ const QuizHistory: React.FC = () => {
    };
 
    // Filter results based on detail availability
-   const filteredResults = results.filter((r) => {
+   const filteredByDetail = results.filter((r) => {
      if (detailFilter === "all") return true;
      if (detailFilter === "detailed") return quizzesWithDetails.has(r.id);
      if (detailFilter === "summary") return !quizzesWithDetails.has(r.id);
      return true;
    });
 
+   // Sort results
+   const filteredResults = [...filteredByDetail].sort((a, b) => {
+     switch (sortBy) {
+       case "date-desc":
+         return new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime();
+       case "date-asc":
+         return new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime();
+       case "accuracy-desc":
+         return Number(b.accuracy) - Number(a.accuracy);
+       case "accuracy-asc":
+         return Number(a.accuracy) - Number(b.accuracy);
+       case "score-desc":
+         return (b.score / b.total_questions) - (a.score / a.total_questions);
+       case "score-asc":
+         return (a.score / a.total_questions) - (b.score / b.total_questions);
+       default:
+         return 0;
+     }
+   });
+
    const quizzesWithoutDetailsCount = results.filter((r) => !quizzesWithDetails.has(r.id)).length;
+   const quizzesWithDetailsCount = results.length - quizzesWithoutDetailsCount;
  
    const getQuizTypeBadge = (type: string) => {
      const styles = {
@@ -574,16 +597,30 @@ const QuizHistory: React.FC = () => {
                <SelectItem value="month">This Month</SelectItem>
              </SelectContent>
            </Select>
-           <Select value={detailFilter} onValueChange={setDetailFilter}>
-             <SelectTrigger className="w-[140px]">
-               <SelectValue placeholder="Detail Level" />
-             </SelectTrigger>
-             <SelectContent>
-               <SelectItem value="all">All Quizzes</SelectItem>
-               <SelectItem value="detailed">With Details</SelectItem>
-               <SelectItem value="summary">Summary Only</SelectItem>
-             </SelectContent>
-           </Select>
+            <Select value={detailFilter} onValueChange={setDetailFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Detail Level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Quizzes</SelectItem>
+                <SelectItem value="detailed">With Details</SelectItem>
+                <SelectItem value="summary">Summary Only</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[150px]">
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Sort By" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date-desc">Newest First</SelectItem>
+                <SelectItem value="date-asc">Oldest First</SelectItem>
+                <SelectItem value="accuracy-desc">Highest Accuracy</SelectItem>
+                <SelectItem value="accuracy-asc">Lowest Accuracy</SelectItem>
+                <SelectItem value="score-desc">Highest Score</SelectItem>
+                <SelectItem value="score-asc">Lowest Score</SelectItem>
+              </SelectContent>
+            </Select>
          </div>
        </div>
  
@@ -790,13 +827,20 @@ const QuizHistory: React.FC = () => {
                      Delete Old ({quizzesWithoutDetailsCount})
                    </Button>
                  </AlertDialogTrigger>
-                 <AlertDialogContent>
-                   <AlertDialogHeader>
-                     <AlertDialogTitle>Delete old quizzes without details?</AlertDialogTitle>
-                     <AlertDialogDescription>
-                       This will permanently delete {quizzesWithoutDetailsCount} quiz{quizzesWithoutDetailsCount > 1 ? "zes" : ""} that don't have detailed question-by-question tracking. 
-                       Quizzes with detailed review will be kept. This action cannot be undone.
-                     </AlertDialogDescription>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete old quizzes without details?</AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-2">
+                        <span className="block">
+                          This will permanently delete <strong>{quizzesWithoutDetailsCount}</strong> quiz{quizzesWithoutDetailsCount > 1 ? "zes" : ""} that don't have detailed question-by-question tracking.
+                        </span>
+                        <span className="block text-emerald-600 dark:text-emerald-400">
+                          ✓ <strong>{quizzesWithDetailsCount}</strong> quiz{quizzesWithDetailsCount !== 1 ? "zes" : ""} with detailed review will remain.
+                        </span>
+                        <span className="block text-muted-foreground text-xs mt-2">
+                          This action cannot be undone.
+                        </span>
+                      </AlertDialogDescription>
                    </AlertDialogHeader>
                    <AlertDialogFooter>
                      <AlertDialogCancel>Cancel</AlertDialogCancel>
