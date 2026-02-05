@@ -29,6 +29,8 @@ import {
 import AnswerPanel from "@/components/library/AnswerPanel";
 import FundamentalsQuizMode from "@/components/library/FundamentalsQuizMode";
 import QuizLeaderboard from "@/components/library/QuizLeaderboard";
+import FundamentalsLeaderboard from "@/components/library/FundamentalsLeaderboard";
+import FundamentalsAnalytics from "@/components/library/FundamentalsAnalytics";
 
 const iconMap: Record<string, React.ReactNode> = {
   Coffee: <Coffee className="h-5 w-5" />,
@@ -555,6 +557,12 @@ const Language: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Combined Leaderboard */}
+        <FundamentalsLeaderboard currentUserId={user?.id} type="languages" />
+
+        {/* Analytics */}
+        <FundamentalsAnalytics type="languages" />
 
         {/* Language Cards */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
