@@ -23,6 +23,7 @@ import RoadmapNodeDetail from "./RoadmapNodeDetail";
 import RoadmapToolbar from "./RoadmapToolbar";
 import RoadmapMiniMap from "./RoadmapMiniMap";
 import RoadmapCertificate from "./RoadmapCertificate";
+import RoadmapSectionHeader from "./RoadmapSectionHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoadmapConfetti } from "@/hooks/useRoadmapConfetti";
 import { useAuth } from "@/contexts/AuthContext";
@@ -114,6 +115,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   userName = "Learner",
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [selectedNode, setSelectedNode] = useState<NodeType | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const treeRef = useRef<HTMLDivElement>(null);
@@ -126,6 +128,19 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Toggle section collapse
+  const toggleSection = useCallback((sectionId: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
+  }, []);
 
   // Auto-expand first level on mount and reset confetti celebrations
   useEffect(() => {
@@ -395,6 +410,66 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
     };
   }, [allNodes, progress]);
 
+  // Calculate section stats for each primary node
+  const getSectionStats = useCallback((node: NodeType): { completed: number; total: number } => {
+    let completed = 0;
+    let total = 1; // Include the section itself
+    
+    if (progress[node.id]?.completed) completed++;
+    
+    const countChildren = (nodes: NodeType[] | undefined) => {
+      if (!nodes) return;
+      for (const child of nodes) {
+        total++;
+        if (progress[child.id]?.completed) completed++;
+        countChildren(child.children);
+      }
+    };
+    
+    countChildren(node.children);
+    return { completed, total };
+  }, [progress]);
+
+  // Render section with header and collapsible content
+  const renderSection = useCallback((node: NodeType, phaseIndex: number): React.ReactNode => {
+    if (!isNodeVisible(node)) return null;
+    
+    const isCollapsed = collapsedSections.has(node.id);
+    const sectionStats = getSectionStats(node);
+    
+    return (
+      <div key={node.id} className="mb-4">
+        {/* Section Header */}
+        <RoadmapSectionHeader
+          phase={phaseIndex + 1}
+          title={node.title}
+          description={node.description}
+          completed={sectionStats.completed}
+          total={sectionStats.total}
+          isCollapsed={isCollapsed}
+          onToggle={() => toggleSection(node.id)}
+        />
+        
+        {/* Section Content */}
+        <AnimatePresence initial={false}>
+          {!isCollapsed && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="mt-4 pl-2">
+                {renderNode(node, 0, false)}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }, [collapsedSections, getSectionStats, isNodeVisible, renderNode, toggleSection]);
+
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex gap-4">
@@ -553,19 +628,38 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           </motion.div>
 
           {/* Search & Filter Toolbar */}
-          <RoadmapToolbar
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            difficultyFilter={difficultyFilter}
-          onDifficultyChange={setDifficultyFilter}
-          statusFilter={statusFilter}
-          onStatusChange={setStatusFilter}
-          matchCount={matchCount}
-          totalCount={allNodes.length}
-        />
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <RoadmapToolbar
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              difficultyFilter={difficultyFilter}
+              onDifficultyChange={setDifficultyFilter}
+              statusFilter={statusFilter}
+              onStatusChange={setStatusFilter}
+              matchCount={matchCount}
+              totalCount={allNodes.length}
+            />
+            
+            {/* Expand/Collapse All Sections */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCollapsedSections(new Set())}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-muted/50"
+              >
+                Expand All
+              </button>
+              <span className="text-muted-foreground/30">|</span>
+              <button
+                onClick={() => setCollapsedSections(new Set(tree.nodes.map(n => n.id)))}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-muted/50"
+              >
+                Collapse All
+              </button>
+            </div>
+          </div>
 
-          {/* Tree Visualization - Enhanced */}
-          <div className="relative pl-2 py-2">
+          {/* Tree Visualization - Enhanced with Section Headers */}
+          <div className="relative py-2">
             {/* Decorative background pattern */}
             <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
               <div className="h-full w-full" style={{
@@ -574,9 +668,9 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
               }} />
             </div>
             
-            {/* Nodes */}
-            <div className="space-y-1 relative">
-              {tree.nodes.map((node, index) => renderNode(node, 0, index === tree.nodes.length - 1))}
+            {/* Sections with Headers */}
+            <div className="space-y-2 relative">
+              {tree.nodes.map((node, index) => renderSection(node, index))}
             </div>
           </div>
 
