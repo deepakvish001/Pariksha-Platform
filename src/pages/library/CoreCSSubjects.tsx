@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Cpu,
@@ -69,6 +69,7 @@ import {
 import AnswerPanel from "@/components/library/AnswerPanel";
 import FolderManager from "@/components/library/FolderManager";
 import AddToFolderButton from "@/components/library/AddToFolderButton";
+import SpacedRepetitionPanel from "@/components/library/SpacedRepetitionPanel";
 
 type ViewMode = "all" | "solved" | "revision" | "folders";
 
@@ -84,7 +85,8 @@ const subjectIcons: Record<string, React.ReactNode> = {
 const CoreCSSubjects = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { isLoading, isSolved, isRevision, toggleSolved, toggleRevision } = useCSProgress();
+  const [searchParams] = useSearchParams();
+  const { isLoading, isSolved, isRevision, toggleSolved, toggleRevision, markReviewed, spacedRepetition } = useCSProgress();
 
   const {
     folders,
@@ -105,6 +107,23 @@ const CoreCSSubjects = () => {
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [expandedQuestionId, setExpandedQuestionId] = useState<number | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+
+  // Handle scroll to question from URL params
+  React.useEffect(() => {
+    const questionId = searchParams.get("question");
+    const subjectId = searchParams.get("subject");
+    if (questionId) {
+      const id = parseInt(questionId);
+      setExpandedQuestionId(id);
+      if (subjectId) {
+        setSubjectFilter(subjectId);
+      }
+      setTimeout(() => {
+        const element = document.querySelector(`[data-question-id="${id}"]`);
+        element?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
+    }
+  }, [searchParams]);
 
   // Get difficulty stats
   const difficultyStats = getDifficultyStats();
@@ -160,6 +179,57 @@ const CoreCSSubjects = () => {
 
     return questions;
   }, [subjectFilter, topicFilter, difficultyFilter, searchQuery, viewMode, isSolved, isRevision, selectedFolderId, folderQuestions]);
+
+  // Get question details for spaced repetition panel
+  const getQuestionDetails = useCallback(
+    (questionId: number, categoryId: string) => {
+      const question = csQuestions.find((q) => q.id === questionId);
+      if (!question) return undefined;
+      return {
+        id: question.id,
+        text: question.title,
+        difficulty: question.difficulty,
+        categoryId: question.subjectId,
+        categoryName: getSubjectName(question.subjectId),
+      };
+    },
+    []
+  );
+
+  // Handle review question
+  const handleReviewQuestion = useCallback(
+    (questionId: number, categoryId: string) => {
+      markReviewed(questionId);
+    },
+    [markReviewed]
+  );
+
+  // Handle scroll to question
+  const handleScrollToQuestion = useCallback(
+    (questionId: number, categoryId: string) => {
+      const question = csQuestions.find((q) => q.id === questionId);
+      if (question) {
+        setSubjectFilter(question.subjectId);
+        setExpandedQuestionId(questionId);
+        setTimeout(() => {
+          const element = document.querySelector(`[data-question-id="${questionId}"]`);
+          element?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 100);
+      }
+    },
+    []
+  );
+
+  // Map spaced repetition questions to expected format
+  const mappedDueQuestions = useMemo(() => {
+    return spacedRepetition.dueQuestions.map((q) => {
+      const question = csQuestions.find((cq) => cq.id === q.questionId);
+      return {
+        ...q,
+        categoryId: question?.subjectId || "",
+      };
+    });
+  }, [spacedRepetition.dueQuestions]);
 
   const getDifficultyStyles = (difficulty: string) => {
     switch (difficulty) {
@@ -327,6 +397,17 @@ const CoreCSSubjects = () => {
               onUpdateFolder={updateFolder}
               onDeleteFolder={deleteFolder}
               isLoading={foldersLoading}
+            />
+          )}
+
+          {/* Spaced Repetition Panel */}
+          {user && spacedRepetition.stats.total > 0 && (
+            <SpacedRepetitionPanel
+              dueQuestions={mappedDueQuestions}
+              stats={spacedRepetition.stats}
+              getQuestionDetails={getQuestionDetails}
+              onReviewQuestion={handleReviewQuestion}
+              onScrollToQuestion={handleScrollToQuestion}
             />
           )}
 
