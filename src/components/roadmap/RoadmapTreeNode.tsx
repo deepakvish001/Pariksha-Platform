@@ -12,6 +12,8 @@ interface RoadmapTreeNodeProps {
   isExpanded: boolean;
   isCompleted: boolean;
   isInProgress: boolean;
+  isOnProgressPath: boolean;
+  isHighlighted: boolean;
   hasLockedPrerequisites: boolean;
   onToggle: () => void;
   onClick: () => void;
@@ -38,6 +40,8 @@ const RoadmapTreeNode: React.FC<RoadmapTreeNodeProps> = memo(({
   isExpanded,
   isCompleted,
   isInProgress,
+  isOnProgressPath,
+  isHighlighted,
   hasLockedPrerequisites,
   onToggle,
   onClick,
@@ -50,25 +54,67 @@ const RoadmapTreeNode: React.FC<RoadmapTreeNodeProps> = memo(({
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.2, delay: depth * 0.05 }}
+      transition={{ duration: 0.2, delay: depth * 0.03 }}
       className="relative"
     >
+      {/* SVG Connector Line */}
+      {depth > 0 && (
+        <svg 
+          className="absolute pointer-events-none" 
+          style={{ 
+            left: (depth - 1) * 24 + 12,
+            top: -8,
+            width: 36,
+            height: 28,
+          }}
+        >
+          {/* Vertical line from parent */}
+          <motion.line
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="20"
+            strokeWidth={2}
+            strokeLinecap="round"
+            className={cn(
+              "stroke-border transition-colors duration-300",
+              isCompleted && "stroke-emerald-500",
+              isOnProgressPath && !isCompleted && "stroke-primary"
+            )}
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.3 }}
+          />
+          {/* Horizontal connector to node */}
+          <motion.path
+            d="M 0 20 Q 0 28, 8 28 L 24 28"
+            fill="none"
+            strokeWidth={2}
+            strokeLinecap="round"
+            className={cn(
+              "stroke-border transition-colors duration-300",
+              isCompleted && "stroke-emerald-500",
+              isOnProgressPath && !isCompleted && "stroke-primary"
+            )}
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          />
+        </svg>
+      )}
+
       <div
         className={cn(
-          "group flex items-center gap-2 py-1.5",
+          "group flex items-center gap-2 py-1.5 relative",
           depth > 0 && "ml-6"
         )}
+        style={{ marginLeft: depth * 24 }}
       >
-        {/* Connection Line */}
-        {depth > 0 && (
-          <div className="absolute left-3 top-0 bottom-0 w-px bg-border -translate-x-3" />
-        )}
-
         {/* Expand/Collapse Button */}
         {hasChildren ? (
           <button
             onClick={onToggle}
-            className="flex-shrink-0 h-5 w-5 flex items-center justify-center rounded hover:bg-muted transition-colors"
+            className="flex-shrink-0 h-5 w-5 flex items-center justify-center rounded hover:bg-muted transition-colors z-10"
           >
             <ChevronRight
               className={cn(
@@ -89,11 +135,13 @@ const RoadmapTreeNode: React.FC<RoadmapTreeNodeProps> = memo(({
           }}
           disabled={hasLockedPrerequisites}
           className={cn(
-            "flex-shrink-0 h-5 w-5 rounded border-2 flex items-center justify-center transition-all duration-200",
+            "flex-shrink-0 h-5 w-5 rounded border-2 flex items-center justify-center transition-all duration-200 z-10",
             isCompleted
               ? "bg-emerald-500 border-emerald-500 text-white"
               : isInProgress
-              ? "border-blue-500 bg-blue-500/10"
+              ? "border-primary bg-primary/10"
+              : isOnProgressPath
+              ? "border-primary/50 bg-primary/5"
               : hasLockedPrerequisites
               ? "border-muted-foreground/30 bg-muted cursor-not-allowed"
               : "border-muted-foreground/30 hover:border-primary"
@@ -106,14 +154,21 @@ const RoadmapTreeNode: React.FC<RoadmapTreeNodeProps> = memo(({
         {/* Node Content */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
+            <motion.button
               onClick={onClick}
+              animate={isHighlighted ? { 
+                scale: [1, 1.02, 1],
+                boxShadow: ["0 0 0 0 hsl(var(--primary) / 0)", "0 0 0 4px hsl(var(--primary) / 0.3)", "0 0 0 0 hsl(var(--primary) / 0)"]
+              } : {}}
+              transition={isHighlighted ? { duration: 1.5, repeat: Infinity } : {}}
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-md border transition-all duration-200",
-                "hover:shadow-md cursor-pointer",
+                "hover:shadow-md cursor-pointer z-10",
                 nodeTypeStyles[node.type],
                 isCompleted && "opacity-70",
-                isInProgress && "ring-2 ring-blue-500 ring-offset-2 ring-offset-background",
+                isInProgress && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+                isOnProgressPath && !isCompleted && !isInProgress && "ring-1 ring-primary/50",
+                isHighlighted && "ring-2 ring-primary ring-offset-2 ring-offset-background",
                 hasLockedPrerequisites && !isCompleted && "opacity-50"
               )}
             >
@@ -132,7 +187,7 @@ const RoadmapTreeNode: React.FC<RoadmapTreeNodeProps> = memo(({
               {node.type === 'resource' && (
                 <ExternalLink className="h-3 w-3" />
               )}
-            </button>
+            </motion.button>
           </TooltipTrigger>
           <TooltipContent side="right" className="max-w-xs">
             <div className="space-y-1">
@@ -152,6 +207,9 @@ const RoadmapTreeNode: React.FC<RoadmapTreeNodeProps> = memo(({
               </div>
               {isOptional && (
                 <p className="text-xs text-muted-foreground italic">Optional topic</p>
+              )}
+              {isOnProgressPath && !isCompleted && (
+                <p className="text-xs text-primary font-medium">📍 Next recommended</p>
               )}
             </div>
           </TooltipContent>
@@ -175,6 +233,21 @@ const RoadmapTreeNode: React.FC<RoadmapTreeNodeProps> = memo(({
           <span className="hidden md:inline text-xs text-muted-foreground">
             {node.estimatedTime}
           </span>
+        )}
+
+        {/* Progress Path Indicator */}
+        {isOnProgressPath && !isCompleted && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="hidden sm:flex items-center gap-1 text-xs text-primary font-medium"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+            </span>
+            Next
+          </motion.div>
         )}
       </div>
     </motion.div>
