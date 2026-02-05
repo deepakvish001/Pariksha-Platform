@@ -1352,15 +1352,16 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                             transition={{ duration: 0.3 }}
                             className="overflow-hidden"
                           >
-                            {/* Main node as horizontal card */}
+                            {/* Main node as card */}
                             <HorizontalBranch
                               nodes={[node]}
                               progress={progress}
                               onNodeClick={handleNodeClick}
                               onNodeComplete={handleComplete}
+                              hasNoteCheck={hasNote}
                             />
                             
-                            {/* Children as horizontal scrollable cards */}
+                            {/* Children as responsive grid cards */}
                             {node.children && node.children.length > 0 && (
                               <HorizontalBranch
                                 nodes={node.children}
@@ -1368,6 +1369,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                                 onNodeClick={handleNodeClick}
                                 onNodeComplete={handleComplete}
                                 title="Topics"
+                                hasNoteCheck={hasNote}
                               />
                             )}
                           </motion.div>
