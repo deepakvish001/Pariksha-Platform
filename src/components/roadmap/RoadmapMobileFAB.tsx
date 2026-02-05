@@ -49,11 +49,20 @@ const RoadmapMobileFAB = ({
 }: RoadmapMobileFABProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Haptic feedback helper
+  const triggerHaptic = (intensity: "light" | "medium" | "heavy" = "light") => {
+    if ("vibrate" in navigator) {
+      const patterns = { light: 10, medium: 25, heavy: 50 };
+      navigator.vibrate(patterns[intensity]);
+    }
+  };
+
   const actions: FABAction[] = [
     {
       icon: <ArrowUp className="h-5 w-5" />,
       label: "Scroll to Top",
       onClick: () => {
+        triggerHaptic("light");
         onScrollToTop();
         setIsOpen(false);
       },
@@ -63,6 +72,7 @@ const RoadmapMobileFAB = ({
       icon: isCompactMode ? <Maximize2 className="h-5 w-5" /> : <Minimize2 className="h-5 w-5" />,
       label: isCompactMode ? "Expand View" : "Compact View",
       onClick: () => {
+        triggerHaptic("medium");
         onToggleCompact();
         setIsOpen(false);
       },
@@ -74,6 +84,7 @@ const RoadmapMobileFAB = ({
       icon: <Focus className="h-5 w-5" />,
       label: isFocusMode ? "Exit Focus" : "Focus Mode",
       onClick: () => {
+        triggerHaptic("medium");
         onToggleFocus();
         setIsOpen(false);
       },
@@ -85,6 +96,7 @@ const RoadmapMobileFAB = ({
       icon: layoutMode === "vertical" ? <LayoutGrid className="h-5 w-5" /> : <List className="h-5 w-5" />,
       label: layoutMode === "vertical" ? "Card View" : "List View",
       onClick: () => {
+        triggerHaptic("light");
         onLayoutModeChange(layoutMode === "vertical" ? "horizontal" : "vertical");
         setIsOpen(false);
       },
@@ -98,6 +110,7 @@ const RoadmapMobileFAB = ({
       icon: <RotateCcw className="h-5 w-5" />,
       label: "Reset Order",
       onClick: () => {
+        triggerHaptic("heavy");
         onResetOrder();
         setIsOpen(false);
       },
@@ -170,7 +183,10 @@ const RoadmapMobileFAB = ({
 
         {/* Main FAB Button */}
         <motion.button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            triggerHaptic(isOpen ? "light" : "medium");
+            setIsOpen(!isOpen);
+          }}
           className={cn(
             "h-14 w-14 rounded-full flex items-center justify-center shadow-xl transition-colors",
             isOpen
