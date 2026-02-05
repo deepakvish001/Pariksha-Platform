@@ -26,6 +26,8 @@ import AchievementBadge, { achievements } from "@/components/AchievementBadge";
  import RecentAchievements from "@/components/RecentAchievements";
 import MobileFAB from "@/components/MobileFAB";
  import confetti from "canvas-confetti";
+import XPLeaderboard from "@/components/XPLeaderboard";
+import XPGoalsCard from "@/components/XPGoalsCard";
 
 // Sheet definitions with total counts
 const sheetDefinitions = [
@@ -562,6 +564,29 @@ const DashboardMatrix = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* XP Goals and Leaderboard Row */}
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          {/* XP Goals Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            className="h-full"
+          >
+            <XPGoalsCard />
+          </motion.div>
+
+          {/* XP Leaderboard */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.14 }}
+            className="h-full"
+          >
+            <XPLeaderboard compact />
+          </motion.div>
+        </div>
 
         {/* Goals and Activity Row */}
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">

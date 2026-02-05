@@ -10,6 +10,7 @@
  import { Skeleton } from "@/components/ui/skeleton";
  import { cn } from "@/lib/utils";
  import { useXPGoals } from "@/hooks/useXPGoals";
+import { useXPGoalNotifications } from "@/hooks/useXPGoalNotifications";
  import { useState } from "react";
  
  interface XPGoalsCardProps {
@@ -22,6 +23,14 @@
    const [editDaily, setEditDaily] = useState(goals.dailyXpTarget);
    const [editWeekly, setEditWeekly] = useState(goals.weeklyXpTarget);
    const [isOpen, setIsOpen] = useState(false);
+
+  // Enable XP goal notifications
+  useXPGoalNotifications({
+    todayXP,
+    weekXP,
+    dailyTarget: goals.dailyXpTarget,
+    weeklyTarget: goals.weeklyXpTarget,
+  });
  
    const handleSave = () => {
      updateGoals({ dailyXpTarget: editDaily, weeklyXpTarget: editWeekly });
