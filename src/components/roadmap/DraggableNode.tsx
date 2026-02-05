@@ -17,6 +17,7 @@ interface DraggableNodeProps {
   hasNote?: boolean;
   completedChildren?: number;
   totalChildren?: number;
+  isCompact?: boolean;
   onToggle: () => void;
   onClick: () => void;
   onComplete: () => void;
@@ -34,6 +35,7 @@ const DraggableNode: React.FC<DraggableNodeProps> = ({
   hasNote = false,
   completedChildren = 0,
   totalChildren = 0,
+  isCompact = false,
   onToggle,
   onClick,
   onComplete,
@@ -94,6 +96,7 @@ const DraggableNode: React.FC<DraggableNodeProps> = ({
           hasNote={hasNote}
           completedChildren={completedChildren}
           totalChildren={totalChildren}
+          isCompact={isCompact}
           onToggle={onToggle}
           onClick={onClick}
           onComplete={onComplete}
