@@ -3369,6 +3369,624 @@ When k-coloring fails:
       { text: "Unlimited registers available", isCorrect: false },
     ],
   },
+   // Additional comprehensive MCQ questions for quiz variety
+   {
+     id: 61,
+     title: "What is thrashing in operating systems?",
+     text: "Explain the concept of thrashing and its causes.",
+     difficulty: "Hard",
+     subjectId: "os",
+     topicId: "os-memory",
+     answer: `## Thrashing
+ 
+ **Thrashing** occurs when a system spends more time paging than executing processes.
+ 
+ ### Causes
+ - Too many processes competing for limited memory
+ - High page fault rate
+ - Pages constantly swapped in/out
+ 
+ ### Symptoms
+ - CPU utilization drops
+ - Disk I/O increases dramatically
+ - System becomes unresponsive
+ 
+ ### Prevention
+ - Working set model
+ - Page fault frequency control
+ - Reduce degree of multiprogramming`,
+     options: [
+       { text: "System spends more time paging than executing processes", isCorrect: true },
+       { text: "CPU overheating", isCorrect: false },
+       { text: "Network congestion", isCorrect: false },
+       { text: "Disk fragmentation", isCorrect: false },
+     ],
+   },
+   {
+     id: 62,
+     title: "Explain the Banker's Algorithm.",
+     text: "What is the Banker's Algorithm used for?",
+     difficulty: "Hard",
+     subjectId: "os",
+     topicId: "os-deadlock",
+     answer: `## Banker's Algorithm
+ 
+ Used for **deadlock avoidance** by checking if resource allocation leaves system in safe state.
+ 
+ ### Data Structures
+ - Available: Vector of available resources
+ - Max: Maximum demand of each process
+ - Allocation: Currently allocated resources
+ - Need: Max - Allocation
+ 
+ ### Safety Algorithm
+ 1. Find process whose Need ≤ Available
+ 2. Pretend process finishes, add its resources to Available
+ 3. Repeat until all processes can finish (safe) or stuck (unsafe)`,
+     options: [
+       { text: "Deadlock avoidance by checking for safe state", isCorrect: true },
+       { text: "Deadlock detection only", isCorrect: false },
+       { text: "Memory allocation algorithm", isCorrect: false },
+       { text: "CPU scheduling algorithm", isCorrect: false },
+     ],
+   },
+   {
+     id: 63,
+     title: "What is a B+ Tree?",
+     text: "Explain B+ Tree structure and its use in databases.",
+     difficulty: "Medium",
+     subjectId: "dbms",
+     topicId: "dbms-indexing",
+     answer: `## B+ Tree
+ 
+ Self-balancing tree used for **database indexing**.
+ 
+ ### Properties
+ - All data in leaf nodes
+ - Leaf nodes linked for range queries
+ - Internal nodes store only keys
+ - Balanced height ensures O(log n) operations
+ 
+ ### Advantages
+ - Efficient range queries
+ - Good for disk-based storage
+ - Predictable performance`,
+     options: [
+       { text: "Self-balancing tree with data only in leaf nodes, linked for range queries", isCorrect: true },
+       { text: "Binary search tree", isCorrect: false },
+       { text: "Data stored in all nodes", isCorrect: false },
+       { text: "Unbalanced tree structure", isCorrect: false },
+     ],
+   },
+   {
+     id: 64,
+     title: "What are different types of SQL joins?",
+     text: "Explain INNER, LEFT, RIGHT, and FULL joins.",
+     difficulty: "Medium",
+     subjectId: "dbms",
+     topicId: "dbms-sql",
+     answer: `## SQL Joins
+ 
+ ### INNER JOIN
+ Returns only matching rows from both tables.
+ 
+ ### LEFT JOIN
+ All rows from left table + matching from right (NULL if no match).
+ 
+ ### RIGHT JOIN
+ All rows from right table + matching from left.
+ 
+ ### FULL OUTER JOIN
+ All rows from both tables, NULL where no match.
+ 
+ ### CROSS JOIN
+ Cartesian product of both tables.`,
+     options: [
+       { text: "INNER returns matches, LEFT/RIGHT keep one table complete, FULL keeps both", isCorrect: true },
+       { text: "All joins return the same result", isCorrect: false },
+       { text: "LEFT and RIGHT joins are identical", isCorrect: false },
+       { text: "INNER JOIN returns all rows", isCorrect: false },
+     ],
+   },
+   {
+     id: 65,
+     title: "How does subnetting work?",
+     text: "Explain IP subnetting and subnet masks.",
+     difficulty: "Medium",
+     subjectId: "cn",
+     topicId: "cn-subnetting",
+     answer: `## Subnetting
+ 
+ Dividing a network into smaller networks.
+ 
+ ### Subnet Mask
+ - Determines network vs host portion
+ - /24 = 255.255.255.0 = 256 addresses
+ - /25 = 255.255.255.128 = 128 addresses
+ 
+ ### CIDR Notation
+ 192.168.1.0/24 means:
+ - Network: 192.168.1.0
+ - Hosts: 192.168.1.1 - 192.168.1.254
+ - Broadcast: 192.168.1.255`,
+     options: [
+       { text: "Dividing networks using subnet masks to separate network and host portions", isCorrect: true },
+       { text: "Combining multiple networks into one", isCorrect: false },
+       { text: "Only used for IPv6", isCorrect: false },
+       { text: "A type of routing protocol", isCorrect: false },
+     ],
+   },
+   {
+     id: 66,
+     title: "What is NAT (Network Address Translation)?",
+     text: "Explain how NAT works and its types.",
+     difficulty: "Medium",
+     subjectId: "cn",
+     topicId: "cn-routing",
+     answer: `## NAT
+ 
+ Translates private IP addresses to public addresses.
+ 
+ ### Types
+ - **Static NAT**: One-to-one mapping
+ - **Dynamic NAT**: Pool of public IPs
+ - **PAT/NAT Overload**: Many-to-one using ports
+ 
+ ### Benefits
+ - Conserves IPv4 addresses
+ - Provides security (hides internal IPs)
+ - Enables private networks to access internet`,
+     options: [
+       { text: "Translates private IPs to public IPs for internet access", isCorrect: true },
+       { text: "Encrypts network traffic", isCorrect: false },
+       { text: "A routing protocol", isCorrect: false },
+       { text: "DNS resolution mechanism", isCorrect: false },
+     ],
+   },
+   {
+     id: 67,
+     title: "What are SOLID principles?",
+     text: "Explain the SOLID principles in OOP.",
+     difficulty: "Medium",
+     subjectId: "oops",
+     topicId: "oops-patterns",
+     answer: `## SOLID Principles
+ 
+ ### S - Single Responsibility
+ Class should have only one reason to change.
+ 
+ ### O - Open/Closed
+ Open for extension, closed for modification.
+ 
+ ### L - Liskov Substitution
+ Subtypes must be substitutable for base types.
+ 
+ ### I - Interface Segregation
+ Many specific interfaces better than one general.
+ 
+ ### D - Dependency Inversion
+ Depend on abstractions, not concretions.`,
+     options: [
+       { text: "Single Responsibility, Open/Closed, Liskov, Interface Segregation, Dependency Inversion", isCorrect: true },
+       { text: "Design patterns for databases", isCorrect: false },
+       { text: "Only applies to functional programming", isCorrect: false },
+       { text: "Hardware design principles", isCorrect: false },
+     ],
+   },
+   {
+     id: 68,
+     title: "What is the Factory Design Pattern?",
+     text: "Explain the Factory pattern and when to use it.",
+     difficulty: "Medium",
+     subjectId: "oops",
+     topicId: "oops-patterns",
+     answer: `## Factory Pattern
+ 
+ Creates objects without specifying exact class.
+ 
+ ### When to Use
+ - Object creation logic is complex
+ - Need to decouple creation from usage
+ - Multiple implementations of an interface
+ 
+ ### Example
+ \`\`\`typescript
+ interface Animal { speak(): void; }
+ class Dog implements Animal { speak() { console.log("Woof"); } }
+ class Cat implements Animal { speak() { console.log("Meow"); } }
+ 
+ function animalFactory(type: string): Animal {
+   if (type === "dog") return new Dog();
+   return new Cat();
+ }
+ \`\`\``,
+     options: [
+       { text: "Creates objects without specifying exact class, decoupling creation", isCorrect: true },
+       { text: "Only creates singleton objects", isCorrect: false },
+       { text: "A structural pattern", isCorrect: false },
+       { text: "Cannot be used with interfaces", isCorrect: false },
+     ],
+   },
+   {
+     id: 69,
+     title: "What is a Turing Machine?",
+     text: "Explain the concept and components of a Turing Machine.",
+     difficulty: "Hard",
+     subjectId: "toc",
+     topicId: "toc-turing",
+     answer: `## Turing Machine
+ 
+ Theoretical model of computation.
+ 
+ ### Components
+ - Infinite tape (memory)
+ - Read/write head
+ - State register
+ - Transition function
+ 
+ ### Operations
+ - Read symbol under head
+ - Write new symbol
+ - Move head left/right
+ - Change state
+ 
+ ### Church-Turing Thesis
+ Any computable function can be computed by a Turing Machine.`,
+     options: [
+       { text: "Theoretical computation model with infinite tape, head, states, and transitions", isCorrect: true },
+       { text: "A physical computer", isCorrect: false },
+       { text: "Only accepts regular languages", isCorrect: false },
+       { text: "Has finite memory", isCorrect: false },
+     ],
+   },
+   {
+     id: 70,
+     title: "What is LL(1) parsing?",
+     text: "Explain LL(1) parsing and its requirements.",
+     difficulty: "Hard",
+     subjectId: "compiler",
+     topicId: "compiler-syntax",
+     answer: `## LL(1) Parsing
+ 
+ Top-down parsing with 1 lookahead token.
+ 
+ ### LL(1) means:
+ - **L**: Left-to-right scan
+ - **L**: Leftmost derivation
+ - **1**: 1 lookahead token
+ 
+ ### Requirements
+ - No left recursion
+ - Must be left-factored
+ - FIRST/FOLLOW sets must not overlap
+ 
+ ### Parse Table
+ Built using FIRST and FOLLOW sets.`,
+     options: [
+       { text: "Top-down parsing with left-to-right scan, leftmost derivation, 1 lookahead", isCorrect: true },
+       { text: "Bottom-up parsing technique", isCorrect: false },
+       { text: "Can parse any grammar", isCorrect: false },
+       { text: "Requires right recursion", isCorrect: false },
+     ],
+   },
+   {
+     id: 71,
+     title: "What is loop optimization?",
+     text: "Explain common loop optimization techniques.",
+     difficulty: "Hard",
+     subjectId: "compiler",
+     topicId: "compiler-optimization",
+     answer: `## Loop Optimization
+ 
+ ### Techniques
+ - **Loop Invariant Code Motion**: Move unchanging code outside
+ - **Loop Unrolling**: Reduce iterations, more work per iteration
+ - **Loop Fusion**: Combine adjacent loops
+ - **Loop Fission**: Split loop for better cache usage
+ - **Strength Reduction**: Replace expensive ops (multiply → add)
+ 
+ ### Example
+ \`\`\`c
+ // Before
+ for (i = 0; i < n; i++) x[i] = i * 4;
+ 
+ // After strength reduction
+ for (i = 0, t = 0; i < n; i++, t += 4) x[i] = t;
+ \`\`\``,
+     options: [
+       { text: "Techniques like code motion, unrolling, fusion, strength reduction", isCorrect: true },
+       { text: "Only applies to while loops", isCorrect: false },
+       { text: "Always increases code size", isCorrect: false },
+       { text: "Done during lexical analysis", isCorrect: false },
+     ],
+   },
+   {
+     id: 72,
+     title: "What is the working set model?",
+     text: "Explain the working set model in memory management.",
+     difficulty: "Hard",
+     subjectId: "os",
+     topicId: "os-memory",
+     answer: `## Working Set Model
+ 
+ Set of pages a process is currently using.
+ 
+ ### Definition
+ WS(t, Δ) = pages referenced in time interval [t-Δ, t]
+ 
+ ### Purpose
+ - Prevent thrashing
+ - Allocate enough frames for active pages
+ - If process needs more → allocate more
+ - If needs less → reclaim frames
+ 
+ ### Relation to Page Faults
+ If working set fits in memory → low page faults.
+ If not → high page faults → potential thrashing.`,
+     options: [
+       { text: "Set of pages currently used by a process to prevent thrashing", isCorrect: true },
+       { text: "Total memory in the system", isCorrect: false },
+       { text: "Pages on disk", isCorrect: false },
+       { text: "A scheduling algorithm", isCorrect: false },
+     ],
+   },
+   {
+     id: 73,
+     title: "What is Two-Phase Locking (2PL)?",
+     text: "Explain the Two-Phase Locking protocol.",
+     difficulty: "Hard",
+     subjectId: "dbms",
+     topicId: "dbms-concurrency",
+     answer: `## Two-Phase Locking (2PL)
+ 
+ Concurrency control protocol ensuring serializability.
+ 
+ ### Phases
+ 1. **Growing Phase**: Acquire locks, no releases
+ 2. **Shrinking Phase**: Release locks, no new acquisitions
+ 
+ ### Variants
+ - **Strict 2PL**: Hold all locks until commit
+ - **Rigorous 2PL**: Hold all locks (read & write) until commit
+ 
+ ### Guarantees
+ - Ensures conflict serializability
+ - Prevents lost updates, dirty reads`,
+     options: [
+       { text: "Protocol with growing phase (acquire) and shrinking phase (release)", isCorrect: true },
+       { text: "Only one phase needed", isCorrect: false },
+       { text: "Prevents all deadlocks", isCorrect: false },
+       { text: "For memory management", isCorrect: false },
+     ],
+   },
+   {
+     id: 74,
+     title: "What is ARP (Address Resolution Protocol)?",
+     text: "Explain how ARP works.",
+     difficulty: "Easy",
+     subjectId: "cn",
+     topicId: "cn-tcp",
+     answer: `## ARP
+ 
+ Maps IP addresses to MAC addresses on local network.
+ 
+ ### Process
+ 1. Check ARP cache for mapping
+ 2. If not found, broadcast ARP request
+ 3. Target device responds with MAC address
+ 4. Cache the mapping
+ 
+ ### ARP Table
+ - Temporary cache of IP-to-MAC mappings
+ - Entries expire after timeout
+ 
+ ### Security Issue
+ - ARP spoofing can redirect traffic`,
+     options: [
+       { text: "Maps IP addresses to MAC addresses using broadcast requests", isCorrect: true },
+       { text: "Maps MAC to IP", isCorrect: false },
+       { text: "A routing protocol", isCorrect: false },
+       { text: "Used for DNS resolution", isCorrect: false },
+     ],
+   },
+   {
+     id: 75,
+     title: "What is method overloading vs overriding?",
+     text: "Explain the difference between overloading and overriding.",
+     difficulty: "Easy",
+     subjectId: "oops",
+     topicId: "oops-polymorphism",
+     answer: `## Overloading vs Overriding
+ 
+ ### Overloading (Compile-time Polymorphism)
+ - Same method name, different parameters
+ - In same class
+ - Resolved at compile time
+ 
+ \`\`\`java
+ void print(int x) { }
+ void print(String s) { }
+ \`\`\`
+ 
+ ### Overriding (Runtime Polymorphism)
+ - Same signature in parent and child
+ - Different implementation in subclass
+ - Resolved at runtime
+ 
+ \`\`\`java
+ class Animal { void speak() { } }
+ class Dog extends Animal { @Override void speak() { } }
+ \`\`\``,
+     options: [
+       { text: "Overloading: same name different params; Overriding: same signature in subclass", isCorrect: true },
+       { text: "They are the same concept", isCorrect: false },
+       { text: "Overriding is compile-time", isCorrect: false },
+       { text: "Overloading requires inheritance", isCorrect: false },
+     ],
+   },
+   {
+     id: 76,
+     title: "What is the Pumping Lemma for regular languages?",
+     text: "Explain the Pumping Lemma and its use.",
+     difficulty: "Hard",
+     subjectId: "toc",
+     topicId: "toc-automata",
+     answer: `## Pumping Lemma
+ 
+ Used to prove languages are NOT regular.
+ 
+ ### Statement
+ For regular language L, ∃ pumping length p such that:
+ Any string s ∈ L with |s| ≥ p can be split into xyz where:
+ 1. |xy| ≤ p
+ 2. |y| > 0
+ 3. For all i ≥ 0: xy^iz ∈ L
+ 
+ ### Usage
+ To prove L is not regular:
+ 1. Assume L is regular
+ 2. Choose string based on p
+ 3. Show no valid split exists
+ 4. Contradiction → L not regular`,
+     options: [
+       { text: "Proves languages are NOT regular by showing no valid substring split exists", isCorrect: true },
+       { text: "Proves languages ARE regular", isCorrect: false },
+       { text: "Used for context-free languages only", isCorrect: false },
+       { text: "A parsing technique", isCorrect: false },
+     ],
+   },
+   {
+     id: 77,
+     title: "What is the difference between CSMA/CD and CSMA/CA?",
+     text: "Explain these MAC protocols.",
+     difficulty: "Medium",
+     subjectId: "cn",
+     topicId: "cn-tcp",
+     answer: `## CSMA/CD vs CSMA/CA
+ 
+ ### CSMA/CD (Collision Detection)
+ - Used in wired Ethernet
+ - Detects collision while transmitting
+ - Stops and retransmits after backoff
+ 
+ ### CSMA/CA (Collision Avoidance)
+ - Used in wireless (WiFi)
+ - Cannot detect collision while transmitting
+ - Uses RTS/CTS handshake
+ - ACK confirms receipt
+ 
+ ### Why Different?
+ Wireless: Hidden terminal problem, can't detect own collision.`,
+     options: [
+       { text: "CD detects collisions (wired), CA avoids them using RTS/CTS (wireless)", isCorrect: true },
+       { text: "They are identical protocols", isCorrect: false },
+       { text: "CA is used in wired networks", isCorrect: false },
+       { text: "CD prevents all collisions", isCorrect: false },
+     ],
+   },
+   {
+     id: 78,
+     title: "What is database recovery?",
+     text: "Explain UNDO and REDO recovery operations.",
+     difficulty: "Medium",
+     subjectId: "dbms",
+     topicId: "dbms-recovery",
+     answer: `## Database Recovery
+ 
+ Restoring database to consistent state after failure.
+ 
+ ### UNDO (Rollback)
+ - Reverse uncommitted transactions
+ - Uses before-images from log
+ - For transactions active at crash
+ 
+ ### REDO (Roll-forward)
+ - Reapply committed transactions
+ - Uses after-images from log
+ - For committed but not written to disk
+ 
+ ### Write-Ahead Logging (WAL)
+ Log record must be written before data page.
+ Ensures recovery is possible.`,
+     options: [
+       { text: "UNDO reverses uncommitted, REDO reapplies committed transactions using logs", isCorrect: true },
+       { text: "Recovery is not needed with SSDs", isCorrect: false },
+       { text: "UNDO and REDO are the same", isCorrect: false },
+       { text: "Only backup is needed", isCorrect: false },
+     ],
+   },
+   {
+     id: 79,
+     title: "What is the Singleton design pattern?",
+     text: "Explain Singleton and its implementation.",
+     difficulty: "Easy",
+     subjectId: "oops",
+     topicId: "oops-patterns",
+     answer: `## Singleton Pattern
+ 
+ Ensures only ONE instance of a class exists.
+ 
+ ### Implementation
+ \`\`\`typescript
+ class Singleton {
+   private static instance: Singleton;
+   private constructor() {}
+   
+   static getInstance(): Singleton {
+     if (!Singleton.instance) {
+       Singleton.instance = new Singleton();
+     }
+     return Singleton.instance;
+   }
+ }
+ \`\`\`
+ 
+ ### Use Cases
+ - Database connection pool
+ - Logger
+ - Configuration manager
+ - Thread pool`,
+     options: [
+       { text: "Ensures only one instance exists using private constructor and static method", isCorrect: true },
+       { text: "Creates multiple instances", isCorrect: false },
+       { text: "A structural pattern", isCorrect: false },
+       { text: "Cannot be implemented in JavaScript", isCorrect: false },
+     ],
+   },
+   {
+     id: 80,
+     title: "What is semantic analysis in compilers?",
+     text: "Explain the role of semantic analysis.",
+     difficulty: "Medium",
+     subjectId: "compiler",
+     topicId: "compiler-semantic",
+     answer: `## Semantic Analysis
+ 
+ Checks meaning and context after parsing.
+ 
+ ### Tasks
+ - **Type Checking**: Operand compatibility
+ - **Scope Resolution**: Variable declarations
+ - **Name Resolution**: Identifier lookup
+ - **Array Bounds**: Static checks where possible
+ 
+ ### Symbol Table
+ Stores identifiers with their attributes:
+ - Type, scope, memory location
+ 
+ ### Example Errors
+ \`\`\`c
+ int x = "hello";  // Type mismatch
+ y = 5;            // Undeclared variable
+ foo(1, 2);        // Wrong argument count
+ \`\`\``,
+     options: [
+       { text: "Checks meaning: type checking, scope resolution, name binding", isCorrect: true },
+       { text: "Only checks syntax", isCorrect: false },
+       { text: "Generates machine code", isCorrect: false },
+       { text: "First phase of compilation", isCorrect: false },
+     ],
+   },
  ];
  
  // Helper functions

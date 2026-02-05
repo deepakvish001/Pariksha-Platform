@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { Trophy, Search, Filter, Clock, Users, History, Code, Cpu, Database, Brain, Calculator, X } from "lucide-react";
+import { Trophy, Search, Filter, Clock, Users, History, Code, Cpu, Database, Brain, Calculator, X, Shuffle, Sparkles } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,12 +11,13 @@ import DSAQuizMode from "@/components/library/DSAQuizMode";
 import CSQuizMode from "@/components/library/CSQuizMode";
 import AptitudeQuizMode from "@/components/library/AptitudeQuizMode";
 import SQLQuizMode from "@/components/library/SQLQuizMode";
+import CombinedQuizMode from "@/components/library/CombinedQuizMode";
 import { dsaQuestions } from "@/data/dsaQuestionsData";
 import { csQuestions } from "@/data/csSubjectsData";
 import { aptitudeQuestions } from "@/data/aptitudeQuestionsData";
 import { sqlQuestions } from "@/data/sqlQuestionsData";
 
-type QuizType = "dsa" | "cs" | "aptitude" | "sql" | null;
+type QuizType = "dsa" | "cs" | "aptitude" | "sql" | "combined" | null;
 
 const quizCategories = [
   {
@@ -70,6 +71,8 @@ const Quiz = () => {
         return <AptitudeQuizMode questions={aptitudeQuestions} onClose={() => setActiveQuiz(null)} />;
       case "sql":
         return <SQLQuizMode questions={sqlQuestions} onClose={() => setActiveQuiz(null)} />;
+      case "combined":
+        return <CombinedQuizMode onClose={() => setActiveQuiz(null)} />;
       default:
         return null;
     }
@@ -119,10 +122,43 @@ const Quiz = () => {
               </Link>
             </motion.div>
 
+            {/* Featured Combined Quiz */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.15 }}
+            >
+              <Card 
+                className="cursor-pointer hover:shadow-lg transition-all group border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5"
+                onClick={() => setActiveQuiz("combined")}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                      <Shuffle className="h-7 w-7 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold">Combined Quiz</h3>
+                        <Badge className="bg-gradient-to-r from-primary to-accent text-white border-0">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          New
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">Mix questions from DSA, CS Core, SQL & Aptitude</p>
+                    </div>
+                    <Button className="group-hover:bg-primary/90">
+                      Start Mixed Quiz
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
             >
               <h2 className="text-lg font-semibold mb-4">Choose a Quiz Category</h2>
               <div className="grid gap-6 md:grid-cols-2">
@@ -131,7 +167,7 @@ const Quiz = () => {
                     key={category.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 + index * 0.1 }}
+                    transition={{ delay: 0.2 + index * 0.1 }}
                   >
                     <Card
                       className={`hover:shadow-lg transition-all cursor-pointer group border bg-gradient-to-br ${category.color}`}
