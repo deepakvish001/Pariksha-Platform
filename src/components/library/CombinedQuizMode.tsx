@@ -1,4 +1,5 @@
  import { useState, useMemo, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
  import { dsaQuestions } from "@/data/dsaQuestionsData";
  import { csQuestions } from "@/data/csSubjectsData";
  import { sqlQuestions } from "@/data/sqlQuestionsData";
@@ -413,109 +414,186 @@
     });
   }, [questions, answers, reviewFilter, markedForReview]);
 
+  const stateVariants = {
+    initial: { opacity: 0, scale: 0.95, y: 20 },
+    animate: { opacity: 1, scale: 1, y: 0 },
+    exit: { opacity: 0, scale: 0.95, y: -20 },
+  };
+
+  const transitionConfig = {
+    type: "spring" as const,
+    stiffness: 300,
+    damping: 30,
+  };
+
    // Render based on quiz state
    if (quizState === "setup") {
      return (
-       <QuizSetup
-         onClose={onClose}
-         onStartQuiz={startQuiz}
-         questionCount={questionCount}
-         setQuestionCount={setQuestionCount}
-         enabledCategories={enabledCategories}
-         setEnabledCategories={setEnabledCategories}
-         timedMode={timedMode}
-         setTimedMode={setTimedMode}
-         timeLimitMinutes={timeLimitMinutes}
-         setTimeLimitMinutes={setTimeLimitMinutes}
-         allQuestionsCount={allQuestions.length}
-       />
+       <AnimatePresence mode="wait">
+         <motion.div
+           key="setup"
+           variants={stateVariants}
+           initial="initial"
+           animate="animate"
+           exit="exit"
+           transition={transitionConfig}
+         >
+           <QuizSetup
+             onClose={onClose}
+             onStartQuiz={startQuiz}
+             questionCount={questionCount}
+             setQuestionCount={setQuestionCount}
+             enabledCategories={enabledCategories}
+             setEnabledCategories={setEnabledCategories}
+             timedMode={timedMode}
+             setTimedMode={setTimedMode}
+             timeLimitMinutes={timeLimitMinutes}
+             setTimeLimitMinutes={setTimeLimitMinutes}
+             allQuestionsCount={allQuestions.length}
+           />
+         </motion.div>
+       </AnimatePresence>
      );
    }
  
   if (quizState === "paused") {
     return (
-      <QuizPaused
-        currentIndex={currentIndex}
-        questionsLength={questions.length}
-        totalTime={totalTime}
-        timeLimit={timeLimit}
-        onResume={handleResume}
-        onClose={onClose}
-      />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="paused"
+          variants={stateVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={transitionConfig}
+        >
+          <QuizPaused
+            currentIndex={currentIndex}
+            questionsLength={questions.length}
+            totalTime={totalTime}
+            timeLimit={timeLimit}
+            onResume={handleResume}
+            onClose={onClose}
+          />
+        </motion.div>
+      </AnimatePresence>
     );
   }
 
    if (quizState === "summary") {
      return (
-       <QuizSummary
-         questions={questions}
-         answers={answers}
-         totalTime={totalTime}
-         summaryData={getSummaryData()}
-         skippedQuestions={skippedQuestions}
-         markedForReview={markedForReview}
-         onGoToQuestion={handleGoToQuestion}
-         onBackToQuiz={() => {
-           setCurrentIndex(questions.length - 1);
-           setSelectedAnswer(answers[questions.length - 1] ?? null);
-           setQuestionStartTime(Date.now());
-           setQuizState("playing");
-         }}
-         onSubmit={handleSubmitFromSummary}
-       />
+       <AnimatePresence mode="wait">
+         <motion.div
+           key="summary"
+           variants={stateVariants}
+           initial="initial"
+           animate="animate"
+           exit="exit"
+           transition={transitionConfig}
+         >
+           <QuizSummary
+             questions={questions}
+             answers={answers}
+             totalTime={totalTime}
+             summaryData={getSummaryData()}
+             skippedQuestions={skippedQuestions}
+             markedForReview={markedForReview}
+             onGoToQuestion={handleGoToQuestion}
+             onBackToQuiz={() => {
+               setCurrentIndex(questions.length - 1);
+               setSelectedAnswer(answers[questions.length - 1] ?? null);
+               setQuestionStartTime(Date.now());
+               setQuizState("playing");
+             }}
+             onSubmit={handleSubmitFromSummary}
+           />
+         </motion.div>
+       </AnimatePresence>
      );
    }
  
     if (quizState === "review") {
       return (
-        <QuizReview
-          filteredReviewQuestions={filteredReviewQuestions}
-          reviewIndex={reviewIndex}
-          reviewFilter={reviewFilter}
-          onSetReviewIndex={setReviewIndex}
-          onSetReviewFilter={setReviewFilter}
-          onBackToResults={() => setQuizState("results")}
-        />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key="review"
+            variants={stateVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={transitionConfig}
+          >
+            <QuizReview
+              filteredReviewQuestions={filteredReviewQuestions}
+              reviewIndex={reviewIndex}
+              reviewFilter={reviewFilter}
+              onSetReviewIndex={setReviewIndex}
+              onSetReviewFilter={setReviewFilter}
+              onBackToResults={() => setQuizState("results")}
+            />
+          </motion.div>
+        </AnimatePresence>
       );
     }
 
    if (quizState === "results") {
      return (
-       <QuizResults
-         questions={questions}
-         answers={answers}
-         totalTime={totalTime}
-         markedForReview={markedForReview}
-         onClose={onClose}
-         onReview={() => {
-           setReviewIndex(0);
-           setReviewFilter(markedForReview.size > 0 ? "flagged" : "incorrect");
-           setQuizState("review");
-         }}
-         onNewQuiz={() => setQuizState("setup")}
-       />
+       <AnimatePresence mode="wait">
+         <motion.div
+           key="results"
+           variants={stateVariants}
+           initial="initial"
+           animate="animate"
+           exit="exit"
+           transition={transitionConfig}
+         >
+           <QuizResults
+             questions={questions}
+             answers={answers}
+             totalTime={totalTime}
+             markedForReview={markedForReview}
+             onClose={onClose}
+             onReview={() => {
+               setReviewIndex(0);
+               setReviewFilter(markedForReview.size > 0 ? "flagged" : "incorrect");
+               setQuizState("review");
+             }}
+             onNewQuiz={() => setQuizState("setup")}
+           />
+         </motion.div>
+       </AnimatePresence>
      );
    }
  
    // Playing state
    return (
-     <QuizPlaying
-       questions={questions}
-       currentIndex={currentIndex}
-       selectedAnswer={selectedAnswer}
-       answers={answers}
-       totalTime={totalTime}
-       timeLimit={timeLimit}
-       markedForReview={markedForReview}
-       skippedQuestions={skippedQuestions}
-       onAnswerSelect={handleAnswerSelect}
-       onNext={handleNext}
-       onSkip={handleSkip}
-       onPause={handlePause}
-       onClose={onClose}
-       onToggleFlag={toggleMarkForReview}
-       onReturnToSkipped={handleReturnToSkipped}
-     />
+     <AnimatePresence mode="wait">
+       <motion.div
+         key={`playing-${currentIndex}`}
+         initial={{ opacity: 0, x: 20 }}
+         animate={{ opacity: 1, x: 0 }}
+         exit={{ opacity: 0, x: -20 }}
+         transition={{ type: "spring", stiffness: 400, damping: 35 }}
+       >
+         <QuizPlaying
+           questions={questions}
+           currentIndex={currentIndex}
+           selectedAnswer={selectedAnswer}
+           answers={answers}
+           totalTime={totalTime}
+           timeLimit={timeLimit}
+           markedForReview={markedForReview}
+           skippedQuestions={skippedQuestions}
+           onAnswerSelect={handleAnswerSelect}
+           onNext={handleNext}
+           onSkip={handleSkip}
+           onPause={handlePause}
+           onClose={onClose}
+           onToggleFlag={toggleMarkForReview}
+           onReturnToSkipped={handleReturnToSkipped}
+         />
+       </motion.div>
+     </AnimatePresence>
    );
  };
  
