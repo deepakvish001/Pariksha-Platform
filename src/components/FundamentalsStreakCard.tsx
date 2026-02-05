@@ -1,12 +1,19 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Flame, Calendar, Trophy, Target, CheckCircle, Clock } from "lucide-react";
+import { Flame, Calendar, Trophy, Target, CheckCircle, Clock, Snowflake } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFundamentalsStreak } from "@/hooks/useFundamentalsStreak";
+import { useStreakFreeze } from "@/hooks/useStreakFreeze";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface FundamentalsStreakCardProps {
   className?: string;
@@ -26,10 +33,16 @@ const FundamentalsStreakCard: React.FC<FundamentalsStreakCardProps> = ({
     isLoading,
   } = useFundamentalsStreak();
 
-  const weeklyGoal = 5; // Days per week goal
+  const {
+    canUseFreeze,
+    daysUntilNextFreeze,
+    useStreakFreeze: activateStreakFreeze,
+    isLoading: freezeLoading,
+  } = useStreakFreeze();
+
+  const weeklyGoal = 5;
   const weeklyProgress = Math.min((thisWeekDays / weeklyGoal) * 100, 100);
 
-  // Streak milestones
   const getStreakMilestone = (streak: number) => {
     if (streak >= 30) return { label: "🔥 On Fire!", color: "text-orange-500" };
     if (streak >= 14) return { label: "⚡ Unstoppable", color: "text-yellow-500" };
@@ -39,6 +52,8 @@ const FundamentalsStreakCard: React.FC<FundamentalsStreakCardProps> = ({
   };
 
   const milestone = getStreakMilestone(currentStreak);
+
+  const showStreakBroken = !todayCompleted && currentStreak === 0;
 
   if (isLoading) {
     return (
@@ -76,7 +91,26 @@ const FundamentalsStreakCard: React.FC<FundamentalsStreakCardProps> = ({
                 <p className="text-sm text-muted-foreground">day streak</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="flex items-center gap-2">
+              {showStreakBroken && canUseFreeze && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-1"
+                      onClick={activateStreakFreeze}
+                      disabled={freezeLoading}
+                    >
+                      <Snowflake className="h-4 w-4 text-blue-500" />
+                      Restore
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Use your weekly streak freeze to restore your streak</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {todayCompleted ? (
                 <Badge variant="default" className="bg-emerald-500">
                   <CheckCircle className="h-3 w-3 mr-1" />
@@ -99,9 +133,30 @@ const FundamentalsStreakCard: React.FC<FundamentalsStreakCardProps> = ({
     <Card className={cn("overflow-hidden", className)}>
       <div className="h-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500" />
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Flame className="h-5 w-5 text-orange-500" />
-          Fundamentals Study Streak
+        <CardTitle className="flex items-center justify-between text-lg">
+          <span className="flex items-center gap-2">
+            <Flame className="h-5 w-5 text-orange-500" />
+            Fundamentals Study Streak
+          </span>
+          {canUseFreeze && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="text-blue-500 border-blue-500/30 gap-1">
+                  <Snowflake className="h-3 w-3" />
+                  1 Freeze Available
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>You can restore a broken streak once per week</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {!canUseFreeze && daysUntilNextFreeze > 0 && (
+            <Badge variant="outline" className="text-muted-foreground gap-1">
+              <Snowflake className="h-3 w-3" />
+              {daysUntilNextFreeze}d until freeze
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -148,6 +203,23 @@ const FundamentalsStreakCard: React.FC<FundamentalsStreakCardProps> = ({
           <Badge variant="secondary" className={cn("text-sm", milestone.color)}>
             {milestone.label}
           </Badge>
+          {showStreakBroken && canUseFreeze && (
+            <div className="mt-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={activateStreakFreeze}
+                disabled={freezeLoading}
+              >
+                <Snowflake className="h-4 w-4 text-blue-500" />
+                Use Streak Freeze
+              </Button>
+              <p className="text-xs text-muted-foreground mt-1">
+                Restore your streak (1 use per week)
+              </p>
+            </div>
+          )}
           {!todayCompleted && currentStreak > 0 && (
             <p className="text-xs text-muted-foreground mt-2">
               Complete a topic today to keep your streak!

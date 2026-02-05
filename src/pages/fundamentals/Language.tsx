@@ -31,6 +31,7 @@ import FundamentalsQuizMode from "@/components/library/FundamentalsQuizMode";
 import QuizLeaderboard from "@/components/library/QuizLeaderboard";
 import FundamentalsLeaderboard from "@/components/library/FundamentalsLeaderboard";
 import FundamentalsAnalytics from "@/components/library/FundamentalsAnalytics";
+import FundamentalsStreakCard from "@/components/FundamentalsStreakCard";
 
 const iconMap: Record<string, React.ReactNode> = {
   Coffee: <Coffee className="h-5 w-5" />,
@@ -267,6 +268,9 @@ const Language: React.FC = () => {
         </header>
 
         <main className="p-4 md:p-6 space-y-6">
+          {/* Streak Card */}
+          <FundamentalsStreakCard compact />
+
           {/* Stats Cards */}
           <div className="grid gap-4 md:grid-cols-4">
             <Card className="bg-card/50 border-primary/20">
