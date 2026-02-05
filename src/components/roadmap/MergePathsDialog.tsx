@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Merge, ArrowRight, Shuffle, ArrowUp, ArrowDown, Undo2, Redo2 } from "lucide-react";
+import { Merge, ArrowRight, Shuffle, ArrowUp, ArrowDown, Undo2, Redo2, Share2, Copy, Check, Link2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,11 +29,14 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { SavedPath } from "@/hooks/useSavedPaths";
+import { toast } from "@/hooks/use-toast";
 
 type MergeStrategy = "interleave" | "prioritize-first" | "prioritize-second";
 
 interface MergePathsDialogProps {
   savedPaths: SavedPath[];
+  roadmapId: string;
+  roadmapTitle: string;
   onMerge: (
     pathId1: string,
     pathId2: string,
@@ -53,6 +56,8 @@ const formatTopicName = (topicId: string) => {
 
 const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
   savedPaths,
+  roadmapId,
+  roadmapTitle,
   onMerge,
   canUndo = false,
   canRedo = false,
@@ -66,6 +71,11 @@ const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
   const [strategy, setStrategy] = useState<MergeStrategy>("interleave");
   const [mergedName, setMergedName] = useState<string>("");
   const [isMerging, setIsMerging] = useState(false);
+  
+  // Success state for showing share options
+  const [mergedPath, setMergedPath] = useState<SavedPath | null>(null);
+  const [shareUrl, setShareUrl] = useState<string>("");
+  const [copied, setCopied] = useState(false);
 
   const path1 = savedPaths.find((p) => p.id === path1Id);
   const path2 = savedPaths.find((p) => p.id === path2Id);
@@ -146,6 +156,18 @@ const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
     return preview;
   }, [path1, path2, strategy]);
 
+  const generateShareUrl = (orders: Record<string, string[]>) => {
+    const exportData = {
+      version: 1,
+      roadmapId,
+      roadmapTitle,
+      exportedAt: new Date().toISOString(),
+      customOrders: orders,
+    };
+    const encoded = btoa(JSON.stringify(exportData));
+    return `${window.location.origin}${window.location.pathname}?importPath=${encoded}`;
+  };
+
   const handleMerge = async () => {
     if (!path1Id || !path2Id || !mergedName.trim()) return;
 
@@ -154,12 +176,36 @@ const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
     setIsMerging(false);
 
     if (result) {
-      setIsOpen(false);
-      setPath1Id("");
-      setPath2Id("");
-      setMergedName("");
-      setStrategy("interleave");
+      setMergedPath(result);
+      setShareUrl(generateShareUrl(result.customOrders));
     }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      toast({
+        title: "Link copied!",
+        description: "Share this link with others to share your merged path.",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDone = () => {
+    setIsOpen(false);
+    setPath1Id("");
+    setPath2Id("");
+    setMergedName("");
+    setStrategy("interleave");
+    setMergedPath(null);
+    setShareUrl("");
   };
 
   const resetDialog = () => {
@@ -167,6 +213,8 @@ const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
     setPath2Id("");
     setMergedName("");
     setStrategy("interleave");
+    setMergedPath(null);
+    setShareUrl("");
   };
 
   const sectionColors = [
@@ -471,18 +519,55 @@ const MergePathsDialog: React.FC<MergePathsDialogProps> = ({
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleMerge}
-            disabled={
-              !path1Id || !path2Id || !mergedName.trim() || isMerging
-            }
-          >
-            {isMerging ? "Merging..." : "Merge Paths"}
-          </Button>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          {mergedPath ? (
+            <>
+              {/* Success state - Show share options */}
+              <div className="flex-1 flex items-center gap-2 mr-auto">
+                <div className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
+                  <Check className="h-4 w-4" />
+                  <span className="font-medium">Merged!</span>
+                </div>
+                <div className="flex-1 flex gap-1.5">
+                  <Input
+                    value={shareUrl}
+                    readOnly
+                    className="text-xs font-mono h-8 flex-1 min-w-0"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 shrink-0"
+                    onClick={handleCopyLink}
+                  >
+                    {copied ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {copied ? "Copied!" : "Copy Link"}
+                    </span>
+                  </Button>
+                </div>
+              </div>
+              <Button onClick={handleDone}>Done</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => setIsOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleMerge}
+                disabled={
+                  !path1Id || !path2Id || !mergedName.trim() || isMerging
+                }
+              >
+                {isMerging ? "Merging..." : "Merge Paths"}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

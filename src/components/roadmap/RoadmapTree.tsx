@@ -1041,7 +1041,9 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
               {/* Merge Paths Button */}
               {user && savedPaths.length >= 2 && (
                 <MergePathsDialog 
-                  savedPaths={savedPaths} 
+                  savedPaths={savedPaths}
+                  roadmapId={tree.id}
+                  roadmapTitle={tree.title}
                   onMerge={mergePaths}
                   canUndo={canUndoMerge}
                   canRedo={canRedoMerge}
