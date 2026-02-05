@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
    Bookmark,
    Menu,
    TrendingUp,
+   Folder,
+   FolderPlus,
  } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
  import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +46,7 @@ import { Progress } from "@/components/ui/progress";
  import { cn } from "@/lib/utils";
  import { useAuth } from "@/contexts/AuthContext";
  import { useSQLProgress } from "@/hooks/useSQLProgress";
+ import { useFolders } from "@/hooks/useFolders";
  import {
    sqlQuestions,
    sqlCategories,
@@ -53,11 +56,14 @@ import { Progress } from "@/components/ui/progress";
    searchQuestions,
    getCategoryName,
    getDifficultyStats,
+   type SQLQuestion,
  } from "@/data/sqlQuestionsData";
  import AnswerPanel from "@/components/library/AnswerPanel";
 import SpacedRepetitionPanel from "@/components/library/SpacedRepetitionPanel";
+ import FolderManager from "@/components/library/FolderManager";
+ import AddToFolderButton from "@/components/library/AddToFolderButton";
  
- type ViewMode = "all" | "solved" | "revision";
+ type ViewMode = "all" | "solved" | "revision" | "folders";
 
 const SQLQuestions = () => {
    const { user } = useAuth();
@@ -73,12 +79,25 @@ const SQLQuestions = () => {
     spacedRepetitionStats,
    } = useSQLProgress();
  
+   const {
+     folders,
+     folderItems,
+     isLoading: foldersLoading,
+     createFolder,
+     updateFolder,
+     deleteFolder,
+     addToFolder,
+     removeFromFolder,
+     isInFolder,
+   } = useFolders("sql");
+ 
    const [viewMode, setViewMode] = useState<ViewMode>("all");
    const [searchQuery, setSearchQuery] = useState("");
    const [categoryFilter, setCategoryFilter] = useState<string>("all");
    const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
    const [typeFilter, setTypeFilter] = useState<string>("all");
    const [expandedQuestionId, setExpandedQuestionId] = useState<number | null>(null);
+   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
  
    // Get difficulty stats
    const difficultyStats = getDifficultyStats();
@@ -96,8 +115,30 @@ const SQLQuestions = () => {
      return { easy, medium, hard, total: easy + medium + hard };
   }, [isSolved]);
  
+   // Get questions in selected folder
+   const folderQuestions = useMemo(() => {
+     if (!selectedFolderId) return [];
+     const items = folderItems[selectedFolderId] || [];
+     return items
+       .filter((item) => item.question_source === "sql")
+       .map((item) => sqlQuestions.find((q) => q.id === item.question_id))
+       .filter(Boolean) as SQLQuestion[];
+   }, [selectedFolderId, folderItems]);
+ 
    // Filter questions based on current view and filters
    const filteredQuestions = useMemo(() => {
+     // If viewing folders and a folder is selected, show folder questions
+     if (viewMode === "folders" && selectedFolderId) {
+       let questions = folderQuestions;
+       questions = getQuestionsByDifficulty(questions, difficultyFilter);
+       questions = getQuestionsByType(questions, typeFilter);
+       questions = searchQuestions(questions, searchQuery);
+       if (categoryFilter !== "all") {
+         questions = questions.filter((q) => q.categoryId === categoryFilter);
+       }
+       return questions;
+     }
+ 
      let questions = getQuestionsByCategory(categoryFilter);
      questions = getQuestionsByDifficulty(questions, difficultyFilter);
      questions = getQuestionsByType(questions, typeFilter);
@@ -111,7 +152,7 @@ const SQLQuestions = () => {
      }
  
      return questions;
-  }, [categoryFilter, difficultyFilter, typeFilter, searchQuery, viewMode, isSolved, isRevision]);
+   }, [categoryFilter, difficultyFilter, typeFilter, searchQuery, viewMode, isSolved, isRevision, selectedFolderId, folderQuestions]);
 
   // Get question details for spaced repetition panel
   const getQuestionDetails = useCallback((questionId: number) => {
@@ -187,25 +228,47 @@ const SQLQuestions = () => {
                </div>
             </div>
              <div className="flex items-center gap-2">
-               <Button variant="outline" size="sm" className="gap-2 hidden md:flex">
-                 <Menu className="h-4 w-4" />
-                 SQL Menu
-               </Button>
                <Button variant="outline" size="sm" className="gap-2">
                  <TrendingUp className="h-4 w-4" />
                  <span className="hidden sm:inline">My progress</span>
                </Button>
+               {user && (
+                 <Button
+                   variant="default"
+                   size="sm"
+                   className="gap-2"
+                   onClick={() => setViewMode("folders")}
+                 >
+                   <FolderPlus className="h-4 w-4" />
+                   <span className="hidden sm:inline">Create Folder</span>
+                 </Button>
+               )}
             </div>
           </div>
          </header>
 
          <main className="p-4 md:p-6 space-y-6">
            {/* Tabs */}
-           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+           <Tabs
+             value={viewMode}
+             onValueChange={(v) => {
+               setViewMode(v as ViewMode);
+               if (v !== "folders") {
+                 setSelectedFolderId(null);
+               }
+             }}
+           >
              <TabsList>
                <TabsTrigger value="all">All SQL Questions</TabsTrigger>
-               <TabsTrigger value="solved">Solved Questions</TabsTrigger>
-               <TabsTrigger value="revision">Questions for Revision</TabsTrigger>
+               <TabsTrigger value="solved">Solved</TabsTrigger>
+               <TabsTrigger value="revision" className="gap-1.5">
+                 <BookmarkCheck className="h-3.5 w-3.5" />
+                 Revision
+               </TabsTrigger>
+               <TabsTrigger value="folders" className="gap-1.5">
+                 <Folder className="h-3.5 w-3.5" />
+                 Folders
+               </TabsTrigger>
              </TabsList>
            </Tabs>
 
@@ -337,8 +400,21 @@ const SQLQuestions = () => {
              </motion.div>
            </div>
  
+           {/* Folders View */}
+           {viewMode === "folders" && user && (
+             <FolderManager
+               folders={folders}
+               selectedFolderId={selectedFolderId}
+               onSelectFolder={setSelectedFolderId}
+               onCreateFolder={createFolder}
+               onUpdateFolder={updateFolder}
+               onDeleteFolder={deleteFolder}
+               isLoading={foldersLoading}
+             />
+           )}
+ 
           {/* Spaced Repetition Panel */}
-          {user && spacedRepetitionStats.total > 0 && (
+          {user && spacedRepetitionStats.total > 0 && viewMode !== "folders" && (
             <SpacedRepetitionPanel
               dueQuestions={dueQuestions}
               stats={spacedRepetitionStats}
@@ -429,12 +505,13 @@ const SQLQuestions = () => {
                        <TableHead className="w-24">Difficulty</TableHead>
                        <TableHead className="w-16 text-center">Solved</TableHead>
                        <TableHead className="w-16 text-center">Revision</TableHead>
+                       <TableHead className="w-12 text-center">Folder</TableHead>
                      </TableRow>
                    </TableHeader>
                    <TableBody>
                      {filteredQuestions.length === 0 ? (
                        <TableRow>
-                         <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                         <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                            No questions found matching your filters.
                          </TableCell>
                        </TableRow>
@@ -455,6 +532,10 @@ const SQLQuestions = () => {
                              )
                            }
                            getDifficultyStyles={getDifficultyStyles}
+                           folders={folders}
+                           isInFolder={isInFolder}
+                           onAddToFolder={addToFolder}
+                           onRemoveFromFolder={removeFromFolder}
                          />
                        ))
                      )}
@@ -503,6 +584,10 @@ const SQLQuestions = () => {
    onToggleRevision: () => void;
    onToggleAnswer: () => void;
    getDifficultyStyles: (difficulty: string) => string;
+   folders: import("@/hooks/useFolders").Folder[];
+   isInFolder: (folderId: string, questionId: number, questionSource: string) => boolean;
+   onAddToFolder: (folderId: string, questionId: number, questionSource: string) => Promise<boolean>;
+   onRemoveFromFolder: (folderId: string, questionId: number, questionSource: string) => Promise<boolean>;
  }
  
  const SQLQuestionRow = ({
@@ -515,6 +600,10 @@ const SQLQuestions = () => {
    onToggleRevision,
    onToggleAnswer,
    getDifficultyStyles,
+   folders,
+   isInFolder,
+   onAddToFolder,
+   onRemoveFromFolder,
  }: SQLQuestionRowProps) => {
    return (
      <>
@@ -639,6 +728,17 @@ const SQLQuestions = () => {
              </TooltipContent>
            </Tooltip>
          </TableCell>
+
+         <TableCell className="text-center">
+           <AddToFolderButton
+             folders={folders}
+             questionId={question.id}
+             questionSource="sql"
+             isInFolder={isInFolder}
+             onAddToFolder={onAddToFolder}
+             onRemoveFromFolder={onRemoveFromFolder}
+           />
+         </TableCell>
        </motion.tr>
  
        {/* Expandable Answer Row */}
@@ -650,7 +750,7 @@ const SQLQuestions = () => {
              exit={{ opacity: 0 }}
              transition={{ duration: 0.15 }}
            >
-             <TableCell colSpan={6} className="p-0 bg-muted/20">
+             <TableCell colSpan={7} className="p-0 bg-muted/20">
                <AnswerPanel answer={question.answer} />
              </TableCell>
            </motion.tr>
