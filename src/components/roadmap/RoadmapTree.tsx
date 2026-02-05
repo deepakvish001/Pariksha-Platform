@@ -15,6 +15,8 @@ import {
   BarChart3,
   Flame,
   Award,
+  ChevronUp,
+  Zap,
 } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -107,6 +109,32 @@ const buildProgressPath = (
   return path;
 };
 
+// LocalStorage key for collapsed sections
+const getCollapsedSectionsKey = (treeId: string) => `roadmap-collapsed-sections-${treeId}`;
+
+// Load collapsed sections from localStorage
+const loadCollapsedSections = (treeId: string): Set<string> => {
+  try {
+    const stored = localStorage.getItem(getCollapsedSectionsKey(treeId));
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return new Set(parsed);
+    }
+  } catch (e) {
+    console.error("Failed to load collapsed sections:", e);
+  }
+  return new Set();
+};
+
+// Save collapsed sections to localStorage
+const saveCollapsedSections = (treeId: string, sections: Set<string>) => {
+  try {
+    localStorage.setItem(getCollapsedSectionsKey(treeId), JSON.stringify([...sections]));
+  } catch (e) {
+    console.error("Failed to save collapsed sections:", e);
+  }
+};
+
 const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   tree,
   progress,
@@ -115,21 +143,22 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   userName = "Learner",
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => loadCollapsedSections(tree.id));
   const [selectedNode, setSelectedNode] = useState<NodeType | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const treeRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const isMobile = useIsMobile();
-  const { celebrateTopic, trackProgress, resetCelebrations } = useRoadmapConfetti();
+  const { celebrateTopic, celebrateSection, trackProgress, resetCelebrations } = useRoadmapConfetti();
   const prevProgressRef = useRef<Record<string, { completed: boolean; inProgress: boolean }>>({});
+  const prevSectionStatsRef = useRef<Record<string, number>>({});
   
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Toggle section collapse
+  // Toggle section collapse with localStorage persistence
   const toggleSection = useCallback((sectionId: string) => {
     setCollapsedSections(prev => {
       const next = new Set(prev);
@@ -138,18 +167,39 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
       } else {
         next.add(sectionId);
       }
+      saveCollapsedSections(tree.id, next);
       return next;
     });
-  }, []);
+  }, [tree.id]);
+
+  // Load collapsed sections when tree changes
+  useEffect(() => {
+    setCollapsedSections(loadCollapsedSections(tree.id));
+  }, [tree.id]);
 
   // Auto-expand first level on mount and reset confetti celebrations
   useEffect(() => {
     const firstLevelIds = tree.nodes.map(n => n.id);
     setExpandedNodes(new Set(firstLevelIds));
     resetCelebrations();
+    // Initialize section stats
+    const initialStats: Record<string, number> = {};
+    tree.nodes.forEach(node => {
+      const nodeList = flattenNodes([node]);
+      const completed = nodeList.filter(n => progress[n.id]?.completed).length;
+      initialStats[node.id] = Math.round((completed / nodeList.length) * 100) || 0;
+    });
+    prevSectionStatsRef.current = initialStats;
   }, [tree.id, resetCelebrations]);
 
-  // Track progress changes and trigger confetti
+  // Calculate section percentage
+  const getSectionPercentage = useCallback((node: NodeType): number => {
+    const nodeList = flattenNodes([node]);
+    const completed = nodeList.filter(n => progress[n.id]?.completed).length;
+    return Math.round((completed / nodeList.length) * 100) || 0;
+  }, [progress]);
+
+  // Track progress changes and trigger confetti (including section milestones)
   useEffect(() => {
     const prevProgress = prevProgressRef.current;
     const allNodesList = flattenNodes(tree.nodes);
@@ -165,12 +215,37 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
       }
     }
 
-    // Calculate current percentage
+    // Calculate current percentage for overall roadmap
     const completedCount = allNodesList.filter(n => progress[n.id]?.completed).length;
     const currentPercentage = Math.round((completedCount / allNodesList.length) * 100) || 0;
 
-    // If a node was completed, trigger celebrations
+    // Check section milestones (25%, 50%, 75%, 100%)
+    const sectionMilestones = [25, 50, 75, 100];
+    let celebratedSectionMilestone = false;
+
     if (wasCompleted) {
+      for (const sectionNode of tree.nodes) {
+        const prevSectionPercentage = prevSectionStatsRef.current[sectionNode.id] || 0;
+        const newSectionPercentage = getSectionPercentage(sectionNode);
+        
+        for (const milestone of sectionMilestones) {
+          if (prevSectionPercentage < milestone && newSectionPercentage >= milestone) {
+            // Celebrate section milestone!
+            celebrateSection(milestone);
+            celebratedSectionMilestone = true;
+            break;
+          }
+        }
+        
+        // Update section stats
+        prevSectionStatsRef.current[sectionNode.id] = newSectionPercentage;
+        
+        if (celebratedSectionMilestone) break;
+      }
+    }
+
+    // If a node was completed but no section milestone was hit, check overall or individual
+    if (wasCompleted && !celebratedSectionMilestone) {
       const celebrated = trackProgress(currentPercentage);
       if (!celebrated) {
         // Small celebration for individual topic
@@ -180,7 +255,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
 
     // Update ref
     prevProgressRef.current = progress;
-  }, [progress, tree.nodes, trackProgress, celebrateTopic]);
+  }, [progress, tree.nodes, trackProgress, celebrateTopic, celebrateSection, getSectionPercentage]);
 
   // Calculate all flattened nodes
   const allNodes = useMemo(() => flattenNodes(tree.nodes), [tree.nodes]);
@@ -714,6 +789,29 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           </div>
         )}
       </div>
+
+      {/* Floating Jump to Next Button */}
+      {nextRecommendedId && stats.percentage < 100 && (
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          onClick={() => handleMiniMapNodeClick(nextRecommendedId)}
+          className={cn(
+            "fixed bottom-6 right-6 z-50",
+            "flex items-center gap-2 px-4 py-3 rounded-full",
+            "bg-primary text-primary-foreground shadow-lg",
+            "hover:shadow-xl hover:scale-105 transition-all duration-200",
+            "border border-primary-foreground/20"
+          )}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Zap className="h-5 w-5" />
+          <span className="font-medium text-sm">Jump to Next</span>
+          <ChevronUp className="h-4 w-4 animate-bounce" />
+        </motion.button>
+      )}
     </TooltipProvider>
   );
 };
