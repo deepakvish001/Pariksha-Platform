@@ -8,6 +8,7 @@ export interface DSAQuestion {
   difficulty: Difficulty;
   topicId: string;
   answer: string;
+  options?: { text: string; isCorrect: boolean }[];
 }
 
 export interface DSATopic {
@@ -76,6 +77,12 @@ def climbStairs(n: int) -> int:
 
 ### Key Insight
 This is essentially the Fibonacci sequence! ways(n) = ways(n-1) + ways(n-2)`,
+    options: [
+      { text: "O(n) time, O(1) space using Fibonacci pattern", isCorrect: true },
+      { text: "O(2^n) recursive without memoization", isCorrect: false },
+      { text: "O(n²) dynamic programming", isCorrect: false },
+      { text: "O(n log n) divide and conquer", isCorrect: false },
+    ],
   },
   {
     id: 2,
@@ -110,6 +117,12 @@ def coinChange(coins: list[int], amount: int) -> int:
 
 ### Recurrence Relation
 \`dp[i] = min(dp[i], dp[i - coin] + 1)\` for each coin`,
+    options: [
+      { text: "Bottom-Up DP with O(amount × coins) time", isCorrect: true },
+      { text: "Greedy approach always works", isCorrect: false },
+      { text: "BFS on state space", isCorrect: false },
+      { text: "Sorting coins first solves it", isCorrect: false },
+    ],
   },
   {
     id: 3,
@@ -155,6 +168,12 @@ def lengthOfLIS(nums: list[int]) -> int:
 ### Time & Space Complexity
 - **O(n²) DP**: Time O(n²), Space O(n)
 - **Binary Search**: Time O(n log n), Space O(n)`,
+    options: [
+      { text: "O(n log n) using binary search with patience sorting", isCorrect: true },
+      { text: "O(n) with two pointers", isCorrect: false },
+      { text: "O(n²) is the best possible", isCorrect: false },
+      { text: "Sliding window technique", isCorrect: false },
+    ],
   },
   {
     id: 4,
@@ -196,6 +215,12 @@ At each house, choose to:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1)`,
+    options: [
+      { text: "dp[i] = max(dp[i-1], dp[i-2] + nums[i])", isCorrect: true },
+      { text: "Always rob alternate houses", isCorrect: false },
+      { text: "Rob houses with maximum value first", isCorrect: false },
+      { text: "Use DFS to explore all paths", isCorrect: false },
+    ],
   },
   {
     id: 5,
@@ -243,6 +268,12 @@ def uniquePaths(m: int, n: int) -> int:
 ### Time & Space Complexity
 - **DP**: Time O(m×n), Space O(n)
 - **Math**: Time O(min(m,n)), Space O(1)`,
+    options: [
+      { text: "C(m+n-2, m-1) using combinatorics", isCorrect: true },
+      { text: "m × n always", isCorrect: false },
+      { text: "2^(m+n)", isCorrect: false },
+      { text: "m + n - 2", isCorrect: false },
+    ],
   },
   {
     id: 6,
@@ -280,6 +311,12 @@ else:
 ### Time & Space Complexity
 - **Time**: O(m × n)
 - **Space**: O(m × n), can be optimized to O(min(m, n))`,
+    options: [
+      { text: "2D DP comparing characters from both strings", isCorrect: true },
+      { text: "Find longest common substring first", isCorrect: false },
+      { text: "Use hash map to store character positions", isCorrect: false },
+      { text: "Binary search on sequence length", isCorrect: false },
+    ],
   },
   {
     id: 7,
@@ -315,6 +352,12 @@ def wordBreak(s: str, wordDict: list[str]) -> bool:
 ### Time & Space Complexity
 - **Time**: O(n² × m) where m is average word length
 - **Space**: O(n)`,
+    options: [
+      { text: "DP checking if each prefix can be segmented", isCorrect: true },
+      { text: "Greedy longest word first", isCorrect: false },
+      { text: "Trie with DFS only", isCorrect: false },
+      { text: "KMP pattern matching", isCorrect: false },
+    ],
   },
   {
     id: 8,
@@ -356,6 +399,12 @@ def maxSumTwoNoOverlap(nums: list[int], firstLen: int, secondLen: int) -> int:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(n)`,
+    options: [
+      { text: "Prefix sum with tracking max subarray before current", isCorrect: true },
+      { text: "Kadane's algorithm twice", isCorrect: false },
+      { text: "Sliding window of fixed size", isCorrect: false },
+      { text: "Binary search on sum values", isCorrect: false },
+    ],
   },
   {
     id: 9,
@@ -394,6 +443,12 @@ def longestIncreasingPath(matrix: list[list[int]]) -> int:
 ### Time & Space Complexity
 - **Time**: O(m × n)
 - **Space**: O(m × n)`,
+    options: [
+      { text: "DFS with memoization caching each cell's result", isCorrect: true },
+      { text: "BFS from all cells simultaneously", isCorrect: false },
+      { text: "Dynamic programming left-to-right", isCorrect: false },
+      { text: "Dijkstra's algorithm", isCorrect: false },
+    ],
   },
   {
     id: 10,
@@ -433,6 +488,12 @@ def minDistance(word1: str, word2: str) -> int:
 ### Time & Space Complexity
 - **Time**: O(m × n)
 - **Space**: O(m × n)`,
+    options: [
+      { text: "2D DP with insert, delete, replace operations", isCorrect: true },
+      { text: "Longest common substring approach", isCorrect: false },
+      { text: "Greedy character matching", isCorrect: false },
+      { text: "Recursive without memoization is optimal", isCorrect: false },
+    ],
   },
 
   // Arrays Questions
@@ -462,6 +523,12 @@ def twoSum(nums: list[int], target: int) -> list[int]:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(n)`,
+    options: [
+      { text: "Hash map storing complement for O(n) time", isCorrect: true },
+      { text: "Sort array first then two pointers", isCorrect: false },
+      { text: "Binary search for each element", isCorrect: false },
+      { text: "Brute force O(n²) is optimal", isCorrect: false },
+    ],
   },
   {
     id: 12,
@@ -488,6 +555,12 @@ def maxProfit(prices: list[int]) -> int:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1)`,
+    options: [
+      { text: "Track minimum price and maximum profit in single pass", isCorrect: true },
+      { text: "Find max and min prices first", isCorrect: false },
+      { text: "Compare every pair of days", isCorrect: false },
+      { text: "Use divide and conquer", isCorrect: false },
+    ],
   },
   {
     id: 13,
@@ -518,6 +591,12 @@ At each position, decide whether to:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1)`,
+    options: [
+      { text: "Kadane's Algorithm - extend or start new", isCorrect: true },
+      { text: "Prefix sum with hash map", isCorrect: false },
+      { text: "Sliding window approach", isCorrect: false },
+      { text: "Sort and sum largest elements", isCorrect: false },
+    ],
   },
   {
     id: 14,
@@ -552,6 +631,12 @@ def productExceptSelf(nums: list[int]) -> list[int]:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1) excluding output array`,
+    options: [
+      { text: "Prefix and suffix products in two passes", isCorrect: true },
+      { text: "Calculate total product and divide", isCorrect: false },
+      { text: "Use logarithms to avoid division", isCorrect: false },
+      { text: "Nested loops are required", isCorrect: false },
+    ],
   },
   {
     id: 15,
@@ -584,6 +669,12 @@ def maxArea(height: list[int]) -> int:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1)`,
+    options: [
+      { text: "Two pointers moving inward based on shorter line", isCorrect: true },
+      { text: "Check all pairs of lines", isCorrect: false },
+      { text: "Monotonic stack approach", isCorrect: false },
+      { text: "Binary search on water level", isCorrect: false },
+    ],
   },
   {
     id: 16,
@@ -628,6 +719,12 @@ def threeSum(nums: list[int]) -> list[list[int]]:
 ### Time & Space Complexity
 - **Time**: O(n²)
 - **Space**: O(1) or O(n) depending on sort`,
+    options: [
+      { text: "Sort + fix one element + two pointers for O(n²)", isCorrect: true },
+      { text: "Three nested loops are required", isCorrect: false },
+      { text: "Hash map gives O(n) solution", isCorrect: false },
+      { text: "Binary search after sorting", isCorrect: false },
+    ],
   },
   {
     id: 17,
@@ -656,6 +753,12 @@ def merge(intervals: list[list[int]]) -> list[list[int]]:
 ### Time & Space Complexity
 - **Time**: O(n log n)
 - **Space**: O(n)`,
+    options: [
+      { text: "Sort by start time, then merge overlapping", isCorrect: true },
+      { text: "Use interval tree for O(n) solution", isCorrect: false },
+      { text: "Check each interval against all others", isCorrect: false },
+      { text: "Sort by end time", isCorrect: false },
+    ],
   },
   {
     id: 18,
@@ -686,6 +789,12 @@ def rotate(nums: list[int], k: int) -> None:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1)`,
+    options: [
+      { text: "Reverse entire array, then reverse two parts", isCorrect: true },
+      { text: "Copy to new array", isCorrect: false },
+      { text: "Shift elements one by one k times", isCorrect: false },
+      { text: "Use circular queue", isCorrect: false },
+    ],
   },
   {
     id: 19,
@@ -718,6 +827,12 @@ def firstMissingPositive(nums: list[int]) -> int:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1)`,
+    options: [
+      { text: "Cyclic sort - place each number at index (num-1)", isCorrect: true },
+      { text: "Sort and scan for O(n log n)", isCorrect: false },
+      { text: "Hash set for O(n) space", isCorrect: false },
+      { text: "Binary search after sorting", isCorrect: false },
+    ],
   },
   {
     id: 20,
@@ -758,6 +873,12 @@ def trap(height: list[int]) -> int:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1)`,
+    options: [
+      { text: "Two pointers tracking left_max and right_max", isCorrect: true },
+      { text: "Monotonic stack only", isCorrect: false },
+      { text: "BFS from each cell", isCorrect: false },
+      { text: "DP with O(n) extra space required", isCorrect: false },
+    ],
   },
 
   // Trees Questions
@@ -805,6 +926,12 @@ def maxDepth(root: TreeNode) -> int:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(h) where h is height`,
+    options: [
+      { text: "1 + max(left_depth, right_depth) recursively", isCorrect: true },
+      { text: "Count nodes and take log", isCorrect: false },
+      { text: "BFS always faster than DFS", isCorrect: false },
+      { text: "Iterative preorder only", isCorrect: false },
+    ],
   },
   {
     id: 22,
@@ -831,6 +958,12 @@ def invertTree(root: TreeNode) -> TreeNode:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(h)`,
+    options: [
+      { text: "Swap left and right children recursively", isCorrect: true },
+      { text: "Rebuild tree with reversed values", isCorrect: false },
+      { text: "Level order with reversal", isCorrect: false },
+      { text: "Modify node values only", isCorrect: false },
+    ],
   },
   {
     id: 23,
@@ -860,6 +993,12 @@ def isValidBST(root: TreeNode) -> bool:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(h)`,
+    options: [
+      { text: "Recursion with min/max bounds for each node", isCorrect: true },
+      { text: "Check only immediate children", isCorrect: false },
+      { text: "Compare with parent only", isCorrect: false },
+      { text: "BFS level validation", isCorrect: false },
+    ],
   },
   {
     id: 24,
@@ -888,6 +1027,12 @@ def lowestCommonAncestor(root: TreeNode, p: TreeNode, q: TreeNode) -> TreeNode:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(h)`,
+    options: [
+      { text: "Recursively find in left/right subtrees", isCorrect: true },
+      { text: "Store paths to both nodes and compare", isCorrect: false },
+      { text: "BFS from root", isCorrect: false },
+      { text: "Use parent pointers only", isCorrect: false },
+    ],
   },
   {
     id: 25,
@@ -926,6 +1071,12 @@ def levelOrder(root: TreeNode) -> list[list[int]]:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(n)`,
+    options: [
+      { text: "BFS with queue processing level by level", isCorrect: true },
+      { text: "DFS preorder is more efficient", isCorrect: false },
+      { text: "Recursion without tracking level", isCorrect: false },
+      { text: "Two stacks approach", isCorrect: false },
+    ],
   },
 
   // Graphs Questions
@@ -968,6 +1119,12 @@ def numIslands(grid: list[list[str]]) -> int:
 ### Time & Space Complexity
 - **Time**: O(m × n)
 - **Space**: O(m × n)`,
+    options: [
+      { text: "DFS/BFS from each unvisited land cell", isCorrect: true },
+      { text: "Union-Find is always faster", isCorrect: false },
+      { text: "Count cells with value '1'", isCorrect: false },
+      { text: "Scanning rows only", isCorrect: false },
+    ],
   },
   {
     id: 27,
@@ -1004,6 +1161,12 @@ def cloneGraph(node: Node) -> Node:
 ### Time & Space Complexity
 - **Time**: O(V + E)
 - **Space**: O(V)`,
+    options: [
+      { text: "DFS/BFS with HashMap to track cloned nodes", isCorrect: true },
+      { text: "Deep copy without tracking", isCorrect: false },
+      { text: "Only clone values not edges", isCorrect: false },
+      { text: "Use adjacency matrix", isCorrect: false },
+    ],
   },
   {
     id: 28,
@@ -1043,6 +1206,12 @@ def canFinish(numCourses: int, prerequisites: list[list[int]]) -> bool:
 ### Time & Space Complexity
 - **Time**: O(V + E)
 - **Space**: O(V + E)`,
+    options: [
+      { text: "Topological sort / cycle detection using DFS", isCorrect: true },
+      { text: "BFS from any course", isCorrect: false },
+      { text: "Sort courses by prerequisites", isCorrect: false },
+      { text: "Greedy course selection", isCorrect: false },
+    ],
   },
   {
     id: 29,
@@ -1083,6 +1252,12 @@ def ladderLength(beginWord: str, endWord: str, wordList: list[str]) -> int:
 ### Time & Space Complexity
 - **Time**: O(M² × N) where M is word length, N is wordList size
 - **Space**: O(M × N)`,
+    options: [
+      { text: "BFS treating words as graph nodes", isCorrect: true },
+      { text: "DFS is more efficient", isCorrect: false },
+      { text: "Edit distance DP", isCorrect: false },
+      { text: "Trie with backtracking", isCorrect: false },
+    ],
   },
   {
     id: 30,
@@ -1120,6 +1295,12 @@ def dijkstra(graph: dict, source: int) -> dict:
 ### Time & Space Complexity
 - **Time**: O((V + E) log V)
 - **Space**: O(V)`,
+    options: [
+      { text: "Priority queue with distance updates", isCorrect: true },
+      { text: "BFS works for weighted graphs", isCorrect: false },
+      { text: "DFS with backtracking", isCorrect: false },
+      { text: "Bellman-Ford is always faster", isCorrect: false },
+    ],
   },
 
   // Binary Search Questions
@@ -1153,6 +1334,12 @@ def search(nums: list[int], target: int) -> int:
 ### Time & Space Complexity
 - **Time**: O(log n)
 - **Space**: O(1)`,
+    options: [
+      { text: "O(log n) by halving search space each step", isCorrect: true },
+      { text: "O(n) linear scan is simpler", isCorrect: false },
+      { text: "O(1) constant time", isCorrect: false },
+      { text: "O(n log n) with preprocessing", isCorrect: false },
+    ],
   },
   {
     id: 32,
@@ -1193,6 +1380,12 @@ def search(nums: list[int], target: int) -> int:
 ### Time & Space Complexity
 - **Time**: O(log n)
 - **Space**: O(1)`,
+    options: [
+      { text: "Modified binary search checking which half is sorted", isCorrect: true },
+      { text: "Find rotation point first", isCorrect: false },
+      { text: "Linear search is required", isCorrect: false },
+      { text: "Two binary searches always", isCorrect: false },
+    ],
   },
   {
     id: 33,
@@ -1222,6 +1415,12 @@ def findMin(nums: list[int]) -> int:
 ### Time & Space Complexity
 - **Time**: O(log n)
 - **Space**: O(1)`,
+    options: [
+      { text: "Binary search comparing mid with right boundary", isCorrect: true },
+      { text: "Linear scan for minimum", isCorrect: false },
+      { text: "Compare mid with left boundary", isCorrect: false },
+      { text: "Sort the array first", isCorrect: false },
+    ],
   },
   {
     id: 34,
@@ -1265,6 +1464,12 @@ def findMedianSortedArrays(nums1: list[int], nums2: list[int]) -> float:
 ### Time & Space Complexity
 - **Time**: O(log(min(m, n)))
 - **Space**: O(1)`,
+    options: [
+      { text: "Binary search on partition of smaller array", isCorrect: true },
+      { text: "Merge arrays then find median", isCorrect: false },
+      { text: "Two pointers from both ends", isCorrect: false },
+      { text: "Binary search on median value", isCorrect: false },
+    ],
   },
 
   // Stack & Queue Questions
@@ -1296,6 +1501,12 @@ def isValid(s: str) -> bool:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(n)`,
+    options: [
+      { text: "Stack matching opening/closing brackets", isCorrect: true },
+      { text: "Counter for each bracket type", isCorrect: false },
+      { text: "Recursion for nested brackets", isCorrect: false },
+      { text: "Regular expression matching", isCorrect: false },
+    ],
   },
   {
     id: 36,
@@ -1332,6 +1543,12 @@ class MinStack:
 ### Time & Space Complexity
 - **All operations**: O(1)
 - **Space**: O(n)`,
+    options: [
+      { text: "Two stacks: one for values, one for minimums", isCorrect: true },
+      { text: "Sort on each push", isCorrect: false },
+      { text: "Single stack with linear getMin", isCorrect: false },
+      { text: "Heap for minimum tracking", isCorrect: false },
+    ],
   },
   {
     id: 37,
@@ -1361,6 +1578,12 @@ def dailyTemperatures(temperatures: list[int]) -> list[int]:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(n)`,
+    options: [
+      { text: "Monotonic decreasing stack storing indices", isCorrect: true },
+      { text: "Compare each day with all future days", isCorrect: false },
+      { text: "Use heap for next greater", isCorrect: false },
+      { text: "DP with O(n²) is optimal", isCorrect: false },
+    ],
   },
   {
     id: 38,
@@ -1391,6 +1614,12 @@ def largestRectangleArea(heights: list[int]) -> int:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(n)`,
+    options: [
+      { text: "Monotonic stack to find left/right boundaries", isCorrect: true },
+      { text: "Divide and conquer on minimum height", isCorrect: false },
+      { text: "Try all possible rectangles", isCorrect: false },
+      { text: "DP on heights", isCorrect: false },
+    ],
   },
 
   // Linked Lists Questions
@@ -1435,6 +1664,12 @@ def reverseList(head: ListNode) -> ListNode:
 ### Time & Space Complexity
 - **Iterative**: O(n) time, O(1) space
 - **Recursive**: O(n) time, O(n) space`,
+    options: [
+      { text: "Iterative with prev, curr, next pointers", isCorrect: true },
+      { text: "Use stack to reverse", isCorrect: false },
+      { text: "Create new list with reversed values", isCorrect: false },
+      { text: "Swap node values pairwise", isCorrect: false },
+    ],
   },
   {
     id: 40,
@@ -1467,6 +1702,12 @@ def mergeTwoLists(l1: ListNode, l2: ListNode) -> ListNode:
 ### Time & Space Complexity
 - **Time**: O(n + m)
 - **Space**: O(1)`,
+    options: [
+      { text: "Compare heads, link smaller, advance pointer", isCorrect: true },
+      { text: "Concatenate then sort", isCorrect: false },
+      { text: "Use extra array", isCorrect: false },
+      { text: "Recursion with O(n) space", isCorrect: false },
+    ],
   },
   {
     id: 41,
@@ -1497,6 +1738,12 @@ def hasCycle(head: ListNode) -> bool:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1)`,
+    options: [
+      { text: "Floyd's Tortoise and Hare (slow/fast pointers)", isCorrect: true },
+      { text: "Store visited nodes in hash set", isCorrect: false },
+      { text: "Mark visited nodes", isCorrect: false },
+      { text: "Count nodes exceeding list length", isCorrect: false },
+    ],
   },
   {
     id: 42,
@@ -1558,6 +1805,12 @@ class LRUCache:
 ### Time & Space Complexity
 - **All operations**: O(1)
 - **Space**: O(capacity)`,
+    options: [
+      { text: "HashMap + Doubly Linked List for O(1) ops", isCorrect: true },
+      { text: "Array with linear search", isCorrect: false },
+      { text: "Min-heap by access time", isCorrect: false },
+      { text: "Single linked list only", isCorrect: false },
+    ],
   },
 
   // Heap Questions
@@ -1624,6 +1877,12 @@ def findKthLargest(nums: list[int], k: int) -> int:
 ### Time & Space Complexity
 - **Heap**: O(n log k)
 - **QuickSelect**: O(n) average, O(n²) worst`,
+    options: [
+      { text: "Min-heap of size k or QuickSelect", isCorrect: true },
+      { text: "Sort entire array", isCorrect: false },
+      { text: "Max-heap of all elements", isCorrect: false },
+      { text: "Counting sort always", isCorrect: false },
+    ],
   },
   {
     id: 44,
@@ -1660,6 +1919,12 @@ def mergeKLists(lists: list[ListNode]) -> ListNode:
 ### Time & Space Complexity
 - **Time**: O(N log k) where N is total nodes
 - **Space**: O(k)`,
+    options: [
+      { text: "Min-heap with k elements for O(N log k)", isCorrect: true },
+      { text: "Merge two at a time", isCorrect: false },
+      { text: "Concatenate all then sort", isCorrect: false },
+      { text: "Compare all heads each time", isCorrect: false },
+    ],
   },
 
   // Backtracking Questions
@@ -1692,6 +1957,12 @@ def subsets(nums: list[int]) -> list[list[int]]:
 ### Time & Space Complexity
 - **Time**: O(n × 2^n)
 - **Space**: O(n)`,
+    options: [
+      { text: "Backtracking: include/exclude each element", isCorrect: true },
+      { text: "Iterative bit manipulation", isCorrect: false },
+      { text: "BFS on decision tree", isCorrect: false },
+      { text: "DP approach", isCorrect: false },
+    ],
   },
   {
     id: 46,
@@ -1728,6 +1999,12 @@ def permute(nums: list[int]) -> list[list[int]]:
 ### Time & Space Complexity
 - **Time**: O(n × n!)
 - **Space**: O(n)`,
+    options: [
+      { text: "Backtracking with used array to track elements", isCorrect: true },
+      { text: "Generate all orderings with DP", isCorrect: false },
+      { text: "Heap's algorithm only", isCorrect: false },
+      { text: "Iterative swapping without recursion", isCorrect: false },
+    ],
   },
   {
     id: 47,
@@ -1775,6 +2052,12 @@ def solveNQueens(n: int) -> list[list[str]]:
 ### Time & Space Complexity
 - **Time**: O(n!)
 - **Space**: O(n²)`,
+    options: [
+      { text: "Backtracking with diagonal conflict tracking", isCorrect: true },
+      { text: "Try all n² positions for each queen", isCorrect: false },
+      { text: "Greedy placement", isCorrect: false },
+      { text: "DP on board states", isCorrect: false },
+    ],
   },
 
   // Greedy Questions
@@ -1803,6 +2086,12 @@ def canJump(nums: list[int]) -> bool:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1)`,
+    options: [
+      { text: "Track maximum reachable index greedily", isCorrect: true },
+      { text: "BFS on all possible jumps", isCorrect: false },
+      { text: "DP with O(n²) time", isCorrect: false },
+      { text: "Backtracking all paths", isCorrect: false },
+    ],
   },
   {
     id: 49,
@@ -1834,6 +2123,12 @@ def canCompleteCircuit(gas: list[int], cost: list[int]) -> int:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1)`,
+    options: [
+      { text: "Greedy: reset start when tank goes negative", isCorrect: true },
+      { text: "Try starting from each station", isCorrect: false },
+      { text: "Sort stations by gas-cost", isCorrect: false },
+      { text: "DFS simulation", isCorrect: false },
+    ],
   },
   {
     id: 50,
@@ -1862,6 +2157,12 @@ def leastInterval(tasks: list[str], n: int) -> int:
 ### Time & Space Complexity
 - **Time**: O(n)
 - **Space**: O(1) (26 letters max)`,
+    options: [
+      { text: "(maxFreq-1) × (n+1) + maxCount formula", isCorrect: true },
+      { text: "Priority queue simulation only", isCorrect: false },
+      { text: "Greedy always picks most frequent", isCorrect: false },
+      { text: "DP on remaining tasks", isCorrect: false },
+    ],
   },
 ];
 

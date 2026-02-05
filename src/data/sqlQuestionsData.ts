@@ -9,6 +9,7 @@
    categoryId: string;
    type: "conceptual" | "query" | "scenario";
    answer: string;
+  options?: { text: string; isCorrect: boolean }[];
  }
  
  export interface SQLCategory {
@@ -64,6 +65,12 @@
  WHERE status = 'active'
  ORDER BY created_at DESC;
  \`\`\``,
+    options: [
+      { text: "Standard language for relational databases (CRUD)", isCorrect: true },
+      { text: "A programming language for web development", isCorrect: false },
+      { text: "A NoSQL query language", isCorrect: false },
+      { text: "A file format for data storage", isCorrect: false },
+    ],
    },
    {
      id: 2,
@@ -86,6 +93,12 @@
  - **SQL Server**: Microsoft's enterprise solution
  - **SQLite**: Lightweight, file-based
  - **Oracle**: Enterprise-grade, complex licensing`,
+    options: [
+      { text: "SQL is language, MySQL is a database system", isCorrect: true },
+      { text: "They are the same thing", isCorrect: false },
+      { text: "MySQL is newer version of SQL", isCorrect: false },
+      { text: "SQL is for web, MySQL for desktop", isCorrect: false },
+    ],
    },
    {
      id: 3,
@@ -134,6 +147,12 @@
  ROLLBACK;
  SAVEPOINT checkpoint1;
  \`\`\``,
+    options: [
+      { text: "DDL, DML, DCL, TCL, and DQL categories", isCorrect: true },
+      { text: "Only SELECT, INSERT, UPDATE, DELETE", isCorrect: false },
+      { text: "CREATE, READ, UPDATE, DELETE only", isCorrect: false },
+      { text: "CONNECT, QUERY, MODIFY", isCorrect: false },
+    ],
    },
    {
      id: 4,
@@ -171,6 +190,12 @@
  - \`COUNT(*)\` counts all rows
  - \`COUNT(column)\` excludes NULL values
  - \`SUM\`, \`AVG\` ignore NULL values`,
+    options: [
+      { text: "Represents missing/unknown value, use IS NULL to check", isCorrect: true },
+      { text: "Same as zero or empty string", isCorrect: false },
+      { text: "An error state in the database", isCorrect: false },
+      { text: "A string value 'NULL'", isCorrect: false },
+    ],
    },
    {
      id: 5,
@@ -215,6 +240,12 @@
          ON UPDATE SET NULL     -- Set NULL if user ID changes
  );
  \`\`\``,
+    options: [
+      { text: "PK uniquely identifies rows; FK links tables", isCorrect: true },
+      { text: "PK can be NULL, FK cannot", isCorrect: false },
+      { text: "They are the same concept", isCorrect: false },
+      { text: "FK must be unique in the table", isCorrect: false },
+    ],
    },
    {
      id: 6,
@@ -260,6 +291,12 @@
  orders: order_id, customer_id
  customers: customer_id, customer_name
  \`\`\``,
+    options: [
+      { text: "Eliminates redundancy through 1NF, 2NF, 3NF forms", isCorrect: true },
+      { text: "Makes queries run faster", isCorrect: false },
+      { text: "Adds more indexes", isCorrect: false },
+      { text: "Combines all tables into one", isCorrect: false },
+    ],
    },
    {
      id: 7,
@@ -296,6 +333,12 @@
  | Write Speed | Faster | Slower |
  | Storage | Less | More |
  | Data Integrity | Higher | Requires maintenance |`,
+    options: [
+      { text: "Adds controlled redundancy to improve read performance", isCorrect: true },
+      { text: "Same as normalization", isCorrect: false },
+      { text: "Removes all indexes", isCorrect: false },
+      { text: "Splits tables into smaller parts", isCorrect: false },
+    ],
    },
    {
      id: 8,
@@ -339,6 +382,12 @@
  RIGHT:  [A ∩ B] + [B]
  FULL:   [A] + [A ∩ B] + [B]
  \`\`\``,
+    options: [
+      { text: "Combine rows from multiple tables based on conditions", isCorrect: true },
+      { text: "Merge two tables permanently", isCorrect: false },
+      { text: "Create a new table from existing ones", isCorrect: false },
+      { text: "Delete matching rows", isCorrect: false },
+    ],
    },
    {
      id: 9,
@@ -377,6 +426,12 @@
  | Jane  | jane@email.com  | 2024-01-16 | 149.99|
  
  **Note**: Users without orders are NOT included.`,
+    options: [
+      { text: "Returns only rows with matches in both tables", isCorrect: true },
+      { text: "Returns all rows from left table", isCorrect: false },
+      { text: "Returns all rows from both tables", isCorrect: false },
+      { text: "Returns rows with no matches", isCorrect: false },
+    ],
    },
    {
      id: 10,
@@ -418,6 +473,12 @@
  -- These are equivalent
  A RIGHT JOIN B  ≡  B LEFT JOIN A
  \`\`\``,
+    options: [
+      { text: "LEFT: all left + matching; RIGHT: all right + matching", isCorrect: true },
+      { text: "They return the same results", isCorrect: false },
+      { text: "LEFT is faster than RIGHT", isCorrect: false },
+      { text: "RIGHT includes NULLs, LEFT doesn't", isCorrect: false },
+    ],
    },
    {
      id: 11,
@@ -453,6 +514,12 @@
  4. \`HAVING\` - Filter groups
  5. \`SELECT\` - Choose columns
  6. \`ORDER BY\` - Sort results`,
+    options: [
+      { text: "WHERE filters rows before grouping; HAVING filters after", isCorrect: true },
+      { text: "They are interchangeable", isCorrect: false },
+      { text: "WHERE works on aggregates, HAVING on rows", isCorrect: false },
+      { text: "HAVING must come before GROUP BY", isCorrect: false },
+    ],
    },
    {
      id: 12,
@@ -503,6 +570,12 @@
      WHERE department_id = e.department_id
  );
  \`\`\``,
+    options: [
+      { text: "Query nested inside another query, executed first", isCorrect: true },
+      { text: "A query that runs in parallel", isCorrect: false },
+      { text: "A stored procedure call", isCorrect: false },
+      { text: "A view definition", isCorrect: false },
+    ],
    },
    {
      id: 13,
@@ -541,6 +614,12 @@
  
  ### Pro Tip
  Use UNION ALL when you know there are no duplicates or duplicates are acceptable - it's significantly faster on large datasets.`,
+    options: [
+      { text: "UNION removes duplicates; UNION ALL keeps them", isCorrect: true },
+      { text: "UNION ALL removes duplicates", isCorrect: false },
+      { text: "They produce identical results", isCorrect: false },
+      { text: "UNION is faster than UNION ALL", isCorrect: false },
+    ],
    },
    {
      id: 14,
@@ -584,6 +663,12 @@
      FIRST_VALUE(name) OVER (PARTITION BY dept ORDER BY salary DESC) as top_earner
  FROM employees;
  \`\`\``,
+    options: [
+      { text: "Calculate over row sets without collapsing rows", isCorrect: true },
+      { text: "Functions that open new database windows", isCorrect: false },
+      { text: "Same as GROUP BY aggregates", isCorrect: false },
+      { text: "Functions for UI rendering", isCorrect: false },
+    ],
    },
    {
      id: 15,
@@ -617,6 +702,12 @@
  - **ROW_NUMBER**: Unique identifier, pagination
  - **RANK**: Ranking with gaps (sports standings)
  - **DENSE_RANK**: Ranking without gaps (Top N queries)`,
+    options: [
+      { text: "ROW_NUMBER: unique; RANK: gaps on ties; DENSE_RANK: no gaps", isCorrect: true },
+      { text: "They all produce the same results", isCorrect: false },
+      { text: "RANK is fastest", isCorrect: false },
+      { text: "DENSE_RANK skips numbers", isCorrect: false },
+    ],
    },
    {
      id: 16,
@@ -679,6 +770,12 @@
  )
  SELECT * FROM hierarchy;
  \`\`\``,
+    options: [
+      { text: "Temporary named result set using WITH clause", isCorrect: true },
+      { text: "A permanent table in the database", isCorrect: false },
+      { text: "A type of stored procedure", isCorrect: false },
+      { text: "A database view", isCorrect: false },
+    ],
    },
    {
      id: 17,
@@ -724,6 +821,12 @@
  | Faster reads | Slower writes |
  | Efficient sorting | Extra storage |
  | Quick lookups | Maintenance overhead |`,
+    options: [
+      { text: "Data structures that speed up data retrieval", isCorrect: true },
+      { text: "A way to sort table columns", isCorrect: false },
+      { text: "Backup copies of data", isCorrect: false },
+      { text: "Constraints on columns", isCorrect: false },
+    ],
    },
    {
      id: 18,
@@ -772,6 +875,12 @@
      -- If error, ROLLBACK (Atomicity)
  COMMIT; -- Durability: saved to disk
  \`\`\``,
+    options: [
+      { text: "Atomicity, Consistency, Isolation, Durability", isCorrect: true },
+      { text: "Accuracy, Completeness, Integrity, Data", isCorrect: false },
+      { text: "Add, Create, Insert, Delete", isCorrect: false },
+      { text: "Authentication, Control, Identity, Domain", isCorrect: false },
+    ],
    },
    {
      id: 19,
@@ -822,6 +931,12 @@
  Every column in SELECT must either be:
  1. In GROUP BY clause, or
  2. Inside an aggregate function`,
+    options: [
+      { text: "Groups rows with same values for aggregate calculations", isCorrect: true },
+      { text: "Sorts the result set", isCorrect: false },
+      { text: "Filters rows before selection", isCorrect: false },
+      { text: "Joins multiple tables", isCorrect: false },
+    ],
    },
    {
      id: 20,
@@ -872,6 +987,12 @@
      GROUP BY email
  );
  \`\`\``,
+    options: [
+      { text: "GROUP BY + HAVING COUNT(*) > 1", isCorrect: true },
+      { text: "SELECT DISTINCT", isCorrect: false },
+      { text: "WHERE clause with = operator", isCorrect: false },
+      { text: "ORDER BY column", isCorrect: false },
+    ],
    },
    {
      id: 21,
@@ -915,6 +1036,12 @@
  JOIN logins b ON a.user_id = b.user_id 
      AND b.login_date = a.login_date + INTERVAL '1 day';
  \`\`\``,
+    options: [
+      { text: "Join a table to itself using aliases", isCorrect: true },
+      { text: "Join two different tables with same schema", isCorrect: false },
+      { text: "Create a copy of the table", isCorrect: false },
+      { text: "Recursive query", isCorrect: false },
+    ],
    },
    {
      id: 22,
@@ -974,6 +1101,12 @@
          ELSE 4
      END;
  \`\`\``,
+    options: [
+      { text: "Conditional logic like if-else in SQL", isCorrect: true },
+      { text: "A type of JOIN", isCorrect: false },
+      { text: "A constraint type", isCorrect: false },
+      { text: "A function for encryption", isCorrect: false },
+    ],
    },
    {
      id: 23,
@@ -1024,6 +1157,12 @@
  -- Refresh when needed
  REFRESH MATERIALIZED VIEW sales_report;
  \`\`\``,
+    options: [
+      { text: "Virtual table defined by a SQL query", isCorrect: true },
+      { text: "A copy of a table in another database", isCorrect: false },
+      { text: "A temporary table", isCorrect: false },
+      { text: "A table partition", isCorrect: false },
+    ],
    },
    {
      id: 24,
@@ -1059,6 +1198,12 @@
  - **DELETE**: Need WHERE clause, triggers, or rollback
  - **TRUNCATE**: Clear table quickly, reset auto-increment
  - **DROP**: Remove table completely`,
+    options: [
+      { text: "DELETE: rows with rollback; TRUNCATE: all rows fast; DROP: table", isCorrect: true },
+      { text: "They all do the same thing", isCorrect: false },
+      { text: "TRUNCATE can use WHERE clause", isCorrect: false },
+      { text: "DROP only removes data, not structure", isCorrect: false },
+    ],
    },
    {
      id: 25,
@@ -1104,6 +1249,12 @@
  | Random page access | ✅ Yes | ❌ No |
  | Large offset performance | ❌ Slow | ✅ Fast |
  | Consistency | ❌ Drift possible | ✅ Stable |`,
+    options: [
+      { text: "LIMIT + OFFSET or keyset pagination for large data", isCorrect: true },
+      { text: "Use WHERE clause only", isCorrect: false },
+      { text: "Create separate tables for each page", isCorrect: false },
+      { text: "Caching all results", isCorrect: false },
+    ],
    },
    {
      id: 26,
@@ -1150,6 +1301,12 @@
  2. **Security**: Grant EXECUTE without table access
  3. **Maintainability**: Centralized business logic
  4. **Reduced network**: Single call vs multiple queries`,
+    options: [
+      { text: "Precompiled SQL code stored in database", isCorrect: true },
+      { text: "A type of table", isCorrect: false },
+      { text: "An index optimization", isCorrect: false },
+      { text: "A backup mechanism", isCorrect: false },
+    ],
    },
    {
      id: 27,
@@ -1199,6 +1356,12 @@
  - Enforce complex business rules
  - Maintain computed columns
  - Sync denormalized data`,
+    options: [
+      { text: "Auto-execute on INSERT/UPDATE/DELETE events", isCorrect: true },
+      { text: "A type of index", isCorrect: false },
+      { text: "A constraint enforcement", isCorrect: false },
+      { text: "A backup schedule", isCorrect: false },
+    ],
    },
    {
      id: 28,
@@ -1249,6 +1412,12 @@
  - [ ] Avoid N+1 queries (use JOINs)
  - [ ] Update table statistics
  - [ ] Consider query caching`,
+    options: [
+      { text: "EXPLAIN plan, add indexes, avoid SELECT *, limit results", isCorrect: true },
+      { text: "Add more RAM to server", isCorrect: false },
+      { text: "Use more subqueries", isCorrect: false },
+      { text: "Remove all indexes", isCorrect: false },
+    ],
    },
    {
      id: 29,
@@ -1297,6 +1466,12 @@
  - Small, static list → IN
  - Large subquery → EXISTS
  - Anything with NOT → EXISTS`,
+    options: [
+      { text: "EXISTS: boolean check, stops early; IN: value matching", isCorrect: true },
+      { text: "They are identical in function", isCorrect: false },
+      { text: "IN is always faster", isCorrect: false },
+      { text: "EXISTS returns values, IN returns boolean", isCorrect: false },
+    ],
    },
    {
      id: 30,
@@ -1347,8 +1522,13 @@
  END;
  $$ LANGUAGE plpgsql;
  \`\`\``,
+    options: [
+      { text: "Subquery, LIMIT OFFSET 1, or DENSE_RANK = 2", isCorrect: true },
+      { text: "SELECT MAX(salary) - 1", isCorrect: false },
+      { text: "ORDER BY salary LIMIT 2", isCorrect: false },
+      { text: "GROUP BY salary HAVING rank = 2", isCorrect: false },
+    ],
    },
-   // More questions...
    {
      id: 31,
      title: "What is a CROSS JOIN?",
@@ -1392,6 +1572,12 @@
  ### ⚠️ Warning
  Be careful! CROSS JOIN can produce huge result sets:
  - 1000 rows × 1000 rows = 1,000,000 rows`,
+    options: [
+      { text: "Cartesian product - every row combined with every row", isCorrect: true },
+      { text: "Same as INNER JOIN", isCorrect: false },
+      { text: "Combines matching rows only", isCorrect: false },
+      { text: "Removes duplicate rows", isCorrect: false },
+    ],
    },
    {
      id: 32,
@@ -1433,6 +1619,12 @@
  - **COALESCE**: SQL standard, multiple arguments
  - **IFNULL** (MySQL): Two arguments only
  - **NVL** (Oracle): Two arguments only`,
+    options: [
+      { text: "Returns first non-NULL value from list", isCorrect: true },
+      { text: "Converts NULL to zero", isCorrect: false },
+      { text: "Removes NULL rows", isCorrect: false },
+      { text: "Checks if value is NULL", isCorrect: false },
+    ],
    },
    {
      id: 33,
@@ -1483,6 +1675,12 @@
  - WHERE A = ? AND B = ?
  
  But NOT: WHERE B = ? (needs separate index)`,
+    options: [
+      { text: "Primary key using multiple columns together", isCorrect: true },
+      { text: "A key that references multiple tables", isCorrect: false },
+      { text: "A foreign key with constraints", isCorrect: false },
+      { text: "An encrypted key", isCorrect: false },
+    ],
    },
    {
      id: 34,
