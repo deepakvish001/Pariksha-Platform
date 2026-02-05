@@ -1,21 +1,39 @@
  import { useState } from "react";
  import { motion } from "framer-motion";
- import { Trophy, Lock, Star, Flame, Target, Zap, Medal, CheckCircle, Loader2 } from "lucide-react";
+ import { Trophy, Lock, Star, Flame, Target, Zap, Medal, CheckCircle, Loader2, Filter, Share2 } from "lucide-react";
  import { SidebarTrigger } from "@/components/ui/sidebar";
  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
  import { Progress } from "@/components/ui/progress";
  import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+ import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+ } from "@/components/ui/select";
  import { cn } from "@/lib/utils";
- import AchievementBadge, { achievements, type Achievement } from "@/components/AchievementBadge";
+ import AchievementBadge, { achievements, type Achievement, type RarityTier } from "@/components/AchievementBadge";
  import { useUserAchievements } from "@/hooks/useUserAchievements";
  import { useAchievementRarity } from "@/hooks/useAchievementRarity";
+ import ShareableAchievementCard from "@/components/ShareableAchievementCard";
  
  const categories = [
    { id: "all", label: "All", icon: Trophy },
    { id: "topics", label: "Learning", icon: Star },
    { id: "streak", label: "Streaks", icon: Flame },
    { id: "quiz", label: "Quizzes", icon: Target },
+ ];
+ 
+
+ const rarityFilters = [
+   { id: "all", label: "All Rarities" },
+   { id: "legendary", label: "Legendary" },
+   { id: "epic", label: "Epic" },
+   { id: "rare", label: "Rare" },
+   { id: "uncommon", label: "Uncommon" },
+   { id: "common", label: "Common" },
  ];
  
  const getCategoryFromAchievement = (achievement: Achievement): string => {
@@ -30,12 +48,14 @@
    earnedAt,
    progress,
    rarity,
+   showShare = false,
  }: {
    achievement: Achievement;
    earned: boolean;
    earnedAt?: string;
    progress: { current: number; target: number };
    rarity?: { earnedCount: number; percentage: number; rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" };
+   showShare?: boolean;
  }) => {
    const progressPercent = Math.round((progress.current / progress.target) * 100);
  
@@ -56,10 +76,35 @@
        >
          {/* Earned indicator */}
          {earned && (
-           <div className="absolute top-2 right-2">
+           <div className="absolute top-2 right-2 flex items-center gap-1">
+             {showShare && earnedAt && rarity && (
+               <ShareableAchievementCard
+                 achievement={achievement}
+                 earnedAt={earnedAt}
+                 rarity={rarity}
+               />
+             )}
              <Badge variant="default" className="bg-primary text-primary-foreground text-xs">
                <CheckCircle className="w-3 h-3 mr-1" />
                Earned
+             </Badge>
+           </div>
+         )}
+         {/* Rarity indicator */}
+         {rarity && (
+           <div className="absolute bottom-2 right-2">
+             <Badge 
+               variant="outline" 
+               className={cn(
+                 "text-[10px]",
+                 rarity.rarity === "legendary" && "border-amber-500/50 text-amber-400",
+                 rarity.rarity === "epic" && "border-purple-500/50 text-purple-400",
+                 rarity.rarity === "rare" && "border-blue-500/50 text-blue-400",
+                 rarity.rarity === "uncommon" && "border-green-500/50 text-green-400",
+                 rarity.rarity === "common" && "border-slate-500/50 text-slate-400"
+               )}
+             >
+               {rarity.rarity.charAt(0).toUpperCase() + rarity.rarity.slice(1)}
              </Badge>
            </div>
          )}
@@ -117,12 +162,19 @@
  
  const Achievements = () => {
    const [selectedCategory, setSelectedCategory] = useState("all");
+   const [selectedRarity, setSelectedRarity] = useState("all");
    const { loading, isEarned, getEarnedAt, getAchievementProgress } = useUserAchievements();
    const { getRarity, isLoading: rarityLoading } = useAchievementRarity();
  
    const filteredAchievements = achievements.filter((achievement) => {
-     if (selectedCategory === "all") return true;
-     return getCategoryFromAchievement(achievement) === selectedCategory;
+     // Category filter
+     const categoryMatch = selectedCategory === "all" || getCategoryFromAchievement(achievement) === selectedCategory;
+     
+     // Rarity filter
+     const rarityInfo = getRarity(achievement.id);
+     const rarityMatch = selectedRarity === "all" || rarityInfo?.rarity === selectedRarity;
+     
+     return categoryMatch && rarityMatch;
    });
  
    const earnedCount = achievements.filter((a) => isEarned(a.id)).length;
@@ -209,14 +261,33 @@
  
          {/* Category Tabs */}
          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-           <TabsList className="grid w-full grid-cols-4 max-w-md">
-             {categories.map((cat) => (
-               <TabsTrigger key={cat.id} value={cat.id} className="flex items-center gap-1.5">
-                 <cat.icon className="w-4 h-4" />
-                 <span className="hidden sm:inline">{cat.label}</span>
-               </TabsTrigger>
-             ))}
-           </TabsList>
+           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+             <TabsList className="grid w-full grid-cols-4 max-w-md">
+               {categories.map((cat) => (
+                 <TabsTrigger key={cat.id} value={cat.id} className="flex items-center gap-1.5">
+                   <cat.icon className="w-4 h-4" />
+                   <span className="hidden sm:inline">{cat.label}</span>
+                 </TabsTrigger>
+               ))}
+             </TabsList>
+             
+             {/* Rarity Filter */}
+             <div className="flex items-center gap-2">
+               <Filter className="h-4 w-4 text-muted-foreground" />
+               <Select value={selectedRarity} onValueChange={setSelectedRarity}>
+                 <SelectTrigger className="w-[150px]">
+                   <SelectValue placeholder="Filter by rarity" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   {rarityFilters.map((filter) => (
+                     <SelectItem key={filter.id} value={filter.id}>
+                       {filter.label}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+             </div>
+           </div>
  
            <TabsContent value={selectedCategory} className="mt-6">
              {/* Earned Achievements */}
@@ -241,6 +312,7 @@
                          earnedAt={getEarnedAt(achievement.id)}
                          progress={getAchievementProgress(achievement)}
                          rarity={getRarity(achievement.id)}
+                         showShare={true}
                        />
                      ))}
                  </div>
