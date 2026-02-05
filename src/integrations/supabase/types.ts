@@ -97,6 +97,51 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_results: {
+        Row: {
+          accuracy: number
+          avg_time_seconds: number
+          category: string | null
+          completed_at: string
+          created_at: string
+          difficulty: string | null
+          id: string
+          quiz_type: string
+          score: number
+          total_questions: number
+          total_time_seconds: number
+          user_id: string
+        }
+        Insert: {
+          accuracy: number
+          avg_time_seconds: number
+          category?: string | null
+          completed_at?: string
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          quiz_type: string
+          score: number
+          total_questions: number
+          total_time_seconds: number
+          user_id: string
+        }
+        Update: {
+          accuracy?: number
+          avg_time_seconds?: number
+          category?: string | null
+          completed_at?: string
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          quiz_type?: string
+          score?: number
+          total_questions?: number
+          total_time_seconds?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       shared_folders: {
         Row: {
           allow_copy: boolean

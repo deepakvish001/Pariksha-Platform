@@ -16,6 +16,7 @@ import {
   ChevronUp,
   Folder,
   FolderPlus,
+   Zap,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -62,13 +63,16 @@ import {
   type DSAQuestion,
 } from "@/data/dsaQuestionsData";
 import type { Difficulty } from "@/data/positionResourcesData";
+ import DSAQuizMode from "@/components/library/DSAQuizMode";
 
 type ViewMode = "all" | "problem-sets" | "solved" | "revision" | "folders";
+ type PageMode = "browse" | "quiz";
 
 const DSAQuestions = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+   const [pageMode, setPageMode] = useState<PageMode>("browse");
   const [viewMode, setViewMode] = useState<ViewMode>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | "all">("all");
@@ -266,6 +270,20 @@ const DSAQuestions = () => {
     return topic?.name || topicId;
   };
 
+   // Quiz mode view
+   if (pageMode === "quiz") {
+     return (
+       <TooltipProvider delayDuration={300}>
+         <div className="min-h-screen bg-background p-4 md:p-6">
+           <DSAQuizMode
+             questions={dsaQuestions}
+             onClose={() => setPageMode("browse")}
+           />
+         </div>
+       </TooltipProvider>
+     );
+   }
+ 
   return (
     <TooltipProvider delayDuration={300}>
       <div className="min-h-screen bg-background">
@@ -287,7 +305,21 @@ const DSAQuestions = () => {
             <div className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
+                   <Button
+                     variant="default"
+                     size="sm"
+                     className="gap-2"
+                     onClick={() => setPageMode("quiz")}
+                   >
+                     <Zap className="h-4 w-4" />
+                     <span className="hidden sm:inline">Quiz Mode</span>
+                   </Button>
+                 </TooltipTrigger>
+                 <TooltipContent>Test your DSA knowledge</TooltipContent>
+               </Tooltip>
+               <Tooltip>
+                 <TooltipTrigger asChild>
+                   <Button variant="outline" size="sm" className="gap-2 hidden md:flex">
                     <TrendingUp className="h-4 w-4" />
                     My progress
                   </Button>
@@ -298,7 +330,7 @@ const DSAQuestions = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="default"
+                       variant="outline"
                       size="sm"
                       className="gap-2"
                       onClick={() => {

@@ -12,6 +12,10 @@
    Target,
    Zap,
    Award,
+   Flame,
+   Brain,
+   Sparkles,
+   Medal,
  } from "lucide-react";
  import { Button } from "@/components/ui/button";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +35,9 @@
    type AptitudeQuestion,
    aptitudeCategories,
  } from "@/data/aptitudeQuestionsData";
+ import { useAuth } from "@/contexts/AuthContext";
+ import { useQuizResults } from "@/hooks/useQuizResults";
+ import QuizLeaderboard from "./QuizLeaderboard";
  
  // Generate options for questions that don't have predefined options
  const generateOptionsForQuestion = (question: AptitudeQuestion): { text: string; isCorrect: boolean }[] => {
@@ -66,11 +73,66 @@
    onClose: () => void;
  }
  
+ interface QuizPreset {
+   id: string;
+   name: string;
+   description: string;
+   icon: React.ReactNode;
+   config: QuizConfig;
+   color: string;
+ }
+ 
+ const QUIZ_PRESETS: QuizPreset[] = [
+   {
+     id: "quick-easy",
+     name: "Quick Easy Quiz",
+     description: "5 easy questions, 45 seconds each",
+     icon: <Sparkles className="h-5 w-5" />,
+     config: { questionCount: 5, timePerQuestion: 45, category: "all", difficulty: "Easy" },
+     color: "from-emerald-500/20 to-green-500/20 border-emerald-500/30",
+   },
+   {
+     id: "balanced",
+     name: "Balanced Challenge",
+     description: "10 mixed questions, 60 seconds each",
+     icon: <Target className="h-5 w-5" />,
+     config: { questionCount: 10, timePerQuestion: 60, category: "all", difficulty: "all" },
+     color: "from-blue-500/20 to-cyan-500/20 border-blue-500/30",
+   },
+   {
+     id: "brain-teaser",
+     name: "Brain Teaser Challenge",
+     description: "10 hard puzzles, 90 seconds each",
+     icon: <Brain className="h-5 w-5" />,
+     config: { questionCount: 10, timePerQuestion: 90, category: "puzzles", difficulty: "Hard" },
+     color: "from-purple-500/20 to-pink-500/20 border-purple-500/30",
+   },
+   {
+     id: "speed-run",
+     name: "Speed Run",
+     description: "15 questions, 30 seconds each",
+     icon: <Flame className="h-5 w-5" />,
+     config: { questionCount: 15, timePerQuestion: 30, category: "all", difficulty: "all" },
+     color: "from-orange-500/20 to-red-500/20 border-orange-500/30",
+   },
+   {
+     id: "marathon",
+     name: "Marathon Mode",
+     description: "30 questions, comprehensive test",
+     icon: <Medal className="h-5 w-5" />,
+     config: { questionCount: 30, timePerQuestion: 60, category: "all", difficulty: "all" },
+     color: "from-amber-500/20 to-yellow-500/20 border-amber-500/30",
+   },
+ ];
+ 
  const AptitudeQuizMode: React.FC<AptitudeQuizModeProps> = ({
    questions,
    onClose,
  }) => {
+   const { user } = useAuth();
+   const { saveQuizResult } = useQuizResults();
    const [phase, setPhase] = useState<"config" | "quiz" | "results">("config");
+   const [showLeaderboard, setShowLeaderboard] = useState(false);
    const [config, setConfig] = useState<QuizConfig>({
      questionCount: 10,
      timePerQuestion: 60,
@@ -164,6 +226,28 @@
    const correctCount = results.filter((r) => r.isCorrect).length;
    const accuracy = results.length > 0 ? Math.round((correctCount / results.length) * 100) : 0;
    const avgTime = results.length > 0 ? Math.round(results.reduce((sum, r) => sum + r.timeTaken, 0) / results.length) : 0;
+   const totalTime = results.reduce((sum, r) => sum + r.timeTaken, 0);
+ 
+   // Save results when quiz completes
+   useEffect(() => {
+     if (phase === "results" && results.length > 0 && user) {
+       saveQuizResult({
+         quizType: "aptitude",
+         category: config.category,
+         difficulty: config.difficulty,
+         score: correctCount,
+         totalQuestions: results.length,
+         accuracy,
+         avgTimeSeconds: avgTime,
+         totalTimeSeconds: totalTime,
+       });
+     }
+   }, [phase, results.length]);
+ 
+   const startPreset = (preset: QuizPreset) => {
+     setConfig(preset.config);
+     setTimeout(() => prepareQuiz(), 0);
+   };
  
    const getTimeColor = () => {
      const ratio = timeLeft / config.timePerQuestion;
@@ -174,15 +258,43 @@
  
    if (phase === "config") {
      return (
-       <Card className="border-primary/20 bg-card/80 backdrop-blur">
+       <div className="space-y-6">
+         <Card className="border-primary/20 bg-card/80 backdrop-blur">
          <CardHeader>
            <CardTitle className="flex items-center gap-2">
              <Zap className="h-5 w-5 text-primary" />
-             Quiz Mode Configuration
+               Quick Start Presets
            </CardTitle>
          </CardHeader>
-         <CardContent className="space-y-6">
-           <div className="grid gap-4 sm:grid-cols-2">
+           <CardContent>
+             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+               {QUIZ_PRESETS.map((preset) => (
+                 <button
+                   key={preset.id}
+                   onClick={() => startPreset(preset)}
+                   className={cn(
+                     "p-4 rounded-lg border text-left transition-all hover:scale-[1.02] active:scale-[0.98]",
+                     "bg-gradient-to-br",
+                     preset.color
+                   )}
+                 >
+                   <div className="flex items-center gap-2 mb-2">
+                     {preset.icon}
+                     <span className="font-semibold">{preset.name}</span>
+                   </div>
+                   <p className="text-sm text-muted-foreground">{preset.description}</p>
+                 </button>
+               ))}
+             </div>
+           </CardContent>
+         </Card>
+ 
+         <Card className="border-primary/20 bg-card/80 backdrop-blur">
+           <CardHeader>
+             <CardTitle className="text-base">Custom Configuration</CardTitle>
+           </CardHeader>
+           <CardContent className="space-y-4">
+             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
              <div className="space-y-2">
                <Label>Number of Questions</Label>
                <Select
@@ -268,17 +380,22 @@
              </div>
            </div>
  
-           <div className="flex gap-3 pt-4">
+             <div className="flex gap-3">
              <Button variant="outline" onClick={onClose} className="flex-1">
                Cancel
              </Button>
-             <Button onClick={prepareQuiz} className="flex-1 gap-2">
+               <Button onClick={() => prepareQuiz()} className="flex-1 gap-2">
                <Play className="h-4 w-4" />
-               Start Quiz
+                 Start Custom Quiz
              </Button>
            </div>
          </CardContent>
        </Card>
+ 
+         {user && (
+           <QuizLeaderboard quizType="aptitude" currentUserId={user.id} />
+         )}
+       </div>
      );
    }
  
@@ -373,13 +490,28 @@
                onClick={() => {
                  setPhase("config");
                  setResults([]);
+                 setShowLeaderboard(false);
                }}
                className="flex-1 gap-2"
              >
                <RotateCcw className="h-4 w-4" />
                New Quiz
              </Button>
+             {user && (
+               <Button
+                 variant={showLeaderboard ? "secondary" : "outline"}
+                 onClick={() => setShowLeaderboard(!showLeaderboard)}
+                 className="gap-2"
+               >
+                 <Trophy className="h-4 w-4" />
+                 Leaderboard
+               </Button>
+             )}
            </div>
+           
+           {showLeaderboard && user && (
+             <QuizLeaderboard quizType="aptitude" currentUserId={user.id} />
+           )}
          </CardContent>
        </Card>
      );
