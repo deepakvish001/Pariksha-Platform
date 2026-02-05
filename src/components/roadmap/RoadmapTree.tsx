@@ -13,42 +13,23 @@ import {
   Smartphone,
   Brain,
   BarChart3,
-  Flame,
   Award,
   ChevronUp,
   Zap,
-  GripVertical,
-  Minimize2,
-  LayoutGrid,
-  List,
-  RotateCcw,
-  Undo2,
-  Share2,
-  FolderOpen,
-  Navigation,
   ChevronDown,
-  Check,
   ArrowUp,
   Focus,
 } from "lucide-react";
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import RoadmapNode from "./RoadmapNode";
 import DraggableNode from "./DraggableNode";
 import RoadmapNodeDetail from "./RoadmapNodeDetail";
 import RoadmapToolbar from "./RoadmapToolbar";
+import RoadmapControlsBar from "./RoadmapControlsBar";
 import RoadmapMiniMap from "./RoadmapMiniMap";
 import RoadmapSectionContainer from "./RoadmapSectionContainer";
 import RoadmapCertificate from "./RoadmapCertificate";
@@ -1064,128 +1045,47 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="sticky top-0 z-20 rounded-2xl bg-background/98 backdrop-blur-xl border-2 border-border/60 shadow-lg"
+            className="sticky top-0 z-20 rounded-xl bg-background/98 backdrop-blur-xl border border-border/60 shadow-md"
           >
             {/* Main controls row */}
-            <div className="p-3 sm:p-4">
-              <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
-                {/* Search & Filters */}
-                <RoadmapToolbar
-                  searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
-                  difficultyFilter={difficultyFilter}
-                  onDifficultyChange={setDifficultyFilter}
-                  statusFilter={statusFilter}
-                  onStatusChange={setStatusFilter}
-                  matchCount={matchCount}
-                  totalCount={allNodes.length}
-                />
-                
-                {/* View Controls - Better Grouped */}
-                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                  {/* Layout Mode Toggle - Pill Style */}
-                  <div className="flex items-center p-0.5 rounded-lg bg-muted/70 border border-border/50">
-                    <button
-                      onClick={() => setLayoutMode('vertical')}
-                      className={cn(
-                        "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all",
-                        layoutMode === 'vertical' 
-                          ? "bg-background text-foreground shadow-sm" 
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                      title="List view"
-                    >
-                      <List className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">List</span>
-                    </button>
-                    <button
-                      onClick={() => setLayoutMode('horizontal')}
-                      className={cn(
-                        "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all",
-                        layoutMode === 'horizontal' 
-                          ? "bg-background text-foreground shadow-sm" 
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                      title="Cards view"
-                    >
-                      <LayoutGrid className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Cards</span>
-                    </button>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="hidden sm:block w-px h-5 bg-border/60" />
-
-                  {/* View Mode Controls */}
-                  <div className="flex items-center gap-1">
-                    {/* Compact Mode Toggle */}
-                    <button
-                      onClick={() => setIsCompactMode(!isCompactMode)}
-                      className={cn(
-                        "flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all",
-                        isCompactMode 
-                          ? "bg-primary/15 text-primary border border-primary/30" 
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                      )}
-                      title={isCompactMode ? "Switch to normal view" : "Switch to compact view"}
-                    >
-                      <Minimize2 className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">{isCompactMode ? "Normal" : "Compact"}</span>
-                    </button>
-                    
-                    {/* Focus Mode Toggle */}
-                    <button
-                      onClick={() => {
-                        if (isFocusMode) {
-                          setIsFocusMode(false);
-                          setFocusedSectionId(null);
-                        } else {
-                          setIsFocusMode(true);
-                          // Auto-focus on section containing next recommended node or first section
-                          const nextSection = tree.nodes.find(section => {
-                            const sectionNodeIds = flattenNodes([section]).map(n => n.id);
-                            return nextRecommendedId && sectionNodeIds.includes(nextRecommendedId);
-                          });
-                          setFocusedSectionId(nextSection?.id || tree.nodes[0]?.id || null);
-                        }
-                      }}
-                      className={cn(
-                        "flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all",
-                        isFocusMode 
-                          ? "bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700" 
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                      )}
-                      title={isFocusMode ? "Exit focus mode" : "Enter focus mode - dims other sections"}
-                    >
-                      <Focus className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">{isFocusMode ? "Exit Focus" : "Focus"}</span>
-                    </button>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="hidden sm:block w-px h-5 bg-border/60" />
-
-                  {/* Drag Reorder Toggle */}
-                  <button
-                    onClick={() => setIsDragEnabled(!isDragEnabled)}
-                    className={cn(
-                      "flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all",
-                      isDragEnabled 
-                        ? "bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700" 
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                    )}
-                    title={isDragEnabled ? "Done reordering" : "Reorder topics"}
-                  >
-                    <GripVertical className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{isDragEnabled ? "Done" : "Reorder"}</span>
-                  </button>
-
-              {/* Undo Button - Only visible in drag mode and when undo is available */}
-              {isDragEnabled && canUndo && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={async () => {
+            <div className="p-3 space-y-3">
+              {/* Search & Filters */}
+              <RoadmapToolbar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                difficultyFilter={difficultyFilter}
+                onDifficultyChange={setDifficultyFilter}
+                statusFilter={statusFilter}
+                onStatusChange={setStatusFilter}
+                matchCount={matchCount}
+                totalCount={allNodes.length}
+              />
+              
+              {/* View Controls Row */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/40">
+                <RoadmapControlsBar
+                  layoutMode={layoutMode}
+                  onLayoutModeChange={setLayoutMode}
+                  isCompactMode={isCompactMode}
+                  onCompactModeChange={setIsCompactMode}
+                  isFocusMode={isFocusMode}
+                  onFocusModeChange={(value) => {
+                    if (value) {
+                      setIsFocusMode(true);
+                      const nextSection = tree.nodes.find(section => {
+                        const sectionNodeIds = flattenNodes([section]).map(n => n.id);
+                        return nextRecommendedId && sectionNodeIds.includes(nextRecommendedId);
+                      });
+                      setFocusedSectionId(nextSection?.id || tree.nodes[0]?.id || null);
+                    } else {
+                      setIsFocusMode(false);
+                      setFocusedSectionId(null);
+                    }
+                  }}
+                  isDragEnabled={isDragEnabled}
+                  onDragEnabledChange={setIsDragEnabled}
+                  canUndo={canUndo}
+                  onUndo={async () => {
                     await undoLastAction();
                     setLocalNodeOrder({});
                     toast({
@@ -1193,170 +1093,91 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                       description: "Your last reorder has been reversed.",
                     });
                   }}
-                  disabled={isSaving}
-                  className="flex items-center gap-1.5 h-7 text-xs text-muted-foreground hover:text-primary"
-                >
-                  <Undo2 className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Undo</span>
-                </Button>
-              )}
-
-              {/* Reset to Default Order Button - Only visible in drag mode and when custom order exists */}
-              {isDragEnabled && hasCustomOrder && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleResetOrder}
-                  disabled={isSaving}
-                  className="flex items-center gap-1.5 h-7 text-xs text-muted-foreground hover:text-destructive"
-                >
-                  <RotateCcw className={cn("h-3.5 w-3.5", isSaving && "animate-spin")} />
-                  <span className="hidden sm:inline">Reset Order</span>
-                </Button>
-              )}
-
-              {/* Saved Paths Manager */}
-              {user && (
-                <SavedPathsManager
-                  savedPaths={savedPaths}
-                  activePath={activePath}
-                  currentOrders={customOrders}
                   hasCustomOrder={hasCustomOrder}
-                  isSaving={isSavingPath}
-                  onSavePath={savePath}
-                  onActivatePath={async (pathId) => {
-                    const orders = await activatePath(pathId);
-                    if (orders) {
+                  onResetOrder={handleResetOrder}
+                  isSaving={isSaving}
+                  sections={tree.nodes.map(node => {
+                    const stats = getSectionStats(node);
+                    return { id: node.id, title: node.title, completed: stats.completed, total: stats.total };
+                  })}
+                  onJumpToSection={handleJumpToSection}
+                  onExpandAll={() => setCollapsedSections(new Set())}
+                  onCollapseAll={() => setCollapsedSections(new Set(tree.nodes.map(n => n.id)))}
+                  focusedSectionIndex={focusedSectionId ? tree.nodes.findIndex(n => n.id === focusedSectionId) : 0}
+                  totalSections={tree.nodes.length}
+                  onNavigateFocus={(direction) => {
+                    const currentIndex = tree.nodes.findIndex(n => n.id === focusedSectionId);
+                    if (direction === 'up' && currentIndex > 0) {
+                      setFocusedSectionId(tree.nodes[currentIndex - 1].id);
+                    } else if (direction === 'down' && currentIndex < tree.nodes.length - 1) {
+                      setFocusedSectionId(tree.nodes[currentIndex + 1].id);
+                    }
+                  }}
+                />
+
+                {/* Path Management - Secondary Row */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {/* Saved Paths Manager */}
+                  {user && (
+                    <SavedPathsManager
+                      savedPaths={savedPaths}
+                      activePath={activePath}
+                      currentOrders={customOrders}
+                      hasCustomOrder={hasCustomOrder}
+                      isSaving={isSavingPath}
+                      onSavePath={savePath}
+                      onActivatePath={async (pathId) => {
+                        const orders = await activatePath(pathId);
+                        if (orders) {
+                          await importOrders(orders);
+                          setLocalNodeOrder({});
+                        }
+                        return orders;
+                      }}
+                      onDeletePath={deletePath}
+                      onUpdatePath={updatePath}
+                      onDuplicatePath={duplicatePath}
+                    />
+                  )}
+
+                  {/* Compare Paths Button */}
+                  {user && savedPaths.length >= 2 && (
+                    <PathComparisonDialog savedPaths={savedPaths} />
+                  )}
+
+                  {/* Merge Paths Button */}
+                  {user && savedPaths.length >= 2 && (
+                    <MergePathsDialog 
+                      savedPaths={savedPaths}
+                      roadmapId={tree.id}
+                      roadmapTitle={tree.title}
+                      onMerge={mergePaths}
+                      canUndo={canUndoMerge}
+                      canRedo={canRedoMerge}
+                      onUndo={undoMerge}
+                      onRedo={redoMerge}
+                    />
+                  )}
+
+                  {/* Share Path Button */}
+                  <SharePathDialog
+                    roadmapId={tree.id}
+                    roadmapTitle={tree.title}
+                    customOrders={customOrders}
+                    hasCustomOrder={hasCustomOrder}
+                    onImportOrder={async (orders) => {
                       await importOrders(orders);
                       setLocalNodeOrder({});
-                    }
-                    return orders;
-                  }}
-                  onDeletePath={deletePath}
-                  onUpdatePath={updatePath}
-                  onDuplicatePath={duplicatePath}
-                />
-              )}
+                    }}
+                  />
 
-              {/* Compare Paths Button */}
-              {user && savedPaths.length >= 2 && (
-                <PathComparisonDialog savedPaths={savedPaths} />
-              )}
-
-              {/* Merge Paths Button */}
-              {user && savedPaths.length >= 2 && (
-                <MergePathsDialog 
-                  savedPaths={savedPaths}
-                  roadmapId={tree.id}
-                  roadmapTitle={tree.title}
-                  onMerge={mergePaths}
-                  canUndo={canUndoMerge}
-                  canRedo={canRedoMerge}
-                  onUndo={undoMerge}
-                  onRedo={redoMerge}
-                />
-              )}
-
-              {/* Share Path Button */}
-              <SharePathDialog
-                roadmapId={tree.id}
-                roadmapTitle={tree.title}
-                customOrders={customOrders}
-                hasCustomOrder={hasCustomOrder}
-                onImportOrder={async (orders) => {
-                  await importOrders(orders);
-                  setLocalNodeOrder({});
-                }}
-              />
-
-              {/* Path History Panel */}
-              {user && (
-                <PathHistoryPanel
-                  operations={operationHistory}
-                  onClear={clearHistory}
-                />
-              )}
-
-              {/* Quick Jump Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
-                    "bg-muted/50 text-muted-foreground border-border/50 hover:text-foreground hover:bg-muted"
-                  )}>
-                    <Navigation className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Jump to</span>
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 max-h-80 overflow-y-auto bg-popover z-50">
-                  <DropdownMenuLabel className="text-xs text-muted-foreground">
-                    Quick Navigation
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {tree.nodes.map((node, index) => {
-                    const sectionStats = getSectionStats(node);
-                    const percentage = Math.round((sectionStats.completed / sectionStats.total) * 100) || 0;
-                    const isComplete = percentage === 100;
-                    
-                    return (
-                      <DropdownMenuItem 
-                        key={node.id}
-                        onClick={() => handleJumpToSection(node.id)}
-                        className="flex items-center gap-3 cursor-pointer"
-                      >
-                        <div className={cn(
-                          "flex-shrink-0 h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-bold",
-                          isComplete 
-                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
-                            : "bg-primary/10 text-primary"
-                        )}>
-                          {isComplete ? <Check className="h-3.5 w-3.5" /> : index + 1}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            "text-sm font-medium truncate",
-                            isComplete && "text-emerald-600 dark:text-emerald-400"
-                          )}>
-                            {node.title}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {sectionStats.completed}/{sectionStats.total} topics • {percentage}%
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0 w-10">
-                          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                            <div 
-                              className={cn(
-                                "h-full rounded-full transition-all",
-                                isComplete ? "bg-emerald-500" : "bg-primary"
-                              )}
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                        </div>
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <span className="text-muted-foreground/30 hidden sm:inline">|</span>
-
-              {/* Expand/Collapse All Sections */}
-              <button
-                onClick={() => setCollapsedSections(new Set())}
-                className="text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-muted/50"
-              >
-                Expand All
-              </button>
-              <span className="text-muted-foreground/30">|</span>
-              <button
-                onClick={() => setCollapsedSections(new Set(tree.nodes.map(n => n.id)))}
-                className="text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-muted/50"
-              >
-                Collapse All
-              </button>
+                  {/* Path History Panel */}
+                  {user && (
+                    <PathHistoryPanel
+                      operations={operationHistory}
+                      onClear={clearHistory}
+                    />
+                  )}
                 </div>
               </div>
             </div>

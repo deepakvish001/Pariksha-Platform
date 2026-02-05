@@ -10,14 +10,14 @@ interface RoadmapSectionContainerProps {
   className?: string;
 }
 
-// Enhanced section accent colors with refined visual distinction
+// Section accent colors with refined visual distinction
 const sectionAccents = [
-  { border: "border-amber-500/20", accent: "from-amber-500/8 to-orange-500/4", line: "from-amber-500 via-orange-400 to-transparent" },
-  { border: "border-violet-500/20", accent: "from-violet-500/8 to-purple-500/4", line: "from-violet-500 via-purple-400 to-transparent" },
-  { border: "border-emerald-500/20", accent: "from-emerald-500/8 to-teal-500/4", line: "from-emerald-500 via-teal-400 to-transparent" },
-  { border: "border-blue-500/20", accent: "from-blue-500/8 to-indigo-500/4", line: "from-blue-500 via-indigo-400 to-transparent" },
-  { border: "border-rose-500/20", accent: "from-rose-500/8 to-pink-500/4", line: "from-rose-500 via-pink-400 to-transparent" },
-  { border: "border-cyan-500/20", accent: "from-cyan-500/8 to-sky-500/4", line: "from-cyan-500 via-sky-400 to-transparent" },
+  { border: "border-amber-400/20", line: "from-amber-500 to-orange-400" },
+  { border: "border-violet-400/20", line: "from-violet-500 to-purple-400" },
+  { border: "border-emerald-400/20", line: "from-emerald-500 to-teal-400" },
+  { border: "border-blue-400/20", line: "from-blue-500 to-indigo-400" },
+  { border: "border-rose-400/20", line: "from-rose-500 to-pink-400" },
+  { border: "border-cyan-400/20", line: "from-cyan-500 to-sky-400" },
 ];
 
 // Refined animation variants
@@ -26,7 +26,7 @@ const containerVariants = {
     opacity: 0,
     height: 0,
     transition: {
-      height: { duration: 0.25, ease: [0.4, 0, 0.2, 1] as const },
+      height: { duration: 0.2, ease: [0.4, 0, 0.2, 1] as const },
       opacity: { duration: 0.15 },
     },
   },
@@ -34,8 +34,8 @@ const containerVariants = {
     opacity: 1,
     height: "auto" as const,
     transition: {
-      height: { duration: 0.35, ease: [0.4, 0, 0.2, 1] as const },
-      opacity: { duration: 0.25, delay: 0.1 },
+      height: { duration: 0.25, ease: [0.4, 0, 0.2, 1] as const },
+      opacity: { duration: 0.2, delay: 0.05 },
     },
   },
 };
@@ -43,13 +43,13 @@ const containerVariants = {
 const contentVariants = {
   collapsed: {
     opacity: 0,
-    y: -6,
+    y: -4,
     transition: { duration: 0.1 },
   },
   expanded: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.25, delay: 0.1 },
+    transition: { duration: 0.2, delay: 0.05 },
   },
 };
 
@@ -75,25 +75,18 @@ const RoadmapSectionContainer: React.FC<RoadmapSectionContainerProps> = ({
         >
           <div
             className={cn(
-              "relative rounded-2xl overflow-hidden",
-              "border-2 transition-all duration-300",
-              "bg-card/50 dark:bg-card/30 backdrop-blur-sm",
+              "relative rounded-xl overflow-hidden",
+              "border transition-all duration-200",
+              "bg-card/30 dark:bg-card/20",
               accent.border,
-              "shadow-sm hover:shadow-md",
-              isCompact ? "mt-1.5" : "mt-2",
+              isCompact ? "mt-1" : "mt-1.5",
               className
             )}
           >
             {/* Gradient accent on left edge */}
             <div className={cn(
-              "absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl",
+              "absolute left-0 top-0 bottom-0 w-0.5 rounded-l-xl",
               `bg-gradient-to-b ${accent.line}`
-            )} />
-            
-            {/* Subtle corner gradient */}
-            <div className={cn(
-              "absolute top-0 left-0 w-32 h-32 opacity-60 pointer-events-none",
-              `bg-gradient-to-br ${accent.accent}`
             )} />
             
             {/* Content area */}
@@ -101,19 +94,10 @@ const RoadmapSectionContainer: React.FC<RoadmapSectionContainerProps> = ({
               variants={contentVariants}
               className={cn(
                 "relative",
-                isCompact ? "p-2 pl-3 sm:p-3 sm:pl-4" : "p-3 pl-4 sm:p-4 sm:pl-5"
+                isCompact ? "p-2 pl-2.5" : "p-2.5 pl-3"
               )}
             >
-              {/* Decorative grid pattern - very subtle */}
-              <div 
-                className="absolute inset-0 pointer-events-none opacity-[0.015] dark:opacity-[0.03]"
-                style={{
-                  backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-                  backgroundSize: '24px 24px',
-                }}
-              />
-              
-              <div className="relative">
+              <div className="relative space-y-0.5">
                 {children}
               </div>
             </motion.div>
