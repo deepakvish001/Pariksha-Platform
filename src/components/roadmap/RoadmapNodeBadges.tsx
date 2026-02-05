@@ -23,66 +23,66 @@ const badgeConfig = {
   'first-steps': {
     icon: Rocket,
     label: 'First Steps',
-    color: 'text-emerald-500',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/30',
-    glow: 'shadow-emerald-500/20',
+    color: 'text-white',
+    bg: 'bg-gradient-to-r from-emerald-500 to-teal-500',
+    border: 'border-emerald-400/50',
+    glow: 'shadow-emerald-500/30',
   },
   'streak': {
     icon: Flame,
     label: 'On Fire',
-    color: 'text-orange-500',
-    bg: 'bg-orange-500/10',
-    border: 'border-orange-500/30',
-    glow: 'shadow-orange-500/20',
+    color: 'text-white',
+    bg: 'bg-gradient-to-r from-orange-500 to-red-500',
+    border: 'border-orange-400/50',
+    glow: 'shadow-orange-500/30',
   },
   'speed-learner': {
     icon: Zap,
     label: 'Speed Learner',
-    color: 'text-yellow-500',
-    bg: 'bg-yellow-500/10',
-    border: 'border-yellow-500/30',
-    glow: 'shadow-yellow-500/20',
+    color: 'text-white',
+    bg: 'bg-gradient-to-r from-yellow-500 to-amber-500',
+    border: 'border-yellow-400/50',
+    glow: 'shadow-yellow-500/30',
   },
   'deep-dive': {
     icon: Target,
     label: 'Deep Dive',
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/30',
-    glow: 'shadow-blue-500/20',
+    color: 'text-white',
+    bg: 'bg-gradient-to-r from-blue-500 to-indigo-500',
+    border: 'border-blue-400/50',
+    glow: 'shadow-blue-500/30',
   },
   'mastered': {
     icon: Trophy,
     label: 'Mastered',
-    color: 'text-amber-500',
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/30',
-    glow: 'shadow-amber-500/20',
+    color: 'text-white',
+    bg: 'bg-gradient-to-r from-amber-500 to-yellow-500',
+    border: 'border-amber-400/50',
+    glow: 'shadow-amber-500/30',
   },
   'recommended': {
     icon: Star,
     label: 'Recommended',
-    color: 'text-primary',
-    bg: 'bg-primary/10',
-    border: 'border-primary/30',
-    glow: 'shadow-primary/20',
+    color: 'text-white',
+    bg: 'bg-gradient-to-r from-primary to-violet-500',
+    border: 'border-primary/50',
+    glow: 'shadow-primary/30',
   },
   'hot': {
     icon: TrendingUp,
     label: 'Trending',
-    color: 'text-rose-500',
-    bg: 'bg-rose-500/10',
-    border: 'border-rose-500/30',
-    glow: 'shadow-rose-500/20',
+    color: 'text-white',
+    bg: 'bg-gradient-to-r from-rose-500 to-pink-500',
+    border: 'border-rose-400/50',
+    glow: 'shadow-rose-500/30',
   },
   'milestone': {
     icon: Medal,
     label: 'Milestone',
-    color: 'text-violet-500',
-    bg: 'bg-violet-500/10',
-    border: 'border-violet-500/30',
-    glow: 'shadow-violet-500/20',
+    color: 'text-white',
+    bg: 'bg-gradient-to-r from-violet-500 to-purple-500',
+    border: 'border-violet-400/50',
+    glow: 'shadow-violet-500/30',
   },
 };
 
@@ -254,22 +254,25 @@ interface DifficultyBadgeProps {
 
 const difficultyConfig = {
   Easy: {
-    emoji: '🟢',
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/20',
+    emoji: '🌱',
+    label: 'Easy',
+    color: 'text-white',
+    bg: 'bg-gradient-to-r from-emerald-500 to-green-500',
+    border: 'border-emerald-400/30',
   },
   Medium: {
-    emoji: '🟡',
-    color: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/20',
+    emoji: '🔥',
+    label: 'Medium',
+    color: 'text-white',
+    bg: 'bg-gradient-to-r from-amber-500 to-orange-500',
+    border: 'border-amber-400/30',
   },
   Hard: {
-    emoji: '🔴',
-    color: 'text-red-600 dark:text-red-400',
-    bg: 'bg-red-500/10',
-    border: 'border-red-500/20',
+    emoji: '💎',
+    label: 'Hard',
+    color: 'text-white',
+    bg: 'bg-gradient-to-r from-rose-500 to-red-500',
+    border: 'border-rose-400/30',
   },
 };
 
@@ -281,18 +284,20 @@ export const DifficultyBadge: React.FC<DifficultyBadgeProps> = ({
   const config = difficultyConfig[difficulty];
 
   return (
-    <div
+    <motion.div
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
       className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border",
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border shadow-sm",
         config.bg,
         config.color,
         config.border,
         className
       )}
     >
-      <span className="text-[10px]">{config.emoji}</span>
+      <span className="text-sm">{config.emoji}</span>
       {showLabel && <span>{difficulty}</span>}
-    </div>
+    </motion.div>
   );
 };
 
@@ -306,16 +311,18 @@ export const ResourceBadge: React.FC<ResourceBadgeProps> = ({ count, className }
   if (count === 0) return null;
 
   return (
-    <div
+    <motion.div
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
       className={cn(
-        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium",
-        "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
+        "inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-semibold",
+        "bg-gradient-to-r from-blue-500 to-indigo-500 text-white border border-blue-400/30 shadow-sm shadow-blue-500/20",
         className
       )}
     >
       <span>📚</span>
-      <span>{count}</span>
-    </div>
+      <span>{count} {count === 1 ? 'resource' : 'resources'}</span>
+    </motion.div>
   );
 };
 
