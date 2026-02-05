@@ -7,17 +7,18 @@ interface RoadmapSectionContainerProps {
   isExpanded: boolean;
   sectionIndex: number;
   isCompact?: boolean;
+  isRecommendedSection?: boolean;
   className?: string;
 }
 
 // Section accent colors with refined visual distinction
 const sectionAccents = [
-  { border: "border-amber-400/20", line: "from-amber-500 to-orange-400" },
-  { border: "border-violet-400/20", line: "from-violet-500 to-purple-400" },
-  { border: "border-emerald-400/20", line: "from-emerald-500 to-teal-400" },
-  { border: "border-blue-400/20", line: "from-blue-500 to-indigo-400" },
-  { border: "border-rose-400/20", line: "from-rose-500 to-pink-400" },
-  { border: "border-cyan-400/20", line: "from-cyan-500 to-sky-400" },
+  { border: "border-amber-400/30", line: "from-amber-500 to-orange-400", glow: "shadow-amber-500/5" },
+  { border: "border-violet-400/30", line: "from-violet-500 to-purple-400", glow: "shadow-violet-500/5" },
+  { border: "border-emerald-400/30", line: "from-emerald-500 to-teal-400", glow: "shadow-emerald-500/5" },
+  { border: "border-blue-400/30", line: "from-blue-500 to-indigo-400", glow: "shadow-blue-500/5" },
+  { border: "border-rose-400/30", line: "from-rose-500 to-pink-400", glow: "shadow-rose-500/5" },
+  { border: "border-cyan-400/30", line: "from-cyan-500 to-sky-400", glow: "shadow-cyan-500/5" },
 ];
 
 // Refined animation variants
@@ -26,16 +27,16 @@ const containerVariants = {
     opacity: 0,
     height: 0,
     transition: {
-      height: { duration: 0.2, ease: [0.4, 0, 0.2, 1] as const },
-      opacity: { duration: 0.15 },
+      height: { duration: 0.18, ease: [0.4, 0, 0.2, 1] as const },
+      opacity: { duration: 0.12 },
     },
   },
   expanded: {
     opacity: 1,
     height: "auto" as const,
     transition: {
-      height: { duration: 0.25, ease: [0.4, 0, 0.2, 1] as const },
-      opacity: { duration: 0.2, delay: 0.05 },
+      height: { duration: 0.22, ease: [0.4, 0, 0.2, 1] as const },
+      opacity: { duration: 0.18, delay: 0.04 },
     },
   },
 };
@@ -43,13 +44,13 @@ const containerVariants = {
 const contentVariants = {
   collapsed: {
     opacity: 0,
-    y: -4,
-    transition: { duration: 0.1 },
+    y: -3,
+    transition: { duration: 0.08 },
   },
   expanded: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.2, delay: 0.05 },
+    transition: { duration: 0.15, delay: 0.04 },
   },
 };
 
@@ -58,6 +59,7 @@ const RoadmapSectionContainer: React.FC<RoadmapSectionContainerProps> = ({
   isExpanded,
   sectionIndex,
   isCompact = false,
+  isRecommendedSection = false,
   className,
 }) => {
   const accent = sectionAccents[sectionIndex % sectionAccents.length];
@@ -75,29 +77,33 @@ const RoadmapSectionContainer: React.FC<RoadmapSectionContainerProps> = ({
         >
           <div
             className={cn(
-              "relative rounded-xl overflow-hidden",
+              "relative rounded-lg overflow-hidden",
               "border transition-all duration-200",
-              "bg-card/30 dark:bg-card/20",
+              "bg-card/20 dark:bg-card/15",
               accent.border,
-              isCompact ? "mt-1" : "mt-1.5",
+              isRecommendedSection && `shadow-md ${accent.glow}`,
+              isCompact ? "mt-0.5" : "mt-1",
               className
             )}
           >
-            {/* Gradient accent on left edge */}
+            {/* Gradient accent on left edge - thinner */}
             <div className={cn(
-              "absolute left-0 top-0 bottom-0 w-0.5 rounded-l-xl",
+              "absolute left-0 top-0 bottom-0 w-[2px] rounded-l-lg",
               `bg-gradient-to-b ${accent.line}`
             )} />
             
-            {/* Content area */}
+            {/* Content area - tighter padding */}
             <motion.div 
               variants={contentVariants}
               className={cn(
                 "relative",
-                isCompact ? "p-2 pl-2.5" : "p-2.5 pl-3"
+                isCompact ? "p-1.5 pl-2" : "p-2 pl-2.5"
               )}
             >
-              <div className="relative space-y-0.5">
+              <div className={cn(
+                "relative",
+                isCompact ? "space-y-0" : "space-y-0.5"
+              )}>
                 {children}
               </div>
             </motion.div>
