@@ -4143,6 +4143,2051 @@
  
  Pattern: ×3, -2, ×3, -2, ×3, -2, ×3...`,
    },
+   // Advanced Puzzles and Brain Teasers (151-205)
+   {
+     id: 151,
+     title: "The Two Egg Problem",
+     text: "You have 2 eggs and a 100-floor building. Find the minimum number of drops needed to determine the critical floor (where eggs break) in the worst case.",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## The Two Egg Problem
+ 
+ ### Problem Analysis
+ With 2 eggs, we need a strategy that minimizes worst-case drops.
+ 
+ ### Optimal Strategy
+ Use decreasing intervals: 14, 13, 12, 11...
+ 
+ ### Why 14?
+ If first egg breaks at floor 14:
+ - Test floors 1-13 with second egg = 13 drops
+ - Total = 1 + 13 = 14 drops
+ 
+ If first egg doesn't break:
+ - Jump to floor 27 (14 + 13)
+ - If breaks: test 15-26 = 12 drops, Total = 2 + 12 = 14
+ 
+ ### Formula
+ n(n+1)/2 ≥ 100
+ n = 14 (since 14×15/2 = 105 ≥ 100)
+ 
+ ### Answer: **14 drops minimum in worst case**`,
+     options: [
+       { text: "10 drops", isCorrect: false },
+       { text: "14 drops", isCorrect: true },
+       { text: "50 drops", isCorrect: false },
+       { text: "7 drops", isCorrect: false },
+     ],
+   },
+   {
+     id: 152,
+     title: "Light Bulb and Switches",
+     text: "You're outside a room with 3 light switches. Inside is 1 bulb. You can enter the room only once. How do you determine which switch controls the bulb?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Light Bulb and Switches
+ 
+ ### Solution
+ Use heat as additional information!
+ 
+ ### Steps
+ 1. Turn Switch 1 ON for 10 minutes
+ 2. Turn Switch 1 OFF
+ 3. Turn Switch 2 ON
+ 4. Enter the room
+ 
+ ### Observations
+ - **Bulb ON** → Switch 2
+ - **Bulb OFF and WARM** → Switch 1
+ - **Bulb OFF and COLD** → Switch 3
+ 
+ ### Key Insight
+ Light bulbs generate heat when on. This gives us a third state beyond just on/off.
+ 
+ ### Answer: Use heat to identify the switch that was previously on`,
+     options: [
+       { text: "Try each switch one by one", isCorrect: false },
+       { text: "Use heat from the bulb as a clue", isCorrect: true },
+       { text: "It's impossible with one entry", isCorrect: false },
+       { text: "Ask someone inside the room", isCorrect: false },
+     ],
+   },
+   {
+     id: 153,
+     title: "The Poisoned Wine",
+     text: "You have 1000 wine bottles, one is poisoned. You have 10 prisoners to test. Poison kills in exactly 24 hours. How do you find the poisoned bottle in one round?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## The Poisoned Wine Problem
+ 
+ ### Solution: Binary Encoding
+ 
+ With 10 prisoners, we can test 2^10 = 1024 bottles.
+ 
+ ### Method
+ 1. Number bottles 0-999 in binary
+ 2. Prisoner i drinks from all bottles where bit i is 1
+ 
+ ### Example
+ Bottle 537 = 1000011001 in binary
+ Prisoners 0, 3, 4, 9 drink from it
+ 
+ ### After 24 hours
+ If prisoners 0, 3, 4, 9 die → Bottle 537 is poisoned
+ 
+ ### Reading the result
+ Dead prisoners form the binary number of the poisoned bottle.
+ 
+ ### Answer: **Use binary encoding with each prisoner representing one bit**`,
+     options: [
+       { text: "Each prisoner tests 100 bottles", isCorrect: false },
+       { text: "Use binary encoding - each prisoner is one bit", isCorrect: true },
+       { text: "Divide bottles into 10 groups", isCorrect: false },
+       { text: "It requires at least 500 prisoners", isCorrect: false },
+     ],
+   },
+   {
+     id: 154,
+     title: "Bridge and Torch Problem",
+     text: "Four people must cross a bridge at night with one torch. Bridge holds max 2 people. Crossing times: 1, 2, 5, 10 minutes. What's the minimum total time?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Bridge and Torch Problem
+ 
+ ### People: A(1min), B(2min), C(5min), D(10min)
+ 
+ ### Optimal Strategy
+ 1. A and B cross → 2 min
+ 2. A returns with torch → 1 min
+ 3. C and D cross → 10 min
+ 4. B returns with torch → 2 min
+ 5. A and B cross → 2 min
+ 
+ **Total: 2 + 1 + 10 + 2 + 2 = 17 minutes**
+ 
+ ### Why not send fastest as escort each time?
+ That gives: 2+1+5+1+10 = 19 minutes
+ 
+ ### Key Insight
+ Send the two slowest together to avoid counting both times separately.
+ 
+ ### Answer: **17 minutes**`,
+     options: [
+       { text: "15 minutes", isCorrect: false },
+       { text: "17 minutes", isCorrect: true },
+       { text: "19 minutes", isCorrect: false },
+       { text: "21 minutes", isCorrect: false },
+     ],
+   },
+   {
+     id: 155,
+     title: "Monty Hall Problem",
+     text: "You pick door 1 of 3 doors (one has a car). Host opens door 3 (shows goat). Should you switch to door 2?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Monty Hall Problem
+ 
+ ### Initial Setup
+ - 3 doors: 1 car, 2 goats
+ - You pick door 1 (1/3 chance of car)
+ - Host opens a door with a goat
+ 
+ ### Probability Analysis
+ 
+ **If you STAY:**
+ - Win if car was behind door 1: P = 1/3
+ 
+ **If you SWITCH:**
+ - Win if car was behind door 2 or 3: P = 2/3
+ 
+ ### Why?
+ Host's action doesn't change your initial 1/3 probability.
+ The remaining 2/3 probability concentrates on the other door.
+ 
+ ### Answer: **Yes, always switch! Probability doubles from 1/3 to 2/3**`,
+     options: [
+       { text: "Stay - same probability either way", isCorrect: false },
+       { text: "Switch - doubles your chances to 2/3", isCorrect: true },
+       { text: "Doesn't matter - it's always 50-50", isCorrect: false },
+       { text: "Stay - host is trying to trick you", isCorrect: false },
+     ],
+   },
+   {
+     id: 156,
+     title: "Pirates and Gold Coins",
+     text: "5 pirates divide 100 gold coins. They vote on proposals. If rejected, the proposer is thrown overboard. What does Pirate 1 (most senior) propose?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Pirates and Gold Coins
+ 
+ ### Rules
+ - Pirates vote on division proposals
+ - 50%+ needed to pass
+ - If rejected, proposer is eliminated
+ - Pirates are logical and greedy
+ 
+ ### Working Backwards
+ 
+ **2 pirates left:** P4 proposes 100-0, votes for self, wins
+ 
+ **3 pirates left:** P3 proposes 99-0-1
+ (P5 gets 1, better than 0 if P3 dies)
+ 
+ **4 pirates left:** P2 proposes 99-0-1-0
+ (P4 gets 1, P5 gets 0 but P4 accepting means it passes)
+ 
+ **5 pirates:** P1 proposes 98-0-1-0-1
+ (P3 and P5 get 1 each, better than what they'd get otherwise)
+ 
+ ### Answer: **P1: 98, P2: 0, P3: 1, P4: 0, P5: 1**`,
+     options: [
+       { text: "20 coins each", isCorrect: false },
+       { text: "98-0-1-0-1 distribution", isCorrect: true },
+       { text: "100-0-0-0-0 (all to P1)", isCorrect: false },
+       { text: "33-33-34-0-0 distribution", isCorrect: false },
+     ],
+   },
+   {
+     id: 157,
+     title: "100 Prisoners and Light Bulb",
+     text: "100 prisoners, 1 room with a light bulb. Each day a random prisoner enters. They must eventually declare 'all have visited' or all die. Strategy?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## 100 Prisoners and Light Bulb
+ 
+ ### Strategy
+ Designate one "Counter" prisoner.
+ 
+ ### Rules
+ **Regular prisoners:**
+ - If bulb OFF and haven't turned it on before → turn ON
+ - Otherwise, do nothing
+ 
+ **Counter:**
+ - If bulb ON → turn OFF and increment count
+ - When count reaches 99 → declare "all have visited"
+ 
+ ### Why it works
+ - Each prisoner turns bulb on exactly once
+ - Counter counts each unique visitor
+ - When counter reaches 99 + himself = 100
+ 
+ ### Expected Time
+ Very long! Approximately 10,000+ days on average.
+ 
+ ### Answer: **Use a designated counter who counts when others signal**`,
+     options: [
+       { text: "Everyone turns light on when they enter", isCorrect: false },
+       { text: "Designate one counter who counts others' signals", isCorrect: true },
+       { text: "Use Morse code with the light", isCorrect: false },
+       { text: "It's impossible to solve", isCorrect: false },
+     ],
+   },
+   {
+     id: 158,
+     title: "Hat Color Puzzle",
+     text: "100 people in a line, each with a black or white hat. Each sees all hats in front. Starting from back, each guesses own hat color. Maximize guaranteed survivors.",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Hat Color Puzzle
+ 
+ ### Strategy
+ Use parity (odd/even count)!
+ 
+ ### Method
+ 1. Last person counts black hats visible
+ 2. Says "Black" if odd, "White" if even
+ 3. Each subsequent person tracks the parity
+ 
+ ### How it works
+ - Person N-1 sees all hats except their own
+ - Knows initial parity from person N's answer
+ - Computes own hat color from difference
+ 
+ ### Example
+ N says "Black" (odd black hats ahead)
+ N-1 sees even black hats → their hat is BLACK
+ 
+ ### Result
+ - Person N: 50% chance (sacrifices for team)
+ - Persons 1 to N-1: 100% correct
+ 
+ ### Answer: **99 guaranteed survivors using parity**`,
+     options: [
+       { text: "50 survivors on average", isCorrect: false },
+       { text: "99 guaranteed using parity", isCorrect: true },
+       { text: "All 100 can be saved", isCorrect: false },
+       { text: "Only 1 can be guaranteed", isCorrect: false },
+     ],
+   },
+   {
+     id: 159,
+     title: "Blue Eyes Puzzle",
+     text: "On an island, 100 people have blue eyes, 100 have brown. All can see others but not themselves. If anyone deduces their eye color, they must leave at midnight. An oracle says 'I see blue eyes.' What happens?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Blue Eyes Puzzle
+ 
+ ### The Setup
+ - 100 blue-eyed, 100 brown-eyed people
+ - Everyone sees everyone else's eyes
+ - Cannot see own eyes or communicate
+ - Must leave at midnight if you deduce your color
+ 
+ ### Common Knowledge
+ The oracle's statement creates "common knowledge."
+ 
+ ### Induction
+ **1 blue:** Leaves night 1 (sees no blue, deduces own)
+ **2 blue:** Each sees 1 blue, expects them to leave night 1.
+            When they don't, both deduce own blue → leave night 2
+ **n blue:** All leave on night n
+ 
+ ### Answer
+ **All 100 blue-eyed people leave on night 100**
+ 
+ ### Key Insight
+ The oracle provides "common knowledge" that allows synchronized reasoning.`,
+     options: [
+       { text: "Nothing happens - everyone already knows", isCorrect: false },
+       { text: "All blue-eyed leave on night 100", isCorrect: true },
+       { text: "One person leaves immediately", isCorrect: false },
+       { text: "All 200 people leave together", isCorrect: false },
+     ],
+   },
+   {
+     id: 160,
+     title: "Airplane Fuel Problem",
+     text: "Planes can fly halfway around the world on a full tank. Fuel is transferable mid-air. How many planes minimum to get one around the world?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Airplane Fuel Problem
+ 
+ ### Constraints
+ - Each plane holds fuel for 180° (halfway around)
+ - Fuel can be transferred mid-flight
+ - All planes start from same point
+ 
+ ### Solution with 3 planes
+ Let circumference = 360 units
+ 
+ **Phase 1: Outbound support**
+ - All 3 depart, at 60° point:
+ - Plane C transfers 60 to A & B, returns
+ - At 90°: Plane B gives 45 to A, returns
+ - A continues to 180° with full tank
+ 
+ **Phase 2: Return support**
+ - C refuels, meets A at 270°
+ - B refuels, meets both at 300°
+ - All return together
+ 
+ ### Answer: **Minimum 3 planes needed**`,
+     options: [
+       { text: "2 planes", isCorrect: false },
+       { text: "3 planes", isCorrect: true },
+       { text: "4 planes", isCorrect: false },
+       { text: "5 planes", isCorrect: false },
+     ],
+   },
+   {
+     id: 161,
+     title: "Counterfeit Coin - 12 Coins",
+     text: "12 coins, one is counterfeit (lighter OR heavier). Using a balance scale 3 times, find the counterfeit and determine if it's heavier or lighter.",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## 12 Coins Problem
+ 
+ ### Key Insight
+ 3 weighings give 3³ = 27 outcomes
+ 12 coins × 2 possibilities = 24 outcomes (fits!)
+ 
+ ### Strategy
+ Label coins 1-12
+ 
+ **Weighing 1:** 1234 vs 5678
+ 
+ **If balanced:** Counterfeit is in 9-12
+ - Weigh 9,10,11 vs 1,2,3 (known good)
+ - Third weighing isolates the fake
+ 
+ **If unbalanced:** Track which side was heavy
+ - Rearrange suspects across both sides
+ - Use elimination logic
+ 
+ ### Method
+ Divide into 3 groups, track "heavy" and "light" suspects.
+ 
+ ### Answer: **Systematic elimination using balanced outcomes**`,
+     options: [
+       { text: "Divide into 2 groups each time", isCorrect: false },
+       { text: "Divide into 3 groups, track heavy/light suspects", isCorrect: true },
+       { text: "It requires 4 weighings minimum", isCorrect: false },
+       { text: "Weigh each coin individually", isCorrect: false },
+     ],
+   },
+   {
+     id: 162,
+     title: "Knights and Knaves",
+     text: "On an island, Knights always tell truth, Knaves always lie. A says 'B is a knave.' B says 'A and I are of the same type.' What are they?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Knights and Knaves
+ 
+ ### Statements
+ - A: "B is a knave"
+ - B: "A and I are the same type"
+ 
+ ### Case Analysis
+ 
+ **Case 1: A is a Knight (truth-teller)**
+ - A's statement true → B is a Knave
+ - B is a Knave → B lies
+ - B says "same type" but that's false → A≠B ✓
+ - Consistent!
+ 
+ **Case 2: A is a Knave (liar)**
+ - A's statement false → B is a Knight
+ - B tells truth → A and B same type
+ - But A=Knave, B=Knight → different types
+ - Contradiction!
+ 
+ ### Answer: **A is a Knight, B is a Knave**`,
+     options: [
+       { text: "Both are Knights", isCorrect: false },
+       { text: "Both are Knaves", isCorrect: false },
+       { text: "A is Knight, B is Knave", isCorrect: true },
+       { text: "A is Knave, B is Knight", isCorrect: false },
+     ],
+   },
+   {
+     id: 163,
+     title: "River Crossing - Wolf, Goat, Cabbage",
+     text: "A farmer must cross a river with a wolf, goat, and cabbage. Boat fits farmer + 1 item. Wolf eats goat if left alone; goat eats cabbage. Minimum crossings?",
+     difficulty: "Easy",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## River Crossing Puzzle
+ 
+ ### Constraints
+ - Wolf + Goat alone = Wolf eats Goat
+ - Goat + Cabbage alone = Goat eats Cabbage
+ - Farmer must row the boat
+ 
+ ### Solution (7 crossings)
+ 1. Farmer takes Goat across →
+ 2. Farmer returns alone ←
+ 3. Farmer takes Wolf across →
+ 4. Farmer returns with Goat ← (key move!)
+ 5. Farmer takes Cabbage across →
+ 6. Farmer returns alone ←
+ 7. Farmer takes Goat across →
+ 
+ ### Key Insight
+ The goat cannot be left with either, so it must make extra trips.
+ 
+ ### Answer: **7 crossings minimum**`,
+     options: [
+       { text: "5 crossings", isCorrect: false },
+       { text: "7 crossings", isCorrect: true },
+       { text: "9 crossings", isCorrect: false },
+       { text: "It's impossible", isCorrect: false },
+     ],
+   },
+   {
+     id: 164,
+     title: "The Locker Problem",
+     text: "100 lockers, all closed. Student 1 opens all. Student 2 toggles every 2nd locker. Student 3 toggles every 3rd... After student 100, which lockers are open?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## The Locker Problem
+ 
+ ### Key Insight
+ A locker is toggled once for each of its divisors.
+ 
+ ### Odd vs Even Divisors
+ - Most numbers have even number of divisors
+ - Example: 12 → divisors 1,2,3,4,6,12 (6 divisors, ends closed)
+ 
+ **Perfect squares have ODD number of divisors!**
+ - Example: 9 → divisors 1,3,9 (3 divisors, ends open)
+ 
+ ### Why?
+ Divisors come in pairs: d × (n/d) = n
+ Except when d = n/d (i.e., n is a perfect square)
+ 
+ ### Answer
+ Open lockers: 1, 4, 9, 16, 25, 36, 49, 64, 81, 100
+ 
+ **10 lockers remain open (the perfect squares)**`,
+     options: [
+       { text: "All 100 are open", isCorrect: false },
+       { text: "50 are open (every other)", isCorrect: false },
+       { text: "10 are open (perfect squares only)", isCorrect: true },
+       { text: "None are open", isCorrect: false },
+     ],
+   },
+   {
+     id: 165,
+     title: "Burning Rope Timer",
+     text: "Two ropes each burn in exactly 60 minutes but non-uniformly. How do you measure exactly 45 minutes?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Burning Rope Timer
+ 
+ ### Challenge
+ Ropes burn non-uniformly (half rope ≠ 30 min)
+ 
+ ### Solution
+ 
+ **At t=0:**
+ - Light Rope A from BOTH ends
+ - Light Rope B from ONE end
+ 
+ **At t=30min:**
+ - Rope A finishes (burns from both ends = half time)
+ - Immediately light other end of Rope B
+ 
+ **At t=45min:**
+ - Rope B finishes (had 30min left, now burns from both ends = 15min more)
+ 
+ ### Why it works
+ - Rope A: 60/2 = 30 min
+ - Rope B remaining: 30/2 = 15 min
+ - Total: 30 + 15 = **45 minutes**`,
+     options: [
+       { text: "Cut the ropes into pieces", isCorrect: false },
+       { text: "Light Rope A from both ends, then light B's other end when A finishes", isCorrect: true },
+       { text: "Light both ropes from one end and estimate", isCorrect: false },
+       { text: "It's impossible with non-uniform ropes", isCorrect: false },
+     ],
+   },
+   {
+     id: 166,
+     title: "Infinite Hotel Paradox",
+     text: "A hotel with infinite rooms (all full) gets a new guest. How do you accommodate them without kicking anyone out?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Infinite Hotel Paradox (Hilbert's Hotel)
+ 
+ ### The Problem
+ ∞ rooms, ∞ guests, all rooms occupied
+ 
+ ### Solution for 1 new guest
+ Move each guest from room n to room n+1
+ - Guest in room 1 → room 2
+ - Guest in room 2 → room 3
+ - And so on...
+ - Room 1 is now free for new guest!
+ 
+ ### For infinite new guests
+ Move each guest from room n to room 2n
+ - All odd-numbered rooms become free!
+ 
+ ### Key Insight
+ This is possible because ∞ + 1 = ∞
+ The set of natural numbers has the same size as the set of even numbers.
+ 
+ ### Answer: **Shift everyone to the next room**`,
+     options: [
+       { text: "Build more rooms", isCorrect: false },
+       { text: "Move each guest from room n to room n+1", isCorrect: true },
+       { text: "It's impossible - hotel is full", isCorrect: false },
+       { text: "Ask someone to share a room", isCorrect: false },
+     ],
+   },
+   {
+     id: 167,
+     title: "Three Ants on Triangle",
+     text: "Three ants on vertices of an equilateral triangle. Each picks a random direction along an edge. What's the probability of no collision?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "calculation",
+     answer: `## Three Ants on Triangle
+ 
+ ### Setup
+ - 3 ants at vertices A, B, C
+ - Each independently chooses clockwise or counterclockwise
+ 
+ ### Total outcomes
+ Each ant has 2 choices: 2³ = 8 total outcomes
+ 
+ ### No collision cases
+ All move clockwise: CCC (1 way)
+ All move counterclockwise: CCC' (1 way)
+ 
+ ### Collision cases
+ All other combinations (6 ways)
+ 
+ ### Probability of NO collision
+ P = 2/8 = 1/4 = **25%**
+ 
+ ### Probability of collision
+ P = 6/8 = 3/4 = **75%**`,
+     options: [
+       { text: "25%", isCorrect: true },
+       { text: "33%", isCorrect: false },
+       { text: "50%", isCorrect: false },
+       { text: "75%", isCorrect: false },
+     ],
+   },
+   {
+     id: 168,
+     title: "Birthday Paradox",
+     text: "How many people needed in a room for >50% probability that two share a birthday?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "calculation",
+     answer: `## Birthday Paradox
+ 
+ ### Approach
+ Calculate P(no shared birthday), then subtract from 1
+ 
+ ### Formula
+ P(no match) = 365/365 × 364/365 × 363/365 × ...
+ 
+ ### For n people
+ P(no match) = 365!/[(365-n)! × 365^n]
+ 
+ ### Calculations
+ - 22 people: P(match) ≈ 47.6%
+ - 23 people: P(match) ≈ 50.7% ✓
+ - 50 people: P(match) ≈ 97%
+ - 70 people: P(match) ≈ 99.9%
+ 
+ ### Why it's surprising
+ We compare pairs, not individuals.
+ 23 people = 23×22/2 = 253 pairs
+ 
+ ### Answer: **23 people for >50% probability**`,
+     options: [
+       { text: "23 people", isCorrect: true },
+       { text: "50 people", isCorrect: false },
+       { text: "100 people", isCorrect: false },
+       { text: "183 people", isCorrect: false },
+     ],
+   },
+   {
+     id: 169,
+     title: "Weighing 8 Balls",
+     text: "8 identical balls, one is slightly heavier. Find the heavy ball using a balance scale in minimum weighings.",
+     difficulty: "Easy",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Weighing 8 Balls
+ 
+ ### Strategy: Divide into thirds
+ 
+ **Weighing 1:** 3 vs 3 (set aside 2)
+ 
+ **If balanced:**
+ Heavy ball is in the 2 set aside
+ Weighing 2: Compare those 2 → find heavy
+ 
+ **If unbalanced:**
+ Heavy ball in heavier group of 3
+ Weighing 2: Compare 2 of those 3
+ - If balanced: third is heavy
+ - If unbalanced: heavier side has the ball
+ 
+ ### Why this works
+ 3^2 = 9 > 8 outcomes possible with 2 weighings
+ 
+ ### Answer: **2 weighings minimum**
+ 
+ General formula: ⌈log₃(n)⌉ weighings for n balls`,
+     options: [
+       { text: "1 weighing", isCorrect: false },
+       { text: "2 weighings", isCorrect: true },
+       { text: "3 weighings", isCorrect: false },
+       { text: "4 weighings", isCorrect: false },
+     ],
+   },
+   {
+     id: 170,
+     title: "Chessboard and Dominoes",
+     text: "A standard 8×8 chessboard with opposite corners removed (62 squares). Can it be covered completely with 31 dominoes (each covers 2 adjacent squares)?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Chessboard and Dominoes
+ 
+ ### Setup
+ - 8×8 board = 64 squares
+ - Remove 2 opposite corners = 62 squares
+ - Each domino covers 2 squares
+ - 31 dominoes needed
+ 
+ ### Key Insight: Coloring argument
+ Chessboard alternates black and white squares.
+ - Normal: 32 black, 32 white
+ - Opposite corners are SAME color!
+ - After removal: 30 of one color, 32 of other
+ 
+ ### Why it's impossible
+ Each domino covers exactly 1 black + 1 white square.
+ 31 dominoes would cover 31 black + 31 white.
+ But we have 30 + 32 squares!
+ 
+ ### Answer: **Impossible - opposite corners are the same color**`,
+     options: [
+       { text: "Yes, it can be done", isCorrect: false },
+       { text: "No - opposite corners are the same color", isCorrect: true },
+       { text: "Only if you use L-shaped pieces", isCorrect: false },
+       { text: "Depends on which corners are removed", isCorrect: false },
+     ],
+   },
+   {
+     id: 171,
+     title: "Handshake Problem",
+     text: "At a party, everyone shakes hands with everyone else exactly once. If there were 45 handshakes, how many people attended?",
+     difficulty: "Easy",
+     categoryId: "puzzles",
+     type: "calculation",
+     answer: `## Handshake Problem
+ 
+ ### Formula
+ Handshakes = n(n-1)/2 (combinations of 2 from n)
+ 
+ ### Solve for n
+ n(n-1)/2 = 45
+ n(n-1) = 90
+ n² - n - 90 = 0
+ 
+ ### Factoring
+ (n-10)(n+9) = 0
+ n = 10 or n = -9
+ 
+ Since n must be positive: **n = 10**
+ 
+ ### Verification
+ 10 × 9 / 2 = 45 ✓
+ 
+ ### Answer: **10 people attended**`,
+     options: [
+       { text: "8 people", isCorrect: false },
+       { text: "9 people", isCorrect: false },
+       { text: "10 people", isCorrect: true },
+       { text: "15 people", isCorrect: false },
+     ],
+   },
+   {
+     id: 172,
+     title: "Gold Bar Payment",
+     text: "You have a 7-segment gold bar to pay a worker 1 segment per day for 7 days. With only 2 cuts allowed, how do you pay exactly 1 segment worth each day?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Gold Bar Payment
+ 
+ ### Constraint
+ - 7 segments needed (1/day × 7 days)
+ - Only 2 cuts allowed
+ 
+ ### Solution
+ Cut into pieces of 1, 2, and 4 segments
+ 
+ ### Daily Payments (giving and receiving back)
+ - Day 1: Give 1-piece
+ - Day 2: Give 2-piece, take back 1-piece
+ - Day 3: Give 1-piece (worker has 1+2=3)
+ - Day 4: Give 4-piece, take back 1+2
+ - Day 5: Give 1-piece
+ - Day 6: Give 2-piece, take back 1-piece
+ - Day 7: Give 1-piece
+ 
+ ### Key Insight
+ Binary representation! 1+2+4 = 7
+ Any number 1-7 can be made with these pieces.
+ 
+ ### Answer: **Cut into 1, 2, and 4 segment pieces**`,
+     options: [
+       { text: "Cut into 7 equal pieces", isCorrect: false },
+       { text: "Cut into 1, 2, and 4 segment pieces", isCorrect: true },
+       { text: "Cut into 1, 1, and 5 segment pieces", isCorrect: false },
+       { text: "It's impossible with 2 cuts", isCorrect: false },
+     ],
+   },
+   {
+     id: 173,
+     title: "Prisoner's Dilemma - Optimal Strategy",
+     text: "In iterated Prisoner's Dilemma, what strategy maximizes long-term payoff when playing repeatedly against the same opponent?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Prisoner's Dilemma - Optimal Strategy
+ 
+ ### Tit-for-Tat Strategy
+ 
+ **Rules:**
+ 1. Start by cooperating
+ 2. Then mirror opponent's previous move
+ 
+ ### Why it works
+ - **Nice:** Never defects first
+ - **Retaliatory:** Punishes defection
+ - **Forgiving:** Returns to cooperation
+ - **Clear:** Easy for opponent to understand
+ 
+ ### Axelrod's Tournament
+ In 1980, Robert Axelrod ran tournaments.
+ Tit-for-Tat (submitted by Anatol Rapoport) won!
+ 
+ ### Improvements
+ - "Tit-for-Tat with Forgiveness" - occasionally cooperates after defection
+ - Avoids endless retaliation cycles
+ 
+ ### Answer: **Tit-for-Tat: Cooperate first, then mirror opponent**`,
+     options: [
+       { text: "Always defect", isCorrect: false },
+       { text: "Always cooperate", isCorrect: false },
+       { text: "Tit-for-Tat", isCorrect: true },
+       { text: "Random choices", isCorrect: false },
+     ],
+   },
+   {
+     id: 174,
+     title: "Josephus Problem",
+     text: "41 soldiers in a circle. Every 3rd person is eliminated going clockwise. At which position should you stand to survive?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Josephus Problem (k=3, n=41)
+ 
+ ### Problem
+ n=41 people, every k=3rd eliminated
+ 
+ ### Recursive Formula
+ J(n,k) = (J(n-1,k) + k) mod n
+ J(1,k) = 0
+ 
+ ### For n=41, k=3
+ Working through the recursion:
+ J(41,3) = 30
+ 
+ ### But positions are 1-indexed!
+ Safe position = 30 + 1 = **Position 31**
+ 
+ ### Historical Note
+ Flavius Josephus (37-100 CE) reportedly used this to survive a Roman siege.
+ 
+ ### Answer: **Stand at position 31**`,
+     options: [
+       { text: "Position 1", isCorrect: false },
+       { text: "Position 21", isCorrect: false },
+       { text: "Position 31", isCorrect: true },
+       { text: "Position 41", isCorrect: false },
+     ],
+   },
+   {
+     id: 175,
+     title: "Two Trains Problem",
+     text: "Two trains 100 km apart approach each other at 50 km/h each. A bird flies between them at 75 km/h. How far does the bird fly before trains meet?",
+     difficulty: "Medium",
+     categoryId: "quantitative",
+     type: "calculation",
+     answer: `## Two Trains Problem
+ 
+ ### Simple Solution
+ Don't track the bird's path!
+ 
+ **Time until trains meet:**
+ - Combined speed = 50 + 50 = 100 km/h
+ - Distance = 100 km
+ - Time = 100/100 = 1 hour
+ 
+ **Bird's total distance:**
+ - Bird flies for 1 hour at 75 km/h
+ - Distance = 75 × 1 = **75 km**
+ 
+ ### Why the complex approach fails
+ Calculating each back-and-forth creates an infinite series.
+ The trick is realizing the bird flies for the same total time!
+ 
+ ### Answer: **75 km**
+ 
+ *Famous story: Von Neumann solved this instantly using the "sum the infinite series" method!*`,
+     options: [
+       { text: "50 km", isCorrect: false },
+       { text: "75 km", isCorrect: true },
+       { text: "100 km", isCorrect: false },
+       { text: "150 km", isCorrect: false },
+     ],
+   },
+   {
+     id: 176,
+     title: "Sqrt(2) Irrationality",
+     text: "Prove that √2 is irrational (cannot be expressed as a fraction).",
+     difficulty: "Medium",
+     categoryId: "quantitative",
+     type: "logical",
+     answer: `## Proof: √2 is Irrational
+ 
+ ### Proof by Contradiction
+ 
+ **Assume** √2 = p/q where p,q are integers with no common factors (lowest terms)
+ 
+ **Square both sides:**
+ 2 = p²/q²
+ 2q² = p²
+ 
+ **Therefore:** p² is even → p is even
+ Let p = 2k
+ 
+ **Substituting:**
+ 2q² = (2k)² = 4k²
+ q² = 2k²
+ 
+ **Therefore:** q² is even → q is even
+ 
+ ### Contradiction!
+ Both p and q are even → they share factor 2
+ But we said they have no common factors!
+ 
+ ### Conclusion
+ Our assumption was wrong.
+ **√2 cannot be expressed as p/q**
+ **√2 is irrational**`,
+     options: [
+       { text: "Use decimal expansion", isCorrect: false },
+       { text: "Proof by contradiction - both p and q must be even", isCorrect: true },
+       { text: "Calculate to many decimal places", isCorrect: false },
+       { text: "It is actually rational", isCorrect: false },
+     ],
+   },
+   {
+     id: 177,
+     title: "Prisoners and Boxes",
+     text: "100 prisoners must find their number among 100 boxes. Each opens 50 boxes. All must succeed. Random strategy: 0% chance. What strategy gives ~30% success?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Prisoners and Boxes (100 Prisoners Problem)
+ 
+ ### The Loop Strategy
+ 
+ **Method:**
+ 1. Start at box with your number
+ 2. Open that box
+ 3. Next, open the box with the number found
+ 4. Continue following the chain
+ 
+ ### Why it works
+ The boxes form permutation cycles.
+ - You succeed iff your cycle length ≤ 50
+ - All fail iff ANY cycle > 50
+ 
+ ### Probability Analysis
+ P(no cycle > 50) ≈ 1 - ln(2) ≈ 31.18%
+ 
+ ### Key Insight
+ This correlates everyone's fate - either all in short cycles succeed or all fail.
+ 
+ Random would be: (1/2)^100 ≈ 0%
+ 
+ ### Answer: **Follow the pointer chain - gives ~31% success!**`,
+     options: [
+       { text: "Open boxes in order 1-50", isCorrect: false },
+       { text: "Follow the pointer chain from your box number", isCorrect: true },
+       { text: "Open random 50 boxes", isCorrect: false },
+       { text: "Coordinate with other prisoners", isCorrect: false },
+     ],
+   },
+   {
+     id: 178,
+     title: "Sum to 100",
+     text: "Using only + and - signs between the digits 123456789, make the total equal to 100. Example: 1+2+3-4+5+6+78+9=100",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Sum to 100 Puzzle
+ 
+ ### Multiple Solutions Exist!
+ 
+ **Solution 1:**
+ 1+2+3-4+5+6+78+9 = 100 ✓
+ 
+ **Solution 2:**
+ 12+3-4+5+67+8+9 = 100 ✓
+ 
+ **Solution 3:**
+ 123-45-67+89 = 100 ✓
+ 
+ **Solution 4:**
+ 12-3-4+5-6+7+89 = 100 ✓
+ 
+ **Solution 5:**
+ 1+23-4+56+7+8+9 = 100 ✓
+ 
+ ### Minimum operations
+ Using just one + or -:
+ 123-45-67+89 = 100 (uses 3 signs)
+ 
+ ### Answer: **Multiple solutions, e.g., 123-45-67+89=100**`,
+     options: [
+       { text: "It's impossible", isCorrect: false },
+       { text: "123-45-67+89 = 100", isCorrect: true },
+       { text: "Only one solution exists", isCorrect: false },
+       { text: "Requires more than + and -", isCorrect: false },
+     ],
+   },
+   {
+     id: 179,
+     title: "Red and Blue Marbles",
+     text: "50 red and 50 blue marbles, 2 jars. Put all marbles in jars, then randomly pick a jar and draw a marble. Maximize probability of drawing red.",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "calculation",
+     answer: `## Red and Blue Marbles
+ 
+ ### Naive approach
+ 50 red in one jar, 50 blue in other
+ P(red) = 1/2 × 1 + 1/2 × 0 = 50%
+ 
+ ### Optimal Strategy
+ - Jar 1: 1 red marble
+ - Jar 2: 49 red + 50 blue = 99 marbles
+ 
+ ### Probability Calculation
+ P(red) = P(jar 1) × P(red|jar 1) + P(jar 2) × P(red|jar 2)
+ = 1/2 × 1 + 1/2 × (49/99)
+ = 0.5 + 0.2475
+ = **74.75%**
+ 
+ ### Why this works
+ Guaranteeing red from one jar while still having good odds from the other.
+ 
+ ### Answer: **~74.75% by putting 1 red in one jar, rest in other**`,
+     options: [
+       { text: "50%", isCorrect: false },
+       { text: "66%", isCorrect: false },
+       { text: "74.75%", isCorrect: true },
+       { text: "100%", isCorrect: false },
+     ],
+   },
+   {
+     id: 180,
+     title: "Cake Cutting for 3",
+     text: "How can 3 people divide a cake fairly so each person believes they got at least 1/3?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Fair Cake Cutting - 3 People
+ 
+ ### "Moving Knife" Method
+ 
+ **Procedure:**
+ 1. Person A slowly moves a knife from left to right
+ 2. Anyone who thinks it's at 1/3 point calls "stop"
+ 3. That person gets the left piece
+ 4. Remaining 2 use "I cut, you choose" for the rest
+ 
+ ### Alternative: Trimming Method
+ 
+ 1. A cuts cake into 3 "equal" pieces
+ 2. B can trim any piece they think is too big
+ 3. C chooses first
+ 4. If C didn't take trimmed piece, B must take it
+ 5. A takes last piece
+ 6. Trimmings divided by trimmer and piece-taker
+ 
+ ### Fairness Guarantee
+ Each person gets a piece they value at ≥ 1/3
+ 
+ ### Answer: **Moving knife or Stromquist moving knife protocol**`,
+     options: [
+       { text: "Have one person cut into 3 pieces, others choose", isCorrect: false },
+       { text: "Moving knife method - first to call stop takes piece", isCorrect: true },
+       { text: "Use a measuring device", isCorrect: false },
+       { text: "It's impossible fairly", isCorrect: false },
+     ],
+   },
+   {
+     id: 181,
+     title: "Missing Dollar Riddle",
+     text: "3 people pay $10 each for a $30 room. Clerk realizes it's $25, gives $5 back to bellboy. Bellboy keeps $2, gives $1 each back. So each paid $9 (total $27) + $2 bellboy = $29. Where's the missing dollar?",
+     difficulty: "Easy",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## The Missing Dollar Riddle
+ 
+ ### The Misdirection
+ The question creates false arithmetic!
+ 
+ ### Correct Accounting
+ 
+ **Money spent by guests:** $27
+ - Hotel got: $25
+ - Bellboy got: $2
+ - Total: $25 + $2 = $27 ✓
+ 
+ **Money flow:**
+ - Originally paid: $30
+ - Returned to guests: $3
+ - Kept by guests: $3
+ - Total: $27 + $3 = $30 ✓
+ 
+ ### The Trick
+ $27 (paid) - $2 (bellboy) = $25 (hotel)
+ NOT $27 + $2!
+ 
+ The $2 is already INSIDE the $27, not additional to it!
+ 
+ ### Answer: **There is no missing dollar - it's a misleading addition**`,
+     options: [
+       { text: "The dollar was stolen", isCorrect: false },
+       { text: "The calculation is misleading - no dollar is missing", isCorrect: true },
+       { text: "The hotel kept it", isCorrect: false },
+       { text: "Rounding error", isCorrect: false },
+     ],
+   },
+   {
+     id: 182,
+     title: "Coin Flip Fairness",
+     text: "You have a biased coin (unknown probability). How do you use it to make fair 50-50 decisions?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Fair Decision with Biased Coin
+ 
+ ### Von Neumann's Method
+ 
+ **Procedure:**
+ 1. Flip coin twice
+ 2. If HT → call it "Heads" (outcome A)
+ 3. If TH → call it "Tails" (outcome B)
+ 4. If HH or TT → discard and repeat
+ 
+ ### Why it works
+ Let P(H) = p, P(T) = 1-p
+ 
+ P(HT) = p × (1-p)
+ P(TH) = (1-p) × p
+ 
+ These are equal! So conditional on getting HT or TH:
+ P(HT | {HT or TH}) = 50%
+ 
+ ### Efficiency
+ P(usable outcome) = 2p(1-p)
+ Maximum efficiency = 50% when p = 0.5
+ 
+ ### Answer: **Flip twice: HT=A, TH=B, otherwise repeat**`,
+     options: [
+       { text: "It's impossible with a biased coin", isCorrect: false },
+       { text: "Flip twice: HT=A, TH=B, repeat if HH or TT", isCorrect: true },
+       { text: "Flip it 100 times and count", isCorrect: false },
+       { text: "Weight the coin on the other side", isCorrect: false },
+     ],
+   },
+   {
+     id: 183,
+     title: "N Queens Problem",
+     text: "How many ways can you place 8 queens on a chess board so no two attack each other?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## 8 Queens Problem
+ 
+ ### Constraints
+ No two queens on same:
+ - Row
+ - Column
+ - Diagonal
+ 
+ ### Solution Count
+ For 8×8 board: **92 distinct solutions**
+ 
+ With rotational/reflection symmetry: **12 fundamental solutions**
+ 
+ ### One Solution
+ Queens at: a5, b3, c1, d7, e2, f8, g6, h4
+ 
+ ### Algorithm
+ Typically solved using backtracking:
+ 1. Place queen in first row
+ 2. Try each column in next row
+ 3. Backtrack if no valid position
+ 
+ ### General n-Queens
+ | n | Solutions |
+ |---|-----------|
+ | 4 | 2 |
+ | 8 | 92 |
+ | 12 | 14,200 |
+ 
+ ### Answer: **92 distinct solutions**`,
+     options: [
+       { text: "8 solutions", isCorrect: false },
+       { text: "64 solutions", isCorrect: false },
+       { text: "92 solutions", isCorrect: true },
+       { text: "It's impossible", isCorrect: false },
+     ],
+   },
+   {
+     id: 184,
+     title: "Zeno's Paradox",
+     text: "Achilles gives a tortoise a 100m head start. Achilles runs 10× faster. Each time he reaches where the tortoise was, it has moved. Does Achilles catch up?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Zeno's Paradox
+ 
+ ### The Infinite Series
+ - Achilles runs 100m → tortoise moved 10m
+ - Achilles runs 10m → tortoise moved 1m
+ - Achilles runs 1m → tortoise moved 0.1m
+ - ...and so on infinitely
+ 
+ ### Mathematical Resolution
+ Total distance = 100 + 10 + 1 + 0.1 + ...
+ = 100 × (1 + 0.1 + 0.01 + ...)
+ = 100 × (1/(1-0.1))
+ = 100 × 10/9
+ = **111.11 meters**
+ 
+ ### Time to catch up
+ If Achilles runs at 10 m/s:
+ t = 111.11/10 = 11.11 seconds
+ 
+ ### Resolution
+ Infinite steps don't require infinite time!
+ The infinite series converges to a finite sum.
+ 
+ ### Answer: **Yes, Achilles catches up at 111.11m in finite time**`,
+     options: [
+       { text: "No, he never catches up", isCorrect: false },
+       { text: "Yes, at 111.11m in finite time", isCorrect: true },
+       { text: "Only if he runs faster", isCorrect: false },
+       { text: "It depends on the tortoise's shell", isCorrect: false },
+     ],
+   },
+   {
+     id: 185,
+     title: "Pascal's Triangle Row Sum",
+     text: "What is the sum of all numbers in the 10th row of Pascal's Triangle?",
+     difficulty: "Easy",
+     categoryId: "pattern",
+     type: "calculation",
+     answer: `## Pascal's Triangle Row Sum
+ 
+ ### Pattern
+ Row n sums to 2^n (rows numbered from 0)
+ 
+ | Row | Numbers | Sum |
+ |-----|---------|-----|
+ | 0 | 1 | 1 = 2^0 |
+ | 1 | 1,1 | 2 = 2^1 |
+ | 2 | 1,2,1 | 4 = 2^2 |
+ | 3 | 1,3,3,1 | 8 = 2^3 |
+ 
+ ### Why?
+ Row n elements are: C(n,0) + C(n,1) + ... + C(n,n)
+ By binomial theorem: (1+1)^n = 2^n
+ 
+ ### 10th Row (row number 10)
+ Sum = 2^10 = **1024**
+ 
+ ### Note
+ If "10th row" means the row starting 1,9,36...
+ That's actually row 9: sum = 2^9 = 512
+ 
+ ### Answer: **2^10 = 1024** (or 512 if 1-indexed)`,
+     options: [
+       { text: "512", isCorrect: false },
+       { text: "1024", isCorrect: true },
+       { text: "2048", isCorrect: false },
+       { text: "100", isCorrect: false },
+     ],
+   },
+   {
+     id: 186,
+     title: "Four 4s Puzzle",
+     text: "Express the number 17 using exactly four 4s and any mathematical operations.",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Four 4s - Making 17
+ 
+ ### Solutions
+ 
+ **Solution 1:**
+ 4 × 4 + 4/4 = 16 + 1 = **17** ✓
+ 
+ **Solution 2:**
+ (4 + 4) × 4 / 4 + 13... wait, need only 4s!
+ 
+ **Solution 3:**
+ 4! - 4 - 4/4 = 24 - 4 - 1 = 19... not quite
+ 
+ **Clean solution:**
+ **4 × 4 + 4/4 = 17**
+ 
+ ### Other numbers with four 4s
+ - 0 = 4 + 4 - 4 - 4
+ - 1 = 4/4 × 4/4
+ - 2 = 4/4 + 4/4
+ - 10 = (44 - 4)/4
+ 
+ ### Answer: **4 × 4 + 4/4 = 17**`,
+     options: [
+       { text: "4 + 4 + 4 + 4 = 17", isCorrect: false },
+       { text: "4 × 4 + 4/4 = 17", isCorrect: true },
+       { text: "(4 + 4) × (4 - 4) = 17", isCorrect: false },
+       { text: "It's impossible", isCorrect: false },
+     ],
+   },
+   {
+     id: 187,
+     title: "Calendar Math",
+     text: "If January 1st is a Monday, what day is December 31st of the same non-leap year?",
+     difficulty: "Easy",
+     categoryId: "quantitative",
+     type: "calculation",
+     answer: `## Calendar Math
+ 
+ ### Days in non-leap year
+ 365 days
+ 
+ ### Days after Jan 1
+ Dec 31 is day 365 (or 364 days after Jan 1)
+ 
+ ### Modulo 7
+ 364 ÷ 7 = 52 weeks exactly
+ So Dec 31 is same day as Jan 1!
+ 
+ Wait, let's recalculate:
+ Jan 1 = Day 1 (Monday)
+ Dec 31 = Day 365
+ 
+ Days to advance = 365 - 1 = 364
+ 364 mod 7 = 0
+ 
+ ### Answer
+ Dec 31 is **Monday**
+ 
+ ### Leap year
+ 366 mod 7 = 1
+ Dec 31 would be Tuesday
+ 
+ ### Answer: **Monday** (same as Jan 1)`,
+     options: [
+       { text: "Sunday", isCorrect: false },
+       { text: "Monday", isCorrect: true },
+       { text: "Tuesday", isCorrect: false },
+       { text: "Wednesday", isCorrect: false },
+     ],
+   },
+   {
+     id: 188,
+     title: "Fibonacci Sequence Sum",
+     text: "What is the sum of the first 10 Fibonacci numbers? (1, 1, 2, 3, 5, 8, 13, 21, 34, 55)",
+     difficulty: "Easy",
+     categoryId: "pattern",
+     type: "calculation",
+     answer: `## Sum of First 10 Fibonacci Numbers
+ 
+ ### Fibonacci Sequence
+ F₁=1, F₂=1, F₃=2, F₄=3, F₅=5, F₆=8, F₇=13, F₈=21, F₉=34, F₁₀=55
+ 
+ ### Direct Sum
+ 1+1+2+3+5+8+13+21+34+55 = **143**
+ 
+ ### Formula
+ Sum of first n Fibonacci = F(n+2) - 1
+ 
+ F₁₂ = 144
+ Sum = 144 - 1 = 143 ✓
+ 
+ ### Verification
+ 1+1=2, +2=4, +3=7, +5=12, +8=20, +13=33, +21=54, +34=88, +55=143
+ 
+ ### Answer: **143**`,
+     options: [
+       { text: "89", isCorrect: false },
+       { text: "143", isCorrect: true },
+       { text: "144", isCorrect: false },
+       { text: "233", isCorrect: false },
+     ],
+   },
+   {
+     id: 189,
+     title: "Magic Square Sum",
+     text: "In a 3×3 magic square using numbers 1-9, what is the magic constant (row/column/diagonal sum)?",
+     difficulty: "Easy",
+     categoryId: "puzzles",
+     type: "calculation",
+     answer: `## Magic Square Constant
+ 
+ ### Total Sum
+ 1+2+3+4+5+6+7+8+9 = 45
+ 
+ ### Magic Constant
+ 3 rows must sum to same value
+ Total = 45
+ Each row = 45/3 = **15**
+ 
+ ### The 3×3 Magic Square
+ \`\`\`
+ 2 | 7 | 6
+ 9 | 5 | 1
+ 4 | 3 | 8
+ \`\`\`
+ 
+ ### Verification
+ - Rows: 2+7+6=15, 9+5+1=15, 4+3+8=15 ✓
+ - Cols: 2+9+4=15, 7+5+3=15, 6+1+8=15 ✓
+ - Diag: 2+5+8=15, 6+5+4=15 ✓
+ 
+ ### General Formula
+ For n×n magic square with 1 to n²:
+ Magic constant = n(n² + 1)/2
+ 
+ ### Answer: **15**`,
+     options: [
+       { text: "12", isCorrect: false },
+       { text: "15", isCorrect: true },
+       { text: "18", isCorrect: false },
+       { text: "21", isCorrect: false },
+     ],
+   },
+   {
+     id: 190,
+     title: "Prime Number Puzzle",
+     text: "What is the smallest prime number that is the sum of three different prime numbers?",
+     difficulty: "Easy",
+     categoryId: "quantitative",
+     type: "logical",
+     answer: `## Smallest Prime = Sum of 3 Different Primes
+ 
+ ### First few primes
+ 2, 3, 5, 7, 11, 13, 17, 19, 23...
+ 
+ ### Trying smallest combinations
+ - 2+3+5 = 10 (not prime)
+ - 2+3+7 = 12 (not prime)
+ - 2+5+7 = 14 (not prime)
+ - 3+5+7 = 15 (not prime)
+ - 2+3+11 = 16 (not prime)
+ - 2+5+11 = 18 (not prime)
+ - 2+3+13 = 18 (not prime)
+ - 3+5+11 = 19 (prime!) ✓
+ 
+ ### Verification
+ 3, 5, 11 are all prime
+ 3+5+11 = 19 is prime
+ 
+ ### Answer: **19 = 3 + 5 + 11**`,
+     options: [
+       { text: "10", isCorrect: false },
+       { text: "13", isCorrect: false },
+       { text: "17", isCorrect: false },
+       { text: "19", isCorrect: true },
+     ],
+   },
+   {
+     id: 191,
+     title: "Ages Riddle",
+     text: "A father is 3 times as old as his son. 12 years ago, he was 6 times as old. How old are they now?",
+     difficulty: "Easy",
+     categoryId: "quantitative",
+     type: "calculation",
+     answer: `## Ages Riddle
+ 
+ ### Let son's current age = S
+ Father's current age = 3S
+ 
+ ### 12 years ago
+ Son was: S - 12
+ Father was: 3S - 12
+ 
+ ### Given condition
+ 3S - 12 = 6(S - 12)
+ 3S - 12 = 6S - 72
+ -12 + 72 = 6S - 3S
+ 60 = 3S
+ S = 20
+ 
+ ### Current ages
+ - Son: **20 years**
+ - Father: **60 years**
+ 
+ ### Verification
+ - Now: 60 = 3 × 20 ✓
+ - 12 years ago: 48 = 6 × 8 ✓
+ 
+ ### Answer: **Son is 20, Father is 60**`,
+     options: [
+       { text: "Son 15, Father 45", isCorrect: false },
+       { text: "Son 18, Father 54", isCorrect: false },
+       { text: "Son 20, Father 60", isCorrect: true },
+       { text: "Son 24, Father 72", isCorrect: false },
+     ],
+   },
+   {
+     id: 192,
+     title: "Escalator Steps",
+     text: "Walking up an escalator, you count 20 steps. Walking down the same escalator (moving up), you count 60 steps. How many steps are visible on the stationary escalator?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "calculation",
+     answer: `## Escalator Problem
+ 
+ ### Variables
+ - N = total visible steps
+ - v = your walking speed (steps/time)
+ - e = escalator speed (steps/time)
+ 
+ ### Walking Up (with escalator)
+ Time = 20/v
+ Steps covered by escalator = e × 20/v
+ Total: 20 + e×20/v = N ... (1)
+ 
+ ### Walking Down (against escalator)
+ Time = 60/v
+ Steps escalator moved = e × 60/v
+ Total: 60 - e×60/v = N ... (2)
+ 
+ ### Solving
+ From (1): e/v = (N-20)/20
+ From (2): e/v = (60-N)/60
+ 
+ (N-20)/20 = (60-N)/60
+ 3(N-20) = 60-N
+ 3N - 60 = 60 - N
+ 4N = 120
+ N = **30 steps**
+ 
+ ### Answer: **30 visible steps**`,
+     options: [
+       { text: "25 steps", isCorrect: false },
+       { text: "30 steps", isCorrect: true },
+       { text: "40 steps", isCorrect: false },
+       { text: "45 steps", isCorrect: false },
+     ],
+   },
+   {
+     id: 193,
+     title: "Consecutive Sum",
+     text: "Express 100 as a sum of consecutive positive integers in as many ways as possible.",
+     difficulty: "Medium",
+     categoryId: "quantitative",
+     type: "calculation",
+     answer: `## 100 as Sum of Consecutive Integers
+ 
+ ### Formula
+ Sum from a to b = (b-a+1)(a+b)/2 = 100
+ Let n = count, a = start
+ n(2a + n - 1)/2 = 100
+ n(2a + n - 1) = 200
+ 
+ ### Finding solutions
+ n must divide 200, and a must be positive.
+ 
+ **n=4:** a = (200/4 - 3)/2 = 47/2 (not integer)
+ **n=5:** a = (40 - 4)/2 = 18 → 18+19+20+21+22=100 ✓
+ **n=8:** a = (25 - 7)/2 = 9 → 9+10+...+16=100 ✓
+ **n=16:** a = (12.5 - 15)/2 (negative, skip)
+ 
+ ### All Solutions
+ 1. 18+19+20+21+22 = 100 (5 terms)
+ 2. 9+10+11+12+13+14+15+16 = 100 (8 terms)
+ 
+ ### Answer: **2 ways: {18-22} and {9-16}**`,
+     options: [
+       { text: "1 way", isCorrect: false },
+       { text: "2 ways", isCorrect: true },
+       { text: "3 ways", isCorrect: false },
+       { text: "5 ways", isCorrect: false },
+     ],
+   },
+   {
+     id: 194,
+     title: "Two-Door Riddle",
+     text: "Two doors: one leads to freedom, one to death. Two guards: one always lies, one always tells truth. You can ask one question. What do you ask?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Two-Door Riddle
+ 
+ ### The Universal Question
+ Ask either guard:
+ **"If I asked the OTHER guard which door leads to freedom, what would he say?"**
+ 
+ Then choose the OPPOSITE door.
+ 
+ ### Why it works
+ 
+ **If you ask the truth-teller:**
+ - He honestly reports what the liar would say
+ - Liar would point to death door
+ - Truth-teller says: "Death door"
+ 
+ **If you ask the liar:**
+ - Truth-teller would point to freedom door
+ - Liar lies about this, points to death door
+ - Liar says: "Death door"
+ 
+ ### Both give the wrong door!
+ So always choose the opposite of their answer.
+ 
+ ### Alternative question
+ "Would you say this door leads to freedom?"
+ 
+ ### Answer: **Ask what the other guard would say, then choose opposite**`,
+     options: [
+       { text: "Ask if they're the truth-teller", isCorrect: false },
+       { text: "Ask what the other guard would say, choose opposite", isCorrect: true },
+       { text: "Ask both guards the same question", isCorrect: false },
+       { text: "Flip a coin", isCorrect: false },
+     ],
+   },
+   {
+     id: 195,
+     title: "Divisibility by 11",
+     text: "What is the divisibility rule for 11? Is 918273645 divisible by 11?",
+     difficulty: "Medium",
+     categoryId: "quantitative",
+     type: "calculation",
+     answer: `## Divisibility by 11
+ 
+ ### Rule
+ Alternating sum of digits must be divisible by 11.
+ (Sum of odd-position digits) - (Sum of even-position digits)
+ 
+ ### For 918273645
+ Digits: 9, 1, 8, 2, 7, 3, 6, 4, 5
+ Positions: 1, 2, 3, 4, 5, 6, 7, 8, 9
+ 
+ Odd positions: 9 + 8 + 7 + 6 + 5 = 35
+ Even positions: 1 + 2 + 3 + 4 = 10
+ 
+ Difference: 35 - 10 = 25
+ 
+ 25 ÷ 11 = 2 remainder 3
+ 
+ ### Conclusion
+ 25 is NOT divisible by 11
+ Therefore, 918273645 is **NOT divisible by 11**
+ 
+ ### Answer: **No, difference is 25, not divisible by 11**`,
+     options: [
+       { text: "Yes, it's divisible by 11", isCorrect: false },
+       { text: "No, alternating sum is 25", isCorrect: true },
+       { text: "Yes, sum of digits is divisible by 11", isCorrect: false },
+       { text: "Cannot be determined", isCorrect: false },
+     ],
+   },
+   {
+     id: 196,
+     title: "Infinite Ladder",
+     text: "What is the value of √(2 + √(2 + √(2 + √(2 + ...))))?",
+     difficulty: "Medium",
+     categoryId: "pattern",
+     type: "calculation",
+     answer: `## Infinite Nested Radical
+ 
+ ### Let x = √(2 + √(2 + √(2 + ...)))
+ 
+ Then x = √(2 + x)
+ 
+ ### Solving
+ x² = 2 + x
+ x² - x - 2 = 0
+ (x-2)(x+1) = 0
+ 
+ x = 2 or x = -1
+ 
+ Since x must be positive: **x = 2**
+ 
+ ### Verification
+ If x = 2: √(2 + 2) = √4 = 2 ✓
+ 
+ ### General Pattern
+ √(n + √(n + √(n + ...))) = (1 + √(1+4n))/2
+ 
+ For n=2: (1 + √9)/2 = (1+3)/2 = 2 ✓
+ 
+ ### Answer: **2**`,
+     options: [
+       { text: "√2", isCorrect: false },
+       { text: "1.5", isCorrect: false },
+       { text: "2", isCorrect: true },
+       { text: "∞", isCorrect: false },
+     ],
+   },
+   {
+     id: 197,
+     title: "Probability of Same Birthday",
+     text: "What's the probability that in a family of 4, at least two share the same birth month?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "calculation",
+     answer: `## Same Birth Month Probability
+ 
+ ### Method: P(at least 2 same) = 1 - P(all different)
+ 
+ ### P(all different months)
+ Person 1: 12/12 = 1 (any month)
+ Person 2: 11/12 (different from 1)
+ Person 3: 10/12 (different from 1,2)
+ Person 4: 9/12 (different from 1,2,3)
+ 
+ P(all different) = (12 × 11 × 10 × 9) / 12⁴
+ = 11880 / 20736
+ = 0.573
+ 
+ ### P(at least 2 same)
+ = 1 - 0.573
+ = **0.427 or 42.7%**
+ 
+ ### Answer: **About 42.7%** (or 41/96 exactly)`,
+     options: [
+       { text: "25%", isCorrect: false },
+       { text: "33%", isCorrect: false },
+       { text: "42.7%", isCorrect: true },
+       { text: "50%", isCorrect: false },
+     ],
+   },
+   {
+     id: 198,
+     title: "Clock Overlap",
+     text: "How many times do the hour and minute hands of a clock overlap in 24 hours?",
+     difficulty: "Medium",
+     categoryId: "quantitative",
+     type: "logical",
+     answer: `## Clock Hand Overlaps
+ 
+ ### Analysis
+ Minute hand is faster than hour hand.
+ 
+ In 12 hours:
+ - Minute hand: 12 complete rotations
+ - Hour hand: 1 complete rotation
+ - Relative movement: 12 - 1 = 11 rotations
+ 
+ ### Overlaps in 12 hours
+ They overlap once per relative rotation = **11 times**
+ 
+ ### Overlap times (12-hour period)
+ 12:00, ~1:05, ~2:11, ~3:16, ~4:22, ~5:27,
+ ~6:33, ~7:38, ~8:44, ~9:49, ~10:55
+ 
+ ### In 24 hours
+ 11 × 2 = **22 times**
+ 
+ ### Common mistake
+ Thinking it's 24 times (once per hour) - but at 12:00 they overlap, and they don't overlap between 11:00-12:00 and 12:00-1:00 separately.
+ 
+ ### Answer: **22 times in 24 hours**`,
+     options: [
+       { text: "12 times", isCorrect: false },
+       { text: "22 times", isCorrect: true },
+       { text: "24 times", isCorrect: false },
+       { text: "48 times", isCorrect: false },
+     ],
+   },
+   {
+     id: 199,
+     title: "River Current Speed",
+     text: "A boat takes 6 hours to travel upstream and 4 hours downstream for the same 48 km distance. Find the speed of the current.",
+     difficulty: "Medium",
+     categoryId: "quantitative",
+     type: "calculation",
+     answer: `## River Current Problem
+ 
+ ### Given
+ - Distance = 48 km (each way)
+ - Upstream time = 6 hours
+ - Downstream time = 4 hours
+ 
+ ### Speeds
+ Upstream speed = 48/6 = 8 km/h
+ Downstream speed = 48/4 = 12 km/h
+ 
+ ### Let
+ - Boat speed in still water = B
+ - Current speed = C
+ 
+ ### Equations
+ B - C = 8 (upstream)
+ B + C = 12 (downstream)
+ 
+ ### Solving
+ Adding: 2B = 20 → B = 10 km/h
+ Subtracting: 2C = 4 → **C = 2 km/h**
+ 
+ ### Verification
+ - Upstream: 10 - 2 = 8 km/h ✓
+ - Downstream: 10 + 2 = 12 km/h ✓
+ 
+ ### Answer: **Current speed = 2 km/h**`,
+     options: [
+       { text: "1 km/h", isCorrect: false },
+       { text: "2 km/h", isCorrect: true },
+       { text: "3 km/h", isCorrect: false },
+       { text: "4 km/h", isCorrect: false },
+     ],
+   },
+   {
+     id: 200,
+     title: "Mutual Fund Returns",
+     text: "An investment gains 20% in year 1 and loses 20% in year 2. What is the overall percentage change?",
+     difficulty: "Easy",
+     categoryId: "quantitative",
+     type: "calculation",
+     answer: `## Mutual Fund Returns
+ 
+ ### Calculation
+ Start with $100
+ 
+ **Year 1: +20%**
+ $100 × 1.20 = $120
+ 
+ **Year 2: -20%**
+ $120 × 0.80 = $96
+ 
+ ### Overall Change
+ ($96 - $100) / $100 × 100 = **-4%**
+ 
+ ### Formula
+ For successive changes of +a% and -a%:
+ Net change = -a²/100 %
+ 
+ = -(20)²/100 = -4%
+ 
+ ### Key Insight
+ 20% of 120 > 20% of 100
+ So losing 20% after gaining 20% results in net loss!
+ 
+ ### Answer: **4% loss (not break-even)**`,
+     options: [
+       { text: "0% (break even)", isCorrect: false },
+       { text: "-4%", isCorrect: true },
+       { text: "+4%", isCorrect: false },
+       { text: "-2%", isCorrect: false },
+     ],
+   },
+   {
+     id: 201,
+     title: "Dice Roll Probability",
+     text: "Rolling two dice, what's the probability of getting a sum of 7?",
+     difficulty: "Easy",
+     categoryId: "quantitative",
+     type: "calculation",
+     answer: `## Sum of 7 with Two Dice
+ 
+ ### Total outcomes
+ 6 × 6 = 36 possible outcomes
+ 
+ ### Favorable outcomes (sum = 7)
+ - (1,6)
+ - (2,5)
+ - (3,4)
+ - (4,3)
+ - (5,2)
+ - (6,1)
+ 
+ **6 favorable outcomes**
+ 
+ ### Probability
+ P(sum=7) = 6/36 = **1/6 ≈ 16.67%**
+ 
+ ### Why 7 is most likely
+ | Sum | Ways |
+ |-----|------|
+ | 2 | 1 |
+ | 3 | 2 |
+ | 7 | 6 |
+ | 12 | 1 |
+ 
+ 7 has the most combinations!
+ 
+ ### Answer: **1/6 or approximately 16.67%**`,
+     options: [
+       { text: "1/12", isCorrect: false },
+       { text: "1/6", isCorrect: true },
+       { text: "1/7", isCorrect: false },
+       { text: "2/7", isCorrect: false },
+     ],
+   },
+   {
+     id: 202,
+     title: "Tower of Hanoi",
+     text: "Minimum moves to solve Tower of Hanoi with 5 disks?",
+     difficulty: "Medium",
+     categoryId: "puzzles",
+     type: "calculation",
+     answer: `## Tower of Hanoi
+ 
+ ### Formula
+ Minimum moves for n disks = 2ⁿ - 1
+ 
+ ### For 5 disks
+ Moves = 2⁵ - 1 = 32 - 1 = **31 moves**
+ 
+ ### Why 2ⁿ - 1?
+ Recursive thinking:
+ 1. Move n-1 disks to auxiliary peg: T(n-1) moves
+ 2. Move largest disk to target: 1 move
+ 3. Move n-1 disks to target: T(n-1) moves
+ 
+ T(n) = 2T(n-1) + 1
+ Solution: T(n) = 2ⁿ - 1
+ 
+ ### Values
+ | Disks | Moves |
+ |-------|-------|
+ | 1 | 1 |
+ | 2 | 3 |
+ | 3 | 7 |
+ | 4 | 15 |
+ | 5 | 31 |
+ 
+ ### Answer: **31 moves**`,
+     options: [
+       { text: "15 moves", isCorrect: false },
+       { text: "25 moves", isCorrect: false },
+       { text: "31 moves", isCorrect: true },
+       { text: "63 moves", isCorrect: false },
+     ],
+   },
+   {
+     id: 203,
+     title: "Leap Year Calculation",
+     text: "How many leap years are there between 1900 and 2100 (inclusive)?",
+     difficulty: "Medium",
+     categoryId: "quantitative",
+     type: "calculation",
+     answer: `## Leap Years 1900-2100
+ 
+ ### Leap Year Rules
+ 1. Divisible by 4: leap year
+ 2. EXCEPT if divisible by 100: not leap year
+ 3. EXCEPT if divisible by 400: leap year
+ 
+ ### Years divisible by 4
+ 1900 to 2100: (2100-1900)/4 + 1 = 51 years
+ 
+ ### Subtract century years (divisible by 100)
+ 1900, 2000, 2100 = 3 years
+ 
+ ### Add back 400-year years
+ 2000 is divisible by 400 = 1 year
+ 
+ ### Calculation
+ 51 - 3 + 1 = **49 leap years**
+ 
+ ### Key exceptions
+ - 1900: NOT a leap year (÷100 but not ÷400)
+ - 2000: IS a leap year (÷400)
+ - 2100: NOT a leap year (÷100 but not ÷400)
+ 
+ ### Answer: **49 leap years**`,
+     options: [
+       { text: "48", isCorrect: false },
+       { text: "49", isCorrect: true },
+       { text: "50", isCorrect: false },
+       { text: "51", isCorrect: false },
+     ],
+   },
+   {
+     id: 204,
+     title: "Matching Socks Probability",
+     text: "A drawer has 10 red and 10 blue socks. How many socks must you draw (blindfolded) to guarantee a matching pair?",
+     difficulty: "Easy",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Matching Socks Problem
+ 
+ ### Pigeonhole Principle
+ 2 colors = 2 "pigeonholes"
+ 
+ ### Worst case
+ You could draw:
+ 1st sock: any color
+ 2nd sock: different color
+ 3rd sock: must match one of the previous!
+ 
+ ### Answer
+ **3 socks guarantee a matching pair**
+ 
+ ### General formula
+ For n colors: need n+1 socks
+ 
+ ### Extended problem
+ For 3 socks of same color (10 red, 10 blue):
+ Worst case: 2 red, 2 blue
+ Need: **5 socks**
+ 
+ ### Key insight
+ We need CERTAINTY, not probability.
+ "At least one pair" is guaranteed after n+1 draws.
+ 
+ ### Answer: **3 socks**`,
+     options: [
+       { text: "2 socks", isCorrect: false },
+       { text: "3 socks", isCorrect: true },
+       { text: "11 socks", isCorrect: false },
+       { text: "12 socks", isCorrect: false },
+     ],
+   },
+   {
+     id: 205,
+     title: "Water in Wine Paradox",
+     text: "Glass A has wine, Glass B has water. Transfer 1 spoon from A→B, mix, then 1 spoon from B→A. Is there more water in the wine or wine in the water?",
+     difficulty: "Hard",
+     categoryId: "puzzles",
+     type: "logical",
+     answer: `## Water in Wine Paradox
+ 
+ ### Initial State
+ Glass A: 100ml wine
+ Glass B: 100ml water
+ Spoon: 10ml
+ 
+ ### Transfer 1 (A→B)
+ Move 10ml wine to B
+ A: 90ml wine
+ B: 100ml water + 10ml wine (mixed)
+ 
+ ### Transfer 2 (B→A)
+ Spoon from B contains:
+ - Water: 10 × 100/110 = 100/11 ml
+ - Wine: 10 × 10/110 = 10/11 ml
+ 
+ ### Final State
+ A: 90 + 10/11 wine + 100/11 water
+ B: 100/11 wine + (remaining water)
+ 
+ ### The Insight
+ However much wine is missing from A must be in B.
+ However much water is in A came from B.
+ 
+ **They must be equal!**
+ 
+ ### Answer: **They are exactly equal** (regardless of spoon size or mixing)`,
+     options: [
+       { text: "More water in wine", isCorrect: false },
+       { text: "More wine in water", isCorrect: false },
+       { text: "Exactly equal amounts", isCorrect: true },
+       { text: "Depends on spoon size", isCorrect: false },
+     ],
+   },
  ];
  
  // Helper functions
