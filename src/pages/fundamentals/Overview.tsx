@@ -21,6 +21,7 @@ import FundamentalsLeaderboard from "@/components/library/FundamentalsLeaderboar
 import FundamentalsAnalytics from "@/components/library/FundamentalsAnalytics";
 import AchievementBadge, { achievements, type Achievement } from "@/components/AchievementBadge";
 import { useUserAchievements } from "@/hooks/useUserAchievements";
+import FundamentalsStreakCard from "@/components/FundamentalsStreakCard";
 
 interface ProgressStats {
   languagesCompleted: number;
@@ -292,6 +293,15 @@ const FundamentalsOverview: React.FC = () => {
               />
             </CardContent>
           </Card>
+        </motion.div>
+
+        {/* Streak Tracker */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <FundamentalsStreakCard />
         </motion.div>
 
         {/* Achievements Section */}
