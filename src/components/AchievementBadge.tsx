@@ -28,7 +28,7 @@ export interface Achievement {
   icon: keyof typeof iconMap;
   color: string;
   requirement: {
-    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics' | 'quiz_perfect_score' | 'quiz_speed_demon' | 'quiz_challenge_complete' | 'quiz_accuracy' | 'quiz_streak' | 'fundamentals_quiz_count' | 'fundamentals_accuracy' | 'fundamentals_mastery' | 'fundamentals_streak';
+    type: 'topics_completed' | 'streak_days' | 'sheets_started' | 'revision_topics' | 'quiz_perfect_score' | 'quiz_speed_demon' | 'quiz_challenge_complete' | 'quiz_accuracy' | 'quiz_streak' | 'fundamentals_quiz_count' | 'fundamentals_accuracy' | 'fundamentals_mastery' | 'fundamentals_streak' | 'system_design_quiz_count' | 'system_design_accuracy' | 'system_design_mastery';
     value: number;
   };
 }
@@ -49,6 +49,7 @@ const iconMap = {
   swords: Swords,
   brain: Brain,
   sparkles: Sparkles,
+  users: Users,
 };
 
 export const achievements: Achievement[] = [
@@ -286,6 +287,71 @@ export const achievements: Achievement[] = [
     icon: 'zap',
     color: 'from-purple-500 to-pink-500',
     requirement: { type: 'fundamentals_streak', value: 30 }
+  },
+  // System Design Achievements
+  {
+    id: 'system_design_first_quiz',
+    name: 'Architect Apprentice',
+    description: 'Complete your first System Design quiz',
+    icon: 'rocket',
+    color: 'from-slate-500 to-zinc-500',
+    requirement: { type: 'system_design_quiz_count', value: 1 }
+  },
+  {
+    id: 'system_design_quiz_5',
+    name: 'Design Enthusiast',
+    description: 'Complete 5 System Design quizzes',
+    icon: 'book',
+    color: 'from-blue-500 to-indigo-500',
+    requirement: { type: 'system_design_quiz_count', value: 5 }
+  },
+  {
+    id: 'system_design_quiz_15',
+    name: 'Systems Thinker',
+    description: 'Complete 15 System Design quizzes',
+    icon: 'brain',
+    color: 'from-violet-500 to-purple-500',
+    requirement: { type: 'system_design_quiz_count', value: 15 }
+  },
+  {
+    id: 'system_design_accuracy_80',
+    name: 'Reliable Architect',
+    description: 'Achieve 80%+ accuracy in 5 System Design quizzes',
+    icon: 'target',
+    color: 'from-emerald-500 to-green-500',
+    requirement: { type: 'system_design_accuracy', value: 5 }
+  },
+  {
+    id: 'system_design_accuracy_90',
+    name: 'Master Architect',
+    description: 'Achieve 90%+ accuracy in 10 System Design quizzes',
+    icon: 'star',
+    color: 'from-amber-500 to-orange-500',
+    requirement: { type: 'system_design_accuracy', value: 10 }
+  },
+  {
+    id: 'system_design_hld_perfect',
+    name: 'HLD Expert',
+    description: 'Get a perfect score in an HLD quiz',
+    icon: 'sparkles',
+    color: 'from-cyan-500 to-blue-500',
+    requirement: { type: 'system_design_mastery', value: 1 }
+  },
+  {
+    id: 'system_design_lld_perfect',
+    name: 'LLD Expert',
+    description: 'Get a perfect score in an LLD quiz',
+    icon: 'check',
+    color: 'from-green-500 to-emerald-500',
+    requirement: { type: 'system_design_mastery', value: 2 }
+  },
+  {
+    id: 'system_design_master',
+    name: 'System Design Master',
+    description: 'Get perfect scores in both HLD and LLD quizzes',
+    icon: 'crown',
+    color: 'from-yellow-400 to-amber-500',
+    requirement: { type: 'system_design_mastery', value: 3 }
   },
 ];
 
