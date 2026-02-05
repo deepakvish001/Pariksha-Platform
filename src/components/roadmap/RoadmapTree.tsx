@@ -41,6 +41,8 @@ import PathComparisonDialog from "./PathComparisonDialog";
 import MergePathsDialog from "./MergePathsDialog";
 import PathHistoryPanel from "./PathHistoryPanel";
 import RoadmapMobileFAB from "./RoadmapMobileFAB";
+import RoadmapBreadcrumb from "./RoadmapBreadcrumb";
+import RoadmapProgressIndicator from "./RoadmapProgressIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoadmapConfetti } from "@/hooks/useRoadmapConfetti";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1066,6 +1068,32 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
             </div>
           </motion.div>
 
+          {/* Breadcrumb Navigation - shows current position in roadmap */}
+          {!isCompactMode && (
+            <RoadmapBreadcrumb
+              items={tree.nodes.map((section, idx) => {
+                const sectionStats = getSectionStats(section);
+                const isComplete = sectionStats.completed === sectionStats.total;
+                const containsRecommended = nextRecommendedId && 
+                  flattenNodes([section]).some(n => n.id === nextRecommendedId);
+                return {
+                  id: section.id,
+                  label: section.title,
+                  isActive: containsRecommended,
+                  isComplete,
+                };
+              })}
+              currentPhase={
+                tree.nodes.findIndex(section => {
+                  const nodes = flattenNodes([section]);
+                  return nextRecommendedId && nodes.some(n => n.id === nextRecommendedId);
+                }) + 1 || 1
+              }
+              totalPhases={tree.nodes.length}
+              onNavigate={handleJumpToSection}
+            />
+          )}
+
           {/* Collapsible Legend - hidden in compact mode */}
           {!isCompactMode && <RoadmapLegend />}
 
@@ -1423,27 +1451,39 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           )}
         </AnimatePresence>
 
-        {/* Jump to Next Button */}
-        {nextRecommendedId && stats.percentage < 100 && (
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            onClick={() => handleMiniMapNodeClick(nextRecommendedId)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-3 rounded-full",
-              "bg-primary text-primary-foreground shadow-lg",
-              "hover:shadow-xl hover:scale-105 transition-all duration-200",
-              "border border-primary-foreground/20"
-            )}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Zap className="h-5 w-5" />
-            <span className="font-medium text-sm">Jump to Next</span>
-            <ChevronUp className="h-4 w-4 animate-bounce" />
-          </motion.button>
-        )}
+        {/* Enhanced Progress Indicator with Next Topic */}
+        <RoadmapProgressIndicator
+          nextNodeTitle={allNodes.find(n => n.id === nextRecommendedId)?.title || "Next Topic"}
+          currentSection={
+            tree.nodes.find(section => {
+              const nodes = flattenNodes([section]);
+              return nextRecommendedId && nodes.some(n => n.id === nextRecommendedId);
+            })?.title || tree.nodes[0]?.title || "Getting Started"
+          }
+          sectionProgress={(() => {
+            const section = tree.nodes.find(s => {
+              const nodes = flattenNodes([s]);
+              return nextRecommendedId && nodes.some(n => n.id === nextRecommendedId);
+            });
+            if (!section) return 0;
+            const sectionStats = getSectionStats(section);
+            return Math.round((sectionStats.completed / sectionStats.total) * 100) || 0;
+          })()}
+          onJumpToNext={() => nextRecommendedId && handleMiniMapNodeClick(nextRecommendedId)}
+          onNavigateSection={(direction) => {
+            const currentSection = tree.nodes.find(section => {
+              const nodes = flattenNodes([section]);
+              return nextRecommendedId && nodes.some(n => n.id === nextRecommendedId);
+            });
+            const currentIndex = tree.nodes.findIndex(n => n.id === currentSection?.id);
+            if (direction === 'up' && currentIndex > 0) {
+              handleJumpToSection(tree.nodes[currentIndex - 1].id);
+            } else if (direction === 'down' && currentIndex < tree.nodes.length - 1) {
+              handleJumpToSection(tree.nodes[currentIndex + 1].id);
+            }
+          }}
+          isVisible={Boolean(nextRecommendedId && stats.percentage < 100 && !isMobile)}
+        />
       </div>
 
       {/* Mobile FAB for quick actions */}

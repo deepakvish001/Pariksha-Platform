@@ -13,6 +13,8 @@ interface RoadmapSectionHeaderProps {
   isCollapsed?: boolean;
   isCompact?: boolean;
   isFocused?: boolean;
+  isRecommendedSection?: boolean;
+  estimatedTime?: string;
   onToggle?: () => void;
   className?: string;
 }
@@ -26,6 +28,8 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
   isCollapsed = false,
   isCompact = false,
   isFocused = false,
+  isRecommendedSection = false,
+  estimatedTime,
   onToggle,
   className,
 }) => {
