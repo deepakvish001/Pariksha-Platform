@@ -7,6 +7,7 @@ import {
   getUrgency,
 } from "./useSpacedRepetition";
 import { differenceInHours } from "date-fns";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 interface ProgressItem {
   solved: boolean;
@@ -82,6 +83,69 @@ export function useInterviewProgress(): UseInterviewProgressReturn {
     };
 
     fetchProgress();
+  }, [user]);
+
+  // Real-time subscription for cross-device sync
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`interview-progress-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_company_progress",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload: RealtimePostgresChangesPayload<{
+          item_id: number;
+          company_id: string;
+          tab_id: string;
+          solved: boolean;
+          revision: boolean;
+          updated_at: string;
+        }>) => {
+          const newRecord = payload.new as {
+            item_id: number;
+            company_id: string;
+            tab_id: string;
+            solved: boolean;
+            revision: boolean;
+            updated_at: string;
+          } | null;
+          const oldRecord = payload.old as { item_id: number; company_id: string } | null;
+
+          // Only process interview progress
+          if (newRecord?.company_id !== "interview-questions" && oldRecord?.company_id !== "interview-questions") {
+            return;
+          }
+
+          if (payload.eventType === "DELETE" && oldRecord) {
+            setProgress((prev) => {
+              const updated = { ...prev };
+              delete updated[oldRecord.item_id];
+              return updated;
+            });
+          } else if (newRecord && newRecord.company_id === "interview-questions") {
+            setProgress((prev) => ({
+              ...prev,
+              [newRecord.item_id]: {
+                solved: newRecord.solved,
+                revision: newRecord.revision,
+                completedAt: newRecord.solved ? newRecord.updated_at : undefined,
+                reviewCount: prev[newRecord.item_id]?.reviewCount || 0,
+              },
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   // Calculate due questions for spaced repetition
