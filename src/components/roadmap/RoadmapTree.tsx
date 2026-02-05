@@ -21,7 +21,7 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import RoadmapTreeNodeEnhanced from "./RoadmapTreeNodeEnhanced";
+import RoadmapNode from "./RoadmapNode";
 import RoadmapNodeDetail from "./RoadmapNodeDetail";
 import RoadmapToolbar from "./RoadmapToolbar";
 import RoadmapMiniMap from "./RoadmapMiniMap";
@@ -459,7 +459,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           if (el) nodeRefs.current.set(node.id, el);
         }}
       >
-        <RoadmapTreeNodeEnhanced
+        <RoadmapNode
           node={node}
           depth={depth}
           isExpanded={isExpanded}
@@ -467,7 +467,6 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
           isInProgress={nodeProgress.inProgress}
           isOnProgressPath={isOnProgressPath && node.id === nextRecommendedId}
           isHighlighted={Boolean(isHighlighted)}
-          hasLockedPrerequisites={false}
           completedChildren={childProgress.completed}
           totalChildren={childProgress.total}
           onToggle={() => toggleExpand(node.id)}
@@ -486,11 +485,11 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
             >
               {/* Vertical continuation line for children */}
               <div 
-                className="absolute w-0.5 bg-border"
+                className="absolute w-0.5 bg-slate-300 dark:bg-slate-600"
                 style={{
-                  left: depth * 32 + 16,
+                  left: depth * 28 + 20,
                   top: 0,
-                  bottom: 28,
+                  bottom: 20,
                 }}
               />
               {visibleChildren.map((child, index) => 
