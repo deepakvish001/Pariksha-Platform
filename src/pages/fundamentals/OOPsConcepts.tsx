@@ -28,6 +28,8 @@ import {
 import AnswerPanel from "@/components/library/AnswerPanel";
 import FundamentalsQuizMode from "@/components/library/FundamentalsQuizMode";
 import QuizLeaderboard from "@/components/library/QuizLeaderboard";
+import FundamentalsLeaderboard from "@/components/library/FundamentalsLeaderboard";
+import FundamentalsAnalytics from "@/components/library/FundamentalsAnalytics";
 
 const iconMap: Record<string, React.ReactNode> = {
   Box: <Box className="h-5 w-5" />,
@@ -512,6 +514,12 @@ const OOPsConcepts: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Combined Leaderboard */}
+        <FundamentalsLeaderboard currentUserId={user?.id} type="oops" />
+
+        {/* Analytics */}
+        <FundamentalsAnalytics type="oops" />
 
         {/* Concept Cards */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
