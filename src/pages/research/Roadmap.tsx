@@ -457,23 +457,66 @@ const Roadmap: React.FC = () => {
 
           {/* Visual Roadmap Tab */}
           <TabsContent value="visual" className="space-y-6 mt-4">
-            {/* Tree Selector */}
-            <div className="flex flex-wrap gap-2">
-              {roadmapTrees.map((tree) => (
-                <Button
-                  key={tree.id}
-                  variant={selectedTreeId === tree.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedTreeId(tree.id)}
-                  className="gap-2"
-                >
-                  <div className={cn(
-                    "h-2 w-2 rounded-full bg-gradient-to-r",
-                    tree.color
-                  )} />
-                  {tree.title.replace(" Development", "").replace(" & ", "/")}
-                </Button>
-              ))}
+            {/* Enhanced Tree Selector */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+              {roadmapTrees.map((tree) => {
+                const isSelected = selectedTreeId === tree.id;
+                return (
+                  <motion.button
+                    key={tree.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSelectedTreeId(tree.id)}
+                    className={cn(
+                      "relative p-3 rounded-xl border-2 transition-all duration-200 text-left",
+                      "hover:shadow-md",
+                      isSelected 
+                        ? "border-primary bg-primary/5 shadow-lg"
+                        : "border-border bg-card hover:border-primary/40"
+                    )}
+                  >
+                    {/* Gradient Background */}
+                    <div className={cn(
+                      "absolute inset-0 rounded-xl opacity-10 bg-gradient-to-br",
+                      tree.color,
+                      isSelected && "opacity-20"
+                    )} />
+                    
+                    <div className="relative flex flex-col gap-2">
+                      {/* Icon */}
+                      <div className={cn(
+                        "h-10 w-10 rounded-lg flex items-center justify-center bg-gradient-to-br shadow-sm",
+                        tree.color
+                      )}>
+                        <Map className="h-5 w-5 text-white" />
+                      </div>
+                      
+                      {/* Title */}
+                      <div>
+                        <p className={cn(
+                          "font-semibold text-sm line-clamp-1",
+                          isSelected && "text-primary"
+                        )}>
+                          {tree.title.replace(" Development", "").replace(" & ", "/")}
+                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                          {tree.nodes.length} topics
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Selected Indicator */}
+                    {isSelected && (
+                      <motion.div
+                        layoutId="selected-tree"
+                        className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary flex items-center justify-center"
+                      >
+                        <CheckCircle className="h-3 w-3 text-primary-foreground" />
+                      </motion.div>
+                    )}
+                  </motion.button>
+                );
+              })}
             </div>
 
             {/* Visual Tree */}

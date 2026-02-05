@@ -1,13 +1,33 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Trophy, 
+  Target, 
+  Clock, 
+  Sparkles,
+  TrendingUp,
+  Layout,
+  Server,
+  Layers,
+  Container,
+  Smartphone,
+  Brain,
+  BarChart3,
+} from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import RoadmapTreeNode from "./RoadmapTreeNode";
 import RoadmapNodeDetail from "./RoadmapNodeDetail";
 import RoadmapToolbar from "./RoadmapToolbar";
 import RoadmapMiniMap from "./RoadmapMiniMap";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { RoadmapTree as TreeType, RoadmapTreeNode as NodeType } from "@/data/roadmapTreesData";
+
+// Icon mapping for roadmap types
+const roadmapIcons: Record<string, React.ElementType> = {
+  Layout, Server, Layers, Container, Smartphone, Brain, BarChart3,
+};
 
 interface RoadmapTreeProps {
   tree: TreeType;
@@ -288,9 +308,9 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
               <div 
                 className="absolute w-0.5 bg-border"
                 style={{
-                  left: depth * 24 + 12,
+                  left: depth * 28 + 14,
                   top: 0,
-                  bottom: 20,
+                  bottom: 24,
                 }}
               />
               {visibleChildren.map((child, index) => 
@@ -319,22 +339,141 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
       <div className="flex gap-4">
         {/* Main Content */}
         <div className="flex-1 space-y-6 min-w-0" ref={treeRef}>
-          {/* Progress Header */}
-          <div className="p-4 rounded-lg bg-muted/50 border space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold">{tree.title}</h3>
-                <p className="text-sm text-muted-foreground">{tree.description}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold">{stats.percentage}%</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.completed} / {stats.total} topics
-                </p>
-              </div>
+          {/* Enhanced Progress Header */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+              "relative overflow-hidden rounded-2xl border-2",
+              "bg-gradient-to-br from-card via-card to-muted/30"
+            )}
+          >
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-5">
+              <div className="absolute inset-0" style={{
+                backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                backgroundSize: '24px 24px'
+              }} />
             </div>
-            <Progress value={stats.percentage} className="h-2" />
-          </div>
+
+            <div className="relative p-5 space-y-4">
+              {/* Header Row */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  {/* Colorful Icon */}
+                  <div className={cn(
+                    "h-14 w-14 rounded-xl flex items-center justify-center shadow-lg",
+                    `bg-gradient-to-br ${tree.color}`
+                  )}>
+                    {(() => {
+                      const IconComponent = roadmapIcons[tree.icon] || Layout;
+                      return <IconComponent className="h-7 w-7 text-white" />;
+                    })()}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">{tree.title}</h3>
+                    <p className="text-sm text-muted-foreground">{tree.description}</p>
+                  </div>
+                </div>
+
+                {/* Progress Circle */}
+                <div className="text-center">
+                  <div className="relative">
+                    <svg className="h-16 w-16 -rotate-90">
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        className="fill-none stroke-muted stroke-[4]"
+                      />
+                      <motion.circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        className="fill-none stroke-primary stroke-[4]"
+                        strokeLinecap="round"
+                        strokeDasharray={176}
+                        initial={{ strokeDashoffset: 176 }}
+                        animate={{ strokeDashoffset: 176 - (176 * stats.percentage) / 100 }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-lg font-bold">{stats.percentage}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                  <Trophy className="h-4 w-4 text-emerald-500" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Completed</p>
+                    <p className="font-semibold text-emerald-600 dark:text-emerald-400">{stats.completed}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-primary/10 border border-primary/20">
+                  <Target className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Remaining</p>
+                    <p className="font-semibold text-primary">{stats.total - stats.completed}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                  <Clock className="h-4 w-4 text-amber-500" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Est. Time</p>
+                    <p className="font-semibold text-amber-600 dark:text-amber-400">
+                      {Math.ceil((stats.total - stats.completed) * 0.5)}w
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                  <TrendingUp className="h-4 w-4 text-violet-500" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Topics</p>
+                    <p className="font-semibold text-violet-600 dark:text-violet-400">{stats.total}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Learning Progress</span>
+                  <span>{stats.completed} of {stats.total} topics mastered</span>
+                </div>
+                <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                  <motion.div 
+                    className="h-full rounded-full bg-gradient-to-r from-primary via-primary to-emerald-500"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${stats.percentage}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                  />
+                </div>
+              </div>
+
+              {/* Next Step Hint */}
+              {nextRecommendedId && stats.percentage < 100 && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20"
+                >
+                  <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Next up: </span>
+                    <span className="font-medium text-primary">
+                      {allNodes.find(n => n.id === nextRecommendedId)?.title}
+                    </span>
+                  </p>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
 
           {/* Search & Filter Toolbar */}
           <RoadmapToolbar
