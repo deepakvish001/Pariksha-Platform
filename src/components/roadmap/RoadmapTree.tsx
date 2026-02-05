@@ -186,7 +186,15 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
   const [isDragEnabled, setIsDragEnabled] = useState(false);
   const [localNodeOrder, setLocalNodeOrder] = useState<Record<string, NodeType[]>>({});
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [isCompactMode, setIsCompactMode] = useState(false);
+  const [isCompactMode, setIsCompactMode] = useState(() => {
+    const saved = localStorage.getItem('roadmap-compact-mode');
+    return saved === 'true';
+  });
+  
+  // Persist compact mode preference
+  useEffect(() => {
+    localStorage.setItem('roadmap-compact-mode', String(isCompactMode));
+  }, [isCompactMode]);
   const treeRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
