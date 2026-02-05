@@ -1,228 +1,185 @@
 
-# UI/UX Improvement Plan: Company Detail Pages
+
+# Quiz History Detail View - Implementation Plan
 
 ## Overview
-This plan transforms the Company Detail pages into a cleaner, more organized, and professional design that follows the established patterns from Position Resources while being simpler and more focused on the company-specific content.
+
+This feature adds the ability to view complete details of past quiz attempts, including all questions asked, the user's selected answers (correct/wrong), the correct answer highlighted, explanations, and overall quiz metrics.
 
 ---
 
-## Current Issues Identified
+## Current Situation
 
-### 1. Table Header Mismatch with Rows
-- The table header uses a fixed grid layout that doesn't visually align with the responsive row layout
-- Header is hidden on mobile but rows show different content, causing visual inconsistency
-
-### 2. Grid-Based Layout Complexity
-- The current `CompanyQuestionRow` uses a complex grid system that's hard to maintain
-- Different column counts between header and rows when `showCategory` is toggled
-
-### 3. Tab Navigation Could Be Cleaner
-- Tabs work but could have better visual separation
-- Missing a clear active state indicator
-
-### 4. Non-Question Tabs Are Card-Heavy
-- Job Portals, Projects, Resume Templates, and Cold DMs use card grids
-- Could benefit from a more unified table-based approach for consistency
-
-### 5. Missing Features from Position Resources
-- No layout toggle (Sections vs Tabs view)
-- No difficulty filter dropdown
-- No "Random Question" feature
-- No Notes system for questions
+Currently, when a quiz is completed:
+- Only aggregate data is saved to the `quiz_results` table (score, accuracy, total time)
+- Individual question responses are not persisted
+- The QuizReview component only works during an active quiz session (questions are in memory)
+- Users cannot review past quiz attempts after leaving the page
 
 ---
 
-## Proposed Improvements
+## Solution Architecture
 
-### Phase 1: Unified Table Component (High Priority)
-
-**1.1 Create Proper HTML Table Structure**
-Replace the grid-based `CompanyQuestionRow` with a proper `<Table>` component usage:
-
+```text
++-------------------+     +------------------------+     +-------------------+
+|   Quiz Attempt    | --> | quiz_question_responses| <-- | Question Data     |
+|   (quiz_results)  |     | (new table)            |     | (static files)    |
++-------------------+     +------------------------+     +-------------------+
+         |                         |
+         v                         v
++--------------------------------------------------+
+|           QuizHistoryDetail Component            |
+|  - Score summary card                            |
+|  - Question navigator (grid/list)                |
+|  - Individual question review with explanation   |
++--------------------------------------------------+
 ```
-| # | Question | Difficulty | Category* | Solved | Revision |
-```
-
-- Use actual `<tr>`, `<td>` elements via shadcn Table components
-- Proper column alignment between header and rows
-- Responsive behavior: hide Category column on mobile
-- Clickable rows for answer expansion (keep current behavior)
-
-**1.2 Responsive Column Strategy**
-```
-Desktop (sm+):
-| # | Question | Difficulty | Category | ✓ | ★ |
-
-Mobile (< sm):
-| # | Question | ✓/★ (stacked) |
-Difficulty + Category shown inline below question text
-```
-
-### Phase 2: Enhanced Tab Navigation
-
-**2.1 Cleaner Tab Design**
-- Keep icons but improve spacing
-- Add subtle underline indicator for active tab
-- Improve wrapping behavior for narrow viewports
-- Group tabs logically:
-  - Questions: SQL | Interview | DSA | Aptitude
-  - Resources: Jobs | Projects | Resumes | DMs
-
-**2.2 Add Tab Group Headers**
-```
-Questions
-[SQL] [Interview] [DSA] [Aptitude]
-
-Resources  
-[Job Portals] [Projects] [Resume Templates] [Cold DMs]
-```
-
-### Phase 3: Question Tab Improvements
-
-**3.1 Add Difficulty Filter Dropdown**
-Same as Position Resources:
-- All Levels (default)
-- Easy (green dot)
-- Medium (amber dot)  
-- Hard (red dot)
-
-**3.2 Add Results Count**
-Show "X questions found" below search bar with pending badge
-
-**3.3 Improved Empty States**
-Better visual design for "No questions found" with clear CTAs
-
-### Phase 4: Resource Tabs Improvements
-
-**4.1 Job Portals - Keep Card Layout**
-Cards work well here, but improve:
-- Better hover states
-- Clearer "Applied" toggle visual
-- Mobile-optimized 1-column layout
-
-**4.2 Projects - Enhance Cards**
-- Add difficulty indicator badge
-- Better technology tag overflow handling
-- Optional time estimate display
-
-**4.3 Resume Templates - Gallery Style**
-- Keep current gallery, improve hover preview
-- Add "Download" action button
-- Style category filters
-
-**4.4 Cold DMs - Card with Better Copy UX**
-- Keep cards but improve copy feedback
-- Show character count more prominently
-- Add platform badges (LinkedIn, Email, etc.)
-
-### Phase 5: Overall Polish
-
-**5.1 Consistent Card/Border Styling**
-- All sections use same `border-border/50` styling
-- Consistent `rounded-lg` corners
-- Uniform padding scale
-
-**5.2 Better Loading States**
-- Skeleton loaders for initial load
-- Smooth transitions between tabs
-
-**5.3 Progress Stats Enhancement**
-Add to header card:
-- Questions by difficulty breakdown
-- Quick toggle for "Show solved only"
 
 ---
 
-## Technical Implementation Details
+## Implementation Steps
 
-### Files to Modify
+### 1. Database Schema Changes
 
-**1. `src/components/library/CompanyQuestionRow.tsx`**
-Major refactor to use proper Table components:
-- Import `TableCell` instead of using divs
-- Return `<tr>` element with proper `<td>` children
-- Keep answer expansion logic
-- Mobile-friendly responsive approach with CSS `hidden`/`block` classes
+Create a new table `quiz_question_responses` to store individual question data for each quiz attempt:
 
-**2. `src/pages/library/CompanyDetail.tsx`**
-Updates:
-- Replace `QuestionsSection` with proper `<Table>` structure
-- Add difficulty filter state and dropdown
-- Improve tab grouping with visual separators
-- Add results count below search
-- Better responsive column handling in table header
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `quiz_result_id` | UUID | Foreign key to quiz_results |
+| `question_id` | INTEGER | ID of the question from static data |
+| `question_category` | TEXT | Category (dsa, cs, sql, aptitude) |
+| `question_index` | INTEGER | Position in the quiz (1-based) |
+| `selected_answer_index` | INTEGER | User's answer (null if skipped) |
+| `is_correct` | BOOLEAN | Whether the answer was correct |
+| `time_taken_seconds` | INTEGER | Time spent on this question |
+| `was_flagged` | BOOLEAN | If user flagged this question |
+| `created_at` | TIMESTAMPTZ | Timestamp |
 
-**3. `src/components/ui/table.tsx`**
-Minor enhancement:
-- Remove `table-fixed` class to allow flexible column widths
-- Ensure proper overflow handling
+**RLS Policies**: Users can only read/write their own quiz responses.
 
-### New Component Structure
+---
 
-```typescript
-// Updated QuestionsSection
-<div className="rounded-lg border border-border/50 overflow-hidden">
-  <Table>
-    <TableHeader>
-      <TableRow className="bg-muted/30">
-        <TableHead className="w-12">#</TableHead>
-        <TableHead>Question</TableHead>
-        <TableHead className="w-24">Difficulty</TableHead>
-        {showCategory && <TableHead className="hidden md:table-cell w-28">Category</TableHead>}
-        <TableHead className="w-16 text-center">Solved</TableHead>
-        <TableHead className="w-16 text-center">Revision</TableHead>
-      </TableRow>
-    </TableHeader>
-    <TableBody>
-      {questions.map((q) => (
-        <CompanyQuestionRow key={q.id} {...props} />
-      ))}
-    </TableBody>
-  </Table>
-</div>
+### 2. Update Quiz Saving Logic
+
+Modify `CombinedQuizMode.tsx` to save individual question responses alongside the quiz result:
+
+- After inserting into `quiz_results`, get the returned `id`
+- Insert each question's data into `quiz_question_responses`
+- Include: question_id, category, selected answer, correctness, time taken, flagged status
+
+---
+
+### 3. Create Quiz History Detail Component
+
+Build a new component `QuizHistoryDetail.tsx` that:
+
+- Receives a quiz result ID as a prop (or via dialog state)
+- Fetches the quiz result + all question responses
+- Reconstructs question data by matching `question_id` with static data files
+- Displays a rich UI similar to the existing `QuizReview` component
+
+**UI Elements**:
+- Header: Quiz date, type, score, accuracy, total time
+- Question grid: Visual overview showing correct/incorrect/skipped
+- Question detail view: Navigate through questions with full details
+- Filter tabs: All / Incorrect / Skipped (similar to QuizReview)
+- Explanation panel: Shows the answer explanation for each question
+
+---
+
+### 4. Integrate with QuizHistory Page
+
+Modify `QuizHistory.tsx` to:
+
+- Add a "View Details" button/icon on each quiz result row
+- Open a dialog/sheet showing `QuizHistoryDetail` for the selected quiz
+- Keep the existing list view as the default
+
+---
+
+### 5. Create a Hook for Fetching Quiz Details
+
+Create `useQuizHistoryDetail.ts` hook that:
+
+- Takes a `quizResultId` parameter
+- Fetches the quiz result metadata
+- Fetches all associated question responses
+- Maps question IDs to full question data from static files
+- Returns loading state, error state, and the reconstructed quiz data
+
+---
+
+## UI/UX Design
+
+**Quiz Result Row (enhanced)**:
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ [DSA] [Medium]        Feb 5, 2026 at 3:45 PM                    │
+│ Score: 8/10 (80%)  │  Avg Time: 45s  │  [View Details] [Delete] │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Responsive Behavior Summary
-
-| Viewport | Columns Shown | Behavior |
-|----------|--------------|----------|
-| < 640px (mobile) | #, Question, Actions | Difficulty/Category inline, stacked actions |
-| 640-768px (sm) | #, Question, Difficulty, Solved, Revision | Category hidden |
-| 768px+ (md) | All columns | Full table layout |
-
----
-
-## UI Before vs After
-
-| Aspect | Current | Proposed |
-|--------|---------|----------|
-| Table Structure | Grid-based divs | Proper HTML table |
-| Column Alignment | Misaligned | Perfectly aligned |
-| Mobile Layout | Complex grid | Simplified 2-3 column |
-| Difficulty Filter | None | Dropdown selector |
-| Tab Groups | Flat list | Grouped by type |
-| Empty States | Basic | Polished with icons |
-| Results Count | None | "X questions found" |
-
----
-
-## Implementation Order
-
-1. **Table Refactor** - Convert CompanyQuestionRow to use TableCell
-2. **Update QuestionsSection** - Use proper Table wrapper with aligned headers
-3. **Add Difficulty Filter** - State + dropdown UI
-4. **Improve Tab Navigation** - Better grouping and indicators
-5. **Polish Resource Tabs** - Minor enhancements to cards
-6. **Add Results Count & Empty States** - Final polish
+**Detail View Dialog**:
+```text
+┌───────────────────────────────────────────────────────────────────┐
+│  Quiz Review - Feb 5, 2026                              [X Close] │
+├───────────────────────────────────────────────────────────────────┤
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐              │
+│  │  8/10   │  │  80%    │  │  7:30   │  │  45s    │              │
+│  │  Score  │  │ Accuracy│  │  Total  │  │ Avg/Q   │              │
+│  └─────────┘  └─────────┘  └─────────┘  └─────────┘              │
+├───────────────────────────────────────────────────────────────────┤
+│  [All] [Incorrect] [Skipped]                     Q 1 of 10       │
+├───────────────────────────────────────────────────────────────────┤
+│  [DSA] [Medium] [Correct ✓]                                       │
+│  Climbing Stairs                                                  │
+│  You are climbing a staircase...                                 │
+│                                                                   │
+│  ○ O(2^n) recursive                                              │
+│  ● O(n) time, O(1) space [Correct ✓]                             │
+│  ○ O(n²) dynamic programming                                     │
+│  ○ O(n log n) divide and conquer                                 │
+│                                                                   │
+│  📖 Explanation                                                   │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ This is essentially the Fibonacci sequence...               │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+├───────────────────────────────────────────────────────────────────┤
+│  [← Previous]                                       [Next →]     │
+└───────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Summary
+## Files to Create/Modify
 
-This plan focuses on:
-1. Fixing table alignment issues with proper HTML table structure
-2. Adding missing features (difficulty filter, results count)
-3. Improving responsive behavior for sidebar open/closed states
-4. Polishing the overall design to match Position Resources quality
+| File | Action | Description |
+|------|--------|-------------|
+| `supabase/migrations/xxx_quiz_responses.sql` | Create | New table and RLS policies |
+| `src/hooks/useQuizHistoryDetail.ts` | Create | Hook to fetch and reconstruct quiz details |
+| `src/components/library/QuizHistoryDetail.tsx` | Create | Detail view component |
+| `src/components/library/CombinedQuizMode.tsx` | Modify | Save individual question responses |
+| `src/pages/library/QuizHistory.tsx` | Modify | Add "View Details" button and dialog |
+| `src/integrations/supabase/types.ts` | Auto-updated | TypeScript types for new table |
 
-The changes maintain full backward compatibility with existing features while significantly improving the user experience.
+---
+
+## Technical Considerations
+
+**Question Data Reconstruction**:
+- Questions are stored in static TypeScript files, not the database
+- We only store the `question_id` and `category` in responses
+- On retrieval, we match these IDs against the static data to get full question details
+- If a question is removed from static data, we show a "Question no longer available" message
+
+**Backwards Compatibility**:
+- Existing quiz results won't have question responses
+- The "View Details" button will only appear for quizzes with saved responses
+- Or show a message: "Detailed review not available for quizzes before [date]"
+
+**Performance**:
+- Batch insert question responses in a single query
+- Use indexes on `quiz_result_id` for efficient lookups
+- Limit question response storage to reasonable quiz sizes (e.g., max 50 questions)
+
