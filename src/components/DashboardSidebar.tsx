@@ -87,6 +87,7 @@ const libraryItems = [
   { title: "Core CS Subjects", url: "/library/cs", icon: Cpu },
   { title: "Handwritten Notes", url: "/library/notes", icon: FileText },
   { title: "Quiz", url: "/library/quiz", icon: Trophy },
+  { title: "Quiz History", url: "/library/quiz-history", icon: Activity },
 ];
 
 const fundamentalsItems = [

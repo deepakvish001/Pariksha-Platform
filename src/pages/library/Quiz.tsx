@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { Trophy, Search, Filter, Clock, Users } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Trophy, Search, Filter, Clock, Users, History } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,12 @@ const Quiz = () => {
             <Filter className="h-4 w-4" />
             Filters
           </Button>
+          <Link to="/library/quiz-history">
+            <Button variant="outline" className="gap-2">
+              <History className="h-4 w-4" />
+              History
+            </Button>
+          </Link>
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
