@@ -754,6 +754,15 @@ export type Database = {
         }
         Relationships: []
       }
+      roadmap_leaderboard_view: {
+        Row: {
+          completed_topics: number | null
+          last_completed_at: string | null
+          roadmaps_started: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       xp_leaderboard_view: {
         Row: {
           avatar_url: string | null
