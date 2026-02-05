@@ -21,11 +21,11 @@ import { Trophy, Medal, Clock, Target, Crown, Users, Timer, Swords, Flame } from
    avatar_url?: string;
  }
  
- interface QuizLeaderboardProps {
-  quizType: "aptitude" | "dsa" | "sql" | "cs";
-   currentUserId?: string;
+interface QuizLeaderboardProps {
+  quizType: string;
+  currentUserId?: string;
   challengeId?: string | null;
- }
+}
  
 const CHALLENGE_LABELS: Record<string, { name: string; icon: React.ReactNode }> = {
   // Aptitude challenges
@@ -132,11 +132,26 @@ const QuizLeaderboard: React.FC<QuizLeaderboardProps> = ({ quizType, currentUser
      return <span className="text-sm text-muted-foreground font-medium w-5 text-center">{index + 1}</span>;
    };
  
-   const quizTypeLabel = {
-     aptitude: "Aptitude",
-     dsa: "DSA",
-     sql: "SQL",
-   };
+  const quizTypeLabel: Record<string, string> = {
+    aptitude: "Aptitude",
+    dsa: "DSA",
+    sql: "SQL",
+    cs: "CS Core",
+  };
+
+  // Get display label for quiz type
+  const getQuizTypeLabel = () => {
+    // Check if it's a fundamentals quiz type
+    if (quizType.startsWith("language-")) {
+      const lang = quizType.replace("language-", "");
+      return lang.charAt(0).toUpperCase() + lang.slice(1);
+    }
+    if (quizType.startsWith("oops-")) {
+      const concept = quizType.replace("oops-", "").replace(/-/g, " ");
+      return concept.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    }
+    return quizTypeLabel[quizType] || quizType;
+  };
  
   const challengeLabel = challengeId ? CHALLENGE_LABELS[challengeId] : null;
 
@@ -162,7 +177,7 @@ const QuizLeaderboard: React.FC<QuizLeaderboardProps> = ({ quizType, currentUser
                 {challengeLabel.name} Leaderboard
               </>
             ) : (
-              <>{quizTypeLabel[quizType]} Quiz Leaderboard</>
+              <>{getQuizTypeLabel()} Quiz Leaderboard</>
             )}
            </CardTitle>
            <Badge variant="outline" className="gap-1">

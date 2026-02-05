@@ -27,6 +27,7 @@ import {
 } from "@/data/oopsConceptsData";
 import AnswerPanel from "@/components/library/AnswerPanel";
 import FundamentalsQuizMode from "@/components/library/FundamentalsQuizMode";
+import QuizLeaderboard from "@/components/library/QuizLeaderboard";
 
 const iconMap: Record<string, React.ReactNode> = {
   Box: <Box className="h-5 w-5" />,
@@ -306,6 +307,12 @@ const OOPsConcepts: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Leaderboard */}
+          <QuizLeaderboard 
+            quizType={`oops-${selectedConcept.id}`} 
+            currentUserId={user?.id} 
+          />
 
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4">
