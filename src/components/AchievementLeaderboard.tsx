@@ -1,14 +1,21 @@
  import { useState } from "react";
  import { motion } from "framer-motion";
-import { Trophy, Crown, Medal, Award, ChevronDown, ChevronUp, ExternalLink, Sparkles, Hash } from "lucide-react";
+import { Trophy, Crown, Medal, Award, ChevronDown, ChevronUp, ExternalLink, Sparkles, Hash, Calendar } from "lucide-react";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
  import { Badge } from "@/components/ui/badge";
  import { Button } from "@/components/ui/button";
  import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
  import { cn } from "@/lib/utils";
-import { useAchievementLeaderboard, SortMode } from "@/hooks/useAchievementLeaderboard";
+import { useAchievementLeaderboard, SortMode, TimeFilter } from "@/hooks/useAchievementLeaderboard";
  import { Link } from "react-router-dom";
  
  const getRankIcon = (rank: number) => {
@@ -27,12 +34,19 @@ import { useAchievementLeaderboard, SortMode } from "@/hooks/useAchievementLeade
  
  const AchievementLeaderboard = () => {
   const [sortMode, setSortMode] = useState<SortMode>("rarity");
-  const { leaderboard, currentUserRank, isLoading } = useAchievementLeaderboard(sortMode);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
+  const { leaderboard, currentUserRank, isLoading } = useAchievementLeaderboard(sortMode, timeFilter);
    const [expanded, setExpanded] = useState(false);
  
    const displayedEntries = expanded ? leaderboard : leaderboard.slice(0, 5);
   const isCurrentUserInTop = currentUserRank && currentUserRank.rank <= (expanded ? 50 : 5);
  
+  const timeFilterLabels: Record<TimeFilter, string> = {
+    all: "All Time",
+    month: "This Month",
+    week: "This Week",
+  };
+
    if (isLoading) {
      return (
        <Card>
@@ -78,18 +92,31 @@ import { useAchievementLeaderboard, SortMode } from "@/hooks/useAchievementLeade
    return (
      <Card>
       <CardHeader className="pb-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Trophy className="h-5 w-5 text-primary" />
-            Achievement Leaderboard
-          </CardTitle>
-          <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
-            <TabsList className="h-8">
-              <TabsTrigger value="rarity" className="text-xs px-3 h-7 gap-1">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Trophy className="h-5 w-5 text-primary" />
+              Achievement Leaderboard
+            </CardTitle>
+            <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as TimeFilter)}>
+              <SelectTrigger className="w-[130px] h-8 text-xs">
+                <Calendar className="h-3 w-3 mr-1" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="week">This Week</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)} className="w-full">
+            <TabsList className="h-8 w-full grid grid-cols-2">
+              <TabsTrigger value="rarity" className="text-xs h-7 gap-1">
                 <Sparkles className="h-3 w-3" />
                 Most Rare
               </TabsTrigger>
-              <TabsTrigger value="total" className="text-xs px-3 h-7 gap-1">
+              <TabsTrigger value="total" className="text-xs h-7 gap-1">
                 <Hash className="h-3 w-3" />
                 Most Badges
               </TabsTrigger>
@@ -98,6 +125,17 @@ import { useAchievementLeaderboard, SortMode } from "@/hooks/useAchievementLeade
         </div>
        </CardHeader>
        <CardContent className="space-y-2">
+        {leaderboard.length === 0 && !isLoading && (
+          <div className="text-center py-6">
+            <Trophy className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
+            <p className="text-sm text-muted-foreground">
+              No achievements earned {timeFilter === "week" ? "this week" : timeFilter === "month" ? "this month" : ""} yet.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Be the first to earn a badge!
+            </p>
+          </div>
+        )}
          {displayedEntries.map((entry, index) => (
            <motion.div
              key={entry.userId}

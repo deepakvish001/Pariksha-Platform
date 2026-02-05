@@ -2,6 +2,7 @@
  import { supabase } from "@/integrations/supabase/client";
  import { achievements } from "@/components/AchievementBadge";
 import { useAuth } from "@/contexts/AuthContext";
+import { startOfWeek, startOfMonth } from "date-fns";
  
  interface LeaderboardEntry {
    userId: string;
@@ -17,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
  }
  
 export type SortMode = "rarity" | "total";
+export type TimeFilter = "all" | "month" | "week";
 
  // Rarity weights for scoring
  const RARITY_WEIGHTS = {
@@ -35,7 +37,7 @@ export type SortMode = "rarity" | "total";
    return "legendary";
  };
  
-export function useAchievementLeaderboard(sortMode: SortMode = "rarity") {
+export function useAchievementLeaderboard(sortMode: SortMode = "rarity", timeFilter: TimeFilter = "all") {
    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [allEntries, setAllEntries] = useState<LeaderboardEntry[]>([]);
   const [currentUserRank, setCurrentUserRank] = useState<{ rank: number; entry: LeaderboardEntry } | null>(null);
@@ -46,13 +48,33 @@ export function useAchievementLeaderboard(sortMode: SortMode = "rarity") {
      const fetchLeaderboard = async () => {
       setIsLoading(true);
        try {
-         // Get all user achievements
-         const { data: allAchievements, error: achievementsError } = await supabase
+        // Build query with optional date filter
+        let query = supabase
            .from("user_achievements")
            .select("user_id, achievement_id");
  
+        // Apply time filter
+        if (timeFilter === "week") {
+          const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString();
+          query = query.gte("earned_at", weekStart);
+        } else if (timeFilter === "month") {
+          const monthStart = startOfMonth(new Date()).toISOString();
+          query = query.gte("earned_at", monthStart);
+        }
+
+        const { data: allAchievements, error: achievementsError } = await query;
+
          if (achievementsError) throw achievementsError;
  
+        // If no achievements in time period, return early
+        if (!allAchievements || allAchievements.length === 0) {
+          setAllEntries([]);
+          setLeaderboard([]);
+          setCurrentUserRank(null);
+          setIsLoading(false);
+          return;
+        }
+
          // Calculate total unique users and achievement percentages
          const uniqueUsers = new Set(allAchievements?.map((a) => a.user_id) || []);
          const totalUsers = Math.max(uniqueUsers.size, 1);
@@ -140,7 +162,7 @@ export function useAchievementLeaderboard(sortMode: SortMode = "rarity") {
      };
  
      fetchLeaderboard();
-   }, []);
+  }, [timeFilter]);
  
   // Sort and slice based on mode
   useEffect(() => {
