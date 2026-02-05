@@ -9,6 +9,9 @@ import {
   Bookmark,
   Clock,
   ExternalLink,
+  Zap,
+  Gauge,
+  Timer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNodeIcon } from "./RoadmapIconMapping";
@@ -251,29 +254,44 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
             )}
           </div>
 
-          {/* Metadata - Right side */}
-          <div className="relative z-10 flex items-center gap-2 flex-shrink-0">
-            {/* Time estimate */}
+          {/* Metadata Indicators - Enhanced visibility */}
+          <div className="relative z-10 flex items-center gap-1.5 flex-shrink-0">
+            {/* Difficulty Badge */}
+            {node.difficulty && (
+              <div className={cn(
+                "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium",
+                node.difficulty === 'Easy' && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+                node.difficulty === 'Medium' && "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+                node.difficulty === 'Hard' && "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
+              )}>
+                <Gauge className="h-2.5 w-2.5" />
+                <span className="hidden sm:inline">{node.difficulty}</span>
+              </div>
+            )}
+
+            {/* Time Estimate Badge */}
             {node.estimatedTime && (
-              <div className="hidden sm:flex items-center gap-1 text-[10px] opacity-60">
-                <Clock className="h-3 w-3" />
-                {node.estimatedTime}
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                <Timer className="h-2.5 w-2.5" />
+                <span className="hidden sm:inline">{node.estimatedTime}</span>
               </div>
             )}
 
             {/* Resources count */}
             {resourceCount > 0 && (
-              <div className="flex items-center gap-1 text-[10px] opacity-60">
-                <ExternalLink className="h-3 w-3" />
-                {resourceCount}
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                <ExternalLink className="h-2.5 w-2.5" />
+                <span>{resourceCount}</span>
               </div>
             )}
 
-            {/* Child count */}
+            {/* Child progress count */}
             {hasChildren && (
               <div className={cn(
-                "text-[10px] font-medium px-1.5 py-0.5 rounded",
-                "bg-black/10 dark:bg-white/10"
+                "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                completedChildren === totalChildren 
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                  : "bg-muted/80 text-muted-foreground dark:bg-muted/60"
               )}>
                 {completedChildren}/{totalChildren}
               </div>
