@@ -1,4 +1,6 @@
  import { useState, useEffect, useCallback } from "react";
+import { useMemo } from "react";
+import { differenceInHours } from "date-fns";
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "@/contexts/AuthContext";
  import { useToast } from "@/hooks/use-toast";
@@ -11,6 +13,38 @@
    completed_at: string | null;
  }
  
+// Spaced repetition intervals in days
+const INTERVALS = [1, 3, 7, 14, 30, 60, 120];
+
+function getNextReviewInterval(reviewCount: number): number {
+  const index = Math.min(reviewCount, INTERVALS.length - 1);
+  return INTERVALS[index];
+}
+
+function calculateDueDate(completedAt: Date, reviewCount: number): Date {
+  const intervalDays = getNextReviewInterval(reviewCount);
+  const dueDate = new Date(completedAt);
+  dueDate.setDate(dueDate.getDate() + intervalDays);
+  return dueDate;
+}
+
+function getUrgency(hoursUntilDue: number): "critical" | "due" | "upcoming" | "later" {
+  if (hoursUntilDue < 0) return "critical";
+  if (hoursUntilDue < 24) return "due";
+  if (hoursUntilDue < 72) return "upcoming";
+  return "later";
+}
+
+export interface CSSpacedRepetitionQuestion {
+  questionId: number;
+  subjectId: string;
+  completedAt: Date;
+  reviewCount: number;
+  dueIn: number;
+  isOverdue: boolean;
+  urgency: "critical" | "due" | "upcoming" | "later";
+}
+
  export function useCSProgress() {
    const { user } = useAuth();
    const { toast } = useToast();
@@ -198,6 +232,91 @@
      [user, progress, toast]
    );
  
+  const markReviewed = useCallback(
+    async (questionId: number) => {
+      if (!user) return;
+
+      const current = progress.get(questionId);
+      if (!current?.solved) return;
+
+      const newReviewCount = (current.review_count || 0) + 1;
+
+      // Optimistic update
+      setProgress((prev) => {
+        const updated = new Map(prev);
+        updated.set(questionId, {
+          ...current,
+          review_count: newReviewCount,
+          completed_at: new Date().toISOString(),
+        });
+        return updated;
+      });
+
+      try {
+        const topicId = `cs-${questionId}`;
+        await supabase
+          .from("user_topic_progress")
+          .update({
+            review_count: newReviewCount,
+            completed_at: new Date().toISOString(),
+          })
+          .eq("user_id", user.id)
+          .eq("sheet_id", SHEET_ID)
+          .eq("topic_id", topicId);
+      } catch (error) {
+        console.error("Error marking reviewed:", error);
+        setProgress((prev) => {
+          const updated = new Map(prev);
+          updated.set(questionId, current);
+          return updated;
+        });
+      }
+    },
+    [user, progress]
+  );
+
+  // Calculate spaced repetition due questions
+  const spacedRepetition = useMemo(() => {
+    const now = new Date();
+    const questions: CSSpacedRepetitionQuestion[] = [];
+
+    progress.forEach((item, questionId) => {
+      if (!item.solved || !item.completed_at) return;
+
+      const completedAt = new Date(item.completed_at);
+      const reviewCount = item.review_count || 0;
+      const dueDate = calculateDueDate(completedAt, reviewCount);
+      const hoursUntilDue = differenceInHours(dueDate, now);
+      const isOverdue = hoursUntilDue < 0;
+      const urgency = getUrgency(hoursUntilDue);
+
+      // Only include questions due within 7 days or overdue
+      if (hoursUntilDue <= 168) {
+        questions.push({
+          questionId,
+          subjectId: "", // Will be filled from question data
+          completedAt,
+          reviewCount,
+          dueIn: hoursUntilDue,
+          isOverdue,
+          urgency,
+        });
+      }
+    });
+
+    // Sort by urgency (most urgent first)
+    questions.sort((a, b) => a.dueIn - b.dueIn);
+
+    const critical = questions.filter((q) => q.urgency === "critical").length;
+    const due = questions.filter((q) => q.urgency === "due").length;
+    const upcoming = questions.filter((q) => q.urgency === "upcoming").length;
+
+    return {
+      dueQuestions: questions,
+      stats: { critical, due, upcoming, total: questions.length },
+    };
+  }, [progress]);
+
    return {
      isLoading,
      isSolved,
@@ -205,5 +324,7 @@
      toggleSolved,
      toggleRevision,
      progress,
+    markReviewed,
+    spacedRepetition,
    };
  }
