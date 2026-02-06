@@ -53,6 +53,7 @@ import SystemDesignOverview from "./pages/system-design/SystemDesignOverview";
 import ResearchOverview from "./pages/research/Overview";
 import JobPortals from "./pages/research/JobPortals";
 import Roadmap from "./pages/research/Roadmap";
+import RoadmapDetail from "./pages/research/RoadmapDetail";
 import ResumeTemplates from "./pages/research/ResumeTemplates";
 import ResumeAnalyser from "./pages/research/ResumeAnalyser";
 import ColdOutreach from "./pages/research/ColdOutreach";
@@ -155,6 +156,7 @@ const App = () => (
                   <Route path="overview" element={<ResearchOverview />} />
                   <Route path="jobs" element={<JobPortals />} />
                   <Route path="roadmap" element={<Roadmap />} />
+                  <Route path="roadmap/:roadmapId" element={<RoadmapDetail />} />
                   <Route path="resume" element={<ResumeTemplates />} />
                   <Route path="analyser" element={<ResumeAnalyser />} />
                   <Route path="outreach" element={<ColdOutreach />} />
