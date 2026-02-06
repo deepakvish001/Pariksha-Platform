@@ -107,7 +107,7 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
   const showEffects = node.isRecommended && !isCompleted;
 
   // Calculate indent based on depth and compact mode - refined spacing
-  const indent = isCompact ? depth * 12 : depth * 16;
+  const indent = isCompact ? depth * 14 : depth * 20;
   
   // Determine if we should show expanded metadata
   const showExpandedMeta = !isCompact && depth === 0;
@@ -144,7 +144,7 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
       <div
         className={cn(
           "flex items-center",
-          isCompact ? "gap-1 py-0.5" : "gap-1.5 py-1"
+          isCompact ? "gap-1.5 py-1" : "gap-2 py-1.5"
         )}
         style={{ marginLeft: indent }}
       >
@@ -153,41 +153,43 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
           <button
             onClick={onToggle}
             className={cn(
-              "flex-shrink-0 h-5 w-5 flex items-center justify-center rounded-md transition-all duration-150",
-              "bg-muted/50 hover:bg-muted border border-border/50",
-              isExpanded && "bg-primary/10 border-primary/30 text-primary"
+              "flex-shrink-0 flex items-center justify-center rounded-lg transition-all duration-150",
+              "bg-muted/60 hover:bg-muted border-2 border-border/60",
+              isExpanded && "bg-primary/15 border-primary/40 text-primary",
+              isCompact ? "h-6 w-6" : "h-7 w-7"
             )}
           >
             <ChevronRight
               className={cn(
-                "h-3 w-3 transition-transform duration-150",
-                isExpanded ? "rotate-90" : "text-muted-foreground"
+                "transition-transform duration-150",
+                isExpanded ? "rotate-90" : "text-muted-foreground",
+                isCompact ? "h-3.5 w-3.5" : "h-4 w-4"
               )}
             />
           </button>
         ) : (
-          <div className="w-5" />
+          <div className={isCompact ? "w-6" : "w-7"} />
         )}
 
         {/* Node Card */}
         <motion.div
           onClick={onClick}
-          whileHover={{ scale: 1.002 }}
+          whileHover={{ scale: 1.005 }}
           whileTap={{ scale: 0.998 }}
           className={cn(
-            "relative flex-1 flex items-center border cursor-pointer",
+            "relative flex-1 flex items-center border-2 cursor-pointer",
             "transition-all duration-150",
             nodeStyle.bg,
             nodeStyle.border,
             nodeStyle.text,
-            "shadow-sm hover:shadow-md",
-            isHighlighted && "ring-2 ring-primary/50 ring-offset-1 dark:ring-offset-background",
-            isInProgress && "ring-2 ring-amber-400/50 ring-offset-1 dark:ring-offset-background",
+            "shadow-sm hover:shadow-lg",
+            isHighlighted && "ring-2 ring-primary/50 ring-offset-2 dark:ring-offset-background",
+            isInProgress && "ring-2 ring-amber-400/50 ring-offset-2 dark:ring-offset-background",
             isOptional && "border-dashed",
-            showEffects && "shadow-md shadow-amber-400/20 dark:shadow-amber-500/25",
+            showEffects && "shadow-lg shadow-amber-400/25 dark:shadow-amber-500/30",
             isCompact 
-              ? "gap-2 px-2 py-1 rounded-md" 
-              : "gap-2.5 px-2.5 py-1.5 rounded-lg"
+              ? "gap-2.5 px-3 py-2 rounded-xl" 
+              : "gap-3 px-4 py-3 rounded-xl"
           )}
         >
           {/* Effects for recommended nodes */}
@@ -198,122 +200,122 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
             </>
           )}
           
-          {/* Icon container - tighter sizing */}
+          {/* Icon container - larger sizing */}
           <div className={cn(
-            "relative z-10 flex-shrink-0 rounded-md flex items-center justify-center",
+            "relative z-10 flex-shrink-0 rounded-lg flex items-center justify-center",
             `bg-gradient-to-br ${gradient}`,
-            "shadow-sm",
-            isCompact ? "h-5 w-5" : "h-6 w-6"
+            "shadow-md",
+            isCompact ? "h-7 w-7" : "h-9 w-9"
           )}>
             <NodeIcon className={cn(
               "text-white drop-shadow-sm",
-              isCompact ? "h-2.5 w-2.5" : "h-3 w-3"
+              isCompact ? "h-3.5 w-3.5" : "h-4.5 w-4.5"
             )} />
           </div>
 
-          {/* Content area - condensed */}
+          {/* Content area */}
           <div className="relative z-10 flex-1 min-w-0">
-            <div className="flex items-center gap-1 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className={cn(
-                "font-medium leading-tight",
-                isCompact ? "text-[11px]" : "text-xs",
+                "font-semibold leading-tight",
+                isCompact ? "text-sm" : "text-base",
                 isCompleted && "line-through opacity-50"
               )}>
                 {node.title}
               </span>
 
-              {/* Inline badges - minimal */}
+              {/* Inline badges */}
               {node.isRecommended && !isCompleted && (
                 <motion.span 
                   className={cn(
-                    "inline-flex items-center gap-0.5 text-[7px] font-bold px-1 py-0.5 rounded",
+                    "inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md",
                     badgeStyles.recommended
                   )}
                   animate={{ 
-                    boxShadow: ["0 0 0 0 rgba(251, 191, 36, 0)", "0 0 3px 1px rgba(251, 191, 36, 0.2)", "0 0 0 0 rgba(251, 191, 36, 0)"]
+                    boxShadow: ["0 0 0 0 rgba(251, 191, 36, 0)", "0 0 4px 2px rgba(251, 191, 36, 0.25)", "0 0 0 0 rgba(251, 191, 36, 0)"]
                   }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <Star className="h-2 w-2 fill-current" />
+                  <Star className="h-2.5 w-2.5 fill-current" />
                 </motion.span>
               )}
               
               {isOptional && (
                 <span className={cn(
-                  "inline-flex items-center text-[7px] px-1 py-0.5 rounded",
+                  "inline-flex items-center text-[9px] px-1.5 py-0.5 rounded-md",
                   badgeStyles.optional
                 )}>
-                  <GitBranch className="h-2 w-2" />
+                  <GitBranch className="h-2.5 w-2.5" />
                 </span>
               )}
 
               {isCheckpoint && (
                 <span className={cn(
-                  "inline-flex items-center text-[7px] px-1 py-0.5 rounded",
+                  "inline-flex items-center text-[9px] px-1.5 py-0.5 rounded-md",
                   badgeStyles.checkpoint
                 )}>
-                  <Bookmark className="h-2 w-2" />
+                  <Bookmark className="h-2.5 w-2.5" />
                 </span>
               )}
             </div>
           </div>
 
-          {/* Metadata pills - ultra-compact */}
-          <div className="relative z-10 flex items-center gap-0.5 flex-shrink-0">
-            {/* Difficulty indicator - icon only on mobile */}
+          {/* Metadata pills */}
+          <div className="relative z-10 flex items-center gap-1 flex-shrink-0">
+            {/* Difficulty indicator */}
             {node.difficulty && (
               <div className={cn(
-                "flex items-center px-1 py-0.5 rounded text-[7px] font-medium",
-                node.difficulty === 'Easy' && "bg-emerald-100/60 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-300",
-                node.difficulty === 'Medium' && "bg-amber-100/60 text-amber-700 dark:bg-amber-900/25 dark:text-amber-300",
-                node.difficulty === 'Hard' && "bg-rose-100/60 text-rose-700 dark:bg-rose-900/25 dark:text-rose-300"
+                "flex items-center px-1.5 py-1 rounded-lg text-[10px] font-semibold",
+                node.difficulty === 'Easy' && "bg-emerald-100/70 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+                node.difficulty === 'Medium' && "bg-amber-100/70 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+                node.difficulty === 'Hard' && "bg-rose-100/70 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
               )}>
-                <Gauge className="h-2.5 w-2.5" />
+                <Gauge className="h-3 w-3" />
               </div>
             )}
 
             {/* Combined resource + notes count */}
             {(resourceCount > 0 || hasNote) && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 rounded text-[7px] font-medium bg-muted/50 text-muted-foreground">
+              <div className="flex items-center gap-1 px-1.5 py-1 rounded-lg text-[10px] font-semibold bg-muted/60 text-muted-foreground">
                 {resourceCount > 0 && (
                   <span className="flex items-center gap-0.5">
-                    <ExternalLink className="h-2 w-2" />
+                    <ExternalLink className="h-3 w-3" />
                     <span className="tabular-nums">{resourceCount}</span>
                   </span>
                 )}
-                {hasNote && <StickyNote className="h-2 w-2 text-amber-500" />}
+                {hasNote && <StickyNote className="h-3 w-3 text-amber-500" />}
               </div>
             )}
 
             {/* Child progress - only show if has children */}
             {hasChildren && (
               <div className={cn(
-                "text-[7px] font-semibold px-1 py-0.5 rounded tabular-nums",
+                "text-[10px] font-bold px-1.5 py-1 rounded-lg tabular-nums",
                 completedChildren === totalChildren 
-                  ? "bg-emerald-100/60 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-300"
-                  : "bg-muted/50 text-muted-foreground"
+                  ? "bg-emerald-100/70 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  : "bg-muted/60 text-muted-foreground"
               )}>
                 {completedChildren}/{totalChildren}
               </div>
             )}
 
-            {/* Completion checkbox - smaller */}
+            {/* Completion checkbox */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onComplete();
               }}
               className={cn(
-                "flex-shrink-0 rounded border-2 flex items-center justify-center transition-all duration-150",
-                isCompact ? "h-4 w-4" : "h-5 w-5",
+                "flex-shrink-0 rounded-lg border-2 flex items-center justify-center transition-all duration-150",
+                isCompact ? "h-6 w-6" : "h-7 w-7",
                 isCompleted
-                  ? "bg-emerald-500 border-emerald-500 text-white shadow-sm"
+                  ? "bg-emerald-500 border-emerald-500 text-white shadow-md"
                   : isInProgress
                   ? "border-amber-400 bg-amber-50 dark:bg-amber-900/30"
-                  : "border-border/70 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                  : "border-border/80 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
               )}
             >
-              {isCompleted && <Check className={cn(isCompact ? "h-2.5 w-2.5" : "h-3 w-3")} strokeWidth={3} />}
+              {isCompleted && <Check className={cn(isCompact ? "h-3.5 w-3.5" : "h-4 w-4")} strokeWidth={3} />}
             </button>
           </div>
         </motion.div>
