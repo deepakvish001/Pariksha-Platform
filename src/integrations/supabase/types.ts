@@ -130,6 +130,36 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          is_active: boolean
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          is_active?: boolean
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          is_active?: boolean
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       quiz_question_responses: {
         Row: {
           created_at: string
@@ -261,6 +291,42 @@ export type Database = {
           review_count?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      roadmap_learning_goals: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          reminder_enabled: boolean
+          roadmap_id: string
+          target_completion_date: string
+          updated_at: string
+          user_id: string
+          weekly_topics_target: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          reminder_enabled?: boolean
+          roadmap_id: string
+          target_completion_date: string
+          updated_at?: string
+          user_id: string
+          weekly_topics_target?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          reminder_enabled?: boolean
+          roadmap_id?: string
+          target_completion_date?: string
+          updated_at?: string
+          user_id?: string
+          weekly_topics_target?: number
         }
         Relationships: []
       }

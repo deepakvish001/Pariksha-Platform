@@ -13,6 +13,7 @@ import { getRoadmapTreeById } from "@/data/roadmapTreesData";
 import RoadmapTree from "@/components/roadmap/RoadmapTree";
 import RoadmapStreakCard from "@/components/roadmap/RoadmapStreakCard";
 import RoadmapFAQ from "@/components/roadmap/RoadmapFAQ";
+import LearningGoalCard from "@/components/roadmap/LearningGoalCard";
 import { useRoadmapTreeProgress } from "@/hooks/useRoadmapTreeProgress";
 
 const RoadmapDetail: React.FC = () => {
@@ -145,8 +146,16 @@ const RoadmapDetail: React.FC = () => {
           </Card>
         </motion.div>
 
-        {/* Streak Card */}
-        <RoadmapStreakCard compact />
+        {/* Streak Card and Learning Goal */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <RoadmapStreakCard compact />
+          <LearningGoalCard
+            roadmapId={roadmapId || "frontend"}
+            roadmapTitle={selectedTree.title}
+            totalTopics={treeStats.total}
+            completedTopics={treeStats.completed}
+          />
+        </div>
 
         {/* Visual Roadmap Tree */}
         <motion.div

@@ -10,9 +10,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
 import { cn } from "@/lib/utils";
+import SocialShareButtons from "./SocialShareButtons";
 
 interface RoadmapCertificateProps {
   roadmapTitle: string;
@@ -269,6 +271,18 @@ const RoadmapCertificate = ({
             </div>
           </div>
         </div>
+
+        {/* Social Share Buttons */}
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground text-center">Share on social media</p>
+          <SocialShareButtons
+            title={`${roadmapTitle} ${isComplete ? "Completed" : "Progress"}!`}
+            text={`🎉 I've ${isComplete ? "completed" : `made ${percentage}% progress on`} the ${roadmapTitle} roadmap! #LearningJourney #TechSkills`}
+            className="flex justify-center"
+          />
+        </div>
+
+        <Separator />
 
         {/* Action Buttons */}
         <div className="grid grid-cols-3 gap-3">
