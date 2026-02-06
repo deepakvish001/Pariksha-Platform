@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import MobileFAB from "@/components/MobileFAB";
 import SheetsHeroSection from "@/components/sheets/SheetsHeroSection";
-import SheetsFilterBar from "@/components/sheets/SheetsFilterBar";
+import SheetsFilterBar, { SortOption } from "@/components/sheets/SheetsFilterBar";
 import SheetCard from "@/components/sheets/SheetCard";
 import SheetsEmptyState from "@/components/sheets/SheetsEmptyState";
+import ContinueLearningSection from "@/components/sheets/ContinueLearningSection";
+import QuickStartSection from "@/components/sheets/QuickStartSection";
 import { useSheetProgress, calculateProgressPercentage } from "@/hooks/useSheetProgress";
 
 const sheets = [
@@ -64,26 +66,20 @@ const sheets = [
   },
 ];
 
+const difficultyOrder: Record<string, number> = {
+  "Easy": 1,
+  "Easy-Medium": 2,
+  "Medium": 3,
+  "Mixed": 4,
+  "Medium-Hard": 5,
+  "Hard": 6,
+};
+
 const DashboardSheets = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [sortBy, setSortBy] = useState<SortOption>("default");
   const { data: progressData, isLoading: isProgressLoading } = useSheetProgress();
-
-  const filteredSheets = sheets.filter((sheet) => {
-    const matchesSearch = sheet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sheet.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTab = activeTab === "all" || 
-      (activeTab === "starred" && sheet.starred) ||
-      sheet.category.toLowerCase() === activeTab.toLowerCase();
-    return matchesSearch && matchesTab;
-  });
-
-  const totalProblems = sheets.reduce((acc, sheet) => acc + sheet.problems, 0);
-  
-  // Calculate total completed problems across all sheets
-  const totalCompleted = progressData 
-    ? Object.values(progressData).reduce((acc, p) => acc + p.completedCount, 0) 
-    : 0;
 
   const getSheetProgress = (sheetId: string, totalProblems: number): number => {
     if (!progressData || !progressData[sheetId]) return 0;
@@ -94,6 +90,84 @@ const DashboardSheets = () => {
     if (!progressData || !progressData[sheetId]) return 0;
     return progressData[sheetId].completedCount;
   };
+
+  const getSheetLastActivity = (sheetId: string): string | null => {
+    if (!progressData || !progressData[sheetId]) return null;
+    return progressData[sheetId].lastActivityAt;
+  };
+
+  // Filter sheets
+  const filteredSheets = useMemo(() => {
+    return sheets.filter((sheet) => {
+      const matchesSearch = sheet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sheet.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesTab = activeTab === "all" || 
+        (activeTab === "starred" && sheet.starred) ||
+        sheet.category.toLowerCase() === activeTab.toLowerCase();
+      return matchesSearch && matchesTab;
+    });
+  }, [searchQuery, activeTab]);
+
+  // Sort sheets
+  const sortedSheets = useMemo(() => {
+    const sheetsWithProgress = filteredSheets.map(sheet => ({
+      ...sheet,
+      progress: getSheetProgress(sheet.id, sheet.problems),
+    }));
+
+    switch (sortBy) {
+      case "progress-desc":
+        return [...sheetsWithProgress].sort((a, b) => b.progress - a.progress);
+      case "progress-asc":
+        return [...sheetsWithProgress].sort((a, b) => a.progress - b.progress);
+      case "problems-desc":
+        return [...sheetsWithProgress].sort((a, b) => b.problems - a.problems);
+      case "problems-asc":
+        return [...sheetsWithProgress].sort((a, b) => a.problems - b.problems);
+      case "difficulty":
+        return [...sheetsWithProgress].sort((a, b) => 
+          (difficultyOrder[a.difficulty] || 4) - (difficultyOrder[b.difficulty] || 4)
+        );
+      default:
+        return sheetsWithProgress;
+    }
+  }, [filteredSheets, sortBy, progressData]);
+
+  // Sheets with partial progress for "Continue Learning" section
+  const inProgressSheets = useMemo(() => {
+    return sheets
+      .map(sheet => ({
+        id: sheet.id,
+        title: sheet.title,
+        category: sheet.category,
+        problems: sheet.problems,
+        progress: getSheetProgress(sheet.id, sheet.problems),
+        completedCount: getSheetCompletedCount(sheet.id),
+        lastActivityAt: getSheetLastActivity(sheet.id),
+      }))
+      .filter(sheet => sheet.progress > 0 && sheet.progress < 100)
+      .sort((a, b) => {
+        // Sort by last activity (most recent first)
+        if (a.lastActivityAt && b.lastActivityAt) {
+          return new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime();
+        }
+        return b.progress - a.progress;
+      });
+  }, [progressData]);
+
+  // Quick start recommendations
+  const quickStartSheets = useMemo(() => {
+    return [
+      { ...sheets.find(s => s.id === "strivers-sde-sheet")!, reason: "popular" as const },
+      { ...sheets.find(s => s.id === "neetcode-150")!, reason: "recommended" as const },
+      { ...sheets.find(s => s.id === "sql-practice")!, reason: "new" as const },
+    ].filter(Boolean);
+  }, []);
+
+  const totalProblems = sheets.reduce((acc, sheet) => acc + sheet.problems, 0);
+  const totalCompleted = progressData 
+    ? Object.values(progressData).reduce((acc, p) => acc + p.completedCount, 0) 
+    : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,25 +187,38 @@ const DashboardSheets = () => {
       />
 
       {/* Content */}
-      <main className="p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <main className="p-4 md:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
+        {/* Continue Learning Section */}
+        {inProgressSheets.length > 0 && (
+          <ContinueLearningSection sheets={inProgressSheets} />
+        )}
+
+        {/* Quick Start Section - only show if no progress */}
+        {inProgressSheets.length === 0 && (
+          <QuickStartSection sheets={quickStartSheets} />
+        )}
+
         {/* Filter Bar */}
         <SheetsFilterBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
         />
 
         {/* Cards Grid */}
-        {filteredSheets.length > 0 ? (
+        {sortedSheets.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredSheets.map((sheet, index) => (
+            {sortedSheets.map((sheet, index) => (
               <SheetCard
                 key={sheet.id}
                 sheet={sheet}
                 index={index}
-                progress={getSheetProgress(sheet.id, sheet.problems)}
+                progress={sheet.progress}
                 completedCount={getSheetCompletedCount(sheet.id)}
+                lastActivityAt={getSheetLastActivity(sheet.id)}
                 isLoading={isProgressLoading}
               />
             ))}

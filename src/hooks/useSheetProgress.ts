@@ -6,6 +6,7 @@ interface SheetProgressData {
   sheetId: string;
   completedCount: number;
   revisionCount: number;
+  lastActivityAt: string | null;
 }
 
 export const useSheetProgress = () => {
@@ -18,12 +19,12 @@ export const useSheetProgress = () => {
 
       const { data, error } = await supabase
         .from("user_topic_progress")
-        .select("sheet_id, completed, is_revision")
+        .select("sheet_id, completed, is_revision, updated_at")
         .eq("user_id", user.id);
 
       if (error) throw error;
 
-      // Group by sheet_id and count completed/revision
+      // Group by sheet_id and count completed/revision, track last activity
       const progressMap: Record<string, SheetProgressData> = {};
 
       data?.forEach((item) => {
@@ -32,6 +33,7 @@ export const useSheetProgress = () => {
             sheetId: item.sheet_id,
             completedCount: 0,
             revisionCount: 0,
+            lastActivityAt: null,
           };
         }
 
@@ -40,6 +42,12 @@ export const useSheetProgress = () => {
         }
         if (item.is_revision) {
           progressMap[item.sheet_id].revisionCount++;
+        }
+        
+        // Track most recent activity
+        const currentLast = progressMap[item.sheet_id].lastActivityAt;
+        if (!currentLast || new Date(item.updated_at) > new Date(currentLast)) {
+          progressMap[item.sheet_id].lastActivityAt = item.updated_at;
         }
       });
 
