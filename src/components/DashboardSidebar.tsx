@@ -32,9 +32,12 @@ import {
   TrendingUp,
   Settings,
   Bell,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useThemeSync } from "@/hooks/useThemeSync";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -232,6 +235,7 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
 export function DashboardSidebar() {
   const { user, profile, signOut } = useAuth();
   const { unreadCount } = useNotifications();
+  const { theme, resolvedTheme, setTheme } = useThemeSync();
   const { state } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
@@ -240,6 +244,10 @@ export function DashboardSidebar() {
   const [shouldShakeBell, setShouldShakeBell] = useState(false);
   const [prevUnreadCount, setPrevUnreadCount] = useState(unreadCount);
   const isCollapsed = state === "collapsed";
+
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  };
 
   // Detect new notifications and trigger shake
   useEffect(() => {
@@ -269,7 +277,7 @@ export function DashboardSidebar() {
   return (
     <>
       <Sidebar collapsible="icon" className="overflow-hidden">
-        {/* Header with Logo */}
+        {/* Header with Logo and Theme Toggle */}
         <SidebarHeader className="border-b border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center justify-center py-1">
@@ -277,10 +285,66 @@ export function DashboardSidebar() {
                 <span className="text-primary-foreground font-bold text-lg">U</span>
               </div>
             </Link>
-            {!isCollapsed && <NotificationBell />}
+            {!isCollapsed && (
+              <div className="flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleTheme}
+                      className="h-9 w-9 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
+                    >
+                      <motion.div
+                        key={resolvedTheme}
+                        initial={{ rotate: -90, opacity: 0 }}
+                        animate={{ rotate: 0, opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {resolvedTheme === "dark" ? (
+                          <Sun className="h-4 w-4" />
+                        ) : (
+                          <Moon className="h-4 w-4" />
+                        )}
+                      </motion.div>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    Switch to {resolvedTheme === "dark" ? "light" : "dark"} mode
+                  </TooltipContent>
+                </Tooltip>
+                <NotificationBell />
+              </div>
+            )}
           </div>
           {isCollapsed && (
-            <div className="flex justify-center mt-2">
+            <div className="flex flex-col items-center gap-2 mt-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleTheme}
+                    className="h-10 w-10 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
+                  >
+                    <motion.div
+                      key={resolvedTheme}
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {resolvedTheme === "dark" ? (
+                        <Sun className="h-4 w-4" />
+                      ) : (
+                        <Moon className="h-4 w-4" />
+                      )}
+                    </motion.div>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  Switch to {resolvedTheme === "dark" ? "light" : "dark"} mode
+                </TooltipContent>
+              </Tooltip>
               <NotificationBell />
             </div>
           )}
