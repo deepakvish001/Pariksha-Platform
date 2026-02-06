@@ -67,6 +67,7 @@ import Affiliate from "./pages/platform/Affiliate";
 import PublicProfile from "./pages/PublicProfile";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
+import NotificationCenter from "./pages/NotificationCenter";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +116,7 @@ const App = () => (
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
                   <Route path="profile" element={<DashboardProfile />} />
                   <Route path="achievements" element={<Achievements />} />
+                  <Route path="notifications" element={<NotificationCenter />} />
                 </Route>
 
                 {/* Library routes */}

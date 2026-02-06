@@ -115,20 +115,22 @@
            )}
          </Button>
        </PopoverTrigger>
-       <PopoverContent className="w-80 p-0" align="end">
-         <div className="flex items-center justify-between p-3 border-b">
-           <h3 className="font-semibold">Notifications</h3>
-           {unreadCount > 0 && (
-             <Button
-               variant="ghost"
-               size="sm"
-               className="text-xs h-7"
-               onClick={markAllAsRead}
-             >
-               Mark all read
-             </Button>
-           )}
-         </div>
+        <PopoverContent className="w-80 p-0" align="end">
+          <div className="flex items-center justify-between p-3 border-b">
+            <Link to="/dashboard/notifications" className="font-semibold hover:text-primary transition-colors">
+              Notifications
+            </Link>
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-7"
+                onClick={markAllAsRead}
+              >
+                Mark all read
+              </Button>
+            )}
+          </div>
          <ScrollArea className="h-[300px]">
            {isLoading ? (
              <div className="p-4 text-center text-sm text-muted-foreground">
