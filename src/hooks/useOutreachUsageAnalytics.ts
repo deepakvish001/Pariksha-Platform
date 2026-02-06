@@ -65,8 +65,9 @@ export const useOutreachUsageAnalytics = () => {
 
   const totalCopies = usageData.length;
 
-  // Group by date for chart
+  // Group by date for chart (skip null dates)
   const copyHistory = usageData.reduce<Record<string, number>>((acc, entry) => {
+    if (!entry.copied_at) return acc;
     const date = new Date(entry.copied_at).toISOString().split("T")[0];
     acc[date] = (acc[date] || 0) + 1;
     return acc;
