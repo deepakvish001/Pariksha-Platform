@@ -23,9 +23,10 @@ import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import CalendarHeatmap from "@/components/CalendarHeatmap";
 import AchievementBadge, { achievements } from "@/components/AchievementBadge";
- import RecentAchievements from "@/components/RecentAchievements";
+import RecentAchievements from "@/components/RecentAchievements";
 import MobileFAB from "@/components/MobileFAB";
- import confetti from "canvas-confetti";
+import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
+import confetti from "canvas-confetti";
 import XPLeaderboard from "@/components/XPLeaderboard";
 import XPGoalsCard from "@/components/XPGoalsCard";
 
@@ -425,11 +426,7 @@ const DashboardMatrix = () => {
   const earnedCount = earnedAchievements.size;
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
