@@ -310,9 +310,9 @@ export function DashboardSidebar() {
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="sm"
                       onClick={toggleTheme}
-                      className="h-9 w-9 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
+                      className="h-9 px-2.5 rounded-lg hover:bg-sidebar-accent transition-all duration-200 gap-2"
                     >
                       <motion.div
                         key={theme}
@@ -322,10 +322,13 @@ export function DashboardSidebar() {
                       >
                         {getThemeIcon()}
                       </motion.div>
+                      <span className="text-xs font-medium text-sidebar-foreground/70">
+                        {getThemeLabel()}
+                      </span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    {getThemeLabel()} mode (click to switch)
+                    Click to switch theme
                   </TooltipContent>
                 </Tooltip>
                 <NotificationBell />
