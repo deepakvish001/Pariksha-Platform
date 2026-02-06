@@ -133,6 +133,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "134 KB",
     dateAdded: "2024-02-10",
     tags: ["Entry-Level", "Graduate", "Internship"],
+    previewUrl: getTemplatePreviewUrl(7),
   },
   {
     id: 8,
@@ -147,6 +148,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "167 KB",
     dateAdded: "2024-02-15",
     tags: ["Corporate", "Traditional", "Formal"],
+    previewUrl: getTemplatePreviewUrl(8),
   },
   {
     id: 9,
@@ -161,6 +163,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "203 KB",
     dateAdded: "2024-02-20",
     tags: ["Startup", "Tech", "Dynamic"],
+    previewUrl: getTemplatePreviewUrl(9),
   },
   {
     id: 10,
@@ -175,6 +178,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "145 KB",
     dateAdded: "2024-02-25",
     tags: ["Academic", "Research", "Education"],
+    previewUrl: getTemplatePreviewUrl(10),
   },
   {
     id: 11,
@@ -189,6 +193,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "678 KB",
     dateAdded: "2024-03-01",
     tags: ["Portfolio", "Visual", "Creative"],
+    previewUrl: getTemplatePreviewUrl(11),
   },
   {
     id: 12,
@@ -203,6 +208,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "72 KB",
     dateAdded: "2024-03-05",
     tags: ["Minimal", "Clean", "Simple"],
+    previewUrl: getTemplatePreviewUrl(12),
   },
 ];
 
