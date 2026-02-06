@@ -134,11 +134,22 @@ const Hero = () => {
 
       {/* Content */}
       <div className="relative z-10 section-container text-center lg:text-left pt-28 pb-32 lg:pr-[400px]">
+        {/* Brand Badge */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="inline-flex items-center gap-3 mb-6"
+        >
+          <img src="/logo.png" alt="Byteskill" className="w-10 h-10 rounded-xl shadow-lg shadow-primary/20" />
+          <span className="text-xl font-bold text-foreground">Byteskill</span>
+        </motion.div>
+
         {/* Badge */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-8"
         >
           <Sparkles className="w-4 h-4 text-primary" />
@@ -149,7 +160,7 @@ const Hero = () => {
         <motion.h1 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
           className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight"
         >
           <span className="gradient-text">Turn Learning Chaos</span>
@@ -161,7 +172,7 @@ const Hero = () => {
         <motion.p 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
           className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
         >
           Replace scattered notes, random spreadsheets, and UI frustrations. 
@@ -173,7 +184,7 @@ const Hero = () => {
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
           className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
         >
           <Link to="/signup" className="btn-primary inline-flex items-center gap-2 text-lg group">
@@ -189,7 +200,7 @@ const Hero = () => {
         <motion.div 
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
           className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto lg:mx-0"
         >
           <AnimatedStat value={10} suffix="K+" label="Active Users" />
