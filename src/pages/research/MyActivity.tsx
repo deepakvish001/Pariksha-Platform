@@ -1,5 +1,6 @@
+import { useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Activity, RefreshCw } from "lucide-react";
+import { Activity, RefreshCw, Loader2 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,11 +10,42 @@ import { useActivityStats } from "@/hooks/useActivityStats";
 import { ActivityFeedItem } from "@/components/activity/ActivityFeedItem";
 import { ActivityStats } from "@/components/activity/ActivityStats";
 import { ActivityEmptyState } from "@/components/activity/ActivityEmptyState";
-import { formatDistanceToNow, isToday, isYesterday, isThisWeek } from "date-fns";
+import { isToday, isYesterday, isThisWeek } from "date-fns";
 
 const MyActivity = () => {
-  const { activities, loading: feedLoading, refetch: refetchFeed } = useActivityFeed({ limit: 50 });
+  const { 
+    activities, 
+    loading: feedLoading, 
+    loadingMore,
+    hasMore,
+    refetch: refetchFeed,
+    loadMore 
+  } = useActivityFeed({ pageSize: 20 });
   const { stats, loading: statsLoading, refetch: refetchStats } = useActivityStats();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !feedLoading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasMore, loadingMore, feedLoading, loadMore]);
 
   const handleRefresh = () => {
     refetchFeed();
@@ -94,7 +126,7 @@ const MyActivity = () => {
                 </div>
                 {activities.length > 0 && (
                   <span className="text-sm text-muted-foreground">
-                    {activities.length} activities
+                    {activities.length} activities{hasMore ? "+" : ""}
                   </span>
                 )}
               </div>
@@ -139,6 +171,21 @@ const MyActivity = () => {
                       </div>
                     );
                   })}
+
+                  {/* Infinite scroll trigger */}
+                  <div ref={loadMoreRef} className="p-4">
+                    {loadingMore && (
+                      <div className="flex items-center justify-center gap-2 py-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Loading more...</span>
+                      </div>
+                    )}
+                    {!hasMore && activities.length > 0 && (
+                      <p className="text-center text-sm text-muted-foreground py-4">
+                        You've reached the end of your activity history
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>

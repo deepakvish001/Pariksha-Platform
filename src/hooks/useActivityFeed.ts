@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -14,17 +14,20 @@ export interface ActivityItem {
 }
 
 interface UseActivityFeedOptions {
-  limit?: number;
+  pageSize?: number;
 }
 
 export function useActivityFeed(options: UseActivityFeedOptions = {}) {
-  const { limit = 50 } = options;
+  const { pageSize = 20 } = options;
   const { user } = useAuth();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const cursorRef = useRef<string | null>(null);
 
-  const fetchActivities = useCallback(async () => {
+  const fetchActivities = useCallback(async (reset = true) => {
     if (!user) {
       setActivities([]);
       setLoading(false);
@@ -32,28 +35,64 @@ export function useActivityFeed(options: UseActivityFeedOptions = {}) {
     }
 
     try {
-      setLoading(true);
-      const { data, error: fetchError } = await supabase
+      if (reset) {
+        setLoading(true);
+        cursorRef.current = null;
+      } else {
+        setLoadingMore(true);
+      }
+
+      let query = supabase
         .from("user_activity_log")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(limit);
+        .limit(pageSize + 1); // Fetch one extra to check if there's more
+
+      // Use cursor for pagination
+      if (!reset && cursorRef.current) {
+        query = query.lt("created_at", cursorRef.current);
+      }
+
+      const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
 
-      setActivities((data as ActivityItem[]) || []);
+      const fetchedData = (data as ActivityItem[]) || [];
+      const hasMoreData = fetchedData.length > pageSize;
+      const itemsToAdd = hasMoreData ? fetchedData.slice(0, pageSize) : fetchedData;
+
+      // Update cursor for next page
+      if (itemsToAdd.length > 0) {
+        cursorRef.current = itemsToAdd[itemsToAdd.length - 1].created_at;
+      }
+
+      setHasMore(hasMoreData);
+
+      if (reset) {
+        setActivities(itemsToAdd);
+      } else {
+        setActivities((prev) => [...prev, ...itemsToAdd]);
+      }
+
       setError(null);
     } catch (err) {
       console.error("Error fetching activities:", err);
       setError(err as Error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [user, limit]);
+  }, [user, pageSize]);
+
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchActivities(false);
+    }
+  }, [fetchActivities, loadingMore, hasMore]);
 
   useEffect(() => {
-    fetchActivities();
+    fetchActivities(true);
   }, [fetchActivities]);
 
   // Subscribe to realtime updates
@@ -74,7 +113,7 @@ export function useActivityFeed(options: UseActivityFeedOptions = {}) {
           const newActivity = payload.new as ActivityItem;
           setActivities((prev) => [
             { ...newActivity, isNew: true },
-            ...prev.slice(0, limit - 1),
+            ...prev,
           ]);
 
           // Remove "isNew" flag after animation
@@ -92,12 +131,15 @@ export function useActivityFeed(options: UseActivityFeedOptions = {}) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, limit]);
+  }, [user]);
 
   return {
     activities,
     loading,
+    loadingMore,
+    hasMore,
     error,
-    refetch: fetchActivities,
+    refetch: () => fetchActivities(true),
+    loadMore,
   };
 }
