@@ -33,8 +33,36 @@ interface ResumePreviewModalProps {
   onToggleFavorite?: (templateId: number) => void;
 }
 
-// Full resume preview component with realistic content
-const FullResumePreview: React.FC<{ template: ResumeTemplate; zoom: number }> = ({
+// Image-based preview component (uses actual uploaded images)
+const ImagePreview: React.FC<{ template: ResumeTemplate; zoom: number }> = ({
+  template,
+  zoom,
+}) => {
+  const [imageError, setImageError] = React.useState(false);
+  
+  if (!template.previewUrl || imageError) {
+    return <FallbackResumePreview template={template} zoom={zoom} />;
+  }
+
+  return (
+    <div
+      className="bg-gray-100 rounded-lg shadow-inner overflow-auto flex justify-center p-4"
+      style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
+    >
+      <div className="w-[500px] shadow-2xl rounded-lg overflow-hidden bg-white">
+        <img
+          src={template.previewUrl}
+          alt={`${template.name} preview`}
+          className="w-full h-auto object-contain"
+          onError={() => setImageError(true)}
+        />
+      </div>
+    </div>
+  );
+};
+
+// Full resume preview component with realistic content (fallback)
+const FallbackResumePreview: React.FC<{ template: ResumeTemplate; zoom: number }> = ({
   template,
   zoom,
 }) => {
@@ -529,7 +557,7 @@ const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <FullResumePreview template={currentTemplate} zoom={zoom} />
+                  <ImagePreview template={currentTemplate} zoom={zoom} />
                 </motion.div>
               </AnimatePresence>
             </div>
