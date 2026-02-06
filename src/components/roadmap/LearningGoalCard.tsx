@@ -141,13 +141,19 @@ const LearningGoalCard: React.FC<LearningGoalCardProps> = ({
 
   // Goal exists - show progress
   return (
-    <Card className={cn("overflow-hidden", className)}>
-      <div className={cn(
-        "h-1",
-        progress.isOnTrack 
-          ? "bg-gradient-to-r from-emerald-500 to-green-500" 
-          : "bg-gradient-to-r from-amber-500 to-orange-500"
-      )} />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className={cn("overflow-hidden glass-card transition-all duration-200 hover:shadow-lg hover:shadow-primary/5", className)}>
+        <div className={cn(
+          "h-1",
+          progress.isOnTrack 
+            ? "bg-gradient-to-r from-emerald-500 to-green-500" 
+            : "bg-gradient-to-r from-amber-500 to-orange-500"
+        )} />
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -256,7 +262,8 @@ const LearningGoalCard: React.FC<LearningGoalCardProps> = ({
           )}
         </p>
       </CardContent>
-    </Card>
+      </Card>
+    </motion.div>
   );
 };
 

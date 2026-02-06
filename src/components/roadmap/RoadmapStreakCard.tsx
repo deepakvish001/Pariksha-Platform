@@ -95,8 +95,14 @@ const RoadmapStreakCard: React.FC<RoadmapStreakCardProps> = ({
   }
 
   return (
-    <Card className={cn("overflow-hidden", className)}>
-      <div className="h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500" />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className={cn("overflow-hidden glass-card transition-all duration-200 hover:shadow-lg hover:shadow-primary/5", className)}>
+        <div className="h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500" />
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Flame className="h-5 w-5 text-purple-500" />
@@ -202,7 +208,8 @@ const RoadmapStreakCard: React.FC<RoadmapStreakCardProps> = ({
           {currentStreak >= 30 && "Legendary explorer! You're unstoppable! 🏆"}
         </p>
       </CardContent>
-    </Card>
+      </Card>
+    </motion.div>
   );
 };
 
