@@ -1,177 +1,145 @@
 
-# Real-Time Activity Dashboard Implementation Plan
+# Astra AI Page Redesign Plan
 
 ## Overview
-Transform the static My Activity page into a dynamic, real-time activity feed that aggregates user actions from multiple data sources and updates live as new activities occur.
+Transform the Astra AI page into a premium, immersive chat experience with a deep black background, animated gradient orbs, glassmorphism components, and polished UI interactions matching the My Activity page aesthetic.
 
-## What We'll Build
+## Current State Analysis
+The current Astra AI page has:
+- Light/default background (uses `bg-background`)
+- Basic card-based chat interface
+- Simple header with basic styling
+- Standard input field at the bottom
+- Basic message bubbles without visual polish
 
-### 1. Create a Unified Activity Feed
-A new database table to store all user activities in one place, making it easy to query and display a chronological timeline.
-
-### 2. Real-Time Updates
-When you complete a quiz, earn XP, or unlock an achievement on another device or tab, the activity feed will update instantly without refreshing the page.
-
-### 3. Aggregated Stats
-Dynamic statistics cards showing:
-- Problems solved (from DSA/SQL/Interview progress)
-- Quizzes completed (from quiz results)
-- Templates used (from resume downloads + outreach usage)
-- XP earned this week
-
-### 4. Visual Activity Timeline
-A beautiful timeline showing your recent learning activities with:
-- Activity type icons and badges
-- Relative timestamps ("2 hours ago")
-- Activity-specific details (quiz scores, topics completed, achievements unlocked)
+## Design Goals
+- Deep black background (`#030305`) with animated gradient orbs
+- Glassmorphism chat interface with `backdrop-blur` effects
+- Premium message bubbles with refined styling
+- Animated welcome state with suggested prompts
+- Polished input area with gradient accents
+- Enhanced history panel with dark theme
+- Smooth animations and micro-interactions
 
 ---
 
-## Technical Implementation
+## Implementation Steps
 
-### Step 1: Create Activity Logging Table
+### Step 1: Page Shell and Background
+Update `AstraAI.tsx` with:
+- Deep black background matching My Activity (`#030305`)
+- Animated radial gradient orbs (primary, purple, blue colors)
+- Subtle grid overlay with very low opacity
+- Vignette effect for depth
 
-Create a new `user_activity_log` table to centralize all activity tracking:
+### Step 2: Enhanced Header
+Redesign header with:
+- Glassmorphism styling (`bg-black/40 backdrop-blur-3xl`)
+- Larger, more prominent Astra AI logo with gradient and glow
+- Animated sparkle badge for "AI Powered" indicator
+- Refined typography with gradient text
+- Better spacing and visual hierarchy
 
+### Step 3: Chat Container Redesign
+Transform the main chat area:
+- Remove the Card wrapper for a more immersive feel
+- Add glassmorphism container for messages
+- Full-height chat area with proper scrolling
+- Gradient dividers and section headers
+
+### Step 4: Message Bubble Styling
+Update message bubbles:
+- User messages: Gradient background (primary to orange), white text
+- Assistant messages: Glassmorphism style (`bg-white/[0.03]`, `border-white/[0.05]`)
+- Refined avatar styling with gradient backgrounds and glow effects
+- Better code block styling for dark theme
+- Smooth entrance animations
+
+### Step 5: Welcome State Enhancement
+Redesign empty state:
+- Larger animated Astra AI icon with glow
+- Gradient text for welcome message
+- Suggested prompts as glassmorphism cards with hover effects
+- Floating decorative elements
+
+### Step 6: Input Area Polish
+Upgrade the message input:
+- Glassmorphism container with border glow on focus
+- Larger input field with better padding
+- Gradient send button with hover animation
+- Character count or typing indicator
+
+### Step 7: History Panel Dark Theme
+Update Sheet/History panel:
+- Dark background matching main page
+- Glassmorphism conversation cards
+- Better search input styling
+- Refined hover states
+
+---
+
+## Technical Details
+
+### Color Palette
 ```text
-┌─────────────────────────────────────────────────────────┐
-│                   user_activity_log                      │
-├─────────────────────────────────────────────────────────┤
-│ id           │ UUID (primary key)                       │
-│ user_id      │ UUID (not null)                          │
-│ activity_type│ TEXT (quiz, topic, achievement, xp, etc) │
-│ title        │ TEXT (human-readable title)              │
-│ description  │ TEXT (additional details)                │
-│ metadata     │ JSONB (score, category, etc)             │
-│ created_at   │ TIMESTAMPTZ (auto)                       │
-└─────────────────────────────────────────────────────────┘
+Background:     #030305 (deep black)
+Card BG:        bg-black/40 + backdrop-blur-2xl
+Borders:        border-white/[0.03] to border-white/[0.06]
+Primary text:   text-white
+Secondary:      text-white/40 to text-white/60
+Accent orbs:    primary/10, purple-600/8, blue-600/6
 ```
 
-Enable realtime for this table and add RLS policies for user-only access.
+### Animation Specifications
+- Gradient orbs: 8-15 second loops with scale and opacity changes
+- Message entrance: Spring animation with stagger
+- Button hover: Scale and glow transitions
+- Typing indicator: Pulsing dots animation
 
-### Step 2: Create Database Triggers
-
-Add triggers on existing tables to automatically log activities:
-
-- **Quiz completed** → Log when a row is inserted into `quiz_results`
-- **Achievement unlocked** → Log when a row is inserted into `user_achievements`
-- **XP earned** → Log when a row is inserted into `xp_transactions`
-- **Topic completed** → Log when `completed` changes to `true` in `user_topic_progress`
-
-### Step 3: Create Activity Hook (`useActivityFeed.ts`)
-
+### Components Structure
 ```text
-┌────────────────────────────────────────┐
-│           useActivityFeed              │
-├────────────────────────────────────────┤
-│ • Fetches recent activities            │
-│ • Subscribes to realtime channel       │
-│ • Auto-updates on new activities       │
-│ • Calculates aggregated stats          │
-│ • Provides loading/error states        │
-└────────────────────────────────────────┘
-```
-
-Key features:
-- Use Supabase Realtime channel for `postgres_changes` on `user_activity_log`
-- Filter by user_id using channel filter
-- Prepend new activities to the list with animation
-- Calculate stats from aggregated queries
-
-### Step 4: Create Stats Aggregation Hook (`useActivityStats.ts`)
-
-Aggregate statistics from multiple sources:
-
-```text
-Stats Queries:
-├── Problems Solved: COUNT from user_company_progress WHERE solved=true
-├── Quizzes Completed: COUNT from quiz_results
-├── Weekly XP: SUM from xp_transactions (last 7 days)
-├── Achievements: COUNT from user_achievements
-└── Streak: From existing useStreak hook
-```
-
-### Step 5: Update MyActivity Page Components
-
-**ActivityFeedItem Component:**
-- Dynamic icon based on activity type
-- Animated entrance for new items
-- Type-specific badge colors
-- Relative time display with auto-refresh
-
-**Stats Cards:**
-- Real count values instead of hardcoded
-- Week-over-week change calculation
-- Loading skeletons
-
-**Activity Timeline:**
-- Grouped by date (Today, Yesterday, This Week, Earlier)
-- Infinite scroll or "Load More" button
-- Empty state for new users
-
----
-
-## File Changes Summary
-
-| Action | File | Purpose |
-|--------|------|---------|
-| Create | `supabase/migrations/xxx_create_activity_log.sql` | New table + triggers |
-| Create | `src/hooks/useActivityFeed.ts` | Realtime activity hook |
-| Create | `src/hooks/useActivityStats.ts` | Aggregated stats hook |
-| Create | `src/components/activity/ActivityFeedItem.tsx` | Individual activity card |
-| Create | `src/components/activity/ActivityStats.tsx` | Stats grid component |
-| Update | `src/pages/research/MyActivity.tsx` | Integrate new components |
-
----
-
-## Activity Types Supported
-
-| Type | Source Table | Title Example |
-|------|--------------|---------------|
-| `quiz_complete` | quiz_results | "Completed DSA Quiz" |
-| `achievement` | user_achievements | "Unlocked First Steps badge" |
-| `xp_earned` | xp_transactions | "Earned 25 XP" |
-| `topic_complete` | user_topic_progress | "Completed Arrays topic" |
-| `resume_download` | resume_downloads | "Downloaded Modern Template" |
-| `outreach_copy` | outreach_usage | "Copied LinkedIn template" |
-
----
-
-## Realtime Flow Diagram
-
-```text
-User Action (e.g., completes quiz)
-         │
-         ▼
-┌─────────────────────┐
-│   quiz_results      │ ◄── INSERT
-│   (table)           │
-└─────────────────────┘
-         │
-         ▼ (trigger fires)
-┌─────────────────────┐
-│  user_activity_log  │ ◄── AUTO INSERT
-│   (table)           │
-└─────────────────────┘
-         │
-         ▼ (realtime broadcast)
-┌─────────────────────┐
-│  Supabase Realtime  │
-│     Channel         │
-└─────────────────────┘
-         │
-         ▼ (useActivityFeed receives)
-┌─────────────────────┐
-│   MyActivity Page   │ ◄── UI Updates instantly
-│   (React)           │
-└─────────────────────┘
+AstraAI.tsx
+├── Fixed Background Layer
+│   ├── Radial gradient base
+│   ├── Animated orbs (4)
+│   ├── Grid overlay
+│   └── Vignette
+├── Header (glassmorphism)
+│   ├── Logo with glow
+│   ├── Title/subtitle
+│   └── Action buttons
+├── Chat Container
+│   ├── Welcome State (conditional)
+│   │   ├── Animated icon
+│   │   ├── Welcome text
+│   │   └── Suggested prompts grid
+│   └── Messages Area
+│       ├── Message bubbles
+│       └── Typing indicator
+└── Input Area
+    ├── Glassmorphism container
+    ├── Text input
+    └── Send button
 ```
 
 ---
 
-## User Experience
+## Files to Modify
 
-1. **Instant Feedback**: Complete a quiz → see it appear in the activity feed immediately
-2. **Cross-Device Sync**: Activity logged on mobile shows on desktop in real-time
-3. **Accurate Stats**: All numbers reflect actual database counts
-4. **Engaging Design**: Animated entries, color-coded badges, and a clean timeline
+| File | Changes |
+|------|---------|
+| `src/pages/platform/AstraAI.tsx` | Complete redesign with dark theme, glassmorphism, animations |
+
+## Dependencies
+No new dependencies required - uses existing:
+- `framer-motion` for animations
+- `lucide-react` for icons
+- Existing UI components (Sheet, Button, Input, etc.)
+
+## Expected Outcome
+A premium, immersive AI chat experience with:
+- Deep black aesthetic matching My Activity page
+- Smooth animations and micro-interactions
+- Professional glassmorphism effects
+- Enhanced readability with proper contrast
+- Responsive design for mobile
