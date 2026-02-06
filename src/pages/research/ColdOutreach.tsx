@@ -105,14 +105,14 @@ const ColdOutreach = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 dark:to-primary/5">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-border/40 dark:border-primary/10 bg-background/80 dark:bg-background/60 backdrop-blur-xl">
         <div className="flex h-16 items-center justify-between gap-4 px-6">
           <div className="flex items-center gap-4">
             <SidebarTrigger />
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-primary to-violet-500 flex items-center justify-center shadow-lg shadow-primary/20">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-primary to-orange-500 flex items-center justify-center shadow-lg shadow-primary/20 dark:shadow-primary/40">
                 <Send className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
@@ -122,7 +122,7 @@ const ColdOutreach = () => {
             </div>
           </div>
           {user && (
-            <Button onClick={() => setShowCreateForm(true)} className="gap-2 rounded-xl shadow-lg shadow-primary/20">
+            <Button onClick={() => setShowCreateForm(true)} className="gap-2 rounded-xl shadow-lg shadow-primary/20 dark:shadow-primary/40">
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Create Template</span>
             </Button>
