@@ -78,7 +78,8 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import NotificationBell from "@/components/NotificationBell";
 
-const mainNavItems = [
+// Primary navigation - Core dashboard features
+const primaryNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
   { title: "Profile", url: "/dashboard/profile", icon: User },
@@ -86,30 +87,35 @@ const mainNavItems = [
   { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
 ];
 
-const libraryItems = [
-  { title: "Position Wise Resources", url: "/library/positions", icon: Layers },
-  { title: "Company Wise Resources", url: "/library/companies", icon: Building2 },
-  { title: "Mass Recruitment", url: "/library/recruitment", icon: Users },
-  { title: "Interview Questions", url: "/library/interview", icon: MessageSquare },
-  { title: "DSA Questions", url: "/library/dsa", icon: Code2 },
-  { title: "SQL Questions", url: "/library/sql", icon: Database },
-  { title: "Aptitude Questions", url: "/library/aptitude", icon: HelpCircle },
-  { title: "Core CS Subjects", url: "/library/cs", icon: Cpu },
-  { title: "Handwritten Notes", url: "/library/notes", icon: FileText },
-  { title: "Quiz", url: "/library/quiz", icon: Trophy },
-  { title: "Quiz History", url: "/library/quiz-history", icon: Activity },
-];
-
+// Learning section groups - ordered by learning progression
 const fundamentalsItems = [
   { title: "Overview", url: "/fundamentals", icon: TrendingUp },
   { title: "Language", url: "/fundamentals/language", icon: Code2 },
   { title: "OOPs Concepts", url: "/fundamentals/oops", icon: FolderOpen },
 ];
 
+const libraryItems = [
+  { title: "DSA Questions", url: "/library/dsa", icon: Code2 },
+  { title: "SQL Questions", url: "/library/sql", icon: Database },
+  { title: "Aptitude Questions", url: "/library/aptitude", icon: HelpCircle },
+  { title: "Core CS Subjects", url: "/library/cs", icon: Cpu },
+  { title: "Interview Questions", url: "/library/interview", icon: MessageSquare },
+  { title: "Handwritten Notes", url: "/library/notes", icon: FileText },
+  { title: "Quiz", url: "/library/quiz", icon: Trophy },
+  { title: "Quiz History", url: "/library/quiz-history", icon: Activity },
+];
+
 const systemDesignItems = [
   { title: "Overview", url: "/system-design", icon: Layers },
   { title: "High Level Design", url: "/system-design/hld", icon: Network },
   { title: "Low Level Design", url: "/system-design/lld", icon: LayoutGrid },
+];
+
+// Career section groups - job search & preparation
+const companyItems = [
+  { title: "Position Wise Resources", url: "/library/positions", icon: Layers },
+  { title: "Company Wise Resources", url: "/library/companies", icon: Building2 },
+  { title: "Mass Recruitment", url: "/library/recruitment", icon: Users },
 ];
 
 const researchItems = [
@@ -122,14 +128,14 @@ const researchItems = [
   { title: "My Activity", url: "/research/activity", icon: Activity },
 ];
 
+// Tools & Settings
 const platformItems = [
   { title: "Astra AI", url: "/platform/ai", icon: Sparkles },
   { title: "Resources", url: "/platform/resources", icon: BookOpen },
   { title: "Collections", url: "/platform/collections", icon: FolderOpen },
-  
 ];
 
-const accountItems = [
+const settingsItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -374,11 +380,11 @@ export function DashboardSidebar() {
         </SidebarHeader>
 
         <SidebarContent className="px-3 py-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3">
-          {/* Main Navigation */}
+          {/* Primary Navigation */}
           <SidebarGroup className="space-y-1">
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                {mainNavItems.map((item) => (
+                {primaryNavItems.map((item) => (
                   <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                     <SidebarMenuButton
                       asChild
@@ -417,42 +423,66 @@ export function DashboardSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-                
-                {/* Sign Out Button */}
-                <SidebarMenuItem className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                  <SidebarMenuButton
-                    onClick={() => setIsSignOutDialogOpen(true)}
-                    tooltip="Sign Out"
-                    size="lg"
-                    className="transition-all duration-200 hover:translate-x-0.5 group/signout hover:text-destructive group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
-                  >
-                    <LogOut className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/signout:scale-110" />
-                    <span className="font-medium group-data-[collapsible=icon]:hidden">Sign Out</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <SidebarSeparator className="my-4 group-data-[collapsible=icon]:my-3" />
+          <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
 
-          {/* Collapsible Groups */}
+          {/* Learning Section */}
           <SidebarGroup className="space-y-1">
+            {!isCollapsed && (
+              <p className="px-3 py-1 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">
+                Learning
+              </p>
+            )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                <CollapsibleGroup title="Library" items={libraryItems} />
                 <CollapsibleGroup title="Fundamentals" items={fundamentalsItems} />
+                <CollapsibleGroup title="Practice" items={libraryItems} />
                 <CollapsibleGroup title="System Design" items={systemDesignItems} />
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
+
+          {/* Career Section */}
+          <SidebarGroup className="space-y-1">
+            {!isCollapsed && (
+              <p className="px-3 py-1 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">
+                Career
+              </p>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
+                <CollapsibleGroup title="Companies" items={companyItems} />
                 <CollapsibleGroup title="Research" items={researchItems} />
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
+
+          {/* Tools & Settings */}
+          <SidebarGroup className="space-y-1">
+            {!isCollapsed && (
+              <p className="px-3 py-1 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">
+                Tools
+              </p>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
                 <CollapsibleGroup title="Platform" items={platformItems} />
-                <CollapsibleGroup title="Account" items={accountItems} defaultOpen />
+                <CollapsibleGroup title="Settings" items={settingsItems} />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
 
-        {/* Footer with User Profile */}
-        <SidebarFooter className="border-t border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
+        {/* Footer with User Profile and Sign Out */}
+        <SidebarFooter className="border-t border-sidebar-border p-3 group-data-[collapsible=icon]:p-2 space-y-2">
+          {/* User Profile */}
           {isCollapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -487,6 +517,32 @@ export function DashboardSidebar() {
                 <p className="text-xs text-primary truncate">Free plan</p>
               </div>
             </div>
+          )}
+
+          {/* Sign Out Button */}
+          {isCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsSignOutDialogOpen(true)}
+                  className="h-10 w-10 mx-auto rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Sign Out</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button
+              variant="ghost"
+              onClick={() => setIsSignOutDialogOpen(true)}
+              className="w-full justify-start gap-2 h-10 px-3 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-200 group/signout"
+            >
+              <LogOut className="h-4 w-4 transition-transform duration-200 group-hover/signout:scale-110" />
+              <span className="text-sm font-medium">Sign Out</span>
+            </Button>
           )}
         </SidebarFooter>
       </Sidebar>
