@@ -1,4 +1,5 @@
-import { Search, Filter, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { Search, X, Flame, Scissors } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,24 +60,45 @@ const OutreachFilterBar = ({
   };
 
   return (
-    <div className="space-y-4">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="space-y-4 p-4 md:p-5 rounded-2xl bg-card/50 backdrop-blur-sm border border-border/50"
+    >
       {/* Search and Platform Tabs Row */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative flex-1 group">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             placeholder="Search templates, tags, or use cases..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-11 rounded-xl bg-background/80 border-border/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
           />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+              onClick={() => onSearchChange('')}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
         
         <Tabs value={platform} onValueChange={(v) => onPlatformChange(v as OutreachPlatform | 'all')}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="linkedin">LinkedIn</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
+          <TabsList className="h-11 bg-background/80 border border-border/50 rounded-xl p-1">
+            <TabsTrigger value="all" className="rounded-lg px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              All
+            </TabsTrigger>
+            <TabsTrigger value="linkedin" className="rounded-lg px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              LinkedIn
+            </TabsTrigger>
+            <TabsTrigger value="email" className="rounded-lg px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Email
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -84,10 +106,10 @@ const OutreachFilterBar = ({
       {/* Filters Row */}
       <div className="flex flex-wrap items-center gap-3">
         <Select value={category} onValueChange={(v) => onCategoryChange(v as OutreachCategory | 'all')}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] h-10 rounded-xl bg-background/80 border-border/60 hover:border-primary/40 transition-colors">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl">
             <SelectItem value="all">All Categories</SelectItem>
             {categoryConfigs.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
@@ -98,10 +120,10 @@ const OutreachFilterBar = ({
         </Select>
 
         <Select value={successRate} onValueChange={(v) => onSuccessRateChange(v as SuccessRate | 'all')}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[160px] h-10 rounded-xl bg-background/80 border-border/60 hover:border-primary/40 transition-colors">
             <SelectValue placeholder="Success Rate" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl">
             <SelectItem value="all">All Rates</SelectItem>
             <SelectItem value="high">High Success</SelectItem>
             <SelectItem value="medium">Medium Success</SelectItem>
@@ -112,33 +134,48 @@ const OutreachFilterBar = ({
         <div className="flex gap-2">
           <Badge
             variant={showPopular ? "default" : "outline"}
-            className="cursor-pointer hover:bg-primary/80 transition-colors"
+            className={`cursor-pointer h-10 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
+              showPopular 
+                ? "bg-gradient-to-r from-orange-500 to-amber-500 border-transparent text-white hover:from-orange-600 hover:to-amber-600" 
+                : "hover:border-orange-400/50 hover:bg-orange-500/10 hover:text-orange-600"
+            }`}
             onClick={() => onShowPopularChange(!showPopular)}
           >
-            🔥 Popular
+            <Flame className="h-3.5 w-3.5 mr-1.5" />
+            Popular
           </Badge>
           <Badge
             variant={showShort ? "default" : "outline"}
-            className="cursor-pointer hover:bg-primary/80 transition-colors"
+            className={`cursor-pointer h-10 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
+              showShort 
+                ? "bg-gradient-to-r from-cyan-500 to-blue-500 border-transparent text-white hover:from-cyan-600 hover:to-blue-600" 
+                : "hover:border-cyan-400/50 hover:bg-cyan-500/10 hover:text-cyan-600"
+            }`}
             onClick={() => onShowShortChange(!showShort)}
           >
-            ✂️ Short & Sweet
+            <Scissors className="h-3.5 w-3.5 mr-1.5" />
+            Short
           </Badge>
         </div>
 
         {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearFilters}
-            className="text-muted-foreground hover:text-foreground"
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
           >
-            <X className="h-4 w-4 mr-1" />
-            Clear filters
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl h-10 px-4"
+            >
+              <X className="h-4 w-4 mr-1.5" />
+              Clear all
+            </Button>
+          </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

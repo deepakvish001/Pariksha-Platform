@@ -105,24 +105,24 @@ const ColdOutreach = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="flex h-16 items-center justify-between gap-4 px-6">
           <div className="flex items-center gap-4">
             <SidebarTrigger />
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center">
-                <Send className="h-4 w-4 text-primary-foreground" />
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-primary to-violet-500 flex items-center justify-center shadow-lg shadow-primary/20">
+                <Send className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold">Cold DMs / Emails</h1>
-                <p className="text-xs text-muted-foreground">Outreach templates that work</p>
+                <h1 className="text-lg font-semibold tracking-tight">Cold DMs / Emails</h1>
+                <p className="text-xs text-muted-foreground">Templates that get replies</p>
               </div>
             </div>
           </div>
           {user && (
-            <Button onClick={() => setShowCreateForm(true)} className="gap-2">
+            <Button onClick={() => setShowCreateForm(true)} className="gap-2 rounded-xl shadow-lg shadow-primary/20">
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Create Template</span>
             </Button>
@@ -130,29 +130,29 @@ const ColdOutreach = () => {
         </div>
       </header>
 
-      <main className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      <main className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
         {/* Hero Section */}
         <OutreachHeroSection />
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="all" className="gap-2">
+          <TabsList className="inline-flex h-12 p-1 bg-muted/50 rounded-xl border border-border/50">
+            <TabsTrigger value="all" className="gap-2 rounded-lg px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Layers className="h-4 w-4" />
               <span className="hidden sm:inline">All Templates</span>
               <span className="sm:hidden">All</span>
             </TabsTrigger>
-            <TabsTrigger value="saved" className="gap-2">
+            <TabsTrigger value="saved" className="gap-2 rounded-lg px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Star className="h-4 w-4" />
               <span className="hidden sm:inline">Saved</span>
               <span className="sm:hidden">Saved</span>
               {savedCount > 0 && (
-                <Badge variant="secondary" className="ml-1 text-xs">
+                <Badge variant="secondary" className="ml-1 text-xs rounded-full h-5 w-5 p-0 flex items-center justify-center">
                   {savedCount}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
+            <TabsTrigger value="analytics" className="gap-2 rounded-lg px-4 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Analytics</span>
               <span className="sm:hidden">Stats</span>
