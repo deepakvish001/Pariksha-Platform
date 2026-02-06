@@ -10,10 +10,10 @@ interface AstraHeaderProps {
 
 const AstraHeader = ({ onNewChat, onOpenHistory }: AstraHeaderProps) => {
   return (
-    <header className="sticky top-0 z-40 bg-black/40 backdrop-blur-3xl border-b border-white/[0.05]">
+    <header className="sticky top-0 z-40 bg-background/40 backdrop-blur-3xl border-b border-border/50">
       <div className="flex h-18 items-center justify-between gap-4 px-6 py-4">
         <div className="flex items-center gap-4">
-          <SidebarTrigger className="text-white/60 hover:text-white hover:bg-white/[0.05]" />
+          <SidebarTrigger className="text-muted-foreground hover:text-foreground hover:bg-muted/50" />
           <div className="flex items-center gap-4">
             {/* Logo with glow */}
             <motion.div 
@@ -21,15 +21,37 @@ const AstraHeader = ({ onNewChat, onOpenHistory }: AstraHeaderProps) => {
               whileHover={{ scale: 1.05 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-primary via-orange-500 to-amber-500 rounded-2xl blur-lg opacity-50" />
-              <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-primary via-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-primary/20">
-                <Sparkles className="h-6 w-6 text-white" />
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-br from-primary via-orange-500 to-amber-500 rounded-2xl blur-lg opacity-50"
+                animate={{
+                  scale: [1, 1.15, 1],
+                  opacity: [0.4, 0.6, 0.4],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+              <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-primary via-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-primary/20 overflow-hidden">
+                <Sparkles className="h-6 w-6 text-white relative z-10" />
+                {/* Shimmer effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                  animate={{ x: ["-100%", "200%"] }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatDelay: 3,
+                    ease: "easeInOut",
+                  }}
+                />
               </div>
             </motion.div>
             
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground via-foreground to-foreground/80 bg-clip-text text-transparent">
                   Byteskill AI
                 </h1>
                 <motion.div
@@ -40,7 +62,7 @@ const AstraHeader = ({ onNewChat, onOpenHistory }: AstraHeaderProps) => {
                   <span className="text-[10px] font-medium text-primary uppercase tracking-wider">AI Powered</span>
                 </motion.div>
               </div>
-              <p className="text-sm text-white/40">Your intelligent career companion</p>
+              <p className="text-sm text-muted-foreground">Your intelligent career companion</p>
             </div>
           </div>
         </div>
@@ -50,7 +72,7 @@ const AstraHeader = ({ onNewChat, onOpenHistory }: AstraHeaderProps) => {
             variant="ghost" 
             size="sm" 
             onClick={onOpenHistory}
-            className="gap-2 text-white/60 hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/[0.05]"
+            className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent hover:border-border/50"
           >
             <History className="h-4 w-4" />
             <span className="hidden sm:inline">History</span>
@@ -59,7 +81,7 @@ const AstraHeader = ({ onNewChat, onOpenHistory }: AstraHeaderProps) => {
             variant="ghost" 
             size="sm" 
             onClick={onNewChat} 
-            className="gap-2 bg-white/[0.03] text-white/80 hover:text-white hover:bg-white/[0.08] border border-white/[0.05]"
+            className="gap-2 bg-muted/30 text-foreground/80 hover:text-foreground hover:bg-muted/50 border border-border/50"
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">New Chat</span>

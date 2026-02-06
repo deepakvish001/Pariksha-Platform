@@ -82,6 +82,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import NotificationBell from "@/components/NotificationBell";
+import BrandLogo from "@/components/BrandLogo";
 
 // Home section - Main entry points
 const homeNavItems = [
@@ -314,13 +315,7 @@ export function DashboardSidebar() {
         {/* Header with Logo and Theme Toggle */}
         <SidebarHeader className="border-b border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center justify-center py-1">
-              <img 
-                src="/logo.png" 
-                alt="Byteskill" 
-                className="w-10 h-10 rounded-xl transition-transform duration-200 hover:scale-105" 
-              />
-            </Link>
+            <BrandLogo size="md" showText={false} />
             {!isCollapsed && (
               <div className="flex items-center gap-2">
                 <Tooltip>
