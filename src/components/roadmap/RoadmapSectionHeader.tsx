@@ -68,12 +68,19 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
         className
       )}
     >
-      <button
+      <motion.button
         onClick={onToggle}
+        whileHover={{ 
+          scale: 1.008, 
+          y: -2,
+          transition: { duration: 0.2, ease: "easeOut" }
+        }}
+        whileTap={{ scale: 0.998 }}
         className={cn(
           "relative w-full flex items-center rounded-2xl overflow-hidden",
-          "bg-card border-2 transition-all duration-200",
-          "hover:shadow-xl hover:border-primary/40",
+          "bg-card border-2 transition-all duration-300",
+          "hover:shadow-2xl hover:shadow-primary/10 dark:hover:shadow-primary/5",
+          "hover:border-primary/40 dark:hover:border-primary/30",
           "shadow-md",
           isCollapsed 
             ? "border-border/50" 
@@ -239,7 +246,7 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
             </motion.div>
           )}
         </div>
-      </button>
+      </motion.button>
     </motion.div>
   );
 };

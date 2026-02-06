@@ -188,18 +188,25 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
           <div className={isCompact ? "w-7" : "w-8"} />
         )}
 
-        {/* Node Card - Refined Design */}
+        {/* Node Card - Refined Design with Enhanced Hover */}
         <motion.div
           onClick={onClick}
-          whileHover={{ scale: 1.008, y: -1 }}
+          whileHover={{ 
+            scale: 1.012, 
+            y: -2,
+            transition: { duration: 0.2, ease: "easeOut" }
+          }}
           whileTap={{ scale: 0.995 }}
           className={cn(
             "relative flex-1 flex items-center cursor-pointer",
-            "border-2 transition-all duration-200",
+            "border-2 transition-all duration-300",
             nodeStyle.bg,
             nodeStyle.border,
             nodeStyle.text,
-            "shadow-sm hover:shadow-md",
+            "shadow-sm",
+            // Enhanced hover shadow
+            "hover:shadow-lg hover:shadow-primary/10 dark:hover:shadow-primary/5",
+            "hover:border-primary/40 dark:hover:border-primary/30",
             isHighlighted && "ring-2 ring-primary/40 ring-offset-2 dark:ring-offset-background",
             isInProgress && "ring-2 ring-amber-400/40 ring-offset-2 dark:ring-offset-background",
             isOptional && "border-dashed",
@@ -218,22 +225,27 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
             </>
           )}
           
-          {/* Icon container - Enhanced sizing */}
-          <div className={cn(
-            "relative z-10 flex-shrink-0 rounded-xl flex items-center justify-center",
-            `bg-gradient-to-br ${gradient}`,
-            "shadow-md",
-            isCompact 
-              ? cn("h-8 w-8", isRootNode && "h-9 w-9")
-              : cn("h-10 w-10", isRootNode && "h-11 w-11")
-          )}>
+          {/* Icon container - Enhanced with hover glow */}
+          <motion.div 
+            className={cn(
+              "relative z-10 flex-shrink-0 rounded-xl flex items-center justify-center",
+              `bg-gradient-to-br ${gradient}`,
+              "shadow-md transition-shadow duration-300",
+              "group-hover:shadow-lg",
+              isCompact 
+                ? cn("h-8 w-8", isRootNode && "h-9 w-9")
+                : cn("h-10 w-10", isRootNode && "h-11 w-11")
+            )}
+            whileHover={{ scale: 1.08, rotate: 3 }}
+            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+          >
             <NodeIcon className={cn(
               "text-white drop-shadow-sm",
               isCompact 
                 ? cn("h-4 w-4", isRootNode && "h-4.5 w-4.5")
                 : cn("h-5 w-5", isRootNode && "h-5.5 w-5.5")
             )} />
-          </div>
+          </motion.div>
 
           {/* Content area - Better typography */}
           <div className="relative z-10 flex-1 min-w-0">
@@ -328,25 +340,27 @@ const RoadmapNode: React.FC<RoadmapNodeProps> = memo(({
               )}
             </div>
 
-            {/* Completion checkbox - Refined */}
-            <button
+            {/* Completion checkbox - Refined with hover animation */}
+            <motion.button
               onClick={(e) => {
                 e.stopPropagation();
                 onComplete();
               }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               className={cn(
                 "flex-shrink-0 rounded-xl border-2 flex items-center justify-center transition-all duration-200",
                 isCompact ? "h-7 w-7" : "h-8 w-8",
                 isCompleted
                   ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/25"
                   : isInProgress
-                  ? "border-amber-400 bg-amber-50 dark:bg-amber-900/30"
-                  : "border-border/60 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                  ? "border-amber-400 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+                  : "border-border/60 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:shadow-sm"
               )}
               aria-label={isCompleted ? "Mark incomplete" : "Mark complete"}
             >
               {isCompleted && <Check className={cn(isCompact ? "h-4 w-4" : "h-4.5 w-4.5")} strokeWidth={3} />}
-            </button>
+            </motion.button>
           </div>
         </motion.div>
       </div>

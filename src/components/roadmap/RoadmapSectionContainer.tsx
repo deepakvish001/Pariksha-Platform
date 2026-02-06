@@ -75,17 +75,22 @@ const RoadmapSectionContainer: React.FC<RoadmapSectionContainerProps> = ({
           variants={containerVariants}
           className="overflow-hidden"
         >
-          <div
+          <motion.div
             className={cn(
               "relative rounded-2xl overflow-hidden",
-              "border-2 transition-all duration-200",
+              "border-2 transition-all duration-300",
               "bg-gradient-to-br to-transparent",
+              "hover:shadow-lg hover:shadow-primary/5 dark:hover:shadow-primary/3",
               accent.border,
               accent.bg,
               isRecommendedSection && `shadow-lg ${accent.glow}`,
               isCompact ? "mt-2" : "mt-3",
               className
             )}
+            whileHover={{ 
+              scale: 1.003,
+              transition: { duration: 0.2, ease: "easeOut" }
+            }}
           >
             {/* Gradient accent on left edge - Enhanced */}
             <div className={cn(
@@ -114,7 +119,7 @@ const RoadmapSectionContainer: React.FC<RoadmapSectionContainerProps> = ({
                 {children}
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
