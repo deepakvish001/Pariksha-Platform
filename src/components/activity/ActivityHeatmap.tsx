@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { format, getDay, startOfWeek, addDays, parseISO, getMonth } from "date-fns";
+import { format, getDay, parseISO, getMonth, subDays } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Flame } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { DayActivity } from "@/hooks/useActivityHeatmap";
 
 interface ActivityHeatmapProps {
@@ -25,9 +26,28 @@ const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeatmapProps) {
+  const isMobile = useIsMobile();
+
+  // Filter data for mobile (last 3 months only)
+  const filteredData = useMemo(() => {
+    if (!isMobile || data.length === 0) return data;
+    
+    const threeMonthsAgo = subDays(new Date(), 90);
+    return data.filter((day) => {
+      if (!day.date) return false;
+      return parseISO(day.date) >= threeMonthsAgo;
+    });
+  }, [data, isMobile]);
+
+  // Calculate activities count for filtered data
+  const displayedActivities = useMemo(() => {
+    if (!isMobile) return totalActivities;
+    return filteredData.reduce((sum, day) => sum + day.count, 0);
+  }, [filteredData, isMobile, totalActivities]);
+
   // Organize data into weeks for grid layout
   const { weeks, monthMarkers } = useMemo(() => {
-    if (data.length === 0) return { weeks: [], monthMarkers: [] };
+    if (filteredData.length === 0) return { weeks: [], monthMarkers: [] };
 
     const weeks: DayActivity[][] = [];
     const monthMarkers: { weekIndex: number; month: string }[] = [];
@@ -35,13 +55,13 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
     let lastMonth = -1;
 
     // Pad first week with empty days if needed
-    const firstDate = parseISO(data[0].date);
+    const firstDate = parseISO(filteredData[0].date);
     const firstDayOfWeek = getDay(firstDate);
     for (let i = 0; i < firstDayOfWeek; i++) {
       currentWeek.push({ date: "", count: 0, level: 0 });
     }
 
-    data.forEach((day, index) => {
+    filteredData.forEach((day, index) => {
       const date = parseISO(day.date);
       const dayOfWeek = getDay(date);
       const month = getMonth(date);
@@ -55,7 +75,7 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
       currentWeek.push(day);
 
       // Start new week on Sunday
-      if (dayOfWeek === 6 || index === data.length - 1) {
+      if (dayOfWeek === 6 || index === filteredData.length - 1) {
         // Pad last week if needed
         while (currentWeek.length < 7) {
           currentWeek.push({ date: "", count: 0, level: 0 });
@@ -66,7 +86,7 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
     });
 
     return { weeks, monthMarkers };
-  }, [data]);
+  }, [filteredData]);
 
   if (loading) {
     return (
@@ -90,14 +110,14 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
     >
       <Card className="overflow-hidden">
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Flame className="h-5 w-5 text-primary" />
                 Activity Heatmap
               </CardTitle>
               <CardDescription>
-                {totalActivities} activities in the last year
+                {displayedActivities} activities {isMobile ? "in the last 3 months" : "in the last year"}
               </CardDescription>
             </div>
             {/* Legend */}
@@ -116,45 +136,48 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
           </div>
         </CardHeader>
         <CardContent className="pb-6">
-          <div className="overflow-x-auto">
-            <div className="min-w-[750px]">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+            <div className={isMobile ? "min-w-[320px]" : "min-w-[750px]"}>
               {/* Month labels */}
               <div className="flex mb-2 ml-8">
-                {monthMarkers.map((marker, i) => (
-                  <div
-                    key={i}
-                    className="text-xs text-muted-foreground"
-                    style={{
-                      marginLeft: i === 0 ? `${marker.weekIndex * 14}px` : undefined,
-                      width: i < monthMarkers.length - 1 
-                        ? `${(monthMarkers[i + 1].weekIndex - marker.weekIndex) * 14}px`
-                        : undefined,
-                    }}
-                  >
-                    {marker.month}
-                  </div>
-                ))}
+                {monthMarkers.map((marker, i) => {
+                  const cellSize = isMobile ? 12 : 14; // Smaller cells on mobile
+                  return (
+                    <div
+                      key={i}
+                      className="text-xs text-muted-foreground"
+                      style={{
+                        marginLeft: i === 0 ? `${marker.weekIndex * cellSize}px` : undefined,
+                        width: i < monthMarkers.length - 1 
+                          ? `${(monthMarkers[i + 1].weekIndex - marker.weekIndex) * cellSize}px`
+                          : undefined,
+                      }}
+                    >
+                      {marker.month}
+                    </div>
+                  );
+                })}
               </div>
 
-              <div className="flex gap-1">
+              <div className="flex gap-[3px] sm:gap-1">
                 {/* Day labels */}
-                <div className="flex flex-col gap-1 pr-2">
+                <div className="flex flex-col gap-[3px] sm:gap-1 pr-1 sm:pr-2">
                   {dayLabels.map((day, i) => (
                     <div
                       key={day}
-                      className="h-3 text-xs text-muted-foreground leading-3"
+                      className="h-[10px] sm:h-3 text-[10px] sm:text-xs text-muted-foreground leading-[10px] sm:leading-3"
                       style={{ visibility: i % 2 === 1 ? "visible" : "hidden" }}
                     >
-                      {day}
+                      {isMobile ? day.charAt(0) : day}
                     </div>
                   ))}
                 </div>
 
                 {/* Heatmap grid */}
                 <TooltipProvider delayDuration={100}>
-                  <div className="flex gap-1">
+                  <div className="flex gap-[3px] sm:gap-1">
                     {weeks.map((week, weekIndex) => (
-                      <div key={weekIndex} className="flex flex-col gap-1">
+                      <div key={weekIndex} className="flex flex-col gap-[3px] sm:gap-1">
                         {week.map((day, dayIndex) => (
                           <Tooltip key={`${weekIndex}-${dayIndex}`}>
                             <TooltipTrigger asChild>
@@ -162,13 +185,13 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ 
-                                  delay: weekIndex * 0.005,
+                                  delay: weekIndex * 0.003,
                                   type: "spring",
                                   stiffness: 500,
                                   damping: 30
                                 }}
                                 className={`
-                                  h-3 w-3 rounded-sm cursor-pointer transition-colors
+                                  h-[10px] w-[10px] sm:h-3 sm:w-3 rounded-sm cursor-pointer transition-colors
                                   ${day.date ? levelColors[day.level] : "bg-transparent"}
                                 `}
                               />
@@ -192,6 +215,13 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
               </div>
             </div>
           </div>
+          
+          {/* Mobile hint */}
+          {isMobile && (
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              ← Scroll to see more →
+            </p>
+          )}
         </CardContent>
       </Card>
     </motion.div>
