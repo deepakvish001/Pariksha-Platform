@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Activity, RefreshCw, Loader2 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActivityFeed } from "@/hooks/useActivityFeed";
 import { useActivityStats } from "@/hooks/useActivityStats";
+import { useActivityHeatmap } from "@/hooks/useActivityHeatmap";
 import { ActivityFeedItem } from "@/components/activity/ActivityFeedItem";
 import { ActivityStats } from "@/components/activity/ActivityStats";
 import { ActivityEmptyState } from "@/components/activity/ActivityEmptyState";
+import { ActivityHeatmap } from "@/components/activity/ActivityHeatmap";
 import { isToday, isYesterday, isThisWeek } from "date-fns";
 
 const MyActivity = () => {
-  const { 
+  const {
     activities, 
     loading: feedLoading, 
     loadingMore,
@@ -22,6 +24,7 @@ const MyActivity = () => {
     loadMore 
   } = useActivityFeed({ pageSize: 20 });
   const { stats, loading: statsLoading, refetch: refetchStats } = useActivityStats();
+  const { heatmapData, loading: heatmapLoading, totalActivities, refetch: refetchHeatmap } = useActivityHeatmap({ days: 365 });
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer for infinite scroll
@@ -50,6 +53,7 @@ const MyActivity = () => {
   const handleRefresh = () => {
     refetchFeed();
     refetchStats();
+    refetchHeatmap();
   };
 
   // Group activities by date
@@ -110,6 +114,13 @@ const MyActivity = () => {
       <main className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto">
         {/* Stats Grid */}
         <ActivityStats stats={stats} loading={statsLoading} />
+
+        {/* Activity Heatmap */}
+        <ActivityHeatmap 
+          data={heatmapData} 
+          loading={heatmapLoading} 
+          totalActivities={totalActivities} 
+        />
 
         {/* Activity Feed */}
         <motion.div
