@@ -64,7 +64,7 @@ const Login = () => {
 
   return (
     <AuthLayout
-      title="Welcome back to UniDash"
+      title="Welcome back to Byteskill"
       subtitle="Sign in to continue tracking your academic journey and unlock your full potential."
     >
       <div className="card-dark">

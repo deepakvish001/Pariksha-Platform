@@ -226,7 +226,7 @@ const PublicProfile = () => {
   };
 
   const shareUrl = `${window.location.origin}/u/${profile?.username}`;
-  const shareText = `Check out ${profile?.full_name}'s profile on UniDash!`;
+  const shareText = `Check out ${profile?.full_name}'s profile on Byteskill!`;
 
   const handleCopyLink = async () => {
     try {
@@ -335,10 +335,10 @@ const PublicProfile = () => {
 
   const siteUrl = window.location.origin;
   const profileUrl = `${siteUrl}/u/${profile?.username}`;
-  const profileTitle = `${profile?.full_name} (@${profile?.username}) | UniDash`;
+  const profileTitle = `${profile?.full_name} (@${profile?.username}) | Byteskill`;
   const profileDescription = profile?.bio 
     ? profile.bio.slice(0, 155) + (profile.bio.length > 155 ? "..." : "")
-    : `Check out ${profile?.full_name}'s profile on UniDash. ${profile?.occupation ? `${profile.occupation}` : ""} ${profile?.location ? `from ${profile.location}` : ""}`.trim();
+    : `Check out ${profile?.full_name}'s profile on Byteskill. ${profile?.occupation ? `${profile.occupation}` : ""} ${profile?.location ? `from ${profile.location}` : ""}`.trim();
 
   return (
     <div className="min-h-screen bg-background">

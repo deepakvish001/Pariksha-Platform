@@ -66,7 +66,7 @@ const AstraWelcome = ({ onSelectPrompt, isLoading }: AstraWelcomeProps) => {
         transition={{ delay: 0.2 }}
         className="text-3xl font-bold mb-3 bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent"
       >
-        Welcome to Astra AI
+        Welcome to Byteskill AI
       </motion.h2>
       <motion.p 
         initial={{ opacity: 0 }}

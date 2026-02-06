@@ -95,14 +95,14 @@ const Footer = () => {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-orange flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">U</span>
+              <span className="text-primary-foreground font-bold text-sm">B</span>
             </div>
-            <span className="text-lg font-bold text-foreground">UniDash</span>
+            <span className="text-lg font-bold text-foreground">Byteskill</span>
           </div>
 
           {/* Copyright */}
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} UniDash. All rights reserved.
+            © {new Date().getFullYear()} Byteskill. All rights reserved.
           </p>
 
           {/* Social Icons */}

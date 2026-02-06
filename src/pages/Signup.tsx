@@ -83,7 +83,7 @@ const Signup = () => {
 
   return (
     <AuthLayout
-      title="Start your journey with UniDash"
+      title="Start your journey with Byteskill"
       subtitle="Join thousands of students who are already improving their academic performance."
     >
       <div className="card-dark">
