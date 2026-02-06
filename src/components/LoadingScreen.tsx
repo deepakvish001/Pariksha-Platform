@@ -3,9 +3,11 @@ import { cn } from "@/lib/utils";
 
 interface LoadingScreenProps {
   isLoading: boolean;
+  progress: number;
+  loadingStage?: string;
 }
 
-const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
+const LoadingScreen = ({ isLoading, progress, loadingStage = "Loading..." }: LoadingScreenProps) => {
   return (
     <AnimatePresence>
       {isLoading && (
@@ -185,7 +187,93 @@ const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
               </motion.p>
             </motion.div>
 
-            {/* Loading indicator */}
+            {/* Progress bar section */}
+            <motion.div
+              className="w-64 sm:w-80 space-y-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+            >
+              {/* Progress bar container */}
+              <div className="relative h-2 bg-muted/30 rounded-full overflow-hidden backdrop-blur-sm">
+                {/* Animated background shimmer */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                  animate={{ translateX: ["-100%", "100%"] }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                />
+                
+                {/* Progress fill */}
+                <motion.div
+                  className="h-full rounded-full relative overflow-hidden"
+                  style={{
+                    background: "linear-gradient(90deg, hsl(var(--primary)), hsl(24 95% 53%), hsl(45 93% 47%))",
+                  }}
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                >
+                  {/* Shine effect on progress bar */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                    animate={{ translateX: ["-100%", "200%"] }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      repeatDelay: 0.5,
+                      ease: "easeInOut",
+                    }}
+                  />
+                </motion.div>
+
+                {/* Glow effect at progress tip */}
+                <motion.div
+                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full"
+                  style={{
+                    left: `calc(${progress}% - 8px)`,
+                    background: "hsl(var(--primary))",
+                    boxShadow: "0 0 12px 4px hsl(var(--primary) / 0.5)",
+                  }}
+                  animate={{
+                    opacity: [0.6, 1, 0.6],
+                    scale: [0.8, 1, 0.8],
+                  }}
+                  transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+              </div>
+
+              {/* Progress info */}
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <motion.span
+                  className="text-muted-foreground"
+                  key={loadingStage}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {loadingStage}
+                </motion.span>
+                <motion.span
+                  className="font-medium text-primary tabular-nums"
+                  key={progress}
+                  initial={{ scale: 1.2 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {Math.round(progress)}%
+                </motion.span>
+              </div>
+            </motion.div>
+
+            {/* Loading dots indicator */}
             <motion.div
               className="flex items-center gap-2"
               initial={{ opacity: 0 }}
@@ -196,10 +284,10 @@ const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
                 {[0, 1, 2].map((i) => (
                   <motion.div
                     key={i}
-                    className="w-2 h-2 rounded-full bg-primary"
+                    className="w-1.5 h-1.5 rounded-full bg-primary/60"
                     animate={{
                       scale: [1, 1.3, 1],
-                      opacity: [0.5, 1, 0.5],
+                      opacity: [0.4, 1, 0.4],
                     }}
                     transition={{
                       duration: 0.8,
