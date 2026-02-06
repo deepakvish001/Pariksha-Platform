@@ -21,6 +21,7 @@ import RoadmapHeroSection from "@/components/roadmap/RoadmapHeroSection";
 import RoadmapFilterBar from "@/components/roadmap/RoadmapFilterBar";
 import RoadmapCardEnhanced from "@/components/roadmap/RoadmapCardEnhanced";
 import RoadmapSectionDivider from "@/components/roadmap/RoadmapSectionDivider";
+import { RoadmapSkeletonGrid, ContinueLearningSkeletonGrid, ProgressComparisonSkeleton } from "@/components/roadmap/RoadmapCardSkeleton";
 
 // Helper to count total nodes in a tree
 const countNodes = (nodes: RoadmapTreeNode[]): number => {
@@ -167,19 +168,37 @@ const getRoadmapTitle = (id: string): string => {
   return roadmap?.title || id;
 };
 
+// Smooth scroll to section helper
+const scrollToSection = (sectionId: string) => {
+  const element = document.getElementById(sectionId);
+  if (element) {
+    const headerOffset = 80;
+    const elementPosition = element.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+    
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
+    });
+  }
+};
+
 // Hook to fetch all roadmap progress at once and detect completions
 const useAllRoadmapProgress = (onComplete?: (roadmapId: string, roadmapTitle: string) => void) => {
   const { user } = useAuth();
   const [progressData, setProgressData] = useState<Record<string, number>>({});
   const [previousProgress, setPreviousProgress] = useState<Record<string, number>>({});
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProgress = async () => {
       if (!user) {
         setProgressData({});
+        setIsLoading(false);
         return;
       }
 
+      setIsLoading(true);
       const { data } = await supabase
         .from("user_topic_progress")
         .select("topic_id, completed, sheet_id")
@@ -226,21 +245,24 @@ const useAllRoadmapProgress = (onComplete?: (roadmapId: string, roadmapTitle: st
         setPreviousProgress(progressData);
         setProgressData(percentages);
       }
+      setIsLoading(false);
     };
 
     fetchProgress();
   }, [user, onComplete]);
 
-  return progressData;
+  return { progressData, isLoading };
 };
 
 // Continue Learning section component
 const ContinueLearningSection = ({ 
   roadmapData, 
-  userProgress 
+  userProgress,
+  isLoading 
 }: { 
   roadmapData: { roadmap: RoadmapTree; estimatedWeeks: number }[];
   userProgress: Record<string, number>;
+  isLoading: boolean;
 }) => {
   const navigate = useNavigate();
   
@@ -252,10 +274,10 @@ const ContinueLearningSection = ({
     })
     .sort((a, b) => (userProgress[b.roadmap.id] || 0) - (userProgress[a.roadmap.id] || 0));
 
-  if (inProgressRoadmaps.length === 0) return null;
+  if (!isLoading && inProgressRoadmaps.length === 0) return null;
 
   return (
-    <div className="max-w-6xl mx-auto mb-10">
+    <div id="section-continue-learning" className="max-w-6xl mx-auto mb-10 scroll-mt-20">
       <RoadmapSectionDivider
         icon={PlayCircle}
         title="Continue Learning"
@@ -265,76 +287,82 @@ const ContinueLearningSection = ({
         gradientFrom="from-amber-500"
         gradientTo="to-orange-500"
         delay={0.12}
+        sectionId="section-continue-learning"
+        isClickable
       />
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {inProgressRoadmaps.slice(0, 3).map(({ roadmap }, index) => {
-          const progress = userProgress[roadmap.id] || 0;
-          const totalTopics = countNodes(roadmap.nodes);
-          const completedTopics = Math.round((progress / 100) * totalTopics);
-          
-          return (
-            <motion.div
-              key={roadmap.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.15 + index * 0.1 }}
-              whileHover={{ scale: 1.02, y: -4 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Card 
-                className="cursor-pointer border-2 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300 h-full"
-                onClick={() => navigate(`/research/roadmap/${roadmap.id}`)}
+      {isLoading ? (
+        <ContinueLearningSkeletonGrid />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {inProgressRoadmaps.slice(0, 3).map(({ roadmap }, index) => {
+            const progress = userProgress[roadmap.id] || 0;
+            const totalTopics = countNodes(roadmap.nodes);
+            const completedTopics = Math.round((progress / 100) * totalTopics);
+            
+            return (
+              <motion.div
+                key={roadmap.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.15 + index * 0.1 }}
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    {/* Progress ring */}
-                    <div className="relative flex-shrink-0">
-                      <svg className="h-14 w-14 -rotate-90">
-                        <circle
-                          cx="28"
-                          cy="28"
-                          r="24"
-                          strokeWidth="4"
-                          fill="none"
-                          className="stroke-muted"
-                        />
-                        <circle
-                          cx="28"
-                          cy="28"
-                          r="24"
-                          strokeWidth="4"
-                          fill="none"
-                          className="stroke-primary"
-                          strokeDasharray={`${progress * 1.51} 151`}
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-xs font-bold">{progress}%</span>
+                <Card 
+                  className="cursor-pointer border-2 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300 h-full"
+                  onClick={() => navigate(`/research/roadmap/${roadmap.id}`)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Progress ring */}
+                      <div className="relative flex-shrink-0">
+                        <svg className="h-14 w-14 -rotate-90">
+                          <circle
+                            cx="28"
+                            cy="28"
+                            r="24"
+                            strokeWidth="4"
+                            fill="none"
+                            className="stroke-muted"
+                          />
+                          <circle
+                            cx="28"
+                            cy="28"
+                            r="24"
+                            strokeWidth="4"
+                            fill="none"
+                            className="stroke-primary"
+                            strokeDasharray={`${progress * 1.51} 151`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-xs font-bold">{progress}%</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold truncate">{roadmap.title}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {completedTopics} of {totalTopics} topics
+                        </p>
+                        <Button 
+                          size="sm" 
+                          className="mt-2 h-8 text-xs gap-1"
+                        >
+                          Resume
+                          <ArrowRight className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold truncate">{roadmap.title}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {completedTopics} of {totalTopics} topics
-                      </p>
-                      <Button 
-                        size="sm" 
-                        className="mt-2 h-8 text-xs gap-1"
-                      >
-                        Resume
-                        <ArrowRight className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
@@ -342,10 +370,12 @@ const ContinueLearningSection = ({
 // Progress Comparison component
 const ProgressComparisonSection = ({ 
   roadmapData, 
-  userProgress 
+  userProgress,
+  isLoading 
 }: { 
   roadmapData: { roadmap: RoadmapTree; estimatedWeeks: number }[];
   userProgress: Record<string, number>;
+  isLoading: boolean;
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -361,12 +391,12 @@ const ProgressComparisonSection = ({
     .filter(item => item.progress > 0)
     .sort((a, b) => b.progress - a.progress);
 
-  if (!user || roadmapsWithProgress.length < 2) return null;
+  if (!user || (!isLoading && roadmapsWithProgress.length < 2)) return null;
 
   const maxProgress = Math.max(...roadmapsWithProgress.map(r => r.progress));
 
   return (
-    <div className="max-w-6xl mx-auto mb-10">
+    <div id="section-progress-overview" className="max-w-6xl mx-auto mb-10 scroll-mt-20">
       <RoadmapSectionDivider
         icon={BarChart3}
         title="Your Progress Overview"
@@ -374,107 +404,113 @@ const ProgressComparisonSection = ({
         gradientFrom="from-blue-500"
         gradientTo="to-indigo-500"
         delay={0.18}
+        sectionId="section-progress-overview"
+        isClickable
       />
       
-      <Card className="border-2 overflow-hidden">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            {roadmapsWithProgress.map(({ roadmap, progress, totalTopics }, index) => {
-              const completedTopics = Math.round((progress / 100) * totalTopics);
-              const isLeading = progress === maxProgress;
-              
-              return (
-                <motion.div
-                  key={roadmap.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + index * 0.05 }}
-                  className="group cursor-pointer"
-                  onClick={() => navigate(`/research/roadmap/${roadmap.id}`)}
-                >
-                  <div className="flex items-center gap-4">
-                    {/* Rank indicator */}
-                    <div className={cn(
-                      "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0",
-                      index === 0 && "bg-amber-500/20 text-amber-600",
-                      index === 1 && "bg-slate-400/20 text-slate-600",
-                      index === 2 && "bg-orange-600/20 text-orange-700",
-                      index > 2 && "bg-muted text-muted-foreground"
-                    )}>
-                      {index === 0 ? <Trophy className="h-4 w-4" /> : index + 1}
-                    </div>
-                    
-                    {/* Roadmap info */}
-                    <div className={cn(
-                      "h-10 w-10 rounded-lg bg-gradient-to-br flex-shrink-0 flex items-center justify-center",
-                      roadmap.color
-                    )}>
-                      <Map className="h-5 w-5 text-white/90" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-medium truncate group-hover:text-primary transition-colors">
-                          {roadmap.title}
-                        </h4>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-sm text-muted-foreground hidden sm:inline">
-                            {completedTopics}/{totalTopics} topics
-                          </span>
-                          <Badge 
-                            variant={progress === 100 ? "default" : "secondary"}
-                            className={cn(
-                              "font-bold",
-                              progress === 100 && "bg-emerald-500"
-                            )}
-                          >
-                            {progress}%
-                          </Badge>
+      {isLoading ? (
+        <ProgressComparisonSkeleton />
+      ) : (
+        <Card className="border-2 overflow-hidden">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {roadmapsWithProgress.map(({ roadmap, progress, totalTopics }, index) => {
+                const completedTopics = Math.round((progress / 100) * totalTopics);
+                const isLeading = progress === maxProgress;
+                
+                return (
+                  <motion.div
+                    key={roadmap.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + index * 0.05 }}
+                    className="group cursor-pointer"
+                    onClick={() => navigate(`/research/roadmap/${roadmap.id}`)}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Rank indicator */}
+                      <div className={cn(
+                        "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0",
+                        index === 0 && "bg-amber-500/20 text-amber-600",
+                        index === 1 && "bg-slate-400/20 text-slate-600",
+                        index === 2 && "bg-orange-600/20 text-orange-700",
+                        index > 2 && "bg-muted text-muted-foreground"
+                      )}>
+                        {index === 0 ? <Trophy className="h-4 w-4" /> : index + 1}
+                      </div>
+                      
+                      {/* Roadmap info */}
+                      <div className={cn(
+                        "h-10 w-10 rounded-lg bg-gradient-to-br flex-shrink-0 flex items-center justify-center",
+                        roadmap.color
+                      )}>
+                        <Map className="h-5 w-5 text-white/90" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-medium truncate group-hover:text-primary transition-colors">
+                            {roadmap.title}
+                          </h4>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-sm text-muted-foreground hidden sm:inline">
+                              {completedTopics}/{totalTopics} topics
+                            </span>
+                            <Badge 
+                              variant={progress === 100 ? "default" : "secondary"}
+                              className={cn(
+                                "font-bold",
+                                progress === 100 && "bg-emerald-500"
+                              )}
+                            >
+                              {progress}%
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        {/* Progress bar with comparison indicator */}
+                        <div className="relative">
+                          <Progress value={progress} className="h-2.5" />
+                          {isLeading && progress < 100 && (
+                            <div className="absolute -top-1 -right-1">
+                              <span className="flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       
-                      {/* Progress bar with comparison indicator */}
-                      <div className="relative">
-                        <Progress value={progress} className="h-2.5" />
-                        {isLeading && progress < 100 && (
-                          <div className="absolute -top-1 -right-1">
-                            <span className="flex h-3 w-3">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                     </div>
-                    
-                    <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-          
-          {/* Summary stats */}
-          <div className="mt-6 pt-4 border-t border-border grid grid-cols-3 gap-4 text-center">
-            <div className="glass-card rounded-lg p-3">
-              <p className="text-2xl font-bold text-primary">{roadmapsWithProgress.length}</p>
-              <p className="text-xs text-muted-foreground">Paths Started</p>
+                  </motion.div>
+                );
+              })}
             </div>
-            <div className="glass-card rounded-lg p-3">
-              <p className="text-2xl font-bold text-emerald-500">
-                {roadmapsWithProgress.filter(r => r.progress === 100).length}
-              </p>
-              <p className="text-xs text-muted-foreground">Completed</p>
+            
+            {/* Summary stats */}
+            <div className="mt-6 pt-4 border-t border-border grid grid-cols-3 gap-4 text-center">
+              <div className="glass-card rounded-lg p-3">
+                <p className="text-2xl font-bold text-primary">{roadmapsWithProgress.length}</p>
+                <p className="text-xs text-muted-foreground">Paths Started</p>
+              </div>
+              <div className="glass-card rounded-lg p-3">
+                <p className="text-2xl font-bold text-emerald-500">
+                  {roadmapsWithProgress.filter(r => r.progress === 100).length}
+                </p>
+                <p className="text-xs text-muted-foreground">Completed</p>
+              </div>
+              <div className="glass-card rounded-lg p-3">
+                <p className="text-2xl font-bold text-amber-500">
+                  {Math.round(roadmapsWithProgress.reduce((acc, r) => acc + r.progress, 0) / roadmapsWithProgress.length)}%
+                </p>
+                <p className="text-xs text-muted-foreground">Avg Progress</p>
+              </div>
             </div>
-            <div className="glass-card rounded-lg p-3">
-              <p className="text-2xl font-bold text-amber-500">
-                {Math.round(roadmapsWithProgress.reduce((acc, r) => acc + r.progress, 0) / roadmapsWithProgress.length)}%
-              </p>
-              <p className="text-xs text-muted-foreground">Avg Progress</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
@@ -482,10 +518,12 @@ const ProgressComparisonSection = ({
 // Featured section component
 const FeaturedSection = ({ 
   roadmapData, 
-  userProgress 
+  userProgress,
+  isLoading 
 }: { 
   roadmapData: { roadmap: RoadmapTree; estimatedWeeks: number }[];
   userProgress: Record<string, number>;
+  isLoading: boolean;
 }) => {
   const featuredRoadmaps = roadmapData.filter(
     ({ roadmap }) => featuredRoadmapIds.includes(roadmap.id)
@@ -494,7 +532,7 @@ const FeaturedSection = ({
   if (featuredRoadmaps.length === 0) return null;
 
   return (
-    <div className="max-w-6xl mx-auto mb-10">
+    <div id="section-featured" className="max-w-6xl mx-auto mb-10 scroll-mt-20">
       <RoadmapSectionDivider
         icon={Sparkles}
         title="Recommended for You"
@@ -504,26 +542,32 @@ const FeaturedSection = ({
         gradientFrom="from-primary"
         gradientTo="to-primary/60"
         delay={0.15}
+        sectionId="section-featured"
+        isClickable
       />
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {featuredRoadmaps.map(({ roadmap, estimatedWeeks }, index) => (
-          <RoadmapCardEnhanced
-            key={roadmap.id}
-            roadmap={roadmap}
-            estimatedTime={formatEstimatedTime(estimatedWeeks)}
-            difficulty={calculateDifficulty(roadmap.nodes)}
-            totalTopics={countNodes(roadmap.nodes)}
-            isFeatured
-            userProgress={userProgress}
-            cardProgress={userProgress[roadmap.id] || 0}
-            popularityScore={popularityScores[roadmap.id]}
-            roadmapPrerequisites={roadmapPrerequisites}
-            getRoadmapTitle={getRoadmapTitle}
-            index={index}
-          />
-        ))}
-      </div>
+      {isLoading ? (
+        <RoadmapSkeletonGrid count={3} isFeatured />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {featuredRoadmaps.map(({ roadmap, estimatedWeeks }, index) => (
+            <RoadmapCardEnhanced
+              key={roadmap.id}
+              roadmap={roadmap}
+              estimatedTime={formatEstimatedTime(estimatedWeeks)}
+              difficulty={calculateDifficulty(roadmap.nodes)}
+              totalTopics={countNodes(roadmap.nodes)}
+              isFeatured
+              userProgress={userProgress}
+              cardProgress={userProgress[roadmap.id] || 0}
+              popularityScore={popularityScores[roadmap.id]}
+              roadmapPrerequisites={roadmapPrerequisites}
+              getRoadmapTitle={getRoadmapTitle}
+              index={index}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -596,7 +640,7 @@ const Roadmap: React.FC = () => {
   }, []);
 
   // Fetch all roadmap progress in a single query
-  const userProgressData = useAllRoadmapProgress(handleRoadmapComplete);
+  const { progressData: userProgressData, isLoading } = useAllRoadmapProgress(handleRoadmapComplete);
 
   // Pre-calculate estimated weeks for all roadmaps
   const roadmapData = useMemo(() => {
@@ -660,13 +704,13 @@ const Roadmap: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background transition-colors duration-500">
       {/* Sticky header */}
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md transition-colors duration-500">
         <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
           <SidebarTrigger />
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg transition-all duration-500">
               <Map className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -702,7 +746,11 @@ const Roadmap: React.FC = () => {
 
         {/* Continue Learning Section - shown first for returning users */}
         {showFeatured && (
-          <ContinueLearningSection roadmapData={roadmapData} userProgress={userProgressData} />
+          <ContinueLearningSection 
+            roadmapData={roadmapData} 
+            userProgress={userProgressData}
+            isLoading={isLoading}
+          />
         )}
 
         {/* Progress Velocity Section */}
@@ -712,12 +760,20 @@ const Roadmap: React.FC = () => {
 
         {/* Progress Comparison Section */}
         {showFeatured && (
-          <ProgressComparisonSection roadmapData={roadmapData} userProgress={userProgressData} />
+          <ProgressComparisonSection 
+            roadmapData={roadmapData} 
+            userProgress={userProgressData}
+            isLoading={isLoading}
+          />
         )}
 
         {/* Featured Section */}
         {showFeatured && (
-          <FeaturedSection roadmapData={roadmapData} userProgress={userProgressData} />
+          <FeaturedSection 
+            roadmapData={roadmapData} 
+            userProgress={userProgressData}
+            isLoading={isLoading}
+          />
         )}
 
         {/* All Roadmaps Section Header */}
@@ -731,28 +787,34 @@ const Roadmap: React.FC = () => {
             gradientFrom="from-muted-foreground/50"
             gradientTo="to-muted-foreground/30"
             delay={0.3}
+            sectionId="section-all-roadmaps"
+            isClickable
           />
         )}
 
         {/* Roadmap Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          <AnimatePresence mode="popLayout">
-            {filteredAndSortedRoadmaps.map(({ roadmap, estimatedWeeks }, index) => (
-              <RoadmapCardEnhanced
-                key={roadmap.id}
-                roadmap={roadmap}
-                estimatedTime={formatEstimatedTime(estimatedWeeks)}
-                difficulty={calculateDifficulty(roadmap.nodes)}
-                totalTopics={countNodes(roadmap.nodes)}
-                userProgress={userProgressData}
-                cardProgress={userProgressData[roadmap.id] || 0}
-                popularityScore={popularityScores[roadmap.id]}
-                roadmapPrerequisites={roadmapPrerequisites}
-                getRoadmapTitle={getRoadmapTitle}
-                index={showFeatured ? index : index}
-              />
-            ))}
-          </AnimatePresence>
+        <div id="section-all-roadmaps" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto scroll-mt-20">
+          {isLoading && !hasActiveFilters ? (
+            <RoadmapSkeletonGrid count={6} />
+          ) : (
+            <AnimatePresence mode="popLayout">
+              {filteredAndSortedRoadmaps.map(({ roadmap, estimatedWeeks }, index) => (
+                <RoadmapCardEnhanced
+                  key={roadmap.id}
+                  roadmap={roadmap}
+                  estimatedTime={formatEstimatedTime(estimatedWeeks)}
+                  difficulty={calculateDifficulty(roadmap.nodes)}
+                  totalTopics={countNodes(roadmap.nodes)}
+                  userProgress={userProgressData}
+                  cardProgress={userProgressData[roadmap.id] || 0}
+                  popularityScore={popularityScores[roadmap.id]}
+                  roadmapPrerequisites={roadmapPrerequisites}
+                  getRoadmapTitle={getRoadmapTitle}
+                  index={showFeatured ? index : index}
+                />
+              ))}
+            </AnimatePresence>
+          )}
         </div>
 
         {/* No Results Message */}

@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { LucideIcon, ChevronRight } from "lucide-react";
+import { LucideIcon, ChevronRight, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,8 @@ interface RoadmapSectionDividerProps {
   showViewAll?: boolean;
   onViewAll?: () => void;
   delay?: number;
+  sectionId?: string;
+  isClickable?: boolean;
 }
 
 const RoadmapSectionDivider: React.FC<RoadmapSectionDividerProps> = ({
@@ -29,19 +31,44 @@ const RoadmapSectionDivider: React.FC<RoadmapSectionDividerProps> = ({
   showViewAll = false,
   onViewAll,
   delay = 0,
+  sectionId,
+  isClickable = false,
 }) => {
+  const handleClick = () => {
+    if (sectionId && isClickable) {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        const headerOffset = 80; // Account for sticky header
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
       className="relative max-w-6xl mx-auto mb-6"
+      id={sectionId}
     >
       {/* Gradient divider line */}
       <div className="absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       
       <div className="relative flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 bg-background pr-4">
+        <div 
+          className={cn(
+            "flex items-center gap-3 bg-background pr-4",
+            isClickable && "cursor-pointer group"
+          )}
+          onClick={handleClick}
+        >
           {/* Icon badge with gradient */}
           <motion.div 
             whileHover={{ scale: 1.05, rotate: 5 }}
@@ -57,11 +84,19 @@ const RoadmapSectionDivider: React.FC<RoadmapSectionDividerProps> = ({
           
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-bold">{title}</h3>
+              <h3 className={cn(
+                "text-xl font-bold transition-colors",
+                isClickable && "group-hover:text-primary"
+              )}>
+                {title}
+              </h3>
               {count !== undefined && (
                 <Badge variant="secondary" className="text-xs font-medium">
                   {count} {countLabel}
                 </Badge>
+              )}
+              {isClickable && (
+                <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
               )}
             </div>
             {subtitle && (
