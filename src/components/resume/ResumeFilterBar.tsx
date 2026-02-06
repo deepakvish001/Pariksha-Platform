@@ -5,9 +5,8 @@ import {
   X,
   Shield,
   TrendingUp,
-  Sparkles,
+  Heart,
   SortAsc,
-  Filter,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,11 +18,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { styleConfig } from "@/data/resumeTemplatesData";
 
 export type StyleFilter = "all" | "modern" | "traditional" | "creative" | "minimal" | "two-column";
 export type SortOption = "downloads" | "name" | "date";
-export type QuickFilter = "ats" | "popular" | null;
+export type QuickFilter = "ats" | "popular" | "favorites" | null;
 
 interface ResumeFilterBarProps {
   searchQuery: string;
@@ -36,6 +34,8 @@ interface ResumeFilterBarProps {
   onQuickFilterChange: (filter: QuickFilter) => void;
   filteredCount: number;
   totalCount: number;
+  showFavoritesFilter?: boolean;
+  favoritesCount?: number;
 }
 
 const styleOptions: { value: StyleFilter; label: string }[] = [
@@ -64,6 +64,8 @@ const ResumeFilterBar: React.FC<ResumeFilterBarProps> = ({
   onQuickFilterChange,
   filteredCount,
   totalCount,
+  showFavoritesFilter = false,
+  favoritesCount = 0,
 }) => {
   const hasActiveFilters =
     searchQuery || styleFilter !== "all" || quickFilter !== null;
@@ -183,6 +185,31 @@ const ResumeFilterBar: React.FC<ResumeFilterBarProps> = ({
             <TrendingUp className="h-3.5 w-3.5" />
             Most Popular
           </motion.button>
+
+          {/* Favorites Filter - Only show when user is logged in */}
+          {showFavoritesFilter && (
+            <motion.button
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() =>
+                onQuickFilterChange(quickFilter === "favorites" ? null : "favorites")
+              }
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+                quickFilter === "favorites"
+                  ? "bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30"
+                  : "bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-transparent"
+              )}
+            >
+              <Heart className="h-3.5 w-3.5" />
+              Favorites
+              {favoritesCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-red-500/20">
+                  {favoritesCount}
+                </span>
+              )}
+            </motion.button>
+          )}
 
           {/* Filter Results Count */}
           <div className="flex-1" />

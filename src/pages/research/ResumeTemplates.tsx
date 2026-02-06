@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Star, FileText } from "lucide-react";
+import { Star, FileText, Heart } from "lucide-react";
 import ResumeHeroSection from "@/components/resume/ResumeHeroSection";
 import ResumeFilterBar, {
   StyleFilter,
@@ -11,12 +11,18 @@ import ResumeTemplateCard from "@/components/resume/ResumeTemplateCard";
 import ResumeStatsDashboard from "@/components/resume/ResumeStatsDashboard";
 import RoadmapSectionDivider from "@/components/roadmap/RoadmapSectionDivider";
 import { resumeTemplates, getTemplateStats } from "@/data/resumeTemplatesData";
+import { useResumeFavorites, useResumeDownloads } from "@/hooks/useResumeActions";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ResumeTemplates = () => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [styleFilter, setStyleFilter] = useState<StyleFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("downloads");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(null);
+
+  const { favorites, isFavorite, toggleFavorite } = useResumeFavorites();
+  const { trackDownload } = useResumeDownloads();
 
   const stats = useMemo(() => getTemplateStats(), []);
 
@@ -44,6 +50,9 @@ const ResumeTemplates = () => {
       filtered = filtered.filter((t) => t.atsCompatible);
     } else if (quickFilter === "popular") {
       filtered = filtered.filter((t) => t.downloads >= 8000);
+    } else if (quickFilter === "favorites") {
+      const favoriteIds = favorites.map((f) => f.template_id);
+      filtered = filtered.filter((t) => favoriteIds.includes(t.id));
     }
 
     // Apply sorting
@@ -63,7 +72,7 @@ const ResumeTemplates = () => {
     }
 
     return filtered;
-  }, [searchQuery, styleFilter, sortBy, quickFilter]);
+  }, [searchQuery, styleFilter, sortBy, quickFilter, favorites]);
 
   const featuredTemplates = useMemo(
     () => filteredTemplates.filter((t) => t.isFeatured),
@@ -98,6 +107,8 @@ const ResumeTemplates = () => {
           onQuickFilterChange={setQuickFilter}
           filteredCount={filteredTemplates.length}
           totalCount={resumeTemplates.length}
+          showFavoritesFilter={!!user}
+          favoritesCount={favorites.length}
         />
 
         {/* Stats Dashboard */}
@@ -109,6 +120,43 @@ const ResumeTemplates = () => {
             rating={stats.rating}
           />
         </div>
+
+        {/* Favorites Section - Only show if user has favorites and not filtering by favorites */}
+        {user && favorites.length > 0 && quickFilter !== "favorites" && (
+          <div className="max-w-6xl mx-auto mt-8">
+            <RoadmapSectionDivider
+              icon={Heart}
+              title="Your Favorites"
+              subtitle="Templates you've saved"
+              count={favorites.length}
+              countLabel="saved"
+              gradientFrom="from-red-500"
+              gradientTo="to-pink-500"
+              delay={0.5}
+            />
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6"
+            >
+              {resumeTemplates
+                .filter((t) => isFavorite(t.id))
+                .slice(0, 4)
+                .map((template, index) => (
+                  <ResumeTemplateCard
+                    key={template.id}
+                    template={template}
+                    index={index}
+                    isFavorite={true}
+                    onToggleFavorite={toggleFavorite}
+                    onDownload={trackDownload}
+                  />
+                ))}
+            </motion.div>
+          </div>
+        )}
 
         {/* Featured Templates Section */}
         {featuredTemplates.length > 0 && (
@@ -136,6 +184,9 @@ const ResumeTemplates = () => {
                   template={template}
                   index={index}
                   isFeatured
+                  isFavorite={isFavorite(template.id)}
+                  onToggleFavorite={toggleFavorite}
+                  onDownload={trackDownload}
                 />
               ))}
             </motion.div>
@@ -167,6 +218,9 @@ const ResumeTemplates = () => {
                   key={template.id}
                   template={template}
                   index={index}
+                  isFavorite={isFavorite(template.id)}
+                  onToggleFavorite={toggleFavorite}
+                  onDownload={trackDownload}
                 />
               ))}
             </motion.div>

@@ -294,6 +294,54 @@ export type Database = {
         }
         Relationships: []
       }
+      resume_downloads: {
+        Row: {
+          created_at: string
+          downloaded_at: string
+          id: string
+          template_id: number
+          template_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          downloaded_at?: string
+          id?: string
+          template_id: number
+          template_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          downloaded_at?: string
+          id?: string
+          template_id?: number
+          template_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      resume_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          template_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          template_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          template_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       roadmap_learning_goals: {
         Row: {
           created_at: string
