@@ -1,3 +1,6 @@
+// Base URL for template previews in Supabase Storage
+const STORAGE_BASE_URL = "https://lvnpvfxlmzbnylwkvgnq.supabase.co/storage/v1/object/public/resume-templates";
+
 export interface ResumeTemplate {
   id: number;
   name: string;
@@ -15,6 +18,17 @@ export interface ResumeTemplate {
   downloadUrl?: string;
 }
 
+// Helper to get preview URL for a template
+export const getTemplatePreviewUrl = (templateId: number): string => {
+  return `${STORAGE_BASE_URL}/template-${templateId}-preview.png`;
+};
+
+// Helper to get download URL for a template
+export const getTemplateDownloadUrl = (templateId: number, format: string = "pdf"): string => {
+  const ext = format.toLowerCase() === "google docs" ? "gdoc" : format.toLowerCase();
+  return `${STORAGE_BASE_URL}/template-${templateId}.${ext}`;
+};
+
 export const resumeTemplates: ResumeTemplate[] = [
   {
     id: 1,
@@ -29,6 +43,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "245 KB",
     dateAdded: "2024-01-15",
     tags: ["Tech", "Business", "Professional"],
+    previewUrl: getTemplatePreviewUrl(1),
   },
   {
     id: 2,
@@ -43,6 +58,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "198 KB",
     dateAdded: "2024-01-10",
     tags: ["Executive", "Leadership", "Corporate"],
+    previewUrl: getTemplatePreviewUrl(2),
   },
   {
     id: 3,
@@ -57,6 +73,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "512 KB",
     dateAdded: "2024-02-01",
     tags: ["Design", "Creative", "Portfolio"],
+    previewUrl: getTemplatePreviewUrl(3),
   },
   {
     id: 4,
@@ -71,6 +88,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "156 KB",
     dateAdded: "2024-01-20",
     tags: ["Tech", "Engineering", "Developer"],
+    previewUrl: getTemplatePreviewUrl(4),
   },
   {
     id: 5,
@@ -85,6 +103,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "89 KB",
     dateAdded: "2024-01-25",
     tags: ["Clean", "Simple", "Versatile"],
+    previewUrl: getTemplatePreviewUrl(5),
   },
   {
     id: 6,
@@ -99,6 +118,7 @@ export const resumeTemplates: ResumeTemplate[] = [
     fileSize: "178 KB",
     dateAdded: "2024-02-05",
     tags: ["Comprehensive", "Detailed", "Professional"],
+    previewUrl: getTemplatePreviewUrl(6),
   },
   {
     id: 7,
