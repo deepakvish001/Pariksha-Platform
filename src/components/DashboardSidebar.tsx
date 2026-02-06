@@ -237,7 +237,19 @@ export function DashboardSidebar() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSignOutDialogOpen, setIsSignOutDialogOpen] = useState(false);
+  const [shouldShakeBell, setShouldShakeBell] = useState(false);
+  const [prevUnreadCount, setPrevUnreadCount] = useState(unreadCount);
   const isCollapsed = state === "collapsed";
+
+  // Detect new notifications and trigger shake
+  useEffect(() => {
+    if (unreadCount > prevUnreadCount) {
+      setShouldShakeBell(true);
+      const timer = setTimeout(() => setShouldShakeBell(false), 600);
+      return () => clearTimeout(timer);
+    }
+    setPrevUnreadCount(unreadCount);
+  }, [unreadCount, prevUnreadCount]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -290,7 +302,14 @@ export function DashboardSidebar() {
                     >
                       <Link to={item.url} className="group-data-[collapsible=icon]:justify-center">
                         <div className="relative">
-                          <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                          <motion.div
+                            animate={item.title === "Notifications" && shouldShakeBell ? {
+                              rotate: [0, -15, 15, -10, 10, -5, 5, 0],
+                            } : {}}
+                            transition={{ duration: 0.5, ease: "easeInOut" }}
+                          >
+                            <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                          </motion.div>
                           <AnimatePresence>
                             {item.title === "Notifications" && unreadCount > 0 && (
                               <motion.span
