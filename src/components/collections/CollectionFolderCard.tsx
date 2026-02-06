@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { FolderWithSource } from "@/hooks/useAllFolders";
+import FolderColorPicker from "./FolderColorPicker";
 
 // Color mapping for folder colors
 const folderColorClasses: Record<string, string> = {
@@ -13,6 +14,8 @@ const folderColorClasses: Record<string, string> = {
   red: "bg-rose-500/20 text-rose-400 border-rose-500/30",
   purple: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   pink: "bg-pink-500/20 text-pink-400 border-pink-500/30",
+  blue: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  cyan: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
 };
 
 // Source icon mapping
@@ -32,9 +35,10 @@ interface CollectionFolderCardProps {
   index: number;
   onSelect: (folder: FolderWithSource) => void;
   onShare: (folder: FolderWithSource) => void;
+  onColorChange: (folderId: string, color: string) => void;
 }
 
-const CollectionFolderCard = ({ folder, index, onSelect, onShare }: CollectionFolderCardProps) => {
+const CollectionFolderCard = ({ folder, index, onSelect, onShare, onColorChange }: CollectionFolderCardProps) => {
   const Icon = getSourceIcon(folder.source);
 
   return (
@@ -73,6 +77,10 @@ const CollectionFolderCard = ({ folder, index, onSelect, onShare }: CollectionFo
             </p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
+            <FolderColorPicker
+              currentColor={folder.color}
+              onColorChange={(color) => onColorChange(folder.id, color)}
+            />
             <Button
               variant="ghost"
               size="icon"

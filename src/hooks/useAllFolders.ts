@@ -34,6 +34,7 @@ interface UseAllFoldersReturn {
   moveItemToFolder: (itemId: string, fromFolderId: string, toFolderId: string) => Promise<boolean>;
   moveItemsToFolder: (itemIds: string[], fromFolderId: string, toFolderId: string) => Promise<boolean>;
   deleteItems: (itemIds: string[], folderId: string) => Promise<boolean>;
+  updateFolderColor: (folderId: string, color: string) => Promise<boolean>;
   refreshFolders: () => Promise<void>;
 }
 
@@ -331,6 +332,36 @@ export function useAllFolders(): UseAllFoldersReturn {
     [user, folderItems]
   );
 
+  const updateFolderColor = useCallback(
+    async (folderId: string, color: string): Promise<boolean> => {
+      if (!user) return false;
+
+      try {
+        const { error } = await supabase
+          .from("user_folders")
+          .update({ color })
+          .eq("id", folderId)
+          .eq("user_id", user.id);
+
+        if (error) {
+          console.error("Error updating folder color:", error);
+          return false;
+        }
+
+        // Update local state
+        setFolders((prev) =>
+          prev.map((f) => (f.id === folderId ? { ...f, color } : f))
+        );
+
+        return true;
+      } catch (err) {
+        console.error("Error updating folder color:", err);
+        return false;
+      }
+    },
+    [user]
+  );
+
   return {
     folders,
     folderItems,
@@ -339,6 +370,7 @@ export function useAllFolders(): UseAllFoldersReturn {
     moveItemToFolder,
     moveItemsToFolder,
     deleteItems,
+    updateFolderColor,
     refreshFolders: fetchFolders,
   };
 }
