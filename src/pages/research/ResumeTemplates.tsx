@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Star, FileText, Heart } from "lucide-react";
 import ResumeHeroSection from "@/components/resume/ResumeHeroSection";
@@ -10,8 +10,9 @@ import ResumeFilterBar, {
 import ResumeTemplateCard from "@/components/resume/ResumeTemplateCard";
 import ResumeStatsDashboard from "@/components/resume/ResumeStatsDashboard";
 import ResumeDownloadHistory from "@/components/resume/ResumeDownloadHistory";
+import ResumePreviewModal from "@/components/resume/ResumePreviewModal";
 import RoadmapSectionDivider from "@/components/roadmap/RoadmapSectionDivider";
-import { resumeTemplates, getTemplateStats } from "@/data/resumeTemplatesData";
+import { resumeTemplates, getTemplateStats, ResumeTemplate } from "@/data/resumeTemplatesData";
 import { useResumeFavorites, useResumeDownloads } from "@/hooks/useResumeActions";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -21,6 +22,8 @@ const ResumeTemplates = () => {
   const [styleFilter, setStyleFilter] = useState<StyleFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("downloads");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<ResumeTemplate | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const { favorites, isFavorite, toggleFavorite } = useResumeFavorites();
   const { 
@@ -28,7 +31,8 @@ const ResumeTemplates = () => {
     isLoading: isLoadingDownloads, 
     trackDownload, 
     clearHistory,
-    redownload 
+    redownload,
+    isDownloading
   } = useResumeDownloads();
 
   const stats = useMemo(() => getTemplateStats(), []);
@@ -90,6 +94,16 @@ const ResumeTemplates = () => {
     () => filteredTemplates.filter((t) => !t.isFeatured),
     [filteredTemplates]
   );
+
+  const handlePreview = useCallback((template: ResumeTemplate) => {
+    setPreviewTemplate(template);
+    setIsPreviewOpen(true);
+  }, []);
+
+  const handleClosePreview = useCallback(() => {
+    setIsPreviewOpen(false);
+    setPreviewTemplate(null);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -173,6 +187,8 @@ const ResumeTemplates = () => {
                     isFavorite={true}
                     onToggleFavorite={toggleFavorite}
                     onDownload={trackDownload}
+                    onPreview={handlePreview}
+                    isDownloading={isDownloading}
                   />
                 ))}
             </motion.div>
@@ -208,6 +224,8 @@ const ResumeTemplates = () => {
                   isFavorite={isFavorite(template.id)}
                   onToggleFavorite={toggleFavorite}
                   onDownload={trackDownload}
+                  onPreview={handlePreview}
+                  isDownloading={isDownloading}
                 />
               ))}
             </motion.div>
@@ -242,6 +260,8 @@ const ResumeTemplates = () => {
                   isFavorite={isFavorite(template.id)}
                   onToggleFavorite={toggleFavorite}
                   onDownload={trackDownload}
+                  onPreview={handlePreview}
+                  isDownloading={isDownloading}
                 />
               ))}
             </motion.div>
@@ -261,6 +281,16 @@ const ResumeTemplates = () => {
             </motion.div>
           )}
         </div>
+
+        {/* Preview Modal */}
+        <ResumePreviewModal
+          template={previewTemplate}
+          isOpen={isPreviewOpen}
+          onClose={handleClosePreview}
+          onDownload={trackDownload}
+          isFavorite={previewTemplate ? isFavorite(previewTemplate.id) : false}
+          onToggleFavorite={toggleFavorite}
+        />
       </main>
     </div>
   );

@@ -175,7 +175,7 @@ export const useResumeDownloads = () => {
   });
 
   const trackDownloadMutation = useMutation({
-    mutationFn: async (template: ResumeTemplate) => {
+    mutationFn: async ({ template, format }: { template: ResumeTemplate; format: string }) => {
       // Track in database if user is logged in
       if (user) {
         const { data, error } = await supabase
@@ -193,28 +193,28 @@ export const useResumeDownloads = () => {
         }
       }
 
-      // Attempt to download from storage
-      const storageUrl = getTemplateStorageUrl(template.id, "pdf");
-      const filename = `${template.name.replace(/\s+/g, "-").toLowerCase()}.pdf`;
+      // Attempt to download from storage with correct format extension
+      const fileExtension = format.toLowerCase() === "google docs" ? "gdoc" : format.toLowerCase();
+      const storageUrl = getTemplateStorageUrl(template.id, fileExtension);
+      const filename = `${template.name.replace(/\s+/g, "-").toLowerCase()}.${fileExtension}`;
       
       const downloaded = await downloadFile(storageUrl, filename);
       
       if (!downloaded) {
-        // If storage file doesn't exist, create a placeholder PDF download
-        // This is a fallback - in production, actual files would be in storage
-        toast.info("Template download prepared!", {
-          description: "File will be available soon. Check back later for the full template.",
+        // If storage file doesn't exist, show message
+        toast.info(`${format} download prepared!`, {
+          description: "Template file will be available soon. Check back later for the full template.",
         });
-        return { template, fallback: true };
+        return { template, format, fallback: true };
       }
       
-      return { template, fallback: false };
+      return { template, format, fallback: false };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["resume-downloads"] });
       if (result && !result.fallback) {
         toast.success("Download complete!", {
-          description: `${result.template.name} has been downloaded.`,
+          description: `${result.template.name} (${result.format}) has been downloaded.`,
         });
       }
     },
@@ -256,8 +256,16 @@ export const useResumeDownloads = () => {
     (templateId: number) => {
       const template = resumeTemplates.find((t) => t.id === templateId);
       if (template) {
-        trackDownloadMutation.mutate(template);
+        trackDownloadMutation.mutate({ template, format: "PDF" });
       }
+    },
+    [trackDownloadMutation]
+  );
+
+  // Wrapper function for component usage
+  const handleDownload = useCallback(
+    (template: ResumeTemplate, format: string = "PDF") => {
+      trackDownloadMutation.mutate({ template, format });
     },
     [trackDownloadMutation]
   );
@@ -265,7 +273,7 @@ export const useResumeDownloads = () => {
   return {
     downloads,
     isLoading,
-    trackDownload: trackDownloadMutation.mutate,
+    trackDownload: handleDownload,
     clearHistory: clearHistory.mutate,
     getDownloadCount,
     redownload,
