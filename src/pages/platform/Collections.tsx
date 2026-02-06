@@ -86,6 +86,7 @@ const Collections = () => {
     updateItemOrder,
     moveItemsToFolder,
     deleteItems,
+    updateFolderColor,
   } = useAllFolders();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -341,6 +342,12 @@ const Collections = () => {
                         index={index}
                         onSelect={setSelectedFolder}
                         onShare={openShareDialog}
+                        onColorChange={async (folderId, color) => {
+                          const success = await updateFolderColor(folderId, color);
+                          if (success) {
+                            toast.success("Folder color updated");
+                          }
+                        }}
                       />
                     ))}
                   </AnimatePresence>
