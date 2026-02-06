@@ -43,9 +43,8 @@ const OutreachTemplateDetail = ({
   const [showAI, setShowAI] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  if (!template) return null;
-
   const personalizedBody = useMemo(() => {
+    if (!template) return '';
     let body = template.body;
     Object.entries(placeholderValues).forEach(([key, value]) => {
       if (value) {
@@ -53,14 +52,19 @@ const OutreachTemplateDetail = ({
       }
     });
     return body;
-  }, [template.body, placeholderValues]);
+  }, [template, placeholderValues]);
 
-  const remainingPlaceholders = template.placeholders.filter(
-    p => !placeholderValues[p] || placeholderValues[p].trim() === ''
-  );
+  const remainingPlaceholders = useMemo(() => {
+    if (!template) return [];
+    return template.placeholders.filter(
+      p => !placeholderValues[p] || placeholderValues[p].trim() === ''
+    );
+  }, [template, placeholderValues]);
 
   const characterCount = personalizedBody.length;
-  const isOverLinkedInLimit = template.platform === 'linkedin' && characterCount > 500;
+  const isOverLinkedInLimit = template?.platform === 'linkedin' && characterCount > 500;
+
+  if (!template) return null;
 
   const handleCopy = async () => {
     try {
