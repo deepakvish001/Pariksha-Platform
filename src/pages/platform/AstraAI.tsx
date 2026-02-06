@@ -1,45 +1,19 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { 
-  Sparkles, 
-  Send, 
-  Bot, 
-  User, 
-  Trash2, 
-  Loader2, 
-  Plus, 
-  History, 
-  MessageSquare,
-  Pencil,
-  Check,
-  X,
-  Search
-} from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAstraChat } from "@/hooks/useAstraChat";
-import { CodeBlock } from "@/components/CodeBlock";
-import { cn } from "@/lib/utils";
 
-const suggestedPrompts = [
-  "Help me prepare for a Google interview",
-  "Explain binary search with examples",
-  "What are the SOLID principles?",
-  "Create a study plan for DSA",
-];
+import AstraBackground from "@/components/astra/AstraBackground";
+import AstraHeader from "@/components/astra/AstraHeader";
+import AstraWelcome from "@/components/astra/AstraWelcome";
+import AstraMessageBubble from "@/components/astra/AstraMessageBubble";
+import AstraTypingIndicator from "@/components/astra/AstraTypingIndicator";
+import AstraInputArea from "@/components/astra/AstraInputArea";
+import AstraHistoryPanel from "@/components/astra/AstraHistoryPanel";
 
 const AstraAI = () => {
-  const [inputValue, setInputValue] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const { 
     messages, 
     conversations,
@@ -53,8 +27,6 @@ const AstraAI = () => {
     renameConversation
   } = useAstraChat();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const editInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -63,16 +35,6 @@ const AstraAI = () => {
     }
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
-    
-    const message = inputValue;
-    setInputValue("");
-    await sendMessage(message);
-    inputRef.current?.focus();
-  };
-
   const handleSuggestedPrompt = async (prompt: string) => {
     if (isLoading) return;
     await sendMessage(prompt);
@@ -80,347 +42,81 @@ const AstraAI = () => {
 
   const handleLoadConversation = async (conversationId: string) => {
     await loadConversation(conversationId);
-    setHistoryOpen(false);
-  };
-
-  const handleStartRename = (conv: { id: string; title: string | null }) => {
-    setEditingId(conv.id);
-    setEditTitle(conv.title || "");
-    setTimeout(() => editInputRef.current?.focus(), 50);
-  };
-
-  const handleSaveRename = async () => {
-    if (editingId && editTitle.trim()) {
-      await renameConversation(editingId, editTitle.trim());
-    }
-    setEditingId(null);
-    setEditTitle("");
-  };
-
-  const handleCancelRename = () => {
-    setEditingId(null);
-    setEditTitle("");
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="flex h-16 items-center justify-between gap-4 px-6">
-          <div className="flex items-center gap-4">
-            <SidebarTrigger />
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-orange flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Astra AI</h1>
-                <p className="text-sm text-muted-foreground">Your AI career assistant</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <History className="h-4 w-4" />
-                  History
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-80">
-                <SheetHeader>
-                  <SheetTitle>Chat History</SheetTitle>
-                </SheetHeader>
-                <div className="mt-4">
-                  <Button 
-                    onClick={() => { newChat(); setHistoryOpen(false); }} 
-                    className="w-full gap-2 mb-3"
-                  >
-                    <Plus className="h-4 w-4" />
-                    New Chat
-                  </Button>
-                  <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search conversations..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  <ScrollArea className="h-[calc(100vh-240px)]">
-                    <div className="space-y-2">
-                      {conversations.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-8">
-                          No conversations yet
-                        </p>
-                      ) : conversations.filter(c => 
-                          (c.title || "").toLowerCase().includes(searchQuery.toLowerCase())
-                        ).length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-8">
-                          No matching conversations
-                        </p>
-                      ) : (
-                        conversations
-                          .filter(c => (c.title || "").toLowerCase().includes(searchQuery.toLowerCase()))
-                          .map((conv) => (
-                          <div
-                            key={conv.id}
-                            className={cn(
-                              "group flex items-center gap-2 p-3 rounded-lg transition-colors",
-                              editingId === conv.id ? "" : "cursor-pointer",
-                              currentConversationId === conv.id 
-                                ? "bg-primary/10 text-primary" 
-                                : "hover:bg-muted"
-                            )}
-                            onClick={() => editingId !== conv.id && handleLoadConversation(conv.id)}
-                          >
-                            {editingId === conv.id ? (
-                              <>
-                                <Input
-                                  ref={editInputRef}
-                                  value={editTitle}
-                                  onChange={(e) => setEditTitle(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleSaveRename();
-                                    if (e.key === "Escape") handleCancelRename();
-                                  }}
-                                  className="h-7 text-sm flex-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSaveRename();
-                                  }}
-                                >
-                                  <Check className="h-3 w-3 text-green-500" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCancelRename();
-                                  }}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                <MessageSquare className="h-4 w-4 shrink-0" />
-                                <span className="flex-1 text-sm truncate">
-                                  {conv.title || "New conversation"}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStartRename(conv);
-                                  }}
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteConversation(conv.id);
-                                  }}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
-                </div>
-              </SheetContent>
-            </Sheet>
-            <Button variant="ghost" size="sm" onClick={newChat} className="gap-2">
-              <Plus className="h-4 w-4" />
-              New Chat
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background layer */}
+      <AstraBackground />
+      
+      {/* Content layer */}
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <AstraHeader 
+          onNewChat={newChat}
+          onOpenHistory={() => setHistoryOpen(true)}
+        />
 
-      <main className="flex-1 flex flex-col p-4 md:p-6 max-w-4xl mx-auto w-full">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex-1 flex flex-col"
-        >
-          <Card className="flex-1 flex flex-col min-h-[500px]">
-            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex-1 flex flex-col"
+          >
+            {/* Chat area */}
+            <ScrollArea 
+              className="flex-1 p-4 md:p-6" 
+              ref={scrollRef}
+            >
               {isLoadingHistory ? (
-                <div className="h-full flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="h-[60vh] flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    <p className="text-white/40 text-sm">Loading conversation...</p>
+                  </div>
                 </div>
               ) : messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Sparkles className="h-8 w-8 text-primary" />
-                  </div>
-                  <h2 className="text-xl font-semibold mb-2">Welcome to Astra AI</h2>
-                  <p className="text-muted-foreground mb-6 max-w-md">
-                    I'm your personal career assistant. Ask me about interview prep, DSA problems, 
-                    system design, or career guidance.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
-                    {suggestedPrompts.map((prompt) => (
-                      <Button
-                        key={prompt}
-                        variant="outline"
-                        className="text-left h-auto py-3 px-4 justify-start"
-                        onClick={() => handleSuggestedPrompt(prompt)}
-                        disabled={isLoading}
-                      >
-                        <span className="text-sm">{prompt}</span>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                <AstraWelcome 
+                  onSelectPrompt={handleSuggestedPrompt}
+                  isLoading={isLoading}
+                />
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6 py-4">
                   {messages.map((message, index) => (
-                    <motion.div
+                    <AstraMessageBubble
                       key={index}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`flex gap-3 ${message.role === "user" ? "justify-end" : ""}`}
-                    >
-                      {message.role === "assistant" && (
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                          <Bot className="h-4 w-4 text-primary" />
-                        </div>
-                      )}
-                      <div
-                        className={cn(
-                          "rounded-2xl px-4 py-3 max-w-[85%]",
-                          message.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        )}
-                      >
-                        {message.role === "assistant" ? (
-                          <div className="prose prose-sm dark:prose-invert max-w-none break-words">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                pre: ({ children }) => <>{children}</>,
-                                code: ({ className, children, ...props }) => {
-                                  const match = /language-(\w+)/.exec(className || "");
-                                  const codeString = String(children).replace(/\n$/, "");
-                                  
-                                  if (match) {
-                                    return (
-                                      <CodeBlock language={match[1]}>
-                                        {codeString}
-                                      </CodeBlock>
-                                    );
-                                  }
-                                  
-                                  // Inline code
-                                  return (
-                                    <code className="bg-background/50 px-1.5 py-0.5 rounded text-sm" {...props}>
-                                      {children}
-                                    </code>
-                                  );
-                                },
-                                ul: ({ children }) => (
-                                  <ul className="list-disc list-inside my-2 space-y-1">{children}</ul>
-                                ),
-                                ol: ({ children }) => (
-                                  <ol className="list-decimal list-inside my-2 space-y-1">{children}</ol>
-                                ),
-                                p: ({ children }) => (
-                                  <p className="my-2 leading-relaxed">{children}</p>
-                                ),
-                                h1: ({ children }) => (
-                                  <h1 className="text-lg font-bold mt-4 mb-2">{children}</h1>
-                                ),
-                                h2: ({ children }) => (
-                                  <h2 className="text-base font-bold mt-3 mb-2">{children}</h2>
-                                ),
-                                h3: ({ children }) => (
-                                  <h3 className="text-sm font-bold mt-2 mb-1">{children}</h3>
-                                ),
-                                strong: ({ children }) => (
-                                  <strong className="font-semibold">{children}</strong>
-                                ),
-                              }}
-                            >
-                              {message.content}
-                            </ReactMarkdown>
-                            {isLoading && index === messages.length - 1 && (
-                              <span className="inline-block w-2 h-4 bg-primary/50 animate-pulse ml-1" />
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-sm whitespace-pre-wrap break-words">
-                            {message.content}
-                          </div>
-                        )}
-                      </div>
-                      {message.role === "user" && (
-                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center shrink-0 mt-1">
-                          <User className="h-4 w-4 text-primary-foreground" />
-                        </div>
-                      )}
-                    </motion.div>
+                      message={message}
+                      index={index}
+                      isLoading={isLoading}
+                      isLastMessage={index === messages.length - 1}
+                    />
                   ))}
                   {isLoading && messages[messages.length - 1]?.role === "user" && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex gap-3"
-                    >
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <Bot className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="rounded-2xl px-4 py-3 bg-muted">
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                      </div>
-                    </motion.div>
+                    <AstraTypingIndicator />
                   )}
                 </div>
               )}
             </ScrollArea>
             
-            <CardContent className="border-t pt-4">
-              <form onSubmit={handleSubmit} className="flex gap-2">
-                <Input
-                  ref={inputRef}
-                  placeholder="Ask Astra anything about your career..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  disabled={isLoading}
-                  className="flex-1"
-                />
-                <Button type="submit" size="icon" disabled={isLoading || !inputValue.trim()}>
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </main>
+            {/* Input area */}
+            <AstraInputArea 
+              onSubmit={sendMessage}
+              isLoading={isLoading}
+            />
+          </motion.div>
+        </main>
+
+        {/* History panel */}
+        <AstraHistoryPanel
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onLoadConversation={handleLoadConversation}
+          onNewChat={newChat}
+          onDeleteConversation={deleteConversation}
+          onRenameConversation={renameConversation}
+        />
+      </div>
     </div>
   );
 };
