@@ -15,11 +15,11 @@ interface ActivityHeatmapProps {
 }
 
 const levelColors = {
-  0: "bg-muted hover:bg-muted/80",
-  1: "bg-emerald-200 dark:bg-emerald-900 hover:bg-emerald-300 dark:hover:bg-emerald-800",
-  2: "bg-emerald-400 dark:bg-emerald-700 hover:bg-emerald-500 dark:hover:bg-emerald-600",
-  3: "bg-emerald-500 dark:bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400",
-  4: "bg-emerald-600 dark:bg-emerald-400 hover:bg-emerald-700 dark:hover:bg-emerald-300",
+  0: "bg-white/5 hover:bg-white/10",
+  1: "bg-emerald-500/30 hover:bg-emerald-500/40",
+  2: "bg-emerald-500/50 hover:bg-emerald-500/60",
+  3: "bg-emerald-500/70 hover:bg-emerald-500/80",
+  4: "bg-emerald-400 hover:bg-emerald-300",
 };
 
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -90,13 +90,13 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
 
   if (loading) {
     return (
-      <Card>
+      <Card className="border-white/5 bg-white/[0.02] backdrop-blur-xl">
         <CardHeader className="pb-4">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-4 w-60" />
+          <Skeleton className="h-5 w-40 bg-white/10" />
+          <Skeleton className="h-4 w-60 bg-white/10" />
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full bg-white/10" />
         </CardContent>
       </Card>
     );
@@ -108,20 +108,20 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
     >
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden border-white/5 bg-white/[0.02] backdrop-blur-xl ring-1 ring-white/5">
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className="text-lg flex items-center gap-2 text-white">
                 <Flame className="h-5 w-5 text-primary" />
                 Activity Heatmap
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-white/50">
                 {displayedActivities} activities {isMobile ? "in the last 3 months" : "in the last year"}
               </CardDescription>
             </div>
             {/* Legend */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-white/50">
               <span>Less</span>
               <div className="flex gap-1">
                 {[0, 1, 2, 3, 4].map((level) => (
@@ -145,7 +145,7 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
                   return (
                     <div
                       key={i}
-                      className="text-xs text-muted-foreground"
+                      className="text-xs text-white/40"
                       style={{
                         marginLeft: i === 0 ? `${marker.weekIndex * cellSize}px` : undefined,
                         width: i < monthMarkers.length - 1 
@@ -165,7 +165,7 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
                   {dayLabels.map((day, i) => (
                     <div
                       key={day}
-                      className="h-[10px] sm:h-3 text-[10px] sm:text-xs text-muted-foreground leading-[10px] sm:leading-3"
+                      className="h-[10px] sm:h-3 text-[10px] sm:text-xs text-white/40 leading-[10px] sm:leading-3"
                       style={{ visibility: i % 2 === 1 ? "visible" : "hidden" }}
                     >
                       {isMobile ? day.charAt(0) : day}
@@ -197,11 +197,11 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
                               />
                             </TooltipTrigger>
                             {day.date && (
-                              <TooltipContent side="top" className="text-xs">
-                                <p className="font-medium">
+                              <TooltipContent side="top" className="text-xs bg-black/90 border-white/10 backdrop-blur-xl">
+                                <p className="font-medium text-white">
                                   {day.count} {day.count === 1 ? "activity" : "activities"}
                                 </p>
-                                <p className="text-muted-foreground">
+                                <p className="text-white/50">
                                   {format(parseISO(day.date), "MMMM d, yyyy")}
                                 </p>
                               </TooltipContent>
@@ -218,7 +218,7 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
           
           {/* Mobile hint */}
           {isMobile && (
-            <p className="text-xs text-muted-foreground mt-3 text-center">
+            <p className="text-xs text-white/30 mt-3 text-center">
               ← Scroll to see more →
             </p>
           )}
