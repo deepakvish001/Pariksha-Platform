@@ -40,6 +40,8 @@ import {
   GraduationCap,
   Briefcase,
   Wrench,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -253,7 +255,7 @@ export function DashboardSidebar() {
   const { user, profile, signOut } = useAuth();
   const { unreadCount } = useNotifications();
   const { theme, resolvedTheme, setTheme } = useThemeSync();
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -312,12 +314,12 @@ export function DashboardSidebar() {
   return (
     <>
       <Sidebar collapsible="icon" className="overflow-hidden">
-        {/* Header with Logo and Theme Toggle */}
+        {/* Header with Logo, Theme Toggle, and Sidebar Toggle */}
         <SidebarHeader className="border-b border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
           <div className="flex items-center justify-between">
             <BrandLogo size="md" showText={false} />
             {!isCollapsed && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -353,11 +355,53 @@ export function DashboardSidebar() {
                   </TooltipContent>
                 </Tooltip>
                 <NotificationBell />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleSidebar()}
+                      className="h-9 w-9 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
+                    >
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <PanelLeftClose className="h-4 w-4" />
+                      </motion.div>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    Collapse sidebar
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
           </div>
           {isCollapsed && (
             <div className="flex flex-col items-center gap-2 mt-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => toggleSidebar()}
+                    className="h-10 w-10 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
+                  >
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <PanelLeft className="h-4 w-4" />
+                    </motion.div>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  Expand sidebar
+                </TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
