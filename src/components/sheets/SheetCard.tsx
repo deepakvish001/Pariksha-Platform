@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Star, BookOpen, ArrowRight, Sparkles } from "lucide-react";
+import { Star, BookOpen, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 interface Sheet {
@@ -20,6 +21,8 @@ interface SheetCardProps {
   sheet: Sheet;
   index: number;
   progress?: number;
+  completedCount?: number;
+  isLoading?: boolean;
 }
 
 const getCategoryStyles = (category: string) => {
@@ -43,7 +46,7 @@ const getDifficultyStyles = (difficulty: string) => {
   return "text-amber-500 bg-amber-500/10";
 };
 
-const SheetCard = ({ sheet, index, progress = 0 }: SheetCardProps) => {
+const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, isLoading = false }: SheetCardProps) => {
   const navigate = useNavigate();
   const categoryStyles = getCategoryStyles(sheet.category);
 
@@ -115,16 +118,41 @@ const SheetCard = ({ sheet, index, progress = 0 }: SheetCardProps) => {
           <div className="space-y-2 mb-4">
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">{progress}%</span>
+              {isLoading ? (
+                <Skeleton className="h-4 w-12" />
+              ) : (
+                <span className="font-medium">{progress}%</span>
+              )}
             </div>
-            <Progress value={progress} className="h-1.5" />
+            {isLoading ? (
+              <Skeleton className="h-1.5 w-full" />
+            ) : (
+              <Progress 
+                value={progress} 
+                className={cn(
+                  "h-1.5",
+                  progress === 100 && "[&>div]:bg-emerald-500"
+                )} 
+              />
+            )}
           </div>
 
           {/* Footer */}
           <div className="flex items-center justify-between pt-3 border-t border-border/50">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-sm font-medium">{sheet.problems} problems</span>
+              {completedCount > 0 ? (
+                <>
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className="text-sm font-medium">
+                    {completedCount}/{sheet.problems}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-sm font-medium">{sheet.problems} problems</span>
+                </>
+              )}
             </div>
             <Badge 
               variant="secondary" 
