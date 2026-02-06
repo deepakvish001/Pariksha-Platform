@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Settings, Sun, Moon, Calendar, Sparkles } from "lucide-react";
+import { Settings, Sun, Moon, Calendar } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
@@ -24,11 +24,11 @@ const SettingsHeader = () => {
     : null;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.05] bg-black/40 backdrop-blur-3xl">
+    <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-3xl">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
         {/* Left section */}
         <div className="flex items-center gap-3 md:gap-4">
-          <SidebarTrigger className="text-white/60 hover:text-white hover:bg-white/10" />
+          <SidebarTrigger className="text-muted-foreground hover:text-foreground hover:bg-accent" />
           
           <div className="flex items-center gap-3">
             <motion.div
@@ -44,8 +44,8 @@ const SettingsHeader = () => {
             </motion.div>
             
             <div>
-              <h1 className="text-lg md:text-xl font-bold text-white">Settings</h1>
-              <p className="text-xs text-white/40 hidden sm:block">Manage your account</p>
+              <h1 className="text-lg md:text-xl font-bold text-foreground">Settings</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">Manage your account</p>
             </div>
           </div>
         </div>
@@ -57,19 +57,19 @@ const SettingsHeader = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.05]"
+            className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-full bg-secondary/50 border border-border"
           >
-            <Avatar className="w-7 h-7 border border-white/10">
+            <Avatar className="w-7 h-7 border border-border">
               <AvatarImage src={profile?.avatar_url || undefined} />
               <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
                 {getInitials(profile?.full_name)}
               </AvatarFallback>
             </Avatar>
             <div className="text-sm">
-              <p className="font-medium text-white/90 leading-tight">
+              <p className="font-medium text-foreground leading-tight">
                 {profile?.full_name || "User"}
               </p>
-              <p className="text-xs text-white/40 leading-tight truncate max-w-[120px]">
+              <p className="text-xs text-muted-foreground leading-tight truncate max-w-[120px]">
                 {user?.email}
               </p>
             </div>
@@ -81,10 +81,10 @@ const SettingsHeader = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.15 }}
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.03] border border-white/[0.05]"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/50 border border-border"
             >
-              <Calendar className="w-3.5 h-3.5 text-white/40" />
-              <span className="text-xs text-white/50">Since {memberSince}</span>
+              <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Since {memberSince}</span>
             </motion.div>
           )}
 
@@ -108,7 +108,7 @@ const SettingsHeader = () => {
               variant="ghost"
               size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="relative text-white/60 hover:text-white hover:bg-white/10"
+              className="relative text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <motion.div
                 key={theme}

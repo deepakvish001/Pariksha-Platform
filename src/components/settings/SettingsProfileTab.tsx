@@ -332,7 +332,7 @@ const SettingsProfileTab = () => {
           <div className="p-2 rounded-lg bg-primary/10">
             <User className="w-4 h-4 text-primary" />
           </div>
-          <h2 className="text-lg font-semibold text-white">Basic Information</h2>
+          <h2 className="text-lg font-semibold text-foreground">Basic Information</h2>
         </div>
 
         <div className="space-y-6">
@@ -341,7 +341,7 @@ const SettingsProfileTab = () => {
             <div className="relative group">
               {/* Glow ring */}
               <div className="absolute -inset-1 bg-gradient-to-r from-primary/40 to-purple-500/40 rounded-full blur-md opacity-60 group-hover:opacity-100 transition-opacity" />
-              <Avatar className="relative w-20 h-20 border-2 border-white/10">
+              <Avatar className="relative w-20 h-20 border-2 border-border">
                 <AvatarImage src={avatarUrl || undefined} />
                 <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
                   {getInitials(profile?.full_name)}
@@ -350,23 +350,23 @@ const SettingsProfileTab = () => {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingAvatar}
-                className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                className="absolute inset-0 flex items-center justify-center bg-background/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
               >
                 {isUploadingAvatar ? (
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  <Loader2 className="w-5 h-5 text-foreground animate-spin" />
                 ) : (
-                  <Camera className="w-5 h-5 text-white" />
+                  <Camera className="w-5 h-5 text-foreground" />
                 )}
               </button>
             </div>
             <div className="flex-1 space-y-2">
-              <Label className="text-white/60">Full Name</Label>
+              <Label className="text-muted-foreground">Full Name</Label>
               <div className="flex gap-2">
                 <Input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Your name"
-                  className="bg-black/30 border-white/[0.08] text-white placeholder:text-white/30 focus:border-primary/50"
+                  className="bg-secondary/50 border-border"
                 />
                 <Button
                   onClick={handleSaveProfile}
@@ -380,7 +380,7 @@ const SettingsProfileTab = () => {
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="text-green-400"
+                      className="text-green-500"
                     >
                       <Check className="w-4 h-4" />
                     </motion.div>
@@ -394,27 +394,27 @@ const SettingsProfileTab = () => {
 
           {/* Email */}
           <div className="space-y-2">
-            <Label className="text-white/60">Email</Label>
+            <Label className="text-muted-foreground">Email</Label>
             <Input
               value={user?.email || ""}
               disabled
-              className="bg-black/20 border-white/[0.05] text-white/50"
+              className="bg-muted border-border"
             />
-            <p className="text-xs text-white/30">Email cannot be changed</p>
+            <p className="text-xs text-muted-foreground">Email cannot be changed</p>
           </div>
 
           {/* Phone */}
           <div className="space-y-2">
-            <Label className="text-white/60">Mobile Number</Label>
+            <Label className="text-muted-foreground">Mobile Number</Label>
             <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="tel"
                 value={editForm.mobile_number}
                 onChange={(e) => handlePhoneChange(e.target.value)}
                 placeholder="+91 98765 43210"
                 className={cn(
-                  "pl-10 bg-black/30 border-white/[0.08] text-white placeholder:text-white/30 focus:border-primary/50",
+                  "pl-10 bg-secondary/50 border-border",
                   phoneError && "border-destructive"
                 )}
               />
@@ -428,20 +428,20 @@ const SettingsProfileTab = () => {
       <SettingsCard delay={0.05}>
         <div className="flex items-center gap-2 mb-6">
           <div className="p-2 rounded-lg bg-blue-500/10">
-            <Briefcase className="w-4 h-4 text-blue-400" />
+            <Briefcase className="w-4 h-4 text-blue-500" />
           </div>
-          <h2 className="text-lg font-semibold text-white">Professional Details</h2>
+          <h2 className="text-lg font-semibold text-foreground">Professional Details</h2>
         </div>
 
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-white/60">Experience Level</Label>
+              <Label className="text-muted-foreground">Experience Level</Label>
               <Select
                 value={editForm.current_experience}
                 onValueChange={(v) => setEditForm((prev) => ({ ...prev, current_experience: v }))}
               >
-                <SelectTrigger className="bg-black/30 border-white/[0.08] text-white">
+                <SelectTrigger className="bg-secondary/50 border-border">
                   <SelectValue placeholder="Select experience" />
                 </SelectTrigger>
                 <SelectContent>
@@ -454,12 +454,12 @@ const SettingsProfileTab = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-white/60">Primary Goal</Label>
+              <Label className="text-muted-foreground">Primary Goal</Label>
               <Select
                 value={editForm.target_goal}
                 onValueChange={(v) => setEditForm((prev) => ({ ...prev, target_goal: v }))}
               >
-                <SelectTrigger className="bg-black/30 border-white/[0.08] text-white">
+                <SelectTrigger className="bg-secondary/50 border-border">
                   <SelectValue placeholder="Select goal" />
                 </SelectTrigger>
                 <SelectContent>
@@ -482,44 +482,44 @@ const SettingsProfileTab = () => {
                 exit={{ opacity: 0, height: 0 }}
                 className="space-y-4 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5"
               >
-                <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
                   <GraduationCap className="w-4 h-4" /> Academic Details
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-white/60">College/University</Label>
+                  <Label className="text-muted-foreground">College/University</Label>
                   <Input
                     value={editForm.college_name}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, college_name: e.target.value }))}
                     placeholder="e.g., IIT Delhi"
-                    className="bg-black/30 border-white/[0.08] text-white placeholder:text-white/30"
+                    className="bg-secondary/50 border-border"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
-                    <Label className="text-white/60">Course</Label>
+                    <Label className="text-muted-foreground">Course</Label>
                     <Input
                       value={editForm.course_name}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, course_name: e.target.value }))}
                       placeholder="B.Tech"
-                      className="bg-black/30 border-white/[0.08] text-white placeholder:text-white/30"
+                      className="bg-secondary/50 border-border"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-white/60">Branch</Label>
+                    <Label className="text-muted-foreground">Branch</Label>
                     <Input
                       value={editForm.branch}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, branch: e.target.value }))}
                       placeholder="CSE"
-                      className="bg-black/30 border-white/[0.08] text-white placeholder:text-white/30"
+                      className="bg-secondary/50 border-border"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-white/60">Year</Label>
+                    <Label className="text-muted-foreground">Year</Label>
                     <Select
                       value={editForm.study_year}
                       onValueChange={(v) => setEditForm((prev) => ({ ...prev, study_year: v }))}
                     >
-                      <SelectTrigger className="bg-black/30 border-white/[0.08] text-white">
+                      <SelectTrigger className="bg-secondary/50 border-border">
                         <SelectValue placeholder="Year" />
                       </SelectTrigger>
                       <SelectContent>
@@ -542,35 +542,35 @@ const SettingsProfileTab = () => {
                 exit={{ opacity: 0, height: 0 }}
                 className="space-y-4 p-4 rounded-xl border border-blue-500/20 bg-blue-500/5"
               >
-                <div className="flex items-center gap-2 text-blue-400 text-sm font-medium">
+                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-medium">
                   <Briefcase className="w-4 h-4" /> Work Details
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
-                    <Label className="text-white/60">Company</Label>
+                    <Label className="text-muted-foreground">Company</Label>
                     <Input
                       value={editForm.company_name}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, company_name: e.target.value }))}
                       placeholder="Google"
-                      className="bg-black/30 border-white/[0.08] text-white placeholder:text-white/30"
+                      className="bg-secondary/50 border-border"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-white/60">Role</Label>
+                    <Label className="text-muted-foreground">Role</Label>
                     <Input
                       value={editForm.role}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value }))}
                       placeholder="SDE"
-                      className="bg-black/30 border-white/[0.08] text-white placeholder:text-white/30"
+                      className="bg-secondary/50 border-border"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-white/60">Experience</Label>
+                    <Label className="text-muted-foreground">Experience</Label>
                     <Select
                       value={editForm.experience}
                       onValueChange={(v) => setEditForm((prev) => ({ ...prev, experience: v }))}
                     >
-                      <SelectTrigger className="bg-black/30 border-white/[0.08] text-white">
+                      <SelectTrigger className="bg-secondary/50 border-border">
                         <SelectValue placeholder="Years" />
                       </SelectTrigger>
                       <SelectContent>
@@ -591,7 +591,7 @@ const SettingsProfileTab = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Target className="w-4 h-4 text-primary" />
-              <Label className="text-white/60">Interested Features</Label>
+              <Label className="text-muted-foreground">Interested Features</Label>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {featureOptions.map((feature) => (
@@ -603,15 +603,14 @@ const SettingsProfileTab = () => {
                     "flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all",
                     editForm.interested_features.includes(feature.id)
                       ? "border-primary/50 bg-primary/10"
-                      : "border-white/[0.05] bg-white/[0.02] hover:border-white/[0.1]"
+                      : "border-border bg-secondary/30 hover:border-primary/30"
                   )}
                 >
                   <Checkbox
                     checked={editForm.interested_features.includes(feature.id)}
                     onCheckedChange={() => toggleFeature(feature.id)}
-                    className="border-white/20"
                   />
-                  <span className="text-sm font-medium text-white/80">{feature.title}</span>
+                  <span className="text-sm font-medium text-foreground">{feature.title}</span>
                 </motion.label>
               ))}
             </div>

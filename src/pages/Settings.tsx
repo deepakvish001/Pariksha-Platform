@@ -13,17 +13,17 @@ import { cn } from "@/lib/utils";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User, color: "text-primary" },
-  { id: "security", label: "Security", icon: Lock, color: "text-blue-400" },
-  { id: "notifications", label: "Notifications", icon: Bell, color: "text-purple-400" },
-  { id: "learning", label: "Learning", icon: Brain, color: "text-emerald-400" },
-  { id: "account", label: "Account", icon: Shield, color: "text-amber-400" },
+  { id: "security", label: "Security", icon: Lock, color: "text-blue-500" },
+  { id: "notifications", label: "Notifications", icon: Bell, color: "text-purple-500" },
+  { id: "learning", label: "Learning", icon: Brain, color: "text-emerald-500" },
+  { id: "account", label: "Account", icon: Shield, color: "text-amber-500" },
 ];
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("profile");
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative bg-background">
       {/* Immersive background */}
       <AstraBackground />
 
@@ -41,15 +41,15 @@ const Settings = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <TabsList className="w-full grid grid-cols-5 bg-black/40 backdrop-blur-2xl border border-white/[0.05] p-1.5 rounded-xl h-auto">
+              <TabsList className="w-full grid grid-cols-5 bg-card/80 backdrop-blur-2xl border border-border p-1.5 rounded-xl h-auto">
                 {tabs.map((tab) => (
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
                     className={cn(
                       "relative flex items-center justify-center gap-2 py-3 px-2 rounded-lg transition-all duration-200",
-                      "text-white/50 hover:text-white/80",
-                      "data-[state=active]:bg-white/[0.08] data-[state=active]:text-white data-[state=active]:shadow-lg",
+                      "text-muted-foreground hover:text-foreground",
+                      "data-[state=active]:bg-secondary data-[state=active]:text-foreground data-[state=active]:shadow-sm",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                     )}
                   >
@@ -63,7 +63,7 @@ const Settings = () => {
                     {activeTab === tab.id && (
                       <motion.div
                         layoutId="activeTabGlow"
-                        className="absolute inset-0 rounded-lg bg-gradient-to-b from-white/[0.05] to-transparent pointer-events-none"
+                        className="absolute inset-0 rounded-lg bg-gradient-to-b from-foreground/[0.03] to-transparent pointer-events-none"
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
                       />
                     )}
