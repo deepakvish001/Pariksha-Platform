@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AchievementNotificationProvider } from "@/contexts/AchievementNotificationContext";
 import { LevelUpProvider } from "@/contexts/LevelUpContext";
 import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
+import { FaviconNotificationProvider } from "@/contexts/FaviconNotificationContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
@@ -88,6 +89,7 @@ const App = () => (
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <AuthProvider>
           <PushNotificationProvider>
+          <FaviconNotificationProvider>
           <AchievementNotificationProvider>
           <LevelUpProvider>
           <TooltipProvider>
@@ -196,6 +198,7 @@ const App = () => (
           </TooltipProvider>
           </LevelUpProvider>
           </AchievementNotificationProvider>
+          </FaviconNotificationProvider>
           </PushNotificationProvider>
         </AuthProvider>
       </ThemeProvider>
