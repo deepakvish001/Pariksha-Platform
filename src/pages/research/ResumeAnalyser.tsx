@@ -14,8 +14,10 @@ import { AnalysisStrengths } from "@/components/resume/AnalysisStrengths";
 import { AnalysisKeywords } from "@/components/resume/AnalysisKeywords";
 import { ResumeAnalysisHistory } from "@/components/resume/ResumeAnalysisHistory";
 import { ResumeAnalysisPDFExport } from "@/components/resume/ResumeAnalysisPDFExport";
+import { ResumeAnalysisPrintView } from "@/components/resume/ResumeAnalysisPrintView";
 import { ResumeAnalysisComparison } from "@/components/resume/ResumeAnalysisComparison";
 import { ResumeTemplateSuggestions } from "@/components/resume/ResumeTemplateSuggestions";
+import { ResumeImprovementTracker } from "@/components/resume/ResumeImprovementTracker";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -312,6 +314,7 @@ const ResumeAnalyser = () => {
               <div className="flex items-center gap-2">
                 {!showDemo && (
                   <>
+                    <ResumeAnalysisPrintView analysis={displayAnalysis} />
                     <ResumeAnalysisPDFExport analysis={displayAnalysis} />
                     {history.length >= 2 && (
                       <Button
@@ -511,11 +514,23 @@ const ResumeAnalyser = () => {
               </Card>
             </motion.div>
 
+            {/* Improvement Tracker */}
+            {history.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="max-w-3xl mx-auto"
+              >
+                <ResumeImprovementTracker history={history} />
+              </motion.div>
+            )}
+
             {/* Analysis History */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.3 }}
               className="max-w-xl mx-auto"
             >
               <ResumeAnalysisHistory
