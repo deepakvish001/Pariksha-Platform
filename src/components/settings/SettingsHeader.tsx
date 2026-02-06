@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Settings, Sun, Moon, Calendar } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "next-themes";
+import { useThemeSync } from "@/hooks/useThemeSync";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,7 +9,7 @@ import XPLevelBadge from "@/components/XPLevelBadge";
 
 const SettingsHeader = () => {
   const { user, profile } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useThemeSync();
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return user?.email?.charAt(0).toUpperCase() || "U";
