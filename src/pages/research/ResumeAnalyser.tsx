@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FileSearch, ArrowLeft, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { FileSearch, ArrowLeft, Sparkles, ChevronLeft, ChevronRight, ArrowLeftRight } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import { AnalysisSuggestions } from "@/components/resume/AnalysisSuggestions";
 import { AnalysisStrengths } from "@/components/resume/AnalysisStrengths";
 import { AnalysisKeywords } from "@/components/resume/AnalysisKeywords";
 import { ResumeAnalysisHistory } from "@/components/resume/ResumeAnalysisHistory";
+import { ResumeAnalysisPDFExport } from "@/components/resume/ResumeAnalysisPDFExport";
+import { ResumeAnalysisComparison } from "@/components/resume/ResumeAnalysisComparison";
+import { ResumeTemplateSuggestions } from "@/components/resume/ResumeTemplateSuggestions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -153,6 +156,7 @@ const ResumeAnalyser = () => {
   const navigate = useNavigate();
   const [showDemo, setShowDemo] = useState(false);
   const [demoIndex, setDemoIndex] = useState(0);
+  const [showComparison, setShowComparison] = useState(false);
   const {
     isUploading,
     isAnalyzing,
@@ -305,11 +309,28 @@ const ResumeAnalyser = () => {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 {showDemo ? "Exit Demo" : "Analyze Another Resume"}
               </Button>
-              {showDemo && (
-                <Button onClick={() => navigate("/login")}>
-                  Sign In to Analyze Your Resume
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {!showDemo && (
+                  <>
+                    <ResumeAnalysisPDFExport analysis={displayAnalysis} />
+                    {history.length >= 2 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowComparison(!showComparison)}
+                        className="gap-2"
+                      >
+                        <ArrowLeftRight className="h-4 w-4" />
+                        {showComparison ? "Hide Comparison" : "Compare"}
+                      </Button>
+                    )}
+                  </>
+                )}
+                {showDemo && (
+                  <Button onClick={() => navigate("/login")}>
+                    Sign In to Analyze Your Resume
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Demo Banner with Scenario Toggle */}
@@ -396,6 +417,19 @@ const ResumeAnalyser = () => {
               </div>
             </div>
 
+            {/* Comparison Section */}
+            {showComparison && !showDemo && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <ResumeAnalysisComparison
+                  analyses={history}
+                  onClose={() => setShowComparison(false)}
+                />
+              </motion.div>
+            )}
+
             {/* Suggestions and Strengths */}
             <div className="grid gap-6 md:grid-cols-2">
               <AnalysisSuggestions suggestions={displayAnalysis.suggestions} />
@@ -404,6 +438,17 @@ const ResumeAnalyser = () => {
                 <AnalysisKeywords keywords={displayAnalysis.keywords_found} />
               </div>
             </div>
+
+            {/* Template Suggestions based on analysis */}
+            {!showDemo && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <ResumeTemplateSuggestions analysis={displayAnalysis} />
+              </motion.div>
+            )}
 
             {/* CTA for demo users */}
             {showDemo && (
