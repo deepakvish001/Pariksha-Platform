@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FileSearch, ArrowLeft, Sparkles } from "lucide-react";
+import { FileSearch, ArrowLeft, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useResumeAnalysis, AnalysisResult } from "@/hooks/useResumeAnalysis";
 import { ResumeUploadZone } from "@/components/resume/ResumeUploadZone";
 import { AnalysisScoreCard } from "@/components/resume/AnalysisScoreCard";
@@ -15,47 +16,143 @@ import { ResumeAnalysisHistory } from "@/components/resume/ResumeAnalysisHistory
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-// Demo analysis data for non-logged-in users
-const DEMO_ANALYSIS: AnalysisResult = {
-  id: "demo",
-  user_id: "demo",
-  file_name: "sample_resume.pdf",
-  file_url: "",
-  overall_score: 72,
-  ats_score: 85,
-  keyword_score: 68,
-  format_score: 78,
-  content_score: 65,
-  suggestions: [
-    { text: "Add quantifiable achievements with specific metrics (e.g., 'Increased sales by 25%')", priority: "high" },
-    { text: "Include more industry-specific keywords relevant to your target role", priority: "high" },
-    { text: "Add a professional summary section at the top of your resume", priority: "medium" },
-    { text: "Consider adding relevant certifications or courses", priority: "medium" },
-    { text: "Use more action verbs to start bullet points (Led, Developed, Implemented)", priority: "low" },
-  ],
-  strengths: [
-    "Clear and professional formatting",
-    "Good use of section headers",
-    "Consistent date formatting throughout",
-    "Education section is well-structured",
-  ],
-  keywords_found: [
-    "Project Management",
-    "Data Analysis",
-    "Team Leadership",
-    "Python",
-    "SQL",
-    "Agile",
-    "Communication",
-  ],
-  summary: "Your resume has a solid foundation with good formatting and structure. To improve your score, focus on adding quantifiable achievements and industry-specific keywords. Consider including a professional summary to make a stronger first impression.",
-  created_at: new Date().toISOString(),
-};
+// Demo scenarios for non-logged-in users
+interface DemoScenario {
+  id: string;
+  label: string;
+  description: string;
+  badgeColor: string;
+  analysis: AnalysisResult;
+}
+
+const DEMO_SCENARIOS: DemoScenario[] = [
+  {
+    id: "excellent",
+    label: "Excellent Resume",
+    description: "Senior developer with strong achievements",
+    badgeColor: "bg-green-500/10 text-green-500 border-green-500/20",
+    analysis: {
+      id: "demo-excellent",
+      user_id: "demo",
+      file_name: "senior_developer_resume.pdf",
+      file_url: "",
+      overall_score: 92,
+      ats_score: 95,
+      keyword_score: 90,
+      format_score: 94,
+      content_score: 88,
+      suggestions: [
+        { text: "Consider adding a link to your GitHub portfolio or personal website", priority: "low" },
+        { text: "You could add 1-2 more industry certifications to strengthen your profile", priority: "low" },
+        { text: "Consider tailoring the summary for each specific job application", priority: "medium" },
+        { text: "Add volunteer work or side projects to show broader interests", priority: "low" },
+        { text: "Include languages spoken if applying to international companies", priority: "low" },
+      ],
+      strengths: [
+        "Excellent use of quantifiable achievements (increased revenue by 40%)",
+        "Strong action verbs throughout (Led, Architected, Optimized)",
+        "Clear career progression and growth trajectory",
+        "Well-organized sections with consistent formatting",
+        "Relevant technical skills prominently displayed",
+      ],
+      keywords_found: [
+        "System Architecture",
+        "Team Leadership",
+        "React",
+        "Node.js",
+        "AWS",
+        "Microservices",
+        "CI/CD",
+        "Agile",
+        "Scrum",
+        "Performance Optimization",
+      ],
+      summary: "Outstanding resume! Your document excels in all key areas. The quantifiable achievements, clear structure, and relevant keywords make this highly effective for both ATS systems and human recruiters. Minor enhancements could include portfolio links and certifications.",
+      created_at: new Date().toISOString(),
+    },
+  },
+  {
+    id: "average",
+    label: "Average Resume",
+    description: "Mid-level professional with room to improve",
+    badgeColor: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+    analysis: {
+      id: "demo-average",
+      user_id: "demo",
+      file_name: "marketing_specialist_resume.pdf",
+      file_url: "",
+      overall_score: 68,
+      ats_score: 75,
+      keyword_score: 62,
+      format_score: 72,
+      content_score: 58,
+      suggestions: [
+        { text: "Add quantifiable achievements with specific metrics (e.g., 'Increased engagement by 35%')", priority: "high" },
+        { text: "Include more industry-specific keywords like 'SEO', 'Google Analytics', 'A/B Testing'", priority: "high" },
+        { text: "Add a professional summary section at the top highlighting key strengths", priority: "medium" },
+        { text: "Consider adding relevant certifications (Google Ads, HubSpot, etc.)", priority: "medium" },
+        { text: "Use more impactful action verbs to start bullet points", priority: "low" },
+      ],
+      strengths: [
+        "Clear and professional formatting",
+        "Good use of section headers",
+        "Consistent date formatting throughout",
+        "Education section is well-structured",
+      ],
+      keywords_found: [
+        "Marketing",
+        "Social Media",
+        "Content Creation",
+        "Campaign Management",
+        "Email Marketing",
+        "Brand Strategy",
+      ],
+      summary: "Your resume has a solid foundation with good formatting and structure. To significantly improve your score, focus on adding quantifiable achievements and industry-specific keywords. A professional summary would strengthen your first impression.",
+      created_at: new Date().toISOString(),
+    },
+  },
+  {
+    id: "needs-work",
+    label: "Needs Improvement",
+    description: "Entry-level with common mistakes",
+    badgeColor: "bg-red-500/10 text-red-500 border-red-500/20",
+    analysis: {
+      id: "demo-needs-work",
+      user_id: "demo",
+      file_name: "fresh_graduate_resume.pdf",
+      file_url: "",
+      overall_score: 42,
+      ats_score: 45,
+      keyword_score: 35,
+      format_score: 52,
+      content_score: 38,
+      suggestions: [
+        { text: "Remove the objective statement and replace with a professional summary", priority: "high" },
+        { text: "Add specific achievements instead of just listing job duties", priority: "high" },
+        { text: "Include relevant technical skills and tools you've used", priority: "high" },
+        { text: "Remove personal information like age, marital status, and photo", priority: "high" },
+        { text: "Add relevant coursework, projects, or internships to demonstrate experience", priority: "medium" },
+      ],
+      strengths: [
+        "Contact information is clearly visible",
+        "Education section includes GPA (good for recent grads)",
+      ],
+      keywords_found: [
+        "Bachelor's Degree",
+        "Microsoft Office",
+        "Communication",
+      ],
+      summary: "This resume needs significant improvements to be competitive. The main issues are: lack of quantifiable achievements, missing industry keywords, and outdated formatting (objective statement). Focus on showcasing projects, internships, and specific skills relevant to your target role.",
+      created_at: new Date().toISOString(),
+    },
+  },
+];
 
 const ResumeAnalyser = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showDemo, setShowDemo] = useState(false);
+  const [demoIndex, setDemoIndex] = useState(0);
   const {
     isUploading,
     isAnalyzing,
@@ -77,10 +174,21 @@ const ResumeAnalyser = () => {
 
   const handleExitDemo = () => {
     setShowDemo(false);
+    setDemoIndex(0);
+  };
+
+  const currentDemoScenario = DEMO_SCENARIOS[demoIndex];
+
+  const handlePrevDemo = () => {
+    setDemoIndex((prev) => (prev === 0 ? DEMO_SCENARIOS.length - 1 : prev - 1));
+  };
+
+  const handleNextDemo = () => {
+    setDemoIndex((prev) => (prev === DEMO_SCENARIOS.length - 1 ? 0 : prev + 1));
   };
 
   // Determine which analysis to show (demo or real)
-  const displayAnalysis = showDemo ? DEMO_ANALYSIS : currentAnalysis;
+  const displayAnalysis = showDemo ? currentDemoScenario.analysis : currentAnalysis;
 
   // Not logged in state - show demo option
   if (!user && !showDemo) {
@@ -204,21 +312,61 @@ const ResumeAnalyser = () => {
               )}
             </div>
 
-            {/* Demo Banner */}
+            {/* Demo Banner with Scenario Toggle */}
             {showDemo && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
                 <Card className="border-primary/50 bg-primary/5">
-                  <CardContent className="flex items-center gap-3 py-4">
-                    <Sparkles className="h-5 w-5 text-primary shrink-0" />
-                    <div>
-                      <p className="font-medium text-sm">Demo Mode</p>
-                      <p className="text-xs text-muted-foreground">
-                        This is a sample analysis. Sign in to analyze your own resume!
-                      </p>
+                  <CardContent className="py-4">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <div className="flex items-center gap-3">
+                        <Sparkles className="h-5 w-5 text-primary shrink-0" />
+                        <div>
+                          <p className="font-medium text-sm">Demo Mode</p>
+                          <p className="text-xs text-muted-foreground">
+                            Browse different resume examples to see how scoring works
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Scenario Selector */}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={handlePrevDemo}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        
+                        <div className="flex flex-col items-center min-w-[140px]">
+                          <Badge variant="outline" className={currentDemoScenario.badgeColor}>
+                            {currentDemoScenario.label}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground mt-1">
+                            {demoIndex + 1} of {DEMO_SCENARIOS.length}
+                          </span>
+                        </div>
+                        
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={handleNextDemo}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
+                    
+                    {/* Scenario Description */}
+                    <p className="text-xs text-muted-foreground mt-3 text-center sm:text-left">
+                      <span className="font-medium">{currentDemoScenario.label}:</span>{" "}
+                      {currentDemoScenario.description}
+                    </p>
                   </CardContent>
                 </Card>
               </motion.div>
