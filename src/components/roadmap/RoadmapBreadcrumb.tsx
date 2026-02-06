@@ -15,6 +15,7 @@ interface RoadmapBreadcrumbProps {
   currentPhase: number;
   totalPhases: number;
   onNavigate?: (id: string) => void;
+  sectionRefs?: React.MutableRefObject<Map<string, HTMLDivElement>>;
   className?: string;
 }
 
@@ -23,11 +24,29 @@ const RoadmapBreadcrumb: React.FC<RoadmapBreadcrumbProps> = ({
   currentPhase,
   totalPhases,
   onNavigate,
+  sectionRefs,
   className,
 }) => {
   // Show only relevant breadcrumbs (max 3 items for mobile)
   const visibleItems = items.slice(-3);
   const hasHiddenItems = items.length > 3;
+
+  // Smooth scroll to section with highlight effect
+  const handleNavigate = (id: string) => {
+    onNavigate?.(id);
+    
+    if (sectionRefs?.current) {
+      const sectionElement = sectionRefs.current.get(id);
+      if (sectionElement) {
+        sectionElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Brief highlight effect
+        sectionElement.classList.add("ring-2", "ring-primary", "ring-offset-4", "rounded-2xl");
+        setTimeout(() => {
+          sectionElement.classList.remove("ring-2", "ring-primary", "ring-offset-4", "rounded-2xl");
+        }, 2000);
+      }
+    }
+  };
 
   return (
     <motion.nav
@@ -42,7 +61,7 @@ const RoadmapBreadcrumb: React.FC<RoadmapBreadcrumbProps> = ({
     >
       {/* Home/start indicator */}
       <button
-        onClick={() => onNavigate?.(items[0]?.id)}
+        onClick={() => handleNavigate(items[0]?.id)}
         className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
       >
         <Home className="h-3 w-3" />
@@ -60,7 +79,7 @@ const RoadmapBreadcrumb: React.FC<RoadmapBreadcrumbProps> = ({
         <React.Fragment key={item.id}>
           <ChevronRight className="h-3 w-3 text-muted-foreground/50 flex-shrink-0" />
           <button
-            onClick={() => onNavigate?.(item.id)}
+            onClick={() => handleNavigate(item.id)}
             className={cn(
               "flex items-center gap-1 px-2 py-1 rounded-md transition-colors whitespace-nowrap",
               item.isActive 
