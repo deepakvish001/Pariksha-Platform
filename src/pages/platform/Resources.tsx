@@ -1,85 +1,173 @@
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Search, Filter, ExternalLink, Star } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-
-const resources = [
-  { title: "Tech Interview Handbook", type: "Guide", rating: 4.9, category: "Interview" },
-  { title: "System Design Primer", type: "Repository", rating: 4.8, category: "System Design" },
-  { title: "Coding Interview University", type: "Course", rating: 4.7, category: "DSA" },
-  { title: "LeetCode Patterns", type: "Guide", rating: 4.6, category: "DSA" },
-  { title: "Grokking Algorithms", type: "Book", rating: 4.5, category: "Algorithms" },
-  { title: "Clean Code", type: "Book", rating: 4.8, category: "Best Practices" },
-];
+import AstraBackground from "@/components/astra/AstraBackground";
+import ResourcesHeader from "@/components/resources/ResourcesHeader";
+import ResourcesFilterBar from "@/components/resources/ResourcesFilterBar";
+import ResourceCard from "@/components/resources/ResourceCard";
+import ResourcesEmptyState from "@/components/resources/ResourcesEmptyState";
+import { learningResources, resourceCategories, ResourceType } from "@/data/learningResourcesData";
 
 const Resources = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeType, setActiveType] = useState<ResourceType>("All");
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem("resource-favorites");
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
+  const handleToggleFavorite = (id: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      localStorage.setItem("resource-favorites", JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const filteredResources = useMemo(() => {
+    return learningResources.filter((resource) => {
+      // Type filter
+      if (activeType !== "All" && resource.type !== activeType) {
+        return false;
+      }
+
+      // Favorites filter
+      if (showFavoritesOnly && !favorites.has(resource.id)) {
+        return false;
+      }
+
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          resource.title.toLowerCase().includes(query) ||
+          resource.description.toLowerCase().includes(query) ||
+          resource.category.toLowerCase().includes(query) ||
+          resource.tags.some((tag) => tag.toLowerCase().includes(query))
+        );
+      }
+
+      return true;
+    });
+  }, [searchQuery, activeType, showFavoritesOnly, favorites]);
+
+  const featuredResources = useMemo(() => {
+    return learningResources.filter((r) => r.isFeatured).slice(0, 3);
+  }, []);
+
+  const uniqueCategories = resourceCategories.filter((c) => c !== "All");
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="flex h-16 items-center gap-4 px-6">
-          <SidebarTrigger />
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-orange flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Resources</h1>
-              <p className="text-sm text-muted-foreground">Curated learning materials</p>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen relative">
+      {/* Reuse the Astra background */}
+      <AstraBackground />
 
-      <main className="p-6 md:p-8 space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row gap-4"
-        >
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search resources..." className="pl-10" />
-          </div>
-          <Button variant="outline" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
-        </motion.div>
+      {/* Content */}
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <ResourcesHeader
+          totalResources={learningResources.length}
+          totalCategories={uniqueCategories.length}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {resources.map((resource, index) => (
-            <motion.div
-              key={resource.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="hover:shadow-lg transition-all cursor-pointer group">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline">{resource.type}</Badge>
-                    <span className="flex items-center gap-1 text-sm text-yellow-500">
-                      <Star className="h-4 w-4 fill-current" />
-                      {resource.rating}
-                    </span>
-                  </div>
-                  <CardTitle className="text-lg">{resource.title}</CardTitle>
-                  <CardDescription>{resource.category}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" className="w-full gap-2">
-                    <ExternalLink className="h-4 w-4" />
-                    View Resource
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </main>
+        <ResourcesFilterBar
+          activeType={activeType}
+          onTypeChange={setActiveType}
+          showFavoritesOnly={showFavoritesOnly}
+          onToggleFavorites={() => setShowFavoritesOnly(!showFavoritesOnly)}
+          favoritesCount={favorites.size}
+        />
+
+        <main className="flex-1 p-6">
+          {/* Featured section */}
+          {!searchQuery && activeType === "All" && !showFavoritesOnly && (
+            <section className="mb-8">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 mb-4"
+              >
+                <div className="h-1 w-1 rounded-full bg-primary" />
+                <h2 className="text-lg font-semibold text-white">Featured Resources</h2>
+              </motion.div>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {featuredResources.map((resource, index) => (
+                  <ResourceCard
+                    key={resource.id}
+                    resource={resource}
+                    index={index}
+                    isFavorite={favorites.has(resource.id)}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* All resources */}
+          <section>
+            {(searchQuery || activeType !== "All" || showFavoritesOnly) && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 mb-4"
+              >
+                <div className="h-1 w-1 rounded-full bg-primary" />
+                <h2 className="text-lg font-semibold text-white">
+                  {showFavoritesOnly
+                    ? "Favorite Resources"
+                    : activeType !== "All"
+                    ? `${activeType}s`
+                    : "Search Results"}
+                </h2>
+                <span className="text-sm text-white/40">({filteredResources.length})</span>
+              </motion.div>
+            )}
+
+            {!searchQuery && activeType === "All" && !showFavoritesOnly && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 mb-4"
+              >
+                <div className="h-1 w-1 rounded-full bg-white/40" />
+                <h2 className="text-lg font-semibold text-white">All Resources</h2>
+              </motion.div>
+            )}
+
+            {filteredResources.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {filteredResources
+                  .filter((r) => !r.isFeatured || searchQuery || activeType !== "All" || showFavoritesOnly)
+                  .map((resource, index) => (
+                    <ResourceCard
+                      key={resource.id}
+                      resource={resource}
+                      index={index}
+                      isFavorite={favorites.has(resource.id)}
+                      onToggleFavorite={handleToggleFavorite}
+                    />
+                  ))}
+              </div>
+            ) : (
+              <ResourcesEmptyState
+                searchQuery={searchQuery}
+                onClearSearch={() => {
+                  setSearchQuery("");
+                  setActiveType("All");
+                  setShowFavoritesOnly(false);
+                }}
+              />
+            )}
+          </section>
+        </main>
+      </div>
     </div>
   );
 };
