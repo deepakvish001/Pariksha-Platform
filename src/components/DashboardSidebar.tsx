@@ -78,13 +78,17 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import NotificationBell from "@/components/NotificationBell";
 
-// Primary navigation - Core dashboard features
-const primaryNavItems = [
+// Home section - Main entry points
+const homeNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
-  { title: "Profile", url: "/dashboard/profile", icon: User },
+];
+
+// Progress section - Track your journey
+const progressNavItems = [
   { title: "Achievements", url: "/dashboard/achievements", icon: Trophy },
   { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
+  { title: "Profile", url: "/dashboard/profile", icon: User },
 ];
 
 // Learning section groups - ordered by learning progression
@@ -380,11 +384,47 @@ export function DashboardSidebar() {
         </SidebarHeader>
 
         <SidebarContent className="px-3 py-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3">
-          {/* Primary Navigation */}
+          {/* Home Section */}
           <SidebarGroup className="space-y-1">
+            {!isCollapsed && (
+              <p className="px-3 py-1 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">
+                Home
+              </p>
+            )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                {primaryNavItems.map((item) => (
+                {homeNavItems.map((item) => (
+                  <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.url}
+                      tooltip={item.title}
+                      size="lg"
+                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
+                    >
+                      <Link to={item.url} className="group-data-[collapsible=icon]:justify-center">
+                        <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                        <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
+
+          {/* Progress Section */}
+          <SidebarGroup className="space-y-1">
+            {!isCollapsed && (
+              <p className="px-3 py-1 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">
+                Progress
+              </p>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
+                {progressNavItems.map((item) => (
                   <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                     <SidebarMenuButton
                       asChild
