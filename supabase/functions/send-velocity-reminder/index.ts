@@ -81,6 +81,19 @@ const handler = async (req: Request): Promise<Response> => {
       const isBehind = completedThisWeek < expectedProgress * 0.5;
 
       if (isBehind && dayOfWeek >= 3) { // Only notify mid-week (Wednesday+)
+        // Check user's notification preferences
+        const { data: userPrefs } = await supabase
+          .from("user_profiles_extended")
+          .select("notify_velocity_reminder, email_notifications_enabled")
+          .eq("user_id", goal.user_id)
+          .single();
+
+        // Skip if user has disabled velocity reminders
+        if (userPrefs?.notify_velocity_reminder === false) {
+          console.log(`Skipping velocity reminder for user ${goal.user_id} - disabled in preferences`);
+          continue;
+        }
+
         // Get user's email
         const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(goal.user_id);
         
@@ -112,8 +125,8 @@ const handler = async (req: Request): Promise<Response> => {
           },
         });
 
-        // Send email if Resend is configured
-        if (resendApiKey) {
+        // Send email if Resend is configured and user has email notifications enabled
+        if (resendApiKey && userPrefs?.email_notifications_enabled !== false) {
           const resend = new Resend(resendApiKey);
           
           try {

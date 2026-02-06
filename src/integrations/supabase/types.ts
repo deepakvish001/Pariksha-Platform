@@ -610,6 +610,12 @@ export type Database = {
           marketing_emails_enabled: boolean | null
           mobile_number: string | null
           new_feature_alerts_enabled: boolean | null
+          notify_achievement_unlock: boolean | null
+          notify_goal_milestone: boolean | null
+          notify_new_follower: boolean | null
+          notify_rare_achievement: boolean | null
+          notify_streak_reminder: boolean | null
+          notify_velocity_reminder: boolean | null
           occupation: string | null
           onboarding_completed: boolean | null
           other_description: string | null
@@ -662,6 +668,12 @@ export type Database = {
           marketing_emails_enabled?: boolean | null
           mobile_number?: string | null
           new_feature_alerts_enabled?: boolean | null
+          notify_achievement_unlock?: boolean | null
+          notify_goal_milestone?: boolean | null
+          notify_new_follower?: boolean | null
+          notify_rare_achievement?: boolean | null
+          notify_streak_reminder?: boolean | null
+          notify_velocity_reminder?: boolean | null
           occupation?: string | null
           onboarding_completed?: boolean | null
           other_description?: string | null
@@ -714,6 +726,12 @@ export type Database = {
           marketing_emails_enabled?: boolean | null
           mobile_number?: string | null
           new_feature_alerts_enabled?: boolean | null
+          notify_achievement_unlock?: boolean | null
+          notify_goal_milestone?: boolean | null
+          notify_new_follower?: boolean | null
+          notify_rare_achievement?: boolean | null
+          notify_streak_reminder?: boolean | null
+          notify_velocity_reminder?: boolean | null
           occupation?: string | null
           onboarding_completed?: boolean | null
           other_description?: string | null
