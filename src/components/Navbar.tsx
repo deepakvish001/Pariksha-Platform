@@ -87,9 +87,9 @@ const Navbar = () => {
             className="flex items-center gap-2"
           >
             <div className="w-8 h-8 rounded-lg bg-gradient-orange flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">U</span>
+              <span className="text-primary-foreground font-bold text-sm">B</span>
             </div>
-            <span className="text-xl font-bold text-foreground">UniDash</span>
+            <span className="text-xl font-bold text-foreground">Byteskill</span>
           </a>
 
           {/* Desktop Navigation */}

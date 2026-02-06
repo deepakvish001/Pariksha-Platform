@@ -48,7 +48,7 @@ const MobileFAB = ({ onOpenGoals }: MobileFABProps) => {
     },
     {
       icon: <Sparkles className="h-5 w-5" />,
-      label: "Astra AI",
+      label: "Byteskill AI",
       onClick: () => {
         navigate("/platform/ai");
         setIsOpen(false);
@@ -72,7 +72,7 @@ const MobileFAB = ({ onOpenGoals }: MobileFABProps) => {
   const filteredActions = actions.filter((action) => {
     if (action.label === "Dashboard" && location.pathname === "/dashboard") return false;
     if (action.label === "Sheets" && location.pathname === "/dashboard/sheets") return false;
-    if (action.label === "Astra AI" && location.pathname === "/platform/ai") return false;
+    if (action.label === "Byteskill AI" && location.pathname === "/platform/ai") return false;
     return true;
   });
 

@@ -139,7 +139,7 @@ const researchItems = [
 
 // Tools & Settings
 const platformItems = [
-  { title: "Astra AI", url: "/platform/ai", icon: Sparkles },
+  { title: "Byteskill AI", url: "/platform/ai", icon: Sparkles },
   { title: "Resources", url: "/platform/resources", icon: BookOpen },
   { title: "Collections", url: "/platform/collections", icon: FolderOpen },
 ];

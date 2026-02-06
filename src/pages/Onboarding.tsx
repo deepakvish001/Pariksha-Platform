@@ -304,7 +304,7 @@ const Onboarding = () => {
     }
 
     if (!referralSource) {
-      newErrors.referralSource = "Please tell us where you found UniDash";
+      newErrors.referralSource = "Please tell us where you found Byteskill";
     }
 
     // Validate phone number
@@ -404,7 +404,7 @@ const Onboarding = () => {
       await refreshExtendedProfile();
       toast({
         title: "Profile completed!",
-        description: "Welcome to UniDash!",
+        description: "Welcome to Byteskill!",
       });
       navigate("/dashboard", { replace: true });
     }
@@ -423,7 +423,7 @@ const Onboarding = () => {
           {/* Header */}
           <div className="mb-8 flex items-start justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Welcome to UniDash</h1>
+              <h1 className="text-2xl font-bold text-foreground">Welcome to Byteskill</h1>
               <p className="text-muted-foreground mt-1">
                 Let's get you onboarded to customize your experience.
               </p>
@@ -666,7 +666,7 @@ const Onboarding = () => {
 
             {/* Referral Source */}
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Where did you find UniDash *</Label>
+              <Label className="text-muted-foreground">Where did you find Byteskill *</Label>
               <Select value={referralSource} onValueChange={setReferralSource}>
                 <SelectTrigger className={cn(
                   "h-12 bg-muted/50 border-border w-full md:w-1/2",
@@ -739,7 +739,7 @@ const Onboarding = () => {
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  "Proceed to UniDash"
+                  "Proceed to Byteskill"
                 )}
               </Button>
             </div>
@@ -753,8 +753,8 @@ const Onboarding = () => {
             </div>
             <p>
               Something went wrong? Please email us at{" "}
-              <a href="mailto:support@unidash.com" className="text-primary hover:underline">
-                support@unidash.com
+              <a href="mailto:support@byteskill.com" className="text-primary hover:underline">
+                support@byteskill.com
               </a>
             </p>
           </div>

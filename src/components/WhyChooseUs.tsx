@@ -5,37 +5,37 @@ import ScrollReveal from "./ScrollReveal";
 const comparisons = [
   {
     feature: "Student-focused design",
-    unidash: true,
+    byteskill: true,
     others: false,
   },
   {
     feature: "Built for Indian academic system",
-    unidash: true,
+    byteskill: true,
     others: false,
   },
   {
     feature: "Streak & gamification",
-    unidash: true,
+    byteskill: true,
     others: "Partial",
   },
   {
     feature: "Advanced analytics",
-    unidash: true,
+    byteskill: true,
     others: "Partial",
   },
   {
     feature: "Affordable pricing in INR",
-    unidash: true,
+    byteskill: true,
     others: false,
   },
   {
     feature: "Placement preparation tools",
-    unidash: true,
+    byteskill: true,
     others: false,
   },
   {
     feature: "Offline mode",
-    unidash: true,
+    byteskill: true,
     others: true,
   },
 ];
@@ -43,7 +43,7 @@ const comparisons = [
 const reasons = [
   {
     title: "Built by Students, for Students",
-    description: "We understand the unique challenges of Indian college life — from placement prep to exam stress. UniDash is designed with your journey in mind.",
+    description: "We understand the unique challenges of Indian college life — from placement prep to exam stress. Byteskill is designed with your journey in mind.",
     icon: "🎓",
   },
   {
@@ -68,7 +68,7 @@ const WhyChooseUs = () => {
     <section className="py-24 bg-secondary/20">
       <div className="section-container">
         <ScrollReveal>
-          <h2 className="section-title">Why choose UniDash?</h2>
+          <h2 className="section-title">Why choose Byteskill?</h2>
           <p className="section-subtitle">
             See how we compare to generic productivity tools
           </p>
@@ -81,7 +81,7 @@ const WhyChooseUs = () => {
               {/* Header */}
               <div className="grid grid-cols-3 bg-secondary/50 px-6 py-4">
                 <span className="text-sm font-semibold text-muted-foreground">Feature</span>
-                <span className="text-sm font-semibold text-center gradient-text">UniDash</span>
+                <span className="text-sm font-semibold text-center gradient-text">Byteskill</span>
                 <span className="text-sm font-semibold text-center text-muted-foreground">Others</span>
               </div>
               

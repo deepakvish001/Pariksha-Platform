@@ -40,7 +40,7 @@ const AstraInputArea = ({ onSubmit, isLoading }: AstraInputAreaProps) => {
           <div className="relative flex gap-3 p-2 rounded-2xl bg-white/[0.03] border border-white/[0.05] group-focus-within:border-white/[0.1] transition-colors">
             <Input
               ref={inputRef}
-              placeholder="Ask Astra anything about your career..."
+              placeholder="Ask Byteskill AI anything about your career..."
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               disabled={isLoading}
@@ -67,7 +67,7 @@ const AstraInputArea = ({ onSubmit, isLoading }: AstraInputAreaProps) => {
         </motion.div>
         
         <p className="text-center text-white/30 text-xs mt-3">
-          Astra can make mistakes. Consider checking important information.
+          Byteskill AI can make mistakes. Consider checking important information.
         </p>
       </form>
     </div>
