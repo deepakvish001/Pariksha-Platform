@@ -65,15 +65,15 @@ export function ActivityStats({ stats, loading }: ActivityStatsProps) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="overflow-hidden">
+          <Card key={i} className="overflow-hidden border-white/5 bg-white/[0.02] backdrop-blur-xl">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div className="space-y-3">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-9 w-20" />
-                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-4 w-24 bg-white/10" />
+                  <Skeleton className="h-9 w-20 bg-white/10" />
+                  <Skeleton className="h-3 w-16 bg-white/10" />
                 </div>
-                <Skeleton className="h-12 w-12 rounded-xl" />
+                <Skeleton className="h-12 w-12 rounded-xl bg-white/10" />
               </div>
             </CardContent>
           </Card>
@@ -104,10 +104,10 @@ export function ActivityStats({ stats, loading }: ActivityStatsProps) {
           >
             <Card className={`
               relative overflow-hidden group cursor-default
-              border-border/50 bg-card/80 backdrop-blur-sm
-              hover:shadow-xl ${config.bgGlow}
+              border-white/5 bg-white/[0.02] backdrop-blur-xl ring-1 ring-white/5
+              hover:shadow-2xl hover:shadow-${config.key === 'weeklyXP' ? 'primary' : config.key === 'problemsSolved' ? 'emerald-500' : config.key === 'quizzesCompleted' ? 'blue-500' : 'violet-500'}/20
               transition-all duration-500 ease-out
-              hover:-translate-y-1
+              hover:-translate-y-1 hover:bg-white/[0.04]
             `}>
               {/* Decorative gradient line */}
               <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient} opacity-80`} />
@@ -115,18 +115,18 @@ export function ActivityStats({ stats, loading }: ActivityStatsProps) {
               {/* Subtle background glow on hover */}
               <div className={`
                 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500
-                bg-gradient-to-br ${config.lightBg}
+                bg-gradient-to-br from-white/[0.02] to-transparent
               `} />
 
               <CardContent className="relative p-5">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">
+                    <p className="text-sm font-medium text-white/50">
                       {config.label}
                     </p>
                     <div className="flex items-baseline gap-1">
                       <motion.span 
-                        className="text-3xl font-bold tabular-nums text-foreground"
+                        className="text-3xl font-bold tabular-nums text-white"
                         key={value}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -134,14 +134,14 @@ export function ActivityStats({ stats, loading }: ActivityStatsProps) {
                         {value.toLocaleString()}
                       </motion.span>
                       {config.suffix && (
-                        <span className="text-lg font-medium text-muted-foreground">
+                        <span className="text-lg font-medium text-white/40">
                           {config.suffix}
                         </span>
                       )}
                     </div>
                     <div className={`
                       flex items-center gap-1.5 text-sm font-medium
-                      ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}
+                      ${isPositive ? "text-emerald-400" : "text-red-400"}
                     `}>
                       {isPositive ? (
                         <TrendingUp className="h-4 w-4" />
@@ -149,7 +149,7 @@ export function ActivityStats({ stats, loading }: ActivityStatsProps) {
                         <TrendingDown className="h-4 w-4" />
                       )}
                       <span>{isPositive ? "+" : ""}{change}</span>
-                      <span className="text-muted-foreground font-normal">this week</span>
+                      <span className="text-white/40 font-normal">this week</span>
                     </div>
                   </div>
 
