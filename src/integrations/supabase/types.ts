@@ -103,6 +103,48 @@ export type Database = {
         }
         Relationships: []
       }
+      outreach_favorites: {
+        Row: {
+          created_at: string | null
+          id: string
+          template_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          template_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          template_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      outreach_usage: {
+        Row: {
+          copied_at: string | null
+          id: string
+          template_id: string
+          user_id: string
+        }
+        Insert: {
+          copied_at?: string | null
+          id?: string
+          template_id: string
+          user_id: string
+        }
+        Update: {
+          copied_at?: string | null
+          id?: string
+          template_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -10,7 +10,8 @@ export const useOutreachCopy = () => {
       if (!user) return;
 
       try {
-        await supabase
+        // Use type assertion since the types file may not be updated yet
+        await (supabase as any)
           .from("outreach_usage")
           .insert({ user_id: user.id, template_id: templateId });
       } catch (error) {

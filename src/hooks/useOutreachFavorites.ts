@@ -5,6 +5,10 @@ import { toast } from "@/hooks/use-toast";
 
 const LOCAL_STORAGE_KEY = "outreach_favorites";
 
+interface OutreachFavorite {
+  template_id: string;
+}
+
 export const useOutreachFavorites = () => {
   const { user } = useAuth();
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -15,13 +19,14 @@ export const useOutreachFavorites = () => {
     setIsLoading(true);
     try {
       if (user) {
-        const { data, error } = await supabase
+        // Use type assertion since the types file may not be updated yet
+        const { data, error } = await (supabase as any)
           .from("outreach_favorites")
           .select("template_id")
           .eq("user_id", user.id);
 
         if (error) throw error;
-        setFavorites(data?.map((f) => f.template_id) || []);
+        setFavorites((data as OutreachFavorite[])?.map((f) => f.template_id) || []);
       } else {
         const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
         setFavorites(stored ? JSON.parse(stored) : []);
@@ -49,7 +54,7 @@ export const useOutreachFavorites = () => {
       try {
         if (user) {
           if (isCurrentlyFavorite) {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
               .from("outreach_favorites")
               .delete()
               .eq("user_id", user.id)
@@ -62,7 +67,7 @@ export const useOutreachFavorites = () => {
               description: "Template removed from your saved collection.",
             });
           } else {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
               .from("outreach_favorites")
               .insert({ user_id: user.id, template_id: templateId });
 
