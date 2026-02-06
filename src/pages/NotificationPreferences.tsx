@@ -31,6 +31,13 @@ interface NotificationSettings {
   weekly_digest_enabled: boolean;
   new_feature_alerts_enabled: boolean;
   marketing_emails_enabled: boolean;
+  // Per-type preferences
+  notify_velocity_reminder: boolean;
+  notify_achievement_unlock: boolean;
+  notify_new_follower: boolean;
+  notify_goal_milestone: boolean;
+  notify_streak_reminder: boolean;
+  notify_rare_achievement: boolean;
 }
 
 const NotificationPreferences = () => {
@@ -43,6 +50,12 @@ const NotificationPreferences = () => {
     weekly_digest_enabled: true,
     new_feature_alerts_enabled: true,
     marketing_emails_enabled: false,
+    notify_velocity_reminder: true,
+    notify_achievement_unlock: true,
+    notify_new_follower: true,
+    notify_goal_milestone: true,
+    notify_streak_reminder: true,
+    notify_rare_achievement: true,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -53,7 +66,18 @@ const NotificationPreferences = () => {
 
       const { data, error } = await supabase
         .from("user_profiles_extended")
-        .select("email_notifications_enabled, weekly_digest_enabled, new_feature_alerts_enabled, marketing_emails_enabled")
+        .select(`
+          email_notifications_enabled, 
+          weekly_digest_enabled, 
+          new_feature_alerts_enabled, 
+          marketing_emails_enabled,
+          notify_velocity_reminder,
+          notify_achievement_unlock,
+          notify_new_follower,
+          notify_goal_milestone,
+          notify_streak_reminder,
+          notify_rare_achievement
+        `)
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -63,6 +87,12 @@ const NotificationPreferences = () => {
           weekly_digest_enabled: data.weekly_digest_enabled ?? true,
           new_feature_alerts_enabled: data.new_feature_alerts_enabled ?? true,
           marketing_emails_enabled: data.marketing_emails_enabled ?? false,
+          notify_velocity_reminder: data.notify_velocity_reminder ?? true,
+          notify_achievement_unlock: data.notify_achievement_unlock ?? true,
+          notify_new_follower: data.notify_new_follower ?? true,
+          notify_goal_milestone: data.notify_goal_milestone ?? true,
+          notify_streak_reminder: data.notify_streak_reminder ?? true,
+          notify_rare_achievement: data.notify_rare_achievement ?? true,
         });
       }
       setIsLoading(false);
@@ -99,7 +129,7 @@ const NotificationPreferences = () => {
 
   const notificationTypes = [
     {
-      id: "velocity_reminder",
+      id: "notify_velocity_reminder",
       title: "Learning Velocity Reminders",
       description: "Get notified when you're falling behind on your weekly learning goals",
       icon: TrendingUp,
@@ -107,7 +137,7 @@ const NotificationPreferences = () => {
       bgColor: "bg-orange-500/10",
     },
     {
-      id: "achievement",
+      id: "notify_achievement_unlock",
       title: "Achievement Unlocks",
       description: "Celebrate when you earn new badges and achievements",
       icon: Trophy,
@@ -115,7 +145,15 @@ const NotificationPreferences = () => {
       bgColor: "bg-amber-500/10",
     },
     {
-      id: "follower",
+      id: "notify_rare_achievement",
+      title: "Rare Achievement Alerts",
+      description: "Get notified when people you follow earn rare achievements",
+      icon: Sparkles,
+      color: "text-pink-500",
+      bgColor: "bg-pink-500/10",
+    },
+    {
+      id: "notify_new_follower",
       title: "New Followers",
       description: "Know when someone starts following your progress",
       icon: UserPlus,
@@ -123,7 +161,7 @@ const NotificationPreferences = () => {
       bgColor: "bg-blue-500/10",
     },
     {
-      id: "goal_milestone",
+      id: "notify_goal_milestone",
       title: "Goal Milestones",
       description: "Celebrate hitting roadmap completion milestones",
       icon: Target,
@@ -131,14 +169,14 @@ const NotificationPreferences = () => {
       bgColor: "bg-green-500/10",
     },
     {
-      id: "streak",
+      id: "notify_streak_reminder",
       title: "Streak Reminders",
       description: "Don't lose your learning streak - get reminded to practice",
       icon: Sparkles,
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
     },
-  ];
+  ] as const;
 
   if (isLoading) {
     return (
@@ -310,24 +348,35 @@ const NotificationPreferences = () => {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4">
-                {notificationTypes.map((type) => (
-                  <div
-                    key={type.id}
-                    className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
-                  >
-                    <div className={cn("p-2.5 rounded-lg", type.bgColor)}>
-                      <type.icon className={cn("h-5 w-5", type.color)} />
+                {notificationTypes.map((type) => {
+                  const settingKey = type.id as keyof NotificationSettings;
+                  const isEnabled = settings[settingKey] as boolean;
+                  
+                  return (
+                    <div
+                      key={type.id}
+                      className={cn(
+                        "flex items-center gap-4 p-4 rounded-lg border transition-colors",
+                        isEnabled ? "bg-card hover:bg-muted/30" : "bg-muted/20 opacity-60"
+                      )}
+                    >
+                      <div className={cn("p-2.5 rounded-lg", type.bgColor)}>
+                        <type.icon className={cn("h-5 w-5", type.color)} />
+                      </div>
+                      <div className="flex-1">
+                        <p className={cn("font-medium", !isEnabled && "text-muted-foreground")}>{type.title}</p>
+                        <p className="text-sm text-muted-foreground">{type.description}</p>
+                      </div>
+                      <Switch
+                        checked={isEnabled}
+                        onCheckedChange={(v) => setSettings((prev) => ({ ...prev, [type.id]: v }))}
+                      />
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{type.title}</p>
-                      <p className="text-sm text-muted-foreground">{type.description}</p>
-                    </div>
-                    <Check className="h-5 w-5 text-green-500" />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <p className="text-xs text-muted-foreground mt-4 text-center">
-                All notification types are enabled. Individual type controls coming soon.
+                Toggle each notification type to customize your experience
               </p>
             </CardContent>
           </Card>
