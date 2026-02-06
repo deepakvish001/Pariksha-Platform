@@ -12,6 +12,7 @@ import {
   Sparkles,
   Check,
   Info,
+  RotateCcw,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -117,6 +118,22 @@ const NotificationPreferences = () => {
     }
 
     setIsSaving(false);
+  };
+
+  const handleResetToDefaults = () => {
+    setSettings({
+      email_notifications_enabled: true,
+      weekly_digest_enabled: true,
+      new_feature_alerts_enabled: true,
+      marketing_emails_enabled: false,
+      notify_velocity_reminder: true,
+      notify_achievement_unlock: true,
+      notify_new_follower: true,
+      notify_goal_milestone: true,
+      notify_streak_reminder: true,
+      notify_rare_achievement: true,
+    });
+    toast({ title: "Reset to defaults", description: "Click 'Save Preferences' to apply changes." });
   };
 
   const handlePushToggle = async () => {
@@ -382,9 +399,18 @@ const NotificationPreferences = () => {
           </Card>
         </motion.div>
 
-        {/* Save Button */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <Button onClick={handleSave} disabled={isSaving} className="w-full" size="lg">
+        {/* Action Buttons */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex gap-3">
+          <Button 
+            variant="outline" 
+            onClick={handleResetToDefaults} 
+            className="flex-1"
+            size="lg"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Reset to Defaults
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving} className="flex-[2]" size="lg">
             {isSaving ? (
               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
             ) : (
