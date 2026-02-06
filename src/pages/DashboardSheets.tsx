@@ -8,6 +8,7 @@ import SheetsEmptyState from "@/components/sheets/SheetsEmptyState";
 import ContinueLearningSection from "@/components/sheets/ContinueLearningSection";
 import RecentlyCompletedSection from "@/components/sheets/RecentlyCompletedSection";
 import QuickStartSection from "@/components/sheets/QuickStartSection";
+import WeeklyProgressChart from "@/components/sheets/WeeklyProgressChart";
 import { useSheetProgress, calculateProgressPercentage } from "@/hooks/useSheetProgress";
 
 const sheets = [
@@ -216,20 +217,28 @@ const DashboardSheets = () => {
 
       {/* Content */}
       <main className="p-4 md:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
-        {/* Recently Completed Section */}
-        {recentlyCompletedSheets.length > 0 && (
-          <RecentlyCompletedSection sheets={recentlyCompletedSheets} />
-        )}
+        {/* Weekly Progress Chart + Continue Learning Row */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <WeeklyProgressChart />
+          </div>
+          <div className="lg:col-span-2 space-y-6">
+            {/* Recently Completed Section */}
+            {recentlyCompletedSheets.length > 0 && (
+              <RecentlyCompletedSection sheets={recentlyCompletedSheets} />
+            )}
 
-        {/* Continue Learning Section */}
-        {inProgressSheets.length > 0 && (
-          <ContinueLearningSection sheets={inProgressSheets} />
-        )}
+            {/* Continue Learning Section */}
+            {inProgressSheets.length > 0 && (
+              <ContinueLearningSection sheets={inProgressSheets} />
+            )}
 
-        {/* Quick Start Section - only show if no progress */}
-        {inProgressSheets.length === 0 && recentlyCompletedSheets.length === 0 && (
-          <QuickStartSection sheets={quickStartSheets} />
-        )}
+            {/* Quick Start Section - only show if no progress */}
+            {inProgressSheets.length === 0 && recentlyCompletedSheets.length === 0 && (
+              <QuickStartSection sheets={quickStartSheets} />
+            )}
+          </div>
+        </div>
 
         {/* Filter Bar */}
         <SheetsFilterBar
