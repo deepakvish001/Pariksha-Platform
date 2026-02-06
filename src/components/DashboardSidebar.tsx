@@ -33,6 +33,7 @@ import {
   Bell,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/hooks/useNotifications";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -229,6 +230,7 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
 
 export function DashboardSidebar() {
   const { user, profile, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
   const { state } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
@@ -286,7 +288,14 @@ export function DashboardSidebar() {
                       className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
                     >
                       <Link to={item.url} className="group-data-[collapsible=icon]:justify-center">
-                        <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                        <div className="relative">
+                          <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                          {item.title === "Notifications" && unreadCount > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                              {unreadCount > 9 ? "9+" : unreadCount}
+                            </span>
+                          )}
+                        </div>
                         <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
