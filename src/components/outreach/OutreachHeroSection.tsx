@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Send, TrendingUp, Copy, Sparkles, Zap } from "lucide-react";
-import { outreachTemplates, categoryConfigs } from "@/data/coldOutreachData";
+import { outreachTemplates } from "@/data/coldOutreachData";
 
 const OutreachHeroSection = () => {
   const totalTemplates = outreachTemplates.length;
@@ -12,25 +12,29 @@ const OutreachHeroSection = () => {
       icon: Send,
       value: totalTemplates.toString(),
       label: "Templates",
-      gradient: "from-primary to-primary/60"
+      gradient: "from-primary to-primary/60",
+      glowColor: "shadow-primary/30 dark:shadow-primary/40"
     },
     {
       icon: TrendingUp,
       value: `${highSuccessPercent}%`,
       label: "High Success",
-      gradient: "from-emerald-500 to-emerald-400"
+      gradient: "from-emerald-500 to-emerald-400",
+      glowColor: "shadow-emerald-500/30 dark:shadow-emerald-400/40"
     },
     {
       icon: Copy,
       value: "1-Click",
       label: "Copy & Customize",
-      gradient: "from-blue-500 to-blue-400"
+      gradient: "from-blue-500 to-blue-400",
+      glowColor: "shadow-blue-500/30 dark:shadow-blue-400/40"
     },
     {
       icon: Sparkles,
       value: "AI",
       label: "Personalization",
-      gradient: "from-violet-500 to-purple-400"
+      gradient: "from-violet-500 to-purple-400",
+      glowColor: "shadow-violet-500/30 dark:shadow-purple-400/40"
     }
   ];
 
@@ -38,14 +42,14 @@ const OutreachHeroSection = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl border border-border/40"
+      className="relative overflow-hidden rounded-3xl border border-border/40 dark:border-primary/20"
     >
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-background to-violet-500/10" />
+      {/* Light mode gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-violet-500/10 dark:from-primary/20 dark:via-background dark:to-orange-500/15" />
       
-      {/* Animated orbs */}
+      {/* Animated orbs - enhanced for dark mode */}
       <motion.div
-        className="absolute -top-20 -right-20 w-60 h-60 bg-primary/20 rounded-full blur-3xl"
+        className="absolute -top-20 -right-20 w-60 h-60 bg-primary/20 dark:bg-primary/30 rounded-full blur-3xl"
         animate={{ 
           scale: [1, 1.2, 1],
           opacity: [0.3, 0.5, 0.3]
@@ -53,23 +57,31 @@ const OutreachHeroSection = () => {
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute -bottom-20 -left-20 w-48 h-48 bg-violet-500/20 rounded-full blur-3xl"
+        className="absolute -bottom-20 -left-20 w-48 h-48 bg-violet-500/20 dark:bg-orange-500/25 rounded-full blur-3xl"
         animate={{ 
           scale: [1.2, 1, 1.2],
           opacity: [0.4, 0.2, 0.4]
         }}
         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
       />
+      <motion.div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 dark:bg-primary/15 rounded-full blur-3xl hidden dark:block"
+        animate={{ 
+          scale: [1, 1.1, 1],
+          opacity: [0.2, 0.4, 0.2]
+        }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      />
       
-      {/* Grid pattern */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0wIDBoNDB2NDBoLTQweiIvPjxwYXRoIGQ9Ik00MCAwdjQwaC00MHYtNDB6IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiIHN0cm9rZS13aWR0aD0iMSIvPjwvZz48L3N2Zz4=')] opacity-50" />
+      {/* Grid pattern - adjusted opacity for dark mode */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0wIDBoNDB2NDBoLTQweiIvPjxwYXRoIGQ9Ik00MCAwdjQwaC00MHYtNDB6IiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiIHN0cm9rZS13aWR0aD0iMSIvPjwvZz48L3N2Zz4=')] opacity-50 dark:opacity-30" />
       
       <div className="relative z-10 p-6 md:p-10">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
           {/* Left content */}
           <div className="space-y-4 max-w-xl">
             <motion.div 
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 text-sm text-primary dark:text-primary"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
@@ -88,7 +100,7 @@ const OutreachHeroSection = () => {
                 Cold Outreach
               </span>
               <br />
-              <span className="bg-gradient-to-r from-primary via-primary to-violet-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary via-primary to-orange-500 dark:from-primary dark:via-orange-400 dark:to-amber-400 bg-clip-text text-transparent">
                 Templates
               </span>
             </motion.h1>
@@ -112,13 +124,13 @@ const OutreachHeroSection = () => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{ delay: 0.4 + index * 0.1, type: "spring", stiffness: 200 }}
                 whileHover={{ y: -4, scale: 1.02 }}
-                className="group relative overflow-hidden rounded-2xl bg-background/60 backdrop-blur-xl border border-border/50 p-4 md:p-5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+                className={`group relative overflow-hidden rounded-2xl bg-background/60 dark:bg-background/40 backdrop-blur-xl border border-border/50 dark:border-primary/20 p-4 md:p-5 hover:border-primary/40 dark:hover:border-primary/50 hover:shadow-lg dark:hover:shadow-xl ${stat.glowColor} transition-all duration-300`}
               >
                 {/* Subtle gradient on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 dark:group-hover:opacity-10 transition-opacity duration-300`} />
                 
                 <div className="relative flex flex-col items-center text-center gap-2">
-                  <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}>
+                  <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg ${stat.glowColor}`}>
                     <stat.icon className="h-5 w-5 text-white" />
                   </div>
                   <div>
