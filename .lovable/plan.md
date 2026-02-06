@@ -1,277 +1,216 @@
 
 
-# Resume Templates Page - Modern Design Overhaul
+# Resume Analyser - Implementation Plan
 
 ## Overview
-Transform the Resume Templates page into a premium, branded experience that matches the recently redesigned Career Roadmaps pages. The goal is to create an immersive, visually polished page with enhanced filtering, template previews, and user engagement features.
 
----
+Build a fully functional AI-powered resume analyser that allows users to upload their resume (PDF/DOC/DOCX), get it analysed by AI, and receive detailed feedback with scores and actionable improvement suggestions.
 
-## Current State Analysis
+## Current State
 
-The current page has basic functionality but lacks:
-- **Visual Impact**: Simple header without brand personality or immersive design
-- **Hero Section**: Missing the animated hero treatment from other pages
-- **Template Showcase**: Basic card grid without visual polish
-- **Filter Experience**: Simple search without category filtering or quick actions
-- **Template Previews**: No visual preview of actual resume designs
-- **Statistics**: No engagement metrics (downloads, popularity, ratings)
-- **User Tracking**: No ability to mark favorites or track downloads
-- **Modern Polish**: Missing glassmorphism, micro-interactions, and premium feel
+The page currently has a static UI with:
+- A placeholder upload card (non-functional)
+- Static mock analysis criteria with hardcoded scores
+- Static quick tips
 
----
-
-## Proposed Design Improvements
-
-### 1. Immersive Hero Section
-Create a branded hero matching the Roadmaps page style:
-
-- **Animated Background**: Floating gradient orbs (orange/amber) with grid pattern overlay
-- **Floating Particles**: Theme-aware animated dots for visual interest
-- **Gradient Text Headline**: "Craft Your Perfect Resume"
-- **Animated Stats Bar**: Total templates, ATS-friendly count, total downloads with count-up animations
-- **Trust Badge**: "100% Free • ATS Optimized • Professional"
-- **Theme Transitions**: Smooth 700ms transitions for dark/light mode
-
-### 2. Enhanced Filter Bar
-Upgrade to a glassmorphism filter experience:
-
-- **Search Input**: Full-width with clear button and icon
-- **Category Pills**: Style-based filtering (Modern, Traditional, Creative, Minimal, Two-Column)
-- **Quick Filters**: "ATS Friendly", "Most Popular", "New" quick action buttons
-- **Sort Options**: By downloads, name, date added
-- **Active Filter Indicator**: Shows filtered count with clear option
-
-### 3. Template Card Redesign
-Modernize the template cards dramatically:
-
-- **Visual Preview Area**: Gradient placeholder with template icon (future: actual preview thumbnails)
-- **Template Name + Style Badge**: Clear naming with style category chip
-- **Metadata Row**: Downloads count, ATS badge, format options
-- **Hover Interactions**: Lift effect, border glow, preview expansion
-- **Action Buttons**: "Preview" and "Download" with hover states
-- **Featured Templates**: Special glow border and shimmer effect for promoted items
-
-### 4. Featured Templates Section
-Highlight top templates with special treatment:
-
-- **Spotlight Cards**: Larger cards with additional details
-- **"Editor's Pick" Badge**: Visual callout for best templates
-- **Animated Entrance**: Staggered reveal animation
-- **Rich Metadata**: Format, file size, compatibility info
-
-### 5. Categories Section
-Organize templates by style with visual separation:
-
-- **Section Dividers**: Gradient icons with section headers (using RoadmapSectionDivider pattern)
-- **Style Icons**: Visual representation of each category
-- **Template Count Badge**: "12 templates" indicator
-- **Horizontal Scroll Option**: For mobile-friendly browsing
-
-### 6. Statistics Dashboard
-Add engagement metrics section:
-
-- **Template Count Card**: Total available templates
-- **Downloads Card**: Total community downloads
-- **ATS Score Card**: Percentage of ATS-friendly templates
-- **User Rating Card**: Average community rating
-
-### 7. Mobile Optimization
-Ensure excellent responsive experience:
-
-- **Stacked Filter Controls**: Vertical layout on mobile
-- **Touch-Friendly Cards**: Larger touch targets
-- **Swipeable Categories**: Horizontal scroll for categories
-- **Bottom Sheet Filters**: Expandable filter panel on mobile
-
----
-
-## Technical Implementation Details
-
-### Files to Create
-1. `src/components/resume/ResumeHeroSection.tsx` - Branded hero with animated backgrounds
-2. `src/components/resume/ResumeFilterBar.tsx` - Glassmorphism filter container
-3. `src/components/resume/ResumeTemplateCard.tsx` - Enhanced template card component
-4. `src/components/resume/ResumeStatsDashboard.tsx` - Engagement statistics section
-5. `src/data/resumeTemplatesData.ts` - Expanded template data with full metadata
-
-### Files to Modify
-1. `src/pages/research/ResumeTemplates.tsx` - Complete page restructure with new components
-
-### Component Structure
-```text
-ResumeTemplates
-├── ResumeHeroSection (NEW)
-│   ├── Animated Background (orbs, particles, grid)
-│   ├── Gradient headline + description
-│   └── Stats Bar (templates, downloads, ATS count)
-├── ResumeFilterBar (NEW)
-│   ├── Search Input
-│   ├── Category Pills (Modern, Traditional, Creative, etc.)
-│   └── Quick Filters + Sort
-├── ResumeStatsDashboard (NEW)
-│   └── Stats Cards Grid
-├── RoadmapSectionDivider (reuse) - "Featured Templates"
-├── Featured Templates Grid
-│   └── ResumeTemplateCard (featured=true)
-├── RoadmapSectionDivider (reuse) - "All Templates"
-└── All Templates Grid
-    └── ResumeTemplateCard
-```
-
----
-
-## Expanded Template Data Structure
-
-```typescript
-interface ResumeTemplate {
-  id: number;
-  name: string;
-  description: string;
-  style: 'modern' | 'traditional' | 'creative' | 'minimal' | 'two-column';
-  downloads: number;
-  atsCompatible: boolean;
-  isFeatured: boolean;
-  format: string[];          // ['PDF', 'DOCX', 'Google Docs']
-  colorScheme: string;       // Preview gradient colors
-  fileSize?: string;
-  dateAdded: string;
-  tags: string[];           // ['Tech', 'Executive', 'Entry-Level']
-  previewUrl?: string;
-  downloadUrl?: string;
-}
-```
-
----
-
-## Visual Hierarchy Changes
+## Architecture
 
 ```text
-+--------------------------------------------------+
-|  HERO SECTION (Immersive, Branded)               |
-|  - Animated gradient background with particles   |
-|  - "Craft Your Perfect Resume" headline          |
-|  - Stats: 12+ Templates • 50K+ Downloads • 100%  |
-+--------------------------------------------------+
-                    |
-                    v
-+--------------------------------------------------+
-|  FILTER BAR (Glassmorphism)                      |
-|  - Search input with icon                        |
-|  - Category pills: Modern, Traditional, etc.     |
-|  - Quick filters: ATS Friendly, Popular          |
-+--------------------------------------------------+
-                    |
-                    v
-+--------------------------------------------------+
-|  STATS DASHBOARD                                 |
-|  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐|
-|  │ 12+     │ │ 50K+    │ │ 95%     │ │ 4.8★    │|
-|  │Templates│ │Downloads│ │ATS Ready│ │ Rating  │|
-|  └─────────┘ └─────────┘ └─────────┘ └─────────┘|
-+--------------------------------------------------+
-                    |
-                    v
-+--------------------------------------------------+
-|  FEATURED TEMPLATES                              |
-|  ┌──────────────────────────────────────────────┐|
-|  │ Featured grid with spotlight cards           │|
-|  │ - Larger preview area                        │|
-|  │ - "Editor's Pick" badges                     │|
-|  └──────────────────────────────────────────────┘|
-+--------------------------------------------------+
-                    |
-                    v
-+--------------------------------------------------+
-|  ALL TEMPLATES                                   |
-|  ┌───────┐ ┌───────┐ ┌───────┐                  |
-|  │ Card  │ │ Card  │ │ Card  │                  |
-|  │ 1     │ │ 2     │ │ 3     │ ...              |
-|  └───────┘ └───────┘ └───────┘                  |
-+--------------------------------------------------+
++------------------+       +-------------------+       +------------------+
+|   Frontend       |       |   Backend         |       |   AI Gateway     |
+|                  |       |                   |       |                  |
+| ResumeAnalyser   +------>+ analyze-resume    +------>+ Lovable AI       |
+| Page             |       | Edge Function     |       | (Gemini)         |
+|                  |       |                   |       |                  |
+| - File Upload    |       | - Parse Document  |       | - Analyze Resume |
+| - Analysis UI    |       | - Extract Text    |       | - Generate Score |
+| - Results View   |       | - Call AI         |       | - Suggestions    |
++------------------+       +-------------------+       +------------------+
+         |
+         v
++------------------+
+| Storage Bucket   |
+| resume-uploads   |
++------------------+
+         |
+         v
++------------------+
+| Database Table   |
+| resume_analyses  |
++------------------+
 ```
 
----
+## Implementation Steps
 
-## Color & Style Tokens
+### Phase 1: Backend Infrastructure
 
-Using established brand tokens:
-- **Primary Orange**: `hsl(24 95% 53%)` - CTAs, highlights
-- **Amber Gradient**: `from-amber-500 to-orange-500` - Hero elements
-- **Glass Effect**: `bg-background/80 backdrop-blur-xl border-border/50` - Filter bar
-- **ATS Badge**: `bg-emerald-500/10 text-emerald-600` - Compatibility indicator
-- **Card Shadows**: `shadow-xl shadow-primary/10` - Hover states
-- **Style Colors**:
-  - Modern: `from-blue-500 to-indigo-600`
-  - Traditional: `from-slate-600 to-slate-800`
-  - Creative: `from-pink-500 to-purple-600`
-  - Minimal: `from-gray-400 to-gray-600`
-  - Two-Column: `from-teal-500 to-cyan-600`
+#### 1.1 Create Storage Bucket
+Create a new storage bucket `resume-uploads` for storing uploaded resume files with RLS policies to ensure users can only access their own uploads.
 
----
+#### 1.2 Create Database Table
+Create a `resume_analyses` table to store analysis results:
+- `id` (uuid, primary key)
+- `user_id` (text, references auth user)
+- `file_name` (text)
+- `file_url` (text)
+- `overall_score` (integer, 0-100)
+- `ats_score` (integer, 0-100)
+- `keyword_score` (integer, 0-100)
+- `format_score` (integer, 0-100)
+- `content_score` (integer, 0-100)
+- `suggestions` (jsonb, array of improvement suggestions)
+- `strengths` (jsonb, array of identified strengths)
+- `keywords_found` (jsonb, array of detected keywords)
+- `created_at` (timestamp)
 
-## Animation Specifications
+#### 1.3 Create Edge Function
+Create `analyze-resume` edge function that:
+- Accepts the uploaded resume file path
+- Extracts text content from the resume
+- Sends the text to Lovable AI (using `google/gemini-2.5-flash`) with a specialized prompt
+- Parses the AI response into structured scores and suggestions
+- Returns the analysis results
 
-### Hero Section
-- Background orbs: 4-6s infinite ease-in-out float animations
-- Floating particles: 3-5s staggered upward float with opacity fade
-- Stats counters: 2s ease-out count-up on scroll into view
+### Phase 2: Frontend Components
 
-### Filter Bar
-- Category pills: 0.2s hover lift + glow effect
-- Search clear button: 0.2s scale entrance/exit
-- Filter indicator: 0.3s slide in/out
+#### 2.1 Create Custom Hook
+Create `useResumeAnalysis` hook:
+- Handle file upload to storage
+- Call the edge function
+- Manage loading/error states
+- Fetch analysis history
 
-### Template Cards
-- Staggered entrance: 0.05s delay per card
-- Hover lift: `y: -6, scale: 1.02` with 0.3s transition
-- Border glow: `shadow-xl shadow-primary/10` on hover
-- Arrow reveal: 0.2s translate-x animation
+#### 2.2 File Upload Component
+Create `ResumeUploadZone` component:
+- Drag and drop support
+- Click to browse files
+- File type validation (PDF, DOC, DOCX)
+- File size validation (max 5MB)
+- Upload progress indicator
+- Preview of selected file
 
-### Section Transitions
-- Section dividers: 0.3s fade in on scroll
-- Grid reveal: Staggered card entrance on scroll into view
+#### 2.3 Analysis Results Components
+Create several sub-components:
+- `AnalysisScoreCard` - Circular progress showing overall score
+- `AnalysisCriteriaCard` - Individual score breakdowns with progress bars
+- `AnalysisSuggestions` - Actionable improvement recommendations
+- `AnalysisStrengths` - Identified resume strengths
+- `AnalysisKeywords` - Detected industry keywords
 
----
+#### 2.4 Analysis History
+Create `ResumeAnalysisHistory` component:
+- List of previous analyses
+- Ability to view past results
+- Delete old analyses
 
-## Accessibility Considerations
+### Phase 3: Main Page Integration
 
-- Maintain WCAG 2.1 AA contrast ratios
-- Keyboard navigation for all filter controls
-- Screen reader labels for all buttons and badges
-- Focus visible indicators on cards and buttons
-- Reduced motion preference support
-- ARIA labels for download/preview actions
+Update the `ResumeAnalyser.tsx` page to:
+- Integrate the file upload component
+- Show loading state during analysis
+- Display results when analysis completes
+- Show analysis history for returning users
+- Add job description input (optional) for targeted analysis
 
----
+## Technical Details
 
-## Performance Considerations
+### Edge Function Prompt Structure
+```
+Analyze this resume and provide:
+1. ATS Compatibility Score (0-100) - How well formatted for ATS systems
+2. Keyword Optimization Score (0-100) - Presence of industry keywords
+3. Format & Structure Score (0-100) - Layout, sections, readability
+4. Content Quality Score (0-100) - Impact statements, quantifiable achievements
 
-- Use CSS animations over JS where possible
-- Memoize filtered template lists
-- Debounce search input (300ms)
-- Lazy load template preview images (if added later)
-- Use `will-change` sparingly for animated elements
+Also provide:
+- 5 specific improvement suggestions with priority
+- 3-5 identified strengths
+- List of detected industry keywords
+- Overall assessment summary
 
----
+Format response as JSON.
+```
 
-## Implementation Priority
+### File Handling
+- Files uploaded to `resume-uploads/{user_id}/{timestamp}-{filename}`
+- Use Supabase storage signed URLs for secure access
+- Clean up old uploads after 30 days (optional background job)
 
-1. **Phase 1**: Hero section + expanded template data
-2. **Phase 2**: Filter bar with category/search functionality
-3. **Phase 3**: Enhanced template cards with hover effects
-4. **Phase 4**: Stats dashboard + section dividers
-5. **Phase 5**: Mobile optimizations + animations
+### Error Handling
+- Invalid file type errors
+- File too large errors
+- AI rate limiting
+- Network failures with retry logic
 
----
+## New Files to Create
 
-## Expected Outcome
+| File | Purpose |
+|------|---------|
+| `supabase/functions/analyze-resume/index.ts` | Edge function for AI analysis |
+| `src/hooks/useResumeAnalysis.ts` | Custom hook for analysis logic |
+| `src/components/resume/ResumeUploadZone.tsx` | File upload with drag/drop |
+| `src/components/resume/AnalysisScoreCard.tsx` | Overall score display |
+| `src/components/resume/AnalysisCriteriaCard.tsx` | Individual criteria scores |
+| `src/components/resume/AnalysisSuggestions.tsx` | Improvement suggestions |
+| `src/components/resume/AnalysisStrengths.tsx` | Resume strengths |
+| `src/components/resume/AnalysisKeywords.tsx` | Detected keywords |
+| `src/components/resume/ResumeAnalysisHistory.tsx` | History of analyses |
 
-A Resume Templates page that:
-- Creates an immersive, branded experience consistent with Career Roadmaps
-- Showcases templates with visual polish and engaging hover states
-- Provides intuitive filtering by style, ATS compatibility, and popularity
-- Guides users to download with clear CTAs and metadata
-- Feels premium and polished across all device sizes
-- Encourages template exploration with animated interactions
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/research/ResumeAnalyser.tsx` | Complete rewrite with functional components |
+
+## Database Migration
+
+```sql
+-- Create resume_analyses table
+CREATE TABLE public.resume_analyses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  file_url TEXT NOT NULL,
+  overall_score INTEGER CHECK (overall_score >= 0 AND overall_score <= 100),
+  ats_score INTEGER CHECK (ats_score >= 0 AND ats_score <= 100),
+  keyword_score INTEGER CHECK (keyword_score >= 0 AND ats_score <= 100),
+  format_score INTEGER CHECK (format_score >= 0 AND format_score <= 100),
+  content_score INTEGER CHECK (content_score >= 0 AND content_score <= 100),
+  suggestions JSONB DEFAULT '[]'::jsonb,
+  strengths JSONB DEFAULT '[]'::jsonb,
+  keywords_found JSONB DEFAULT '[]'::jsonb,
+  summary TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.resume_analyses ENABLE ROW LEVEL SECURITY;
+
+-- RLS policies
+CREATE POLICY "Users can view own analyses" ON public.resume_analyses
+  FOR SELECT USING (user_id = auth.uid()::text);
+
+CREATE POLICY "Users can insert own analyses" ON public.resume_analyses
+  FOR INSERT WITH CHECK (user_id = auth.uid()::text);
+
+CREATE POLICY "Users can delete own analyses" ON public.resume_analyses
+  FOR DELETE USING (user_id = auth.uid()::text);
+```
+
+## User Experience Flow
+
+1. User navigates to Resume Analyser page
+2. User drags/drops or clicks to upload resume
+3. File is validated and uploaded to storage
+4. Loading animation shows while AI analyzes
+5. Results appear with overall score prominently displayed
+6. Detailed breakdown shows each criteria with scores
+7. Actionable suggestions are listed with priority indicators
+8. User can view analysis history and re-analyze
+
+## Dependencies
+
+- Uses existing Lovable AI integration (no new API keys needed)
+- Leverages existing Supabase storage patterns from Settings page
+- Follows existing UI patterns from quiz and other analysis features
 
