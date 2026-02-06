@@ -70,11 +70,6 @@ const Login = () => {
       <div className="card-dark">
         {/* Header */}
         <div className="text-center mb-6">
-          {/* Mobile Logo */}
-          <div className="flex items-center justify-center gap-2 mb-4 lg:hidden">
-            <img src="/logo.png" alt="Byteskill" className="w-10 h-10 rounded-xl" />
-            <span className="text-xl font-bold text-foreground">Byteskill</span>
-          </div>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-4 lg:hidden">
             <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium text-foreground">Welcome back</span>
