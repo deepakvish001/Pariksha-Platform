@@ -6,8 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
- import { AchievementNotificationProvider } from "@/contexts/AchievementNotificationContext";
+import { AchievementNotificationProvider } from "@/contexts/AchievementNotificationContext";
 import { LevelUpProvider } from "@/contexts/LevelUpContext";
+import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
@@ -86,6 +87,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <AuthProvider>
+          <PushNotificationProvider>
           <AchievementNotificationProvider>
           <LevelUpProvider>
           <TooltipProvider>
@@ -194,6 +196,7 @@ const App = () => (
           </TooltipProvider>
           </LevelUpProvider>
           </AchievementNotificationProvider>
+          </PushNotificationProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
