@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Star, BookOpen, ArrowRight, Sparkles, CheckCircle2, Clock, ChevronRight } from "lucide-react";
+import { Star, BookOpen, Sparkles, CheckCircle2, Clock, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import StreakBadge from "./StreakBadge";
 
 interface Sheet {
   id: string;
@@ -25,6 +26,7 @@ interface SheetCardProps {
   progress?: number;
   completedCount?: number;
   lastActivityAt?: string | null;
+  streak?: number;
   isLoading?: boolean;
 }
 
@@ -49,7 +51,7 @@ const getDifficultyStyles = (difficulty: string) => {
   return "text-amber-500 bg-amber-500/10";
 };
 
-const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, lastActivityAt, isLoading = false }: SheetCardProps) => {
+const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, lastActivityAt, streak = 0, isLoading = false }: SheetCardProps) => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const categoryStyles = getCategoryStyles(sheet.category);
@@ -80,9 +82,10 @@ const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, lastActivit
         {/* Category Color Strip */}
         <div className={cn("absolute top-0 left-0 right-0 h-1", categoryStyles.bg)} />
 
-        {/* Starred Badge */}
-        {sheet.starred && (
-          <div className="absolute top-3 right-3 z-10">
+        {/* Starred Badge & Streak */}
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+          {streak > 0 && <StreakBadge streak={streak} />}
+          {sheet.starred && (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -90,8 +93,8 @@ const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, lastActivit
             >
               <Star className="h-5 w-5 text-amber-500 fill-amber-500 drop-shadow-sm" />
             </motion.div>
-          </div>
-        )}
+          )}
+        </div>
 
         <CardContent className="p-5 pt-6 flex flex-col h-full">
           {/* Icon & Category */}
