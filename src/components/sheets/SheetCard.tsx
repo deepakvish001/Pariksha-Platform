@@ -1,0 +1,151 @@
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { Star, BookOpen, ArrowRight, Sparkles } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+
+interface Sheet {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  problems: number;
+  difficulty: string;
+  starred: boolean;
+}
+
+interface SheetCardProps {
+  sheet: Sheet;
+  index: number;
+  progress?: number;
+}
+
+const getCategoryStyles = (category: string) => {
+  switch (category.toLowerCase()) {
+    case "dsa":
+      return { bg: "bg-blue-500/10", text: "text-blue-500", border: "border-blue-500/20" };
+    case "sql":
+      return { bg: "bg-emerald-500/10", text: "text-emerald-500", border: "border-emerald-500/20" };
+    case "system design":
+      return { bg: "bg-purple-500/10", text: "text-purple-500", border: "border-purple-500/20" };
+    case "ml":
+      return { bg: "bg-amber-500/10", text: "text-amber-500", border: "border-amber-500/20" };
+    default:
+      return { bg: "bg-primary/10", text: "text-primary", border: "border-primary/20" };
+  }
+};
+
+const getDifficultyStyles = (difficulty: string) => {
+  if (difficulty.includes("Easy")) return "text-emerald-500 bg-emerald-500/10";
+  if (difficulty.includes("Hard")) return "text-red-500 bg-red-500/10";
+  return "text-amber-500 bg-amber-500/10";
+};
+
+const SheetCard = ({ sheet, index, progress = 0 }: SheetCardProps) => {
+  const navigate = useNavigate();
+  const categoryStyles = getCategoryStyles(sheet.category);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, duration: 0.3 }}
+      whileHover={{ y: -4 }}
+      className="h-full"
+    >
+      <Card 
+        className={cn(
+          "relative h-full overflow-hidden cursor-pointer group",
+          "border-border/50 hover:border-primary/30",
+          "bg-gradient-to-br from-card to-card/80",
+          "transition-all duration-300 hover:shadow-xl hover:shadow-primary/5"
+        )}
+        onClick={() => navigate(`/dashboard/sheets/${sheet.id}`)}
+      >
+        {/* Category Color Strip */}
+        <div className={cn("absolute top-0 left-0 right-0 h-1", categoryStyles.bg)} />
+
+        {/* Starred Badge */}
+        {sheet.starred && (
+          <div className="absolute top-3 right-3">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: index * 0.05 + 0.2, type: "spring" }}
+            >
+              <Star className="h-5 w-5 text-amber-500 fill-amber-500 drop-shadow-sm" />
+            </motion.div>
+          </div>
+        )}
+
+        <CardContent className="p-5 pt-6 flex flex-col h-full">
+          {/* Icon & Category */}
+          <div className="flex items-start gap-3 mb-4">
+            <div className={cn(
+              "h-11 w-11 rounded-xl flex items-center justify-center",
+              "bg-gradient-to-br from-primary/20 to-primary/10",
+              "group-hover:from-primary/30 group-hover:to-primary/20",
+              "transition-all duration-300"
+            )}>
+              <BookOpen className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <Badge 
+                variant="outline" 
+                className={cn("text-xs font-medium", categoryStyles.text, categoryStyles.border)}
+              >
+                {sheet.category}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Title & Description */}
+          <div className="flex-1 space-y-2 mb-4">
+            <h3 className="font-semibold text-base leading-tight group-hover:text-primary transition-colors line-clamp-2">
+              {sheet.title}
+            </h3>
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              {sheet.description}
+            </p>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-medium">{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-1.5" />
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-3 border-t border-border/50">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm font-medium">{sheet.problems} problems</span>
+            </div>
+            <Badge 
+              variant="secondary" 
+              className={cn("text-xs", getDifficultyStyles(sheet.difficulty))}
+            >
+              {sheet.difficulty}
+            </Badge>
+          </div>
+
+          {/* Hover Arrow */}
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            whileHover={{ opacity: 1, x: 0 }}
+            className="absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <ArrowRight className="h-5 w-5 text-primary" />
+          </motion.div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
+
+export default SheetCard;
