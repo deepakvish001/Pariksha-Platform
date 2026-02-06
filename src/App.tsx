@@ -64,7 +64,7 @@ import MyActivity from "./pages/research/MyActivity";
 import AstraAI from "./pages/platform/AstraAI";
 import Resources from "./pages/platform/Resources";
 import Collections from "./pages/platform/Collections";
-import Affiliate from "./pages/platform/Affiliate";
+
 import PublicProfile from "./pages/PublicProfile";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
@@ -174,7 +174,7 @@ const App = () => (
                   <Route path="ai" element={<AstraAI />} />
                   <Route path="resources" element={<Resources />} />
                   <Route path="collections" element={<Collections />} />
-                  <Route path="affiliate" element={<Affiliate />} />
+                  
                 </Route>
 
                 {/* Settings */}
