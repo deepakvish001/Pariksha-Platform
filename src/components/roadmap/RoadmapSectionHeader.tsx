@@ -156,8 +156,8 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
         <div className="flex-1 text-left min-w-0">
           <div className="flex items-center gap-2">
             <h3 className={cn(
-              "font-semibold tracking-tight leading-tight truncate",
-              isCompact ? "text-sm" : "text-base"
+              "font-bold tracking-tight leading-tight truncate",
+              isCompact ? "text-base" : "text-lg"
             )}>
               {title}
             </h3>
@@ -187,7 +187,7 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
           {/* Progress stats row - cleaner layout */}
           <div className={cn(
             "flex items-center gap-3 text-muted-foreground",
-            isCompact ? "mt-0.5 text-[10px]" : "mt-1 text-xs"
+            isCompact ? "mt-0.5 text-xs" : "mt-1 text-sm"
           )}>
             <span className={cn(
               "font-medium tabular-nums",
@@ -213,7 +213,7 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
           {/* Percentage badge */}
           <span className={cn(
             "font-bold tabular-nums",
-            isCompact ? "text-sm" : "text-base",
+            isCompact ? "text-base" : "text-lg",
             isComplete ? "text-emerald-600 dark:text-emerald-400" : phaseStyle.text
           )}>
             {percentage}%

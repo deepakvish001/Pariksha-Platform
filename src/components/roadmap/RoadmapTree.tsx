@@ -1091,6 +1091,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
               }
               totalPhases={tree.nodes.length}
               onNavigate={handleJumpToSection}
+              sectionRefs={sectionRefs}
             />
           )}
 
