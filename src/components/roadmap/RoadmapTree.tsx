@@ -756,7 +756,7 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
         transition={{ delay: phaseIndex * (isCompactMode ? 0.05 : 0.1), duration: 0.3 }}
         className={cn(
           "scroll-mt-24 transition-all duration-300",
-          isCompactMode ? "mb-3" : "mb-6",
+          isCompactMode ? "mb-4" : "mb-8",
           isDimmed && "pointer-events-none grayscale-[30%]",
           isFocusMode && isFocused && "relative z-10"
         )}
@@ -807,16 +807,16 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden relative mt-3 pt-3 border-t border-border/30"
+                    transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                    className="overflow-hidden relative mt-4 pt-4 border-t border-border/40"
                   >
-                    {/* Vertical continuation line for children */}
+                    {/* Vertical continuation line for children - Enhanced */}
                     <div 
-                      className="absolute w-0.5 rounded-full bg-gradient-to-b from-border via-border/60 to-transparent"
+                      className="absolute w-0.5 rounded-full bg-gradient-to-b from-border/80 via-border/50 to-transparent"
                       style={{
-                        left: 20,
-                        top: 12,
-                        bottom: 20,
+                        left: 24,
+                        top: 16,
+                        bottom: 24,
                       }}
                     />
                     
@@ -869,9 +869,9 @@ const RoadmapTree: React.FC<RoadmapTreeProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className={cn("flex gap-4 lg:gap-6", isCompactMode && "gap-2 lg:gap-4")}>
+      <div className={cn("flex gap-5 lg:gap-8", isCompactMode && "gap-3 lg:gap-5")}>
         {/* Main Content */}
-        <div className={cn("flex-1 min-w-0", isCompactMode ? "space-y-4" : "space-y-8")} ref={treeRef}>
+        <div className={cn("flex-1 min-w-0", isCompactMode ? "space-y-5" : "space-y-10")} ref={treeRef}>
           {/* Compact Progress Header Card - Enhanced */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
