@@ -1,12 +1,22 @@
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Map, ArrowRight, Clock, BookOpen, Users, Search, Filter, X, Timer } from "lucide-react";
+import { 
+  Map, ArrowRight, Clock, BookOpen, Users, Search, Filter, X, Timer,
+  ArrowUpDown, Sprout, Flame, Diamond, TrendingUp
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { roadmapTrees, type RoadmapTree, type RoadmapTreeNode } from "@/data/roadmapTreesData";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,8 +30,8 @@ const countNodes = (nodes: RoadmapTreeNode[]): number => {
   }, 0);
 };
 
-// Helper to calculate estimated time from nodes
-const calculateEstimatedTime = (nodes: RoadmapTreeNode[]): string => {
+// Helper to calculate estimated time from nodes (returns weeks for sorting)
+const calculateEstimatedWeeks = (nodes: RoadmapTreeNode[]): number => {
   let totalWeeks = 0;
   
   const processNode = (node: RoadmapTreeNode) => {
@@ -43,11 +53,76 @@ const calculateEstimatedTime = (nodes: RoadmapTreeNode[]): string => {
   };
   
   nodes.forEach(processNode);
-  
-  if (totalWeeks < 1) return "< 1 week";
-  if (totalWeeks < 4) return `${Math.round(totalWeeks)} weeks`;
-  const months = Math.round(totalWeeks / 4);
+  return totalWeeks;
+};
+
+// Helper to format weeks to readable string
+const formatEstimatedTime = (weeks: number): string => {
+  if (weeks < 1) return "< 1 week";
+  if (weeks < 4) return `${Math.round(weeks)} weeks`;
+  const months = Math.round(weeks / 4);
   return `${months} ${months === 1 ? 'month' : 'months'}`;
+};
+
+// Calculate difficulty level based on roadmap content
+const calculateDifficulty = (nodes: RoadmapTreeNode[]): 'beginner' | 'intermediate' | 'advanced' => {
+  let hardCount = 0;
+  let mediumCount = 0;
+  let totalCount = 0;
+  
+  const processNode = (node: RoadmapTreeNode) => {
+    totalCount++;
+    if (node.difficulty === 'Hard') hardCount++;
+    else if (node.difficulty === 'Medium') mediumCount++;
+    node.children?.forEach(processNode);
+  };
+  
+  nodes.forEach(processNode);
+  
+  const hardRatio = hardCount / totalCount;
+  const mediumRatio = mediumCount / totalCount;
+  
+  if (hardRatio > 0.3) return 'advanced';
+  if (mediumRatio > 0.4 || hardRatio > 0.15) return 'intermediate';
+  return 'beginner';
+};
+
+// Difficulty configuration
+const difficultyConfig = {
+  beginner: {
+    label: 'Beginner',
+    icon: Sprout,
+    color: 'text-emerald-500',
+    bgColor: 'bg-emerald-500/10',
+    borderColor: 'border-emerald-500/30',
+  },
+  intermediate: {
+    label: 'Intermediate',
+    icon: Flame,
+    color: 'text-amber-500',
+    bgColor: 'bg-amber-500/10',
+    borderColor: 'border-amber-500/30',
+  },
+  advanced: {
+    label: 'Advanced',
+    icon: Diamond,
+    color: 'text-violet-500',
+    bgColor: 'bg-violet-500/10',
+    borderColor: 'border-violet-500/30',
+  },
+};
+
+// Popularity scores (simulated - in production this would come from analytics)
+const popularityScores: Record<string, number> = {
+  frontend: 95,
+  backend: 88,
+  fullstack: 92,
+  devops: 75,
+  'data-science': 82,
+  'data-analyst': 70,
+  android: 65,
+  ios: 60,
+  'react-native': 72,
 };
 
 // Category definitions for filtering
@@ -74,14 +149,28 @@ const roadmapCategoryMap: Record<string, string> = {
   "react-native": "mobile",
 };
 
+// Sorting options
+type SortOption = 'name' | 'popularity' | 'duration-asc' | 'duration-desc';
+
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: 'popularity', label: 'Most Popular' },
+  { value: 'name', label: 'Name (A-Z)' },
+  { value: 'duration-asc', label: 'Duration (Shortest)' },
+  { value: 'duration-desc', label: 'Duration (Longest)' },
+];
+
 // Individual roadmap card component
-const RoadmapCard = ({ roadmap }: { roadmap: RoadmapTree }) => {
+const RoadmapCard = ({ roadmap, estimatedWeeks }: { roadmap: RoadmapTree; estimatedWeeks: number }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { stats } = useRoadmapTreeProgress(roadmap.id, roadmap.nodes);
   
   const totalTopics = countNodes(roadmap.nodes);
-  const estimatedTime = calculateEstimatedTime(roadmap.nodes);
+  const estimatedTime = formatEstimatedTime(estimatedWeeks);
+  const difficulty = calculateDifficulty(roadmap.nodes);
+  const diffConfig = difficultyConfig[difficulty];
+  const DifficultyIcon = diffConfig.icon;
+  
   const progressPercent = user && stats.total > 0 
     ? Math.round((stats.completed / stats.total) * 100) 
     : 0;
@@ -107,11 +196,26 @@ const RoadmapCard = ({ roadmap }: { roadmap: RoadmapTree }) => {
         )}>
           <Map className="h-16 w-16 text-white/80" />
           
-          {/* Estimated time badge */}
-          <div className="absolute top-3 left-3">
+          {/* Top badges row */}
+          <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+            {/* Estimated time badge */}
             <Badge variant="secondary" className="bg-black/40 text-white border-0 backdrop-blur-sm gap-1.5">
               <Timer className="h-3 w-3" />
               {estimatedTime}
+            </Badge>
+            
+            {/* Difficulty badge */}
+            <Badge 
+              variant="secondary" 
+              className={cn(
+                "border backdrop-blur-sm gap-1.5",
+                diffConfig.bgColor,
+                diffConfig.color,
+                diffConfig.borderColor
+              )}
+            >
+              <DifficultyIcon className="h-3 w-3" />
+              {diffConfig.label}
             </Badge>
           </div>
           
@@ -145,6 +249,12 @@ const RoadmapCard = ({ roadmap }: { roadmap: RoadmapTree }) => {
               <Clock className="h-4 w-4" />
               <span>{roadmap.nodes.length} sections</span>
             </div>
+            {popularityScores[roadmap.id] && (
+              <div className="flex items-center gap-1.5 ml-auto">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <span className="text-primary font-medium">{popularityScores[roadmap.id]}%</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -155,10 +265,21 @@ const RoadmapCard = ({ roadmap }: { roadmap: RoadmapTree }) => {
 const Roadmap: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [sortBy, setSortBy] = useState<SortOption>("popularity");
 
-  // Filter roadmaps based on search and category
-  const filteredRoadmaps = useMemo(() => {
-    return roadmapTrees.filter((roadmap) => {
+  // Pre-calculate estimated weeks for all roadmaps
+  const roadmapData = useMemo(() => {
+    return roadmapTrees.map(roadmap => ({
+      roadmap,
+      estimatedWeeks: calculateEstimatedWeeks(roadmap.nodes),
+      popularity: popularityScores[roadmap.id] || 50,
+    }));
+  }, []);
+
+  // Filter and sort roadmaps
+  const filteredAndSortedRoadmaps = useMemo(() => {
+    // First filter
+    const filtered = roadmapData.filter(({ roadmap }) => {
       // Search filter
       const searchMatch = searchQuery === "" || 
         roadmap.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -171,7 +292,23 @@ const Roadmap: React.FC = () => {
       
       return searchMatch && categoryMatch;
     });
-  }, [searchQuery, selectedCategory]);
+
+    // Then sort
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.roadmap.title.localeCompare(b.roadmap.title);
+        case 'popularity':
+          return b.popularity - a.popularity;
+        case 'duration-asc':
+          return a.estimatedWeeks - b.estimatedWeeks;
+        case 'duration-desc':
+          return b.estimatedWeeks - a.estimatedWeeks;
+        default:
+          return 0;
+      }
+    });
+  }, [roadmapData, searchQuery, selectedCategory, sortBy]);
 
   const hasActiveFilters = searchQuery !== "" || selectedCategory !== "all";
 
@@ -220,23 +357,41 @@ const Roadmap: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="max-w-6xl mx-auto mb-8 space-y-4"
         >
-          {/* Search Input */}
-          <div className="relative max-w-md mx-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search roadmaps..."
-              className="pl-10 pr-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+          {/* Search and Sort Row */}
+          <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search roadmaps..."
+                className="pl-10 pr-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            
+            {/* Sort Dropdown */}
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-full sm:w-48">
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Category Filter Pills */}
@@ -265,7 +420,7 @@ const Roadmap: React.FC = () => {
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Filter className="h-4 w-4" />
               <span>
-                Showing {filteredRoadmaps.length} of {roadmapTrees.length} roadmaps
+                Showing {filteredAndSortedRoadmaps.length} of {roadmapTrees.length} roadmaps
               </span>
               <Button 
                 variant="ghost" 
@@ -282,7 +437,7 @@ const Roadmap: React.FC = () => {
         {/* Roadmap Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           <AnimatePresence mode="popLayout">
-            {filteredRoadmaps.map((roadmap, index) => (
+            {filteredAndSortedRoadmaps.map(({ roadmap, estimatedWeeks }, index) => (
               <motion.div
                 key={roadmap.id}
                 layout
@@ -291,14 +446,14 @@ const Roadmap: React.FC = () => {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <RoadmapCard roadmap={roadmap} />
+                <RoadmapCard roadmap={roadmap} estimatedWeeks={estimatedWeeks} />
               </motion.div>
             ))}
           </AnimatePresence>
         </div>
 
         {/* No Results Message */}
-        {filteredRoadmaps.length === 0 && (
+        {filteredAndSortedRoadmaps.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -316,7 +471,7 @@ const Roadmap: React.FC = () => {
         )}
 
         {/* Coming Soon Placeholder */}
-        {filteredRoadmaps.length > 0 && (
+        {filteredAndSortedRoadmaps.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
