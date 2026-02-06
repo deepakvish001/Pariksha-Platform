@@ -1,12 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Map, ArrowLeft, Trophy, RotateCcw } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { getRoadmapTreeById } from "@/data/roadmapTreesData";
@@ -14,6 +10,10 @@ import RoadmapTree from "@/components/roadmap/RoadmapTree";
 import RoadmapStreakCard from "@/components/roadmap/RoadmapStreakCard";
 import RoadmapFAQ from "@/components/roadmap/RoadmapFAQ";
 import LearningGoalCard from "@/components/roadmap/LearningGoalCard";
+import RoadmapDetailHero from "@/components/roadmap/RoadmapDetailHero";
+import RoadmapProgressDashboard from "@/components/roadmap/RoadmapProgressDashboard";
+import RoadmapFloatingProgress from "@/components/roadmap/RoadmapFloatingProgress";
+import RoadmapScrollProgress from "@/components/roadmap/RoadmapScrollProgress";
 import { useRoadmapTreeProgress } from "@/hooks/useRoadmapTreeProgress";
 
 const RoadmapDetail: React.FC = () => {
@@ -51,6 +51,17 @@ const RoadmapDetail: React.FC = () => {
     fetchUserName();
   }, [user]);
 
+  // Find next incomplete topic
+  const nextTopic = useMemo(() => {
+    if (!selectedTree?.nodes) return undefined;
+    for (const node of selectedTree.nodes) {
+      if (!treeProgress[node.id]?.completed) {
+        return node.title;
+      }
+    }
+    return undefined;
+  }, [selectedTree?.nodes, treeProgress]);
+
   // Handle invalid roadmap
   if (!selectedTree) {
     return (
@@ -73,78 +84,26 @@ const RoadmapDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="flex h-16 items-center gap-4 px-6">
-          <SidebarTrigger />
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate("/research/roadmap")}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            All Roadmaps
-          </Button>
-          <div className="flex items-center gap-3 ml-2">
-            <div className={cn(
-              "h-10 w-10 rounded-xl bg-gradient-to-br flex items-center justify-center",
-              selectedTree.color
-            )}>
-              <Map className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">{selectedTree.title}</h1>
-              <p className="text-sm text-muted-foreground">{selectedTree.description}</p>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Branded Hero Header */}
+      <RoadmapDetailHero
+        title={selectedTree.title}
+        description={selectedTree.description}
+        colorClass={selectedTree.color}
+        completedTopics={treeStats.completed}
+        totalTopics={treeStats.total}
+        progressPercent={progressPercent}
+      />
+
+      {/* Scroll Progress Bar */}
+      <RoadmapScrollProgress />
 
       <main className="p-4 md:p-6 space-y-6">
-        {/* Progress Summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid gap-4 md:grid-cols-4"
-        >
-          <Card className="col-span-2 md:col-span-1">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Trophy className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-xl font-bold">{treeStats.completed}/{treeStats.total}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="col-span-2 md:col-span-1">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                  <RotateCcw className="h-5 w-5 text-amber-500" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">In Progress</p>
-                  <p className="text-xl font-bold">{treeStats.inProgress}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="col-span-4 md:col-span-2">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Overall Progress</span>
-                <span className="text-sm font-medium">{progressPercent}%</span>
-              </div>
-              <Progress value={progressPercent} className="h-2" />
-            </CardContent>
-          </Card>
-        </motion.div>
+        {/* Progress Dashboard */}
+        <RoadmapProgressDashboard
+          completed={treeStats.completed}
+          inProgress={treeStats.inProgress}
+          total={treeStats.total}
+        />
 
         {/* Streak Card and Learning Goal */}
         <div className="grid gap-4 md:grid-cols-2">
@@ -172,14 +131,14 @@ const RoadmapDetail: React.FC = () => {
         </motion.div>
 
         {/* FAQ Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <RoadmapFAQ faqs={selectedTree.faqs} />
-        </motion.div>
+        <RoadmapFAQ faqs={selectedTree.faqs} />
       </main>
+
+      {/* Floating Progress Widget & Back to Top */}
+      <RoadmapFloatingProgress
+        progressPercent={progressPercent}
+        nextTopic={nextTopic}
+      />
     </div>
   );
 };
