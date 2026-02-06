@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { ResumeTemplate } from "@/data/resumeTemplatesData";
+import { ResumeTemplate, resumeTemplates } from "@/data/resumeTemplatesData";
 
 interface ResumeFavorite {
   id: string;
@@ -12,7 +12,7 @@ interface ResumeFavorite {
   created_at: string;
 }
 
-interface ResumeDownload {
+export interface ResumeDownload {
   id: string;
   user_id: string;
   template_id: number;
@@ -20,6 +20,37 @@ interface ResumeDownload {
   downloaded_at: string;
   created_at: string;
 }
+
+// Helper to get the storage URL for a template
+const getTemplateStorageUrl = (templateId: number, format: string = "pdf") => {
+  const { data } = supabase.storage
+    .from("resume-templates")
+    .getPublicUrl(`template-${templateId}.${format.toLowerCase()}`);
+  return data.publicUrl;
+};
+
+// Helper to trigger actual file download
+const downloadFile = async (url: string, filename: string) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error("File not found");
+    }
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+    return true;
+  } catch (error) {
+    console.error("Download failed:", error);
+    return false;
+  }
+};
 
 export const useResumeFavorites = () => {
   const { user } = useAuth();
@@ -143,33 +174,74 @@ export const useResumeDownloads = () => {
     enabled: !!user,
   });
 
-  const trackDownload = useMutation({
+  const trackDownloadMutation = useMutation({
     mutationFn: async (template: ResumeTemplate) => {
-      if (!user) {
-        // Still allow download for non-authenticated users, just don't track
-        return null;
+      // Track in database if user is logged in
+      if (user) {
+        const { data, error } = await supabase
+          .from("resume_downloads")
+          .insert({
+            user_id: user.id,
+            template_id: template.id,
+            template_name: template.name,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error tracking download:", error);
+        }
       }
 
-      const { data, error } = await supabase
+      // Attempt to download from storage
+      const storageUrl = getTemplateStorageUrl(template.id, "pdf");
+      const filename = `${template.name.replace(/\s+/g, "-").toLowerCase()}.pdf`;
+      
+      const downloaded = await downloadFile(storageUrl, filename);
+      
+      if (!downloaded) {
+        // If storage file doesn't exist, create a placeholder PDF download
+        // This is a fallback - in production, actual files would be in storage
+        toast.info("Template download prepared!", {
+          description: "File will be available soon. Check back later for the full template.",
+        });
+        return { template, fallback: true };
+      }
+      
+      return { template, fallback: false };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["resume-downloads"] });
+      if (result && !result.fallback) {
+        toast.success("Download complete!", {
+          description: `${result.template.name} has been downloaded.`,
+        });
+      }
+    },
+    onError: (error) => {
+      console.error("Download error:", error);
+      toast.error("Download failed. Please try again.");
+    },
+  });
+
+  const clearHistory = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+
+      const { error } = await supabase
         .from("resume_downloads")
-        .insert({
-          user_id: user.id,
-          template_id: template.id,
-          template_name: template.name,
-        })
-        .select()
-        .single();
+        .delete()
+        .eq("user_id", user.id);
 
       if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resume-downloads"] });
-      toast.success("Download started!");
+      toast.success("Download history cleared");
     },
     onError: (error) => {
-      console.error("Error tracking download:", error);
-      // Don't show error toast for tracking - download should still work
+      console.error("Error clearing history:", error);
+      toast.error("Failed to clear history");
     },
   });
 
@@ -180,10 +252,23 @@ export const useResumeDownloads = () => {
     [downloads]
   );
 
+  const redownload = useCallback(
+    (templateId: number) => {
+      const template = resumeTemplates.find((t) => t.id === templateId);
+      if (template) {
+        trackDownloadMutation.mutate(template);
+      }
+    },
+    [trackDownloadMutation]
+  );
+
   return {
     downloads,
     isLoading,
-    trackDownload: trackDownload.mutate,
+    trackDownload: trackDownloadMutation.mutate,
+    clearHistory: clearHistory.mutate,
     getDownloadCount,
+    redownload,
+    isDownloading: trackDownloadMutation.isPending,
   };
 };

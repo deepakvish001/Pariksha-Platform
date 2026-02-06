@@ -9,6 +9,7 @@ import ResumeFilterBar, {
 } from "@/components/resume/ResumeFilterBar";
 import ResumeTemplateCard from "@/components/resume/ResumeTemplateCard";
 import ResumeStatsDashboard from "@/components/resume/ResumeStatsDashboard";
+import ResumeDownloadHistory from "@/components/resume/ResumeDownloadHistory";
 import RoadmapSectionDivider from "@/components/roadmap/RoadmapSectionDivider";
 import { resumeTemplates, getTemplateStats } from "@/data/resumeTemplatesData";
 import { useResumeFavorites, useResumeDownloads } from "@/hooks/useResumeActions";
@@ -22,7 +23,13 @@ const ResumeTemplates = () => {
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(null);
 
   const { favorites, isFavorite, toggleFavorite } = useResumeFavorites();
-  const { trackDownload } = useResumeDownloads();
+  const { 
+    downloads, 
+    isLoading: isLoadingDownloads, 
+    trackDownload, 
+    clearHistory,
+    redownload 
+  } = useResumeDownloads();
 
   const stats = useMemo(() => getTemplateStats(), []);
 
@@ -95,21 +102,35 @@ const ResumeTemplates = () => {
 
       {/* Main Content */}
       <main className="px-6 pb-12">
-        {/* Filter Bar */}
-        <ResumeFilterBar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          styleFilter={styleFilter}
-          onStyleChange={setStyleFilter}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          quickFilter={quickFilter}
-          onQuickFilterChange={setQuickFilter}
-          filteredCount={filteredTemplates.length}
-          totalCount={resumeTemplates.length}
-          showFavoritesFilter={!!user}
-          favoritesCount={favorites.length}
-        />
+        {/* Filter Bar with Download History */}
+        <div className="relative">
+          <ResumeFilterBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            styleFilter={styleFilter}
+            onStyleChange={setStyleFilter}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            quickFilter={quickFilter}
+            onQuickFilterChange={setQuickFilter}
+            filteredCount={filteredTemplates.length}
+            totalCount={resumeTemplates.length}
+            showFavoritesFilter={!!user}
+            favoritesCount={favorites.length}
+          />
+          
+          {/* Download History Button - positioned in header */}
+          {user && (
+            <div className="absolute top-4 right-6 z-40">
+              <ResumeDownloadHistory
+                downloads={downloads}
+                isLoading={isLoadingDownloads}
+                onClearHistory={clearHistory}
+                onRedownload={redownload}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Stats Dashboard */}
         <div className="max-w-6xl mx-auto mt-8">
