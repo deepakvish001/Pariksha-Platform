@@ -86,9 +86,7 @@ const Navbar = () => {
             onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="flex items-center gap-2"
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-orange flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">B</span>
-            </div>
+            <img src="/logo.png" alt="Byteskill" className="w-8 h-8 rounded-lg" />
             <span className="text-xl font-bold text-foreground">Byteskill</span>
           </a>
 
