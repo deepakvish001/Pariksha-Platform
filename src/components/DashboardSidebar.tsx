@@ -35,6 +35,11 @@ import {
   Sun,
   Moon,
   Monitor,
+  Home,
+  TrendingUp as ProgressIcon,
+  GraduationCap,
+  Briefcase,
+  Wrench,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -387,9 +392,26 @@ export function DashboardSidebar() {
           {/* Home Section */}
           <SidebarGroup className="space-y-1">
             {!isCollapsed && (
-              <p className="px-3 py-1 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">
-                Home
-              </p>
+              <div className="flex items-center gap-2 px-3 py-1.5">
+                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-primary/10">
+                  <Home className="h-3 w-3 text-primary" />
+                </div>
+                <p className="text-[10px] font-semibold text-primary/80 uppercase tracking-widest">
+                  Home
+                </p>
+              </div>
+            )}
+            {isCollapsed && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center py-1">
+                    <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                      <Home className="h-3 w-3 text-primary" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">Home</TooltipContent>
+              </Tooltip>
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
@@ -418,9 +440,26 @@ export function DashboardSidebar() {
           {/* Progress Section */}
           <SidebarGroup className="space-y-1">
             {!isCollapsed && (
-              <p className="px-3 py-1 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">
-                Progress
-              </p>
+              <div className="flex items-center gap-2 px-3 py-1.5">
+                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-emerald-500/10">
+                  <ProgressIcon className="h-3 w-3 text-emerald-500" />
+                </div>
+                <p className="text-[10px] font-semibold text-emerald-500/80 uppercase tracking-widest">
+                  Progress
+                </p>
+              </div>
+            )}
+            {isCollapsed && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center py-1">
+                    <div className="w-6 h-6 rounded-md bg-emerald-500/10 flex items-center justify-center">
+                      <ProgressIcon className="h-3 w-3 text-emerald-500" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">Progress</TooltipContent>
+              </Tooltip>
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
@@ -472,9 +511,26 @@ export function DashboardSidebar() {
           {/* Learning Section */}
           <SidebarGroup className="space-y-1">
             {!isCollapsed && (
-              <p className="px-3 py-1 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">
-                Learning
-              </p>
+              <div className="flex items-center gap-2 px-3 py-1.5">
+                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-blue-500/10">
+                  <GraduationCap className="h-3 w-3 text-blue-500" />
+                </div>
+                <p className="text-[10px] font-semibold text-blue-500/80 uppercase tracking-widest">
+                  Learning
+                </p>
+              </div>
+            )}
+            {isCollapsed && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center py-1">
+                    <div className="w-6 h-6 rounded-md bg-blue-500/10 flex items-center justify-center">
+                      <GraduationCap className="h-3 w-3 text-blue-500" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">Learning</TooltipContent>
+              </Tooltip>
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
@@ -490,9 +546,26 @@ export function DashboardSidebar() {
           {/* Career Section */}
           <SidebarGroup className="space-y-1">
             {!isCollapsed && (
-              <p className="px-3 py-1 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">
-                Career
-              </p>
+              <div className="flex items-center gap-2 px-3 py-1.5">
+                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-purple-500/10">
+                  <Briefcase className="h-3 w-3 text-purple-500" />
+                </div>
+                <p className="text-[10px] font-semibold text-purple-500/80 uppercase tracking-widest">
+                  Career
+                </p>
+              </div>
+            )}
+            {isCollapsed && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center py-1">
+                    <div className="w-6 h-6 rounded-md bg-purple-500/10 flex items-center justify-center">
+                      <Briefcase className="h-3 w-3 text-purple-500" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">Career</TooltipContent>
+              </Tooltip>
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
@@ -507,9 +580,26 @@ export function DashboardSidebar() {
           {/* Tools & Settings */}
           <SidebarGroup className="space-y-1">
             {!isCollapsed && (
-              <p className="px-3 py-1 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest">
-                Tools
-              </p>
+              <div className="flex items-center gap-2 px-3 py-1.5">
+                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-amber-500/10">
+                  <Wrench className="h-3 w-3 text-amber-500" />
+                </div>
+                <p className="text-[10px] font-semibold text-amber-500/80 uppercase tracking-widest">
+                  Tools
+                </p>
+              </div>
+            )}
+            {isCollapsed && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center py-1">
+                    <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center">
+                      <Wrench className="h-3 w-3 text-amber-500" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">Tools</TooltipContent>
+              </Tooltip>
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
