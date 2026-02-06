@@ -104,7 +104,7 @@ const OutreachUsageAnalytics = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {recentActivity.length > 0
+                  {recentActivity.length > 0 && recentActivity[0].copied_at
                     ? formatDistanceToNow(new Date(recentActivity[0].copied_at), { addSuffix: false })
                     : "N/A"}
                 </p>
@@ -223,7 +223,9 @@ const OutreachUsageAnalytics = () => {
                     </p>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(activity.copied_at), { addSuffix: true })}
+                    {activity.copied_at
+                      ? formatDistanceToNow(new Date(activity.copied_at), { addSuffix: true })
+                      : "Unknown"}
                   </span>
                 </div>
               ))}
