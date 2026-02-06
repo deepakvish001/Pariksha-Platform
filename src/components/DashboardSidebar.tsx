@@ -316,117 +316,102 @@ export function DashboardSidebar() {
       <Sidebar collapsible="icon" className="overflow-hidden">
         {/* Header with Logo, Theme Toggle, and Sidebar Toggle */}
         <SidebarHeader className="border-b border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
-          <div className="flex items-center justify-between">
+          {/* Expanded state header */}
+          <div className={cn(
+            "flex items-center justify-between",
+            isCollapsed && "hidden"
+          )}>
             <BrandLogo size="md" showText={false} />
-            {!isCollapsed && (
-              <div className="flex items-center gap-1.5">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={toggleTheme}
-                      className="h-9 px-2.5 rounded-lg hover:bg-sidebar-accent transition-all duration-200 gap-2 overflow-hidden"
-                    >
-                      <motion.div
-                        key={theme}
-                        initial={{ rotate: -90, opacity: 0 }}
-                        animate={{ rotate: 0, opacity: 1 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        {getThemeIcon()}
-                      </motion.div>
-                      <AnimatePresence mode="wait">
-                        <motion.span
-                          key={theme}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -8 }}
-                          transition={{ duration: 0.15, ease: "easeOut" }}
-                          className="text-xs font-medium text-sidebar-foreground/70"
-                        >
-                          {getThemeLabel()}
-                        </motion.span>
-                      </AnimatePresence>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    Click to switch theme
-                  </TooltipContent>
-                </Tooltip>
-                <NotificationBell />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => toggleSidebar()}
-                      className="h-9 w-9 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
-                    >
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <PanelLeftClose className="h-4 w-4" />
-                      </motion.div>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    Collapse sidebar
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            )}
-          </div>
-          {isCollapsed && (
-            <div className="flex flex-col items-center gap-2 mt-2">
+            <div className="flex items-center gap-1.5">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    onClick={() => toggleSidebar()}
-                    className="h-10 w-10 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
-                  >
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <PanelLeft className="h-4 w-4" />
-                    </motion.div>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  Expand sidebar
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                    size="sm"
                     onClick={toggleTheme}
-                    className="h-10 w-10 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
+                    className="h-9 px-2.5 rounded-lg hover:bg-sidebar-accent transition-all duration-200 gap-2 overflow-hidden"
                   >
                     <motion.div
-                      key={theme}
+                      key={`theme-expanded-${theme}`}
                       initial={{ rotate: -90, opacity: 0 }}
                       animate={{ rotate: 0, opacity: 1 }}
                       transition={{ duration: 0.2 }}
                     >
                       {getThemeIcon()}
                     </motion.div>
+                    <span className="text-xs font-medium text-sidebar-foreground/70">
+                      {getThemeLabel()}
+                    </span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">
-                  {getThemeLabel()} mode (click to switch)
+                <TooltipContent side="bottom">
+                  Click to switch theme
                 </TooltipContent>
               </Tooltip>
               <NotificationBell />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => toggleSidebar()}
+                    className="h-9 w-9 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
+                  >
+                    <PanelLeftClose className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  Collapse sidebar
+                </TooltipContent>
+              </Tooltip>
             </div>
-          )}
+          </div>
+
+          {/* Collapsed state header */}
+          <div className={cn(
+            "flex flex-col items-center gap-2",
+            !isCollapsed && "hidden"
+          )}>
+            <BrandLogo size="sm" showText={false} />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => toggleSidebar()}
+                  className="h-10 w-10 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
+                >
+                  <PanelLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                Expand sidebar
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleTheme}
+                  className="h-10 w-10 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
+                >
+                  <motion.div
+                    key={`theme-collapsed-${theme}`}
+                    initial={{ rotate: -90, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {getThemeIcon()}
+                  </motion.div>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {getThemeLabel()} mode (click to switch)
+              </TooltipContent>
+            </Tooltip>
+            <NotificationBell />
+          </div>
         </SidebarHeader>
 
         <SidebarContent className="px-3 py-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3">
