@@ -1,14 +1,24 @@
 import { motion } from "framer-motion";
-import { Search, Filter, Star, Code, Database, Cpu, Brain, LayoutGrid } from "lucide-react";
+import { Search, Filter, Star, Code, Database, Cpu, Brain, LayoutGrid, ArrowUpDown, TrendingUp, Hash, Gauge } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+
+export type SortOption = "default" | "progress-desc" | "progress-asc" | "problems-desc" | "problems-asc" | "difficulty";
 
 interface SheetsFilterBarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   activeTab: string;
   onTabChange: (value: string) => void;
+  sortBy: SortOption;
+  onSortChange: (value: SortOption) => void;
 }
 
 const tabs = [
@@ -20,12 +30,25 @@ const tabs = [
   { id: "ml", label: "ML", icon: Brain },
 ];
 
+const sortOptions = [
+  { id: "default" as SortOption, label: "Default", icon: LayoutGrid },
+  { id: "progress-desc" as SortOption, label: "Most Progress", icon: TrendingUp },
+  { id: "progress-asc" as SortOption, label: "Least Progress", icon: TrendingUp },
+  { id: "problems-desc" as SortOption, label: "Most Problems", icon: Hash },
+  { id: "problems-asc" as SortOption, label: "Fewest Problems", icon: Hash },
+  { id: "difficulty" as SortOption, label: "By Difficulty", icon: Gauge },
+];
+
 const SheetsFilterBar = ({ 
   searchQuery, 
   onSearchChange, 
   activeTab, 
-  onTabChange 
+  onTabChange,
+  sortBy,
+  onSortChange,
 }: SheetsFilterBarProps) => {
+  const currentSort = sortOptions.find(s => s.id === sortBy) || sortOptions[0];
+
   return (
     <div className="space-y-4">
       {/* Search Bar */}
@@ -43,10 +66,31 @@ const SheetsFilterBar = ({
             className="pl-10 h-11 bg-card/50 border-border/50 focus:border-primary/50"
           />
         </div>
-        <Button variant="outline" className="gap-2 h-11 px-4 shrink-0">
-          <Filter className="h-4 w-4" />
-          <span className="hidden sm:inline">Filters</span>
-        </Button>
+        
+        {/* Sort Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-2 h-11 px-4 shrink-0">
+              <ArrowUpDown className="h-4 w-4" />
+              <span className="hidden sm:inline">{currentSort.label}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {sortOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.id}
+                onClick={() => onSortChange(option.id)}
+                className={cn(
+                  "gap-2 cursor-pointer",
+                  sortBy === option.id && "bg-primary/10 text-primary"
+                )}
+              >
+                <option.icon className="h-4 w-4" />
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </motion.div>
 
       {/* Category Tabs */}

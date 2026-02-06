@@ -1,11 +1,13 @@
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Star, BookOpen, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
+import { Star, BookOpen, ArrowRight, Sparkles, CheckCircle2, Clock, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
 interface Sheet {
   id: string;
@@ -22,6 +24,7 @@ interface SheetCardProps {
   index: number;
   progress?: number;
   completedCount?: number;
+  lastActivityAt?: string | null;
   isLoading?: boolean;
 }
 
@@ -46,9 +49,14 @@ const getDifficultyStyles = (difficulty: string) => {
   return "text-amber-500 bg-amber-500/10";
 };
 
-const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, isLoading = false }: SheetCardProps) => {
+const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, lastActivityAt, isLoading = false }: SheetCardProps) => {
   const navigate = useNavigate();
+  const [isHovered, setIsHovered] = useState(false);
   const categoryStyles = getCategoryStyles(sheet.category);
+
+  const formattedLastActivity = lastActivityAt 
+    ? formatDistanceToNow(new Date(lastActivityAt), { addSuffix: true })
+    : null;
 
   return (
     <motion.div
@@ -57,6 +65,8 @@ const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, isLoading =
       transition={{ delay: index * 0.05, duration: 0.3 }}
       whileHover={{ y: -4 }}
       className="h-full"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <Card 
         className={cn(
@@ -72,7 +82,7 @@ const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, isLoading =
 
         {/* Starred Badge */}
         {sheet.starred && (
-          <div className="absolute top-3 right-3">
+          <div className="absolute top-3 right-3 z-10">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -137,6 +147,14 @@ const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, isLoading =
             )}
           </div>
 
+          {/* Last Activity */}
+          {formattedLastActivity && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+              <Clock className="h-3 w-3" />
+              <span>Active {formattedLastActivity}</span>
+            </div>
+          )}
+
           {/* Footer */}
           <div className="flex items-center justify-between pt-3 border-t border-border/50">
             <div className="flex items-center gap-2">
@@ -161,16 +179,49 @@ const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, isLoading =
               {sheet.difficulty}
             </Badge>
           </div>
-
-          {/* Hover Arrow */}
-          <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            whileHover={{ opacity: 1, x: 0 }}
-            className="absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <ArrowRight className="h-5 w-5 text-primary" />
-          </motion.div>
         </CardContent>
+
+        {/* Hover Preview Overlay */}
+        <AnimatePresence>
+          {isHovered && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-card via-card/95 to-transparent"
+            >
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Click to start practicing</p>
+                  <div className="flex items-center gap-2">
+                    {progress > 0 && progress < 100 && (
+                      <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+                        Continue Learning
+                      </Badge>
+                    )}
+                    {progress === 100 && (
+                      <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                        Completed!
+                      </Badge>
+                    )}
+                    {progress === 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        Start Fresh
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <motion.div
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                >
+                  <ChevronRight className="h-5 w-5 text-primary" />
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Card>
     </motion.div>
   );
