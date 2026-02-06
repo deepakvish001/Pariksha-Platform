@@ -30,6 +30,7 @@ import {
   FolderOpen,
   TrendingUp,
   Settings,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -76,6 +77,7 @@ const mainNavItems = [
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
   { title: "Profile", url: "/dashboard/profile", icon: User },
   { title: "Achievements", url: "/dashboard/achievements", icon: Trophy },
+  { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
 ];
 
 const libraryItems = [
