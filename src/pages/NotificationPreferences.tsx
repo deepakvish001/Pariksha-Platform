@@ -26,6 +26,17 @@ import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface NotificationSettings {
   email_notifications_enabled: boolean;
@@ -401,15 +412,34 @@ const NotificationPreferences = () => {
 
         {/* Action Buttons */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex gap-3">
-          <Button 
-            variant="outline" 
-            onClick={handleResetToDefaults} 
-            className="flex-1"
-            size="lg"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset to Defaults
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                size="lg"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reset to Defaults
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset Notification Preferences?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will reset all your notification preferences to their default values. 
+                  Email notifications, weekly digest, and new feature alerts will be enabled. 
+                  Marketing emails will be disabled. You'll still need to save after resetting.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleResetToDefaults}>
+                  Reset to Defaults
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button onClick={handleSave} disabled={isSaving} className="flex-[2]" size="lg">
             {isSaving ? (
               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
