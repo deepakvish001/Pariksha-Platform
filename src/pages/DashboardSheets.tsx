@@ -1,14 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { FileSpreadsheet, Search, Filter, Star, ExternalLink, BookOpen } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import MobileFAB from "@/components/MobileFAB";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SheetsHeroSection from "@/components/sheets/SheetsHeroSection";
+import SheetsFilterBar from "@/components/sheets/SheetsFilterBar";
+import SheetCard from "@/components/sheets/SheetCard";
+import SheetsEmptyState from "@/components/sheets/SheetsEmptyState";
 
 const sheets = [
   {
@@ -68,7 +64,6 @@ const sheets = [
 ];
 
 const DashboardSheets = () => {
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
@@ -81,121 +76,52 @@ const DashboardSheets = () => {
     return matchesSearch && matchesTab;
   });
 
+  const totalProblems = sheets.reduce((acc, sheet) => acc + sheet.problems, 0);
+
   return (
     <div className="min-h-screen bg-background">
-          {/* Header */}
-          <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
-            <div className="flex h-16 items-center gap-4 px-6">
-              <SidebarTrigger />
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-orange flex items-center justify-center">
-                  <FileSpreadsheet className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold">Practice Sheets</h1>
-                  <p className="text-sm text-muted-foreground">Curated problem sets for your preparation</p>
-                </div>
-              </div>
-            </div>
-          </header>
+      {/* Sticky Header */}
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
+        <div className="flex h-14 items-center gap-4 px-4 md:px-6">
+          <SidebarTrigger />
+          <span className="text-sm font-medium text-muted-foreground">Practice Sheets</span>
+        </div>
+      </header>
 
-          {/* Content */}
-          <main className="p-6 md:p-8 space-y-6">
-            {/* Search and Filter */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col sm:flex-row gap-4"
-            >
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search sheets..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button variant="outline" className="gap-2">
-                <Filter className="h-4 w-4" />
-                Filters
-              </Button>
-            </motion.div>
+      {/* Hero Section */}
+      <SheetsHeroSection totalSheets={sheets.length} totalProblems={totalProblems} />
 
-            {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="flex-wrap h-auto gap-2 bg-transparent p-0">
-                <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  All Sheets
-                </TabsTrigger>
-                <TabsTrigger value="starred" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  <Star className="h-3 w-3 mr-1" />
-                  Starred
-                </TabsTrigger>
-                <TabsTrigger value="dsa" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  DSA
-                </TabsTrigger>
-                <TabsTrigger value="sql" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  SQL
-                </TabsTrigger>
-                <TabsTrigger value="system design" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  System Design
-                </TabsTrigger>
-              </TabsList>
+      {/* Content */}
+      <main className="p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+        {/* Filter Bar */}
+        <SheetsFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
 
-              <TabsContent value={activeTab} className="mt-6">
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredSheets.map((sheet, index) => (
-                    <motion.div
-                      key={sheet.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <Card 
-                        className="hover:shadow-lg transition-all cursor-pointer group h-full"
-                        onClick={() => navigate(`/dashboard/sheets/${sheet.id}`)}
-                      >
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                              <BookOpen className="h-5 w-5 text-primary" />
-                            </div>
-                            {sheet.starred && (
-                              <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                            )}
-                          </div>
-                          <CardTitle className="text-lg mt-4">{sheet.title}</CardTitle>
-                          <CardDescription>{sheet.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">{sheet.problems} problems</span>
-                            <Badge variant="outline">{sheet.difficulty}</Badge>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge>{sheet.category}</Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
+        {/* Cards Grid */}
+        {filteredSheets.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredSheets.map((sheet, index) => (
+              <SheetCard
+                key={sheet.id}
+                sheet={sheet}
+                index={index}
+                progress={Math.floor(Math.random() * 60)}
+              />
+            ))}
+          </div>
+        ) : (
+          <SheetsEmptyState hasSearchQuery={searchQuery.length > 0} />
+        )}
+      </main>
 
-                {filteredSheets.length === 0 && (
-                  <div className="text-center py-12">
-                    <FileSpreadsheet className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No sheets found matching your criteria</p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-        </main>
+      {/* Mobile FAB */}
+      <MobileFAB />
+    </div>
+  );
+};
 
-        {/* Mobile FAB */}
-        <MobileFAB />
-      </div>
-    );
-  };
-  
-  export default DashboardSheets;
+export default DashboardSheets;
