@@ -1,16 +1,19 @@
 import { motion } from "framer-motion";
-import { FileSpreadsheet, TrendingUp, Target, Zap } from "lucide-react";
+import { FileSpreadsheet, Target, Zap, CheckCircle2 } from "lucide-react";
 
 interface SheetsHeroSectionProps {
   totalSheets: number;
   totalProblems: number;
+  completedProblems?: number;
 }
 
-const SheetsHeroSection = ({ totalSheets, totalProblems }: SheetsHeroSectionProps) => {
+const SheetsHeroSection = ({ totalSheets, totalProblems, completedProblems = 0 }: SheetsHeroSectionProps) => {
+  const completionPercent = totalProblems > 0 ? Math.round((completedProblems / totalProblems) * 100) : 0;
+  
   const stats = [
     { label: "Practice Sheets", value: totalSheets, icon: FileSpreadsheet, color: "text-primary" },
-    { label: "Total Problems", value: totalProblems, icon: Target, color: "text-emerald-500" },
-    { label: "Categories", value: 5, icon: Zap, color: "text-amber-500" },
+    { label: "Total Problems", value: totalProblems, icon: Target, color: "text-blue-500" },
+    { label: "Completed", value: `${completedProblems} (${completionPercent}%)`, icon: CheckCircle2, color: "text-emerald-500" },
   ];
 
   return (

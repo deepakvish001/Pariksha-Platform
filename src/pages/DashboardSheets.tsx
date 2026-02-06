@@ -5,6 +5,7 @@ import SheetsHeroSection from "@/components/sheets/SheetsHeroSection";
 import SheetsFilterBar from "@/components/sheets/SheetsFilterBar";
 import SheetCard from "@/components/sheets/SheetCard";
 import SheetsEmptyState from "@/components/sheets/SheetsEmptyState";
+import { useSheetProgress, calculateProgressPercentage } from "@/hooks/useSheetProgress";
 
 const sheets = [
   {
@@ -66,6 +67,7 @@ const sheets = [
 const DashboardSheets = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const { data: progressData, isLoading: isProgressLoading } = useSheetProgress();
 
   const filteredSheets = sheets.filter((sheet) => {
     const matchesSearch = sheet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -77,6 +79,21 @@ const DashboardSheets = () => {
   });
 
   const totalProblems = sheets.reduce((acc, sheet) => acc + sheet.problems, 0);
+  
+  // Calculate total completed problems across all sheets
+  const totalCompleted = progressData 
+    ? Object.values(progressData).reduce((acc, p) => acc + p.completedCount, 0) 
+    : 0;
+
+  const getSheetProgress = (sheetId: string, totalProblems: number): number => {
+    if (!progressData || !progressData[sheetId]) return 0;
+    return calculateProgressPercentage(progressData[sheetId].completedCount, totalProblems);
+  };
+
+  const getSheetCompletedCount = (sheetId: string): number => {
+    if (!progressData || !progressData[sheetId]) return 0;
+    return progressData[sheetId].completedCount;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -89,7 +106,11 @@ const DashboardSheets = () => {
       </header>
 
       {/* Hero Section */}
-      <SheetsHeroSection totalSheets={sheets.length} totalProblems={totalProblems} />
+      <SheetsHeroSection 
+        totalSheets={sheets.length} 
+        totalProblems={totalProblems}
+        completedProblems={totalCompleted}
+      />
 
       {/* Content */}
       <main className="p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -109,7 +130,9 @@ const DashboardSheets = () => {
                 key={sheet.id}
                 sheet={sheet}
                 index={index}
-                progress={Math.floor(Math.random() * 60)}
+                progress={getSheetProgress(sheet.id, sheet.problems)}
+                completedCount={getSheetCompletedCount(sheet.id)}
+                isLoading={isProgressLoading}
               />
             ))}
           </div>
