@@ -312,7 +312,7 @@ export function DashboardSidebar() {
                       variant="ghost"
                       size="sm"
                       onClick={toggleTheme}
-                      className="h-9 px-2.5 rounded-lg hover:bg-sidebar-accent transition-all duration-200 gap-2"
+                      className="h-9 px-2.5 rounded-lg hover:bg-sidebar-accent transition-all duration-200 gap-2 overflow-hidden"
                     >
                       <motion.div
                         key={theme}
@@ -322,9 +322,18 @@ export function DashboardSidebar() {
                       >
                         {getThemeIcon()}
                       </motion.div>
-                      <span className="text-xs font-medium text-sidebar-foreground/70">
-                        {getThemeLabel()}
-                      </span>
+                      <AnimatePresence mode="wait">
+                        <motion.span
+                          key={theme}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.15, ease: "easeOut" }}
+                          className="text-xs font-medium text-sidebar-foreground/70"
+                        >
+                          {getThemeLabel()}
+                        </motion.span>
+                      </AnimatePresence>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
