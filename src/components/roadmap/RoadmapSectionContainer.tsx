@@ -77,27 +77,27 @@ const RoadmapSectionContainer: React.FC<RoadmapSectionContainerProps> = ({
         >
           <div
             className={cn(
-              "relative rounded-lg overflow-hidden",
-              "border transition-all duration-200",
-              "bg-card/20 dark:bg-card/15",
+              "relative rounded-2xl overflow-hidden",
+              "border-2 transition-all duration-200",
+              "bg-card/30 dark:bg-card/20",
               accent.border,
-              isRecommendedSection && `shadow-md ${accent.glow}`,
-              isCompact ? "mt-0.5" : "mt-1",
+              isRecommendedSection && `shadow-lg ${accent.glow}`,
+              isCompact ? "mt-1" : "mt-2",
               className
             )}
           >
-            {/* Gradient accent on left edge - thinner */}
+            {/* Gradient accent on left edge */}
             <div className={cn(
-              "absolute left-0 top-0 bottom-0 w-[2px] rounded-l-lg",
+              "absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl",
               `bg-gradient-to-b ${accent.line}`
             )} />
             
-            {/* Content area - tighter padding */}
+            {/* Content area */}
             <motion.div 
               variants={contentVariants}
               className={cn(
                 "relative",
-                isCompact ? "p-1.5 pl-2" : "p-2 pl-2.5"
+                isCompact ? "p-2 pl-3" : "p-3 pl-4"
               )}
             >
               <div className={cn(

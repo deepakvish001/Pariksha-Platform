@@ -38,9 +38,9 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
   const isComplete = percentage === 100;
   const isStarted = completed > 0;
   
-  // Progress ring calculations
-  const size = isCompact ? 36 : 44;
-  const strokeWidth = 2.5;
+  // Progress ring calculations - larger for better visibility
+  const size = isCompact ? 44 : 56;
+  const strokeWidth = 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -71,14 +71,15 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
       <button
         onClick={onToggle}
         className={cn(
-          "relative w-full flex items-center rounded-xl overflow-hidden",
-          "bg-card border transition-all duration-200",
-          "hover:shadow-md",
+          "relative w-full flex items-center rounded-2xl overflow-hidden",
+          "bg-card border-2 transition-all duration-200",
+          "hover:shadow-lg hover:border-primary/30",
+          "shadow-sm",
           isCollapsed 
             ? "border-border/60" 
-            : cn("border-l-[3px]", phaseStyle.border, "border-l-current", phaseStyle.text),
-          isCompact ? "gap-2 px-3 py-2" : "gap-3 px-4 py-3",
-          isComplete && "bg-gradient-to-r from-emerald-50/30 to-transparent dark:from-emerald-500/5",
+            : cn("border-l-4", phaseStyle.border, "border-l-current", phaseStyle.text),
+          isCompact ? "gap-3 px-4 py-3" : "gap-4 px-5 py-4",
+          isComplete && "bg-gradient-to-r from-emerald-50/40 to-transparent dark:from-emerald-500/10",
           isFocused && "ring-2 ring-violet-400 ring-offset-2 dark:ring-offset-background",
           onToggle && "cursor-pointer group"
         )}
@@ -114,24 +115,24 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
           <div className="absolute inset-0 flex items-center justify-center">
             <motion.div 
               className={cn(
-                "rounded-lg flex items-center justify-center shadow-sm",
+                "rounded-xl flex items-center justify-center shadow-md",
                 "bg-gradient-to-br",
                 phaseStyle.bg,
-                isCompact ? "h-6 w-6" : "h-8 w-8"
+                isCompact ? "h-8 w-8" : "h-10 w-10"
               )}
               whileHover={{ scale: 1.05 }}
               transition={{ type: "spring", stiffness: 400 }}
             >
-              <PhaseIcon className={cn("text-white drop-shadow-sm", isCompact ? "h-3 w-3" : "h-4 w-4")} />
+              <PhaseIcon className={cn("text-white drop-shadow-sm", isCompact ? "h-4 w-4" : "h-5 w-5")} />
             </motion.div>
           </div>
           
           {/* Phase number badge */}
           <div className={cn(
-            "absolute -top-0.5 -right-0.5 rounded-full flex items-center justify-center",
-            "bg-background border shadow-sm font-bold",
+            "absolute -top-1 -right-1 rounded-full flex items-center justify-center",
+            "bg-background border-2 shadow-sm font-bold",
             phaseStyle.text, phaseStyle.border,
-            isCompact ? "h-3.5 w-3.5 text-[7px]" : "h-4 w-4 text-[9px]"
+            isCompact ? "h-5 w-5 text-[9px]" : "h-6 w-6 text-[11px]"
           )}>
             {phase}
           </div>
@@ -143,11 +144,11 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", stiffness: 500, delay: 0.2 }}
               className={cn(
-                "absolute -bottom-0.5 -right-0.5 rounded-full bg-emerald-500 flex items-center justify-center shadow ring-2 ring-background",
-                isCompact ? "h-3.5 w-3.5" : "h-4 w-4"
+                "absolute -bottom-1 -right-1 rounded-full bg-emerald-500 flex items-center justify-center shadow-md ring-2 ring-background",
+                isCompact ? "h-5 w-5" : "h-6 w-6"
               )}
             >
-              <CheckCircle2 className={cn("text-white", isCompact ? "h-2 w-2" : "h-2.5 w-2.5")} />
+              <CheckCircle2 className={cn("text-white", isCompact ? "h-3 w-3" : "h-3.5 w-3.5")} />
             </motion.div>
           )}
         </div>
@@ -157,28 +158,28 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
           <div className="flex items-center gap-2">
             <h3 className={cn(
               "font-bold tracking-tight leading-tight truncate",
-              isCompact ? "text-base" : "text-lg"
+              isCompact ? "text-lg" : "text-xl"
             )}>
               {title}
             </h3>
             
             {isComplete && (
               <motion.span
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-semibold"
-              >
-                <Sparkles className="h-2.5 w-2.5" />
-                Done
-              </motion.span>
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs font-semibold"
+            >
+              <Sparkles className="h-3 w-3" />
+              Done
+            </motion.span>
             )}
             
             {!isComplete && isStarted && !isCompact && (
               <span className={cn(
-                "flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium",
-                "bg-primary/10 text-primary"
+                "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                "bg-primary/15 text-primary"
               )}>
-                <TrendingUp className="h-2.5 w-2.5" />
+                <TrendingUp className="h-3 w-3" />
                 In Progress
               </span>
             )}
@@ -187,10 +188,10 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
           {/* Progress stats row - cleaner layout */}
           <div className={cn(
             "flex items-center gap-3 text-muted-foreground",
-            isCompact ? "mt-0.5 text-xs" : "mt-1 text-sm"
+            isCompact ? "mt-1 text-sm" : "mt-1.5 text-base"
           )}>
             <span className={cn(
-              "font-medium tabular-nums",
+              "font-semibold tabular-nums",
               isComplete && "text-emerald-600 dark:text-emerald-400"
             )}>
               {completed}/{total} topics
@@ -199,8 +200,8 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
             {!isComplete && !isCompact && (
               <>
                 <span className="text-muted-foreground/40">•</span>
-                <span className="flex items-center gap-1">
-                  <ArrowRight className="h-3 w-3" />
+                <span className="flex items-center gap-1.5 font-medium">
+                  <ArrowRight className="h-4 w-4" />
                   {total - completed} left
                 </span>
               </>
@@ -213,7 +214,7 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
           {/* Percentage badge */}
           <span className={cn(
             "font-bold tabular-nums",
-            isCompact ? "text-base" : "text-lg",
+            isCompact ? "text-xl" : "text-2xl",
             isComplete ? "text-emerald-600 dark:text-emerald-400" : phaseStyle.text
           )}>
             {percentage}%
@@ -225,15 +226,15 @@ const RoadmapSectionHeader: React.FC<RoadmapSectionHeaderProps> = ({
               animate={{ rotate: isCollapsed ? 0 : 180 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
               className={cn(
-                "flex-shrink-0 rounded-lg flex items-center justify-center",
-                "bg-muted/40 border border-border/40",
+                "flex-shrink-0 rounded-xl flex items-center justify-center",
+                "bg-muted/50 border-2 border-border/50",
                 "group-hover:bg-muted group-hover:border-border transition-all duration-200",
-                isCompact ? "h-5 w-5" : "h-6 w-6"
+                isCompact ? "h-7 w-7" : "h-8 w-8"
               )}
             >
               <ChevronDown className={cn(
                 "text-muted-foreground group-hover:text-foreground transition-colors",
-                isCompact ? "h-3 w-3" : "h-3.5 w-3.5"
+                isCompact ? "h-4 w-4" : "h-5 w-5"
               )} />
             </motion.div>
           )}
