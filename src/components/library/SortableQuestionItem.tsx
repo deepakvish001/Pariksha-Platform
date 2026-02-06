@@ -60,11 +60,11 @@ const SortableQuestionItem = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg border bg-card transition-all",
+        "flex items-center gap-3 p-3 rounded-xl border bg-black/40 backdrop-blur-xl transition-all",
         isDragging
-          ? "shadow-lg border-primary/50 bg-primary/5 z-50"
-          : "border-border hover:border-primary/30 hover:bg-muted/30",
-        isSelected && "border-primary bg-primary/5"
+          ? "shadow-lg border-primary/50 bg-primary/10 z-50"
+          : "border-white/[0.05] hover:border-white/[0.1] hover:bg-black/50",
+        isSelected && "border-primary/50 bg-primary/10"
       )}
     >
       {/* Checkbox for selection */}
@@ -72,7 +72,7 @@ const SortableQuestionItem = ({
         <Checkbox
           checked={isSelected}
           onCheckedChange={(checked) => onSelect?.(!!checked)}
-          className="flex-shrink-0"
+          className="flex-shrink-0 border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
           onClick={(e) => e.stopPropagation()}
         />
       )}
@@ -81,10 +81,10 @@ const SortableQuestionItem = ({
       <button
         {...attributes}
         {...listeners}
-        className="flex-shrink-0 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+        className="flex-shrink-0 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-white/[0.05] transition-colors"
         aria-label="Drag to reorder"
       >
-        <GripVertical className="h-4 w-4 text-muted-foreground" />
+        <GripVertical className="h-4 w-4 text-white/40" />
       </button>
 
       {/* Status Indicators */}
@@ -100,13 +100,13 @@ const SortableQuestionItem = ({
       {/* Question Content */}
       <div className="flex-1 min-w-0">
         <p className={cn(
-          "text-sm font-medium truncate",
-          isSolved && "text-muted-foreground"
+          "text-sm font-medium truncate text-white",
+          isSolved && "text-white/60"
         )}>
           {question.text}
         </p>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs text-muted-foreground truncate">
+          <span className="text-xs text-white/40 truncate">
             {question.sourceLabel}
           </span>
         </div>
