@@ -608,6 +608,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_log: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_company_progress: {
         Row: {
           company_id: string
