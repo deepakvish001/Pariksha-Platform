@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { FolderOpen, Sparkles, Search, ArrowLeft, Share2, CheckSquare, X } from "lucide-react";
+import { FolderOpen, FolderPlus, Sparkles, Search, ArrowLeft, Share2, CheckSquare, X } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,7 @@ interface CollectionsHeaderProps {
   isSelectionMode: boolean;
   onToggleSelectionMode: () => void;
   onOpenShareDialog: () => void;
+  onCreateFolder: () => void;
 }
 
 const CollectionsHeader = ({
@@ -39,6 +40,7 @@ const CollectionsHeader = ({
   isSelectionMode,
   onToggleSelectionMode,
   onOpenShareDialog,
+  onCreateFolder,
 }: CollectionsHeaderProps) => {
   return (
     <header className="sticky top-0 z-40 border-b border-white/[0.03] bg-black/40 backdrop-blur-3xl">
@@ -163,6 +165,15 @@ const CollectionsHeader = ({
                   </span>
                 </div>
               </div>
+
+              {/* Create Folder Button */}
+              <Button
+                onClick={onCreateFolder}
+                className="gap-2 bg-primary hover:bg-primary/90"
+              >
+                <FolderPlus className="h-4 w-4" />
+                <span className="hidden sm:inline">New Folder</span>
+              </Button>
             </div>
           )}
         </div>

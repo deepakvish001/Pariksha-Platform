@@ -42,6 +42,9 @@ import CollectionsHeader from "@/components/collections/CollectionsHeader";
 import CollectionFolderCard from "@/components/collections/CollectionFolderCard";
 import CollectionsBulkActions from "@/components/collections/CollectionsBulkActions";
 import CollectionsEmptyState from "@/components/collections/CollectionsEmptyState";
+import CreateFolderDialog from "@/components/collections/CreateFolderDialog";
+import RenameFolderDialog from "@/components/collections/RenameFolderDialog";
+import DeleteFolderDialog from "@/components/collections/DeleteFolderDialog";
 
 // Helper to get question details from various sources
 const getQuestionDetails = (questionId: number, source: string) => {
@@ -87,6 +90,9 @@ const Collections = () => {
     moveItemsToFolder,
     deleteItems,
     updateFolderColor,
+    createFolder,
+    renameFolder,
+    deleteFolder,
   } = useAllFolders();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,6 +104,12 @@ const Collections = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveMenuOpen, setMoveMenuOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Folder CRUD dialogs
+  const [createFolderDialogOpen, setCreateFolderDialogOpen] = useState(false);
+  const [renameFolderDialogOpen, setRenameFolderDialogOpen] = useState(false);
+  const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false);
+  const [folderToEdit, setFolderToEdit] = useState<FolderWithSource | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -253,6 +265,56 @@ const Collections = () => {
     setShareDialogOpen(true);
   };
 
+  const handleCreateFolder = async (name: string, description: string, color: string) => {
+    const success = await createFolder(name, description, color);
+    if (success) {
+      toast.success("Folder created successfully");
+    } else {
+      toast.error("Failed to create folder");
+    }
+    return success;
+  };
+
+  const handleRenameFolder = async (name: string, description: string) => {
+    if (!folderToEdit) return false;
+    const success = await renameFolder(folderToEdit.id, name, description);
+    if (success) {
+      toast.success("Folder renamed successfully");
+      // Update selectedFolder if it's the one being renamed
+      if (selectedFolder?.id === folderToEdit.id) {
+        setSelectedFolder({ ...selectedFolder, name, description });
+      }
+    } else {
+      toast.error("Failed to rename folder");
+    }
+    return success;
+  };
+
+  const handleDeleteFolder = async () => {
+    if (!folderToEdit) return false;
+    const success = await deleteFolder(folderToEdit.id);
+    if (success) {
+      toast.success("Folder deleted successfully");
+      // If the deleted folder was selected, go back to folder list
+      if (selectedFolder?.id === folderToEdit.id) {
+        setSelectedFolder(null);
+      }
+    } else {
+      toast.error("Failed to delete folder");
+    }
+    return success;
+  };
+
+  const openRenameDialog = (folder: FolderWithSource) => {
+    setFolderToEdit(folder);
+    setRenameFolderDialogOpen(true);
+  };
+
+  const openDeleteDialog = (folder: FolderWithSource) => {
+    setFolderToEdit(folder);
+    setDeleteFolderDialogOpen(true);
+  };
+
   // Login prompt
   if (!user) {
     return (
@@ -269,6 +331,7 @@ const Collections = () => {
             isSelectionMode={false}
             onToggleSelectionMode={() => {}}
             onOpenShareDialog={() => {}}
+            onCreateFolder={() => {}}
           />
           <main className="p-6">
             <CollectionsEmptyState type="not-logged-in" />
@@ -293,6 +356,7 @@ const Collections = () => {
           isSelectionMode={isSelectionMode}
           onToggleSelectionMode={toggleSelectionMode}
           onOpenShareDialog={() => selectedFolder && openShareDialog(selectedFolder)}
+          onCreateFolder={() => setCreateFolderDialogOpen(true)}
         />
 
         {/* Bulk Action Bar */}
@@ -348,6 +412,8 @@ const Collections = () => {
                             toast.success("Folder color updated");
                           }
                         }}
+                        onRename={openRenameDialog}
+                        onDelete={openDeleteDialog}
                       />
                     ))}
                   </AnimatePresence>
@@ -452,6 +518,35 @@ const Collections = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Folder Dialog */}
+      <CreateFolderDialog
+        open={createFolderDialogOpen}
+        onOpenChange={setCreateFolderDialogOpen}
+        onCreateFolder={handleCreateFolder}
+      />
+
+      {/* Rename Folder Dialog */}
+      {folderToEdit && (
+        <RenameFolderDialog
+          open={renameFolderDialogOpen}
+          onOpenChange={setRenameFolderDialogOpen}
+          folderName={folderToEdit.name}
+          folderDescription={folderToEdit.description || ""}
+          onRenameFolder={handleRenameFolder}
+        />
+      )}
+
+      {/* Delete Folder Dialog */}
+      {folderToEdit && (
+        <DeleteFolderDialog
+          open={deleteFolderDialogOpen}
+          onOpenChange={setDeleteFolderDialogOpen}
+          folderName={folderToEdit.name}
+          itemCount={folderToEdit.itemCount || 0}
+          onDeleteFolder={handleDeleteFolder}
+        />
+      )}
     </div>
   );
 };
