@@ -315,9 +315,11 @@ export function DashboardSidebar() {
         <SidebarHeader className="border-b border-sidebar-border p-3 group-data-[collapsible=icon]:p-2">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center justify-center py-1">
-              <div className="w-10 h-10 rounded-xl bg-gradient-orange flex items-center justify-center transition-transform duration-200 hover:scale-105">
-                <span className="text-primary-foreground font-bold text-lg">U</span>
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="Byteskill" 
+                className="w-10 h-10 rounded-xl transition-transform duration-200 hover:scale-105" 
+              />
             </Link>
             {!isCollapsed && (
               <div className="flex items-center gap-2">
