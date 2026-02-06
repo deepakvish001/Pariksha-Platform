@@ -15,11 +15,11 @@ interface ActivityHeatmapProps {
 }
 
 const levelColors = {
-  0: "bg-white/5 hover:bg-white/10",
-  1: "bg-emerald-500/30 hover:bg-emerald-500/40",
-  2: "bg-emerald-500/50 hover:bg-emerald-500/60",
-  3: "bg-emerald-500/70 hover:bg-emerald-500/80",
-  4: "bg-emerald-400 hover:bg-emerald-300",
+  0: "bg-white/[0.03] hover:bg-white/[0.06]",
+  1: "bg-emerald-600/25 hover:bg-emerald-600/35",
+  2: "bg-emerald-500/45 hover:bg-emerald-500/55",
+  3: "bg-emerald-500/65 hover:bg-emerald-500/75",
+  4: "bg-emerald-400/90 hover:bg-emerald-400",
 };
 
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -90,13 +90,13 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
 
   if (loading) {
     return (
-      <Card className="border-white/5 bg-white/[0.02] backdrop-blur-xl">
+      <Card className="border-white/[0.03] bg-black/40 backdrop-blur-2xl">
         <CardHeader className="pb-4">
-          <Skeleton className="h-5 w-40 bg-white/10" />
-          <Skeleton className="h-4 w-60 bg-white/10" />
+          <Skeleton className="h-5 w-40 bg-white/[0.06]" />
+          <Skeleton className="h-4 w-60 bg-white/[0.06]" />
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-32 w-full bg-white/10" />
+          <Skeleton className="h-32 w-full bg-white/[0.06]" />
         </CardContent>
       </Card>
     );
@@ -106,28 +106,30 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
+      transition={{ delay: 0.2, type: "spring", stiffness: 400, damping: 25 }}
     >
-      <Card className="overflow-hidden border-white/5 bg-white/[0.02] backdrop-blur-xl ring-1 ring-white/5">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <Card className="overflow-hidden border-white/[0.03] bg-black/40 backdrop-blur-2xl">
+        <CardHeader className="pb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-lg flex items-center gap-2 text-white">
-                <Flame className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg flex items-center gap-2.5 text-white font-semibold">
+                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center shadow-lg shadow-primary/20">
+                  <Flame className="h-4 w-4 text-white" />
+                </div>
                 Activity Heatmap
               </CardTitle>
-              <CardDescription className="text-white/50">
+              <CardDescription className="text-white/40 mt-1.5">
                 {displayedActivities} activities {isMobile ? "in the last 3 months" : "in the last year"}
               </CardDescription>
             </div>
             {/* Legend */}
-            <div className="flex items-center gap-2 text-xs text-white/50">
+            <div className="flex items-center gap-2.5 text-xs text-white/40">
               <span>Less</span>
               <div className="flex gap-1">
                 {[0, 1, 2, 3, 4].map((level) => (
                   <div
                     key={level}
-                    className={`h-3 w-3 rounded-sm ${levelColors[level as keyof typeof levelColors]}`}
+                    className={`h-3 w-3 rounded-[3px] ${levelColors[level as keyof typeof levelColors]} transition-colors`}
                   />
                 ))}
               </div>
@@ -197,11 +199,11 @@ export function ActivityHeatmap({ data, loading, totalActivities }: ActivityHeat
                               />
                             </TooltipTrigger>
                             {day.date && (
-                              <TooltipContent side="top" className="text-xs bg-black/90 border-white/10 backdrop-blur-xl">
-                                <p className="font-medium text-white">
+                              <TooltipContent side="top" className="text-xs bg-black/95 border-white/[0.06] backdrop-blur-2xl shadow-2xl shadow-black/50">
+                                <p className="font-semibold text-white">
                                   {day.count} {day.count === 1 ? "activity" : "activities"}
                                 </p>
-                                <p className="text-white/50">
+                                <p className="text-white/40 mt-0.5">
                                   {format(parseISO(day.date), "MMMM d, yyyy")}
                                 </p>
                               </TooltipContent>

@@ -63,17 +63,17 @@ const statConfig = [
 export function ActivityStats({ stats, loading }: ActivityStatsProps) {
   if (loading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="overflow-hidden border-white/5 bg-white/[0.02] backdrop-blur-xl">
-            <CardContent className="p-5">
+          <Card key={i} className="overflow-hidden border-white/[0.03] bg-white/[0.01] backdrop-blur-2xl">
+            <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-3">
-                  <Skeleton className="h-4 w-24 bg-white/10" />
-                  <Skeleton className="h-9 w-20 bg-white/10" />
-                  <Skeleton className="h-3 w-16 bg-white/10" />
+                  <Skeleton className="h-4 w-24 bg-white/[0.06]" />
+                  <Skeleton className="h-9 w-20 bg-white/[0.06]" />
+                  <Skeleton className="h-3 w-16 bg-white/[0.06]" />
                 </div>
-                <Skeleton className="h-12 w-12 rounded-xl bg-white/10" />
+                <Skeleton className="h-14 w-14 rounded-xl bg-white/[0.06]" />
               </div>
             </CardContent>
           </Card>
@@ -83,7 +83,7 @@ export function ActivityStats({ stats, loading }: ActivityStatsProps) {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {statConfig.map((config, index) => {
         const value = stats[config.key];
         const change = stats[config.changeKey];
@@ -93,48 +93,51 @@ export function ActivityStats({ stats, loading }: ActivityStatsProps) {
         return (
           <motion.div
             key={config.key}
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 25, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ 
-              delay: index * 0.1,
+              delay: index * 0.08,
               type: "spring",
-              stiffness: 400,
+              stiffness: 500,
               damping: 25
             }}
           >
             <Card className={`
               relative overflow-hidden group cursor-default
-              border-white/5 bg-white/[0.02] backdrop-blur-xl ring-1 ring-white/5
-              hover:shadow-2xl hover:shadow-${config.key === 'weeklyXP' ? 'primary' : config.key === 'problemsSolved' ? 'emerald-500' : config.key === 'quizzesCompleted' ? 'blue-500' : 'violet-500'}/20
+              border-white/[0.03] bg-black/40 backdrop-blur-2xl
+              hover:bg-black/50 hover:border-white/[0.06]
+              hover:shadow-2xl hover:shadow-black/60
               transition-all duration-500 ease-out
-              hover:-translate-y-1 hover:bg-white/[0.04]
+              hover:-translate-y-1.5
             `}>
               {/* Decorative gradient line */}
-              <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient} opacity-80`} />
+              <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${config.gradient} opacity-60 group-hover:opacity-100 transition-opacity`} />
               
-              {/* Subtle background glow on hover */}
+              {/* Subtle corner glow on hover */}
               <div className={`
-                absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500
-                bg-gradient-to-br from-white/[0.02] to-transparent
+                absolute -top-20 -right-20 w-40 h-40 rounded-full
+                bg-gradient-to-br ${config.gradient} blur-3xl
+                opacity-0 group-hover:opacity-20 transition-opacity duration-500
               `} />
 
-              <CardContent className="relative p-5">
+              <CardContent className="relative p-6">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-white/50">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-white/40 tracking-wide">
                       {config.label}
                     </p>
-                    <div className="flex items-baseline gap-1">
+                    <div className="flex items-baseline gap-1.5">
                       <motion.span 
-                        className="text-3xl font-bold tabular-nums text-white"
+                        className="text-4xl font-bold tabular-nums text-white"
                         key={value}
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 20 }}
                       >
                         {value.toLocaleString()}
                       </motion.span>
                       {config.suffix && (
-                        <span className="text-lg font-medium text-white/40">
+                        <span className="text-lg font-medium text-white/30">
                           {config.suffix}
                         </span>
                       )}
@@ -149,30 +152,31 @@ export function ActivityStats({ stats, loading }: ActivityStatsProps) {
                         <TrendingDown className="h-4 w-4" />
                       )}
                       <span>{isPositive ? "+" : ""}{change}</span>
-                      <span className="text-white/40 font-normal">this week</span>
+                      <span className="text-white/30 font-normal">this week</span>
                     </div>
                   </div>
 
                   {/* Icon container */}
                   <motion.div 
                     className={`
-                      h-12 w-12 rounded-xl ${config.iconBg}
+                      h-14 w-14 rounded-2xl ${config.iconBg}
                       flex items-center justify-center
-                      shadow-lg transition-transform duration-300
-                      group-hover:scale-110 group-hover:rotate-3
+                      shadow-xl shadow-black/30
+                      transition-all duration-300
+                      group-hover:scale-110 group-hover:shadow-2xl
                     `}
                     whileHover={{ rotate: [0, -5, 5, 0] }}
                     transition={{ duration: 0.5 }}
                   >
-                    <Icon className="h-6 w-6 text-white" />
+                    <Icon className="h-7 w-7 text-white" />
                   </motion.div>
                 </div>
 
                 {/* Sparkle effect on hover */}
                 <motion.div
-                  className="absolute top-3 right-14 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-4 right-16 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                   animate={{ rotate: [0, 180] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
                 >
                   <Sparkles className={`h-3 w-3 ${config.textColor}`} />
                 </motion.div>

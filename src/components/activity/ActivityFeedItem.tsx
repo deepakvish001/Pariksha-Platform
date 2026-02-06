@@ -100,77 +100,78 @@ export function ActivityFeedItem({ activity, index }: ActivityFeedItemProps) {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ 
-        delay: index * 0.03, 
+        delay: index * 0.025, 
         duration: 0.4,
         type: "spring",
-        stiffness: 400,
+        stiffness: 500,
         damping: 30
       }}
-      whileHover={{ x: 4 }}
+      whileHover={{ x: 6 }}
       className={`
-        relative flex items-start gap-4 p-4 rounded-xl 
-        border border-white/5 bg-white/[0.02] backdrop-blur-sm
-        hover:bg-white/[0.05] hover:border-white/10 hover:shadow-xl hover:shadow-black/20
+        relative flex items-start gap-4 p-5 rounded-2xl 
+        border border-white/[0.03] bg-black/30 backdrop-blur-xl
+        hover:bg-black/40 hover:border-white/[0.06] hover:shadow-2xl hover:shadow-black/50
         transition-all duration-300 ease-out cursor-default group
-        ${activity.isNew ? `ring-2 ${config.ringColor} shadow-lg` : ""}
+        ${activity.isNew ? `ring-2 ${config.ringColor} shadow-xl shadow-primary/10` : ""}
       `}
     >
       {/* Timeline connector line */}
-      <div className="absolute left-[2.15rem] top-16 bottom-0 w-px bg-gradient-to-b from-white/10 to-transparent opacity-50 group-last:hidden" />
+      <div className="absolute left-[2.4rem] top-[4.5rem] bottom-0 w-px bg-gradient-to-b from-white/[0.06] to-transparent opacity-60 group-last:hidden" />
 
       {/* Icon with gradient background */}
       <motion.div 
         className={`
-          relative shrink-0 h-12 w-12 rounded-xl 
+          relative shrink-0 h-13 w-13 rounded-xl 
           bg-gradient-to-br ${config.gradient}
-          flex items-center justify-center shadow-lg
-          transition-transform duration-300 group-hover:scale-105
+          flex items-center justify-center shadow-xl shadow-black/30
+          transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl
         `}
         whileHover={{ rotate: [0, -5, 5, 0] }}
         transition={{ duration: 0.4 }}
+        style={{ height: '3.25rem', width: '3.25rem' }}
       >
         <Icon className="h-6 w-6 text-white" />
         {activity.isNew && (
           <motion.div
-            className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 1, repeat: Infinity }}
+            className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary ring-2 ring-black"
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
           >
-            <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-75" />
+            <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-60" />
           </motion.div>
         )}
       </motion.div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 py-0.5">
+      <div className="flex-1 min-w-0 py-1">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-white group-hover:text-primary transition-colors truncate">
+            <p className="font-semibold text-white/90 group-hover:text-white transition-colors truncate text-[15px]">
               {activity.title}
             </p>
             {activity.description && (
-              <p className="text-sm text-white/50 mt-1 line-clamp-2">
+              <p className="text-sm text-white/40 mt-1.5 line-clamp-2 leading-relaxed">
                 {activity.description}
               </p>
             )}
           </div>
           <Badge 
             variant="outline" 
-            className={`shrink-0 ${config.badgeClass} font-medium border`}
+            className={`shrink-0 ${config.badgeClass} font-medium border text-xs`}
           >
             {getActivityLabel(activity.activity_type)}
           </Badge>
         </div>
         
-        <div className="flex items-center gap-3 mt-3">
-          <div className="flex items-center gap-1.5 text-xs text-white/40">
+        <div className="flex items-center gap-3 mt-3.5">
+          <div className="flex items-center gap-1.5 text-xs text-white/35">
             <Clock className="h-3.5 w-3.5" />
             <span>{relativeTime}</span>
           </div>
           
           {/* Show score for quizzes */}
           {activity.activity_type === "quiz_complete" && activity.metadata?.accuracy != null && (
-            <div className="flex items-center gap-1 text-xs font-medium text-emerald-400 ml-auto bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 ml-auto bg-emerald-500/15 px-2.5 py-1 rounded-full border border-emerald-500/20">
               <CheckCircle2 className="h-3 w-3" />
               {Math.round(Number(activity.metadata.accuracy))}% accuracy
             </div>
@@ -178,14 +179,14 @@ export function ActivityFeedItem({ activity, index }: ActivityFeedItemProps) {
           
           {/* Show XP amount */}
           {activity.activity_type === "xp_earned" && activity.metadata?.amount != null && (
-            <div className="flex items-center gap-1 text-xs font-medium text-primary ml-auto bg-primary/20 px-2 py-0.5 rounded-full border border-primary/30">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-primary ml-auto bg-primary/15 px-2.5 py-1 rounded-full border border-primary/20">
               <Zap className="h-3 w-3" />
               +{String(activity.metadata.amount)} XP
             </div>
           )}
 
           {/* Hover indicator */}
-          <ChevronRight className="h-4 w-4 text-white/30 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+          <ChevronRight className="h-4 w-4 text-white/20 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
         </div>
       </div>
     </motion.div>
