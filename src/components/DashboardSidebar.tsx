@@ -34,6 +34,7 @@ import {
   Bell,
   Sun,
   Moon,
+  Monitor,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -245,8 +246,26 @@ export function DashboardSidebar() {
   const [prevUnreadCount, setPrevUnreadCount] = useState(unreadCount);
   const isCollapsed = state === "collapsed";
 
+  const getNextTheme = () => {
+    if (theme === "light") return "dark";
+    if (theme === "dark") return "system";
+    return "light";
+  };
+
+  const getThemeIcon = () => {
+    if (theme === "system") return <Monitor className="h-4 w-4" />;
+    if (resolvedTheme === "dark") return <Sun className="h-4 w-4" />;
+    return <Moon className="h-4 w-4" />;
+  };
+
+  const getThemeLabel = () => {
+    if (theme === "system") return "System";
+    if (theme === "dark") return "Dark";
+    return "Light";
+  };
+
   const toggleTheme = () => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+    setTheme(getNextTheme());
   };
 
   // Detect new notifications and trigger shake
@@ -296,21 +315,17 @@ export function DashboardSidebar() {
                       className="h-9 w-9 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
                     >
                       <motion.div
-                        key={resolvedTheme}
+                        key={theme}
                         initial={{ rotate: -90, opacity: 0 }}
                         animate={{ rotate: 0, opacity: 1 }}
                         transition={{ duration: 0.2 }}
                       >
-                        {resolvedTheme === "dark" ? (
-                          <Sun className="h-4 w-4" />
-                        ) : (
-                          <Moon className="h-4 w-4" />
-                        )}
+                        {getThemeIcon()}
                       </motion.div>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    Switch to {resolvedTheme === "dark" ? "light" : "dark"} mode
+                    {getThemeLabel()} mode (click to switch)
                   </TooltipContent>
                 </Tooltip>
                 <NotificationBell />
@@ -328,21 +343,17 @@ export function DashboardSidebar() {
                     className="h-10 w-10 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
                   >
                     <motion.div
-                      key={resolvedTheme}
+                      key={theme}
                       initial={{ rotate: -90, opacity: 0 }}
                       animate={{ rotate: 0, opacity: 1 }}
                       transition={{ duration: 0.2 }}
                     >
-                      {resolvedTheme === "dark" ? (
-                        <Sun className="h-4 w-4" />
-                      ) : (
-                        <Moon className="h-4 w-4" />
-                      )}
+                      {getThemeIcon()}
                     </motion.div>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  Switch to {resolvedTheme === "dark" ? "light" : "dark"} mode
+                  {getThemeLabel()} mode (click to switch)
                 </TooltipContent>
               </Tooltip>
               <NotificationBell />
