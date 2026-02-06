@@ -6,6 +6,7 @@ import SheetsFilterBar, { SortOption } from "@/components/sheets/SheetsFilterBar
 import SheetCard from "@/components/sheets/SheetCard";
 import SheetsEmptyState from "@/components/sheets/SheetsEmptyState";
 import ContinueLearningSection from "@/components/sheets/ContinueLearningSection";
+import RecentlyCompletedSection from "@/components/sheets/RecentlyCompletedSection";
 import QuickStartSection from "@/components/sheets/QuickStartSection";
 import { useSheetProgress, calculateProgressPercentage } from "@/hooks/useSheetProgress";
 
@@ -96,6 +97,11 @@ const DashboardSheets = () => {
     return progressData[sheetId].lastActivityAt;
   };
 
+  const getSheetStreak = (sheetId: string): number => {
+    if (!progressData || !progressData[sheetId]) return 0;
+    return progressData[sheetId].streak;
+  };
+
   // Filter sheets
   const filteredSheets = useMemo(() => {
     return sheets.filter((sheet) => {
@@ -147,12 +153,34 @@ const DashboardSheets = () => {
       }))
       .filter(sheet => sheet.progress > 0 && sheet.progress < 100)
       .sort((a, b) => {
-        // Sort by last activity (most recent first)
         if (a.lastActivityAt && b.lastActivityAt) {
           return new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime();
         }
         return b.progress - a.progress;
       });
+  }, [progressData]);
+
+  // Recently completed sheets (100% progress)
+  const recentlyCompletedSheets = useMemo(() => {
+    return sheets
+      .map(sheet => {
+        const sheetProgress = progressData?.[sheet.id];
+        return {
+          id: sheet.id,
+          title: sheet.title,
+          category: sheet.category,
+          problems: sheet.problems,
+          progress: getSheetProgress(sheet.id, sheet.problems),
+          completedAt: sheetProgress?.completedAt || sheetProgress?.lastActivityAt,
+        };
+      })
+      .filter(sheet => sheet.progress === 100 && sheet.completedAt)
+      .sort((a, b) => {
+        if (a.completedAt && b.completedAt) {
+          return new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime();
+        }
+        return 0;
+      }) as { id: string; title: string; category: string; problems: number; completedAt: string }[];
   }, [progressData]);
 
   // Quick start recommendations
@@ -188,13 +216,18 @@ const DashboardSheets = () => {
 
       {/* Content */}
       <main className="p-4 md:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
+        {/* Recently Completed Section */}
+        {recentlyCompletedSheets.length > 0 && (
+          <RecentlyCompletedSection sheets={recentlyCompletedSheets} />
+        )}
+
         {/* Continue Learning Section */}
         {inProgressSheets.length > 0 && (
           <ContinueLearningSection sheets={inProgressSheets} />
         )}
 
         {/* Quick Start Section - only show if no progress */}
-        {inProgressSheets.length === 0 && (
+        {inProgressSheets.length === 0 && recentlyCompletedSheets.length === 0 && (
           <QuickStartSection sheets={quickStartSheets} />
         )}
 
@@ -219,6 +252,7 @@ const DashboardSheets = () => {
                 progress={sheet.progress}
                 completedCount={getSheetCompletedCount(sheet.id)}
                 lastActivityAt={getSheetLastActivity(sheet.id)}
+                streak={getSheetStreak(sheet.id)}
                 isLoading={isProgressLoading}
               />
             ))}
