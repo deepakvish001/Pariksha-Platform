@@ -842,6 +842,7 @@ export type Database = {
           srs_mastery_threshold: number | null
           study_year: Database["public"]["Enums"]["study_year"] | null
           target_goal: string | null
+          theme_preference: string | null
           total_xp: number | null
           twitter_url: string | null
           updated_at: string
@@ -900,6 +901,7 @@ export type Database = {
           srs_mastery_threshold?: number | null
           study_year?: Database["public"]["Enums"]["study_year"] | null
           target_goal?: string | null
+          theme_preference?: string | null
           total_xp?: number | null
           twitter_url?: string | null
           updated_at?: string
@@ -958,6 +960,7 @@ export type Database = {
           srs_mastery_threshold?: number | null
           study_year?: Database["public"]["Enums"]["study_year"] | null
           target_goal?: string | null
+          theme_preference?: string | null
           total_xp?: number | null
           twitter_url?: string | null
           updated_at?: string
