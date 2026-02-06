@@ -261,4 +261,77 @@
   .glass-effect {
     @apply backdrop-blur-lg bg-background/80;
   }
+
+  /* Glassmorphism card */
+  .glass-card {
+    @apply backdrop-blur-xl bg-background/80 border border-border/50;
+  }
+
+  /* Shimmer effect overlay */
+  .shimmer-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
+    animation: shimmer 2.5s ease-in-out infinite;
+  }
+
+  /* Animated glow border */
+  .glow-border {
+    position: relative;
+  }
+  
+  .glow-border::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      hsl(24 95% 53% / 0.4),
+      hsl(30 100% 45% / 0.2),
+      hsl(24 95% 53% / 0.4)
+    );
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .glow-border:hover::before {
+    opacity: 1;
+  }
+
+  /* Tabular numbers for counters */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Gradient text animation */
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .gradient-text-animated {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-orange);
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+  }
+
+  /* Scale hover utility */
+  .hover-scale-102:hover {
+    transform: scale(1.02);
+  }
 }

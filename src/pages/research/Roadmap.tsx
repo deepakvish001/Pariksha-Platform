@@ -1,35 +1,26 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Map, ArrowRight, Clock, BookOpen, Users, Search, Filter, X, Timer,
-  ArrowUpDown, Sprout, Flame, Diamond, TrendingUp, Sparkles, GitBranch,
-  CheckCircle2, Lock, ChevronRight, PlayCircle, BarChart3, Trophy
+  Map, ArrowRight, Clock, BookOpen, Users, Search, 
+  PlayCircle, BarChart3, Trophy, Sparkles, Bell
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { roadmapTrees, type RoadmapTree, type RoadmapTreeNode } from "@/data/roadmapTreesData";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import RoadmapCompletionCelebration from "@/components/roadmap/RoadmapCompletionCelebration";
 import ProgressVelocitySection from "@/components/roadmap/ProgressVelocitySection";
+import RoadmapHeroSection from "@/components/roadmap/RoadmapHeroSection";
+import RoadmapFilterBar from "@/components/roadmap/RoadmapFilterBar";
+import RoadmapCardEnhanced from "@/components/roadmap/RoadmapCardEnhanced";
+import RoadmapSectionDivider from "@/components/roadmap/RoadmapSectionDivider";
 
 // Helper to count total nodes in a tree
 const countNodes = (nodes: RoadmapTreeNode[]): number => {
@@ -107,31 +98,6 @@ const calculateDifficulty = (nodes: RoadmapTreeNode[]): 'beginner' | 'intermedia
   return 'beginner';
 };
 
-// Difficulty configuration
-const difficultyConfig = {
-  beginner: {
-    label: 'Beginner',
-    icon: Sprout,
-    color: 'text-emerald-500',
-    bgColor: 'bg-emerald-500/10',
-    borderColor: 'border-emerald-500/30',
-  },
-  intermediate: {
-    label: 'Intermediate',
-    icon: Flame,
-    color: 'text-amber-500',
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/30',
-  },
-  advanced: {
-    label: 'Advanced',
-    icon: Diamond,
-    color: 'text-violet-500',
-    bgColor: 'bg-violet-500/10',
-    borderColor: 'border-violet-500/30',
-  },
-};
-
 // Popularity scores (simulated - in production this would come from analytics)
 const popularityScores: Record<string, number> = {
   frontend: 95,
@@ -188,12 +154,18 @@ const roadmapCategoryMap: Record<string, string> = {
 // Sorting options
 type SortOption = 'name' | 'popularity' | 'duration-asc' | 'duration-desc';
 
-const sortOptions: { value: SortOption; label: string }[] = [
+const sortOptions = [
   { value: 'popularity', label: 'Most Popular' },
   { value: 'name', label: 'Name (A-Z)' },
   { value: 'duration-asc', label: 'Duration (Shortest)' },
   { value: 'duration-desc', label: 'Duration (Longest)' },
 ];
+
+// Get roadmap title by ID
+const getRoadmapTitle = (id: string): string => {
+  const roadmap = roadmapTrees.find(r => r.id === id);
+  return roadmap?.title || id;
+};
 
 // Hook to fetch all roadmap progress at once and detect completions
 const useAllRoadmapProgress = (onComplete?: (roadmapId: string, roadmapTitle: string) => void) => {
@@ -262,282 +234,6 @@ const useAllRoadmapProgress = (onComplete?: (roadmapId: string, roadmapTitle: st
   return progressData;
 };
 
-// Prerequisite indicator component
-const PrerequisiteIndicator = ({ 
-  roadmapId, 
-  userProgress 
-}: { 
-  roadmapId: string; 
-  userProgress: Record<string, number>;
-}) => {
-  const prereqs = roadmapPrerequisites[roadmapId];
-  if (!prereqs || (prereqs.required.length === 0 && prereqs.recommended.length === 0)) {
-    return null;
-  }
-
-  const requiredComplete = prereqs.required.every(id => (userProgress[id] || 0) >= 50);
-  const recommendedComplete = prereqs.recommended.every(id => (userProgress[id] || 0) >= 30);
-
-  const getRoadmapTitle = (id: string) => {
-    const roadmap = roadmapTrees.find(r => r.id === id);
-    return roadmap?.title || id;
-  };
-
-  return (
-    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
-      {prereqs.required.length > 0 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className={cn(
-              "flex items-center gap-1 text-xs px-2 py-1 rounded-full",
-              requiredComplete 
-                ? "bg-emerald-500/10 text-emerald-600" 
-                : "bg-amber-500/10 text-amber-600"
-            )}>
-              {requiredComplete ? (
-                <CheckCircle2 className="h-3 w-3" />
-              ) : (
-                <Lock className="h-3 w-3" />
-              )}
-              <span>{prereqs.required.length} Required</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-xs">
-            <p className="font-medium mb-1">Required Prerequisites:</p>
-            <ul className="space-y-1">
-              {prereqs.required.map(id => (
-                <li key={id} className="flex items-center gap-2 text-sm">
-                  {(userProgress[id] || 0) >= 50 ? (
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                  ) : (
-                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                  )}
-                  {getRoadmapTitle(id)}
-                  <span className="text-muted-foreground">({userProgress[id] || 0}%)</span>
-                </li>
-              ))}
-            </ul>
-          </TooltipContent>
-        </Tooltip>
-      )}
-      
-      {prereqs.recommended.length > 0 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className={cn(
-              "flex items-center gap-1 text-xs px-2 py-1 rounded-full",
-              recommendedComplete 
-                ? "bg-blue-500/10 text-blue-600" 
-                : "bg-muted text-muted-foreground"
-            )}>
-              <GitBranch className="h-3 w-3" />
-              <span>{prereqs.recommended.length} Suggested</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-xs">
-            <p className="font-medium mb-1">Suggested Prerequisites:</p>
-            <ul className="space-y-1">
-              {prereqs.recommended.map(id => (
-                <li key={id} className="flex items-center gap-2 text-sm">
-                  {(userProgress[id] || 0) >= 30 ? (
-                    <CheckCircle2 className="h-3 w-3 text-blue-500" />
-                  ) : (
-                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                  )}
-                  {getRoadmapTitle(id)}
-                  <span className="text-muted-foreground">({userProgress[id] || 0}%)</span>
-                </li>
-              ))}
-            </ul>
-          </TooltipContent>
-        </Tooltip>
-      )}
-    </div>
-  );
-};
-
-// Individual roadmap card component
-const RoadmapCard = ({ 
-  roadmap, 
-  estimatedWeeks, 
-  isFeatured = false,
-  userProgress = {},
-  cardProgress = 0
-}: { 
-  roadmap: RoadmapTree; 
-  estimatedWeeks: number;
-  isFeatured?: boolean;
-  userProgress?: Record<string, number>;
-  cardProgress?: number;
-}) => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  
-  const totalTopics = countNodes(roadmap.nodes);
-  const estimatedTime = formatEstimatedTime(estimatedWeeks);
-  const difficulty = calculateDifficulty(roadmap.nodes);
-  const diffConfig = difficultyConfig[difficulty];
-  const DifficultyIcon = diffConfig.icon;
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ scale: 1.02, y: -4 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Card 
-        className={cn(
-          "group cursor-pointer overflow-hidden border-2 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 h-full",
-          isFeatured && "ring-2 ring-primary/20"
-        )}
-        onClick={() => navigate(`/research/roadmap/${roadmap.id}`)}
-      >
-        {/* Gradient header */}
-        <div className={cn(
-          "h-32 relative bg-gradient-to-br flex items-center justify-center",
-          roadmap.color
-        )}>
-          <Map className="h-16 w-16 text-white/80" />
-          
-          {/* Featured badge */}
-          {isFeatured && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2">
-              <Badge className="bg-primary text-primary-foreground gap-1.5 shadow-lg">
-                <Sparkles className="h-3 w-3" />
-                Featured
-              </Badge>
-            </div>
-          )}
-          
-          {/* Top badges row */}
-          <div className={cn(
-            "absolute left-3 right-3 flex items-center justify-between",
-            isFeatured ? "top-10" : "top-3"
-          )}>
-            {/* Estimated time badge */}
-            <Badge variant="secondary" className="bg-black/40 text-white border-0 backdrop-blur-sm gap-1.5">
-              <Timer className="h-3 w-3" />
-              {estimatedTime}
-            </Badge>
-            
-            {/* Difficulty badge */}
-            <Badge 
-              variant="secondary" 
-              className={cn(
-                "border backdrop-blur-sm gap-1.5",
-                diffConfig.bgColor,
-                diffConfig.color,
-                diffConfig.borderColor
-              )}
-            >
-              <DifficultyIcon className="h-3 w-3" />
-              {diffConfig.label}
-            </Badge>
-          </div>
-          
-          {/* Progress overlay */}
-          {user && cardProgress > 0 && (
-            <div className="absolute bottom-3 right-3">
-              <Badge variant="secondary" className="bg-white/90 text-foreground font-semibold">
-                {cardProgress}% Complete
-              </Badge>
-            </div>
-          )}
-        </div>
-
-        <CardHeader className="pb-3">
-          <CardTitle className="text-xl group-hover:text-primary transition-colors flex items-center justify-between">
-            {roadmap.title}
-            <ArrowRight className="h-5 w-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-          </CardTitle>
-          <CardDescription className="line-clamp-2">
-            {roadmap.description}
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="pt-0">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <BookOpen className="h-4 w-4" />
-              <span>{totalTopics} topics</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4" />
-              <span>{roadmap.nodes.length} sections</span>
-            </div>
-            {popularityScores[roadmap.id] && (
-              <div className="flex items-center gap-1.5 ml-auto">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <span className="text-primary font-medium">{popularityScores[roadmap.id]}%</span>
-              </div>
-            )}
-          </div>
-          
-          {/* Prerequisite Indicator */}
-          <PrerequisiteIndicator roadmapId={roadmap.id} userProgress={userProgress} />
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-};
-
-// Featured section component
-const FeaturedSection = ({ 
-  roadmapData, 
-  userProgress 
-}: { 
-  roadmapData: { roadmap: RoadmapTree; estimatedWeeks: number }[];
-  userProgress: Record<string, number>;
-}) => {
-  const featuredRoadmaps = roadmapData.filter(
-    ({ roadmap }) => featuredRoadmapIds.includes(roadmap.id)
-  );
-
-  if (featuredRoadmaps.length === 0) return null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15 }}
-      className="max-w-6xl mx-auto mb-10"
-    >
-      <div className="flex items-center gap-3 mb-6">
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-          <Sparkles className="h-5 w-5 text-primary-foreground" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold">Recommended for You</h3>
-          <p className="text-sm text-muted-foreground">Popular paths to kickstart your journey</p>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {featuredRoadmaps.map(({ roadmap, estimatedWeeks }, index) => (
-          <motion.div
-            key={roadmap.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 + index * 0.1 }}
-          >
-            <RoadmapCard 
-              roadmap={roadmap} 
-              estimatedWeeks={estimatedWeeks} 
-              isFeatured 
-              userProgress={userProgress}
-              cardProgress={userProgress[roadmap.id] || 0}
-            />
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  );
-};
-
 // Continue Learning section component
 const ContinueLearningSection = ({ 
   roadmapData, 
@@ -559,24 +255,20 @@ const ContinueLearningSection = ({
   if (inProgressRoadmaps.length === 0) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.12 }}
-      className="max-w-6xl mx-auto mb-10"
-    >
-      <div className="flex items-center gap-3 mb-6">
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-          <PlayCircle className="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold">Continue Learning</h3>
-          <p className="text-sm text-muted-foreground">Pick up where you left off</p>
-        </div>
-      </div>
+    <div className="max-w-6xl mx-auto mb-10">
+      <RoadmapSectionDivider
+        icon={PlayCircle}
+        title="Continue Learning"
+        subtitle="Pick up where you left off"
+        count={inProgressRoadmaps.length}
+        countLabel="in progress"
+        gradientFrom="from-amber-500"
+        gradientTo="to-orange-500"
+        delay={0.12}
+      />
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {inProgressRoadmaps.slice(0, 3).map(({ roadmap, estimatedWeeks }, index) => {
+        {inProgressRoadmaps.slice(0, 3).map(({ roadmap }, index) => {
           const progress = userProgress[roadmap.id] || 0;
           const totalTopics = countNodes(roadmap.nodes);
           const completedTopics = Math.round((progress / 100) * totalTopics);
@@ -587,30 +279,54 @@ const ContinueLearningSection = ({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.15 + index * 0.1 }}
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.02, y: -4 }}
               whileTap={{ scale: 0.98 }}
             >
               <Card 
-                className="cursor-pointer border-2 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300"
+                className="cursor-pointer border-2 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300 h-full"
                 onClick={() => navigate(`/research/roadmap/${roadmap.id}`)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
-                    <div className={cn(
-                      "h-12 w-12 rounded-xl bg-gradient-to-br flex-shrink-0 flex items-center justify-center",
-                      roadmap.color
-                    )}>
-                      <Map className="h-6 w-6 text-white/90" />
+                    {/* Progress ring */}
+                    <div className="relative flex-shrink-0">
+                      <svg className="h-14 w-14 -rotate-90">
+                        <circle
+                          cx="28"
+                          cy="28"
+                          r="24"
+                          strokeWidth="4"
+                          fill="none"
+                          className="stroke-muted"
+                        />
+                        <circle
+                          cx="28"
+                          cy="28"
+                          r="24"
+                          strokeWidth="4"
+                          fill="none"
+                          className="stroke-primary"
+                          strokeDasharray={`${progress * 1.51} 151`}
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-xs font-bold">{progress}%</span>
+                      </div>
                     </div>
+                    
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold truncate">{roadmap.title}</h4>
                       <p className="text-sm text-muted-foreground">
-                        {completedTopics} of {totalTopics} topics completed
+                        {completedTopics} of {totalTopics} topics
                       </p>
-                      <div className="mt-2 flex items-center gap-3">
-                        <Progress value={progress} className="flex-1 h-2" />
-                        <span className="text-sm font-semibold text-primary">{progress}%</span>
-                      </div>
+                      <Button 
+                        size="sm" 
+                        className="mt-2 h-8 text-xs gap-1"
+                      >
+                        Resume
+                        <ArrowRight className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -619,7 +335,7 @@ const ContinueLearningSection = ({
           );
         })}
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -650,23 +366,17 @@ const ProgressComparisonSection = ({
   const maxProgress = Math.max(...roadmapsWithProgress.map(r => r.progress));
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.18 }}
-      className="max-w-6xl mx-auto mb-10"
-    >
-      <div className="flex items-center gap-3 mb-6">
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
-          <BarChart3 className="h-5 w-5 text-white" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold">Your Progress Overview</h3>
-          <p className="text-sm text-muted-foreground">Compare your progress across all roadmaps</p>
-        </div>
-      </div>
+    <div className="max-w-6xl mx-auto mb-10">
+      <RoadmapSectionDivider
+        icon={BarChart3}
+        title="Your Progress Overview"
+        subtitle="Compare your progress across all roadmaps"
+        gradientFrom="from-blue-500"
+        gradientTo="to-indigo-500"
+        delay={0.18}
+      />
       
-      <Card className="border-2">
+      <Card className="border-2 overflow-hidden">
         <CardContent className="p-6">
           <div className="space-y-4">
             {roadmapsWithProgress.map(({ roadmap, progress, totalTopics }, index) => {
@@ -685,7 +395,7 @@ const ProgressComparisonSection = ({
                   <div className="flex items-center gap-4">
                     {/* Rank indicator */}
                     <div className={cn(
-                      "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold",
+                      "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0",
                       index === 0 && "bg-amber-500/20 text-amber-600",
                       index === 1 && "bg-slate-400/20 text-slate-600",
                       index === 2 && "bg-orange-600/20 text-orange-700",
@@ -707,8 +417,8 @@ const ProgressComparisonSection = ({
                         <h4 className="font-medium truncate group-hover:text-primary transition-colors">
                           {roadmap.title}
                         </h4>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-sm text-muted-foreground hidden sm:inline">
                             {completedTopics}/{totalTopics} topics
                           </span>
                           <Badge 
@@ -737,7 +447,7 @@ const ProgressComparisonSection = ({
                       </div>
                     </div>
                     
-                    <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                   </div>
                 </motion.div>
               );
@@ -746,17 +456,17 @@ const ProgressComparisonSection = ({
           
           {/* Summary stats */}
           <div className="mt-6 pt-4 border-t border-border grid grid-cols-3 gap-4 text-center">
-            <div>
+            <div className="glass-card rounded-lg p-3">
               <p className="text-2xl font-bold text-primary">{roadmapsWithProgress.length}</p>
               <p className="text-xs text-muted-foreground">Paths Started</p>
             </div>
-            <div>
+            <div className="glass-card rounded-lg p-3">
               <p className="text-2xl font-bold text-emerald-500">
                 {roadmapsWithProgress.filter(r => r.progress === 100).length}
               </p>
               <p className="text-xs text-muted-foreground">Completed</p>
             </div>
-            <div>
+            <div className="glass-card rounded-lg p-3">
               <p className="text-2xl font-bold text-amber-500">
                 {Math.round(roadmapsWithProgress.reduce((acc, r) => acc + r.progress, 0) / roadmapsWithProgress.length)}%
               </p>
@@ -765,6 +475,106 @@ const ProgressComparisonSection = ({
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+};
+
+// Featured section component
+const FeaturedSection = ({ 
+  roadmapData, 
+  userProgress 
+}: { 
+  roadmapData: { roadmap: RoadmapTree; estimatedWeeks: number }[];
+  userProgress: Record<string, number>;
+}) => {
+  const featuredRoadmaps = roadmapData.filter(
+    ({ roadmap }) => featuredRoadmapIds.includes(roadmap.id)
+  );
+
+  if (featuredRoadmaps.length === 0) return null;
+
+  return (
+    <div className="max-w-6xl mx-auto mb-10">
+      <RoadmapSectionDivider
+        icon={Sparkles}
+        title="Recommended for You"
+        subtitle="Popular paths to kickstart your journey"
+        count={featuredRoadmaps.length}
+        countLabel="featured"
+        gradientFrom="from-primary"
+        gradientTo="to-primary/60"
+        delay={0.15}
+      />
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {featuredRoadmaps.map(({ roadmap, estimatedWeeks }, index) => (
+          <RoadmapCardEnhanced
+            key={roadmap.id}
+            roadmap={roadmap}
+            estimatedTime={formatEstimatedTime(estimatedWeeks)}
+            difficulty={calculateDifficulty(roadmap.nodes)}
+            totalTopics={countNodes(roadmap.nodes)}
+            isFeatured
+            userProgress={userProgress}
+            cardProgress={userProgress[roadmap.id] || 0}
+            popularityScore={popularityScores[roadmap.id]}
+            roadmapPrerequisites={roadmapPrerequisites}
+            getRoadmapTitle={getRoadmapTitle}
+            index={index}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Coming Soon placeholder
+const ComingSoonSection = () => {
+  const [email, setEmail] = useState("");
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.5 }}
+      className="text-center mt-12 max-w-md mx-auto"
+    >
+      <div className="relative p-8 rounded-2xl border-2 border-dashed border-border overflow-hidden glow-border">
+        {/* Animated gradient border effect */}
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 opacity-10 bg-gradient-conic from-primary via-transparent to-primary"
+          style={{ borderRadius: 'inherit' }}
+        />
+        
+        <motion.div
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <Users className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+        </motion.div>
+        
+        <h3 className="text-lg font-semibold mb-2">More Roadmaps Coming Soon</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          We're actively adding new career paths. Stay tuned for more!
+        </p>
+        
+        {/* Notify me input */}
+        <div className="flex gap-2 max-w-xs mx-auto">
+          <Input
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="flex-1 h-9 text-sm"
+          />
+          <Button size="sm" className="h-9 gap-1">
+            <Bell className="h-3 w-3" />
+            Notify
+          </Button>
+        </div>
+      </div>
     </motion.div>
   );
 };
@@ -796,6 +606,11 @@ const Roadmap: React.FC = () => {
       popularity: popularityScores[roadmap.id] || 50,
     }));
   }, []);
+
+  // Calculate total topics across all roadmaps
+  const totalTopics = useMemo(() => {
+    return roadmapData.reduce((acc, { roadmap }) => acc + countNodes(roadmap.nodes), 0);
+  }, [roadmapData]);
 
   // Filter and sort roadmaps (excluding featured from main grid when no filters)
   const filteredAndSortedRoadmaps = useMemo(() => {
@@ -846,120 +661,44 @@ const Roadmap: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Sticky header */}
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="flex h-16 items-center gap-4 px-6">
+        <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
           <SidebarTrigger />
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
               <Map className="h-5 w-5 text-white" />
             </div>
             <div>
               <h1 className="text-xl font-bold">Career Roadmaps</h1>
-              <p className="text-sm text-muted-foreground">Navigate your tech career path</p>
+              <p className="text-sm text-muted-foreground hidden sm:block">Navigate your tech career path</p>
             </div>
           </div>
         </div>
       </header>
 
       <main className="p-4 md:p-6 lg:p-8">
-        {/* Hero Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <h2 className="text-3xl md:text-4xl font-bold mb-3">
-            Choose Your Path
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Explore comprehensive visual roadmaps designed to guide you through your tech career journey. 
-            Track your progress and master each skill step by step.
-          </p>
-        </motion.div>
+        {/* Enhanced Hero Section */}
+        <RoadmapHeroSection
+          totalRoadmaps={roadmapTrees.length}
+          totalTopics={totalTopics}
+        />
 
-        {/* Search and Filter Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="max-w-6xl mx-auto mb-8 space-y-4"
-        >
-          {/* Search and Sort Row */}
-          <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search roadmaps..."
-                className="pl-10 pr-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            
-            {/* Sort Dropdown */}
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-              <SelectTrigger className="w-full sm:w-48">
-                <ArrowUpDown className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                {sortOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Category Filter Pills */}
-          <div className="flex flex-wrap justify-center gap-2">
-            {categories.map((category) => (
-              <Button
-                key={category.id}
-                variant={selectedCategory === category.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(category.id)}
-                className={cn(
-                  "transition-all",
-                  selectedCategory === category.id && "shadow-md"
-                )}
-              >
-                {category.id !== "all" && (
-                  <span className={cn("h-2 w-2 rounded-full mr-2", category.color)} />
-                )}
-                {category.label}
-              </Button>
-            ))}
-          </div>
-
-          {/* Active Filters Indicator */}
-          {hasActiveFilters && (
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Filter className="h-4 w-4" />
-              <span>
-                Showing {filteredAndSortedRoadmaps.length} of {roadmapTrees.length} roadmaps
-              </span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={clearFilters}
-                className="h-auto py-1 px-2 text-xs"
-              >
-                Clear filters
-              </Button>
-            </div>
-          )}
-        </motion.div>
+        {/* Glassmorphism Filter Bar */}
+        <RoadmapFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          sortBy={sortBy}
+          onSortChange={(v) => setSortBy(v as SortOption)}
+          categories={categories}
+          sortOptions={sortOptions}
+          totalRoadmaps={roadmapTrees.length}
+          filteredCount={filteredAndSortedRoadmaps.length + (showFeatured ? featuredRoadmapIds.length : 0)}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={clearFilters}
+        />
 
         {/* Continue Learning Section - shown first for returning users */}
         {showFeatured && (
@@ -983,43 +722,35 @@ const Roadmap: React.FC = () => {
 
         {/* All Roadmaps Section Header */}
         {showFeatured && filteredAndSortedRoadmaps.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="max-w-6xl mx-auto mb-6"
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-muted to-muted/60 flex items-center justify-center">
-                <Map className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold">All Roadmaps</h3>
-                <p className="text-sm text-muted-foreground">Explore more career paths</p>
-              </div>
-            </div>
-          </motion.div>
+          <RoadmapSectionDivider
+            icon={Map}
+            title="All Roadmaps"
+            subtitle="Explore more career paths"
+            count={filteredAndSortedRoadmaps.length}
+            countLabel="paths"
+            gradientFrom="from-muted-foreground/50"
+            gradientTo="to-muted-foreground/30"
+            delay={0.3}
+          />
         )}
 
         {/* Roadmap Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           <AnimatePresence mode="popLayout">
             {filteredAndSortedRoadmaps.map(({ roadmap, estimatedWeeks }, index) => (
-              <motion.div
+              <RoadmapCardEnhanced
                 key={roadmap.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ delay: (showFeatured ? 0.35 : 0) + index * 0.05 }}
-              >
-                <RoadmapCard 
-                  roadmap={roadmap} 
-                  estimatedWeeks={estimatedWeeks} 
-                  userProgress={userProgressData}
-                  cardProgress={userProgressData[roadmap.id] || 0}
-                />
-              </motion.div>
+                roadmap={roadmap}
+                estimatedTime={formatEstimatedTime(estimatedWeeks)}
+                difficulty={calculateDifficulty(roadmap.nodes)}
+                totalTopics={countNodes(roadmap.nodes)}
+                userProgress={userProgressData}
+                cardProgress={userProgressData[roadmap.id] || 0}
+                popularityScore={popularityScores[roadmap.id]}
+                roadmapPrerequisites={roadmapPrerequisites}
+                getRoadmapTitle={getRoadmapTitle}
+                index={showFeatured ? index : index}
+              />
             ))}
           </AnimatePresence>
         </div>
@@ -1044,18 +775,7 @@ const Roadmap: React.FC = () => {
 
         {/* Coming Soon Placeholder */}
         {(filteredAndSortedRoadmaps.length > 0 || showFeatured) && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-center mt-12 p-8 border-2 border-dashed border-border rounded-2xl max-w-md mx-auto"
-          >
-            <Users className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">More Roadmaps Coming Soon</h3>
-            <p className="text-sm text-muted-foreground">
-              We're actively adding new career paths. Stay tuned for more!
-            </p>
-          </motion.div>
+          <ComingSoonSection />
         )}
       </main>
 
