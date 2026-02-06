@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutGrid,
   FileSpreadsheet,
@@ -290,11 +291,20 @@ export function DashboardSidebar() {
                       <Link to={item.url} className="group-data-[collapsible=icon]:justify-center">
                         <div className="relative">
                           <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
-                          {item.title === "Notifications" && unreadCount > 0 && (
-                            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                              {unreadCount > 9 ? "9+" : unreadCount}
-                            </span>
-                          )}
+                          <AnimatePresence>
+                            {item.title === "Notifications" && unreadCount > 0 && (
+                              <motion.span
+                                key={unreadCount}
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.5, opacity: 0 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                                className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground"
+                              >
+                                {unreadCount > 9 ? "9+" : unreadCount}
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
                         </div>
                         <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
                       </Link>
