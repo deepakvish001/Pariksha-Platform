@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ResumeTemplate, styleConfig } from "@/data/resumeTemplatesData";
+import FormatDownloadButton from "./FormatDownloadButton";
 
 interface ResumeTemplateCardProps {
   template: ResumeTemplate;
@@ -22,7 +23,9 @@ interface ResumeTemplateCardProps {
   isFeatured?: boolean;
   isFavorite?: boolean;
   onToggleFavorite?: (templateId: number) => void;
-  onDownload?: (template: ResumeTemplate) => void;
+  onDownload?: (template: ResumeTemplate, format: string) => void;
+  onPreview?: (template: ResumeTemplate) => void;
+  isDownloading?: boolean;
 }
 
 // Visual resume preview component
@@ -170,6 +173,8 @@ const ResumeTemplateCard: React.FC<ResumeTemplateCardProps> = ({
   isFavorite = false,
   onToggleFavorite,
   onDownload,
+  onPreview,
+  isDownloading = false,
 }) => {
   const style = styleConfig[template.style];
 
@@ -180,13 +185,17 @@ const ResumeTemplateCard: React.FC<ResumeTemplateCardProps> = ({
     return num.toString();
   };
 
-  const handleDownload = () => {
-    onDownload?.(template);
+  const handleDownload = (format: string) => {
+    onDownload?.(template, format);
   };
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleFavorite?.(template.id);
+  };
+
+  const handlePreview = () => {
+    onPreview?.(template);
   };
 
   return (
@@ -266,6 +275,7 @@ const ResumeTemplateCard: React.FC<ResumeTemplateCardProps> = ({
               size="sm"
               variant="secondary"
               className="gap-1.5 bg-white/90 hover:bg-white text-gray-900"
+              onClick={handlePreview}
             >
               <Eye className="h-4 w-4" />
               Preview
@@ -276,7 +286,7 @@ const ResumeTemplateCard: React.FC<ResumeTemplateCardProps> = ({
         <CardContent className="p-4 space-y-3">
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
-            <div>
+            <div className="cursor-pointer" onClick={handlePreview}>
               <h3 className="font-semibold text-base group-hover:text-primary transition-colors">
                 {template.name}
               </h3>
@@ -332,12 +342,13 @@ const ResumeTemplateCard: React.FC<ResumeTemplateCardProps> = ({
             ))}
           </div>
 
-          {/* Action Button */}
-          <Button onClick={handleDownload} className="w-full gap-2 group/btn">
-            <Download className="h-4 w-4" />
-            Download Free
-            <ArrowRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover/btn:opacity-100 group-hover/btn:translate-x-0 transition-all duration-200" />
-          </Button>
+          {/* Action Button with Format Selection */}
+          <FormatDownloadButton
+            template={template}
+            onDownload={(t, format) => handleDownload(format)}
+            variant="card"
+            isDownloading={isDownloading}
+          />
         </CardContent>
       </Card>
     </motion.div>
