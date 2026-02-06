@@ -13,6 +13,8 @@ import {
   Check,
   Info,
   RotateCcw,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -153,6 +155,43 @@ const NotificationPreferences = () => {
     } else {
       await subscribe();
     }
+  };
+
+  const notificationTypeKeys = [
+    "notify_velocity_reminder",
+    "notify_achievement_unlock",
+    "notify_new_follower",
+    "notify_goal_milestone",
+    "notify_streak_reminder",
+    "notify_rare_achievement",
+  ] as const;
+
+  const allNotificationTypesEnabled = notificationTypeKeys.every(
+    (key) => settings[key]
+  );
+
+  const handleSelectAllNotificationTypes = () => {
+    setSettings((prev) => ({
+      ...prev,
+      notify_velocity_reminder: true,
+      notify_achievement_unlock: true,
+      notify_new_follower: true,
+      notify_goal_milestone: true,
+      notify_streak_reminder: true,
+      notify_rare_achievement: true,
+    }));
+  };
+
+  const handleDeselectAllNotificationTypes = () => {
+    setSettings((prev) => ({
+      ...prev,
+      notify_velocity_reminder: false,
+      notify_achievement_unlock: false,
+      notify_new_follower: false,
+      notify_goal_milestone: false,
+      notify_streak_reminder: false,
+      notify_rare_achievement: false,
+    }));
   };
 
   const notificationTypes = [
@@ -364,13 +403,35 @@ const NotificationPreferences = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Bell className="h-5 w-5 text-primary" />
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Bell className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle>Notification Types</CardTitle>
+                    <CardDescription>Choose which notifications you want to receive</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle>Notification Types</CardTitle>
-                  <CardDescription>These are the types of notifications you'll receive</CardDescription>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectAllNotificationTypes}
+                    disabled={allNotificationTypesEnabled}
+                  >
+                    <CheckSquare className="h-4 w-4 mr-1.5" />
+                    Select All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDeselectAllNotificationTypes}
+                    disabled={!notificationTypeKeys.some((key) => settings[key])}
+                  >
+                    <Square className="h-4 w-4 mr-1.5" />
+                    Deselect All
+                  </Button>
                 </div>
               </div>
             </CardHeader>
