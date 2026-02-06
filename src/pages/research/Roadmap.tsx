@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Map, ArrowRight, Clock, BookOpen, Users, Search, Filter, X, Timer,
   ArrowUpDown, Sprout, Flame, Diamond, TrendingUp, Sparkles, GitBranch,
-  CheckCircle2, Lock, ChevronRight
+  CheckCircle2, Lock, ChevronRight, PlayCircle, BarChart3, Trophy
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -520,6 +521,237 @@ const FeaturedSection = ({
   );
 };
 
+// Continue Learning section component
+const ContinueLearningSection = ({ 
+  roadmapData, 
+  userProgress 
+}: { 
+  roadmapData: { roadmap: RoadmapTree; estimatedWeeks: number }[];
+  userProgress: Record<string, number>;
+}) => {
+  const navigate = useNavigate();
+  
+  // Get roadmaps that are in progress (1-99%)
+  const inProgressRoadmaps = roadmapData
+    .filter(({ roadmap }) => {
+      const progress = userProgress[roadmap.id] || 0;
+      return progress > 0 && progress < 100;
+    })
+    .sort((a, b) => (userProgress[b.roadmap.id] || 0) - (userProgress[a.roadmap.id] || 0));
+
+  if (inProgressRoadmaps.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.12 }}
+      className="max-w-6xl mx-auto mb-10"
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+          <PlayCircle className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold">Continue Learning</h3>
+          <p className="text-sm text-muted-foreground">Pick up where you left off</p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {inProgressRoadmaps.slice(0, 3).map(({ roadmap, estimatedWeeks }, index) => {
+          const progress = userProgress[roadmap.id] || 0;
+          const totalTopics = countNodes(roadmap.nodes);
+          const completedTopics = Math.round((progress / 100) * totalTopics);
+          
+          return (
+            <motion.div
+              key={roadmap.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.15 + index * 0.1 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Card 
+                className="cursor-pointer border-2 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300"
+                onClick={() => navigate(`/research/roadmap/${roadmap.id}`)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    <div className={cn(
+                      "h-12 w-12 rounded-xl bg-gradient-to-br flex-shrink-0 flex items-center justify-center",
+                      roadmap.color
+                    )}>
+                      <Map className="h-6 w-6 text-white/90" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold truncate">{roadmap.title}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {completedTopics} of {totalTopics} topics completed
+                      </p>
+                      <div className="mt-2 flex items-center gap-3">
+                        <Progress value={progress} className="flex-1 h-2" />
+                        <span className="text-sm font-semibold text-primary">{progress}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+};
+
+// Progress Comparison component
+const ProgressComparisonSection = ({ 
+  roadmapData, 
+  userProgress 
+}: { 
+  roadmapData: { roadmap: RoadmapTree; estimatedWeeks: number }[];
+  userProgress: Record<string, number>;
+}) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Get all roadmaps with progress, sorted by progress
+  const roadmapsWithProgress = roadmapData
+    .map(({ roadmap, estimatedWeeks }) => ({
+      roadmap,
+      estimatedWeeks,
+      progress: userProgress[roadmap.id] || 0,
+      totalTopics: countNodes(roadmap.nodes),
+    }))
+    .filter(item => item.progress > 0)
+    .sort((a, b) => b.progress - a.progress);
+
+  if (!user || roadmapsWithProgress.length < 2) return null;
+
+  const maxProgress = Math.max(...roadmapsWithProgress.map(r => r.progress));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.18 }}
+      className="max-w-6xl mx-auto mb-10"
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+          <BarChart3 className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold">Your Progress Overview</h3>
+          <p className="text-sm text-muted-foreground">Compare your progress across all roadmaps</p>
+        </div>
+      </div>
+      
+      <Card className="border-2">
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            {roadmapsWithProgress.map(({ roadmap, progress, totalTopics }, index) => {
+              const completedTopics = Math.round((progress / 100) * totalTopics);
+              const isLeading = progress === maxProgress;
+              
+              return (
+                <motion.div
+                  key={roadmap.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + index * 0.05 }}
+                  className="group cursor-pointer"
+                  onClick={() => navigate(`/research/roadmap/${roadmap.id}`)}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Rank indicator */}
+                    <div className={cn(
+                      "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold",
+                      index === 0 && "bg-amber-500/20 text-amber-600",
+                      index === 1 && "bg-slate-400/20 text-slate-600",
+                      index === 2 && "bg-orange-600/20 text-orange-700",
+                      index > 2 && "bg-muted text-muted-foreground"
+                    )}>
+                      {index === 0 ? <Trophy className="h-4 w-4" /> : index + 1}
+                    </div>
+                    
+                    {/* Roadmap info */}
+                    <div className={cn(
+                      "h-10 w-10 rounded-lg bg-gradient-to-br flex-shrink-0 flex items-center justify-center",
+                      roadmap.color
+                    )}>
+                      <Map className="h-5 w-5 text-white/90" />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-medium truncate group-hover:text-primary transition-colors">
+                          {roadmap.title}
+                        </h4>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            {completedTopics}/{totalTopics} topics
+                          </span>
+                          <Badge 
+                            variant={progress === 100 ? "default" : "secondary"}
+                            className={cn(
+                              "font-bold",
+                              progress === 100 && "bg-emerald-500"
+                            )}
+                          >
+                            {progress}%
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {/* Progress bar with comparison indicator */}
+                      <div className="relative">
+                        <Progress value={progress} className="h-2.5" />
+                        {isLeading && progress < 100 && (
+                          <div className="absolute -top-1 -right-1">
+                            <span className="flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+          
+          {/* Summary stats */}
+          <div className="mt-6 pt-4 border-t border-border grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold text-primary">{roadmapsWithProgress.length}</p>
+              <p className="text-xs text-muted-foreground">Paths Started</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-emerald-500">
+                {roadmapsWithProgress.filter(r => r.progress === 100).length}
+              </p>
+              <p className="text-xs text-muted-foreground">Completed</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-amber-500">
+                {Math.round(roadmapsWithProgress.reduce((acc, r) => acc + r.progress, 0) / roadmapsWithProgress.length)}%
+              </p>
+              <p className="text-xs text-muted-foreground">Avg Progress</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
+
 const Roadmap: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -700,6 +932,16 @@ const Roadmap: React.FC = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Continue Learning Section - shown first for returning users */}
+        {showFeatured && (
+          <ContinueLearningSection roadmapData={roadmapData} userProgress={userProgressData} />
+        )}
+
+        {/* Progress Comparison Section */}
+        {showFeatured && (
+          <ProgressComparisonSection roadmapData={roadmapData} userProgress={userProgressData} />
+        )}
 
         {/* Featured Section */}
         {showFeatured && (
