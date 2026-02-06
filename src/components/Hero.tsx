@@ -1,8 +1,9 @@
 import { ArrowRight, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import HeroIllustration from "./HeroIllustration";
+import BrandLogo from "./BrandLogo";
 
 // Animated stat component
 const AnimatedStat = ({ 
@@ -75,6 +76,42 @@ const AnimatedStat = ({
   );
 };
 
+// Animated Tagline Component
+const taglines = [
+  "Master your tech career",
+  "Learn with purpose",
+  "Build your future",
+  "Code with confidence",
+];
+
+const AnimatedTagline = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % taglines.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="h-5 overflow-hidden">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={currentIndex}
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -20, opacity: 0 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+          className="block text-sm font-medium text-muted-foreground"
+        >
+          {taglines[currentIndex]}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const Hero = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -134,11 +171,51 @@ const Hero = () => {
 
       {/* Content */}
       <div className="relative z-10 section-container text-center lg:text-left pt-28 pb-32 lg:pr-[400px]">
+        {/* Animated Logo with Tagline */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col items-center lg:items-start gap-3 mb-8"
+        >
+          <BrandLogo size="lg" showText={true} linkTo={undefined} />
+          
+          {/* Animated Tagline */}
+          <motion.div
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: "auto" }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="overflow-hidden"
+          >
+            <motion.div 
+              className="flex items-center gap-2"
+              initial={{ x: -20 }}
+              animate={{ x: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+            >
+              <motion.div
+                animate={{ 
+                  rotate: [0, 10, -10, 0],
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity,
+                  repeatDelay: 3
+                }}
+              >
+                <Sparkles className="w-4 h-4 text-primary" />
+              </motion.div>
+              <AnimatedTagline />
+            </motion.div>
+          </motion.div>
+        </motion.div>
+
         {/* Badge */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-8"
         >
           <Sparkles className="w-4 h-4 text-primary" />
