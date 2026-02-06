@@ -1,122 +1,145 @@
 
-# Career Roadmap Individual Page - Modern Design Overhaul
+
+# Resume Templates Page - Modern Design Overhaul
 
 ## Overview
-Transform the individual Career Roadmap detail page (`RoadmapDetail.tsx`) into a premium, branded experience that matches the recently redesigned main Roadmaps page. The goal is to create a cohesive, immersive learning experience with improved visual hierarchy, modern UI patterns, and enhanced user engagement.
+Transform the Resume Templates page into a premium, branded experience that matches the recently redesigned Career Roadmaps pages. The goal is to create an immersive, visually polished page with enhanced filtering, template previews, and user engagement features.
 
 ---
 
 ## Current State Analysis
 
-The current individual roadmap page has functional elements but lacks:
-- **Visual Impact**: Basic header without brand personality or immersive design
-- **Hero Section**: Missing the animated hero treatment that was added to the main roadmaps page
-- **Information Hierarchy**: Stats cards are basic and lack visual polish
-- **Progress Visualization**: Simple cards without engaging visual elements
-- **Sticky Navigation**: No quick-jump or progress indicator as users scroll
+The current page has basic functionality but lacks:
+- **Visual Impact**: Simple header without brand personality or immersive design
+- **Hero Section**: Missing the animated hero treatment from other pages
+- **Template Showcase**: Basic card grid without visual polish
+- **Filter Experience**: Simple search without category filtering or quick actions
+- **Template Previews**: No visual preview of actual resume designs
+- **Statistics**: No engagement metrics (downloads, popularity, ratings)
+- **User Tracking**: No ability to mark favorites or track downloads
 - **Modern Polish**: Missing glassmorphism, micro-interactions, and premium feel
-- **Brand Consistency**: Not leveraging the established orange gradient identity from the main page
 
 ---
 
 ## Proposed Design Improvements
 
-### 1. Enhanced Hero Header Section
-Transform the basic sticky header into an immersive branded hero:
+### 1. Immersive Hero Section
+Create a branded hero matching the Roadmaps page style:
 
-- **Animated Background Elements**: Subtle floating gradient orbs (orange/amber) matching the main roadmaps page pattern
-- **Large Roadmap Icon**: Featured icon with gradient background and glow effect
-- **Gradient Text Treatment**: Apply brand gradient to the roadmap title
-- **Breadcrumb Navigation**: Styled breadcrumb with hover effects for easy navigation
-- **Quick Stats Row**: Inline progress stats with animated counters (topics completed, progress %, estimated time)
-- **Theme-Aware Transitions**: Smooth 700ms transitions for theme changes
+- **Animated Background**: Floating gradient orbs (orange/amber) with grid pattern overlay
+- **Floating Particles**: Theme-aware animated dots for visual interest
+- **Gradient Text Headline**: "Craft Your Perfect Resume"
+- **Animated Stats Bar**: Total templates, ATS-friendly count, total downloads with count-up animations
+- **Trust Badge**: "100% Free • ATS Optimized • Professional"
+- **Theme Transitions**: Smooth 700ms transitions for dark/light mode
 
-### 2. Progress Dashboard Cards Redesign
-Upgrade the simple stat cards to a modern dashboard:
+### 2. Enhanced Filter Bar
+Upgrade to a glassmorphism filter experience:
 
-- **Glassmorphism Cards**: Frosted glass effect containers with subtle borders
-- **Animated Progress Ring**: Large circular progress indicator with SVG animation
-- **Stat Cards Grid**: Redesigned with gradient icons and micro-interactions
-- **Live Progress Updates**: Real-time visual feedback when topics are completed
-- **Color-Coded States**: Green for completed, amber for in-progress, muted for remaining
+- **Search Input**: Full-width with clear button and icon
+- **Category Pills**: Style-based filtering (Modern, Traditional, Creative, Minimal, Two-Column)
+- **Quick Filters**: "ATS Friendly", "Most Popular", "New" quick action buttons
+- **Sort Options**: By downloads, name, date added
+- **Active Filter Indicator**: Shows filtered count with clear option
 
-### 3. Enhanced Streak & Goal Cards
-Make the streak and learning goal cards more visually prominent:
+### 3. Template Card Redesign
+Modernize the template cards dramatically:
 
-- **Unified Card Design**: Match the new design language with gradient accents
-- **Hover Effects**: Lift and glow on hover
-- **Better Visual Hierarchy**: Larger fonts for key metrics
-- **Motivational Elements**: Enhanced milestone indicators
+- **Visual Preview Area**: Gradient placeholder with template icon (future: actual preview thumbnails)
+- **Template Name + Style Badge**: Clear naming with style category chip
+- **Metadata Row**: Downloads count, ATS badge, format options
+- **Hover Interactions**: Lift effect, border glow, preview expansion
+- **Action Buttons**: "Preview" and "Download" with hover states
+- **Featured Templates**: Special glow border and shimmer effect for promoted items
 
-### 4. Roadmap Tree Visual Enhancement
-Improve the main roadmap tree visualization:
+### 4. Featured Templates Section
+Highlight top templates with special treatment:
 
-- **Section Dividers**: Gradient fade dividers between major sections
-- **Floating Progress Indicator**: Sticky widget showing current section and next recommended topic
-- **Quick Jump Navigation**: Dropdown or pill-based section jumper in the header
-- **Scroll Progress Bar**: Visual indicator of scroll position through the roadmap
-- **Enhanced Node Styling**: Already has good styling; ensure consistency with new header
+- **Spotlight Cards**: Larger cards with additional details
+- **"Editor's Pick" Badge**: Visual callout for best templates
+- **Animated Entrance**: Staggered reveal animation
+- **Rich Metadata**: Format, file size, compatibility info
 
-### 5. FAQ Section Polish
-Upgrade the FAQ accordion:
+### 5. Categories Section
+Organize templates by style with visual separation:
 
-- **Card Container**: Wrap in glassmorphism card
-- **Icon Enhancement**: Add question mark icon with gradient
-- **Hover States**: Subtle background transitions
-- **Smoother Animations**: Enhanced accordion transitions
+- **Section Dividers**: Gradient icons with section headers (using RoadmapSectionDivider pattern)
+- **Style Icons**: Visual representation of each category
+- **Template Count Badge**: "12 templates" indicator
+- **Horizontal Scroll Option**: For mobile-friendly browsing
 
-### 6. Floating Action Elements
-Add helpful floating UI elements:
+### 6. Statistics Dashboard
+Add engagement metrics section:
 
-- **Back-to-Top Button**: Appears after scrolling, with smooth animation
-- **Progress Mini-Widget**: Floating widget showing overall progress and next topic
-- **Quick Actions FAB**: Mobile-friendly floating action button for common actions
+- **Template Count Card**: Total available templates
+- **Downloads Card**: Total community downloads
+- **ATS Score Card**: Percentage of ATS-friendly templates
+- **User Rating Card**: Average community rating
 
 ### 7. Mobile Optimization
-Ensure excellent mobile experience:
+Ensure excellent responsive experience:
 
-- **Collapsible Stats**: Stack stats vertically on mobile
-- **Touch-Friendly Controls**: Larger touch targets
-- **Simplified Header**: Condensed header with essential info
-- **Bottom Navigation Bar**: Quick access to sections
+- **Stacked Filter Controls**: Vertical layout on mobile
+- **Touch-Friendly Cards**: Larger touch targets
+- **Swipeable Categories**: Horizontal scroll for categories
+- **Bottom Sheet Filters**: Expandable filter panel on mobile
 
 ---
 
 ## Technical Implementation Details
 
 ### Files to Create
-1. `src/components/roadmap/RoadmapDetailHero.tsx` - New branded hero section for detail page
-2. `src/components/roadmap/RoadmapProgressDashboard.tsx` - Enhanced progress stats dashboard
-3. `src/components/roadmap/RoadmapFloatingProgress.tsx` - Floating progress indicator widget
-4. `src/components/roadmap/RoadmapScrollProgress.tsx` - Scroll-based progress bar
+1. `src/components/resume/ResumeHeroSection.tsx` - Branded hero with animated backgrounds
+2. `src/components/resume/ResumeFilterBar.tsx` - Glassmorphism filter container
+3. `src/components/resume/ResumeTemplateCard.tsx` - Enhanced template card component
+4. `src/components/resume/ResumeStatsDashboard.tsx` - Engagement statistics section
+5. `src/data/resumeTemplatesData.ts` - Expanded template data with full metadata
 
 ### Files to Modify
-1. `src/pages/research/RoadmapDetail.tsx` - Integrate new components, restructure layout
-2. `src/components/roadmap/RoadmapStreakCard.tsx` - Minor styling enhancements
-3. `src/components/roadmap/LearningGoalCard.tsx` - Minor styling enhancements
-4. `src/components/roadmap/RoadmapFAQ.tsx` - Enhanced styling with glassmorphism
+1. `src/pages/research/ResumeTemplates.tsx` - Complete page restructure with new components
 
 ### Component Structure
-
 ```text
-RoadmapDetail
-├── RoadmapDetailHero (NEW)
+ResumeTemplates
+├── ResumeHeroSection (NEW)
 │   ├── Animated Background (orbs, particles, grid)
-│   ├── Breadcrumb Navigation
-│   ├── Roadmap Icon + Title + Description
-│   └── Quick Stats Bar (animated counters)
-├── RoadmapProgressDashboard (NEW)
-│   ├── Circular Progress Ring (SVG animated)
-│   ├── Stats Cards Grid (Completed, In Progress, Remaining)
-│   └── Estimated Time to Complete
-├── RoadmapStreakCard (existing, enhanced)
-├── LearningGoalCard (existing, enhanced)
-├── RoadmapScrollProgress (NEW)
-│   └── Sticky progress bar at top of tree section
-├── RoadmapTree (existing)
-│   └── RoadmapFloatingProgress (NEW - sticky widget)
-├── RoadmapFAQ (enhanced)
-└── BackToTop Button (floating)
+│   ├── Gradient headline + description
+│   └── Stats Bar (templates, downloads, ATS count)
+├── ResumeFilterBar (NEW)
+│   ├── Search Input
+│   ├── Category Pills (Modern, Traditional, Creative, etc.)
+│   └── Quick Filters + Sort
+├── ResumeStatsDashboard (NEW)
+│   └── Stats Cards Grid
+├── RoadmapSectionDivider (reuse) - "Featured Templates"
+├── Featured Templates Grid
+│   └── ResumeTemplateCard (featured=true)
+├── RoadmapSectionDivider (reuse) - "All Templates"
+└── All Templates Grid
+    └── ResumeTemplateCard
+```
+
+---
+
+## Expanded Template Data Structure
+
+```typescript
+interface ResumeTemplate {
+  id: number;
+  name: string;
+  description: string;
+  style: 'modern' | 'traditional' | 'creative' | 'minimal' | 'two-column';
+  downloads: number;
+  atsCompatible: boolean;
+  isFeatured: boolean;
+  format: string[];          // ['PDF', 'DOCX', 'Google Docs']
+  colorScheme: string;       // Preview gradient colors
+  fileSize?: string;
+  dateAdded: string;
+  tags: string[];           // ['Tech', 'Executive', 'Entry-Level']
+  previewUrl?: string;
+  downloadUrl?: string;
+}
 ```
 
 ---
@@ -125,55 +148,46 @@ RoadmapDetail
 
 ```text
 +--------------------------------------------------+
-|  HERO HEADER SECTION                             |
-|  - Animated gradient background                  |
-|  - Back button + Breadcrumb                      |
-|  - Large icon + Title + Description              |
-|  - Quick stats: 12/45 topics • 27% • ~8 weeks    |
+|  HERO SECTION (Immersive, Branded)               |
+|  - Animated gradient background with particles   |
+|  - "Craft Your Perfect Resume" headline          |
+|  - Stats: 12+ Templates • 50K+ Downloads • 100%  |
 +--------------------------------------------------+
                     |
                     v
 +--------------------------------------------------+
-|  PROGRESS DASHBOARD                              |
-|  ┌────────────┐ ┌────────────┐ ┌────────────┐   |
-|  │  ◉ 27%    │ │ ✓ 12      │ │ ⏳ 5       │   |
-|  │  Progress  │ │ Completed  │ │ In Progress │   |
-|  └────────────┘ └────────────┘ └────────────┘   |
-|  ┌────────────────────────────────────────────┐ |
-|  │  Overall Progress Bar ████████░░░░░ 27%    │ |
-|  └────────────────────────────────────────────┘ |
+|  FILTER BAR (Glassmorphism)                      |
+|  - Search input with icon                        |
+|  - Category pills: Modern, Traditional, etc.     |
+|  - Quick filters: ATS Friendly, Popular          |
 +--------------------------------------------------+
                     |
                     v
 +--------------------------------------------------+
-|  STREAK & GOAL CARDS (Side by Side)              |
-|  ┌──────────────────┐ ┌──────────────────┐      |
-|  │ 🔥 5 Day Streak  │ │ 🎯 Learning Goal │      |
-|  └──────────────────┘ └──────────────────┘      |
+|  STATS DASHBOARD                                 |
+|  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐|
+|  │ 12+     │ │ 50K+    │ │ 95%     │ │ 4.8★    │|
+|  │Templates│ │Downloads│ │ATS Ready│ │ Rating  │|
+|  └─────────┘ └─────────┘ └─────────┘ └─────────┘|
 +--------------------------------------------------+
                     |
                     v
 +--------------------------------------------------+
-|  ROADMAP TREE SECTION                            |
-|  ┌─────────────────────────────────────────────┐|
-|  │ [Scroll Progress Bar]                       │|
-|  ├─────────────────────────────────────────────┤|
-|  │ Section 1: Internet Basics                  │|
-|  │   └─ Topic nodes...                         │|
-|  │ Section 2: HTML                             │|
-|  │   └─ Topic nodes...                         │|
-|  │ ... (with floating progress widget)         │|
-|  └─────────────────────────────────────────────┘|
+|  FEATURED TEMPLATES                              |
+|  ┌──────────────────────────────────────────────┐|
+|  │ Featured grid with spotlight cards           │|
+|  │ - Larger preview area                        │|
+|  │ - "Editor's Pick" badges                     │|
+|  └──────────────────────────────────────────────┘|
 +--------------------------------------------------+
                     |
                     v
 +--------------------------------------------------+
-|  FAQ SECTION (Glassmorphism Card)                |
-|  ┌─────────────────────────────────────────────┐|
-|  │ ❓ Frequently Asked Questions               │|
-|  │   > Question 1                              │|
-|  │   > Question 2                              │|
-|  └─────────────────────────────────────────────┘|
+|  ALL TEMPLATES                                   |
+|  ┌───────┐ ┌───────┐ ┌───────┐                  |
+|  │ Card  │ │ Card  │ │ Card  │                  |
+|  │ 1     │ │ 2     │ │ 3     │ ...              |
+|  └───────┘ └───────┘ └───────┘                  |
 +--------------------------------------------------+
 ```
 
@@ -181,13 +195,18 @@ RoadmapDetail
 
 ## Color & Style Tokens
 
-Using established brand tokens from `index.css`:
-- **Primary Orange**: `hsl(24 95% 53%)` - CTAs, highlights, progress indicators
-- **Amber Gradient**: `from-amber-500 to-orange-500` - Hero elements, icons
-- **Glass Effect**: `bg-background/80 backdrop-blur-xl border-border/50` - Cards, containers
+Using established brand tokens:
+- **Primary Orange**: `hsl(24 95% 53%)` - CTAs, highlights
+- **Amber Gradient**: `from-amber-500 to-orange-500` - Hero elements
+- **Glass Effect**: `bg-background/80 backdrop-blur-xl border-border/50` - Filter bar
+- **ATS Badge**: `bg-emerald-500/10 text-emerald-600` - Compatibility indicator
 - **Card Shadows**: `shadow-xl shadow-primary/10` - Hover states
-- **Border Glow**: `ring-2 ring-primary/20` - Focus states
-- **Progress Green**: `from-emerald-500 to-green-500` - Completed states
+- **Style Colors**:
+  - Modern: `from-blue-500 to-indigo-600`
+  - Traditional: `from-slate-600 to-slate-800`
+  - Creative: `from-pink-500 to-purple-600`
+  - Minimal: `from-gray-400 to-gray-600`
+  - Two-Column: `from-teal-500 to-cyan-600`
 
 ---
 
@@ -198,61 +217,61 @@ Using established brand tokens from `index.css`:
 - Floating particles: 3-5s staggered upward float with opacity fade
 - Stats counters: 2s ease-out count-up on scroll into view
 
-### Progress Dashboard
-- Progress ring: 0.7s ease-out stroke animation on mount
-- Stat cards: 0.3s staggered fade-in with y translation
-- Value counters: 2s count-up animation
+### Filter Bar
+- Category pills: 0.2s hover lift + glow effect
+- Search clear button: 0.2s scale entrance/exit
+- Filter indicator: 0.3s slide in/out
 
-### Cards & Interactions
-- Hover lift: `y: -2, scale: 1.012` with 0.2s transition
-- Border glow: `box-shadow` animation on hover
-- Accordion: 0.2s height + opacity transitions
+### Template Cards
+- Staggered entrance: 0.05s delay per card
+- Hover lift: `y: -6, scale: 1.02` with 0.3s transition
+- Border glow: `shadow-xl shadow-primary/10` on hover
+- Arrow reveal: 0.2s translate-x animation
 
-### Scroll-Based
-- Scroll progress bar: Smooth width transition tied to scroll position
-- Floating widget: Fade in/out based on scroll position
-- Back-to-top: Scale + opacity entrance animation
+### Section Transitions
+- Section dividers: 0.3s fade in on scroll
+- Grid reveal: Staggered card entrance on scroll into view
 
 ---
 
 ## Accessibility Considerations
 
-- Maintain WCAG 2.1 AA contrast ratios for all text
-- Keyboard navigation for all interactive elements
-- ARIA labels for progress indicators and stats
-- Screen reader announcements for dynamic updates
-- Reduced motion preference support (`prefers-reduced-motion`)
-- Focus visible indicators on all clickable elements
+- Maintain WCAG 2.1 AA contrast ratios
+- Keyboard navigation for all filter controls
+- Screen reader labels for all buttons and badges
+- Focus visible indicators on cards and buttons
+- Reduced motion preference support
+- ARIA labels for download/preview actions
 
 ---
 
 ## Performance Considerations
 
-- Use CSS animations over JS where possible for smoother rendering
-- Lazy render roadmap sections below the fold
-- Memoize progress calculations to prevent recalculation
-- Debounce scroll event handlers for floating elements
-- Use `will-change` sparingly for animated gradient elements
-- Intersection Observer for scroll-based animations
+- Use CSS animations over JS where possible
+- Memoize filtered template lists
+- Debounce search input (300ms)
+- Lazy load template preview images (if added later)
+- Use `will-change` sparingly for animated elements
 
 ---
 
 ## Implementation Priority
 
-1. **Phase 1**: Hero section redesign with animated background
-2. **Phase 2**: Progress dashboard with animated ring
-3. **Phase 3**: Floating progress widget and scroll indicator
-4. **Phase 4**: Enhanced FAQ section styling
-5. **Phase 5**: Mobile optimizations and polish
+1. **Phase 1**: Hero section + expanded template data
+2. **Phase 2**: Filter bar with category/search functionality
+3. **Phase 3**: Enhanced template cards with hover effects
+4. **Phase 4**: Stats dashboard + section dividers
+5. **Phase 5**: Mobile optimizations + animations
 
 ---
 
 ## Expected Outcome
 
-An individual Career Roadmap page that:
-- Creates an immersive, branded learning experience
-- Maintains visual consistency with the redesigned main roadmaps page
-- Provides clear progress visualization and motivation
-- Guides users naturally through their learning journey
+A Resume Templates page that:
+- Creates an immersive, branded experience consistent with Career Roadmaps
+- Showcases templates with visual polish and engaging hover states
+- Provides intuitive filtering by style, ATS compatibility, and popularity
+- Guides users to download with clear CTAs and metadata
 - Feels premium and polished across all device sizes
-- Enhances user engagement with subtle animations and feedback
+- Encourages template exploration with animated interactions
+
