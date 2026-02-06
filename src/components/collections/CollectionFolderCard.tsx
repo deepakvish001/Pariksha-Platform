@@ -1,7 +1,14 @@
 import { motion } from "framer-motion";
-import { Folder, ChevronRight, Share2, MessageSquare, Users } from "lucide-react";
+import { Folder, ChevronRight, Share2, MessageSquare, Users, Pencil, Trash2, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { FolderWithSource } from "@/hooks/useAllFolders";
 import FolderColorPicker from "./FolderColorPicker";
@@ -36,9 +43,11 @@ interface CollectionFolderCardProps {
   onSelect: (folder: FolderWithSource) => void;
   onShare: (folder: FolderWithSource) => void;
   onColorChange: (folderId: string, color: string) => void;
+  onRename: (folder: FolderWithSource) => void;
+  onDelete: (folder: FolderWithSource) => void;
 }
 
-const CollectionFolderCard = ({ folder, index, onSelect, onShare, onColorChange }: CollectionFolderCardProps) => {
+const CollectionFolderCard = ({ folder, index, onSelect, onShare, onColorChange, onRename, onDelete }: CollectionFolderCardProps) => {
   const Icon = getSourceIcon(folder.source);
 
   return (
@@ -81,17 +90,46 @@ const CollectionFolderCard = ({ folder, index, onSelect, onShare, onColorChange 
               currentColor={folder.color}
               onColorChange={(color) => onColorChange(folder.id, color)}
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-white/40 hover:text-white hover:bg-white/[0.05]"
-              onClick={(e) => {
-                e.stopPropagation();
-                onShare(folder);
-              }}
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-white/40 hover:text-white hover:bg-white/[0.05]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                align="end" 
+                className="bg-black/95 border-white/10 backdrop-blur-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DropdownMenuItem
+                  onClick={() => onShare(folder)}
+                  className="text-white/70 hover:text-white focus:text-white focus:bg-white/[0.05]"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onRename(folder)}
+                  className="text-white/70 hover:text-white focus:text-white focus:bg-white/[0.05]"
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem
+                  onClick={() => onDelete(folder)}
+                  className="text-destructive hover:text-destructive focus:text-destructive focus:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <ChevronRight className="h-5 w-5 text-white/30 group-hover:text-primary transition-colors" />
           </div>
         </div>

@@ -35,6 +35,9 @@ interface UseAllFoldersReturn {
   moveItemsToFolder: (itemIds: string[], fromFolderId: string, toFolderId: string) => Promise<boolean>;
   deleteItems: (itemIds: string[], folderId: string) => Promise<boolean>;
   updateFolderColor: (folderId: string, color: string) => Promise<boolean>;
+  createFolder: (name: string, description: string, color: string) => Promise<boolean>;
+  renameFolder: (folderId: string, name: string, description: string) => Promise<boolean>;
+  deleteFolder: (folderId: string) => Promise<boolean>;
   refreshFolders: () => Promise<void>;
 }
 
@@ -362,6 +365,122 @@ export function useAllFolders(): UseAllFoldersReturn {
     [user]
   );
 
+  const createFolder = useCallback(
+    async (name: string, description: string, color: string): Promise<boolean> => {
+      if (!user) return false;
+
+      try {
+        const { data, error } = await supabase
+          .from("user_folders")
+          .insert({
+            user_id: user.id,
+            name,
+            description: description || null,
+            color,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error creating folder:", error);
+          return false;
+        }
+
+        // Add to local state
+        const newFolder: FolderWithSource = {
+          ...data,
+          itemCount: 0,
+          source: "unknown",
+          sourceLabel: "Empty folder",
+        };
+
+        setFolders((prev) => [newFolder, ...prev]);
+        return true;
+      } catch (err) {
+        console.error("Error creating folder:", err);
+        return false;
+      }
+    },
+    [user]
+  );
+
+  const renameFolder = useCallback(
+    async (folderId: string, name: string, description: string): Promise<boolean> => {
+      if (!user) return false;
+
+      try {
+        const { error } = await supabase
+          .from("user_folders")
+          .update({ name, description: description || null })
+          .eq("id", folderId)
+          .eq("user_id", user.id);
+
+        if (error) {
+          console.error("Error renaming folder:", error);
+          return false;
+        }
+
+        // Update local state
+        setFolders((prev) =>
+          prev.map((f) =>
+            f.id === folderId ? { ...f, name, description: description || null } : f
+          )
+        );
+
+        return true;
+      } catch (err) {
+        console.error("Error renaming folder:", err);
+        return false;
+      }
+    },
+    [user]
+  );
+
+  const deleteFolder = useCallback(
+    async (folderId: string): Promise<boolean> => {
+      if (!user) return false;
+
+      try {
+        // First delete all items in the folder
+        const { error: itemsError } = await supabase
+          .from("user_folder_items")
+          .delete()
+          .eq("folder_id", folderId);
+
+        if (itemsError) {
+          console.error("Error deleting folder items:", itemsError);
+          return false;
+        }
+
+        // Then delete the folder
+        const { error } = await supabase
+          .from("user_folders")
+          .delete()
+          .eq("id", folderId)
+          .eq("user_id", user.id);
+
+        if (error) {
+          console.error("Error deleting folder:", error);
+          return false;
+        }
+
+        // Update local state
+        setFolders((prev) => prev.filter((f) => f.id !== folderId));
+        setFolderItems((prev) => {
+          const newItems = { ...prev };
+          delete newItems[folderId];
+          return newItems;
+        });
+
+        return true;
+      } catch (err) {
+        console.error("Error deleting folder:", err);
+        return false;
+      }
+    },
+    [user]
+  );
+
   return {
     folders,
     folderItems,
@@ -371,6 +490,9 @@ export function useAllFolders(): UseAllFoldersReturn {
     moveItemsToFolder,
     deleteItems,
     updateFolderColor,
+    createFolder,
+    renameFolder,
+    deleteFolder,
     refreshFolders: fetchFolders,
   };
 }
