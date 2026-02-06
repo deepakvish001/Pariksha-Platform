@@ -122,7 +122,7 @@ const platformItems = [
   { title: "Astra AI", url: "/platform/ai", icon: Sparkles },
   { title: "Resources", url: "/platform/resources", icon: BookOpen },
   { title: "Collections", url: "/platform/collections", icon: FolderOpen },
-  { title: "Affiliate", url: "/platform/affiliate", icon: TrendingUp },
+  
 ];
 
 const accountItems = [
