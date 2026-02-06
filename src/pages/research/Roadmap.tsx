@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Map, ArrowRight, Clock, BookOpen, Users, Search, Filter, X, Timer,
@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 import { roadmapTrees, type RoadmapTree, type RoadmapTreeNode } from "@/data/roadmapTreesData";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import RoadmapCompletionCelebration from "@/components/roadmap/RoadmapCompletionCelebration";
+import ProgressVelocitySection from "@/components/roadmap/ProgressVelocitySection";
 
 // Helper to count total nodes in a tree
 const countNodes = (nodes: RoadmapTreeNode[]): number => {
@@ -193,10 +195,11 @@ const sortOptions: { value: SortOption; label: string }[] = [
   { value: 'duration-desc', label: 'Duration (Longest)' },
 ];
 
-// Hook to fetch all roadmap progress at once
-const useAllRoadmapProgress = () => {
+// Hook to fetch all roadmap progress at once and detect completions
+const useAllRoadmapProgress = (onComplete?: (roadmapId: string, roadmapTitle: string) => void) => {
   const { user } = useAuth();
   const [progressData, setProgressData] = useState<Record<string, number>>({});
+  const [previousProgress, setPreviousProgress] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchProgress = async () => {
@@ -235,12 +238,26 @@ const useAllRoadmapProgress = () => {
             : 0;
         });
 
+        // Check for newly completed roadmaps
+        if (onComplete) {
+          Object.entries(percentages).forEach(([roadmapId, progress]) => {
+            const prevProgress = previousProgress[roadmapId] || 0;
+            if (progress === 100 && prevProgress < 100 && prevProgress > 0) {
+              const roadmap = roadmapTrees.find(r => r.id === roadmapId);
+              if (roadmap) {
+                onComplete(roadmapId, roadmap.title);
+              }
+            }
+          });
+        }
+
+        setPreviousProgress(progressData);
         setProgressData(percentages);
       }
     };
 
     fetchProgress();
-  }, [user]);
+  }, [user, onComplete]);
 
   return progressData;
 };
@@ -756,9 +773,20 @@ const Roadmap: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState<SortOption>("popularity");
+  
+  // Celebration state for completed roadmaps
+  const [celebrationData, setCelebrationData] = useState<{
+    roadmapId: string;
+    roadmapTitle: string;
+  } | null>(null);
+
+  // Handle roadmap completion
+  const handleRoadmapComplete = useCallback((roadmapId: string, roadmapTitle: string) => {
+    setCelebrationData({ roadmapId, roadmapTitle });
+  }, []);
 
   // Fetch all roadmap progress in a single query
-  const userProgressData = useAllRoadmapProgress();
+  const userProgressData = useAllRoadmapProgress(handleRoadmapComplete);
 
   // Pre-calculate estimated weeks for all roadmaps
   const roadmapData = useMemo(() => {
@@ -938,6 +966,11 @@ const Roadmap: React.FC = () => {
           <ContinueLearningSection roadmapData={roadmapData} userProgress={userProgressData} />
         )}
 
+        {/* Progress Velocity Section */}
+        {showFeatured && (
+          <ProgressVelocitySection />
+        )}
+
         {/* Progress Comparison Section */}
         {showFeatured && (
           <ProgressComparisonSection roadmapData={roadmapData} userProgress={userProgressData} />
@@ -1025,6 +1058,15 @@ const Roadmap: React.FC = () => {
           </motion.div>
         )}
       </main>
+
+      {/* Roadmap Completion Celebration Modal */}
+      {celebrationData && (
+        <RoadmapCompletionCelebration
+          roadmapId={celebrationData.roadmapId}
+          roadmapTitle={celebrationData.roadmapTitle}
+          onClose={() => setCelebrationData(null)}
+        />
+      )}
     </div>
   );
 };
