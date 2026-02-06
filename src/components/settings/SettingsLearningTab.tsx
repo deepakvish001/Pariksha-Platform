@@ -54,14 +54,14 @@ const SettingsLearningTab = () => {
       <SettingsCard delay={0}>
         <div className="flex items-center gap-2 mb-6">
           <div className="p-2 rounded-lg bg-amber-500/10">
-            <Zap className="w-4 h-4 text-amber-400" />
+            <Zap className="w-4 h-4 text-amber-500" />
           </div>
-          <h2 className="text-lg font-semibold text-white">XP & Level</h2>
+          <h2 className="text-lg font-semibold text-foreground">XP & Level</h2>
         </div>
 
         <div className="flex flex-col items-center py-4">
           <XPLevelBadge showProgress />
-          <p className="text-sm text-white/40 text-center mt-4 max-w-md">
+          <p className="text-sm text-muted-foreground text-center mt-4 max-w-md">
             Earn XP by completing quizzes, mastering spaced repetition questions, and maintaining streaks.
             Level up to unlock titles and track your progress!
           </p>
@@ -79,10 +79,10 @@ const SettingsLearningTab = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + index * 0.05 }}
-              className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.03] text-center"
+              className="p-3 rounded-xl bg-secondary/30 border border-border text-center"
             >
               <stat.icon className="w-4 h-4 text-primary mx-auto mb-1" />
-              <p className="text-xs text-white/40">{stat.label}</p>
+              <p className="text-xs text-muted-foreground">{stat.label}</p>
               <p className="text-sm font-semibold text-primary">{stat.xp}</p>
             </motion.div>
           ))}
@@ -94,16 +94,16 @@ const SettingsLearningTab = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-emerald-500/10">
-              <Brain className="w-4 h-4 text-emerald-400" />
+              <Brain className="w-4 h-4 text-emerald-500" />
             </div>
-            <h2 className="text-lg font-semibold text-white">Spaced Repetition</h2>
+            <h2 className="text-lg font-semibold text-foreground">Spaced Repetition</h2>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={resetToDefaults}
             disabled={srsSaving}
-            className="text-white/50 hover:text-white hover:bg-white/10"
+            className="text-muted-foreground hover:text-foreground"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Reset
@@ -114,8 +114,8 @@ const SettingsLearningTab = () => {
           {/* Mastery Threshold */}
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label className="text-base text-white">Mastery Threshold</Label>
-              <p className="text-sm text-white/40">
+              <Label className="text-base text-foreground">Mastery Threshold</Label>
+              <p className="text-sm text-muted-foreground">
                 Number of consecutive correct answers to master a question
               </p>
             </div>
@@ -129,18 +129,18 @@ const SettingsLearningTab = () => {
                 className="flex-1"
               />
               <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <span className="text-2xl font-bold text-emerald-400">{localMasteryThreshold}</span>
+                <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{localMasteryThreshold}</span>
               </div>
             </div>
           </div>
 
-          <Separator className="bg-white/[0.03]" />
+          <Separator className="bg-border" />
 
           {/* Review Intervals */}
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label className="text-base text-white">Review Intervals (days)</Label>
-              <p className="text-sm text-white/40">
+              <Label className="text-base text-foreground">Review Intervals (days)</Label>
+              <p className="text-sm text-muted-foreground">
                 Days between reviews for each correct answer streak
               </p>
             </div>
@@ -154,7 +154,7 @@ const SettingsLearningTab = () => {
                   transition={{ delay: 0.1 + idx * 0.03 }}
                   className="space-y-1"
                 >
-                  <Label className="text-xs text-center block text-white/30">
+                  <Label className="text-xs text-center block text-muted-foreground">
                     {idx + 1}{ordinalSuffix(idx + 1)}
                   </Label>
                   <Input
@@ -167,25 +167,25 @@ const SettingsLearningTab = () => {
                       newIntervals[idx] = Math.max(1, parseInt(e.target.value) || 1);
                       setLocalSRSIntervals(newIntervals);
                     }}
-                    className="text-center bg-black/30 border-white/[0.08] text-white focus:border-emerald-500/50"
+                    className="text-center bg-secondary/50 border-border"
                   />
                 </motion.div>
               ))}
             </div>
 
             {/* Visual timeline */}
-            <div className="mt-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.03]">
-              <p className="text-xs text-white/40 text-center mb-3">Review Schedule Preview</p>
+            <div className="mt-4 p-4 rounded-xl bg-secondary/30 border border-border">
+              <p className="text-xs text-muted-foreground text-center mb-3">Review Schedule Preview</p>
               <div className="flex items-center justify-between">
                 {localSRSIntervals.map((interval, idx) => (
                   <div key={idx} className="flex flex-col items-center">
-                    <div className={`w-3 h-3 rounded-full ${idx === 0 ? 'bg-emerald-400' : 'bg-white/20'}`} />
-                    <span className="text-xs text-white/50 mt-1">{interval}d</span>
+                    <div className={`w-3 h-3 rounded-full ${idx === 0 ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
+                    <span className="text-xs text-muted-foreground mt-1">{interval}d</span>
                   </div>
                 ))}
               </div>
-              <div className="relative mt-1 h-0.5 bg-white/10 rounded-full">
-                <div className="absolute left-0 top-0 h-full w-1/7 bg-gradient-to-r from-emerald-400 to-emerald-500/50 rounded-full" />
+              <div className="relative mt-1 h-0.5 bg-border rounded-full">
+                <div className="absolute left-0 top-0 h-full w-[14%] bg-gradient-to-r from-emerald-500 to-emerald-500/50 rounded-full" />
               </div>
             </div>
           </div>

@@ -33,7 +33,7 @@ const notificationTypes = [
     icon: Mail,
     title: "Email Notifications",
     description: "Receive important updates via email",
-    color: "text-blue-400",
+    color: "text-blue-500",
     bgColor: "bg-blue-500/10",
   },
   {
@@ -41,7 +41,7 @@ const notificationTypes = [
     icon: Newspaper,
     title: "Weekly Quiz Summary",
     description: "Receive a weekly email with your quiz stats, streak, and achievements (sent every Sunday)",
-    color: "text-purple-400",
+    color: "text-purple-500",
     bgColor: "bg-purple-500/10",
   },
   {
@@ -49,7 +49,7 @@ const notificationTypes = [
     icon: Sparkles,
     title: "New Feature Alerts",
     description: "Be the first to know about new features",
-    color: "text-amber-400",
+    color: "text-amber-500",
     bgColor: "bg-amber-500/10",
   },
   {
@@ -57,7 +57,7 @@ const notificationTypes = [
     icon: Megaphone,
     title: "Marketing Emails",
     description: "Receive promotional content and offers",
-    color: "text-pink-400",
+    color: "text-pink-500",
     bgColor: "bg-pink-500/10",
   },
 ];
@@ -167,9 +167,9 @@ const SettingsNotificationsTab = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-purple-500/10">
-              <Bell className="w-4 h-4 text-purple-400" />
+              <Bell className="w-4 h-4 text-purple-500" />
             </div>
-            <h2 className="text-lg font-semibold text-white">Email Preferences</h2>
+            <h2 className="text-lg font-semibold text-foreground">Email Preferences</h2>
           </div>
 
           {/* Bulk actions */}
@@ -179,7 +179,7 @@ const SettingsNotificationsTab = () => {
               size="sm"
               onClick={selectAll}
               disabled={allSelected}
-              className="text-white/50 hover:text-white hover:bg-white/10"
+              className="text-muted-foreground hover:text-foreground"
             >
               <CheckCheck className="w-4 h-4 mr-1" />
               All
@@ -189,7 +189,7 @@ const SettingsNotificationsTab = () => {
               size="sm"
               onClick={deselectAll}
               disabled={noneSelected}
-              className="text-white/50 hover:text-white hover:bg-white/10"
+              className="text-muted-foreground hover:text-foreground"
             >
               <XCircle className="w-4 h-4 mr-1" />
               None
@@ -211,8 +211,8 @@ const SettingsNotificationsTab = () => {
                     <type.icon className={`w-4 h-4 ${type.color}`} />
                   </div>
                   <div className="space-y-0.5">
-                    <Label className="text-base text-white">{type.title}</Label>
-                    <p className="text-sm text-white/40">{type.description}</p>
+                    <Label className="text-base text-foreground">{type.title}</Label>
+                    <p className="text-sm text-muted-foreground">{type.description}</p>
                   </div>
                 </div>
                 <Switch
@@ -222,7 +222,7 @@ const SettingsNotificationsTab = () => {
                 />
               </div>
               {index < notificationTypes.length - 1 && (
-                <Separator className="bg-white/[0.03]" />
+                <Separator className="bg-border" />
               )}
             </motion.div>
           ))}
@@ -248,8 +248,8 @@ const SettingsNotificationsTab = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20"
             >
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-xs text-amber-400">Unsaved changes</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-xs text-amber-600 dark:text-amber-400">Unsaved changes</span>
             </motion.div>
           )}
         </div>

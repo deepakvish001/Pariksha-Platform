@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -81,51 +80,51 @@ const SettingsAccountTab = () => {
       <SettingsCard delay={0}>
         <div className="flex items-center gap-2 mb-6">
           <div className="p-2 rounded-lg bg-emerald-500/10">
-            <Shield className="w-4 h-4 text-emerald-400" />
+            <Shield className="w-4 h-4 text-emerald-500" />
           </div>
-          <h2 className="text-lg font-semibold text-white">Account Status</h2>
+          <h2 className="text-lg font-semibold text-foreground">Account Status</h2>
         </div>
 
         <div className="space-y-4">
           {/* Status Card */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-emerald-500/10">
-                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                <CheckCircle className="w-5 h-5 text-emerald-500" />
               </div>
               <div>
-                <p className="font-medium text-white">Account Active</p>
-                <p className="text-sm text-white/40">Your account is in good standing</p>
+                <p className="font-medium text-foreground">Account Active</p>
+                <p className="text-sm text-muted-foreground">Your account is in good standing</p>
               </div>
             </div>
             <div className="px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <span className="text-sm font-medium text-emerald-400">Active</span>
+              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Active</span>
             </div>
           </div>
 
           {/* Member Since Card */}
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-secondary/30 border border-border">
             <div className="p-2 rounded-lg bg-blue-500/10">
-              <Calendar className="w-5 h-5 text-blue-400" />
+              <Calendar className="w-5 h-5 text-blue-500" />
             </div>
             <div>
-              <p className="font-medium text-white">Member Since</p>
-              <p className="text-sm text-white/40">{memberSince}</p>
+              <p className="font-medium text-foreground">Member Since</p>
+              <p className="text-sm text-muted-foreground">{memberSince}</p>
             </div>
           </div>
 
           {/* Data Export (Future) */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] opacity-60">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border opacity-60">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-purple-500/10">
-                <Download className="w-5 h-5 text-purple-400" />
+                <Download className="w-5 h-5 text-purple-500" />
               </div>
               <div>
-                <p className="font-medium text-white">Export Data</p>
-                <p className="text-sm text-white/40">Download all your data</p>
+                <p className="font-medium text-foreground">Export Data</p>
+                <p className="text-sm text-muted-foreground">Download all your data</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" disabled className="border-white/10 text-white/50">
+            <Button variant="outline" size="sm" disabled className="border-border text-muted-foreground">
               Coming Soon
             </Button>
           </div>
@@ -144,8 +143,8 @@ const SettingsAccountTab = () => {
         <div className="p-4 rounded-xl border border-destructive/20 bg-destructive/5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="font-medium text-white">Delete Account</p>
-              <p className="text-sm text-white/40">
+              <p className="font-medium text-foreground">Delete Account</p>
+              <p className="text-sm text-muted-foreground">
                 Permanently delete your account and all associated data. This action cannot be undone.
               </p>
             </div>
@@ -169,30 +168,30 @@ const SettingsAccountTab = () => {
           if (!open) setDeleteConfirmText("");
         }}
       >
-        <AlertDialogContent className="bg-[#0a0a0c] border-white/10">
+        <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="w-5 h-5" />
               Delete Account
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3 text-white/60">
+            <AlertDialogDescription className="space-y-3 text-muted-foreground">
               <p>
-                This action is <strong className="text-white">permanent and cannot be undone</strong>.
+                This action is <strong className="text-foreground">permanent and cannot be undone</strong>.
                 All your data, including your profile, preferences, and progress will be permanently deleted.
               </p>
               <p>
-                To confirm, type <strong className="text-white">DELETE</strong> below:
+                To confirm, type <strong className="text-foreground">DELETE</strong> below:
               </p>
               <Input
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="Type DELETE to confirm"
-                className="mt-2 bg-black/30 border-white/10 text-white"
+                className="mt-2 bg-secondary/50 border-border"
               />
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white/5 border-white/10 text-white hover:bg-white/10">
+            <AlertDialogCancel className="bg-secondary border-border text-foreground hover:bg-accent">
               Cancel
             </AlertDialogCancel>
             <Button
