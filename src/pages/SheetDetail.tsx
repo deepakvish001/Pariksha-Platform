@@ -1342,6 +1342,87 @@ export default function SheetDetail() {
     });
   };
 
+  // Track previous completion for sheet completion detection
+  const prevCompletedCountRef = useRef(completedCount);
+  const sheetCompletionTriggeredRef = useRef(false);
+
+  // Check for 100% sheet completion
+  useEffect(() => {
+    const totalTopics = allTopics.length;
+    const isNowComplete = completedCount === totalTopics && totalTopics > 0;
+    const wasNotComplete = prevCompletedCountRef.current < totalTopics;
+    
+    if (isNowComplete && wasNotComplete && !sheetCompletionTriggeredRef.current) {
+      sheetCompletionTriggeredRef.current = true;
+      triggerSheetCompletionCelebration();
+    }
+    
+    // Reset trigger if sheet becomes incomplete again
+    if (!isNowComplete) {
+      sheetCompletionTriggeredRef.current = false;
+    }
+    
+    prevCompletedCountRef.current = completedCount;
+  }, [completedCount, allTopics.length]);
+
+  // Epic celebration for 100% sheet completion
+  const triggerSheetCompletionCelebration = useCallback(() => {
+    const duration = 5000;
+    const animationEnd = Date.now() + duration;
+    const colors = ['#f97316', '#fb923c', '#10b981', '#8b5cf6', '#ec4899', '#eab308'];
+
+    // Initial burst from center
+    confetti({
+      particleCount: 100,
+      spread: 100,
+      origin: { x: 0.5, y: 0.5 },
+      colors,
+      startVelocity: 45,
+      ticks: 100,
+      zIndex: 9999,
+    });
+
+    // Continuous side cannons
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        return;
+      }
+
+      const particleCount = 30 * (timeLeft / duration);
+
+      // Left cannon
+      confetti({
+        particleCount: Math.floor(particleCount),
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.65 },
+        colors,
+        ticks: 80,
+        zIndex: 9999,
+      });
+
+      // Right cannon
+      confetti({
+        particleCount: Math.floor(particleCount),
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.65 },
+        colors,
+        ticks: 80,
+        zIndex: 9999,
+      });
+    }, 200);
+
+    // Show celebratory toast
+    toast({
+      title: "🏆 Sheet Complete!",
+      description: `Amazing! You've completed all ${allTopics.length} topics in ${sheetData?.title}!`,
+    });
+  }, [toast, allTopics.length, sheetData?.title]);
+
   const handleToggleTopic = async (topicId: string) => {
     const topic = allTopics.find(t => t.id === topicId);
     const newCompleted = !topic?.completed;
