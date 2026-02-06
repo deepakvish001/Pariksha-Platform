@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { sendResumeScoreNotification, getPreviousBestScore } from "@/services/resumeScoreNotifications";
 
 export interface AnalysisResult {
   id: string;
@@ -155,6 +156,9 @@ export const useResumeAnalysis = () => {
       setState(prev => ({ ...prev, uploadProgress: 80 }));
 
       const analysis = functionData.analysis;
+      
+      // Get previous best score before saving new analysis
+      const previousBestScore = await getPreviousBestScore(user.id);
 
       // Save analysis to database
       const { data: savedAnalysis, error: saveError } = await supabase
@@ -179,6 +183,14 @@ export const useResumeAnalysis = () => {
       if (saveError) throw new Error(`Failed to save analysis: ${saveError.message}`);
 
       setState(prev => ({ ...prev, uploadProgress: 100 }));
+
+      // Send notification for score improvement or milestone (async, don't await)
+      sendResumeScoreNotification({
+        userId: user.id,
+        currentScore: analysis.overall_score,
+        previousScore: previousBestScore,
+        fileName: file.name,
+      });
 
       return savedAnalysis as unknown as AnalysisResult;
     },
