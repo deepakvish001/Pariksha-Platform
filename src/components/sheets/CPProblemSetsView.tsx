@@ -84,7 +84,8 @@ import StreakCounter from "@/components/StreakCounter";
 import { useCPProgress } from "@/hooks/useCPProgress";
 import { useAuth } from "@/contexts/AuthContext";
 
-const ITEMS_PER_PAGE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+type PageSize = typeof PAGE_SIZE_OPTIONS[number];
 
 type ViewTab = "all" | "by-track" | "by-topic";
 
@@ -582,6 +583,7 @@ const CPProblemSetsView = () => {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ViewTab>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PageSize>(10);
   
   // Notes dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
@@ -610,16 +612,16 @@ const CPProblemSetsView = () => {
   }, [searchQuery, selectedTrack, selectedTopic]);
 
   // Pagination calculations
-  const totalPages = Math.ceil(filteredProblemSets.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredProblemSets.length / pageSize);
   const paginatedProblemSets = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProblemSets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredProblemSets, currentPage]);
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredProblemSets.slice(startIndex, startIndex + pageSize);
+  }, [filteredProblemSets, currentPage, pageSize]);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters or page size change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedTrack, selectedTopic]);
+  }, [searchQuery, selectedTrack, selectedTopic, pageSize]);
 
   // Group by track
   const groupedByTrack = useMemo(() => {
@@ -937,98 +939,116 @@ const CPProblemSetsView = () => {
               </motion.div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
+              {filteredProblemSets.length > 0 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredProblemSets.length)} of {filteredProblemSets.length} sets
-                  </p>
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                          className={cn(
-                            "cursor-pointer",
-                            currentPage === 1 && "pointer-events-none opacity-50"
-                          )}
-                        />
-                      </PaginationItem>
-                      
-                      {/* First page */}
-                      {currentPage > 2 && (
-                        <>
-                          <PaginationItem>
-                            <PaginationLink 
-                              onClick={() => setCurrentPage(1)}
-                              className="cursor-pointer"
-                            >
-                              1
-                            </PaginationLink>
-                          </PaginationItem>
-                          {currentPage > 3 && (
-                            <PaginationItem>
-                              <PaginationEllipsis />
-                            </PaginationItem>
-                          )}
-                        </>
-                      )}
-                      
-                      {/* Page numbers around current */}
-                      {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
-                        let page: number;
-                        if (currentPage === 1) {
-                          page = i + 1;
-                        } else if (currentPage === totalPages) {
-                          page = totalPages - 2 + i;
-                        } else {
-                          page = currentPage - 1 + i;
-                        }
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, filteredProblemSets.length)} of {filteredProblemSets.length} sets
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Per page:</span>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => setPageSize(Number(e.target.value) as PageSize)}
+                        className="h-8 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      >
+                        {PAGE_SIZE_OPTIONS.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  {totalPages > 1 && (
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            className={cn(
+                              "cursor-pointer",
+                              currentPage === 1 && "pointer-events-none opacity-50"
+                            )}
+                          />
+                        </PaginationItem>
                         
-                        if (page < 1 || page > totalPages) return null;
-                        
-                        return (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              onClick={() => setCurrentPage(page)}
-                              isActive={currentPage === page}
-                              className="cursor-pointer"
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      })}
-                      
-                      {/* Last page */}
-                      {currentPage < totalPages - 1 && (
-                        <>
-                          {currentPage < totalPages - 2 && (
+                        {/* First page */}
+                        {currentPage > 2 && (
+                          <>
                             <PaginationItem>
-                              <PaginationEllipsis />
+                              <PaginationLink 
+                                onClick={() => setCurrentPage(1)}
+                                className="cursor-pointer"
+                              >
+                                1
+                              </PaginationLink>
                             </PaginationItem>
-                          )}
-                          <PaginationItem>
-                            <PaginationLink 
-                              onClick={() => setCurrentPage(totalPages)}
-                              className="cursor-pointer"
-                            >
-                              {totalPages}
-                            </PaginationLink>
-                          </PaginationItem>
-                        </>
-                      )}
-                      
-                      <PaginationItem>
-                        <PaginationNext 
-                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                          className={cn(
-                            "cursor-pointer",
-                            currentPage === totalPages && "pointer-events-none opacity-50"
-                          )}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
+                            {currentPage > 3 && (
+                              <PaginationItem>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Page numbers around current */}
+                        {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                          let page: number;
+                          if (currentPage === 1) {
+                            page = i + 1;
+                          } else if (currentPage === totalPages) {
+                            page = totalPages - 2 + i;
+                          } else {
+                            page = currentPage - 1 + i;
+                          }
+                          
+                          if (page < 1 || page > totalPages) return null;
+                          
+                          return (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                onClick={() => setCurrentPage(page)}
+                                isActive={currentPage === page}
+                                className="cursor-pointer"
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        })}
+                        
+                        {/* Last page */}
+                        {currentPage < totalPages - 1 && (
+                          <>
+                            {currentPage < totalPages - 2 && (
+                              <PaginationItem>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            )}
+                            <PaginationItem>
+                              <PaginationLink 
+                                onClick={() => setCurrentPage(totalPages)}
+                                className="cursor-pointer"
+                              >
+                                {totalPages}
+                              </PaginationLink>
+                            </PaginationItem>
+                          </>
+                        )}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            className={cn(
+                              "cursor-pointer",
+                              currentPage === totalPages && "pointer-events-none opacity-50"
+                            )}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
                 </div>
               )}
             </TabsContent>
