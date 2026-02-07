@@ -32,15 +32,15 @@ export interface CPProblemSet {
 // Tracks organized by difficulty level and contest type
 export const cpTracks: CPTrack[] = [
   { id: "preliminaries", name: "Preliminaries", color: "bg-teal-500/20 text-teal-600 dark:text-teal-400 border-teal-500/30" },
-  { id: "basics", name: "The Basics", color: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" },
+  { id: "basics", name: "Basics", color: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" },
   { id: "intermediate", name: "Intermediate", color: "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500/30" },
-  { id: "atcoder-4p", name: "4-Problem AtCoder Beginner Contests (Sorted)", color: "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30" },
-  { id: "codeforces-edu", name: "Codeforces Educational Rounds", color: "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30" },
-  { id: "atcoder-6p", name: "6-Problem AtCoder Beginner Contests (Sorted)", color: "bg-lime-500/20 text-lime-600 dark:text-lime-400 border-lime-500/30" },
   { id: "advanced-ds", name: "Advanced Data Structures", color: "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30" },
   { id: "advanced-algo", name: "Advanced Algorithms", color: "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-500/30" },
   { id: "advanced-math", name: "Advanced Mathematics", color: "bg-violet-500/20 text-violet-600 dark:text-violet-400 border-violet-500/30" },
+  { id: "atcoder-4p", name: "4-Problem AtCoder Beginner Contests (Sorted)", color: "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30" },
+  { id: "atcoder-6p", name: "6-Problem AtCoder Beginner Contests (Sorted)", color: "bg-lime-500/20 text-lime-600 dark:text-lime-400 border-lime-500/30" },
   { id: "atcoder-regular", name: "AtCoder Regular Contests (Sorted)", color: "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30" },
+  { id: "codeforces-edu", name: "Codeforces Educational Rounds", color: "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30" },
   { id: "icpc", name: "ICPC World Finals", color: "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30" },
 ];
 
