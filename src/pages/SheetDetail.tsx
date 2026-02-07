@@ -646,6 +646,296 @@ const mockSheetData: Record<string, SheetData> = {
       },
     ],
   },
+  "competitive-programming": {
+    id: "competitive-programming",
+    title: "Competitive Programming Sheet",
+    description: "Master algorithms through structured problem sets from Codeforces, AtCoder & ICPC",
+    lastUpdated: "February 7, 2026",
+    totalProblems: 320,
+    completed: 0,
+    easy: 80,
+    medium: 150,
+    hard: 90,
+    sections: [
+      {
+        id: "cp-preliminaries",
+        title: "Preliminaries",
+        subSections: [
+          {
+            id: "cp-lang-basics",
+            title: "Language Basics",
+            topics: [
+              { id: "cp-1", title: "Fast I/O in C++", completed: false, difficulty: "Easy", resourceType: "article", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-2", title: "Template Setup", completed: false, difficulty: "Easy", resourceType: "article", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-3", title: "Debugging Techniques", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-4", title: "Time Complexity Analysis", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-5", title: "Common Pitfalls & Edge Cases", completed: false, difficulty: "Easy", resourceType: "article", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-io-practice",
+            title: "Input/Output Practice",
+            topics: [
+              { id: "cp-6", title: "Multiple Test Cases", completed: false, difficulty: "Easy", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-7", title: "Reading Until EOF", completed: false, difficulty: "Easy", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-8", title: "String Parsing", completed: false, difficulty: "Easy", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "cp-basics",
+        title: "Basics",
+        subSections: [
+          {
+            id: "cp-sorting",
+            title: "Sorting Algorithms",
+            topics: [
+              { id: "cp-9", title: "Counting Sort", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-10", title: "Radix Sort", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-11", title: "Custom Comparators", completed: false, difficulty: "Easy", resourceType: "article", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-12", title: "Coordinate Compression", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-two-pointers",
+            title: "Two Pointers & Sliding Window",
+            topics: [
+              { id: "cp-13", title: "Two Pointers Technique", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-14", title: "Sliding Window Fixed Size", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-15", title: "Sliding Window Variable Size", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-16", title: "Meet in the Middle", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-prefix",
+            title: "Prefix Sum & Difference Arrays",
+            topics: [
+              { id: "cp-17", title: "1D Prefix Sum", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-18", title: "2D Prefix Sum", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-19", title: "Difference Array", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-20", title: "Range Update Queries", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-greedy",
+            title: "Greedy Algorithms",
+            topics: [
+              { id: "cp-21", title: "Activity Selection", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-22", title: "Fractional Knapsack", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-23", title: "Job Scheduling", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-24", title: "Huffman Coding", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "cp-intermediate",
+        title: "Intermediate",
+        subSections: [
+          {
+            id: "cp-binary-search",
+            title: "Binary Search Advanced",
+            topics: [
+              { id: "cp-25", title: "Binary Search on Answer", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-26", title: "Ternary Search", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-27", title: "Parallel Binary Search", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-28", title: "Fractional Binary Search", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-dp-intro",
+            title: "Dynamic Programming Introduction",
+            topics: [
+              { id: "cp-29", title: "DP Fundamentals", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-30", title: "1D DP Problems", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-31", title: "2D DP Problems", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-32", title: "Knapsack Variants", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-33", title: "LIS & LCS", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-34", title: "Digit DP", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-graphs-basic",
+            title: "Graph Fundamentals",
+            topics: [
+              { id: "cp-35", title: "Graph Representation", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-36", title: "BFS & DFS", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-37", title: "Cycle Detection", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-38", title: "Bipartite Check", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-39", title: "Topological Sort", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-40", title: "Dijkstra's Algorithm", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-number-theory",
+            title: "Number Theory",
+            topics: [
+              { id: "cp-41", title: "Prime Sieve", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-42", title: "Prime Factorization", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-43", title: "GCD & LCM", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-44", title: "Modular Arithmetic", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-45", title: "Modular Inverse", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-46", title: "Fast Exponentiation", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "cp-advanced-ds",
+        title: "Advanced Data Structures",
+        subSections: [
+          {
+            id: "cp-segment-tree",
+            title: "Segment Tree",
+            topics: [
+              { id: "cp-47", title: "Basic Segment Tree", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-48", title: "Lazy Propagation", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-49", title: "Segment Tree with Merge", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-50", title: "Persistent Segment Tree", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-fenwick",
+            title: "Fenwick Tree (BIT)",
+            topics: [
+              { id: "cp-51", title: "Basic BIT", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-52", title: "Range Update Point Query", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-53", title: "2D BIT", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-dsu",
+            title: "Disjoint Set Union",
+            topics: [
+              { id: "cp-54", title: "Basic DSU", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-55", title: "DSU by Rank/Size", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-56", title: "Path Compression", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-57", title: "DSU on Trees", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-trie",
+            title: "Trie & Suffix Structures",
+            topics: [
+              { id: "cp-58", title: "Basic Trie", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-59", title: "XOR Trie", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-60", title: "Suffix Array", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "cp-advanced-algo",
+        title: "Advanced Algorithms",
+        subSections: [
+          {
+            id: "cp-graphs-adv",
+            title: "Advanced Graph Algorithms",
+            topics: [
+              { id: "cp-61", title: "Bellman-Ford", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-62", title: "Floyd-Warshall", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-63", title: "MST (Kruskal & Prim)", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-64", title: "SCC (Kosaraju/Tarjan)", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-65", title: "Bridges & Articulation Points", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-66", title: "LCA & Binary Lifting", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-dp-advanced",
+            title: "Advanced DP",
+            topics: [
+              { id: "cp-67", title: "DP on Trees", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-68", title: "Bitmask DP", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-69", title: "SOS DP", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-70", title: "Divide & Conquer DP", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-71", title: "Convex Hull Trick", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-strings",
+            title: "String Algorithms",
+            topics: [
+              { id: "cp-72", title: "KMP Algorithm", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-73", title: "Z Algorithm", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-74", title: "Rabin-Karp Hashing", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-75", title: "Aho-Corasick", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "cp-math",
+        title: "Advanced Mathematics",
+        subSections: [
+          {
+            id: "cp-combinatorics",
+            title: "Combinatorics",
+            topics: [
+              { id: "cp-76", title: "nCr & nPr", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-77", title: "Pascal's Triangle", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-78", title: "Catalan Numbers", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-79", title: "Inclusion-Exclusion", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-80", title: "Stars and Bars", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-game-theory",
+            title: "Game Theory",
+            topics: [
+              { id: "cp-81", title: "Nim Game", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-82", title: "Sprague-Grundy Theorem", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-83", title: "Minimax Algorithm", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-fft",
+            title: "FFT & Polynomial",
+            topics: [
+              { id: "cp-84", title: "FFT Basics", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-85", title: "NTT", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-86", title: "Polynomial Multiplication", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "cp-contests",
+        title: "Contest Problem Sets",
+        subSections: [
+          {
+            id: "cp-atcoder",
+            title: "AtCoder Beginner Problems",
+            topics: [
+              { id: "cp-87", title: "ABC 300 - A to D", completed: false, difficulty: "Easy", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-88", title: "ABC 310 - A to D", completed: false, difficulty: "Easy", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-89", title: "ABC 320 - A to D", completed: false, difficulty: "Medium", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-90", title: "ABC E-F Collection", completed: false, difficulty: "Hard", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-codeforces",
+            title: "Codeforces Educational",
+            topics: [
+              { id: "cp-91", title: "Div 2 A-B Problems", completed: false, difficulty: "Easy", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-92", title: "Div 2 C-D Problems", completed: false, difficulty: "Medium", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-93", title: "Div 2 E-F Problems", completed: false, difficulty: "Hard", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-94", title: "Educational Round Collection", completed: false, difficulty: "Medium", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "cp-icpc",
+            title: "ICPC Problems",
+            topics: [
+              { id: "cp-95", title: "ICPC Regionals 2023", completed: false, difficulty: "Hard", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-96", title: "ICPC World Finals 2022", completed: false, difficulty: "Hard", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "cp-97", title: "ICPC World Finals 2023", completed: false, difficulty: "Hard", resourceType: "link", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+    ],
+  },
 };
 
 // Difficulty badge component

@@ -39,6 +39,15 @@ const sheets = [
     starred: false,
   },
   {
+    id: "competitive-programming",
+    title: "Competitive Programming",
+    description: "Master algorithms through structured problem sets from Codeforces, AtCoder & ICPC",
+    category: "CP",
+    problems: 320,
+    difficulty: "Medium-Hard",
+    starred: true,
+  },
+  {
     id: "sql-practice",
     title: "SQL Practice Sheet",
     description: "Essential SQL queries for interviews",
