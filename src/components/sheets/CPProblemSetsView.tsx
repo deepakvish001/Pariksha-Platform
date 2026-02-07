@@ -1471,43 +1471,56 @@ const CPProblemSetsView = () => {
                           {count} {count === 1 ? 'problem' : 'problems'}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Sort by:</span>
-                        <div className="flex rounded-md border border-input overflow-hidden">
-                          <button
-                            onClick={() => setRevisionSort("difficulty")}
-                            className={cn(
-                              "px-3 py-1.5 text-xs transition-colors",
-                              revisionSort === "difficulty" 
-                                ? "bg-primary text-primary-foreground" 
-                                : "bg-background hover:bg-muted"
-                            )}
-                          >
-                            Difficulty
-                          </button>
-                          <button
-                            onClick={() => setRevisionSort("set")}
-                            className={cn(
-                              "px-3 py-1.5 text-xs border-l border-input transition-colors",
-                              revisionSort === "set" 
-                                ? "bg-primary text-primary-foreground" 
-                                : "bg-background hover:bg-muted"
-                            )}
-                          >
-                            Set
-                          </button>
-                          <button
-                            onClick={() => setRevisionSort("name")}
-                            className={cn(
-                              "px-3 py-1.5 text-xs border-l border-input transition-colors",
-                              revisionSort === "name" 
-                                ? "bg-primary text-primary-foreground" 
-                                : "bg-background hover:bg-muted"
-                            )}
-                          >
-                            Name
-                          </button>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Sort by:</span>
+                          <div className="flex rounded-md border border-input overflow-hidden">
+                            <button
+                              onClick={() => setRevisionSort("difficulty")}
+                              className={cn(
+                                "px-3 py-1.5 text-xs transition-colors",
+                                revisionSort === "difficulty" 
+                                  ? "bg-primary text-primary-foreground" 
+                                  : "bg-background hover:bg-muted"
+                              )}
+                            >
+                              Difficulty
+                            </button>
+                            <button
+                              onClick={() => setRevisionSort("set")}
+                              className={cn(
+                                "px-3 py-1.5 text-xs border-l border-input transition-colors",
+                                revisionSort === "set" 
+                                  ? "bg-primary text-primary-foreground" 
+                                  : "bg-background hover:bg-muted"
+                              )}
+                            >
+                              Set
+                            </button>
+                            <button
+                              onClick={() => setRevisionSort("name")}
+                              className={cn(
+                                "px-3 py-1.5 text-xs border-l border-input transition-colors",
+                                revisionSort === "name" 
+                                  ? "bg-primary text-primary-foreground" 
+                                  : "bg-background hover:bg-muted"
+                              )}
+                            >
+                              Name
+                            </button>
+                          </div>
                         </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            sortedProblems.forEach(p => toggleRevision(p.id));
+                          }}
+                          className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Clear All
+                        </Button>
                       </div>
                     </div>
                     
