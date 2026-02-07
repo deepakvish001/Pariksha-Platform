@@ -109,12 +109,12 @@
  
          if (profilesError) throw profilesError;
  
-         const { data: extendedProfiles, error: extendedError } = await supabase
-           .from("user_profiles_extended")
-           .select("user_id, username")
-           .in("user_id", userIds);
- 
-         if (extendedError) throw extendedError;
+          const { data: extendedProfiles, error: extendedError } = await supabase
+            .from("public_user_profiles" as any)
+            .select("user_id, username")
+            .in("user_id", userIds) as { data: { user_id: string; username: string }[] | null; error: any };
+
+          if (extendedError) throw extendedError;
  
          const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
          const usernameMap = new Map(extendedProfiles?.map((p) => [p.user_id, p.username]) || []);

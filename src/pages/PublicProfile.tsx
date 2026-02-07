@@ -155,12 +155,37 @@ const PublicProfile = () => {
       }
 
       try {
-        // Fetch extended profile by username
+        // Fetch public profile data from secure view (excludes sensitive data like phone numbers)
         const { data: extendedData, error: extendedError } = await supabase
-          .from("user_profiles_extended")
+          .from("public_user_profiles" as any)
           .select("*")
           .eq("username", username)
-          .maybeSingle();
+          .maybeSingle() as { data: {
+            user_id: string;
+            username: string;
+            bio: string | null;
+            location: string | null;
+            occupation: string | null;
+            website: string | null;
+            skills: string[] | null;
+            interests: string[] | null;
+            goals: string[] | null;
+            aspirations: string[] | null;
+            twitter_url: string | null;
+            linkedin_url: string | null;
+            github_url: string | null;
+            instagram_url: string | null;
+            leetcode_url: string | null;
+            hackerrank_url: string | null;
+            codeforces_url: string | null;
+            codechef_url: string | null;
+            geeksforgeeks_url: string | null;
+            total_xp: number | null;
+            current_level: number | null;
+            xp_this_week: number | null;
+            profile_completion_percentage: number | null;
+            created_at: string;
+          } | null; error: any };
 
         if (extendedError || !extendedData) {
           setNotFound(true);
