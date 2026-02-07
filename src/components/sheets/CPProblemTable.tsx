@@ -152,9 +152,12 @@ function CPProblemRow({
         TABLE_GRID_COLS,
         "border-b border-border/5 last:border-0",
         "transition-all duration-200",
+        // Alternating row colors
+        index % 2 === 0 ? "bg-transparent" : "bg-muted/20",
+        // Override with solved state styling
         isSolved 
           ? "bg-emerald-500/5 hover:bg-emerald-500/8" 
-          : "hover:bg-muted/30"
+          : "hover:bg-muted/40"
       )}
     >
       {/* Status Checkbox */}
@@ -322,6 +325,9 @@ function CPProblemRowMobile({
       className={cn(
         "group p-3 border-b border-border/10 last:border-0",
         "transition-colors duration-200",
+        // Alternating row colors
+        index % 2 === 0 ? "bg-transparent" : "bg-muted/15",
+        // Override with solved state styling
         isSolved ? "bg-emerald-500/5" : "hover:bg-muted/30"
       )}
     >
