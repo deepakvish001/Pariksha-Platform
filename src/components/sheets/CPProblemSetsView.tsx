@@ -1237,7 +1237,41 @@ const CPProblemSetsView = () => {
             </TabsContent>
 
             {/* By Track View - Grouped by Track */}
-            <TabsContent value="by-track" className="mt-4">
+            <TabsContent value="by-track" className="mt-4 space-y-4">
+              {/* Jump to Track dropdown */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">Jump to:</span>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const trackId = e.target.value;
+                    if (trackId) {
+                      // Expand the track if not already expanded
+                      if (!expandedTracks.includes(trackId)) {
+                        setExpandedTracks(prev => [...prev, trackId]);
+                      }
+                      // Scroll to the track section
+                      const element = document.getElementById(`track-section-${trackId}`);
+                      if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }
+                  }}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px]"
+                >
+                  <option value="">Select a track...</option>
+                  {cpTracks.map((track) => {
+                    const trackSets = groupedByTrack[track.id] || [];
+                    if (trackSets.length === 0) return null;
+                    return (
+                      <option key={track.id} value={track.id}>
+                        {track.name} ({trackSets.length} sets)
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1249,20 +1283,21 @@ const CPProblemSetsView = () => {
                       if (trackSets.length === 0) return null;
                       
                       return (
-                        <TrackSection
-                          key={track.id}
-                          trackId={track.id}
-                          problemSets={trackSets}
-                          isExpanded={expandedTracks.includes(track.id)}
-                          onToggle={() => toggleTrackExpansion(track.id)}
-                          expandedSets={expandedSets}
-                          toggleSetExpansion={toggleSetExpansion}
-                          isSolved={isSolved}
-                          isRevision={isRevision}
-                          toggleSolved={toggleSolved}
-                          toggleRevision={toggleRevision}
-                          onOpenNote={openNoteDialog}
-                        />
+                        <div key={track.id} id={`track-section-${track.id}`}>
+                          <TrackSection
+                            trackId={track.id}
+                            problemSets={trackSets}
+                            isExpanded={expandedTracks.includes(track.id)}
+                            onToggle={() => toggleTrackExpansion(track.id)}
+                            expandedSets={expandedSets}
+                            toggleSetExpansion={toggleSetExpansion}
+                            isSolved={isSolved}
+                            isRevision={isRevision}
+                            toggleSolved={toggleSolved}
+                            toggleRevision={toggleRevision}
+                            onOpenNote={openNoteDialog}
+                          />
+                        </div>
                       );
                     })}
                     {filteredProblemSets.length === 0 && (
