@@ -370,7 +370,7 @@ function ProblemSetSection({
   );
 }
 
-// Track Section Component
+// Track Section Component with pagination
 function TrackSection({
   trackId,
   problemSets,
@@ -397,6 +397,9 @@ function TrackSection({
   onOpenNote: (problemId: number, title: string) => void;
 }) {
   const track = cpTracks.find(t => t.id === trackId);
+  const TRACK_PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  
   if (!track) return null;
 
   const totalProblems = problemSets.reduce((acc, ps) => acc + ps.problems.length, 0);
@@ -404,6 +407,14 @@ function TrackSection({
     acc + ps.problems.filter(p => isSolved(p.id)).length, 0);
   const progressPercent = totalProblems > 0 ? Math.round((completedProblems / totalProblems) * 100) : 0;
   const difficulty = getTrackDifficulty(trackId);
+  
+  // Pagination logic for problem sets within this track
+  const totalPages = Math.ceil(problemSets.length / TRACK_PAGE_SIZE);
+  const paginatedSets = problemSets.slice(
+    (currentPage - 1) * TRACK_PAGE_SIZE,
+    currentPage * TRACK_PAGE_SIZE
+  );
+  const needsPagination = problemSets.length > TRACK_PAGE_SIZE;
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
@@ -450,7 +461,7 @@ function TrackSection({
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {problemSets.map((ps) => (
+              {paginatedSets.map((ps) => (
                 <ProblemSetSection
                   key={ps.id}
                   problemSet={ps}
@@ -463,6 +474,72 @@ function TrackSection({
                   onOpenNote={onOpenNote}
                 />
               ))}
+              
+              {/* Pagination for tracks with many sets */}
+              {needsPagination && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border/30 bg-muted/10">
+                  <p className="text-xs text-muted-foreground">
+                    Showing {((currentPage - 1) * TRACK_PAGE_SIZE) + 1} - {Math.min(currentPage * TRACK_PAGE_SIZE, problemSets.length)} of {problemSets.length} sets
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentPage(p => Math.max(1, p - 1));
+                      }}
+                      disabled={currentPage === 1}
+                      className="h-7 px-2"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let page: number;
+                      if (totalPages <= 5) {
+                        page = i + 1;
+                      } else if (currentPage <= 3) {
+                        page = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        page = totalPages - 4 + i;
+                      } else {
+                        page = currentPage - 2 + i;
+                      }
+                      
+                      if (page < 1 || page > totalPages) return null;
+                      
+                      return (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "ghost"}
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentPage(page);
+                          }}
+                          className="h-7 w-7 p-0 text-xs"
+                        >
+                          {page}
+                        </Button>
+                      );
+                    })}
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentPage(p => Math.min(totalPages, p + 1));
+                      }}
+                      disabled={currentPage === totalPages}
+                      className="h-7 px-2"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </CollapsibleContent>
         )}
