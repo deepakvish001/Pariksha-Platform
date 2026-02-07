@@ -99,6 +99,7 @@ import CPFilterSidebar from "@/components/sheets/CPFilterSidebar";
 import CPHeroSection from "@/components/sheets/CPHeroSection";
 import CPStatsDashboard from "@/components/sheets/CPStatsDashboard";
 import CPEmptyState from "@/components/sheets/CPEmptyState";
+import CPFloatingProgress from "@/components/sheets/CPFloatingProgress";
 import CPProblemSetCard, { MiniProgressRing } from "@/components/sheets/CPProblemSetCard";
 import CPProblemTable from "@/components/sheets/CPProblemTable";
 import StreakCounter from "@/components/StreakCounter";
@@ -1575,6 +1576,13 @@ const CPProblemSetsView = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Floating Progress Indicator */}
+      <CPFloatingProgress
+        solvedCount={completedCount}
+        totalCount={totalProblemCount}
+        revisionCount={revisionCount}
+      />
     </div>
   );
 };
