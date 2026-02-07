@@ -1271,7 +1271,8 @@ const CPProblemSetsView = () => {
                     </span>
                     <Progress 
                       value={paginatedProblemSets.length > 0 ? (paginatedProblemSets.filter(ps => expandedSets.includes(ps.id)).length / paginatedProblemSets.length) * 100 : 0} 
-                      className="w-20 h-1.5" 
+                      className="w-20 h-1.5"
+                      indicatorClassName={paginatedProblemSets.length > 0 && paginatedProblemSets.filter(ps => expandedSets.includes(ps.id)).length === paginatedProblemSets.length ? "bg-emerald-500" : undefined}
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -1497,7 +1498,12 @@ const CPProblemSetsView = () => {
                       const expanded = expandedTracks.filter(id => cpTracks.some(t => t.id === id && (groupedByTrack[t.id] || []).length > 0)).length;
                       return total > 0 ? (expanded / total) * 100 : 0;
                     })()} 
-                    className="w-20 h-1.5" 
+                    className="w-20 h-1.5"
+                    indicatorClassName={(() => {
+                      const total = cpTracks.filter(t => (groupedByTrack[t.id] || []).length > 0).length;
+                      const expanded = expandedTracks.filter(id => cpTracks.some(t => t.id === id && (groupedByTrack[t.id] || []).length > 0)).length;
+                      return total > 0 && expanded === total ? "bg-emerald-500" : undefined;
+                    })()}
                   />
                   <div className="flex items-center gap-2">
                     <Button
@@ -1612,7 +1618,12 @@ const CPProblemSetsView = () => {
                       const expanded = expandedTopics.filter(id => cpTopics.some(t => t.id === id && (groupedByTopic[t.id] || []).length > 0)).length;
                       return total > 0 ? (expanded / total) * 100 : 0;
                     })()} 
-                    className="w-20 h-1.5" 
+                    className="w-20 h-1.5"
+                    indicatorClassName={(() => {
+                      const total = cpTopics.filter(t => (groupedByTopic[t.id] || []).length > 0).length;
+                      const expanded = expandedTopics.filter(id => cpTopics.some(t => t.id === id && (groupedByTopic[t.id] || []).length > 0)).length;
+                      return total > 0 && expanded === total ? "bg-emerald-500" : undefined;
+                    })()}
                   />
                   <div className="flex items-center gap-2">
                     <Button
