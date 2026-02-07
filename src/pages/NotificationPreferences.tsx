@@ -23,7 +23,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { cn } from "@/lib/utils";
@@ -259,7 +258,6 @@ const NotificationPreferences = () => {
       <header className="border-b border-border bg-card/50 backdrop-blur-lg sticky top-0 z-50">
         <div className="flex items-center justify-between h-16 px-6">
           <div className="flex items-center gap-4">
-            <SidebarTrigger />
             <div>
               <h1 className="text-xl font-bold text-foreground">Notification Preferences</h1>
               <p className="text-sm text-muted-foreground">Manage how you receive notifications</p>

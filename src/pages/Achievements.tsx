@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Lock, Star, Flame, Target, Zap, Medal, CheckCircle, Loader2, Filter, Network, Map } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -203,10 +202,9 @@ const getCategoryFromAchievement = (achievement: Achievement): string => {
    return (
      <div className="min-h-screen bg-background">
        {/* Header */}
-       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-         <div className="flex h-14 items-center gap-4 px-4 lg:px-6">
-           <SidebarTrigger />
-           <div className="flex items-center gap-2">
+      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex h-14 items-center gap-4 px-4 lg:px-6">
+          <div className="flex items-center gap-2">
              <Trophy className="h-5 w-5 text-primary" />
              <h1 className="text-lg font-semibold">Achievements</h1>
            </div>

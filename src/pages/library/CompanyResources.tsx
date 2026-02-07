@@ -14,7 +14,6 @@ import {
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -223,7 +222,6 @@ const CompanyResources = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="flex h-16 items-center gap-4 px-6">
-          <SidebarTrigger />
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-orange flex items-center justify-center">
               <Building2 className="h-5 w-5 text-primary-foreground" />
