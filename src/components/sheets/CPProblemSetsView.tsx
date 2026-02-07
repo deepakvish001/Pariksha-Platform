@@ -613,10 +613,10 @@ const CPProblemSetsView = () => {
         </div>
       </header>
 
-      <div className="flex">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block shrink-0">
-          <div className="sticky top-20 p-4 w-64">
+      <div className="flex gap-0">
+        {/* Desktop Sidebar - Sticky */}
+        <aside className="hidden lg:block w-64 shrink-0">
+          <div className="sticky top-20 h-[calc(100vh-6rem)] overflow-hidden">
             <CPFilterSidebar
               selectedTrack={selectedTrack}
               onTrackChange={setSelectedTrack}
@@ -626,7 +626,7 @@ const CPProblemSetsView = () => {
               onClearFilters={clearFilters}
             />
           </div>
-        </div>
+        </aside>
 
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
