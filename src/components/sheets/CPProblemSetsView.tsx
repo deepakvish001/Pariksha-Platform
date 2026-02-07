@@ -99,6 +99,8 @@ import CPFilterSidebar from "@/components/sheets/CPFilterSidebar";
 import CPHeroSection from "@/components/sheets/CPHeroSection";
 import CPStatsDashboard from "@/components/sheets/CPStatsDashboard";
 import CPEmptyState from "@/components/sheets/CPEmptyState";
+import CPProblemSetCard, { MiniProgressRing } from "@/components/sheets/CPProblemSetCard";
+import CPProblemTable from "@/components/sheets/CPProblemTable";
 import StreakCounter from "@/components/StreakCounter";
 import { useCPProgress } from "@/hooks/useCPProgress";
 import { useAuth } from "@/contexts/AuthContext";
@@ -108,332 +110,24 @@ type PageSize = typeof PAGE_SIZE_OPTIONS[number];
 
 type ViewTab = "all" | "by-track" | "by-topic" | "revision";
 
-// Difficulty Badge Component
-function DifficultyBadge({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
-  const styles = {
-    Easy: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-    Medium: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
-    Hard: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
-  };
-
-  return (
-    <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", styles[difficulty])}>
-      {difficulty}
-    </Badge>
-  );
-}
-
-// Get track badge color
+// Get track badge color (kept for legacy usage)
 function getTrackBadgeClass(trackId: string) {
   const track = cpTracks.find(t => t.id === trackId);
   return track?.color || "bg-muted text-muted-foreground";
 }
 
-// Get difficulty-based badge class for problem count
-function getDifficultyBadgeClass(problems: CPProblem[]) {
-  if (problems.length === 0) return "bg-muted text-muted-foreground border-muted";
-  
-  const counts = { Easy: 0, Medium: 0, Hard: 0 };
-  problems.forEach(p => counts[p.difficulty]++);
-  
-  // Determine dominant difficulty
-  const easyPercent = counts.Easy / problems.length;
-  const hardPercent = counts.Hard / problems.length;
-  
-  if (hardPercent >= 0.5) {
-    return "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30";
-  } else if (easyPercent >= 0.5) {
-    return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
-  } else {
-    return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30";
-  }
-}
-
-// Problem Row Component (individual problem inside a set)
-function ProblemRow({
-  problem,
-  problemSetId,
-  index,
-  isSolved,
-  isRevision,
-  onToggleSolved,
-  onToggleRevision,
-  onOpenNote,
-}: {
-  problem: CPProblem;
-  problemSetId: number;
-  index: number;
-  isSolved: boolean;
-  isRevision: boolean;
-  onToggleSolved: () => void;
-  onToggleRevision: () => void;
-  onOpenNote: () => void;
-}) {
-  return (
-    <motion.tr
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.02 }}
-      className={cn(
-        "group transition-colors border-b border-border/20 last:border-0",
-        isSolved ? "bg-primary/5" : "hover:bg-muted/30"
-      )}
-    >
-      {/* Status Checkbox */}
-      <TableCell className="w-12 text-center py-2">
-        <motion.button
-          onClick={onToggleSolved}
-          className="text-muted-foreground hover:text-foreground transition-colors"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <AnimatePresence mode="wait">
-            {isSolved ? (
-              <motion.div
-                key="checked"
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                exit={{ scale: 0, rotate: 180 }}
-                transition={{ duration: 0.2 }}
-              >
-                <CheckSquare className="h-4 w-4 text-primary" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="unchecked"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Square className="h-4 w-4" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.button>
-      </TableCell>
-
-      {/* Problem Number */}
-      <TableCell className="w-12 text-center py-2">
-        <span className="text-xs text-muted-foreground">{index + 1}</span>
-      </TableCell>
-
-      {/* Problem Title */}
-      <TableCell className="py-2">
-        <div className="flex items-center gap-2">
-          <span className={cn(
-            "text-sm",
-            isSolved && "line-through text-muted-foreground"
-          )}>
-            {problem.title}
-          </span>
-          {problem.platform && (
-            <Badge variant="outline" className="text-[9px] px-1 py-0 hidden sm:inline">
-              {problem.platform}
-            </Badge>
-          )}
-        </div>
-      </TableCell>
-
-      {/* Difficulty */}
-      <TableCell className="w-20 text-center py-2 hidden sm:table-cell">
-        <DifficultyBadge difficulty={problem.difficulty} />
-      </TableCell>
-
-      {/* Practice Link */}
-      <TableCell className="w-20 text-center py-2">
-        {problem.problemUrl && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <a
-                  href={problem.problemUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center p-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </TooltipTrigger>
-              <TooltipContent>Solve Problem</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
-      </TableCell>
-
-      {/* Notes Button */}
-      <TableCell className="w-14 text-center py-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onOpenNote}
-                className="text-muted-foreground hover:text-foreground transition-colors p-1"
-              >
-                <Save className="h-3.5 w-3.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Add Note</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </TableCell>
-
-      {/* Revision Star */}
-      <TableCell className="w-14 text-center py-2">
-        <motion.button
-          onClick={onToggleRevision}
-          className={cn(
-            "transition-colors",
-            isRevision ? "text-yellow-500" : "text-muted-foreground hover:text-yellow-500"
-          )}
-          whileHover={{ scale: 1.2 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          <Star className={cn("h-3.5 w-3.5", isRevision && "fill-current")} />
-        </motion.button>
-      </TableCell>
-    </motion.tr>
-  );
-}
-
-// Expandable Problem Set Section for All Sets View
-function ProblemSetSection({
-  problemSet,
-  isExpanded,
-  onToggle,
-  isSolved,
-  isRevision,
-  toggleSolved,
-  toggleRevision,
-  onOpenNote,
-}: {
-  problemSet: CPProblemSet;
-  isExpanded: boolean;
-  onToggle: () => void;
-  isSolved: (problemId: number) => boolean;
-  isRevision: (problemId: number) => boolean;
-  toggleSolved: (problemId: number) => void;
-  toggleRevision: (problemId: number) => void;
-  onOpenNote: (problemId: number, title: string) => void;
-}) {
-  const track = cpTracks.find(t => t.id === problemSet.trackId);
-  const completedCount = problemSet.problems.filter(p => isSolved(p.id)).length;
-  const progressPercent = problemSet.problems.length > 0 
-    ? Math.round((completedCount / problemSet.problems.length) * 100) 
-    : 0;
+// Local DifficultyBadge for track/topic headers
+function DifficultyBadgeLegacy({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
+  const styles = {
+    Easy: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 shadow-sm",
+    Medium: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 shadow-sm",
+    Hard: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/40 shadow-sm",
+  };
 
   return (
-    <Collapsible open={isExpanded} onOpenChange={onToggle}>
-      <CollapsibleTrigger className="w-full">
-        <motion.div 
-          className="flex items-center justify-between p-3 sm:p-4 hover:bg-muted/30 transition-colors border-b border-border/50"
-          whileHover={{ backgroundColor: "hsl(var(--muted) / 0.3)" }}
-        >
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <motion.div
-              animate={{ rotate: isExpanded ? 90 : 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-            </motion.div>
-            <Badge 
-              variant="outline"
-              className={cn(
-                "text-[10px] px-1.5 py-0 shrink-0 hidden sm:inline-flex",
-                getTrackBadgeClass(problemSet.trackId)
-              )}
-            >
-              {track?.name || problemSet.trackId}
-            </Badge>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge 
-                    variant="outline"
-                    className={cn(
-                      "text-[10px] px-1.5 py-0 shrink-0 cursor-help",
-                      getDifficultyBadgeClass(problemSet.problems)
-                    )}
-                  >
-                    {problemSet.problems.length} {problemSet.problems.length === 1 ? 'problem' : 'problems'}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  {(() => {
-                    const counts = { Easy: 0, Medium: 0, Hard: 0 };
-                    problemSet.problems.forEach(p => counts[p.difficulty]++);
-                    return (
-                      <div className="flex gap-2">
-                        {counts.Easy > 0 && <span className="text-emerald-500">{counts.Easy} Easy</span>}
-                        {counts.Medium > 0 && <span className="text-amber-500">{counts.Medium} Medium</span>}
-                        {counts.Hard > 0 && <span className="text-red-500">{counts.Hard} Hard</span>}
-                      </div>
-                    );
-                  })()}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <span className="font-medium text-sm truncate">{problemSet.title}</span>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                {completedCount} / {problemSet.problems.length}
-              </span>
-              <Progress value={progressPercent} className="w-16 sm:w-24 h-1.5" />
-              <span className="text-xs text-muted-foreground w-8 text-right hidden sm:inline">
-                {progressPercent}%
-              </span>
-            </div>
-          </div>
-        </motion.div>
-      </CollapsibleTrigger>
-      
-      <AnimatePresence>
-        {isExpanded && (
-          <CollapsibleContent forceMount>
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="bg-muted/10"
-            >
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent border-b border-border/30">
-                      <TableHead className="w-12 text-center text-xs">Status</TableHead>
-                      <TableHead className="w-12 text-center text-xs">#</TableHead>
-                      <TableHead className="text-xs">Problem</TableHead>
-                      <TableHead className="w-20 text-center text-xs hidden sm:table-cell">Difficulty</TableHead>
-                      <TableHead className="w-20 text-center text-xs">Practice</TableHead>
-                      <TableHead className="w-14 text-center text-xs">Notes</TableHead>
-                      <TableHead className="w-14 text-center text-xs">Rev</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {problemSet.problems.map((problem, idx) => (
-                      <ProblemRow
-                        key={problem.id}
-                        problem={problem}
-                        problemSetId={problemSet.id}
-                        index={idx}
-                        isSolved={isSolved(problem.id)}
-                        isRevision={isRevision(problem.id)}
-                        onToggleSolved={() => toggleSolved(problem.id)}
-                        onToggleRevision={() => toggleRevision(problem.id)}
-                        onOpenNote={() => onOpenNote(problem.id, problem.title)}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </motion.div>
-          </CollapsibleContent>
-        )}
-      </AnimatePresence>
-    </Collapsible>
+    <Badge variant="outline" className={cn("text-[10px] px-2 py-0.5 font-semibold", styles[difficulty])}>
+      {difficulty}
+    </Badge>
   );
 }
 
@@ -505,7 +199,7 @@ function TrackSection({
               {problemSets.length} sets
             </Badge>
             <span className="font-semibold text-sm sm:text-base truncate">{track.name}</span>
-            <DifficultyBadge difficulty={difficulty} />
+            <DifficultyBadgeLegacy difficulty={difficulty} />
           </div>
           
           <div className="flex items-center gap-3 shrink-0">
@@ -559,7 +253,7 @@ function TrackSection({
               className="bg-muted/5"
             >
               {problemSets.map((ps) => (
-                <ProblemSetSection
+                <CPProblemSetCard
                   key={ps.id}
                   problemSet={ps}
                   isExpanded={expandedSets.includes(ps.id)}
@@ -569,6 +263,7 @@ function TrackSection({
                   toggleSolved={toggleSolved}
                   toggleRevision={toggleRevision}
                   onOpenNote={onOpenNote}
+                  showTrackBadge={false}
                 />
               ))}
             </motion.div>
@@ -695,7 +390,7 @@ function TopicSection({
               className="bg-muted/5"
             >
               {problemSets.map((ps) => (
-                <ProblemSetSection
+                <CPProblemSetCard
                   key={ps.id}
                   problemSet={ps}
                   isExpanded={expandedSets.includes(ps.id)}
@@ -705,6 +400,7 @@ function TopicSection({
                   toggleSolved={toggleSolved}
                   toggleRevision={toggleRevision}
                   onOpenNote={onOpenNote}
+                  showTrackBadge={false}
                 />
               ))}
             </motion.div>
@@ -1172,7 +868,7 @@ const CPProblemSetsView = () => {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.02 }}
                         >
-                          <ProblemSetSection
+                          <CPProblemSetCard
                             problemSet={ps}
                             isExpanded={expandedSets.includes(ps.id)}
                             onToggle={() => toggleSetExpansion(ps.id)}
@@ -1797,7 +1493,7 @@ const CPProblemSetsView = () => {
                                                 </div>
                                               </TableCell>
                                               <TableCell className="w-20 py-2">
-                                                <DifficultyBadge difficulty={problem.difficulty} />
+                                                <DifficultyBadgeLegacy difficulty={problem.difficulty} />
                                               </TableCell>
                                               <TableCell className="w-14 text-center py-2">
                                                 <motion.button
@@ -1884,3 +1580,4 @@ const CPProblemSetsView = () => {
 };
 
 export default CPProblemSetsView;
+
