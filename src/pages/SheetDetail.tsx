@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -1416,14 +1416,35 @@ function SectionCard({
   );
 }
 
-export default function SheetDetail() {
+// Wrapper component to handle CP sheet routing
+function SheetDetailWrapper() {
   const { sheetId } = useParams<{ sheetId: string }>();
+  const currentSheetId = sheetId || "strivers-sde-sheet";
+  
+  // Render dedicated CP view for competitive programming sheet
+  if (currentSheetId === "competitive-programming") {
+    const CPProblemSetsView = React.lazy(() => import("@/components/sheets/CPProblemSetsView"));
+    return (
+      <React.Suspense fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      }>
+        <CPProblemSetsView />
+      </React.Suspense>
+    );
+  }
+  
+  return <SheetDetailContent sheetId={currentSheetId} />;
+}
+
+function SheetDetailContent({ sheetId }: { sheetId: string }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const { currentStreak, todayCompleted, refreshStreak } = useStreak();
   
-  const currentSheetId = sheetId || "strivers-sde-sheet";
+  const currentSheetId = sheetId;
   const [sheetData, setSheetData] = useState<SheetData | null>(
     mockSheetData[currentSheetId] || mockSheetData["strivers-sde-sheet"]
   );
@@ -2028,3 +2049,5 @@ export default function SheetDetail() {
     </div>
   );
 }
+
+export default SheetDetailWrapper;
