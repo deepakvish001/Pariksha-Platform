@@ -370,7 +370,7 @@ function ProblemSetSection({
   );
 }
 
-// Track Section Component with pagination
+// Track Section Component (simplified - no internal search/pagination)
 function TrackSection({
   trackId,
   problemSets,
@@ -397,51 +397,14 @@ function TrackSection({
   onOpenNote: (problemId: number, title: string) => void;
 }) {
   const track = cpTracks.find(t => t.id === trackId);
-  const storageKey = `cp-track-page-size-${trackId}`;
-  
-  const [pageSize, setPageSize] = useState<PageSize>(() => {
-    const saved = localStorage.getItem(storageKey);
-    if (saved && PAGE_SIZE_OPTIONS.includes(Number(saved) as PageSize)) {
-      return Number(saved) as PageSize;
-    }
-    return 10;
-  });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [trackSearchQuery, setTrackSearchQuery] = useState("");
-  
-  // Persist page size to localStorage
-  useEffect(() => {
-    localStorage.setItem(storageKey, String(pageSize));
-  }, [pageSize, storageKey]);
-  
-  // Reset page when page size or search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [pageSize, trackSearchQuery]);
   
   if (!track) return null;
-
-  // Filter problem sets by search query within this track
-  const filteredTrackSets = trackSearchQuery
-    ? problemSets.filter(ps =>
-        ps.title.toLowerCase().includes(trackSearchQuery.toLowerCase()) ||
-        ps.problems.some(p => p.title.toLowerCase().includes(trackSearchQuery.toLowerCase()))
-      )
-    : problemSets;
 
   const totalProblems = problemSets.reduce((acc, ps) => acc + ps.problems.length, 0);
   const completedProblems = problemSets.reduce((acc, ps) => 
     acc + ps.problems.filter(p => isSolved(p.id)).length, 0);
   const progressPercent = totalProblems > 0 ? Math.round((completedProblems / totalProblems) * 100) : 0;
   const difficulty = getTrackDifficulty(trackId);
-  
-  // Pagination logic for filtered problem sets within this track
-  const totalPages = Math.ceil(filteredTrackSets.length / pageSize);
-  const paginatedSets = filteredTrackSets.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
-  const needsPagination = filteredTrackSets.length > pageSize;
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
@@ -488,153 +451,19 @@ function TrackSection({
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Search filter within track */}
-              <div className="px-4 py-3 border-b border-border/30 bg-muted/5">
-                <div className="relative max-w-sm">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder={`Search in ${track.name}...`}
-                    value={trackSearchQuery}
-                    onChange={(e) => setTrackSearchQuery(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="pl-8 h-8 text-sm"
-                  />
-                  {trackSearchQuery && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTrackSearchQuery("");
-                      }}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-                {trackSearchQuery && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Found {filteredTrackSets.length} of {problemSets.length} sets
-                  </p>
-                )}
-              </div>
-              
-              {paginatedSets.length > 0 ? (
-                paginatedSets.map((ps) => (
-                  <ProblemSetSection
-                    key={ps.id}
-                    problemSet={ps}
-                    isExpanded={expandedSets.includes(ps.id)}
-                    onToggle={() => toggleSetExpansion(ps.id)}
-                    isSolved={isSolved}
-                    isRevision={isRevision}
-                    toggleSolved={toggleSolved}
-                    toggleRevision={toggleRevision}
-                    onOpenNote={onOpenNote}
-                  />
-                ))
-              ) : (
-                <div className="p-8 text-center">
-                  <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No sets found matching "{trackSearchQuery}"</p>
-                  <Button 
-                    variant="link" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setTrackSearchQuery("");
-                    }}
-                    className="mt-1"
-                  >
-                    Clear search
-                  </Button>
-                </div>
-              )}
-              
-              {/* Pagination for tracks with many sets */}
-              {needsPagination && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-border/30 bg-muted/10">
-                  <div className="flex items-center gap-3">
-                    <p className="text-xs text-muted-foreground">
-                      Showing {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, problemSets.length)} of {problemSets.length} sets
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Per page:</span>
-                      <select
-                        value={pageSize}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          setPageSize(Number(e.target.value) as PageSize);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-7 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring z-50"
-                      >
-                        {PAGE_SIZE_OPTIONS.map((size) => (
-                          <option key={size} value={size}>
-                            {size}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentPage(p => Math.max(1, p - 1));
-                      }}
-                      disabled={currentPage === 1}
-                      className="h-7 px-2"
-                    >
-                      <ChevronLeft className="h-3.5 w-3.5" />
-                    </Button>
-                    
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let page: number;
-                      if (totalPages <= 5) {
-                        page = i + 1;
-                      } else if (currentPage <= 3) {
-                        page = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        page = totalPages - 4 + i;
-                      } else {
-                        page = currentPage - 2 + i;
-                      }
-                      
-                      if (page < 1 || page > totalPages) return null;
-                      
-                      return (
-                        <Button
-                          key={page}
-                          variant={currentPage === page ? "default" : "ghost"}
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCurrentPage(page);
-                          }}
-                          className="h-7 w-7 p-0 text-xs"
-                        >
-                          {page}
-                        </Button>
-                      );
-                    })}
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentPage(p => Math.min(totalPages, p + 1));
-                      }}
-                      disabled={currentPage === totalPages}
-                      className="h-7 px-2"
-                    >
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+              {problemSets.map((ps) => (
+                <ProblemSetSection
+                  key={ps.id}
+                  problemSet={ps}
+                  isExpanded={expandedSets.includes(ps.id)}
+                  onToggle={() => toggleSetExpansion(ps.id)}
+                  isSolved={isSolved}
+                  isRevision={isRevision}
+                  toggleSolved={toggleSolved}
+                  toggleRevision={toggleRevision}
+                  onOpenNote={onOpenNote}
+                />
+              ))}
             </motion.div>
           </CollapsibleContent>
         )}
@@ -643,7 +472,7 @@ function TrackSection({
   );
 }
 
-// Topic Section Component with pagination and search
+// Topic Section Component (simplified - no internal search/pagination)
 function TopicSection({
   topicId,
   problemSets,
@@ -670,50 +499,13 @@ function TopicSection({
   onOpenNote: (problemId: number, title: string) => void;
 }) {
   const topic = cpTopics.find(t => t.id === topicId);
-  const storageKey = `cp-topic-page-size-${topicId}`;
-  
-  const [pageSize, setPageSize] = useState<PageSize>(() => {
-    const saved = localStorage.getItem(storageKey);
-    if (saved && PAGE_SIZE_OPTIONS.includes(Number(saved) as PageSize)) {
-      return Number(saved) as PageSize;
-    }
-    return 10;
-  });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [topicSearchQuery, setTopicSearchQuery] = useState("");
-  
-  // Persist page size to localStorage
-  useEffect(() => {
-    localStorage.setItem(storageKey, String(pageSize));
-  }, [pageSize, storageKey]);
-  
-  // Reset page when page size or search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [pageSize, topicSearchQuery]);
   
   if (!topic) return null;
-
-  // Filter problem sets by search query within this topic
-  const filteredTopicSets = topicSearchQuery
-    ? problemSets.filter(ps =>
-        ps.title.toLowerCase().includes(topicSearchQuery.toLowerCase()) ||
-        ps.problems.some(p => p.title.toLowerCase().includes(topicSearchQuery.toLowerCase()))
-      )
-    : problemSets;
 
   const totalProblems = problemSets.reduce((acc, ps) => acc + ps.problems.length, 0);
   const completedProblems = problemSets.reduce((acc, ps) => 
     acc + ps.problems.filter(p => isSolved(p.id)).length, 0);
   const progressPercent = totalProblems > 0 ? Math.round((completedProblems / totalProblems) * 100) : 0;
-  
-  // Pagination logic for filtered problem sets within this topic
-  const totalPages = Math.ceil(filteredTopicSets.length / pageSize);
-  const paginatedSets = filteredTopicSets.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
-  const needsPagination = filteredTopicSets.length > pageSize;
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
@@ -759,153 +551,19 @@ function TopicSection({
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Search filter within topic */}
-              <div className="px-4 py-3 border-b border-border/30 bg-muted/5">
-                <div className="relative max-w-sm">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder={`Search in ${topic.name}...`}
-                    value={topicSearchQuery}
-                    onChange={(e) => setTopicSearchQuery(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="pl-8 h-8 text-sm"
-                  />
-                  {topicSearchQuery && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTopicSearchQuery("");
-                      }}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-                {topicSearchQuery && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Found {filteredTopicSets.length} of {problemSets.length} sets
-                  </p>
-                )}
-              </div>
-              
-              {paginatedSets.length > 0 ? (
-                paginatedSets.map((ps) => (
-                  <ProblemSetSection
-                    key={ps.id}
-                    problemSet={ps}
-                    isExpanded={expandedSets.includes(ps.id)}
-                    onToggle={() => toggleSetExpansion(ps.id)}
-                    isSolved={isSolved}
-                    isRevision={isRevision}
-                    toggleSolved={toggleSolved}
-                    toggleRevision={toggleRevision}
-                    onOpenNote={onOpenNote}
-                  />
-                ))
-              ) : (
-                <div className="p-8 text-center">
-                  <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No sets found matching "{topicSearchQuery}"</p>
-                  <Button 
-                    variant="link" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setTopicSearchQuery("");
-                    }}
-                    className="mt-1"
-                  >
-                    Clear search
-                  </Button>
-                </div>
-              )}
-              
-              {/* Pagination for topics with many sets */}
-              {needsPagination && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-border/30 bg-muted/10">
-                  <div className="flex items-center gap-3">
-                    <p className="text-xs text-muted-foreground">
-                      Showing {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, filteredTopicSets.length)} of {filteredTopicSets.length} sets
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Per page:</span>
-                      <select
-                        value={pageSize}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          setPageSize(Number(e.target.value) as PageSize);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-7 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring z-50"
-                      >
-                        {PAGE_SIZE_OPTIONS.map((size) => (
-                          <option key={size} value={size}>
-                            {size}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentPage(p => Math.max(1, p - 1));
-                      }}
-                      disabled={currentPage === 1}
-                      className="h-7 px-2"
-                    >
-                      <ChevronLeft className="h-3.5 w-3.5" />
-                    </Button>
-                    
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let page: number;
-                      if (totalPages <= 5) {
-                        page = i + 1;
-                      } else if (currentPage <= 3) {
-                        page = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        page = totalPages - 4 + i;
-                      } else {
-                        page = currentPage - 2 + i;
-                      }
-                      
-                      if (page < 1 || page > totalPages) return null;
-                      
-                      return (
-                        <Button
-                          key={page}
-                          variant={currentPage === page ? "default" : "ghost"}
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCurrentPage(page);
-                          }}
-                          className="h-7 w-7 p-0 text-xs"
-                        >
-                          {page}
-                        </Button>
-                      );
-                    })}
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentPage(p => Math.min(totalPages, p + 1));
-                      }}
-                      disabled={currentPage === totalPages}
-                      className="h-7 px-2"
-                    >
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+              {problemSets.map((ps) => (
+                <ProblemSetSection
+                  key={ps.id}
+                  problemSet={ps}
+                  isExpanded={expandedSets.includes(ps.id)}
+                  onToggle={() => toggleSetExpansion(ps.id)}
+                  isSolved={isSolved}
+                  isRevision={isRevision}
+                  toggleSolved={toggleSolved}
+                  toggleRevision={toggleRevision}
+                  onOpenNote={onOpenNote}
+                />
+              ))}
             </motion.div>
           </CollapsibleContent>
         )}
