@@ -306,6 +306,12 @@ function ProblemSetSection({
             >
               {track?.name || problemSet.trackId}
             </Badge>
+            <Badge 
+              variant="secondary"
+              className="text-[10px] px-1.5 py-0 shrink-0"
+            >
+              {problemSet.problems.length} {problemSet.problems.length === 1 ? 'problem' : 'problems'}
+            </Badge>
             <span className="font-medium text-sm truncate">{problemSet.title}</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
