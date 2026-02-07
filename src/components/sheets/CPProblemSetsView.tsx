@@ -397,8 +397,26 @@ function TrackSection({
   onOpenNote: (problemId: number, title: string) => void;
 }) {
   const track = cpTracks.find(t => t.id === trackId);
-  const TRACK_PAGE_SIZE = 10;
+  const storageKey = `cp-track-page-size-${trackId}`;
+  
+  const [pageSize, setPageSize] = useState<PageSize>(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved && PAGE_SIZE_OPTIONS.includes(Number(saved) as PageSize)) {
+      return Number(saved) as PageSize;
+    }
+    return 10;
+  });
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Persist page size to localStorage
+  useEffect(() => {
+    localStorage.setItem(storageKey, String(pageSize));
+  }, [pageSize, storageKey]);
+  
+  // Reset page when page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pageSize]);
   
   if (!track) return null;
 
@@ -409,12 +427,12 @@ function TrackSection({
   const difficulty = getTrackDifficulty(trackId);
   
   // Pagination logic for problem sets within this track
-  const totalPages = Math.ceil(problemSets.length / TRACK_PAGE_SIZE);
+  const totalPages = Math.ceil(problemSets.length / pageSize);
   const paginatedSets = problemSets.slice(
-    (currentPage - 1) * TRACK_PAGE_SIZE,
-    currentPage * TRACK_PAGE_SIZE
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
   );
-  const needsPagination = problemSets.length > TRACK_PAGE_SIZE;
+  const needsPagination = problemSets.length > pageSize;
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
@@ -477,10 +495,30 @@ function TrackSection({
               
               {/* Pagination for tracks with many sets */}
               {needsPagination && (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-border/30 bg-muted/10">
-                  <p className="text-xs text-muted-foreground">
-                    Showing {((currentPage - 1) * TRACK_PAGE_SIZE) + 1} - {Math.min(currentPage * TRACK_PAGE_SIZE, problemSets.length)} of {problemSets.length} sets
-                  </p>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-border/30 bg-muted/10">
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      Showing {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, problemSets.length)} of {problemSets.length} sets
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Per page:</span>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setPageSize(Number(e.target.value) as PageSize);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-7 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring z-50"
+                      >
+                        {PAGE_SIZE_OPTIONS.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                   <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
