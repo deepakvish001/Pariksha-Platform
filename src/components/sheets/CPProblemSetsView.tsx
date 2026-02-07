@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -7,6 +7,7 @@ import {
   Filter,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   BookOpen,
   Trophy,
   X,
@@ -59,6 +60,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { 
@@ -73,6 +83,8 @@ import CPFilterSidebar from "@/components/sheets/CPFilterSidebar";
 import StreakCounter from "@/components/StreakCounter";
 import { useCPProgress } from "@/hooks/useCPProgress";
 import { useAuth } from "@/contexts/AuthContext";
+
+const ITEMS_PER_PAGE = 10;
 
 type ViewTab = "all" | "by-track" | "by-topic";
 
@@ -569,6 +581,7 @@ const CPProblemSetsView = () => {
   const [expandedTopics, setExpandedTopics] = useState<string[]>(["dynamic-programming", "graphs"]);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ViewTab>("all");
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Notes dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
@@ -594,6 +607,18 @@ const CPProblemSetsView = () => {
       const matchesTopic = selectedTopic === "all" || ps.topicId === selectedTopic;
       return matchesSearch && matchesTrack && matchesTopic;
     });
+  }, [searchQuery, selectedTrack, selectedTopic]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredProblemSets.length / ITEMS_PER_PAGE);
+  const paginatedProblemSets = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProblemSets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProblemSets, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
   }, [searchQuery, selectedTrack, selectedTopic]);
 
   // Group by track
@@ -879,15 +904,15 @@ const CPProblemSetsView = () => {
             </TabsList>
 
             {/* All Sets View - Expandable sections with problems inside */}
-            <TabsContent value="all" className="mt-4">
+            <TabsContent value="all" className="mt-4 space-y-4">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               >
                 <Card className="overflow-hidden">
                   <CardContent className="p-0">
-                    {filteredProblemSets.length > 0 ? (
-                      filteredProblemSets.map((ps) => (
+                    {paginatedProblemSets.length > 0 ? (
+                      paginatedProblemSets.map((ps) => (
                         <ProblemSetSection
                           key={ps.id}
                           problemSet={ps}
@@ -910,6 +935,102 @@ const CPProblemSetsView = () => {
                   </CardContent>
                 </Card>
               </motion.div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredProblemSets.length)} of {filteredProblemSets.length} sets
+                  </p>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          className={cn(
+                            "cursor-pointer",
+                            currentPage === 1 && "pointer-events-none opacity-50"
+                          )}
+                        />
+                      </PaginationItem>
+                      
+                      {/* First page */}
+                      {currentPage > 2 && (
+                        <>
+                          <PaginationItem>
+                            <PaginationLink 
+                              onClick={() => setCurrentPage(1)}
+                              className="cursor-pointer"
+                            >
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                          {currentPage > 3 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                        </>
+                      )}
+                      
+                      {/* Page numbers around current */}
+                      {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                        let page: number;
+                        if (currentPage === 1) {
+                          page = i + 1;
+                        } else if (currentPage === totalPages) {
+                          page = totalPages - 2 + i;
+                        } else {
+                          page = currentPage - 1 + i;
+                        }
+                        
+                        if (page < 1 || page > totalPages) return null;
+                        
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => setCurrentPage(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+                      
+                      {/* Last page */}
+                      {currentPage < totalPages - 1 && (
+                        <>
+                          {currentPage < totalPages - 2 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                          <PaginationItem>
+                            <PaginationLink 
+                              onClick={() => setCurrentPage(totalPages)}
+                              className="cursor-pointer"
+                            >
+                              {totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </>
+                      )}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          className={cn(
+                            "cursor-pointer",
+                            currentPage === totalPages && "pointer-events-none opacity-50"
+                          )}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </TabsContent>
 
             {/* By Track View - Grouped by Track */}
