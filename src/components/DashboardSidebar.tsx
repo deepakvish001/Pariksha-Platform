@@ -42,6 +42,9 @@ import {
   Wrench,
   PanelLeftClose,
   PanelLeft,
+  Brain,
+  Target,
+  Compass,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -163,10 +166,12 @@ const progressNavItems = [
 interface CollapsibleGroupProps {
   title: string;
   items: { title: string; url: string; icon: React.ComponentType<{ className?: string }> }[];
+  groupIcon?: React.ComponentType<{ className?: string }>;
+  iconColor?: string;
   defaultOpen?: boolean;
 }
 
-const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGroupProps) => {
+const CollapsibleGroup = ({ title, items, groupIcon, iconColor = "text-muted-foreground", defaultOpen = false }: CollapsibleGroupProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const location = useLocation();
   const { state } = useSidebar();
@@ -174,8 +179,8 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
 
   const isActiveGroup = items.some(item => location.pathname === item.url);
 
-  // Get the first item's icon to show as group icon when collapsed
-  const GroupIcon = items[0]?.icon;
+  // Use provided groupIcon or fall back to first item's icon
+  const GroupIcon = groupIcon || items[0]?.icon;
 
   if (isCollapsed) {
     // When collapsed, show a dropdown with group items
@@ -192,7 +197,7 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
             >
               {GroupIcon && (
                 <div className="relative flex items-center justify-center">
-                  <GroupIcon className="h-4 w-4 shrink-0" />
+                  <GroupIcon className={cn("h-4 w-4 shrink-0", iconColor)} />
                   {isActiveGroup && (
                     <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary animate-pulse" />
                   )}
@@ -229,7 +234,10 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
         <button
           className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 rounded-md transition-all duration-200 group"
         >
-          <span className="group-hover:translate-x-0.5 transition-transform duration-200">{title}</span>
+          <div className="flex items-center gap-2 group-hover:translate-x-0.5 transition-transform duration-200">
+            {GroupIcon && <GroupIcon className={cn("h-4 w-4 shrink-0", iconColor)} />}
+            <span>{title}</span>
+          </div>
           <span className="transition-transform duration-200">
             {isOpen || isActiveGroup ? (
               <ChevronDown className="h-4 w-4" />
@@ -248,7 +256,7 @@ const CollapsibleGroup = ({ title, items, defaultOpen = false }: CollapsibleGrou
               tooltip={item.title}
               className="transition-all duration-200 hover:translate-x-0.5 group/item"
             >
-              <Link to={item.url} className="pl-4">
+              <Link to={item.url} className="pl-8">
                 <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/item:scale-110" />
                 <span>{item.title}</span>
               </Link>
@@ -545,11 +553,11 @@ export function DashboardSidebar() {
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                <CollapsibleGroup title="Fundamentals" items={fundamentalsItems} />
-                <CollapsibleGroup title="Practice" items={practiceItems} />
-                <CollapsibleGroup title="Quizzes" items={quizItems} />
-                <CollapsibleGroup title="System Design" items={systemDesignItems} />
-                <CollapsibleGroup title="Roadmaps" items={roadmapItems} />
+                <CollapsibleGroup title="Fundamentals" items={fundamentalsItems} groupIcon={BookOpen} iconColor="text-blue-500" />
+                <CollapsibleGroup title="Practice" items={practiceItems} groupIcon={Target} iconColor="text-blue-400" />
+                <CollapsibleGroup title="Quizzes" items={quizItems} groupIcon={Brain} iconColor="text-blue-300" />
+                <CollapsibleGroup title="System Design" items={systemDesignItems} groupIcon={Network} iconColor="text-blue-500" />
+                <CollapsibleGroup title="Roadmaps" items={roadmapItems} groupIcon={Compass} iconColor="text-blue-400" />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -582,9 +590,9 @@ export function DashboardSidebar() {
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                <CollapsibleGroup title="Companies" items={companyItems} />
-                <CollapsibleGroup title="Resume" items={resumeItems} />
-                <CollapsibleGroup title="Job Search" items={jobSearchItems} />
+                <CollapsibleGroup title="Companies" items={companyItems} groupIcon={Building2} iconColor="text-purple-500" />
+                <CollapsibleGroup title="Resume" items={resumeItems} groupIcon={FileCheck} iconColor="text-purple-400" />
+                <CollapsibleGroup title="Job Search" items={jobSearchItems} groupIcon={Search} iconColor="text-purple-300" />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
