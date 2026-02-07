@@ -326,15 +326,34 @@ function ProblemSetSection({
             >
               {track?.name || problemSet.trackId}
             </Badge>
-            <Badge 
-              variant="outline"
-              className={cn(
-                "text-[10px] px-1.5 py-0 shrink-0",
-                getDifficultyBadgeClass(problemSet.problems)
-              )}
-            >
-              {problemSet.problems.length} {problemSet.problems.length === 1 ? 'problem' : 'problems'}
-            </Badge>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="outline"
+                    className={cn(
+                      "text-[10px] px-1.5 py-0 shrink-0 cursor-help",
+                      getDifficultyBadgeClass(problemSet.problems)
+                    )}
+                  >
+                    {problemSet.problems.length} {problemSet.problems.length === 1 ? 'problem' : 'problems'}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  {(() => {
+                    const counts = { Easy: 0, Medium: 0, Hard: 0 };
+                    problemSet.problems.forEach(p => counts[p.difficulty]++);
+                    return (
+                      <div className="flex gap-2">
+                        {counts.Easy > 0 && <span className="text-emerald-500">{counts.Easy} Easy</span>}
+                        {counts.Medium > 0 && <span className="text-amber-500">{counts.Medium} Medium</span>}
+                        {counts.Hard > 0 && <span className="text-red-500">{counts.Hard} Hard</span>}
+                      </div>
+                    );
+                  })()}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <span className="font-medium text-sm truncate">{problemSet.title}</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
