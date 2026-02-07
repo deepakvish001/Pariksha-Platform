@@ -110,6 +110,26 @@ function getTrackBadgeClass(trackId: string) {
   return track?.color || "bg-muted text-muted-foreground";
 }
 
+// Get difficulty-based badge class for problem count
+function getDifficultyBadgeClass(problems: CPProblem[]) {
+  if (problems.length === 0) return "bg-muted text-muted-foreground border-muted";
+  
+  const counts = { Easy: 0, Medium: 0, Hard: 0 };
+  problems.forEach(p => counts[p.difficulty]++);
+  
+  // Determine dominant difficulty
+  const easyPercent = counts.Easy / problems.length;
+  const hardPercent = counts.Hard / problems.length;
+  
+  if (hardPercent >= 0.5) {
+    return "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30";
+  } else if (easyPercent >= 0.5) {
+    return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
+  } else {
+    return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30";
+  }
+}
+
 // Problem Row Component (individual problem inside a set)
 function ProblemRow({
   problem,
@@ -307,8 +327,11 @@ function ProblemSetSection({
               {track?.name || problemSet.trackId}
             </Badge>
             <Badge 
-              variant="secondary"
-              className="text-[10px] px-1.5 py-0 shrink-0"
+              variant="outline"
+              className={cn(
+                "text-[10px] px-1.5 py-0 shrink-0",
+                getDifficultyBadgeClass(problemSet.problems)
+              )}
             >
               {problemSet.problems.length} {problemSet.problems.length === 1 ? 'problem' : 'problems'}
             </Badge>
