@@ -18,7 +18,8 @@ import {
   List,
   Layers,
   Tags,
-  Save
+  Save,
+  Bookmark
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,7 +88,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 type PageSize = typeof PAGE_SIZE_OPTIONS[number];
 
-type ViewTab = "all" | "by-track" | "by-topic";
+type ViewTab = "all" | "by-track" | "by-topic" | "revision";
 
 // Difficulty Badge Component
 function DifficultyBadge({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
@@ -948,7 +949,7 @@ const CPProblemSetsView = () => {
 
           {/* Tabs for View Selection */}
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ViewTab)} className="w-full">
-            <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex h-10 sm:h-9">
+            <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:inline-flex h-10 sm:h-9">
               <TabsTrigger value="all" className="gap-1.5 text-xs sm:text-sm">
                 <List className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">All Sets</span>
@@ -963,6 +964,11 @@ const CPProblemSetsView = () => {
                 <Tags className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">By Topic</span>
                 <span className="sm:hidden">Topic</span>
+              </TabsTrigger>
+              <TabsTrigger value="revision" className="gap-1.5 text-xs sm:text-sm">
+                <Bookmark className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Revision</span>
+                <span className="sm:hidden">Rev</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1395,6 +1401,148 @@ const CPProblemSetsView = () => {
                   </CardContent>
                 </Card>
               </motion.div>
+            </TabsContent>
+
+            {/* Revision View - Problems marked for revision */}
+            <TabsContent value="revision" className="mt-4 space-y-4">
+              {(() => {
+                // Get all problems marked for revision
+                const revisionProblems = cpProblemSets.flatMap(ps => 
+                  ps.problems
+                    .filter(p => isRevision(p.id))
+                    .map(p => ({ ...p, problemSetTitle: ps.title, problemSetId: ps.id, trackId: ps.trackId }))
+                );
+                
+                const revisionCount = revisionProblems.length;
+                
+                if (revisionCount === 0) {
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <Card className="overflow-hidden">
+                        <CardContent className="p-12 text-center">
+                          <Bookmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-muted-foreground mb-2">No problems marked for revision yet.</p>
+                          <p className="text-sm text-muted-foreground">
+                            Click the star icon on any problem to add it to your revision list.
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                }
+                
+                return (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="gap-1">
+                          <Star className="h-3 w-3 fill-current text-amber-500" />
+                          {revisionCount} {revisionCount === 1 ? 'problem' : 'problems'}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <Card className="overflow-hidden">
+                        <CardContent className="p-0">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-12 text-center">Status</TableHead>
+                                <TableHead className="w-12 text-center">#</TableHead>
+                                <TableHead>Problem</TableHead>
+                                <TableHead className="hidden sm:table-cell">Set</TableHead>
+                                <TableHead className="w-20">Difficulty</TableHead>
+                                <TableHead className="w-14 text-center">Star</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {revisionProblems.map((problem, index) => (
+                                <motion.tr
+                                  key={problem.id}
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: index * 0.02 }}
+                                  className={cn(
+                                    "border-b transition-colors",
+                                    isSolved(problem.id) && "bg-primary/5"
+                                  )}
+                                >
+                                  <TableCell className="w-12 text-center py-2">
+                                    <motion.button
+                                      onClick={() => toggleSolved(problem.id)}
+                                      className="text-muted-foreground hover:text-foreground transition-colors"
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.95 }}
+                                    >
+                                      {isSolved(problem.id) ? (
+                                        <CheckSquare className="h-4 w-4 text-primary" />
+                                      ) : (
+                                        <Square className="h-4 w-4" />
+                                      )}
+                                    </motion.button>
+                                  </TableCell>
+                                  <TableCell className="w-12 text-center py-2">
+                                    <span className="text-xs text-muted-foreground">{index + 1}</span>
+                                  </TableCell>
+                                  <TableCell className="py-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className={cn(
+                                        "font-medium text-sm",
+                                        isSolved(problem.id) && "line-through text-muted-foreground"
+                                      )}>
+                                        {problem.title}
+                                      </span>
+                                      {problem.problemUrl && (
+                                        <a
+                                          href={problem.problemUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-muted-foreground hover:text-primary transition-colors"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="hidden sm:table-cell py-2">
+                                    <Badge 
+                                      variant="outline" 
+                                      className={cn("text-[10px] px-1.5 py-0", getTrackBadgeClass(problem.trackId))}
+                                    >
+                                      {problem.problemSetTitle}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="w-20 py-2">
+                                    <DifficultyBadge difficulty={problem.difficulty} />
+                                  </TableCell>
+                                  <TableCell className="w-14 text-center py-2">
+                                    <motion.button
+                                      onClick={() => toggleRevision(problem.id)}
+                                      className="text-amber-500 hover:text-amber-600 transition-colors"
+                                      whileHover={{ scale: 1.2 }}
+                                      whileTap={{ scale: 0.9 }}
+                                    >
+                                      <Star className="h-3.5 w-3.5 fill-current" />
+                                    </motion.button>
+                                  </TableCell>
+                                </motion.tr>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </>
+                );
+              })()}
             </TabsContent>
           </Tabs>
         </main>
