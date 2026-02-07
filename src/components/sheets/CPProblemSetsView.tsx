@@ -583,7 +583,18 @@ const CPProblemSetsView = () => {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ViewTab>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState<PageSize>(10);
+  const [pageSize, setPageSize] = useState<PageSize>(() => {
+    const saved = localStorage.getItem("cp-page-size");
+    if (saved && PAGE_SIZE_OPTIONS.includes(Number(saved) as PageSize)) {
+      return Number(saved) as PageSize;
+    }
+    return 10;
+  });
+
+  // Persist page size to localStorage
+  useEffect(() => {
+    localStorage.setItem("cp-page-size", String(pageSize));
+  }, [pageSize]);
   
   // Notes dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
