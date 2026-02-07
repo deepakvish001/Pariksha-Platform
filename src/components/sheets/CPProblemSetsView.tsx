@@ -14,13 +14,17 @@ import {
   CheckSquare,
   Square,
   Star,
-  Loader2
+  Loader2,
+  List,
+  Layers,
+  Tags
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Collapsible,
   CollapsibleContent,
@@ -60,6 +64,8 @@ import StreakCounter from "@/components/StreakCounter";
 import MobileFAB from "@/components/MobileFAB";
 import { useCPProgress, getTrackDifficulty } from "@/hooks/useCPProgress";
 import { useAuth } from "@/contexts/AuthContext";
+
+type ViewTab = "all" | "by-track" | "by-topic";
 
 // Difficulty Badge Component
 function DifficultyBadge({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
@@ -342,6 +348,413 @@ function TrackSection({
   );
 }
 
+// Topic Section Component
+function TopicSection({
+  topicId,
+  problemSets,
+  isExpanded,
+  onToggle,
+  isSolved,
+  isRevision,
+  toggleSolved,
+  toggleRevision,
+}: {
+  topicId: string;
+  problemSets: CPProblemSet[];
+  isExpanded: boolean;
+  onToggle: () => void;
+  isSolved: (id: number) => boolean;
+  isRevision: (id: number) => boolean;
+  toggleSolved: (id: number) => void;
+  toggleRevision: (id: number) => void;
+}) {
+  const topic = cpTopics.find(t => t.id === topicId);
+  if (!topic) return null;
+
+  const totalProblems = problemSets.reduce((acc, ps) => acc + ps.problemCount, 0);
+  const completedSets = problemSets.filter(ps => isSolved(ps.id)).length;
+  const progressPercent = problemSets.length > 0 ? Math.round((completedSets / problemSets.length) * 100) : 0;
+
+  return (
+    <Collapsible open={isExpanded} onOpenChange={onToggle}>
+      <CollapsibleTrigger className="w-full">
+        <motion.div 
+          className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors border-b border-border/50"
+          whileHover={{ backgroundColor: "hsl(var(--muted) / 0.3)" }}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <motion.div
+              animate={{ rotate: isExpanded ? 90 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            </motion.div>
+            <Badge variant="secondary" className="text-xs shrink-0">
+              {completedSets}/{problemSets.length}
+            </Badge>
+            <span className="font-semibold text-sm sm:text-base truncate">{topic.name}</span>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            {progressPercent > 0 && (
+              <div className="hidden sm:flex items-center gap-2">
+                <Progress value={progressPercent} className="w-16 h-1.5" />
+                <span className="text-xs text-muted-foreground w-8">{progressPercent}%</span>
+              </div>
+            )}
+            <span className="text-xs text-muted-foreground hidden md:inline">{totalProblems} problems</span>
+            <ChevronDown className={cn(
+              "h-4 w-4 text-muted-foreground transition-transform duration-200",
+              isExpanded && "rotate-180"
+            )} />
+          </div>
+        </motion.div>
+      </CollapsibleTrigger>
+      
+      <AnimatePresence>
+        {isExpanded && (
+          <CollapsibleContent forceMount>
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent border-b border-border/30">
+                      <TableHead className="w-12 text-center text-xs">Status</TableHead>
+                      <TableHead className="w-12 text-center text-xs">#</TableHead>
+                      <TableHead className="text-xs">Problem Set</TableHead>
+                      <TableHead className="hidden sm:table-cell w-44 text-xs">Track</TableHead>
+                      <TableHead className="w-20 text-center text-xs">Problems</TableHead>
+                      <TableHead className="w-24 text-center text-xs">Practice</TableHead>
+                      <TableHead className="w-14 text-center text-xs">Rev</TableHead>
+                      <TableHead className="hidden sm:table-cell w-20 text-center text-xs">Difficulty</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {problemSets.map((ps, idx) => (
+                      <TopicProblemSetRow 
+                        key={ps.id} 
+                        problemSet={ps} 
+                        index={idx}
+                        isSolved={isSolved(ps.id)}
+                        isRevision={isRevision(ps.id)}
+                        onToggleSolved={() => toggleSolved(ps.id)}
+                        onToggleRevision={() => toggleRevision(ps.id)}
+                        difficulty={getTrackDifficulty(ps.trackId)}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </motion.div>
+          </CollapsibleContent>
+        )}
+      </AnimatePresence>
+    </Collapsible>
+  );
+}
+
+// Topic Problem Set Row - shows Track instead of Topic
+function TopicProblemSetRow({ 
+  problemSet, 
+  index,
+  isSolved,
+  isRevision,
+  onToggleSolved,
+  onToggleRevision,
+  difficulty,
+}: { 
+  problemSet: CPProblemSet; 
+  index: number;
+  isSolved: boolean;
+  isRevision: boolean;
+  onToggleSolved: () => void;
+  onToggleRevision: () => void;
+  difficulty: "Easy" | "Medium" | "Hard";
+}) {
+  const getTrackName = (trackId: string) => {
+    return cpTracks.find(t => t.id === trackId)?.name || trackId;
+  };
+
+  return (
+    <motion.tr
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.015 }}
+      className={cn(
+        "group transition-colors border-b border-border/30 last:border-0",
+        isSolved ? "bg-primary/5" : "hover:bg-muted/50"
+      )}
+    >
+      <TableCell className="w-12 text-center">
+        <motion.button
+          onClick={onToggleSolved}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <AnimatePresence mode="wait">
+            {isSolved ? (
+              <motion.div
+                key="checked"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: 180 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CheckSquare className="h-5 w-5 text-primary" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="unchecked"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Square className="h-5 w-5" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </TableCell>
+      
+      <TableCell className="w-12 text-center">
+        <span className="text-xs font-medium text-muted-foreground">
+          {problemSet.id}
+        </span>
+      </TableCell>
+      
+      <TableCell className="font-medium min-w-0">
+        <motion.span
+          className={cn(
+            "text-sm truncate block transition-colors",
+            isSolved && "line-through text-muted-foreground"
+          )}
+          animate={{ opacity: isSolved ? 0.7 : 1 }}
+        >
+          {problemSet.title}
+        </motion.span>
+        <div className="flex gap-1.5 mt-1 sm:hidden">
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            {getTrackName(problemSet.trackId)}
+          </Badge>
+          <DifficultyBadge difficulty={difficulty} />
+        </div>
+      </TableCell>
+      
+      <TableCell className="hidden sm:table-cell w-44">
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0 truncate max-w-full">
+          {getTrackName(problemSet.trackId)}
+        </Badge>
+      </TableCell>
+      
+      <TableCell className="w-20 text-center">
+        <div className="flex items-center justify-center gap-1">
+          <Hash className="h-3 w-3 text-muted-foreground" />
+          <span className="text-sm font-medium">{problemSet.problemCount}</span>
+        </div>
+      </TableCell>
+      
+      <TableCell className="w-24 text-center">
+        {problemSet.externalUrl && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <motion.a
+                  href={problemSet.externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  <ExternalLink className="h-3 w-3" />
+                </motion.a>
+              </TooltipTrigger>
+              <TooltipContent>Open on ProgVar.fun</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </TableCell>
+
+      <TableCell className="w-14 text-center">
+        <motion.button
+          onClick={onToggleRevision}
+          className={cn(
+            "transition-colors",
+            isRevision ? "text-yellow-500" : "text-muted-foreground hover:text-yellow-500"
+          )}
+          whileHover={{ scale: 1.2 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
+        </motion.button>
+      </TableCell>
+      
+      <TableCell className="hidden sm:table-cell w-20 text-center">
+        <DifficultyBadge difficulty={difficulty} />
+      </TableCell>
+    </motion.tr>
+  );
+}
+
+// All Sets Row - shows both Track and Topic
+function AllSetsRow({ 
+  problemSet, 
+  index,
+  isSolved,
+  isRevision,
+  onToggleSolved,
+  onToggleRevision,
+  difficulty,
+  getTrackName,
+  getTopicName,
+}: { 
+  problemSet: CPProblemSet; 
+  index: number;
+  isSolved: boolean;
+  isRevision: boolean;
+  onToggleSolved: () => void;
+  onToggleRevision: () => void;
+  difficulty: "Easy" | "Medium" | "Hard";
+  getTrackName: (id: string) => string;
+  getTopicName: (id: string) => string;
+}) {
+  return (
+    <motion.tr
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.01 }}
+      className={cn(
+        "group transition-colors border-b border-border/30 last:border-0",
+        isSolved ? "bg-primary/5" : "hover:bg-muted/50"
+      )}
+    >
+      <TableCell className="w-12 text-center">
+        <motion.button
+          onClick={onToggleSolved}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <AnimatePresence mode="wait">
+            {isSolved ? (
+              <motion.div
+                key="checked"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: 180 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CheckSquare className="h-5 w-5 text-primary" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="unchecked"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Square className="h-5 w-5" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </TableCell>
+      
+      <TableCell className="w-12 text-center">
+        <span className="text-xs font-medium text-muted-foreground">
+          {problemSet.id}
+        </span>
+      </TableCell>
+      
+      <TableCell className="font-medium min-w-0">
+        <motion.span
+          className={cn(
+            "text-sm truncate block transition-colors",
+            isSolved && "line-through text-muted-foreground"
+          )}
+          animate={{ opacity: isSolved ? 0.7 : 1 }}
+        >
+          {problemSet.title}
+        </motion.span>
+        <div className="flex gap-1.5 mt-1 sm:hidden">
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            {getTrackName(problemSet.trackId)}
+          </Badge>
+          <DifficultyBadge difficulty={difficulty} />
+        </div>
+      </TableCell>
+
+      <TableCell className="hidden sm:table-cell w-36">
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0 truncate max-w-full">
+          {getTrackName(problemSet.trackId)}
+        </Badge>
+      </TableCell>
+      
+      <TableCell className="hidden md:table-cell w-36">
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 truncate max-w-full">
+          {getTopicName(problemSet.topicId)}
+        </Badge>
+      </TableCell>
+      
+      <TableCell className="w-20 text-center">
+        <div className="flex items-center justify-center gap-1">
+          <Hash className="h-3 w-3 text-muted-foreground" />
+          <span className="text-sm font-medium">{problemSet.problemCount}</span>
+        </div>
+      </TableCell>
+      
+      <TableCell className="w-24 text-center">
+        {problemSet.externalUrl && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <motion.a
+                  href={problemSet.externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  <ExternalLink className="h-3 w-3" />
+                </motion.a>
+              </TooltipTrigger>
+              <TooltipContent>Open on ProgVar.fun</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </TableCell>
+
+      <TableCell className="w-14 text-center">
+        <motion.button
+          onClick={onToggleRevision}
+          className={cn(
+            "transition-colors",
+            isRevision ? "text-yellow-500" : "text-muted-foreground hover:text-yellow-500"
+          )}
+          whileHover={{ scale: 1.2 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
+        </motion.button>
+      </TableCell>
+      
+      <TableCell className="hidden sm:table-cell w-20 text-center">
+        <DifficultyBadge difficulty={difficulty} />
+      </TableCell>
+    </motion.tr>
+  );
+}
+
 const CPProblemSetsView = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -350,7 +763,9 @@ const CPProblemSetsView = () => {
   const [selectedTrack, setSelectedTrack] = useState("all");
   const [selectedTopic, setSelectedTopic] = useState("all");
   const [expandedTracks, setExpandedTracks] = useState<string[]>(["preliminaries", "basics"]);
+  const [expandedTopics, setExpandedTopics] = useState<string[]>(["dp", "graphs"]);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<ViewTab>("all");
 
   // Calculate problem set counts per track
   const problemSetCounts = useMemo(() => {
@@ -382,11 +797,29 @@ const CPProblemSetsView = () => {
     return groups;
   }, [filteredProblemSets]);
 
+  // Group by topic
+  const groupedByTopic = useMemo(() => {
+    const groups: Record<string, CPProblemSet[]> = {};
+    filteredProblemSets.forEach(ps => {
+      if (!groups[ps.topicId]) groups[ps.topicId] = [];
+      groups[ps.topicId].push(ps);
+    });
+    return groups;
+  }, [filteredProblemSets]);
+
   const toggleTrackExpansion = (trackId: string) => {
     setExpandedTracks(prev => 
       prev.includes(trackId) 
         ? prev.filter(id => id !== trackId)
         : [...prev, trackId]
+    );
+  };
+
+  const toggleTopicExpansion = (topicId: string) => {
+    setExpandedTopics(prev => 
+      prev.includes(topicId) 
+        ? prev.filter(id => id !== topicId)
+        : [...prev, topicId]
     );
   };
 
@@ -400,6 +833,9 @@ const CPProblemSetsView = () => {
     return cpTopics.find(t => t.id === topicId)?.name || topicId;
   };
 
+  const getTrackName = (trackId: string) => {
+    return cpTracks.find(t => t.id === trackId)?.name || trackId;
+  };
   const totalProblems = filteredProblemSets.reduce((acc, ps) => acc + ps.problemCount, 0);
   const completedCount = getTotalSolved();
   const progressPercent = cpProblemSets.length > 0 ? Math.round((completedCount / cpProblemSets.length) * 100) : 0;
@@ -593,48 +1029,153 @@ const CPProblemSetsView = () => {
             )}
           </motion.div>
 
-          {/* Problem Sets Table */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                {cpTracks.map((track) => {
-                  const trackSets = groupedByTrack[track.id] || [];
-                  if (trackSets.length === 0) return null;
-                  
-                  return (
-                    <TrackSection
-                      key={track.id}
-                      trackId={track.id}
-                      problemSets={trackSets}
-                      isExpanded={expandedTracks.includes(track.id)}
-                      onToggle={() => toggleTrackExpansion(track.id)}
-                      isSolved={isSolved}
-                      isRevision={isRevision}
-                      toggleSolved={toggleSolved}
-                      toggleRevision={toggleRevision}
-                    />
-                  );
-                })}
+          {/* Tabs for View Selection */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ViewTab)} className="w-full">
+            <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex h-10 sm:h-9">
+              <TabsTrigger value="all" className="gap-1.5 text-xs sm:text-sm">
+                <List className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">All Sets</span>
+                <span className="sm:hidden">All</span>
+              </TabsTrigger>
+              <TabsTrigger value="by-track" className="gap-1.5 text-xs sm:text-sm">
+                <Layers className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">By Track</span>
+                <span className="sm:hidden">Track</span>
+              </TabsTrigger>
+              <TabsTrigger value="by-topic" className="gap-1.5 text-xs sm:text-sm">
+                <Tags className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">By Topic</span>
+                <span className="sm:hidden">Topic</span>
+              </TabsTrigger>
+            </TabsList>
 
-                {/* Empty State */}
-                {filteredProblemSets.length === 0 && (
-                  <div className="p-12 text-center">
-                    <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      No problem sets found matching your filters.
-                    </p>
-                    <Button variant="link" onClick={clearFilters} className="mt-2">
-                      Clear filters
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+            {/* All Sets View - Flat table */}
+            <TabsContent value="all" className="mt-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Card className="overflow-hidden">
+                  <CardContent className="p-0 overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent border-b border-border/30">
+                          <TableHead className="w-12 text-center text-xs">Status</TableHead>
+                          <TableHead className="w-12 text-center text-xs">#</TableHead>
+                          <TableHead className="text-xs">Problem Set</TableHead>
+                          <TableHead className="hidden sm:table-cell w-36 text-xs">Track</TableHead>
+                          <TableHead className="hidden md:table-cell w-36 text-xs">Topic</TableHead>
+                          <TableHead className="w-20 text-center text-xs">Problems</TableHead>
+                          <TableHead className="w-24 text-center text-xs">Practice</TableHead>
+                          <TableHead className="w-14 text-center text-xs">Rev</TableHead>
+                          <TableHead className="hidden sm:table-cell w-20 text-center text-xs">Difficulty</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredProblemSets.map((ps, idx) => (
+                          <AllSetsRow 
+                            key={ps.id} 
+                            problemSet={ps} 
+                            index={idx}
+                            isSolved={isSolved(ps.id)}
+                            isRevision={isRevision(ps.id)}
+                            onToggleSolved={() => toggleSolved(ps.id)}
+                            onToggleRevision={() => toggleRevision(ps.id)}
+                            difficulty={getTrackDifficulty(ps.trackId)}
+                            getTrackName={getTrackName}
+                            getTopicName={getTopicName}
+                          />
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {filteredProblemSets.length === 0 && (
+                      <div className="p-12 text-center">
+                        <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No problem sets found matching your filters.</p>
+                        <Button variant="link" onClick={clearFilters} className="mt-2">Clear filters</Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            {/* By Track View - Grouped by Track */}
+            <TabsContent value="by-track" className="mt-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Card className="overflow-hidden">
+                  <CardContent className="p-0">
+                    {cpTracks.map((track) => {
+                      const trackSets = groupedByTrack[track.id] || [];
+                      if (trackSets.length === 0) return null;
+                      
+                      return (
+                        <TrackSection
+                          key={track.id}
+                          trackId={track.id}
+                          problemSets={trackSets}
+                          isExpanded={expandedTracks.includes(track.id)}
+                          onToggle={() => toggleTrackExpansion(track.id)}
+                          isSolved={isSolved}
+                          isRevision={isRevision}
+                          toggleSolved={toggleSolved}
+                          toggleRevision={toggleRevision}
+                        />
+                      );
+                    })}
+                    {filteredProblemSets.length === 0 && (
+                      <div className="p-12 text-center">
+                        <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No problem sets found matching your filters.</p>
+                        <Button variant="link" onClick={clearFilters} className="mt-2">Clear filters</Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            {/* By Topic View - Grouped by Topic */}
+            <TabsContent value="by-topic" className="mt-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Card className="overflow-hidden">
+                  <CardContent className="p-0">
+                    {cpTopics.map((topic) => {
+                      const topicSets = groupedByTopic[topic.id] || [];
+                      if (topicSets.length === 0) return null;
+                      
+                      return (
+                        <TopicSection
+                          key={topic.id}
+                          topicId={topic.id}
+                          problemSets={topicSets}
+                          isExpanded={expandedTopics.includes(topic.id)}
+                          onToggle={() => toggleTopicExpansion(topic.id)}
+                          isSolved={isSolved}
+                          isRevision={isRevision}
+                          toggleSolved={toggleSolved}
+                          toggleRevision={toggleRevision}
+                        />
+                      );
+                    })}
+                    {filteredProblemSets.length === 0 && (
+                      <div className="p-12 text-center">
+                        <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No problem sets found matching your filters.</p>
+                        <Button variant="link" onClick={clearFilters} className="mt-2">Clear filters</Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+          </Tabs>
         </main>
       </div>
 
