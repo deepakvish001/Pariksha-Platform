@@ -8,25 +8,29 @@ import {
   HelpCircle, 
   Sparkles,
   Loader2,
-  CheckCircle
+  ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-
-type GenerationType = "course" | "guide" | "roadmap" | "quiz";
+import { useAIContent, AIContentType } from "@/hooks/useAIContent";
 
 interface FormatOption {
-  id: GenerationType;
+  id: AIContentType;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   description: string;
 }
 
 const formatOptions: FormatOption[] = [
+  { 
+    id: "plan", 
+    label: "Plan", 
+    icon: ClipboardList,
+    description: "Structured study plan with milestones"
+  },
   { 
     id: "course", 
     label: "Course", 
@@ -55,38 +59,37 @@ const formatOptions: FormatOption[] = [
 
 const AIGenerate = () => {
   const [searchParams] = useSearchParams();
-  const initialType = (searchParams.get("type") as GenerationType) || "course";
+  const initialType = (searchParams.get("type") as AIContentType) || "course";
   
   const [topic, setTopic] = useState("");
-  const [selectedFormat, setSelectedFormat] = useState<GenerationType>(initialType);
+  const [selectedFormat, setSelectedFormat] = useState<AIContentType>(initialType);
   const [includeQuestions, setIncludeQuestions] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { generateContent } = useAIContent();
 
   const handleGenerate = async () => {
-    if (!topic.trim()) {
-      toast({
-        title: "Please enter a topic",
-        description: "You need to enter a topic to generate content.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsGenerating(true);
+    if (!topic.trim()) return;
     
-    // Simulate generation delay for now
-    // TODO: Integrate with Lovable AI edge function
-    setTimeout(() => {
-      toast({
-        title: "Generation Started",
-        description: `Creating your ${selectedFormat} on "${topic}"...`,
+    try {
+      const result = await generateContent.mutateAsync({
+        topic: topic.trim(),
+        contentType: selectedFormat,
+        includeQuestions,
       });
-      setIsGenerating(false);
-      // Navigate to chat with pre-filled prompt
-      navigate(`/platform/ai?prompt=${encodeURIComponent(`Create a ${selectedFormat} about: ${topic}${includeQuestions ? ". Include practice questions at the end of each section." : ""}`)}`);
-    }, 1500);
+      
+      // Navigate to the appropriate "My" page after generation
+      const routes: Record<AIContentType, string> = {
+        plan: "/platform/ai/my-plans",
+        course: "/platform/ai/my-courses",
+        guide: "/platform/ai/my-guides",
+        roadmap: "/platform/ai/my-roadmaps",
+        quiz: "/platform/ai/my-quizzes",
+      };
+      
+      navigate(routes[selectedFormat]);
+    } catch (error) {
+      // Error is handled in the hook
+    }
   };
 
   return (
@@ -122,7 +125,8 @@ const AIGenerate = () => {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             className="h-12 text-base"
-            onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
+            onKeyDown={(e) => e.key === "Enter" && !generateContent.isPending && handleGenerate()}
+            disabled={generateContent.isPending}
           />
         </motion.div>
 
@@ -136,7 +140,7 @@ const AIGenerate = () => {
           <Label className="text-sm font-medium text-foreground mb-4 block">
             Choose the format
           </Label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {formatOptions.map((option) => {
               const Icon = option.icon;
               const isSelected = selectedFormat === option.id;
@@ -144,19 +148,21 @@ const AIGenerate = () => {
                 <button
                   key={option.id}
                   onClick={() => setSelectedFormat(option.id)}
+                  disabled={generateContent.isPending}
                   className={cn(
-                    "flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all duration-200",
+                    "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200",
                     isSelected
                       ? "border-primary bg-primary/5 shadow-md"
-                      : "border-border hover:border-muted-foreground/50 hover:bg-muted/30"
+                      : "border-border hover:border-muted-foreground/50 hover:bg-muted/30",
+                    generateContent.isPending && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <Icon className={cn(
-                    "h-8 w-8 mb-3 transition-colors",
+                    "h-6 w-6 mb-2 transition-colors",
                     isSelected ? "text-primary" : "text-muted-foreground"
                   )} />
                   <span className={cn(
-                    "font-medium transition-colors",
+                    "text-sm font-medium transition-colors",
                     isSelected ? "text-foreground" : "text-muted-foreground"
                   )}>
                     {option.label}
@@ -179,12 +185,13 @@ const AIGenerate = () => {
               id="questions"
               checked={includeQuestions}
               onCheckedChange={(checked) => setIncludeQuestions(checked as boolean)}
+              disabled={generateContent.isPending}
             />
             <Label 
               htmlFor="questions" 
               className="text-sm text-foreground cursor-pointer flex-1"
             >
-              Answer the following questions for a better {selectedFormat}
+              Include practice questions for better retention
             </Label>
           </div>
         </motion.div>
@@ -197,13 +204,13 @@ const AIGenerate = () => {
         >
           <Button
             onClick={handleGenerate}
-            disabled={isGenerating || !topic.trim()}
+            disabled={generateContent.isPending || !topic.trim()}
             className="w-full h-14 text-base font-semibold bg-foreground text-background hover:bg-foreground/90"
           >
-            {isGenerating ? (
+            {generateContent.isPending ? (
               <>
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                Generating...
+                Generating... (this may take a moment)
               </>
             ) : (
               <>
@@ -236,7 +243,8 @@ const AIGenerate = () => {
               <button
                 key={suggestion}
                 onClick={() => setTopic(suggestion)}
-                className="px-3 py-1.5 text-sm rounded-full border border-border bg-muted/30 text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
+                disabled={generateContent.isPending}
+                className="px-3 py-1.5 text-sm rounded-full border border-border bg-muted/30 text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors disabled:opacity-50"
               >
                 {suggestion}
               </button>

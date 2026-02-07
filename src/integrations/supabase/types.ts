@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_generated_content: {
+        Row: {
+          content: Json
+          content_type: string
+          created_at: string
+          id: string
+          is_public: boolean
+          likes_count: number
+          title: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          content_type: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          likes_count?: number
+          title: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          content_type?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          likes_count?: number
+          title?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string
