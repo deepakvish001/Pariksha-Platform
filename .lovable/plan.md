@@ -1,136 +1,251 @@
 
-# Competitive Programming Sheet Implementation Plan
+
+# Competitive Programming Page Visual Redesign
 
 ## Overview
-Create a new Competitive Programming sheet page that matches the reference design with a left sidebar for filtering by Track and Topic, and a right-side tabular list showing problem sets with progress tracking. This will follow the established patterns from DSA Questions, SQL Questions, and Company Resources pages.
 
-## Design Reference Analysis
-Based on the provided screenshot:
-- **Left Sidebar**: Contains "All Sets" header, "By Track" section (Preliminaries, Basics, Intermediate, etc.), and "By Topic" section (Algorithmic Techniques, Data Structures, DP, Geometry, Graphs, etc.)
-- **Right Content Area**: Search bar with Clear button, "Show" dropdown for pagination, sortable table with columns: Track badge, Problem Set name, Progress (solved count + percentage + progress bar)
-- **Pagination**: Bottom pagination with page numbers
+Transform the Competitive Programming page into a bold, modern, and visually striking experience that matches the platform's premium SaaS aesthetic while maintaining all existing functionality. The redesign focuses on enhanced visual hierarchy, branded color schemes, iconography, and polished micro-interactions.
+
+---
+
+## Design Principles
+
+1. **Bold & Clear**: Larger typography, stronger contrast, distinct section boundaries
+2. **Colorful & Branded**: Track-specific color accents, gradient highlights, primary/amber theme
+3. **Icon-Rich**: Meaningful icons for every action and category
+4. **Modern Glassmorphism**: Backdrop blur, semi-transparent layers, subtle borders
+5. **Animated & Interactive**: Spring-based micro-interactions, smooth transitions
+
+---
+
+## Changes by Component
+
+### 1. New CP Hero Section Component
+
+Create a dedicated hero section similar to `RoadmapDetailHero.tsx`:
+
+- Large gradient icon (trophy/code icon) with glow effect
+- Bold title "Competitive Programming" with gradient text animation
+- Animated floating orbs (primary, amber, orange) in background
+- Grid pattern overlay for texture
+- Floating stat pills: Total Problems, Solved, Tracks, Revision Items
+- Animated number counting effect for stats
+- Gradient border accent at top
+
+### 2. Enhanced Stats Dashboard
+
+Replace the current plain stats card with a premium dashboard:
+
+- Circular progress ring (SVG-based, 80px diameter) with gradient stroke
+- Stat cards in a responsive grid (Problems Solved, Current Streak, Tracks Completed)
+- Each stat card has:
+  - Branded icon with colored background
+  - Large bold number
+  - Small label text
+  - Subtle hover lift animation
+- Difficulty distribution bar (horizontal stacked bar showing Easy/Medium/Hard proportions)
+- Glass-card styling with border gradients
+
+### 3. Redesigned Tab Navigation
+
+Enhance the current tabs with:
+
+- Pill-shaped tab triggers with icons:
+  - All Sets: `List` icon
+  - By Track: `Layers` icon  
+  - By Topic: `Tags` icon
+  - Revision: `Star` icon (filled amber)
+- Active tab with gradient background and glow
+- Badge counts with track-colored backgrounds
+- Smooth sliding indicator animation
+
+### 4. Enhanced Filter Sidebar
+
+Upgrade `CPFilterSidebar.tsx`:
+
+- Section headers with icons (Filter icon, Layers icon)
+- Track filters with colored dot indicators matching track colors
+- Collapsible sections with smooth animations
+- Active filter pills with close buttons
+- "Clear All" button with hover state
+- Glass-card container with gradient border accent
+
+### 5. Track Section Headers (By Track View)
+
+Create visually distinct track sections:
+
+- Large track name with gradient text matching track color
+- Track icon (based on difficulty: Shield for Easy, Sword for Medium, Crown for Hard)
+- Progress ring (inline, 40px) showing track completion
+- Problem count badge with track color
+- Difficulty badge with appropriate color
+- Expandable with smooth rotate animation on chevron
+- Gradient left border accent (4px) matching track color
+
+### 6. Topic Section Headers (By Topic View)
+
+Similar treatment for topic groupings:
+
+- Topic icon from a predefined mapping:
+  - Dynamic Programming: `Brain`
+  - Graphs: `Network`
+  - Math: `Calculator`
+  - Data Structures: `Database`
+  - Strings: `Type`
+  - Implementation: `Code`
+  - etc.
+- Progress indicator inline
+- Collapsible with animation
+
+### 7. Problem Set Cards/Rows
+
+Enhance the problem set sections:
+
+- Card-style wrapper with glass-card effect
+- Left gradient border accent matching track
+- Hover state with subtle lift and shadow
+- Track badge with full color (not just outline)
+- Problem count badge color-coded by dominant difficulty
+- Progress bar with gradient fill (green to amber to red based on completion)
+- Expand/collapse with animated chevron rotation
+- Quick action buttons: External Link, Bookmark
+
+### 8. Individual Problem Rows
+
+Polish the problem table rows:
+
+- Alternating subtle background for readability
+- Checkbox with animated checkmark (Framer Motion)
+- Difficulty badge with icon:
+  - Easy: Green circle
+  - Medium: Amber diamond
+  - Hard: Red hexagon
+- Platform badge with platform-specific colors (Codeforces blue, AtCoder green, etc.)
+- Hover highlight with primary/5 background
+- Star button with fill animation on toggle
+- External link button with tooltip
+
+### 9. Revision Tab Enhancement
+
+Special treatment for the revision section:
+
+- Amber/gold accent theme throughout
+- Grouped by problem set with collapsible cards
+- Each card shows:
+  - Problem set title with star count badge
+  - Track badge
+  - Mini progress ring
+- Sort options as segmented control with icons
+- Filter checkbox styled with amber accent
+- Clear All button with confirmation (already implemented)
+- Empty state with star illustration
+
+### 10. Empty States
+
+Create engaging empty states:
+
+- Large illustrated icon (Search icon for no results, Star icon for empty revision)
+- Friendly message with suggestions
+- Clear filters/Browse problems CTA button
+- Subtle animated background
+
+### 11. Pagination Enhancement
+
+Modernize pagination controls:
+
+- Page size selector as segmented button group
+- Page numbers with active state gradient
+- Previous/Next with arrow icons
+- "Showing X-Y of Z" with bold numbers
+- Jump to page dropdown for large datasets
+
+---
 
 ## Technical Implementation
 
-### 1. Create Data File: `src/data/competitiveProgrammingData.ts`
-Define the data structure for problem sets:
-- `CPTrack` interface: id, name, color (for badge styling)
-- `CPTopic` interface: id, name
-- `CPProblemSet` interface: id, title, trackId, topicId, problemCount, externalUrl (optional)
-- Export arrays: `cpTracks`, `cpTopics`, `cpProblemSets`
-- Helper functions: `getByTrack()`, `getByTopic()`, `searchProblemSets()`
+### New Files to Create
 
-Sample tracks to include:
-- Preliminaries, Basics, Intermediate, Advanced Data Structures, Advanced Algorithms, Advanced Mathematics
-- Contest tracks: AtCoder Beginner, AtCoder Regular, Codeforces Educational, ICPC World Finals
+1. `src/components/sheets/CPHeroSection.tsx` - Dedicated hero for CP page
+2. `src/components/sheets/CPStatsDashboard.tsx` - Enhanced stats display
+3. `src/components/sheets/CPEmptyState.tsx` - Styled empty states
 
-Sample topics:
-- Algorithmic Techniques (except DP), Data Structures, Dynamic Programming, Geometry, Graphs, Implementation, Math, Strings
+### Files to Modify
 
-### 2. Create Progress Hook: `src/hooks/useCPProgress.ts`
-Following the pattern of `useDSAProgress.ts`:
-- Track solved/revision status per problem set
-- Store progress in `user_company_progress` table with `company_id: "cp-questions"`
-- Include real-time sync via Supabase channel subscription
-- Calculate progress stats (solved count, total, percentage per track/topic)
+1. `src/components/sheets/CPProblemSetsView.tsx` - Main view integration
+2. `src/components/sheets/CPFilterSidebar.tsx` - Enhanced styling
+3. `src/data/competitiveProgrammingData.ts` - Add icon mappings
 
-### 3. Create Main Page: `src/pages/library/CompetitiveProgramming.tsx`
-Layout structure matching the reference:
+### CSS Additions (index.css)
 
-```text
-+----------------------------------+
-| Sticky Header (icon + title)     |
-+--------+-------------------------+
-| Left   |  Search + Show dropdown |
-| Filter |  -----------------------|
-| Sidebar|  Sortable Table         |
-|        |  - Track badge column   |
-| Tracks |  - Problem Set name     |
-| Topics |  - Progress bar + count |
-|        |  -----------------------|
-|        |  Pagination controls    |
-+--------+-------------------------+
-```
+Add new utility classes:
+- `.gradient-border-left` - Left border gradient effect
+- `.stat-card` - Stat card styling
+- `.difficulty-easy/medium/hard` - Difficulty-specific styles
 
-Features to implement:
-- **Left Sidebar**: Collapsible sections for "By Track" and "By Topic" with clickable filter items
-- **Search bar**: Filter problem sets by name
-- **Show dropdown**: Items per page (10, 25, 50)
-- **Sortable table columns**: Track, Problem Set, Progress (ascending/descending)
-- **Progress column**: Shows "X / Y (Z%) solved" with progress bar
-- **Pagination**: Page numbers with ellipsis for many pages
-- **Mobile responsive**: Sidebar converts to collapsible dropdown on mobile
+---
 
-### 4. Create Sidebar Filter Component: `src/components/library/CPFilterSidebar.tsx`
-Dedicated component for the left filter panel:
-- "All Sets" option to clear filters
-- "By Track" section with track names as clickable buttons
-- "By Topic" section with topic names as clickable buttons
-- Active filter highlighting
-- Filter counts (optional badges)
-- Collapsible on mobile
+## Visual Specifications
 
-### 5. Update Routing: `src/App.tsx`
-Add route for the new page:
-```typescript
-<Route path="cp" element={<CompetitiveProgramming />} />
-```
+### Color Palette by Track
 
-### 6. Update Sidebar Navigation: `src/components/DashboardSidebar.tsx`
-Add navigation item under Library section:
-```typescript
-{ title: "Competitive Programming", url: "/library/cp", icon: Code }
-```
+| Track | Primary Color | Background |
+|-------|--------------|------------|
+| Preliminaries | Teal | teal-500/20 |
+| Basics | Emerald | emerald-500/20 |
+| Intermediate | Cyan | cyan-500/20 |
+| Advanced DS | Blue | blue-500/20 |
+| Advanced Algo | Indigo | indigo-500/20 |
+| Advanced Math | Violet | violet-500/20 |
+| AtCoder 4P | Green | green-500/20 |
+| AtCoder 6P | Lime | lime-500/20 |
+| AtCoder Regular | Amber | amber-500/20 |
+| Codeforces Edu | Orange | orange-500/20 |
+| ICPC | Red | red-500/20 |
 
-## Database Considerations
-No new tables required. The existing `user_company_progress` table will be used with:
-- `company_id`: "cp-questions"
-- `tab_id`: "all" (or specific track/topic if needed)
-- `item_id`: Problem set ID
+### Typography Scale
 
-## UI/UX Details
+- Page Title: 2xl-3xl, font-bold, gradient text
+- Section Headers: xl-2xl, font-semibold
+- Card Titles: base-lg, font-medium
+- Body Text: sm-base
+- Badges: xs, font-medium
 
-### Table Design
-| Column | Width | Content |
-|--------|-------|---------|
-| Track | 120px | Colored badge (teal/green shades) |
-| Problem Set | flex | Clickable problem set title |
-| Progress | 180px | "0 / 16 (0%) solved" + progress bar |
+### Spacing
 
-### Filter Sidebar Styling
-- Background: `bg-muted/30` with border
-- Section headers: Bold, with chevron for collapse
-- Filter items: Hover state, active state with primary color
-- Sticky positioning within scroll container
+- Section gaps: 24-32px
+- Card padding: 16-24px
+- Item padding: 12-16px
 
-### Responsive Behavior
-- Desktop (>1024px): Side-by-side layout
-- Tablet (768-1024px): Collapsible sidebar with toggle button
-- Mobile (<768px): Sidebar hidden by default, accessible via hamburger menu
+---
 
-## File Structure Summary
-```text
-src/
-  data/
-    competitiveProgrammingData.ts    (NEW)
-  hooks/
-    useCPProgress.ts                 (NEW)
-  pages/
-    library/
-      CompetitiveProgramming.tsx     (NEW)
-  components/
-    library/
-      CPFilterSidebar.tsx            (NEW)
-  App.tsx                            (MODIFY - add route)
-  components/
-    DashboardSidebar.tsx             (MODIFY - add nav item)
-```
+## Animation Details
 
-## Implementation Order
-1. Create data file with sample problem sets
-2. Create progress tracking hook
-3. Create filter sidebar component
-4. Create main page with layout and functionality
-5. Add routing and navigation
-6. Test and refine responsive behavior
+1. **Page Load**: Staggered fade-up for sections (0.1s delay each)
+2. **Stat Numbers**: Count-up animation (2s duration, ease-out)
+3. **Expand/Collapse**: Height animation with spring physics
+4. **Checkboxes**: Scale + color transition
+5. **Stars**: Scale bounce on toggle
+6. **Hover States**: translateY(-2px) + shadow elevation
+7. **Tab Switch**: Cross-fade content
+8. **Progress Rings**: Stroke-dasharray animation
+
+---
+
+## Responsive Considerations
+
+- Hero stats stack vertically on mobile
+- Sidebar becomes bottom sheet on mobile (already handled)
+- Tables scroll horizontally on small screens
+- Reduce padding/gaps on mobile
+- Hide secondary badges on xs screens
+
+---
+
+## Accessibility
+
+- Maintain keyboard navigation
+- ARIA labels on icon-only buttons
+- Focus visible states
+- Color contrast ratios maintained
+- Screen reader friendly stat announcements
 
