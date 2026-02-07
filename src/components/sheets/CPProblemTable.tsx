@@ -1,6 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ExternalLink,
   CheckCircle2,
   Circle,
   Star,
@@ -10,9 +9,9 @@ import {
   Zap,
   Trophy,
   Sparkles,
-  ArrowUpRight,
+  ExternalLink,
+  Target,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
@@ -32,51 +31,58 @@ interface CPProblemTableProps {
   onOpenNote: (problemId: number, title: string) => void;
 }
 
-// Difficulty icon with consistent sizing
+// Enhanced Difficulty Icon with glow effect
 function DifficultyIcon({ difficulty, size = "sm" }: { difficulty: "Easy" | "Medium" | "Hard"; size?: "xs" | "sm" }) {
-  const sizeClasses = size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3";
+  const sizeClasses = size === "xs" ? "h-2.5 w-2.5" : "h-3.5 w-3.5";
   const config = {
-    Easy: { Icon: Circle, color: "text-emerald-500", fill: "fill-emerald-500" },
-    Medium: { Icon: Diamond, color: "text-amber-500", fill: "fill-amber-500/60" },
-    Hard: { Icon: Hexagon, color: "text-red-500", fill: "fill-red-500/60" },
+    Easy: { Icon: Circle, color: "text-emerald-500", fill: "fill-emerald-500/80", glow: "drop-shadow-[0_0_3px_rgba(16,185,129,0.4)]" },
+    Medium: { Icon: Diamond, color: "text-amber-500", fill: "fill-amber-500/60", glow: "drop-shadow-[0_0_3px_rgba(245,158,11,0.4)]" },
+    Hard: { Icon: Hexagon, color: "text-red-500", fill: "fill-red-500/60", glow: "drop-shadow-[0_0_3px_rgba(239,68,68,0.4)]" },
   };
-  const { Icon, color, fill } = config[difficulty];
-  return <Icon className={cn(sizeClasses, color, fill)} />;
+  const { Icon, color, fill, glow } = config[difficulty];
+  return <Icon className={cn(sizeClasses, color, fill, glow)} />;
 }
 
-// Enhanced Difficulty Badge
+// Enhanced Difficulty Badge with gradient background
 function DifficultyBadge({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
   const styles = {
-    Easy: "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
-    Medium: "bg-amber-500/12 text-amber-600 dark:text-amber-400 border-amber-500/25",
-    Hard: "bg-red-500/12 text-red-600 dark:text-red-400 border-red-500/25",
+    Easy: "bg-gradient-to-r from-emerald-500/15 to-emerald-400/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-emerald-500/10",
+    Medium: "bg-gradient-to-r from-amber-500/15 to-amber-400/10 text-amber-600 dark:text-amber-400 border-amber-500/30 shadow-amber-500/10",
+    Hard: "bg-gradient-to-r from-red-500/15 to-red-400/10 text-red-600 dark:text-red-400 border-red-500/30 shadow-red-500/10",
   };
 
   return (
-    <span className={cn(
-      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border",
-      styles[difficulty]
-    )}>
+    <motion.span 
+      className={cn(
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm",
+        styles[difficulty]
+      )}
+      whileHover={{ scale: 1.02 }}
+    >
       <DifficultyIcon difficulty={difficulty} size="xs" />
       {difficulty}
-    </span>
+    </motion.span>
   );
 }
 
-// Platform Badge
+// Enhanced Platform Badge with subtle animation
 function PlatformBadge({ platform }: { platform: string }) {
   const colorClasses = getPlatformColor(platform);
   return (
-    <span className={cn(
-      "inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border",
-      colorClasses
-    )}>
+    <motion.span 
+      className={cn(
+        "inline-flex items-center px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border backdrop-blur-sm",
+        colorClasses
+      )}
+      whileHover={{ scale: 1.05 }}
+      transition={{ type: "spring", stiffness: 400 }}
+    >
       {platform}
-    </span>
+    </motion.span>
   );
 }
 
-// Table Header Cell Component for consistency
+// Refined Table Header Cell
 function TableHeaderCell({ 
   children, 
   className,
@@ -88,7 +94,8 @@ function TableHeaderCell({
 }) {
   return (
     <div className={cn(
-      "text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 py-3 px-3",
+      "text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50 py-2.5 px-3",
+      "border-b border-border/20",
       align === "center" && "text-center",
       align === "right" && "text-right",
       className
@@ -98,7 +105,7 @@ function TableHeaderCell({
   );
 }
 
-// Individual Problem Row
+// Enhanced Problem Row with refined styling
 function CPProblemRow({
   problem,
   index,
@@ -118,33 +125,43 @@ function CPProblemRow({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.015, duration: 0.25 }}
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.02, duration: 0.3, ease: "easeOut" }}
       className={cn(
-        "group grid grid-cols-[56px_48px_1fr_100px_80px_48px_48px] items-center",
-        "border-b border-border/15 last:border-0",
-        "transition-all duration-200",
+        "group relative grid grid-cols-[52px_44px_1fr_90px_88px_44px_44px] items-center",
+        "border-b border-border/10 last:border-0",
+        "transition-all duration-300",
         isSolved 
-          ? "bg-gradient-to-r from-emerald-500/6 via-emerald-500/3 to-transparent" 
-          : "hover:bg-muted/30"
+          ? "bg-gradient-to-r from-emerald-500/8 via-emerald-500/4 to-transparent" 
+          : "hover:bg-gradient-to-r hover:from-muted/50 hover:via-muted/30 hover:to-transparent"
       )}
     >
-      {/* Status Checkbox - 56px */}
-      <div className="flex items-center justify-center py-3 px-2">
-        <TooltipProvider delayDuration={400}>
+      {/* Solved indicator line */}
+      {isSolved && (
+        <motion.div 
+          className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-emerald-500 via-emerald-400 to-emerald-500/50"
+          initial={{ scaleY: 0 }}
+          animate={{ scaleY: 1 }}
+          transition={{ duration: 0.3 }}
+        />
+      )}
+
+      {/* Status Checkbox */}
+      <div className="flex items-center justify-center py-3.5 px-2">
+        <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.button
                 onClick={onToggleSolved}
                 className={cn(
-                  "relative p-1.5 rounded-lg transition-all duration-200",
+                  "relative p-1.5 rounded-xl transition-all duration-300",
                   isSolved 
-                    ? "bg-emerald-500/15" 
-                    : "hover:bg-muted/50"
+                    ? "bg-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.15)]" 
+                    : "hover:bg-muted/60 hover:shadow-sm"
                 )}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.92 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
                 <AnimatePresence mode="wait">
                   {isSolved ? (
@@ -153,9 +170,9 @@ function CPProblemRow({
                       initial={{ scale: 0, rotate: -180 }}
                       animate={{ scale: 1, rotate: 0 }}
                       exit={{ scale: 0, rotate: 180 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 25 }}
                     >
-                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500 drop-shadow-[0_0_4px_rgba(16,185,129,0.5)]" />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -164,63 +181,65 @@ function CPProblemRow({
                       animate={{ scale: 1 }}
                       exit={{ scale: 0 }}
                     >
-                      <Circle className="h-5 w-5 text-muted-foreground/30 group-hover:text-muted-foreground/50 transition-colors" />
+                      <Circle className="h-5 w-5 text-muted-foreground/25 group-hover:text-muted-foreground/50 transition-colors duration-300" />
                     </motion.div>
                   )}
                 </AnimatePresence>
               </motion.button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">
-              {isSolved ? "Mark incomplete" : "Mark complete"}
+            <TooltipContent side="right" className="text-xs font-medium">
+              {isSolved ? "Mark as incomplete" : "Mark as complete"}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
 
-      {/* Problem Number - 48px */}
-      <div className="flex items-center justify-center py-3">
+      {/* Problem Number */}
+      <div className="flex items-center justify-center py-3.5">
         <span className={cn(
-          "inline-flex items-center justify-center min-w-[28px] h-7 text-[11px] font-bold rounded-md tabular-nums",
+          "inline-flex items-center justify-center min-w-[26px] h-6 text-[10px] font-bold rounded-md tabular-nums transition-all duration-300",
           isSolved 
-            ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400" 
-            : "bg-muted/50 text-muted-foreground"
+            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20" 
+            : "bg-muted/40 text-muted-foreground/70 group-hover:bg-muted/60"
         )}>
           {String(index + 1).padStart(2, '0')}
         </span>
       </div>
 
-      {/* Problem Title & Platform - Flex grow */}
-      <div className="py-3 px-2 min-w-0">
-        <div className="flex items-center gap-2.5">
+      {/* Problem Title & Platform */}
+      <div className="py-3.5 px-3 min-w-0">
+        <div className="flex items-center gap-3">
           <span className={cn(
-            "text-[13px] font-medium truncate transition-all",
-            isSolved && "line-through text-muted-foreground decoration-emerald-500/40 decoration-1"
+            "text-[13px] font-medium truncate transition-all duration-300",
+            isSolved 
+              ? "text-muted-foreground line-through decoration-emerald-500/50 decoration-[1.5px]" 
+              : "text-foreground group-hover:text-primary"
           )}>
             {problem.title}
           </span>
           {problem.platform && (
-            <span className="hidden md:inline shrink-0">
+            <span className="hidden lg:inline shrink-0">
               <PlatformBadge platform={problem.platform} />
             </span>
           )}
         </div>
         {/* Mobile: show platform below title */}
         {problem.platform && (
-          <div className="md:hidden mt-1">
+          <div className="lg:hidden mt-1.5">
             <PlatformBadge platform={problem.platform} />
           </div>
         )}
       </div>
 
-      {/* Difficulty - 100px */}
-      <div className="flex items-center justify-center py-3 px-2">
+      {/* Difficulty */}
+      <div className="flex items-center justify-center py-3.5 px-2">
         <DifficultyBadge difficulty={problem.difficulty} />
       </div>
 
-      {/* Practice Link - 80px */}
-      <div className="flex items-center justify-center py-3 px-2">
+      {/* Practice Link */}
+      <div className="flex items-center justify-center py-3.5 px-2">
         {problem.problemUrl ? (
-          <TooltipProvider delayDuration={400}>
+          <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <motion.a
@@ -228,68 +247,70 @@ function CPProblemRow({
                   target="_blank"
                   rel="noopener noreferrer"
                   className={cn(
-                    "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md",
-                    "bg-primary/10 text-primary text-[11px] font-semibold",
-                    "border border-primary/20 hover:border-primary/35",
-                    "hover:bg-primary/15 transition-all duration-200"
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+                    "bg-gradient-to-r from-primary/15 to-primary/10 text-primary text-[10px] font-bold uppercase tracking-wide",
+                    "border border-primary/25 hover:border-primary/40",
+                    "hover:from-primary/20 hover:to-primary/15 hover:shadow-[0_0_12px_rgba(var(--primary),0.15)]",
+                    "transition-all duration-300"
                   )}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.03, y: -1 }}
+                  whileTap={{ scale: 0.97 }}
                 >
                   <Zap className="h-3 w-3" />
                   <span>Solve</span>
+                  <ExternalLink className="h-2.5 w-2.5 opacity-60" />
                 </motion.a>
               </TooltipTrigger>
-              <TooltipContent>
-                Open on {problem.platform || "Platform"}
+              <TooltipContent className="text-xs">
+                Practice on {problem.platform || "Platform"}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         ) : (
-          <span className="text-muted-foreground/30">—</span>
+          <span className="text-muted-foreground/20 text-xs">—</span>
         )}
       </div>
 
-      {/* Notes - 48px */}
-      <div className="flex items-center justify-center py-3">
-        <TooltipProvider delayDuration={400}>
+      {/* Notes Button */}
+      <div className="flex items-center justify-center py-3.5">
+        <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.button
                 onClick={onOpenNote}
-                className="p-1.5 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 transition-all"
+                className="p-2 rounded-lg text-muted-foreground/35 hover:text-primary hover:bg-primary/10 transition-all duration-300"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
                 <FileText className="h-4 w-4" />
               </motion.button>
             </TooltipTrigger>
-            <TooltipContent>Add notes</TooltipContent>
+            <TooltipContent className="text-xs">Add notes</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
 
-      {/* Revision Star - 48px */}
-      <div className="flex items-center justify-center py-3">
-        <TooltipProvider delayDuration={400}>
+      {/* Revision Star */}
+      <div className="flex items-center justify-center py-3.5">
+        <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.button
                 onClick={onToggleRevision}
                 className={cn(
-                  "p-1.5 rounded-md transition-all",
+                  "p-2 rounded-lg transition-all duration-300",
                   isRevision 
-                    ? "text-amber-500 bg-amber-500/12" 
-                    : "text-muted-foreground/30 hover:text-amber-500/60 hover:bg-amber-500/8"
+                    ? "text-amber-500 bg-amber-500/15 shadow-[0_0_10px_rgba(245,158,11,0.15)]" 
+                    : "text-muted-foreground/25 hover:text-amber-500/70 hover:bg-amber-500/10"
                 )}
-                whileHover={{ scale: 1.12, rotate: isRevision ? -12 : 12 }}
-                whileTap={{ scale: 0.88 }}
+                whileHover={{ scale: 1.15, rotate: isRevision ? -15 : 15 }}
+                whileTap={{ scale: 0.85 }}
               >
-                <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
+                <Star className={cn("h-4 w-4 transition-all", isRevision && "fill-current drop-shadow-[0_0_4px_rgba(245,158,11,0.5)]")} />
               </motion.button>
             </TooltipTrigger>
-            <TooltipContent>
-              {isRevision ? "Remove from revision" : "Add to revision"}
+            <TooltipContent className="text-xs">
+              {isRevision ? "Remove from revision" : "Add to revision list"}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -298,7 +319,7 @@ function CPProblemRow({
   );
 }
 
-// Mobile Problem Row (stacked layout)
+// Enhanced Mobile Problem Row
 function CPProblemRowMobile({
   problem,
   index,
@@ -318,24 +339,29 @@ function CPProblemRowMobile({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.02, duration: 0.25 }}
+      transition={{ delay: index * 0.025, duration: 0.3 }}
       className={cn(
-        "group p-3 border-b border-border/15 last:border-0",
-        "transition-all duration-200",
+        "group relative p-4 border-b border-border/10 last:border-0",
+        "transition-all duration-300",
         isSolved 
-          ? "bg-gradient-to-r from-emerald-500/6 to-transparent" 
-          : "hover:bg-muted/20"
+          ? "bg-gradient-to-r from-emerald-500/8 to-transparent" 
+          : "hover:bg-muted/30"
       )}
     >
+      {/* Solved indicator */}
+      {isSolved && (
+        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-emerald-500 to-emerald-500/30" />
+      )}
+
       {/* Top row: checkbox, number, title */}
-      <div className="flex items-start gap-2.5">
+      <div className="flex items-start gap-3">
         <motion.button
           onClick={onToggleSolved}
           className={cn(
-            "p-1 rounded-lg shrink-0 mt-0.5",
-            isSolved ? "bg-emerald-500/15" : "hover:bg-muted/50"
+            "p-1.5 rounded-xl shrink-0 mt-0.5 transition-all",
+            isSolved ? "bg-emerald-500/20" : "hover:bg-muted/60"
           )}
           whileTap={{ scale: 0.9 }}
         >
@@ -347,9 +373,9 @@ function CPProblemRowMobile({
         </motion.button>
 
         <span className={cn(
-          "inline-flex items-center justify-center min-w-[24px] h-6 text-[10px] font-bold rounded shrink-0 mt-0.5",
+          "inline-flex items-center justify-center min-w-[24px] h-6 text-[10px] font-bold rounded-md shrink-0 mt-0.5",
           isSolved 
-            ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400" 
+            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" 
             : "bg-muted/50 text-muted-foreground"
         )}>
           {String(index + 1).padStart(2, '0')}
@@ -357,14 +383,14 @@ function CPProblemRowMobile({
 
         <div className="flex-1 min-w-0">
           <span className={cn(
-            "text-sm font-medium block",
-            isSolved && "line-through text-muted-foreground decoration-emerald-500/40"
+            "text-sm font-medium block leading-relaxed",
+            isSolved && "line-through text-muted-foreground decoration-emerald-500/50"
           )}>
             {problem.title}
           </span>
           
           {/* Badges row */}
-          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <DifficultyBadge difficulty={problem.difficulty} />
             {problem.platform && <PlatformBadge platform={problem.platform} />}
           </div>
@@ -372,31 +398,32 @@ function CPProblemRowMobile({
       </div>
 
       {/* Bottom row: actions */}
-      <div className="flex items-center justify-end gap-1 mt-2.5 pl-8">
+      <div className="flex items-center justify-end gap-2 mt-3 pl-10">
         {problem.problemUrl && (
-          <a
+          <motion.a
             href={problem.problemUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-semibold border border-primary/20"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/15 text-primary text-[10px] font-bold uppercase border border-primary/25"
+            whileTap={{ scale: 0.95 }}
           >
             <Zap className="h-3 w-3" />
             Solve
-          </a>
+          </motion.a>
         )}
         <button
           onClick={onOpenNote}
-          className="p-1.5 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-muted/50"
+          className="p-2 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 transition-all"
         >
           <FileText className="h-4 w-4" />
         </button>
         <button
           onClick={onToggleRevision}
           className={cn(
-            "p-1.5 rounded-md",
+            "p-2 rounded-lg transition-all",
             isRevision 
-              ? "text-amber-500 bg-amber-500/12" 
-              : "text-muted-foreground/30 hover:text-amber-500/60"
+              ? "text-amber-500 bg-amber-500/15" 
+              : "text-muted-foreground/30 hover:text-amber-500/70"
           )}
         >
           <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
@@ -425,61 +452,84 @@ export default function CPProblemTable({
     { Easy: 0, Medium: 0, Hard: 0 }
   );
   
+  const progressPercent = problems.length > 0 ? (solvedCount / problems.length) * 100 : 0;
+  
   return (
-    <div className="relative">
-      {/* Stats Header */}
+    <div className="relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-b from-card/80 to-card/40 backdrop-blur-sm">
+      {/* Enhanced Stats Header */}
       <div className={cn(
-        "flex flex-wrap items-center justify-between gap-3 px-4 py-3",
-        "bg-gradient-to-r from-muted/40 via-muted/20 to-transparent",
-        "border-b border-border/30"
+        "relative flex flex-wrap items-center justify-between gap-4 px-5 py-4",
+        "bg-gradient-to-r from-muted/50 via-muted/30 to-transparent",
+        "border-b border-border/20"
       )}>
-        {/* Left: counts */}
-        <div className="flex items-center gap-4">
+        {/* Progress bar background */}
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-muted/30">
+          <motion.div 
+            className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-primary"
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPercent}%` }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          />
+        </div>
+
+        {/* Left: Problem count & difficulty breakdown */}
+        <div className="flex items-center gap-5">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-semibold">
-              {problems.length} <span className="text-muted-foreground font-normal">problems</span>
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <Target className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-sm font-semibold">
+              {problems.length} <span className="text-muted-foreground font-normal text-xs">problems</span>
             </span>
           </div>
           
           {/* Difficulty legend */}
-          <div className="hidden sm:flex items-center gap-3 pl-3 border-l border-border/40">
+          <div className="hidden sm:flex items-center gap-4 pl-4 border-l border-border/30">
             {stats.Easy > 0 && (
-              <span className="flex items-center gap-1 text-[11px]">
+              <div className="flex items-center gap-1.5">
                 <DifficultyIcon difficulty="Easy" size="xs" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{stats.Easy}</span>
-              </span>
+                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">{stats.Easy}</span>
+              </div>
             )}
             {stats.Medium > 0 && (
-              <span className="flex items-center gap-1 text-[11px]">
+              <div className="flex items-center gap-1.5">
                 <DifficultyIcon difficulty="Medium" size="xs" />
-                <span className="text-amber-600 dark:text-amber-400 font-semibold">{stats.Medium}</span>
-              </span>
+                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">{stats.Medium}</span>
+              </div>
             )}
             {stats.Hard > 0 && (
-              <span className="flex items-center gap-1 text-[11px]">
+              <div className="flex items-center gap-1.5">
                 <DifficultyIcon difficulty="Hard" size="xs" />
-                <span className="text-red-600 dark:text-red-400 font-semibold">{stats.Hard}</span>
-              </span>
+                <span className="text-[11px] font-bold text-red-600 dark:text-red-400">{stats.Hard}</span>
+              </div>
             )}
           </div>
         </div>
         
-        {/* Right: progress */}
-        <div className="flex items-center gap-2">
+        {/* Right: Revision count & completion status */}
+        <div className="flex items-center gap-3">
           {revisionCount > 0 && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <motion.span 
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 500 }}
+            >
               <Star className="h-3 w-3 fill-current" />
-              {revisionCount}
-            </span>
+              {revisionCount} starred
+            </motion.span>
           )}
           
-          <span className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold",
-            isAllComplete 
-              ? "bg-emerald-500 text-white" 
-              : "bg-muted/60 text-foreground"
-          )}>
+          <motion.span 
+            className={cn(
+              "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold",
+              isAllComplete 
+                ? "bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-lg shadow-emerald-500/25" 
+                : "bg-muted/60 text-foreground border border-border/30"
+            )}
+            animate={isAllComplete ? { scale: [1, 1.05, 1] } : {}}
+            transition={{ duration: 0.5 }}
+          >
             {isAllComplete ? (
               <>
                 <Trophy className="h-3.5 w-3.5" />
@@ -487,29 +537,29 @@ export default function CPProblemTable({
               </>
             ) : (
               <>
-                <CheckCircle2 className="h-3.5 w-3.5" />
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
                 {solvedCount}/{problems.length}
               </>
             )}
-          </span>
+          </motion.span>
         </div>
       </div>
       
       {/* Desktop Table */}
       <div className="hidden sm:block">
         {/* Table Header */}
-        <div className="grid grid-cols-[56px_48px_1fr_100px_80px_48px_48px] items-center bg-muted/20 border-b border-border/30">
+        <div className="grid grid-cols-[52px_44px_1fr_90px_88px_44px_44px] items-center bg-muted/10">
           <TableHeaderCell align="center">Done</TableHeaderCell>
           <TableHeaderCell align="center">#</TableHeaderCell>
-          <TableHeaderCell>Problem</TableHeaderCell>
-          <TableHeaderCell align="center">Level</TableHeaderCell>
+          <TableHeaderCell>Problem Title</TableHeaderCell>
+          <TableHeaderCell align="center">Difficulty</TableHeaderCell>
           <TableHeaderCell align="center">Practice</TableHeaderCell>
-          <TableHeaderCell align="center">Note</TableHeaderCell>
-          <TableHeaderCell align="center">Rev</TableHeaderCell>
+          <TableHeaderCell align="center">Notes</TableHeaderCell>
+          <TableHeaderCell align="center">Star</TableHeaderCell>
         </div>
         
         {/* Table Body */}
-        <div>
+        <div className="divide-y divide-border/5">
           {problems.map((problem, idx) => (
             <CPProblemRow
               key={problem.id}
@@ -526,7 +576,7 @@ export default function CPProblemTable({
       </div>
       
       {/* Mobile Layout */}
-      <div className="sm:hidden">
+      <div className="sm:hidden divide-y divide-border/5">
         {problems.map((problem, idx) => (
           <CPProblemRowMobile
             key={problem.id}
