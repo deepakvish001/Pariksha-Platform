@@ -270,15 +270,15 @@ const CPFilterSidebar = ({
   }
 
   return (
-    <aside className="hidden lg:block w-64 shrink-0">
-      <div className="sticky top-20 glass-card rounded-xl p-4 border border-border/50 bg-gradient-to-b from-card to-card/50">
+    <div className="h-full flex flex-col p-4">
+      <div className="glass-card rounded-xl p-4 border border-border/50 bg-gradient-to-b from-card to-card/50 h-full flex flex-col overflow-hidden">
         {/* Gradient accent at top */}
         <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        <ScrollArea className="h-[calc(100vh-10rem)]">
+        <ScrollArea className="flex-1 -mr-2 pr-2">
           {content}
         </ScrollArea>
       </div>
-    </aside>
+    </div>
   );
 };
 
