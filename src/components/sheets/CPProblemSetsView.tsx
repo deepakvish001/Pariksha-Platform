@@ -1262,34 +1262,39 @@ const CPProblemSetsView = () => {
 
             {/* All Sets View - Expandable sections with problems inside */}
             <TabsContent value="all" className="mt-4 space-y-4">
-              {/* Controls: Expand/Collapse All */}
+              {/* Controls: Expand/Collapse All with indicator */}
               {paginatedProblemSets.length > 0 && (
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const allSetIds = paginatedProblemSets.map(ps => ps.id);
-                      setExpandedSets(prev => {
-                        const newExpanded = new Set([...prev, ...allSetIds]);
-                        return Array.from(newExpanded);
-                      });
-                    }}
-                    className="h-8 text-xs"
-                  >
-                    Expand All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const allSetIds = paginatedProblemSets.map(ps => ps.id);
-                      setExpandedSets(prev => prev.filter(id => !allSetIds.includes(id)));
-                    }}
-                    className="h-8 text-xs"
-                  >
-                    Collapse All
-                  </Button>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {paginatedProblemSets.filter(ps => expandedSets.includes(ps.id)).length} of {paginatedProblemSets.length} expanded
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const allSetIds = paginatedProblemSets.map(ps => ps.id);
+                        setExpandedSets(prev => {
+                          const newExpanded = new Set([...prev, ...allSetIds]);
+                          return Array.from(newExpanded);
+                        });
+                      }}
+                      className="h-8 text-xs"
+                    >
+                      Expand All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const allSetIds = paginatedProblemSets.map(ps => ps.id);
+                        setExpandedSets(prev => prev.filter(id => !allSetIds.includes(id)));
+                      }}
+                      className="h-8 text-xs"
+                    >
+                      Collapse All
+                    </Button>
+                  </div>
                 </div>
               )}
               
