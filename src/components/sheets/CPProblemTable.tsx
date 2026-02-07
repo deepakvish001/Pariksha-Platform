@@ -111,8 +111,7 @@ function TableHeaderCell({
 }) {
   return (
     <div className={cn(
-      "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3 px-3",
-      "border-b-2 border-border/30",
+      "text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 py-3 px-2",
       align === "center" && "text-center",
       align === "right" && "text-right",
       className
@@ -121,6 +120,9 @@ function TableHeaderCell({
     </div>
   );
 }
+
+// Grid column definition for consistency
+const TABLE_GRID_COLS = "grid-cols-[50px_50px_1fr_56px_56px_56px_56px_56px_100px]";
 
 // Striver-style Problem Row
 function CPProblemRow({
@@ -146,20 +148,21 @@ function CPProblemRow({
       animate={{ opacity: 1 }}
       transition={{ delay: index * 0.015, duration: 0.2 }}
       className={cn(
-        "group grid grid-cols-[44px_44px_1fr_44px_44px_44px_44px_44px_90px] items-center",
-        "border-b border-border/10 last:border-0",
+        "group grid items-center",
+        TABLE_GRID_COLS,
+        "border-b border-border/5 last:border-0",
         "transition-all duration-200",
         isSolved 
           ? "bg-emerald-500/5 hover:bg-emerald-500/8" 
-          : "hover:bg-muted/40"
+          : "hover:bg-muted/30"
       )}
     >
       {/* Status Checkbox */}
-      <div className="flex items-center justify-center py-3">
+      <div className="flex items-center justify-center py-3.5 px-1">
         <motion.button
           onClick={onToggleSolved}
-          className="p-1 rounded-md transition-colors"
-          whileHover={{ scale: 1.1 }}
+          className="p-1.5 rounded-lg transition-colors hover:bg-muted/50"
+          whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.9 }}
         >
           <AnimatePresence mode="wait">
@@ -179,7 +182,7 @@ function CPProblemRow({
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
               >
-                <Circle className="h-5 w-5 text-muted-foreground/30 group-hover:text-muted-foreground/50" />
+                <Circle className="h-5 w-5 text-muted-foreground/25 group-hover:text-muted-foreground/40" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -187,29 +190,31 @@ function CPProblemRow({
       </div>
 
       {/* Problem Number */}
-      <div className="flex items-center justify-center py-3">
+      <div className="flex items-center justify-center py-3.5">
         <span className={cn(
-          "text-xs font-medium tabular-nums",
-          isSolved ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/60"
+          "text-xs font-semibold tabular-nums w-6 h-6 flex items-center justify-center rounded-md",
+          isSolved 
+            ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10" 
+            : "text-muted-foreground/50 bg-muted/30"
         )}>
           {index + 1}
         </span>
       </div>
 
       {/* Problem Title */}
-      <div className="py-3 px-2 min-w-0">
+      <div className="py-3.5 px-3 min-w-0">
         <span className={cn(
-          "text-sm font-medium truncate block transition-colors",
+          "text-[13px] font-medium truncate block transition-colors",
           isSolved 
-            ? "text-muted-foreground line-through decoration-emerald-500/40" 
+            ? "text-muted-foreground line-through decoration-emerald-500/30" 
             : "text-foreground group-hover:text-primary"
         )}>
           {problem.title}
         </span>
       </div>
 
-      {/* Article Link - uses problemUrl as fallback */}
-      <div className="flex items-center justify-center py-3">
+      {/* Article Link */}
+      <div className="flex items-center justify-center py-3.5">
         <ResourceLink 
           href={problem.problemUrl} 
           icon={BookOpen} 
@@ -218,8 +223,8 @@ function CPProblemRow({
         />
       </div>
 
-      {/* Video Link - uses problemUrl as fallback */}
-      <div className="flex items-center justify-center py-3">
+      {/* Video Link */}
+      <div className="flex items-center justify-center py-3.5">
         <ResourceLink 
           href={problem.problemUrl} 
           icon={Video} 
@@ -229,7 +234,7 @@ function CPProblemRow({
       </div>
 
       {/* Practice Link */}
-      <div className="flex items-center justify-center py-3">
+      <div className="flex items-center justify-center py-3.5">
         <ResourceLink 
           href={problem.problemUrl} 
           icon={Code2} 
@@ -239,14 +244,14 @@ function CPProblemRow({
       </div>
 
       {/* Notes Button */}
-      <div className="flex items-center justify-center py-3">
+      <div className="flex items-center justify-center py-3.5">
         <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.button
                 onClick={onOpenNote}
-                className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground/40 hover:text-amber-500 hover:bg-amber-500/10 transition-all"
-                whileHover={{ scale: 1.1 }}
+                className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground/30 hover:text-amber-500 hover:bg-amber-500/10 transition-all"
+                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <StickyNote className="h-4 w-4" />
@@ -258,7 +263,7 @@ function CPProblemRow({
       </div>
 
       {/* Revision Star */}
-      <div className="flex items-center justify-center py-3">
+      <div className="flex items-center justify-center py-3.5">
         <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -268,9 +273,9 @@ function CPProblemRow({
                   "flex items-center justify-center w-8 h-8 rounded-lg transition-all",
                   isRevision 
                     ? "text-amber-500 bg-amber-500/10" 
-                    : "text-muted-foreground/30 hover:text-amber-500/60 hover:bg-amber-500/5"
+                    : "text-muted-foreground/25 hover:text-amber-500/50 hover:bg-amber-500/5"
                 )}
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
@@ -284,7 +289,7 @@ function CPProblemRow({
       </div>
 
       {/* Difficulty */}
-      <div className="flex items-center justify-center py-3 px-2">
+      <div className="flex items-center justify-center py-3.5 px-2">
         <DifficultyBadge difficulty={problem.difficulty} />
       </div>
     </motion.div>
@@ -389,9 +394,9 @@ export default function CPProblemTable({
   const progressPercent = problems.length > 0 ? (solvedCount / problems.length) * 100 : 0;
   
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm">
+    <div className="relative overflow-hidden rounded-xl border border-border/30 bg-card/60 backdrop-blur-sm">
       {/* Progress Bar */}
-      <div className="h-1 bg-muted/30">
+      <div className="h-1 bg-muted/20">
         <motion.div 
           className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
           initial={{ width: 0 }}
@@ -401,22 +406,22 @@ export default function CPProblemTable({
       </div>
 
       {/* Stats Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-muted/20 border-b border-border/20">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-muted/10 border-b border-border/20">
         <div className="flex items-center gap-4">
           <span className="text-xs font-medium text-muted-foreground">
             Progress: <span className="text-foreground font-semibold">{solvedCount}/{problems.length}</span>
           </span>
-          <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60">
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-500/60" />
+          <div className="hidden sm:flex items-center gap-3 text-[10px] text-muted-foreground/50">
+            <span className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-500/50" />
               Easy
             </span>
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-amber-500/60" />
+            <span className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-amber-500/50" />
               Medium
             </span>
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-red-500/60" />
+            <span className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-red-500/50" />
               Hard
             </span>
           </div>
@@ -434,11 +439,15 @@ export default function CPProblemTable({
       
       {/* Desktop Table */}
       <div className="hidden md:block">
-        {/* Table Header */}
-        <div className="grid grid-cols-[44px_44px_1fr_44px_44px_44px_44px_44px_90px] items-center bg-muted/10">
+        {/* Sticky Table Header */}
+        <div className={cn(
+          "grid items-center sticky top-0 z-10",
+          TABLE_GRID_COLS,
+          "bg-muted/30 backdrop-blur-md border-b border-border/20"
+        )}>
           <TableHeaderCell align="center">Status</TableHeaderCell>
           <TableHeaderCell align="center">#</TableHeaderCell>
-          <TableHeaderCell>Problem</TableHeaderCell>
+          <TableHeaderCell className="pl-3">Problem</TableHeaderCell>
           <TableHeaderCell align="center">Article</TableHeaderCell>
           <TableHeaderCell align="center">Video</TableHeaderCell>
           <TableHeaderCell align="center">Practice</TableHeaderCell>
@@ -448,7 +457,7 @@ export default function CPProblemTable({
         </div>
         
         {/* Table Body */}
-        <div>
+        <div className="divide-y divide-border/5">
           {problems.map((problem, idx) => (
             <CPProblemRow
               key={problem.id}
