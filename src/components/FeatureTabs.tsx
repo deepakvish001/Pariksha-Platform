@@ -1,111 +1,144 @@
 import { useState } from "react";
-import { Target, Type, Clock, BarChart2, Users, CheckCircle2, FileText, Timer, TrendingUp, Share2 } from "lucide-react";
+import { 
+  Target, 
+  Code2, 
+  Trophy, 
+  BarChart2, 
+  Brain, 
+  CheckCircle2, 
+  TrendingUp, 
+  Flame,
+  Star,
+  Zap,
+  BookOpen,
+  FileText
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ScrollReveal from "./ScrollReveal";
 
 const tabs = [
   { 
-    id: "tasks", 
-    icon: Target, 
-    label: "Daily Tasks",
-    title: "Break down goals into actionable steps",
-    description: "Transform overwhelming projects into manageable daily tasks. Set priorities, track deadlines, and watch your productivity soar with our intuitive task management system.",
-    features: ["Smart priority sorting", "Deadline reminders", "Progress tracking", "Subtask breakdown"],
+    id: "dsa", 
+    icon: Code2, 
+    label: "DSA Sheets",
+    title: "Master Data Structures & Algorithms",
+    description: "Practice with curated problem sheets from Striver, Love Babbar, NeetCode, and more. Track your progress, mark revisions, and build consistency.",
+    features: ["500+ curated problems", "Progress tracking", "Revision markers", "Difficulty filters"],
+    stats: { problems: 500, users: "8K+", completion: "92%" },
     preview: [
-      { icon: CheckCircle2, text: "Complete DSA Assignment", status: "done" },
-      { icon: CheckCircle2, text: "Review System Design notes", status: "progress" },
-      { icon: CheckCircle2, text: "Practice coding problems", status: "pending" },
+      { icon: CheckCircle2, text: "Two Sum - Easy", status: "done", xp: "+10 XP" },
+      { icon: Code2, text: "Binary Search - Medium", status: "progress", xp: "+20 XP" },
+      { icon: Code2, text: "DP on Grids - Hard", status: "pending", xp: "+30 XP" },
     ]
   },
   { 
-    id: "notes", 
-    icon: Type, 
-    label: "Rich Editing",
-    title: "Capture ideas with powerful editing",
-    description: "Write notes that work the way you think. Rich text formatting, code blocks, and markdown support help you organize knowledge effectively.",
-    features: ["Markdown support", "Code highlighting", "Quick formatting", "Auto-save"],
+    id: "cp", 
+    icon: Zap, 
+    label: "Competitive Programming",
+    title: "Level Up Your CP Skills",
+    description: "AtCoder, Codeforces, and ICPC problem sets organized by track and difficulty. From beginner to advanced algorithms.",
+    features: ["270+ contest problems", "Track-wise organization", "Platform filters", "Notes support"],
+    stats: { problems: 270, users: "5K+", completion: "78%" },
     preview: [
-      { icon: FileText, text: "Lecture Notes - Machine Learning", status: "done" },
-      { icon: FileText, text: "Project Ideas - Web App", status: "progress" },
-      { icon: FileText, text: "Interview Prep Notes", status: "done" },
-    ]
-  },
-  { 
-    id: "time", 
-    icon: Clock, 
-    label: "Time-Bound Deadlines",
-    title: "Never miss a deadline again",
-    description: "Smart deadline tracking keeps you ahead of schedule. Get timely reminders, see what's due, and plan your week with confidence.",
-    features: ["Calendar view", "Smart reminders", "Time blocking", "Due date alerts"],
-    preview: [
-      { icon: Timer, text: "Assignment due in 2 days", status: "progress" },
-      { icon: Timer, text: "Exam prep - 5 days left", status: "pending" },
-      { icon: Timer, text: "Project submission - Today", status: "urgent" },
+      { icon: CheckCircle2, text: "ABC 330 - Complete", status: "done", xp: "+50 XP" },
+      { icon: Zap, text: "Educational Round 156", status: "progress", xp: "+40 XP" },
+      { icon: Zap, text: "ICPC Regionals 2023", status: "pending", xp: "+100 XP" },
     ]
   },
   { 
     id: "analytics", 
     icon: BarChart2, 
-    label: "Progress Analytics",
-    title: "Visualize your growth journey",
-    description: "See your productivity patterns, identify peak hours, and understand what drives your best work. Data-driven insights for continuous improvement.",
-    features: ["Weekly reports", "Streak tracking", "Productivity score", "Goal insights"],
+    label: "Analytics",
+    title: "Visualize Your Growth Journey",
+    description: "Track your daily activity, view GitHub-style heatmaps, and understand your learning patterns with detailed analytics.",
+    features: ["Activity heatmap", "Weekly reports", "Streak tracking", "XP leaderboards"],
+    stats: { streak: "23 days", xp: "2,450", rank: "#127" },
     preview: [
-      { icon: TrendingUp, text: "Productivity up 32% this week", status: "done" },
-      { icon: TrendingUp, text: "Best focus time: 9AM - 12PM", status: "done" },
-      { icon: TrendingUp, text: "23-day learning streak", status: "done" },
+      { icon: TrendingUp, text: "Weekly problems: 45 solved", status: "done", xp: "" },
+      { icon: Flame, text: "Current streak: 23 days", status: "done", xp: "" },
+      { icon: Star, text: "This week: +450 XP earned", status: "done", xp: "" },
     ]
   },
   { 
-    id: "tracking", 
-    icon: Users, 
-    label: "Track-Share-Repeat",
-    title: "Learn together, grow faster",
-    description: "Share progress with peers, collaborate on projects, and stay accountable with your study group. Learning is better together.",
-    features: ["Progress sharing", "Study groups", "Leaderboards", "Peer motivation"],
+    id: "achievements", 
+    icon: Trophy, 
+    label: "Achievements",
+    title: "Earn Badges & Climb Leaderboards",
+    description: "Unlock 50+ achievements, earn XP for every action, and compete with peers on weekly leaderboards.",
+    features: ["50+ achievements", "XP system", "Level progression", "Public profiles"],
+    stats: { badges: 50, levels: 25, active: "10K+" },
     preview: [
-      { icon: Share2, text: "Shared roadmap with study group", status: "done" },
-      { icon: Share2, text: "Team challenge: 7-day streak", status: "progress" },
-      { icon: Share2, text: "Ranked #5 in your batch", status: "done" },
+      { icon: Trophy, text: "Speed Demon - 10 in 1 hour", status: "done", xp: "Unlocked!" },
+      { icon: Star, text: "Streak Master - 30 day streak", status: "progress", xp: "78%" },
+      { icon: Trophy, text: "DSA Champion - 100 problems", status: "pending", xp: "45/100" },
+    ]
+  },
+  { 
+    id: "interview", 
+    icon: Brain, 
+    label: "Interview Prep",
+    title: "Ace Your Technical Interviews",
+    description: "Company-specific questions, CS fundamentals, aptitude prep, and SQL practice all in one place.",
+    features: ["Company-wise questions", "CS subjects", "Aptitude tests", "SQL practice"],
+    stats: { companies: "50+", questions: "1000+", categories: 8 },
+    preview: [
+      { icon: BookOpen, text: "Google - System Design", status: "progress", xp: "" },
+      { icon: FileText, text: "Amazon - Leadership Principles", status: "pending", xp: "" },
+      { icon: Brain, text: "Meta - Behavioral Questions", status: "done", xp: "" },
     ]
   },
 ];
 
 const FeatureTabs = () => {
-  const [activeTab, setActiveTab] = useState("tasks");
+  const [activeTab, setActiveTab] = useState("dsa");
   const activeContent = tabs.find(tab => tab.id === activeTab);
 
   return (
-    <section className="py-24 bg-background">
-      <div className="section-container">
+    <section className="py-24 bg-gradient-to-b from-background to-secondary/10 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-orange-500/5 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="section-container relative z-10">
         {/* Header */}
         <ScrollReveal>
-          <h2 className="section-title">One place to run your entire college life</h2>
-          <p className="section-subtitle">
-            Click on the features below to see what they do
-          </p>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl sm:text-5xl font-black text-foreground mb-4">
+              See It In
+              <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent"> Action</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Explore the key features that make Byteskill the ultimate placement prep companion
+            </p>
+          </div>
         </ScrollReveal>
 
         {/* Tabs */}
-        <ScrollReveal delay={0.2}>
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
+        <ScrollReveal delay={0.1}>
+          <div className="flex flex-wrap justify-center gap-2 mb-12">
             {tabs.map((tab) => (
-              <button
+              <motion.button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`feature-tab flex items-center gap-2 ${
-                  activeTab === tab.id ? "active" : ""
+                className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                  activeTab === tab.id 
+                    ? "bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/25" 
+                    : "bg-card/50 border border-border/50 text-muted-foreground hover:text-foreground hover:border-primary/30"
                 }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <tab.icon className="w-4 h-4" />
                 <span>{tab.label}</span>
-              </button>
+              </motion.button>
             ))}
           </div>
         </ScrollReveal>
 
         {/* Tab Content */}
-        <ScrollReveal delay={0.3}>
+        <ScrollReveal delay={0.2}>
           <AnimatePresence mode="wait">
             {activeContent && (
               <motion.div
@@ -114,28 +147,46 @@ const FeatureTabs = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className="max-w-5xl mx-auto"
+                className="max-w-6xl mx-auto"
               >
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                   {/* Text Content */}
                   <div className="order-2 lg:order-1">
-                    <h3 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
+                    <h3 className="text-3xl sm:text-4xl font-black text-foreground mb-4">
                       {activeContent.title}
                     </h3>
-                    <p className="text-muted-foreground mb-6 leading-relaxed">
+                    <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
                       {activeContent.description}
                     </p>
-                    <div className="grid grid-cols-2 gap-3">
+                    
+                    {/* Features list */}
+                    <div className="grid grid-cols-2 gap-3 mb-8">
                       {activeContent.features.map((feature, index) => (
                         <motion.div
                           key={feature}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.1 }}
-                          className="flex items-center gap-2 text-sm text-foreground"
+                          className="flex items-center gap-2"
                         >
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                          {feature}
+                          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-primary to-orange-500" />
+                          <span className="text-sm font-medium text-foreground">{feature}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    {/* Stats pills */}
+                    <div className="flex flex-wrap gap-3">
+                      {Object.entries(activeContent.stats).map(([key, value], index) => (
+                        <motion.div
+                          key={key}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.3 + index * 0.1 }}
+                          className="px-4 py-2 rounded-full bg-primary/10 border border-primary/20"
+                        >
+                          <span className="text-sm font-bold text-primary">{value}</span>
+                          <span className="text-xs text-muted-foreground ml-1 capitalize">{key}</span>
                         </motion.div>
                       ))}
                     </div>
@@ -143,15 +194,25 @@ const FeatureTabs = () => {
 
                   {/* Preview Card */}
                   <div className="order-1 lg:order-2">
-                    <div className="card-dark">
+                    <motion.div 
+                      className="rounded-2xl bg-card border border-border/50 p-6 shadow-2xl shadow-black/10"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.2 }}
+                    >
                       {/* Card Header */}
-                      <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
+                      <div className="flex items-center justify-between mb-6 pb-4 border-b border-border/50">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-orange-500">
+                            <activeContent.icon className="w-5 h-5 text-white" />
+                          </div>
+                          <span className="font-bold text-foreground">{activeContent.label}</span>
+                        </div>
                         <div className="flex gap-1.5">
                           <div className="w-3 h-3 rounded-full bg-red-500/80" />
                           <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
                           <div className="w-3 h-3 rounded-full bg-green-500/80" />
                         </div>
-                        <span className="text-xs text-muted-foreground ml-2">{activeContent.label}</span>
                       </div>
 
                       {/* Preview Items */}
@@ -161,28 +222,30 @@ const FeatureTabs = () => {
                             key={item.text}
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 border border-border"
+                            transition={{ delay: 0.3 + index * 0.1 }}
+                            className="flex items-center gap-3 p-4 rounded-xl bg-secondary/30 border border-border/30"
                           >
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                              item.status === 'done' ? 'bg-green-500/20 text-green-500' :
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                              item.status === 'done' ? 'bg-emerald-500/20 text-emerald-500' :
                               item.status === 'progress' ? 'bg-primary/20 text-primary' :
-                              item.status === 'urgent' ? 'bg-red-500/20 text-red-500' :
                               'bg-muted text-muted-foreground'
                             }`}>
-                              <item.icon className="w-4 h-4" />
+                              <item.icon className="w-5 h-5" />
                             </div>
-                            <span className="text-sm text-foreground flex-1">{item.text}</span>
-                            <div className={`w-2 h-2 rounded-full ${
-                              item.status === 'done' ? 'bg-green-500' :
-                              item.status === 'progress' ? 'bg-primary' :
-                              item.status === 'urgent' ? 'bg-red-500' :
-                              'bg-muted-foreground'
-                            }`} />
+                            <div className="flex-1">
+                              <span className="text-sm font-medium text-foreground">{item.text}</span>
+                            </div>
+                            {item.xp && (
+                              <span className={`text-xs font-bold ${
+                                item.status === 'done' ? 'text-emerald-500' : 'text-muted-foreground'
+                              }`}>
+                                {item.xp}
+                              </span>
+                            )}
                           </motion.div>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
                 </div>
               </motion.div>
