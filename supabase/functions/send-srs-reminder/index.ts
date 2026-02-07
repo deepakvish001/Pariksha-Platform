@@ -19,15 +19,31 @@
    totalCount: number;
  }
  
- const handler = async (req: Request): Promise<Response> => {
-   if (req.method === "OPTIONS") {
-     return new Response(null, { headers: corsHeaders });
-   }
- 
-   try {
-     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Validate secret token for scheduled function
+    const cronSecret = Deno.env.get("CRON_SECRET_TOKEN");
+    const providedSecret = req.headers.get("X-Cron-Secret") || req.headers.get("Authorization")?.replace("Bearer ", "");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    const isAuthorizedByCron = cronSecret && providedSecret === cronSecret;
+    const isAuthorizedByServiceRole = serviceRoleKey && providedSecret === serviceRoleKey;
+    
+    if (!isAuthorizedByCron && !isAuthorizedByServiceRole) {
+      console.log("Unauthorized access attempt to send-srs-reminder");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - This function requires internal authorization" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
  
      const now = new Date();
      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);

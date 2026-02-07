@@ -19,19 +19,35 @@
    data?: Record<string, unknown>;
  }
  
- const handler = async (req: Request): Promise<Response> => {
-   if (req.method === "OPTIONS") {
-     return new Response(null, { headers: corsHeaders });
-   }
- 
-   try {
-     const payload: NotificationPayload = await req.json();
-     const { user_id, type, title, message, data } = payload;
- 
-     // Initialize Supabase client
-     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // This function is called by database triggers, so we validate using service role key
+    const cronSecret = Deno.env.get("CRON_SECRET_TOKEN");
+    const providedSecret = req.headers.get("X-Cron-Secret") || req.headers.get("Authorization")?.replace("Bearer ", "");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    const isAuthorizedByCron = cronSecret && providedSecret === cronSecret;
+    const isAuthorizedByServiceRole = serviceRoleKey && providedSecret === serviceRoleKey;
+    
+    if (!isAuthorizedByCron && !isAuthorizedByServiceRole) {
+      console.log("Unauthorized access attempt to send-notification-email");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - This function requires internal authorization" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const payload: NotificationPayload = await req.json();
+    const { user_id, type, title, message, data } = payload;
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
  
      // Get user's email and notification preferences
      const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(user_id);

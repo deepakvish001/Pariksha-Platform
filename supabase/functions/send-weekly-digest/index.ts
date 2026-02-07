@@ -33,17 +33,34 @@
    completed_at: string;
  }
  
- const handler = async (req: Request): Promise<Response> => {
-   if (req.method === "OPTIONS") {
-     return new Response(null, { headers: corsHeaders });
-   }
- 
-   try {
-     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-     const supabase = createClient(supabaseUrl, supabaseServiceKey);
- 
-     console.log("Starting weekly digest job...");
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Validate secret token for scheduled function (required for cron/internal calls)
+    const cronSecret = Deno.env.get("CRON_SECRET_TOKEN");
+    const providedSecret = req.headers.get("X-Cron-Secret") || req.headers.get("Authorization")?.replace("Bearer ", "");
+    
+    // Also allow service role key as authorization
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const isAuthorizedByCron = cronSecret && providedSecret === cronSecret;
+    const isAuthorizedByServiceRole = serviceRoleKey && providedSecret === serviceRoleKey;
+    
+    if (!isAuthorizedByCron && !isAuthorizedByServiceRole) {
+      console.log("Unauthorized access attempt to send-weekly-digest");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - This function requires internal authorization" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    console.log("Starting weekly digest job...");
  
      // Get all users who have weekly_digest_enabled
      const { data: enabledUsers, error: usersError } = await supabase
