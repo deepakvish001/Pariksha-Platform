@@ -1,217 +1,204 @@
 
+# Complete "Create with AI" Feature Build Plan
 
-# Enhanced Landing Page Redesign Plan
-
-## Current State Analysis
-
-After reviewing all 14 landing page components, I've identified areas to **enhance**, **consolidate**, and **improve** for a more modern, bold, and organized experience.
-
-### Components to Enhance (Keep & Improve)
-- **Hero** - Add dashboard preview mockup, improve social proof
-- **CompanyLogos** - Make more impactful with infinite scroll animation
-- **Features** - Add visual hierarchy, bento grid layout
-- **FeatureTabs** - Add actual dashboard screenshots/mockups
-- **WhyChooseUs** - Improve visual comparison
-- **Testimonials** - Add marquee scroll, highlight key success stories
-- **Pricing** - Add popular badge glow effect, improve visual hierarchy
-- **CTA** - More impactful final push
-- **FAQ** - Keep as is (already good)
-- **Footer** - Keep as is (already good)
-
-### Components to Remove/Consolidate
-- **Checklist** - Content doesn't showcase actual product value; remove
-- **Analytics** - Merge into FeatureTabs showcase instead
-- **Momentum** - Merge into FeatureTabs showcase instead
-- **Upcoming** - Generic placeholder content; remove
+## Overview
+This plan outlines the remaining work to complete the "Create with AI" section with all features working end-to-end. The current implementation has a solid foundation - the core AI generation, storage, and display is working. This plan focuses on completing the remaining functionality to make it a polished, complete feature.
 
 ---
 
-## Detailed Implementation Plan
+## Current Status Summary
 
-### 1. Page Structure Reorganization
-**File: `src/pages/Index.tsx`**
-
-Streamlined order for better flow:
-```text
-Navbar
-Hero (with dashboard preview)
-CompanyLogos (infinite scroll)
-Features (bento grid)
-FeatureTabs (interactive preview)
-WhyChooseUs (comparison + reasons)
-Testimonials (marquee)
-Pricing
-FAQ
-CTA
-Footer
-```
-
-Remove: Checklist, Analytics, Momentum, Upcoming
+| Feature | Status |
+|---------|--------|
+| AI Content Generation (Edge Function) | Working |
+| Content Storage (Database + RLS) | Working |
+| Generate Page (Plan, Course, Guide, Roadmap, Quiz) | Working |
+| My Plans/Courses/Guides/Roadmaps/Quizzes Pages | Working |
+| Content Detail View | Working |
+| Community & Staff Picks (View Only) | Working |
+| Roadmap Chat | Placeholder Only |
+| Like Functionality | Not Implemented |
+| Interactive Quiz Mode | Not Implemented |
+| Progress Tracking | Not Implemented |
 
 ---
 
-### 2. Enhanced Hero Section
-**File: `src/components/Hero.tsx`**
+## Implementation Plan
 
-Key improvements:
-- Add floating dashboard preview mockup below CTA buttons
-- Larger gradient text with text-9xl on desktop
-- Animated "typing effect" for rotating taglines
-- Improved trust badge with real avatar placeholders
-- Pulsing glow effect on primary CTA button
-- Stats moved to horizontal bar with separator lines
+### Phase 1: Like Functionality (Priority: High)
+Enable users to like public content to power Staff Picks and Community rankings.
 
-Visual hierarchy:
-```text
-[Trust Badge] Join 10,000+ students
-[Main Headline] Turn Learning → Into Results
-[Sub-headline with keywords highlighted]
-[CTA Buttons: Start Free | Watch Demo]
-[Stats Bar: 10K+ Users | 500+ Problems | 95% Success | 50+ Companies]
-[Dashboard Preview Mockup - floating with shadow]
-```
+**Database Changes:**
+- Create `ai_content_likes` table to track user likes (user_id, content_id, created_at)
+- Add RLS policies for authenticated users to insert/delete their own likes
+
+**Frontend Changes:**
+- Add `useLikeContent` hook to manage like state
+- Add like button to content cards in Community, Staff Picks, and AIContentDetail pages
+- Show filled/unfilled heart icon based on user's like status
+- Update likes_count display in real-time
 
 ---
 
-### 3. Infinite Scroll Company Logos
-**File: `src/components/CompanyLogos.tsx`**
+### Phase 2: Interactive Quiz Mode (Priority: High)
+Allow users to actually take AI-generated quizzes instead of just viewing answers.
 
-Replace static grid with:
-- Infinite horizontal scroll marquee (CSS animation)
-- Two rows scrolling in opposite directions
-- Grayscale logos that colorize on hover
-- Seamless loop with duplicated items
-- Header: "Our Students Work At"
+**New Components:**
+- `QuizPlayer.tsx` - Interactive quiz-taking interface with:
+  - Question display with progress indicator
+  - Multiple choice answer selection
+  - Timer (based on timeLimit in quiz content)
+  - Submit and navigation controls
+  
+- `QuizResultsView.tsx` - Results screen showing:
+  - Final score and percentage
+  - Time taken
+  - Question-by-question review with correct answers
+  - Option to retake or share results
 
----
-
-### 4. Bento Grid Features Layout
-**File: `src/components/Features.tsx`**
-
-Transform 4x3 grid into modern Bento layout:
-- 2 large featured cards (DSA Sheets, AI Assistant)
-- 4 medium cards (Analytics, Achievements, Resume, Roadmaps)
-- 6 small cards (remaining features)
-- Each card with unique gradient background
-- Hover reveals additional details
-- Featured cards include mini illustrations
+**Detail Page Update:**
+- Add "Take Quiz" button in AIContentDetail for quiz type
+- Toggle between study mode (current view) and quiz mode
 
 ---
 
-### 5. Enhanced Feature Tabs with Live Preview
-**File: `src/components/FeatureTabs.tsx`**
+### Phase 3: Roadmap Chat (Priority: Medium)
+Convert the placeholder into a functional AI chat for personalized roadmap guidance.
 
-Improvements:
-- Full-width section with side-by-side layout
-- Left: Description + features + CTA button
-- Right: Browser mockup with animated preview content
-- Tab pills with active glow indicator
-- Auto-rotate tabs every 5 seconds with progress bar
-- Add "Try It Now" mini-CTA per tab
+**Implementation:**
+- Create new edge function `roadmap-chat` that uses Lovable AI with roadmap-specific system prompt
+- Build chat interface similar to existing AstraAI/Ask AI Tutor
+- Include context about user's goals and experience level
+- Provide actionable roadmap recommendations
 
----
-
-### 6. Improved Social Proof Section
-**File: `src/components/Testimonials.tsx`**
-
-Changes:
-- Infinite horizontal scroll marquee for testimonials
-- Featured testimonial spotlight (larger card)
-- Video testimonial placeholder option
-- Star ratings with gradient fill
-- Company/college logos next to testimonials
-- Trust stats bar integrated at bottom
+**Features:**
+- Message history persistence (use existing conversations table)
+- Suggested prompts for career goals, learning paths, skill gaps
+- Ability to generate a roadmap directly from chat recommendations
 
 ---
 
-### 7. Enhanced Pricing Section
-**File: `src/components/Pricing.tsx`**
+### Phase 4: Progress Tracking (Priority: Medium)
+Track completion progress for courses and guides.
 
-Improvements:
-- Featured plan with animated glow border
-- "Most Popular" badge with pulse animation
-- Hover reveals all features tooltip
-- Money-back guarantee badge
-- Annual savings shown more prominently
-- Free plan emphasized as "Free Forever"
+**Database Changes:**
+- Create `ai_content_progress` table:
+  - content_id, user_id, progress_data (JSONB), completed_at, updated_at
+  - Progress data stores completed lessons/steps/phases
 
----
-
-### 8. Bold CTA Section
-**File: `src/components/CTA.tsx`**
-
-Improvements:
-- Larger headline text
-- Before/After comparison mini-section
-- "Limited time" urgency element (optional)
-- Multiple CTA options with different intents
-- Floating achievement badges as decoration
+**Frontend Changes:**
+- Add completion checkboxes to lessons (courses), steps (guides), phases (plans)
+- Show progress bar on content cards
+- Add "Continue Learning" section showing in-progress content
+- Award XP when completing sections
 
 ---
 
-### 9. New Component: HowItWorks
-**File: `src/components/HowItWorks.tsx` (NEW)**
+### Phase 5: User Attribution & Sharing (Priority: Low)
+Show creator info and enable content sharing.
 
-3-step visual process:
-1. Sign Up (icon + description)
-2. Track Progress (icon + description)  
-3. Land Your Dream Job (icon + description)
+**Database Changes:**
+- Join profiles table when fetching public content to get creator name/avatar
 
-Connected with animated line/arrows
+**Frontend Changes:**
+- Display creator avatar and name on Community/Staff Picks cards
+- Add share button with copy link functionality
+- Add social share options (Twitter, LinkedIn)
+
+---
+
+### Phase 6: Polish & UX Improvements (Priority: Low)
+
+**Search & Filtering:**
+- Add search bar to Community page
+- Filter by content type (dropdown/tabs)
+- Sort options (Most Liked, Most Recent, Most Viewed)
+
+**Enhanced Content Cards:**
+- Add view count tracking
+- Show estimated completion time
+- Add difficulty badges for courses/quizzes
+
+**Navigation Improvements:**
+- Breadcrumb navigation in detail pages
+- "Related Content" suggestions based on topic
 
 ---
 
 ## Technical Details
 
-### Animation Enhancements
-- **Marquee scroll**: CSS keyframes with translateX
-- **Auto-rotating tabs**: useEffect with setInterval
-- **Glow effects**: Box-shadow with primary color and blur
-- **Typing effect**: Framer Motion with word array rotation
-- **Bento hover**: Scale + lift with spring physics
+### New Database Tables
 
-### Performance Considerations
-- Lazy load below-fold sections
-- Use CSS animations over JS where possible
-- Optimize SVG logos (already inline)
-- Intersection Observer for reveal animations
+```text
+ai_content_likes
++-------------+-------+---------+
+| Column      | Type  | Notes   |
++-------------+-------+---------+
+| id          | uuid  | PK      |
+| user_id     | uuid  | FK      |
+| content_id  | uuid  | FK      |
+| created_at  | timestamptz     |
++-------------+-------+---------+
+Unique constraint: (user_id, content_id)
 
-### Responsive Breakpoints
-- Mobile: Single column, stacked layout
-- Tablet (md): 2-column grids
-- Desktop (lg): Full bento layout, side-by-side features
+ai_content_progress  
++-------------+-------+---------+
+| Column      | Type  | Notes   |
++-------------+-------+---------+
+| id          | uuid  | PK      |
+| user_id     | uuid  | FK      |
+| content_id  | uuid  | FK      |
+| progress    | jsonb | Stores completed items |
+| last_accessed_at | timestamptz |
+| completed_at | timestamptz | Nullable |
++-------------+-------+---------+
+Unique constraint: (user_id, content_id)
+```
+
+### New Edge Functions
+- `roadmap-chat` - AI chat for roadmap guidance with career-focused prompts
+
+### New React Components
+- `src/components/ai/LikeButton.tsx` - Reusable like button with animation
+- `src/components/ai/QuizPlayer.tsx` - Interactive quiz interface
+- `src/components/ai/QuizResults.tsx` - Quiz results display
+- `src/components/ai/ContentProgress.tsx` - Progress tracking controls
+- `src/components/ai/CreatorCard.tsx` - User attribution component
+
+### New Hooks
+- `useContentLike.ts` - Manage like state and mutations
+- `useContentProgress.ts` - Track and update content progress
+- `useRoadmapChat.ts` - Handle roadmap chat messages
 
 ---
 
-## Files to Create/Modify
+## Recommended Implementation Order
 
-| Action | File |
-|--------|------|
-| Modify | `src/pages/Index.tsx` |
-| Modify | `src/components/Hero.tsx` |
-| Modify | `src/components/CompanyLogos.tsx` |
-| Modify | `src/components/Features.tsx` |
-| Modify | `src/components/FeatureTabs.tsx` |
-| Modify | `src/components/Testimonials.tsx` |
-| Modify | `src/components/Pricing.tsx` |
-| Modify | `src/components/CTA.tsx` |
-| Modify | `src/components/WhyChooseUs.tsx` |
-| Create | `src/components/HowItWorks.tsx` |
-| Delete | `src/components/Checklist.tsx` (remove from Index) |
-| Delete | `src/components/Analytics.tsx` (remove from Index) |
-| Delete | `src/components/Momentum.tsx` (remove from Index) |
-| Delete | `src/components/Upcoming.tsx` (remove from Index) |
+1. **Like Functionality** - Quick win, enables Community engagement
+2. **Interactive Quiz Mode** - High value, makes quizzes actually usable
+3. **Roadmap Chat** - Completes the Byteskill AI section
+4. **Progress Tracking** - Adds retention mechanics
+5. **User Attribution** - Social features for community growth
+6. **Polish & UX** - Final refinements
 
 ---
 
-## Expected Outcome
+## Estimated Effort
+- Phase 1 (Likes): ~1 session
+- Phase 2 (Quiz Mode): ~2 sessions  
+- Phase 3 (Roadmap Chat): ~2 sessions
+- Phase 4 (Progress): ~2 sessions
+- Phase 5 (Attribution): ~1 session
+- Phase 6 (Polish): ~1-2 sessions
 
-A streamlined, impactful landing page that:
-- Immediately showcases the product with a dashboard preview
-- Creates trust through infinite-scroll company logos
-- Highlights key features in a modern bento grid
-- Provides interactive feature exploration
-- Builds social proof with scrolling testimonials
-- Drives conversion with bold, clear CTAs
-- Maintains fast performance and smooth animations
+**Total: ~9-10 implementation sessions**
 
+---
+
+## Success Criteria
+- Users can generate all 5 content types and view them
+- Users can take interactive quizzes with scoring
+- Users can like public content
+- Community and Staff Picks show real engagement data
+- Roadmap Chat provides personalized guidance
+- Progress is tracked across learning content
