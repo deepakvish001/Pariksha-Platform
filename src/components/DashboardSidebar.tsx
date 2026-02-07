@@ -92,27 +92,27 @@ const homeNavItems = [
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
 ];
 
-// Progress section - Track your journey
-const progressNavItems = [
-  { title: "Achievements", url: "/dashboard/achievements", icon: Trophy },
-  { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
-  { title: "Profile", url: "/dashboard/profile", icon: User },
+// AI Tools section - AI-powered features
+const aiToolsItems = [
+  { title: "Byteskill AI", url: "/platform/ai", icon: Sparkles },
 ];
 
-// Learning section groups - ordered by learning progression
+// My Learning section - organized learning progression
 const fundamentalsItems = [
   { title: "Overview", url: "/fundamentals", icon: TrendingUp },
   { title: "Language", url: "/fundamentals/language", icon: Code2 },
   { title: "OOPs Concepts", url: "/fundamentals/oops", icon: FolderOpen },
 ];
 
-const libraryItems = [
+const practiceItems = [
   { title: "DSA Questions", url: "/library/dsa", icon: Code2 },
   { title: "SQL Questions", url: "/library/sql", icon: Database },
   { title: "Aptitude Questions", url: "/library/aptitude", icon: HelpCircle },
   { title: "Core CS Subjects", url: "/library/cs", icon: Cpu },
   { title: "Interview Questions", url: "/library/interview", icon: MessageSquare },
-  { title: "Handwritten Notes", url: "/library/notes", icon: FileText },
+];
+
+const quizItems = [
   { title: "Quiz", url: "/library/quiz", icon: Layers },
   { title: "Quiz History", url: "/library/quiz-history", icon: Activity },
 ];
@@ -123,31 +123,40 @@ const systemDesignItems = [
   { title: "Low Level Design", url: "/system-design/lld", icon: LayoutGrid },
 ];
 
-// Career section groups - job search & preparation
+const roadmapItems = [
+  { title: "Roadmap", url: "/research/roadmap", icon: Map },
+];
+
+// Career section - Job search & preparation
 const companyItems = [
-  { title: "Position Wise Resources", url: "/library/positions", icon: Layers },
-  { title: "Company Wise Resources", url: "/library/companies", icon: Building2 },
+  { title: "Position Wise", url: "/library/positions", icon: Layers },
+  { title: "Company Wise", url: "/library/companies", icon: Building2 },
   { title: "Mass Recruitment", url: "/library/recruitment", icon: Users },
 ];
 
-const researchItems = [
-  { title: "Overview", url: "/research", icon: TrendingUp },
-  { title: "Job Portals", url: "/research/jobs", icon: List },
-  { title: "Roadmap", url: "/research/roadmap", icon: Map },
+const resumeItems = [
   { title: "Resume Templates", url: "/research/resume", icon: FileCheck },
   { title: "Resume Analyser", url: "/research/analyser", icon: FileSearch },
-  { title: "Cold DMs / Emails", url: "/research/outreach", icon: Send },
-  { title: "My Activity", url: "/research/activity", icon: Activity },
 ];
 
-// Tools & Settings
-const platformItems = [
-  { title: "Byteskill AI", url: "/platform/ai", icon: Sparkles },
+const jobSearchItems = [
+  { title: "Job Portals", url: "/research/jobs", icon: List },
+  { title: "Cold DMs / Emails", url: "/research/outreach", icon: Send },
+];
+
+// Resources & Tools
+const resourceItems = [
   { title: "Resources", url: "/platform/resources", icon: BookOpen },
   { title: "Collections", url: "/platform/collections", icon: FolderOpen },
+  { title: "Handwritten Notes", url: "/library/notes", icon: FileText },
 ];
 
-const settingsItems = [
+// Progress & Profile section
+const progressNavItems = [
+  { title: "My Activity", url: "/research/activity", icon: Activity },
+  { title: "Achievements", url: "/dashboard/achievements", icon: Trophy },
+  { title: "Profile", url: "/dashboard/profile", icon: User },
+  { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -461,17 +470,16 @@ export function DashboardSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
 
-          {/* Progress Section */}
+          {/* AI Tools Section */}
           <SidebarGroup className="space-y-1">
             {!isCollapsed && (
               <div className="flex items-center gap-2 px-3 py-1.5">
-                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-emerald-500/10">
-                  <ProgressIcon className="h-3 w-3 text-emerald-500" />
+                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-primary/10">
+                  <Sparkles className="h-3 w-3 text-primary" />
                 </div>
-                <p className="text-[10px] font-semibold text-emerald-500/80 uppercase tracking-widest">
-                  Progress
+                <p className="text-[10px] font-semibold text-primary/80 uppercase tracking-widest">
+                  AI Tools
                 </p>
               </div>
             )}
@@ -479,17 +487,17 @@ export function DashboardSidebar() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center justify-center py-1">
-                    <div className="w-6 h-6 rounded-md bg-emerald-500/10 flex items-center justify-center">
-                      <ProgressIcon className="h-3 w-3 text-emerald-500" />
+                    <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                      <Sparkles className="h-3 w-3 text-primary" />
                     </div>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="right">Progress</TooltipContent>
+                <TooltipContent side="right">AI Tools</TooltipContent>
               </Tooltip>
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                {progressNavItems.map((item) => (
+                {aiToolsItems.map((item) => (
                   <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                     <SidebarMenuButton
                       asChild
@@ -499,30 +507,7 @@ export function DashboardSidebar() {
                       className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
                     >
                       <Link to={item.url} className="group-data-[collapsible=icon]:justify-center">
-                        <div className="relative">
-                          <motion.div
-                            animate={item.title === "Notifications" && shouldShakeBell ? {
-                              rotate: [0, -15, 15, -10, 10, -5, 5, 0],
-                            } : {}}
-                            transition={{ duration: 0.5, ease: "easeInOut" }}
-                          >
-                            <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
-                          </motion.div>
-                          <AnimatePresence>
-                            {item.title === "Notifications" && unreadCount > 0 && (
-                              <motion.span
-                                key={unreadCount}
-                                initial={{ scale: 0.5, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.5, opacity: 0 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                                className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground"
-                              >
-                                {unreadCount > 9 ? "9+" : unreadCount}
-                              </motion.span>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                        <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
                         <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -534,7 +519,7 @@ export function DashboardSidebar() {
 
           <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
 
-          {/* Learning Section */}
+          {/* My Learning Section */}
           <SidebarGroup className="space-y-1">
             {!isCollapsed && (
               <div className="flex items-center gap-2 px-3 py-1.5">
@@ -542,7 +527,7 @@ export function DashboardSidebar() {
                   <GraduationCap className="h-3 w-3 text-blue-500" />
                 </div>
                 <p className="text-[10px] font-semibold text-blue-500/80 uppercase tracking-widest">
-                  Learning
+                  My Learning
                 </p>
               </div>
             )}
@@ -555,14 +540,16 @@ export function DashboardSidebar() {
                     </div>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="right">Learning</TooltipContent>
+                <TooltipContent side="right">My Learning</TooltipContent>
               </Tooltip>
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
                 <CollapsibleGroup title="Fundamentals" items={fundamentalsItems} />
-                <CollapsibleGroup title="Practice" items={libraryItems} />
+                <CollapsibleGroup title="Practice" items={practiceItems} />
+                <CollapsibleGroup title="Quizzes" items={quizItems} />
                 <CollapsibleGroup title="System Design" items={systemDesignItems} />
+                <CollapsibleGroup title="Roadmaps" items={roadmapItems} />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -596,14 +583,15 @@ export function DashboardSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
                 <CollapsibleGroup title="Companies" items={companyItems} />
-                <CollapsibleGroup title="Research" items={researchItems} />
+                <CollapsibleGroup title="Resume" items={resumeItems} />
+                <CollapsibleGroup title="Job Search" items={jobSearchItems} />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
 
           <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
 
-          {/* Tools & Settings */}
+          {/* Resources & Tools */}
           <SidebarGroup className="space-y-1">
             {!isCollapsed && (
               <div className="flex items-center gap-2 px-3 py-1.5">
@@ -611,7 +599,7 @@ export function DashboardSidebar() {
                   <Wrench className="h-3 w-3 text-amber-500" />
                 </div>
                 <p className="text-[10px] font-semibold text-amber-500/80 uppercase tracking-widest">
-                  Tools
+                  Resources
                 </p>
               </div>
             )}
@@ -624,13 +612,96 @@ export function DashboardSidebar() {
                     </div>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="right">Tools</TooltipContent>
+                <TooltipContent side="right">Resources</TooltipContent>
               </Tooltip>
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                <CollapsibleGroup title="Platform" items={platformItems} />
-                <CollapsibleGroup title="Settings" items={settingsItems} />
+                {resourceItems.map((item) => (
+                  <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.url}
+                      tooltip={item.title}
+                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
+                    >
+                      <Link to={item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
+                        <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
+
+          {/* Progress & Profile Section */}
+          <SidebarGroup className="space-y-1">
+            {!isCollapsed && (
+              <div className="flex items-center gap-2 px-3 py-1.5">
+                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-emerald-500/10">
+                  <ProgressIcon className="h-3 w-3 text-emerald-500" />
+                </div>
+                <p className="text-[10px] font-semibold text-emerald-500/80 uppercase tracking-widest">
+                  Account
+                </p>
+              </div>
+            )}
+            {isCollapsed && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center py-1">
+                    <div className="w-6 h-6 rounded-md bg-emerald-500/10 flex items-center justify-center">
+                      <ProgressIcon className="h-3 w-3 text-emerald-500" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">Account</TooltipContent>
+              </Tooltip>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
+                {progressNavItems.map((item) => (
+                  <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.url}
+                      tooltip={item.title}
+                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
+                    >
+                      <Link to={item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
+                        <div className="relative">
+                          <motion.div
+                            animate={item.title === "Notifications" && shouldShakeBell ? {
+                              rotate: [0, -15, 15, -10, 10, -5, 5, 0],
+                            } : {}}
+                            transition={{ duration: 0.5, ease: "easeInOut" }}
+                          >
+                            <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                          </motion.div>
+                          <AnimatePresence>
+                            {item.title === "Notifications" && unreadCount > 0 && (
+                              <motion.span
+                                key={unreadCount}
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.5, opacity: 0 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                                className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground"
+                              >
+                                {unreadCount > 9 ? "9+" : unreadCount}
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
