@@ -240,3 +240,25 @@ export function useCPProgress(): UseCPProgressReturn {
     getTotalSolved,
   };
 }
+
+// Map track to difficulty
+export function getTrackDifficulty(trackId: string): "Easy" | "Medium" | "Hard" {
+  switch (trackId) {
+    case "preliminaries":
+    case "basics":
+      return "Easy";
+    case "intermediate":
+    case "atcoder-4p":
+    case "codeforces-edu":
+    case "atcoder-6p":
+      return "Medium";
+    case "advanced-ds":
+    case "advanced-algo":
+    case "advanced-math":
+    case "atcoder-regular":
+    case "icpc":
+      return "Hard";
+    default:
+      return "Medium";
+  }
+}
