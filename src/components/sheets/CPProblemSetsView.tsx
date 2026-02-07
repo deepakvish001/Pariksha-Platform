@@ -10,7 +10,11 @@ import {
   BookOpen,
   Trophy,
   Hash,
-  X
+  X,
+  CheckSquare,
+  Square,
+  Star,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,14 +58,41 @@ import {
 import CPFilterSidebar from "@/components/sheets/CPFilterSidebar";
 import StreakCounter from "@/components/StreakCounter";
 import MobileFAB from "@/components/MobileFAB";
+import { useCPProgress, getTrackDifficulty } from "@/hooks/useCPProgress";
+import { useAuth } from "@/contexts/AuthContext";
+
+// Difficulty Badge Component
+function DifficultyBadge({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
+  const styles = {
+    Easy: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+    Medium: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
+    Hard: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
+  };
+
+  return (
+    <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", styles[difficulty])}>
+      {difficulty}
+    </Badge>
+  );
+}
 
 // Problem Set Row Component
 function ProblemSetRow({ 
   problemSet, 
-  index 
+  index,
+  isSolved,
+  isRevision,
+  onToggleSolved,
+  onToggleRevision,
+  difficulty,
 }: { 
   problemSet: CPProblemSet; 
   index: number;
+  isSolved: boolean;
+  isRevision: boolean;
+  onToggleSolved: () => void;
+  onToggleRevision: () => void;
+  difficulty: "Easy" | "Medium" | "Hard";
 }) {
   const getTopicName = (topicId: string) => {
     return cpTopics.find(t => t.id === topicId)?.name || topicId;
@@ -71,11 +102,48 @@ function ProblemSetRow({
     <motion.tr
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.02 }}
-      className="group hover:bg-muted/50 transition-colors border-b border-border/30 last:border-0"
+      transition={{ delay: index * 0.015 }}
+      className={cn(
+        "group transition-colors border-b border-border/30 last:border-0",
+        isSolved ? "bg-primary/5" : "hover:bg-muted/50"
+      )}
     >
+      {/* Status Checkbox */}
+      <TableCell className="w-12 text-center">
+        <motion.button
+          onClick={onToggleSolved}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <AnimatePresence mode="wait">
+            {isSolved ? (
+              <motion.div
+                key="checked"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: 180 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CheckSquare className="h-5 w-5 text-primary" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="unchecked"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Square className="h-5 w-5" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </TableCell>
+      
       {/* ID */}
-      <TableCell className="w-14 text-center">
+      <TableCell className="w-12 text-center">
         <span className="text-xs font-medium text-muted-foreground">
           {problemSet.id}
         </span>
@@ -83,31 +151,41 @@ function ProblemSetRow({
       
       {/* Title */}
       <TableCell className="font-medium min-w-0">
-        <div className="flex flex-col gap-1">
-          <span className="text-sm truncate">{problemSet.title}</span>
-          <Badge variant="outline" className="w-fit text-[10px] px-1.5 py-0 sm:hidden">
+        <motion.span
+          className={cn(
+            "text-sm truncate block transition-colors",
+            isSolved && "line-through text-muted-foreground"
+          )}
+          animate={{ opacity: isSolved ? 0.7 : 1 }}
+        >
+          {problemSet.title}
+        </motion.span>
+        {/* Mobile-only topic badge */}
+        <div className="flex gap-1.5 mt-1 sm:hidden">
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
             {getTopicName(problemSet.topicId)}
           </Badge>
+          <DifficultyBadge difficulty={difficulty} />
         </div>
       </TableCell>
       
       {/* Topic - hidden on mobile */}
-      <TableCell className="hidden sm:table-cell w-48">
+      <TableCell className="hidden sm:table-cell w-44">
         <Badge variant="outline" className="text-[10px] px-1.5 py-0 truncate max-w-full">
           {getTopicName(problemSet.topicId)}
         </Badge>
       </TableCell>
       
       {/* Problems Count */}
-      <TableCell className="w-24 text-center">
-        <div className="flex items-center justify-center gap-1.5">
+      <TableCell className="w-20 text-center">
+        <div className="flex items-center justify-center gap-1">
           <Hash className="h-3 w-3 text-muted-foreground" />
           <span className="text-sm font-medium">{problemSet.problemCount}</span>
         </div>
       </TableCell>
       
       {/* Practice Link */}
-      <TableCell className="w-28 text-center">
+      <TableCell className="w-24 text-center">
         {problemSet.externalUrl && (
           <TooltipProvider>
             <Tooltip>
@@ -116,12 +194,11 @@ function ProblemSetRow({
                   href={problemSet.externalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <BookOpen className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Practice</span>
                   <ExternalLink className="h-3 w-3" />
                 </motion.a>
               </TooltipTrigger>
@@ -129,6 +206,26 @@ function ProblemSetRow({
             </Tooltip>
           </TooltipProvider>
         )}
+      </TableCell>
+
+      {/* Revision Star */}
+      <TableCell className="w-14 text-center">
+        <motion.button
+          onClick={onToggleRevision}
+          className={cn(
+            "transition-colors",
+            isRevision ? "text-yellow-500" : "text-muted-foreground hover:text-yellow-500"
+          )}
+          whileHover={{ scale: 1.2 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
+        </motion.button>
+      </TableCell>
+      
+      {/* Difficulty - hidden on mobile */}
+      <TableCell className="hidden sm:table-cell w-20 text-center">
+        <DifficultyBadge difficulty={difficulty} />
       </TableCell>
     </motion.tr>
   );
@@ -140,16 +237,27 @@ function TrackSection({
   problemSets,
   isExpanded,
   onToggle,
+  isSolved,
+  isRevision,
+  toggleSolved,
+  toggleRevision,
 }: {
   trackId: string;
   problemSets: CPProblemSet[];
   isExpanded: boolean;
   onToggle: () => void;
+  isSolved: (id: number) => boolean;
+  isRevision: (id: number) => boolean;
+  toggleSolved: (id: number) => void;
+  toggleRevision: (id: number) => void;
 }) {
   const track = cpTracks.find(t => t.id === trackId);
   if (!track) return null;
 
   const totalProblems = problemSets.reduce((acc, ps) => acc + ps.problemCount, 0);
+  const completedSets = problemSets.filter(ps => isSolved(ps.id)).length;
+  const progressPercent = problemSets.length > 0 ? Math.round((completedSets / problemSets.length) * 100) : 0;
+  const difficulty = getTrackDifficulty(trackId);
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
@@ -158,22 +266,29 @@ function TrackSection({
           className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors border-b border-border/50"
           whileHover={{ backgroundColor: "hsl(var(--muted) / 0.3)" }}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <motion.div
               animate={{ rotate: isExpanded ? 90 : 0 }}
               transition={{ duration: 0.2 }}
             >
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </motion.div>
             <Badge className={cn("text-xs shrink-0", track.color)}>
-              {problemSets.length} sets
+              {completedSets}/{problemSets.length}
             </Badge>
             <span className="font-semibold text-sm sm:text-base truncate">{track.name}</span>
+            <DifficultyBadge difficulty={difficulty} />
           </div>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground shrink-0">
-            <span className="hidden sm:inline">{totalProblems} problems</span>
+          <div className="flex items-center gap-3 shrink-0">
+            {progressPercent > 0 && (
+              <div className="hidden sm:flex items-center gap-2">
+                <Progress value={progressPercent} className="w-16 h-1.5" />
+                <span className="text-xs text-muted-foreground w-8">{progressPercent}%</span>
+              </div>
+            )}
+            <span className="text-xs text-muted-foreground hidden md:inline">{totalProblems} problems</span>
             <ChevronDown className={cn(
-              "h-4 w-4 transition-transform duration-200",
+              "h-4 w-4 text-muted-foreground transition-transform duration-200",
               isExpanded && "rotate-180"
             )} />
           </div>
@@ -193,16 +308,28 @@ function TrackSection({
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent border-b border-border/30">
-                      <TableHead className="w-14 text-center text-xs">#</TableHead>
+                      <TableHead className="w-12 text-center text-xs">Status</TableHead>
+                      <TableHead className="w-12 text-center text-xs">#</TableHead>
                       <TableHead className="text-xs">Problem Set</TableHead>
-                      <TableHead className="hidden sm:table-cell w-48 text-xs">Topic</TableHead>
-                      <TableHead className="w-24 text-center text-xs">Problems</TableHead>
-                      <TableHead className="w-28 text-center text-xs">Practice</TableHead>
+                      <TableHead className="hidden sm:table-cell w-44 text-xs">Topic</TableHead>
+                      <TableHead className="w-20 text-center text-xs">Problems</TableHead>
+                      <TableHead className="w-24 text-center text-xs">Practice</TableHead>
+                      <TableHead className="w-14 text-center text-xs">Rev</TableHead>
+                      <TableHead className="hidden sm:table-cell w-20 text-center text-xs">Difficulty</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {problemSets.map((ps, idx) => (
-                      <ProblemSetRow key={ps.id} problemSet={ps} index={idx} />
+                      <ProblemSetRow 
+                        key={ps.id} 
+                        problemSet={ps} 
+                        index={idx}
+                        isSolved={isSolved(ps.id)}
+                        isRevision={isRevision(ps.id)}
+                        onToggleSolved={() => toggleSolved(ps.id)}
+                        onToggleRevision={() => toggleRevision(ps.id)}
+                        difficulty={getTrackDifficulty(ps.trackId)}
+                      />
                     ))}
                   </TableBody>
                 </Table>
@@ -217,6 +344,8 @@ function TrackSection({
 
 const CPProblemSetsView = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isSolved, isRevision, toggleSolved, toggleRevision, getTotalSolved, isLoading: isProgressLoading } = useCPProgress();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTrack, setSelectedTrack] = useState("all");
   const [selectedTopic, setSelectedTopic] = useState("all");
@@ -272,6 +401,8 @@ const CPProblemSetsView = () => {
   };
 
   const totalProblems = filteredProblemSets.reduce((acc, ps) => acc + ps.problemCount, 0);
+  const completedCount = getTotalSolved();
+  const progressPercent = cpProblemSets.length > 0 ? Math.round((completedCount / cpProblemSets.length) * 100) : 0;
   const hasActiveFilters = selectedTrack !== "all" || selectedTopic !== "all" || searchQuery !== "";
 
   return (
@@ -292,8 +423,9 @@ const CPProblemSetsView = () => {
             <h1 className="text-lg sm:text-xl font-bold truncate">Competitive Programming</h1>
           </div>
           <StreakCounter variant="mini" />
+          {isProgressLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           <Badge variant="outline" className="hidden md:flex text-xs whitespace-nowrap">
-            {filteredProblemSets.length} Problem Sets
+            {completedCount}/{cpProblemSets.length} completed
           </Badge>
         </div>
       </header>
@@ -339,34 +471,52 @@ const CPProblemSetsView = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="h-14 w-14 rounded-full border-4 border-muted flex items-center justify-center">
-                      <Trophy className="h-6 w-6 text-primary" />
+                      <span className="text-lg font-bold">{progressPercent}%</span>
                     </div>
                     <div>
                       <p className="font-medium">Overall Progress</p>
                       <p className="text-sm text-muted-foreground">
-                        {filteredProblemSets.length} sets · {totalProblems.toLocaleString()} problems
+                        {completedCount}/{cpProblemSets.length} sets · {totalProblems.toLocaleString()} problems
                       </p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-6 sm:gap-8">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-primary">{cpTracks.length}</p>
-                      <p className="text-xs text-muted-foreground">Tracks</p>
+                  <div className="flex items-center gap-4 sm:gap-6">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                      <span className="text-sm">Easy</span>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-primary">{cpTopics.length}</p>
-                      <p className="text-xs text-muted-foreground">Topics</p>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                      <span className="text-sm">Medium</span>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-primary">270</p>
-                      <p className="text-xs text-muted-foreground">Sets</p>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                      <span className="text-sm">Hard</span>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Sign in prompt for unauthenticated users */}
+          {!user && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <Trophy className="h-5 w-5 text-primary shrink-0" />
+                  <p className="text-sm">
+                    <span className="font-medium">Sign in to track your progress</span>
+                    <span className="text-muted-foreground"> across devices and sync with your profile.</span>
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           {/* Search & Filters Row */}
           <motion.div
@@ -462,6 +612,10 @@ const CPProblemSetsView = () => {
                       problemSets={trackSets}
                       isExpanded={expandedTracks.includes(track.id)}
                       onToggle={() => toggleTrackExpansion(track.id)}
+                      isSolved={isSolved}
+                      isRevision={isRevision}
+                      toggleSolved={toggleSolved}
+                      toggleRevision={toggleRevision}
                     />
                   );
                 })}
