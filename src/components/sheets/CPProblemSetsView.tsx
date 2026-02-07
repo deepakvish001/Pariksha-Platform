@@ -407,18 +407,27 @@ function TrackSection({
     return 10;
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [trackSearchQuery, setTrackSearchQuery] = useState("");
   
   // Persist page size to localStorage
   useEffect(() => {
     localStorage.setItem(storageKey, String(pageSize));
   }, [pageSize, storageKey]);
   
-  // Reset page when page size changes
+  // Reset page when page size or search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [pageSize]);
+  }, [pageSize, trackSearchQuery]);
   
   if (!track) return null;
+
+  // Filter problem sets by search query within this track
+  const filteredTrackSets = trackSearchQuery
+    ? problemSets.filter(ps =>
+        ps.title.toLowerCase().includes(trackSearchQuery.toLowerCase()) ||
+        ps.problems.some(p => p.title.toLowerCase().includes(trackSearchQuery.toLowerCase()))
+      )
+    : problemSets;
 
   const totalProblems = problemSets.reduce((acc, ps) => acc + ps.problems.length, 0);
   const completedProblems = problemSets.reduce((acc, ps) => 
@@ -426,13 +435,13 @@ function TrackSection({
   const progressPercent = totalProblems > 0 ? Math.round((completedProblems / totalProblems) * 100) : 0;
   const difficulty = getTrackDifficulty(trackId);
   
-  // Pagination logic for problem sets within this track
-  const totalPages = Math.ceil(problemSets.length / pageSize);
-  const paginatedSets = problemSets.slice(
+  // Pagination logic for filtered problem sets within this track
+  const totalPages = Math.ceil(filteredTrackSets.length / pageSize);
+  const paginatedSets = filteredTrackSets.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
-  const needsPagination = problemSets.length > pageSize;
+  const needsPagination = filteredTrackSets.length > pageSize;
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
@@ -479,19 +488,67 @@ function TrackSection({
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {paginatedSets.map((ps) => (
-                <ProblemSetSection
-                  key={ps.id}
-                  problemSet={ps}
-                  isExpanded={expandedSets.includes(ps.id)}
-                  onToggle={() => toggleSetExpansion(ps.id)}
-                  isSolved={isSolved}
-                  isRevision={isRevision}
-                  toggleSolved={toggleSolved}
-                  toggleRevision={toggleRevision}
-                  onOpenNote={onOpenNote}
-                />
-              ))}
+              {/* Search filter within track */}
+              <div className="px-4 py-3 border-b border-border/30 bg-muted/5">
+                <div className="relative max-w-sm">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder={`Search in ${track.name}...`}
+                    value={trackSearchQuery}
+                    onChange={(e) => setTrackSearchQuery(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="pl-8 h-8 text-sm"
+                  />
+                  {trackSearchQuery && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTrackSearchQuery("");
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {trackSearchQuery && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Found {filteredTrackSets.length} of {problemSets.length} sets
+                  </p>
+                )}
+              </div>
+              
+              {paginatedSets.length > 0 ? (
+                paginatedSets.map((ps) => (
+                  <ProblemSetSection
+                    key={ps.id}
+                    problemSet={ps}
+                    isExpanded={expandedSets.includes(ps.id)}
+                    onToggle={() => toggleSetExpansion(ps.id)}
+                    isSolved={isSolved}
+                    isRevision={isRevision}
+                    toggleSolved={toggleSolved}
+                    toggleRevision={toggleRevision}
+                    onOpenNote={onOpenNote}
+                  />
+                ))
+              ) : (
+                <div className="p-8 text-center">
+                  <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No sets found matching "{trackSearchQuery}"</p>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTrackSearchQuery("");
+                    }}
+                    className="mt-1"
+                  >
+                    Clear search
+                  </Button>
+                </div>
+              )}
               
               {/* Pagination for tracks with many sets */}
               {needsPagination && (
