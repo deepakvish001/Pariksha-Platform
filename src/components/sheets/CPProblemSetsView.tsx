@@ -1481,28 +1481,33 @@ const CPProblemSetsView = () => {
                   </select>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const allTrackIds = cpTracks
-                        .filter(t => (groupedByTrack[t.id] || []).length > 0)
-                        .map(t => t.id);
-                      setExpandedTracks(allTrackIds);
-                    }}
-                    className="h-8 text-xs"
-                  >
-                    Expand All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setExpandedTracks([])}
-                    className="h-8 text-xs"
-                  >
-                    Collapse All
-                  </Button>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {expandedTracks.filter(id => cpTracks.some(t => t.id === id && (groupedByTrack[t.id] || []).length > 0)).length} of {cpTracks.filter(t => (groupedByTrack[t.id] || []).length > 0).length} expanded
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const allTrackIds = cpTracks
+                          .filter(t => (groupedByTrack[t.id] || []).length > 0)
+                          .map(t => t.id);
+                        setExpandedTracks(allTrackIds);
+                      }}
+                      className="h-8 text-xs"
+                    >
+                      Expand All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setExpandedTracks([])}
+                      className="h-8 text-xs"
+                    >
+                      Collapse All
+                    </Button>
+                  </div>
                 </div>
               </div>
               
@@ -1583,28 +1588,33 @@ const CPProblemSetsView = () => {
                   </select>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const allTopicIds = cpTopics
-                        .filter(t => (groupedByTopic[t.id] || []).length > 0)
-                        .map(t => t.id);
-                      setExpandedTopics(allTopicIds);
-                    }}
-                    className="h-8 text-xs"
-                  >
-                    Expand All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setExpandedTopics([])}
-                    className="h-8 text-xs"
-                  >
-                    Collapse All
-                  </Button>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {expandedTopics.filter(id => cpTopics.some(t => t.id === id && (groupedByTopic[t.id] || []).length > 0)).length} of {cpTopics.filter(t => (groupedByTopic[t.id] || []).length > 0).length} expanded
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const allTopicIds = cpTopics
+                          .filter(t => (groupedByTopic[t.id] || []).length > 0)
+                          .map(t => t.id);
+                        setExpandedTopics(allTopicIds);
+                      }}
+                      className="h-8 text-xs"
+                    >
+                      Expand All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setExpandedTopics([])}
+                      className="h-8 text-xs"
+                    >
+                      Collapse All
+                    </Button>
+                  </div>
                 </div>
               </div>
               
