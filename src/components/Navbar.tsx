@@ -4,6 +4,7 @@ import { Menu, X, Sun, Moon, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
+import { useThemeSync } from "@/hooks/useThemeSync";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -23,10 +24,14 @@ const navLinks = [
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { theme: baseTheme } = useTheme();
+  const { theme, setTheme } = useThemeSync();
   const [mounted, setMounted] = useState(false);
   const { user, profile, signOut, loading } = useAuth();
   const navigate = useNavigate();
+  
+  // Use resolved theme for display (handles "system" preference)
+  const displayTheme = theme === "system" ? baseTheme : theme;
 
   useEffect(() => {
     setMounted(true);
@@ -111,13 +116,13 @@ const Navbar = () => {
               >
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
-                    key={theme}
+                    key={displayTheme}
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 20, opacity: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    {displayTheme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                   </motion.div>
                 </AnimatePresence>
               </motion.button>
@@ -183,7 +188,7 @@ const Navbar = () => {
                 className="p-2 rounded-full bg-secondary border border-border text-foreground"
                 aria-label="Toggle theme"
               >
-                {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                {displayTheme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
             )}
 
