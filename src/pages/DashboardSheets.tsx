@@ -43,7 +43,7 @@ const sheets = [
     title: "Competitive Programming",
     description: "Master algorithms through structured problem sets from Codeforces, AtCoder & ICPC",
     category: "CP",
-    problems: 320,
+    problems: 270,
     difficulty: "Medium-Hard",
     starred: true,
   },
