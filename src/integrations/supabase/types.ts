@@ -1150,6 +1150,87 @@ export type Database = {
         }
         Relationships: []
       }
+      public_user_profiles: {
+        Row: {
+          aspirations: string[] | null
+          bio: string | null
+          codechef_url: string | null
+          codeforces_url: string | null
+          created_at: string | null
+          current_level: number | null
+          geeksforgeeks_url: string | null
+          github_url: string | null
+          goals: string[] | null
+          hackerrank_url: string | null
+          instagram_url: string | null
+          interests: string[] | null
+          leetcode_url: string | null
+          linkedin_url: string | null
+          location: string | null
+          occupation: string | null
+          profile_completion_percentage: number | null
+          skills: string[] | null
+          total_xp: number | null
+          twitter_url: string | null
+          user_id: string | null
+          username: string | null
+          website: string | null
+          xp_this_week: number | null
+        }
+        Insert: {
+          aspirations?: string[] | null
+          bio?: string | null
+          codechef_url?: string | null
+          codeforces_url?: string | null
+          created_at?: string | null
+          current_level?: number | null
+          geeksforgeeks_url?: string | null
+          github_url?: string | null
+          goals?: string[] | null
+          hackerrank_url?: string | null
+          instagram_url?: string | null
+          interests?: string[] | null
+          leetcode_url?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          occupation?: string | null
+          profile_completion_percentage?: number | null
+          skills?: string[] | null
+          total_xp?: number | null
+          twitter_url?: string | null
+          user_id?: string | null
+          username?: string | null
+          website?: string | null
+          xp_this_week?: number | null
+        }
+        Update: {
+          aspirations?: string[] | null
+          bio?: string | null
+          codechef_url?: string | null
+          codeforces_url?: string | null
+          created_at?: string | null
+          current_level?: number | null
+          geeksforgeeks_url?: string | null
+          github_url?: string | null
+          goals?: string[] | null
+          hackerrank_url?: string | null
+          instagram_url?: string | null
+          interests?: string[] | null
+          leetcode_url?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          occupation?: string | null
+          profile_completion_percentage?: number | null
+          skills?: string[] | null
+          total_xp?: number | null
+          twitter_url?: string | null
+          user_id?: string | null
+          username?: string | null
+          website?: string | null
+          xp_this_week?: number | null
+        }
+        Relationships: []
+      }
       roadmap_leaderboard_view: {
         Row: {
           completed_topics: number | null
