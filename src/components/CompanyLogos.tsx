@@ -88,7 +88,6 @@ const ZomatoLogo = () => (
   </svg>
 );
 
-// New company logos
 const AdobeLogo = () => (
   <svg viewBox="0 0 24 24" className="w-8 h-8">
     <path fill="#FF0000" d="M13.966 22.624l-1.69-4.281H8.122l3.892-9.144 5.662 13.425h-3.71zm-6.073 0H0l7.893-18.623v18.623zm10.232-18.624h7.875v18.623l-7.875-18.623z"/>
@@ -131,7 +130,8 @@ const ZerodhaLogo = () => (
   </svg>
 );
 
-const companies = [
+// Row 1 companies (scroll left)
+const row1Companies = [
   { name: "Google", Logo: GoogleLogo },
   { name: "Microsoft", Logo: MicrosoftLogo },
   { name: "Amazon", Logo: AmazonLogo },
@@ -142,6 +142,10 @@ const companies = [
   { name: "Salesforce", Logo: SalesforceLogo },
   { name: "LinkedIn", Logo: LinkedInLogo },
   { name: "Spotify", Logo: SpotifyLogo },
+];
+
+// Row 2 companies (scroll right)
+const row2Companies = [
   { name: "Stripe", Logo: StripeLogo },
   { name: "Uber", Logo: UberLogo },
   { name: "Flipkart", Logo: FlipkartLogo },
@@ -153,49 +157,70 @@ const companies = [
   { name: "Zomato", Logo: ZomatoLogo },
 ];
 
+const LogoMarquee = ({ companies, direction = "left" }: { companies: typeof row1Companies; direction?: "left" | "right" }) => {
+  const duplicatedCompanies = [...companies, ...companies, ...companies];
+  
+  return (
+    <div className="relative overflow-hidden py-4">
+      <motion.div
+        className="flex gap-8 items-center"
+        animate={{
+          x: direction === "left" ? [0, -33.33 * companies.length * 8] : [-33.33 * companies.length * 8, 0],
+        }}
+        transition={{
+          x: {
+            repeat: Infinity,
+            repeatType: "loop",
+            duration: 30,
+            ease: "linear",
+          },
+        }}
+        style={{ width: `${duplicatedCompanies.length * 150}px` }}
+      >
+        {duplicatedCompanies.map((company, index) => (
+          <div
+            key={`${company.name}-${index}`}
+            className="flex items-center justify-center min-w-[120px] h-14 px-6 rounded-xl bg-card/50 border border-border/30 backdrop-blur-sm grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
+          >
+            <company.Logo />
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+};
+
 const CompanyLogos = () => {
   return (
-    <section className="py-16 bg-secondary/30">
+    <section className="py-16 bg-gradient-to-b from-background to-secondary/20 overflow-hidden">
       <div className="section-container">
         <ScrollReveal>
           <div className="text-center mb-10">
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
-              Get Placed at Top Companies & Startups
+              Our Students Work At
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Our students have landed roles at FAANG, MAANG, and India's top unicorns
+              Top tech companies and unicorns trust Byteskill graduates
             </p>
           </div>
         </ScrollReveal>
+      </div>
 
-        {/* Logo Grid - Responsive for 19 companies */}
-        <ScrollReveal delay={0.1}>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 max-w-6xl mx-auto">
-            {companies.map((company, index) => (
-              <motion.div
-                key={company.name}
-                className="flex items-center justify-center bg-card border border-border rounded-xl p-4 h-20 transition-all hover:border-primary/50 hover:shadow-lg group"
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.03 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -4, scale: 1.05 }}
-              >
-                <company.Logo />
-              </motion.div>
-            ))}
-          </div>
-        </ScrollReveal>
+      {/* Infinite scroll marquees */}
+      <div className="space-y-2">
+        <LogoMarquee companies={row1Companies} direction="left" />
+        <LogoMarquee companies={row2Companies} direction="right" />
+      </div>
 
-        {/* Featured Quote */}
+      {/* Featured Quote */}
+      <div className="section-container">
         <ScrollReveal delay={0.2}>
           <div className="mt-12 max-w-3xl mx-auto text-center">
             <blockquote className="relative">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-4xl text-primary/30">"</div>
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-5xl text-primary/30 font-serif">"</div>
               <p className="text-lg text-muted-foreground italic leading-relaxed px-8">
                 Byteskill helped me land my dream internship at a top tech company. 
-                The structured approach to tracking my progress made all the difference 
-                in staying consistent with my preparation.
+                The structured approach to tracking my progress made all the difference.
               </p>
               <footer className="mt-4">
                 <span className="text-sm font-semibold text-foreground">— Arjun K.</span>
