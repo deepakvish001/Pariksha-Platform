@@ -45,6 +45,11 @@ import {
   Brain,
   Target,
   Compass,
+  ClipboardList,
+  Star,
+  UsersRound,
+  MessageCircle,
+  Route,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -95,16 +100,31 @@ const homeNavItems = [
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
 ];
 
-// AI Tools section - "Create with AI" features
+// AI Tools section - "Byteskill AI" features
 const createWithAIItems = [
+  { title: "Plan", url: "/platform/ai/generate?type=plan", icon: ClipboardList },
   { title: "Course", url: "/platform/ai/generate?type=course", icon: BookOpen },
   { title: "Guide", url: "/platform/ai/generate?type=guide", icon: FileText },
   { title: "Roadmap", url: "/platform/ai/generate?type=roadmap", icon: Map },
   { title: "Quiz", url: "/platform/ai/generate?type=quiz", icon: HelpCircle },
 ];
 
-const aiToolsItems = [
-  { title: "Ask AI", url: "/platform/ai", icon: Sparkles },
+const myAILearningItems = [
+  { title: "Plans", url: "/platform/ai/my-plans", icon: ClipboardList },
+  { title: "Courses", url: "/platform/ai/my-courses", icon: BookOpen },
+  { title: "Guides", url: "/platform/ai/my-guides", icon: FileText },
+  { title: "Roadmaps", url: "/platform/ai/my-roadmaps", icon: Map },
+  { title: "Quizzes", url: "/platform/ai/my-quizzes", icon: HelpCircle },
+];
+
+const aiChatItems = [
+  { title: "Ask AI Tutor", url: "/platform/ai", icon: Sparkles },
+  { title: "Roadmap Chat", url: "/platform/ai/roadmap-chat", icon: Route },
+];
+
+const aiCommunityItems = [
+  { title: "Staff Picks", url: "/platform/ai/staff-picks", icon: Star },
+  { title: "Community", url: "/platform/ai/community", icon: UsersRound },
 ];
 
 // My Learning section - organized learning progression
@@ -486,7 +506,7 @@ export function DashboardSidebar() {
           </SidebarGroup>
 
 
-          {/* AI Tools Section */}
+          {/* Byteskill AI Section */}
           <SidebarGroup className="space-y-1">
             {!isCollapsed && (
               <div className="flex items-center gap-2 px-3 py-1.5">
@@ -494,7 +514,7 @@ export function DashboardSidebar() {
                   <Sparkles className="h-3 w-3 text-primary" />
                 </div>
                 <p className="text-[10px] font-semibold text-primary/80 uppercase tracking-widest">
-                  AI Tools
+                  Byteskill AI
                 </p>
               </div>
             )}
@@ -507,13 +527,29 @@ export function DashboardSidebar() {
                     </div>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="right">AI Tools</TooltipContent>
+                <TooltipContent side="right">Byteskill AI</TooltipContent>
               </Tooltip>
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
                 <CollapsibleGroup title="Create with AI" items={createWithAIItems} groupIcon={Sparkles} iconColor="text-primary" />
-                {aiToolsItems.map((item) => (
+                <CollapsibleGroup title="My Learning" items={myAILearningItems} groupIcon={GraduationCap} iconColor="text-primary" />
+                {aiChatItems.map((item) => (
+                  <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.url}
+                      tooltip={item.title}
+                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
+                    >
+                      <Link to={item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
+                        <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+                {aiCommunityItems.map((item) => (
                   <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                     <SidebarMenuButton
                       asChild
