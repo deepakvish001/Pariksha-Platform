@@ -1,193 +1,136 @@
 
-# Settings Page Complete Redesign Plan
+# Competitive Programming Sheet Implementation Plan
 
 ## Overview
-Transform the Settings page into a premium, immersive experience with a deep black background (`#030305`), animated gradient orbs, glassmorphism components, and a modular architecture matching the Astra AI, Resources, and Collections pages.
+Create a new Competitive Programming sheet page that matches the reference design with a left sidebar for filtering by Track and Topic, and a right-side tabular list showing problem sets with progress tracking. This will follow the established patterns from DSA Questions, SQL Questions, and Company Resources pages.
 
-## Current State Analysis
-The existing Settings page has:
-- Light/default background (`bg-background`)
-- 5-tab structure: Profile, Security, Notifications, Learning, Account
-- Inline tab content with `card-dark` styling
-- Functional features: avatar upload, profile editing, password change, notification toggles, SRS settings, account deletion
-- 1,162 lines in a single monolithic file
+## Design Reference Analysis
+Based on the provided screenshot:
+- **Left Sidebar**: Contains "All Sets" header, "By Track" section (Preliminaries, Basics, Intermediate, etc.), and "By Topic" section (Algorithmic Techniques, Data Structures, DP, Geometry, Graphs, etc.)
+- **Right Content Area**: Search bar with Clear button, "Show" dropdown for pagination, sortable table with columns: Track badge, Problem Set name, Progress (solved count + percentage + progress bar)
+- **Pagination**: Bottom pagination with page numbers
 
-## Design Goals
-- Deep black background (`#030305`) with animated gradient orbs
-- Glassmorphism header and tab panels (`bg-black/40 backdrop-blur-3xl`)
-- Modular component architecture (split into separate files)
-- Enhanced visual hierarchy and micro-interactions
-- Staggered animations for settings items
-- Consistent styling with other redesigned pages
-- Real-time sync indicators for settings changes
+## Technical Implementation
 
----
+### 1. Create Data File: `src/data/competitiveProgrammingData.ts`
+Define the data structure for problem sets:
+- `CPTrack` interface: id, name, color (for badge styling)
+- `CPTopic` interface: id, name
+- `CPProblemSet` interface: id, title, trackId, topicId, problemCount, externalUrl (optional)
+- Export arrays: `cpTracks`, `cpTopics`, `cpProblemSets`
+- Helper functions: `getByTrack()`, `getByTopic()`, `searchProblemSets()`
 
-## Implementation Steps
+Sample tracks to include:
+- Preliminaries, Basics, Intermediate, Advanced Data Structures, Advanced Algorithms, Advanced Mathematics
+- Contest tracks: AtCoder Beginner, AtCoder Regular, Codeforces Educational, ICPC World Finals
 
-### Step 1: Page Shell and Background
-Integrate the Astra-style background:
-- Use `AstraBackground` component for consistency
-- Deep black base with animated gradient orbs
-- Sticky glassmorphism header with sidebar trigger
+Sample topics:
+- Algorithmic Techniques (except DP), Data Structures, Dynamic Programming, Geometry, Graphs, Implementation, Math, Strings
 
-### Step 2: Redesigned Header
-Create `SettingsHeader.tsx`:
-- Glassmorphism styling (`bg-black/40 backdrop-blur-3xl border-white/[0.05]`)
-- Settings icon with glow effect
-- User info badge (name, email)
-- Theme toggle with smooth animation
-- Stats badges (member since, XP level)
+### 2. Create Progress Hook: `src/hooks/useCPProgress.ts`
+Following the pattern of `useDSAProgress.ts`:
+- Track solved/revision status per problem set
+- Store progress in `user_company_progress` table with `company_id: "cp-questions"`
+- Include real-time sync via Supabase channel subscription
+- Calculate progress stats (solved count, total, percentage per track/topic)
 
-### Step 3: Enhanced Tab Navigation
-Create `SettingsTabNav.tsx`:
-- Glassmorphism tab list with pill indicators
-- Animated active tab indicator (underline/glow)
-- Icons with color coding per tab
-- Mobile-optimized horizontal scroll
+### 3. Create Main Page: `src/pages/library/CompetitiveProgramming.tsx`
+Layout structure matching the reference:
 
-### Step 4: Profile Tab Redesign
-Create `SettingsProfileTab.tsx`:
-- Avatar section with upload overlay and glow ring
-- Glassmorphism cards for basic info, professional details
-- Animated form fields with focus states
-- Skill/interest chips with add/remove animations
-- Save button with loading state
-
-### Step 5: Security Tab Redesign
-Create `SettingsSecurityTab.tsx`:
-- Password change form with glassmorphism container
-- Enhanced password strength indicator (animated bars)
-- Two-factor authentication section (future-ready placeholder)
-- Session management display
-- Security tips card
-
-### Step 6: Notifications Tab Redesign
-Create `SettingsNotificationsTab.tsx`:
-- Push notification toggle with status indicator
-- Email preferences with category icons
-- Notification type grid with color-coded icons
-- Select All / Deselect All bulk actions
-- Visual feedback on toggle changes
-
-### Step 7: Learning Tab Redesign
-Create `SettingsLearningTab.tsx`:
-- XP Level Badge with enhanced styling
-- Spaced repetition settings with visual slider
-- Review interval visualization (timeline graphic)
-- Mastery threshold with progress preview
-- Learning statistics summary
-
-### Step 8: Account Tab Redesign
-Create `SettingsAccountTab.tsx`:
-- Account status card with active badge
-- Member since with calendar icon
-- Data export section (future-ready)
-- Danger zone with red border accent
-- Delete account with confirmation dialog
-
-### Step 9: Real-time Sync Indicators
-Add visual feedback for settings changes:
-- Auto-save indicator with sync animation
-- "Saved" confirmation with checkmark
-- Optimistic UI updates
-
-### Step 10: Empty and Loading States
-Add polished states:
-- Skeleton loaders matching glassmorphism design
-- Tab content fade transitions
-
----
-
-## Technical Details
-
-### Color Palette
 ```text
-Background:     #030305 (deep black)
-Card BG:        bg-black/40 + backdrop-blur-2xl
-Borders:        border-white/[0.03] to border-white/[0.08]
-Primary text:   text-white
-Secondary:      text-white/40 to text-white/60
-Tab active:     bg-primary/10 border-primary/30
-Form inputs:    bg-black/30 border-white/[0.08]
++----------------------------------+
+| Sticky Header (icon + title)     |
++--------+-------------------------+
+| Left   |  Search + Show dropdown |
+| Filter |  -----------------------|
+| Sidebar|  Sortable Table         |
+|        |  - Track badge column   |
+| Tracks |  - Problem Set name     |
+| Topics |  - Progress bar + count |
+|        |  -----------------------|
+|        |  Pagination controls    |
++--------+-------------------------+
 ```
 
-### Tab Color Coding
-```text
-Profile:        Orange/Primary gradient
-Security:       Blue gradient
-Notifications:  Purple gradient
-Learning:       Emerald gradient
-Account:        Amber gradient
+Features to implement:
+- **Left Sidebar**: Collapsible sections for "By Track" and "By Topic" with clickable filter items
+- **Search bar**: Filter problem sets by name
+- **Show dropdown**: Items per page (10, 25, 50)
+- **Sortable table columns**: Track, Problem Set, Progress (ascending/descending)
+- **Progress column**: Shows "X / Y (Z%) solved" with progress bar
+- **Pagination**: Page numbers with ellipsis for many pages
+- **Mobile responsive**: Sidebar converts to collapsible dropdown on mobile
+
+### 4. Create Sidebar Filter Component: `src/components/library/CPFilterSidebar.tsx`
+Dedicated component for the left filter panel:
+- "All Sets" option to clear filters
+- "By Track" section with track names as clickable buttons
+- "By Topic" section with topic names as clickable buttons
+- Active filter highlighting
+- Filter counts (optional badges)
+- Collapsible on mobile
+
+### 5. Update Routing: `src/App.tsx`
+Add route for the new page:
+```typescript
+<Route path="cp" element={<CompetitiveProgramming />} />
 ```
 
-### Animation Specifications
-- Tab switch: Fade + slide transition (200ms)
-- Form focus: Border glow animation
-- Switch toggle: Spring animation
-- Save button: Pulse on success
-- Card entrance: Stagger (0.05s delay)
-
-### Component Structure
-```text
-Settings.tsx (refactored)
-├── AstraBackground
-├── SettingsHeader.tsx
-│   ├── Sidebar trigger
-│   ├── User info
-│   ├── Theme toggle
-│   └── XP badge
-├── SettingsTabNav.tsx
-│   └── Tab buttons with icons
-└── TabContent
-    ├── SettingsProfileTab.tsx
-    │   ├── AvatarUploadSection
-    │   ├── BasicInfoCard
-    │   └── ProfessionalInfoCard
-    ├── SettingsSecurityTab.tsx
-    │   ├── PasswordChangeCard
-    │   └── SecurityStatusCard
-    ├── SettingsNotificationsTab.tsx
-    │   ├── PushNotificationCard
-    │   ├── EmailPreferencesCard
-    │   └── NotificationTypesGrid
-    ├── SettingsLearningTab.tsx
-    │   ├── XPLevelCard
-    │   └── SRSSettingsCard
-    └── SettingsAccountTab.tsx
-        ├── AccountStatusCard
-        └── DangerZoneCard
+### 6. Update Sidebar Navigation: `src/components/DashboardSidebar.tsx`
+Add navigation item under Library section:
+```typescript
+{ title: "Competitive Programming", url: "/library/cp", icon: Code }
 ```
 
----
+## Database Considerations
+No new tables required. The existing `user_company_progress` table will be used with:
+- `company_id`: "cp-questions"
+- `tab_id`: "all" (or specific track/topic if needed)
+- `item_id`: Problem set ID
 
-## File Structure
+## UI/UX Details
 
-| File | Action | Description |
-|------|--------|-------------|
-| `src/pages/Settings.tsx` | Modify | Refactor to orchestrate components with dark theme |
-| `src/components/settings/SettingsHeader.tsx` | Create | Glassmorphism header component |
-| `src/components/settings/SettingsProfileTab.tsx` | Create | Profile settings with enhanced UI |
-| `src/components/settings/SettingsSecurityTab.tsx` | Create | Security settings tab |
-| `src/components/settings/SettingsNotificationsTab.tsx` | Create | Notifications preferences tab |
-| `src/components/settings/SettingsLearningTab.tsx` | Create | Learning/SRS settings tab |
-| `src/components/settings/SettingsAccountTab.tsx` | Create | Account management tab |
-| `src/components/settings/SettingsCard.tsx` | Create | Reusable glassmorphism card wrapper |
+### Table Design
+| Column | Width | Content |
+|--------|-------|---------|
+| Track | 120px | Colored badge (teal/green shades) |
+| Problem Set | flex | Clickable problem set title |
+| Progress | 180px | "0 / 16 (0%) solved" + progress bar |
 
-## Dependencies
-No new dependencies required - uses existing:
-- `framer-motion` for animations
-- `lucide-react` for icons
-- Existing UI components (Tabs, Switch, Input, Select, Slider, etc.)
-- Existing hooks (useAuth, useSRSSettings, useXPSystem, usePushNotifications)
+### Filter Sidebar Styling
+- Background: `bg-muted/30` with border
+- Section headers: Bold, with chevron for collapse
+- Filter items: Hover state, active state with primary color
+- Sticky positioning within scroll container
 
-## Expected Outcome
-A premium, immersive settings experience with:
-- Deep black aesthetic matching Astra AI and Resources pages
-- Smooth animations and micro-interactions
-- Professional glassmorphism effects throughout
-- Modular, maintainable component architecture
-- Enhanced visual hierarchy and user feedback
-- Real-time sync indicators for changes
-- Consistent styling across all tabs
-- Responsive design for mobile
+### Responsive Behavior
+- Desktop (>1024px): Side-by-side layout
+- Tablet (768-1024px): Collapsible sidebar with toggle button
+- Mobile (<768px): Sidebar hidden by default, accessible via hamburger menu
+
+## File Structure Summary
+```text
+src/
+  data/
+    competitiveProgrammingData.ts    (NEW)
+  hooks/
+    useCPProgress.ts                 (NEW)
+  pages/
+    library/
+      CompetitiveProgramming.tsx     (NEW)
+  components/
+    library/
+      CPFilterSidebar.tsx            (NEW)
+  App.tsx                            (MODIFY - add route)
+  components/
+    DashboardSidebar.tsx             (MODIFY - add nav item)
+```
+
+## Implementation Order
+1. Create data file with sample problem sets
+2. Create progress tracking hook
+3. Create filter sidebar component
+4. Create main page with layout and functionality
+5. Add routing and navigation
+6. Test and refine responsive behavior
+
