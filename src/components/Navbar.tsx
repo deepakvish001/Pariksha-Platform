@@ -24,6 +24,7 @@ const navLinks = [
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("");
   const { theme: baseTheme } = useTheme();
   const { theme, setTheme } = useThemeSync();
   const [mounted, setMounted] = useState(false);
@@ -40,9 +41,30 @@ const Navbar = () => {
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
+      
+      // Scroll spy logic
+      const sections = navLinks.map(link => link.href.replace('#', ''));
+      const navbarHeight = 80;
+      
+      for (const sectionId of sections) {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          if (rect.top <= navbarHeight + 100 && rect.bottom >= navbarHeight) {
+            setActiveSection(`#${sectionId}`);
+            return;
+          }
+        }
+      }
+      
+      // If at top of page, clear active section
+      if (window.scrollY < 100) {
+        setActiveSection("");
+      }
     };
 
     window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Check initial state
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -100,15 +122,25 @@ const Navbar = () => {
             linkTo={undefined}
           />
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (
               <button
                 key={link.label}
                 onClick={() => scrollToSection(link.href)}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className={`text-sm transition-colors relative ${
+                  activeSection === link.href
+                    ? "text-primary font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
                 {link.label}
+                {activeSection === link.href && (
+                  <motion.div
+                    layoutId="activeNavIndicator"
+                    className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
               </button>
             ))}
             
@@ -236,7 +268,11 @@ const Navbar = () => {
                   <button
                     key={link.label}
                     onClick={() => scrollToSection(link.href)}
-                    className="block w-full text-left px-2 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                    className={`block w-full text-left px-2 py-2 transition-colors ${
+                      activeSection === link.href
+                        ? "text-primary font-medium"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
                   >
                     {link.label}
                   </button>
