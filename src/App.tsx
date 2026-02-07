@@ -65,6 +65,14 @@ import MyActivity from "./pages/research/MyActivity";
 // Platform Pages
 import AstraAI from "./pages/platform/AstraAI";
 import AIGenerate from "./pages/platform/AIGenerate";
+import MyPlans from "./pages/platform/ai/MyPlans";
+import MyCourses from "./pages/platform/ai/MyCourses";
+import MyGuides from "./pages/platform/ai/MyGuides";
+import MyRoadmaps from "./pages/platform/ai/MyRoadmaps";
+import MyQuizzes from "./pages/platform/ai/MyQuizzes";
+import RoadmapChat from "./pages/platform/ai/RoadmapChat";
+import StaffPicks from "./pages/platform/ai/StaffPicks";
+import Community from "./pages/platform/ai/Community";
 import Resources from "./pages/platform/Resources";
 import Collections from "./pages/platform/Collections";
 
@@ -179,6 +187,14 @@ const App = () => (
                 <Route path="/platform" element={<DashboardLayoutWrapper />}>
                   <Route path="ai" element={<AstraAI />} />
                   <Route path="ai/generate" element={<AIGenerate />} />
+                  <Route path="ai/my-plans" element={<MyPlans />} />
+                  <Route path="ai/my-courses" element={<MyCourses />} />
+                  <Route path="ai/my-guides" element={<MyGuides />} />
+                  <Route path="ai/my-roadmaps" element={<MyRoadmaps />} />
+                  <Route path="ai/my-quizzes" element={<MyQuizzes />} />
+                  <Route path="ai/roadmap-chat" element={<RoadmapChat />} />
+                  <Route path="ai/staff-picks" element={<StaffPicks />} />
+                  <Route path="ai/community" element={<Community />} />
                   <Route path="resources" element={<Resources />} />
                   <Route path="collections" element={<Collections />} />
                 </Route>
