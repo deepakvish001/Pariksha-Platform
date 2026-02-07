@@ -651,6 +651,9 @@ const CPProblemSetsView = () => {
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [currentNoteProblem, setCurrentNoteProblem] = useState<{ id: number; title: string } | null>(null);
   const [noteContent, setNoteContent] = useState("");
+  
+  // Revision tab sorting
+  const [revisionSort, setRevisionSort] = useState<"difficulty" | "set" | "name">("difficulty");
 
   // Calculate problem set counts per track
   const problemSetCounts = useMemo(() => {
@@ -754,6 +757,11 @@ const CPProblemSetsView = () => {
   const totalProblemCount = allProblems.length;
   const progressPercent = totalProblemCount > 0 ? Math.round((completedCount / totalProblemCount) * 100) : 0;
   const hasActiveFilters = selectedTrack !== "all" || selectedTopic !== "all" || searchQuery !== "";
+  
+  // Calculate revision count for badge
+  const revisionCount = useMemo(() => {
+    return cpProblemSets.flatMap(ps => ps.problems).filter(p => isRevision(p.id)).length;
+  }, [isRevision]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -965,10 +973,18 @@ const CPProblemSetsView = () => {
                 <span className="hidden sm:inline">By Topic</span>
                 <span className="sm:hidden">Topic</span>
               </TabsTrigger>
-              <TabsTrigger value="revision" className="gap-1.5 text-xs sm:text-sm">
+              <TabsTrigger value="revision" className="gap-1.5 text-xs sm:text-sm relative">
                 <Bookmark className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Revision</span>
                 <span className="sm:hidden">Rev</span>
+                {revisionCount > 0 && (
+                  <Badge 
+                    variant="secondary" 
+                    className="ml-1 h-5 min-w-5 px-1.5 text-[10px] bg-amber-500/20 text-amber-600 dark:text-amber-400 border-0"
+                  >
+                    {revisionCount}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -1413,9 +1429,9 @@ const CPProblemSetsView = () => {
                     .map(p => ({ ...p, problemSetTitle: ps.title, problemSetId: ps.id, trackId: ps.trackId }))
                 );
                 
-                const revisionCount = revisionProblems.length;
+                const count = revisionProblems.length;
                 
-                if (revisionCount === 0) {
+                if (count === 0) {
                   return (
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -1434,14 +1450,64 @@ const CPProblemSetsView = () => {
                   );
                 }
                 
+                // Sort revision problems
+                const difficultyOrder = { Easy: 0, Medium: 1, Hard: 2 };
+                const sortedProblems = [...revisionProblems].sort((a, b) => {
+                  if (revisionSort === "difficulty") {
+                    return difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
+                  } else if (revisionSort === "set") {
+                    return a.problemSetTitle.localeCompare(b.problemSetTitle);
+                  } else {
+                    return a.title.localeCompare(b.title);
+                  }
+                });
+                
                 return (
                   <>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="gap-1">
                           <Star className="h-3 w-3 fill-current text-amber-500" />
-                          {revisionCount} {revisionCount === 1 ? 'problem' : 'problems'}
+                          {count} {count === 1 ? 'problem' : 'problems'}
                         </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Sort by:</span>
+                        <div className="flex rounded-md border border-input overflow-hidden">
+                          <button
+                            onClick={() => setRevisionSort("difficulty")}
+                            className={cn(
+                              "px-3 py-1.5 text-xs transition-colors",
+                              revisionSort === "difficulty" 
+                                ? "bg-primary text-primary-foreground" 
+                                : "bg-background hover:bg-muted"
+                            )}
+                          >
+                            Difficulty
+                          </button>
+                          <button
+                            onClick={() => setRevisionSort("set")}
+                            className={cn(
+                              "px-3 py-1.5 text-xs border-l border-input transition-colors",
+                              revisionSort === "set" 
+                                ? "bg-primary text-primary-foreground" 
+                                : "bg-background hover:bg-muted"
+                            )}
+                          >
+                            Set
+                          </button>
+                          <button
+                            onClick={() => setRevisionSort("name")}
+                            className={cn(
+                              "px-3 py-1.5 text-xs border-l border-input transition-colors",
+                              revisionSort === "name" 
+                                ? "bg-primary text-primary-foreground" 
+                                : "bg-background hover:bg-muted"
+                            )}
+                          >
+                            Name
+                          </button>
+                        </div>
                       </div>
                     </div>
                     
@@ -1463,7 +1529,7 @@ const CPProblemSetsView = () => {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {revisionProblems.map((problem, index) => (
+                              {sortedProblems.map((problem, index) => (
                                 <motion.tr
                                   key={problem.id}
                                   initial={{ opacity: 0, x: -10 }}
