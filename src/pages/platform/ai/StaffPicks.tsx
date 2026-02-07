@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import { Star, Sparkles, BookOpen, FileText, Map, HelpCircle, ClipboardList, Clock, ThumbsUp } from "lucide-react";
+import { Star, Sparkles, BookOpen, FileText, Map, HelpCircle, ClipboardList, Clock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePublicAIContent, AIContentType } from "@/hooks/useAIContent";
 import { formatDistanceToNow } from "date-fns";
+import { LikeButton } from "@/components/ai/LikeButton";
 
 const typeIcons: Record<AIContentType, React.ComponentType<{ className?: string }>> = {
   plan: ClipboardList,
@@ -80,15 +81,12 @@ const StaffPicks = () => {
                     <CardDescription>Topic: {item.topic}</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <ThumbsUp className="h-4 w-4" />
-                        {item.likes_count} likes
-                      </span>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
                         {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
                       </span>
+                      <LikeButton contentId={item.id} likesCount={item.likes_count} size="sm" />
                     </div>
                   </CardContent>
                 </Card>
