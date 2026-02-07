@@ -73,6 +73,7 @@ import MyQuizzes from "./pages/platform/ai/MyQuizzes";
 import RoadmapChat from "./pages/platform/ai/RoadmapChat";
 import StaffPicks from "./pages/platform/ai/StaffPicks";
 import Community from "./pages/platform/ai/Community";
+import AIContentDetail from "./pages/platform/ai/AIContentDetail";
 import Resources from "./pages/platform/Resources";
 import Collections from "./pages/platform/Collections";
 
@@ -195,6 +196,7 @@ const App = () => (
                   <Route path="ai/roadmap-chat" element={<RoadmapChat />} />
                   <Route path="ai/staff-picks" element={<StaffPicks />} />
                   <Route path="ai/community" element={<Community />} />
+                  <Route path="ai/content/:contentId" element={<AIContentDetail />} />
                   <Route path="resources" element={<Resources />} />
                   <Route path="collections" element={<Collections />} />
                 </Route>

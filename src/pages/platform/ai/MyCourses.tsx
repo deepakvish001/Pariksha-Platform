@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, Plus, Trash2, Globe, Lock, MoreVertical, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ interface CourseContent {
 }
 
 const MyCourses = () => {
+  const navigate = useNavigate();
   const { contents, isLoading, deleteContent, togglePublic } = useAIContent("course");
 
   if (isLoading) {
@@ -77,7 +78,11 @@ const MyCourses = () => {
             {contents.map((course) => {
               const content = course.content as CourseContent;
               return (
-                <Card key={course.id} className="hover:shadow-md transition-shadow">
+                <Card 
+                  key={course.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/platform/ai/content/${course.id}`)}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -105,14 +110,14 @@ const MyCourses = () => {
                         </CardDescription>
                       </div>
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() => togglePublic.mutate({ id: course.id, isPublic: !course.is_public })}
+                            onClick={(e) => { e.stopPropagation(); togglePublic.mutate({ id: course.id, isPublic: !course.is_public }); }}
                           >
                             {course.is_public ? (
                               <>
@@ -128,7 +133,7 @@ const MyCourses = () => {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
-                            onClick={() => deleteContent.mutate(course.id)}
+                            onClick={(e) => { e.stopPropagation(); deleteContent.mutate(course.id); }}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
