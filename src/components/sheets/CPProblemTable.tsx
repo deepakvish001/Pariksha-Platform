@@ -4,13 +4,11 @@ import {
   Circle,
   Star,
   FileText,
-  Diamond,
-  Hexagon,
-  Zap,
-  Trophy,
-  Sparkles,
   ExternalLink,
-  Target,
+  BookOpen,
+  Video,
+  Code2,
+  StickyNote,
 } from "lucide-react";
 import {
   Tooltip,
@@ -20,7 +18,6 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { CPProblem } from "@/data/competitiveProgrammingData";
-import { getPlatformColor } from "@/data/cpIconMappings";
 
 interface CPProblemTableProps {
   problems: CPProblem[];
@@ -31,58 +28,78 @@ interface CPProblemTableProps {
   onOpenNote: (problemId: number, title: string) => void;
 }
 
-// Enhanced Difficulty Icon with glow effect
-function DifficultyIcon({ difficulty, size = "sm" }: { difficulty: "Easy" | "Medium" | "Hard"; size?: "xs" | "sm" }) {
-  const sizeClasses = size === "xs" ? "h-2.5 w-2.5" : "h-3.5 w-3.5";
-  const config = {
-    Easy: { Icon: Circle, color: "text-emerald-500", fill: "fill-emerald-500/80", glow: "drop-shadow-[0_0_3px_rgba(16,185,129,0.4)]" },
-    Medium: { Icon: Diamond, color: "text-amber-500", fill: "fill-amber-500/60", glow: "drop-shadow-[0_0_3px_rgba(245,158,11,0.4)]" },
-    Hard: { Icon: Hexagon, color: "text-red-500", fill: "fill-red-500/60", glow: "drop-shadow-[0_0_3px_rgba(239,68,68,0.4)]" },
-  };
-  const { Icon, color, fill, glow } = config[difficulty];
-  return <Icon className={cn(sizeClasses, color, fill, glow)} />;
-}
-
-// Enhanced Difficulty Badge with gradient background
+// Striver-style Difficulty Badge
 function DifficultyBadge({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
   const styles = {
-    Easy: "bg-gradient-to-r from-emerald-500/15 to-emerald-400/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-emerald-500/10",
-    Medium: "bg-gradient-to-r from-amber-500/15 to-amber-400/10 text-amber-600 dark:text-amber-400 border-amber-500/30 shadow-amber-500/10",
-    Hard: "bg-gradient-to-r from-red-500/15 to-red-400/10 text-red-600 dark:text-red-400 border-red-500/30 shadow-red-500/10",
+    Easy: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    Medium: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    Hard: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
   };
 
   return (
-    <motion.span 
-      className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm",
-        styles[difficulty]
-      )}
-      whileHover={{ scale: 1.02 }}
-    >
-      <DifficultyIcon difficulty={difficulty} size="xs" />
+    <span className={cn(
+      "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border",
+      styles[difficulty]
+    )}>
       {difficulty}
-    </motion.span>
+    </span>
   );
 }
 
-// Enhanced Platform Badge with subtle animation
-function PlatformBadge({ platform }: { platform: string }) {
-  const colorClasses = getPlatformColor(platform);
+// Resource Link Button (Striver-style)
+function ResourceLink({ 
+  href, 
+  icon: Icon, 
+  label, 
+  variant = "default" 
+}: { 
+  href?: string; 
+  icon: React.ElementType; 
+  label: string;
+  variant?: "default" | "article" | "video" | "practice";
+}) {
+  const variantStyles = {
+    default: "text-muted-foreground/40 hover:text-foreground hover:bg-muted/50",
+    article: "text-blue-500/60 hover:text-blue-500 hover:bg-blue-500/10",
+    video: "text-red-500/60 hover:text-red-500 hover:bg-red-500/10",
+    practice: "text-emerald-500/60 hover:text-emerald-500 hover:bg-emerald-500/10",
+  };
+
+  if (!href) {
+    return (
+      <div className="flex items-center justify-center w-8 h-8">
+        <Icon className="h-4 w-4 text-muted-foreground/20" />
+      </div>
+    );
+  }
+
   return (
-    <motion.span 
-      className={cn(
-        "inline-flex items-center px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border backdrop-blur-sm",
-        colorClasses
-      )}
-      whileHover={{ scale: 1.05 }}
-      transition={{ type: "spring", stiffness: 400 }}
-    >
-      {platform}
-    </motion.span>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <motion.a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200",
+              variantStyles[variant]
+            )}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Icon className="h-4 w-4" />
+          </motion.a>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs font-medium">
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
-// Refined Table Header Cell
+// Table Header Cell
 function TableHeaderCell({ 
   children, 
   className,
@@ -94,8 +111,8 @@ function TableHeaderCell({
 }) {
   return (
     <div className={cn(
-      "text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50 py-2.5 px-3",
-      "border-b border-border/20",
+      "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 py-3 px-3",
+      "border-b-2 border-border/30",
       align === "center" && "text-center",
       align === "right" && "text-right",
       className
@@ -105,7 +122,7 @@ function TableHeaderCell({
   );
 }
 
-// Enhanced Problem Row with refined styling
+// Striver-style Problem Row
 function CPProblemRow({
   problem,
   index,
@@ -125,184 +142,156 @@ function CPProblemRow({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.02, duration: 0.3, ease: "easeOut" }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: index * 0.015, duration: 0.2 }}
       className={cn(
-        "group relative grid grid-cols-[48px_1fr_100px_80px_44px_44px_90px] items-center",
+        "group grid grid-cols-[44px_44px_1fr_44px_44px_44px_44px_44px_90px] items-center",
         "border-b border-border/10 last:border-0",
-        "transition-all duration-300",
+        "transition-all duration-200",
         isSolved 
-          ? "bg-gradient-to-r from-emerald-500/8 via-emerald-500/4 to-transparent"
-          : "hover:bg-gradient-to-r hover:from-muted/50 hover:via-muted/30 hover:to-transparent"
+          ? "bg-emerald-500/5 hover:bg-emerald-500/8" 
+          : "hover:bg-muted/40"
       )}
     >
-      {/* Solved indicator line */}
-      {isSolved && (
-        <motion.div 
-          className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-emerald-500 via-emerald-400 to-emerald-500/50"
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ duration: 0.3 }}
-        />
-      )}
-
       {/* Status Checkbox */}
-      <div className="flex items-center justify-center py-3.5 px-1">
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <motion.button
-                onClick={onToggleSolved}
-                className={cn(
-                  "relative p-1.5 rounded-xl transition-all duration-300",
-                  isSolved 
-                    ? "bg-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.15)]" 
-                    : "hover:bg-muted/60 hover:shadow-sm"
-                )}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+      <div className="flex items-center justify-center py-3">
+        <motion.button
+          onClick={onToggleSolved}
+          className="p-1 rounded-md transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <AnimatePresence mode="wait">
+            {isSolved ? (
+              <motion.div
+                key="checked"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
               >
-                <AnimatePresence mode="wait">
-                  {isSolved ? (
-                    <motion.div
-                      key="checked"
-                      initial={{ scale: 0, rotate: -180 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      exit={{ scale: 0, rotate: 180 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                    >
-                      <CheckCircle2 className="h-5 w-5 text-emerald-500 drop-shadow-[0_0_4px_rgba(16,185,129,0.5)]" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="unchecked"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                    >
-                      <Circle className="h-5 w-5 text-muted-foreground/25 group-hover:text-muted-foreground/50 transition-colors duration-300" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs font-medium">
-              {isSolved ? "Mark as incomplete" : "Mark as complete"}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="unchecked"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+              >
+                <Circle className="h-5 w-5 text-muted-foreground/30 group-hover:text-muted-foreground/50" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </div>
+
+      {/* Problem Number */}
+      <div className="flex items-center justify-center py-3">
+        <span className={cn(
+          "text-xs font-medium tabular-nums",
+          isSolved ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/60"
+        )}>
+          {index + 1}
+        </span>
       </div>
 
       {/* Problem Title */}
-      <div className="py-3.5 px-3 min-w-0">
+      <div className="py-3 px-2 min-w-0">
         <span className={cn(
-          "text-[13px] font-medium truncate block transition-all duration-300",
+          "text-sm font-medium truncate block transition-colors",
           isSolved 
-            ? "text-muted-foreground line-through decoration-emerald-500/50 decoration-[1.5px]" 
+            ? "text-muted-foreground line-through decoration-emerald-500/40" 
             : "text-foreground group-hover:text-primary"
         )}>
           {problem.title}
         </span>
       </div>
 
-      {/* Resource/Platform */}
-      <div className="flex items-center justify-center py-3.5 px-2">
-        {problem.platform ? (
-          <PlatformBadge platform={problem.platform} />
-        ) : (
-          <span className="text-muted-foreground/20 text-xs">—</span>
-        )}
+      {/* Article Link - uses problemUrl as fallback */}
+      <div className="flex items-center justify-center py-3">
+        <ResourceLink 
+          href={problem.problemUrl} 
+          icon={BookOpen} 
+          label="Read Article"
+          variant="article"
+        />
+      </div>
+
+      {/* Video Link - uses problemUrl as fallback */}
+      <div className="flex items-center justify-center py-3">
+        <ResourceLink 
+          href={problem.problemUrl} 
+          icon={Video} 
+          label="Watch Video"
+          variant="video"
+        />
       </div>
 
       {/* Practice Link */}
-      <div className="flex items-center justify-center py-3.5 px-1">
-        {problem.problemUrl ? (
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <motion.a
-                  href={problem.problemUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={cn(
-                    "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg",
-                    "bg-gradient-to-r from-primary/15 to-primary/10 text-primary text-[9px] font-bold uppercase tracking-wide",
-                    "border border-primary/25 hover:border-primary/40",
-                    "hover:from-primary/20 hover:to-primary/15 hover:shadow-[0_0_12px_rgba(var(--primary),0.15)]",
-                    "transition-all duration-300"
-                  )}
-                  whileHover={{ scale: 1.03, y: -1 }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <Zap className="h-3 w-3" />
-                  <span>Solve</span>
-                </motion.a>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">
-                Practice on {problem.platform || "Platform"}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          <span className="text-muted-foreground/20 text-xs">—</span>
-        )}
+      <div className="flex items-center justify-center py-3">
+        <ResourceLink 
+          href={problem.problemUrl} 
+          icon={Code2} 
+          label={`Practice on ${problem.platform || 'Platform'}`}
+          variant="practice"
+        />
       </div>
 
       {/* Notes Button */}
-      <div className="flex items-center justify-center py-3.5">
-        <TooltipProvider delayDuration={300}>
+      <div className="flex items-center justify-center py-3">
+        <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.button
                 onClick={onOpenNote}
-                className="p-2 rounded-lg text-muted-foreground/35 hover:text-primary hover:bg-primary/10 transition-all duration-300"
+                className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground/40 hover:text-amber-500 hover:bg-amber-500/10 transition-all"
                 whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <FileText className="h-4 w-4" />
+                <StickyNote className="h-4 w-4" />
               </motion.button>
             </TooltipTrigger>
-            <TooltipContent className="text-xs">Add notes</TooltipContent>
+            <TooltipContent side="top" className="text-xs">Add Notes</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
 
       {/* Revision Star */}
-      <div className="flex items-center justify-center py-3.5">
-        <TooltipProvider delayDuration={300}>
+      <div className="flex items-center justify-center py-3">
+        <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.button
                 onClick={onToggleRevision}
                 className={cn(
-                  "p-2 rounded-lg transition-all duration-300",
+                  "flex items-center justify-center w-8 h-8 rounded-lg transition-all",
                   isRevision 
-                    ? "text-amber-500 bg-amber-500/15 shadow-[0_0_10px_rgba(245,158,11,0.15)]" 
-                    : "text-muted-foreground/25 hover:text-amber-500/70 hover:bg-amber-500/10"
+                    ? "text-amber-500 bg-amber-500/10" 
+                    : "text-muted-foreground/30 hover:text-amber-500/60 hover:bg-amber-500/5"
                 )}
-                whileHover={{ scale: 1.15, rotate: isRevision ? -15 : 15 }}
-                whileTap={{ scale: 0.85 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <Star className={cn("h-4 w-4 transition-all", isRevision && "fill-current drop-shadow-[0_0_4px_rgba(245,158,11,0.5)]")} />
+                <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
               </motion.button>
             </TooltipTrigger>
-            <TooltipContent className="text-xs">
-              {isRevision ? "Remove from revision" : "Add to revision list"}
+            <TooltipContent side="top" className="text-xs">
+              {isRevision ? "Remove from Revision" : "Mark for Revision"}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
 
       {/* Difficulty */}
-      <div className="flex items-center justify-center py-3.5 px-2">
+      <div className="flex items-center justify-center py-3 px-2">
         <DifficultyBadge difficulty={problem.difficulty} />
       </div>
     </motion.div>
   );
 }
 
-// Enhanced Mobile Problem Row
+// Striver-style Mobile Row
 function CPProblemRowMobile({
   problem,
   index,
@@ -322,30 +311,20 @@ function CPProblemRowMobile({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.025, duration: 0.3 }}
+      transition={{ delay: index * 0.02, duration: 0.2 }}
       className={cn(
-        "group relative p-4 border-b border-border/10 last:border-0",
-        "transition-all duration-300",
-        isSolved 
-          ? "bg-gradient-to-r from-emerald-500/8 to-transparent" 
-          : "hover:bg-muted/30"
+        "group p-3 border-b border-border/10 last:border-0",
+        "transition-colors duration-200",
+        isSolved ? "bg-emerald-500/5" : "hover:bg-muted/30"
       )}
     >
-      {/* Solved indicator */}
-      {isSolved && (
-        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-emerald-500 to-emerald-500/30" />
-      )}
-
-      {/* Top row: checkbox, number, title */}
+      {/* Top row: Status + Title + Difficulty */}
       <div className="flex items-start gap-3">
         <motion.button
           onClick={onToggleSolved}
-          className={cn(
-            "p-1.5 rounded-xl shrink-0 mt-0.5 transition-all",
-            isSolved ? "bg-emerald-500/20" : "hover:bg-muted/60"
-          )}
+          className="p-0.5 shrink-0 mt-0.5"
           whileTap={{ scale: 0.9 }}
         >
           {isSolved ? (
@@ -355,62 +334,43 @@ function CPProblemRowMobile({
           )}
         </motion.button>
 
-        <span className={cn(
-          "inline-flex items-center justify-center min-w-[24px] h-6 text-[10px] font-bold rounded-md shrink-0 mt-0.5",
-          isSolved 
-            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" 
-            : "bg-muted/50 text-muted-foreground"
-        )}>
-          {String(index + 1).padStart(2, '0')}
-        </span>
-
         <div className="flex-1 min-w-0">
-          <span className={cn(
-            "text-sm font-medium block leading-relaxed",
-            isSolved && "line-through text-muted-foreground decoration-emerald-500/50"
-          )}>
-            {problem.title}
-          </span>
-          
-          {/* Badges row */}
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <div className="flex items-start justify-between gap-2">
+            <span className={cn(
+              "text-sm font-medium leading-relaxed",
+              isSolved && "line-through text-muted-foreground decoration-emerald-500/40"
+            )}>
+              <span className="text-muted-foreground/50 mr-1.5">{index + 1}.</span>
+              {problem.title}
+            </span>
             <DifficultyBadge difficulty={problem.difficulty} />
-            {problem.platform && <PlatformBadge platform={problem.platform} />}
+          </div>
+          
+          {/* Resource Links Row */}
+          <div className="flex items-center gap-1 mt-2">
+            <ResourceLink href={problem.problemUrl} icon={BookOpen} label="Article" variant="article" />
+            <ResourceLink href={problem.problemUrl} icon={Video} label="Video" variant="video" />
+            <ResourceLink href={problem.problemUrl} icon={Code2} label="Practice" variant="practice" />
+            <div className="w-px h-4 bg-border/30 mx-1" />
+            <motion.button
+              onClick={onOpenNote}
+              className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground/40 hover:text-amber-500 hover:bg-amber-500/10"
+              whileTap={{ scale: 0.95 }}
+            >
+              <StickyNote className="h-4 w-4" />
+            </motion.button>
+            <motion.button
+              onClick={onToggleRevision}
+              className={cn(
+                "flex items-center justify-center w-8 h-8 rounded-lg transition-colors",
+                isRevision ? "text-amber-500 bg-amber-500/10" : "text-muted-foreground/30"
+              )}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
+            </motion.button>
           </div>
         </div>
-      </div>
-
-      {/* Bottom row: actions */}
-      <div className="flex items-center justify-end gap-2 mt-3 pl-10">
-        {problem.problemUrl && (
-          <motion.a
-            href={problem.problemUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/15 text-primary text-[10px] font-bold uppercase border border-primary/25"
-            whileTap={{ scale: 0.95 }}
-          >
-            <Zap className="h-3 w-3" />
-            Solve
-          </motion.a>
-        )}
-        <button
-          onClick={onOpenNote}
-          className="p-2 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 transition-all"
-        >
-          <FileText className="h-4 w-4" />
-        </button>
-        <button
-          onClick={onToggleRevision}
-          className={cn(
-            "p-2 rounded-lg transition-all",
-            isRevision 
-              ? "text-amber-500 bg-amber-500/15" 
-              : "text-muted-foreground/30 hover:text-amber-500/70"
-          )}
-        >
-          <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
-        </button>
       </div>
     </motion.div>
   );
@@ -426,123 +386,69 @@ export default function CPProblemTable({
   onOpenNote,
 }: CPProblemTableProps) {
   const solvedCount = problems.filter(p => isSolved(p.id)).length;
-  const isAllComplete = solvedCount === problems.length && problems.length > 0;
-  const revisionCount = problems.filter(p => isRevision(p.id)).length;
-  
-  // Difficulty breakdown
-  const stats = problems.reduce(
-    (acc, p) => ({ ...acc, [p.difficulty]: acc[p.difficulty] + 1 }),
-    { Easy: 0, Medium: 0, Hard: 0 }
-  );
-  
   const progressPercent = problems.length > 0 ? (solvedCount / problems.length) * 100 : 0;
   
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-b from-card/80 to-card/40 backdrop-blur-sm">
-      {/* Enhanced Stats Header */}
-      <div className={cn(
-        "relative flex flex-wrap items-center justify-between gap-4 px-5 py-4",
-        "bg-gradient-to-r from-muted/50 via-muted/30 to-transparent",
-        "border-b border-border/20"
-      )}>
-        {/* Progress bar background */}
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-muted/30">
-          <motion.div 
-            className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-primary"
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPercent}%` }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          />
-        </div>
+    <div className="relative overflow-hidden rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm">
+      {/* Progress Bar */}
+      <div className="h-1 bg-muted/30">
+        <motion.div 
+          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+          initial={{ width: 0 }}
+          animate={{ width: `${progressPercent}%` }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        />
+      </div>
 
-        {/* Left: Problem count & difficulty breakdown */}
-        <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-primary/10">
-              <Target className="h-4 w-4 text-primary" />
-            </div>
-            <span className="text-sm font-semibold">
-              {problems.length} <span className="text-muted-foreground font-normal text-xs">problems</span>
+      {/* Stats Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-muted/20 border-b border-border/20">
+        <div className="flex items-center gap-4">
+          <span className="text-xs font-medium text-muted-foreground">
+            Progress: <span className="text-foreground font-semibold">{solvedCount}/{problems.length}</span>
+          </span>
+          <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60">
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-500/60" />
+              Easy
+            </span>
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-amber-500/60" />
+              Medium
+            </span>
+            <span className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-red-500/60" />
+              Hard
             </span>
           </div>
-          
-          {/* Difficulty legend */}
-          <div className="hidden sm:flex items-center gap-4 pl-4 border-l border-border/30">
-            {stats.Easy > 0 && (
-              <div className="flex items-center gap-1.5">
-                <DifficultyIcon difficulty="Easy" size="xs" />
-                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">{stats.Easy}</span>
-              </div>
-            )}
-            {stats.Medium > 0 && (
-              <div className="flex items-center gap-1.5">
-                <DifficultyIcon difficulty="Medium" size="xs" />
-                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">{stats.Medium}</span>
-              </div>
-            )}
-            {stats.Hard > 0 && (
-              <div className="flex items-center gap-1.5">
-                <DifficultyIcon difficulty="Hard" size="xs" />
-                <span className="text-[11px] font-bold text-red-600 dark:text-red-400">{stats.Hard}</span>
-              </div>
-            )}
-          </div>
         </div>
-        
-        {/* Right: Revision count & completion status */}
-        <div className="flex items-center gap-3">
-          {revisionCount > 0 && (
-            <motion.span 
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 500 }}
-            >
-              <Star className="h-3 w-3 fill-current" />
-              {revisionCount} starred
-            </motion.span>
-          )}
-          
+        {progressPercent === 100 && (
           <motion.span 
-            className={cn(
-              "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold",
-              isAllComplete 
-                ? "bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-lg shadow-emerald-500/25" 
-                : "bg-muted/60 text-foreground border border-border/30"
-            )}
-            animate={isAllComplete ? { scale: [1, 1.05, 1] } : {}}
-            transition={{ duration: 0.5 }}
+            className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
           >
-            {isAllComplete ? (
-              <>
-                <Trophy className="h-3.5 w-3.5" />
-                Complete!
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                {solvedCount}/{problems.length}
-              </>
-            )}
+            ✓ Complete
           </motion.span>
-        </div>
+        )}
       </div>
       
       {/* Desktop Table */}
-      <div className="hidden sm:block">
+      <div className="hidden md:block">
         {/* Table Header */}
-        <div className="grid grid-cols-[48px_1fr_100px_80px_44px_44px_90px] items-center bg-muted/10">
+        <div className="grid grid-cols-[44px_44px_1fr_44px_44px_44px_44px_44px_90px] items-center bg-muted/10">
           <TableHeaderCell align="center">Status</TableHeaderCell>
+          <TableHeaderCell align="center">#</TableHeaderCell>
           <TableHeaderCell>Problem</TableHeaderCell>
-          <TableHeaderCell align="center">Resource</TableHeaderCell>
+          <TableHeaderCell align="center">Article</TableHeaderCell>
+          <TableHeaderCell align="center">Video</TableHeaderCell>
           <TableHeaderCell align="center">Practice</TableHeaderCell>
           <TableHeaderCell align="center">Note</TableHeaderCell>
-          <TableHeaderCell align="center">Revision</TableHeaderCell>
+          <TableHeaderCell align="center">Rev</TableHeaderCell>
           <TableHeaderCell align="center">Difficulty</TableHeaderCell>
         </div>
         
         {/* Table Body */}
-        <div className="divide-y divide-border/5">
+        <div>
           {problems.map((problem, idx) => (
             <CPProblemRow
               key={problem.id}
@@ -559,7 +465,7 @@ export default function CPProblemTable({
       </div>
       
       {/* Mobile Layout */}
-      <div className="sm:hidden divide-y divide-border/5">
+      <div className="md:hidden">
         {problems.map((problem, idx) => (
           <CPProblemRowMobile
             key={problem.id}
@@ -577,4 +483,4 @@ export default function CPProblemTable({
   );
 }
 
-export { DifficultyBadge, PlatformBadge, DifficultyIcon };
+export { DifficultyBadge };
