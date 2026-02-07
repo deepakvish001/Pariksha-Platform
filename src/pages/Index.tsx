@@ -3,11 +3,8 @@ import Hero from "@/components/Hero";
 import CompanyLogos from "@/components/CompanyLogos";
 import Features from "@/components/Features";
 import FeatureTabs from "@/components/FeatureTabs";
-import Checklist from "@/components/Checklist";
-import Analytics from "@/components/Analytics";
-import Momentum from "@/components/Momentum";
+import HowItWorks from "@/components/HowItWorks";
 import WhyChooseUs from "@/components/WhyChooseUs";
-import Upcoming from "@/components/Upcoming";
 import Testimonials from "@/components/Testimonials";
 import Pricing from "@/components/Pricing";
 import FAQ from "@/components/FAQ";
@@ -24,13 +21,8 @@ const Index = () => {
         <Features />
       </section>
       <FeatureTabs />
-      <Checklist />
-      <section id="analytics">
-        <Analytics />
-      </section>
-      <Momentum />
+      <HowItWorks />
       <WhyChooseUs />
-      <Upcoming />
       <Testimonials />
       <section id="pricing">
         <Pricing />
