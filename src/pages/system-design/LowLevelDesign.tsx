@@ -5,7 +5,6 @@ import {
   BookOpen, Trophy, Target, Bookmark, ArrowLeft, Timer,
   Puzzle, Shield, FileText, Building2
 } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -243,7 +242,6 @@ const LowLevelDesign: React.FC = () => {
 
         <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
           <div className="flex h-16 items-center gap-4 px-6">
-            <SidebarTrigger />
             <Button variant="ghost" size="icon" onClick={() => setSelectedCategory(null)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -494,7 +492,6 @@ const LowLevelDesign: React.FC = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="flex h-16 items-center gap-4 px-6">
-          <SidebarTrigger />
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
               <LayoutGrid className="h-5 w-5 text-primary-foreground" />

@@ -4,7 +4,6 @@ import {
   Search, List, Map, Target, Trophy, TrendingUp, Users, 
   Sparkles, BarChart3, Award, Flame, ArrowRight
 } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -124,7 +123,6 @@ const ResearchOverview: React.FC = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="flex h-16 items-center gap-4 px-6">
-          <SidebarTrigger />
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center">
               <Search className="h-5 w-5 text-white" />

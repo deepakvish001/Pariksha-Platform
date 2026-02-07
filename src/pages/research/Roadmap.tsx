@@ -5,7 +5,6 @@ import {
   PlayCircle, BarChart3, Trophy, Sparkles, Bell
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -708,7 +707,6 @@ const Roadmap: React.FC = () => {
       {/* Sticky header */}
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md transition-colors duration-500">
         <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
-          <SidebarTrigger />
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg transition-all duration-500">
               <Map className="h-5 w-5 text-white" />

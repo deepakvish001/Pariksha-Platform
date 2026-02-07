@@ -17,7 +17,6 @@ import {
   ChevronUp,
   Folder,
 } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -272,7 +271,6 @@ const InterviewQuestions = () => {
         {/* Header */}
         <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
           <div className="flex h-16 items-center gap-4 px-4 md:px-6">
-            <SidebarTrigger />
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className="h-10 w-10 rounded-xl bg-gradient-orange flex items-center justify-center shrink-0">
                 <MessageSquare className="h-5 w-5 text-primary-foreground" />

@@ -13,7 +13,6 @@
    FolderPlus,
    Zap,
  } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
  import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -206,11 +205,10 @@ const AptitudeQuestions = () => {
   return (
      <TooltipProvider>
        <div className="min-h-screen bg-background">
-         <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
-           <div className="flex h-16 items-center justify-between gap-4 px-4 md:px-6">
-             <div className="flex items-center gap-3">
-               <SidebarTrigger />
-               <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
+          <div className="flex h-16 items-center justify-between gap-4 px-4 md:px-6">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
                  <div className="h-10 w-10 rounded-xl bg-gradient-orange flex items-center justify-center">
                    <HelpCircle className="h-5 w-5 text-primary-foreground" />
                  </div>

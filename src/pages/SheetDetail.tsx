@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import StreakCounter from "@/components/StreakCounter";
 import { useStreak } from "@/hooks/useStreak";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -1532,7 +1531,6 @@ export default function SheetDetail() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
-          <SidebarTrigger />
           <div className="flex-1 min-w-0">
             <h1 className="text-lg sm:text-xl font-bold truncate">{sheetData.title}</h1>
           </div>

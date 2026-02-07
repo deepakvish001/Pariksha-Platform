@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import MobileFAB from "@/components/MobileFAB";
 import SheetsHeroSection from "@/components/sheets/SheetsHeroSection";
 import SheetsFilterBar, { SortOption } from "@/components/sheets/SheetsFilterBar";
@@ -203,7 +202,6 @@ const DashboardSheets = () => {
       {/* Sticky Header */}
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="flex h-14 items-center gap-4 px-4 md:px-6">
-          <SidebarTrigger />
           <span className="text-sm font-medium text-muted-foreground">Practice Sheets</span>
         </div>
       </header>

@@ -34,7 +34,6 @@ import {
   ChevronsUpDown,
   ChevronsDownUp,
 } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -580,7 +579,6 @@ const PositionDetail = () => {
         {/* Header */}
         <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
           <div className="flex h-16 items-center gap-4 px-4 md:px-6">
-            <SidebarTrigger />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
