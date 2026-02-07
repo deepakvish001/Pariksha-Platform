@@ -666,6 +666,9 @@ const CPProblemSetsView = () => {
   // Revision tab sorting
   const [revisionSort, setRevisionSort] = useState<"difficulty" | "set" | "name">("difficulty");
   
+  // Revision tab filter - show only unsolved
+  const [showOnlyUnsolved, setShowOnlyUnsolved] = useState(false);
+  
   // Clear revision confirmation dialog
   const [clearRevisionDialogOpen, setClearRevisionDialogOpen] = useState(false);
   const [problemsToClear, setProblemsToClear] = useState<number[]>([]);
@@ -1465,9 +1468,14 @@ const CPProblemSetsView = () => {
                   );
                 }
                 
+                // Filter by unsolved if enabled
+                const filteredRevisionProblems = showOnlyUnsolved 
+                  ? revisionProblems.filter(p => !isSolved(p.id))
+                  : revisionProblems;
+                
                 // Sort revision problems
                 const difficultyOrder = { Easy: 0, Medium: 1, Hard: 2 };
-                const sortedProblems = [...revisionProblems].sort((a, b) => {
+                const sortedProblems = [...filteredRevisionProblems].sort((a, b) => {
                   if (revisionSort === "difficulty") {
                     return difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
                   } else if (revisionSort === "set") {
@@ -1477,14 +1485,27 @@ const CPProblemSetsView = () => {
                   }
                 });
                 
+                const unsolvedCount = revisionProblems.filter(p => !isSolved(p.id)).length;
+                
                 return (
                   <>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Badge variant="secondary" className="gap-1">
                           <Star className="h-3 w-3 fill-current text-amber-500" />
                           {count} {count === 1 ? 'problem' : 'problems'}
                         </Badge>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={showOnlyUnsolved}
+                            onChange={(e) => setShowOnlyUnsolved(e.target.checked)}
+                            className="h-4 w-4 rounded border-input accent-primary"
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            Unsolved only ({unsolvedCount})
+                          </span>
+                        </label>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
