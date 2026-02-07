@@ -18,9 +18,11 @@ export const useThemeSync = () => {
 
   // Sync theme to database when it changes
   const syncTheme = useCallback(async (newTheme: string) => {
-    if (!user) return;
-
+    // Always update the theme in next-themes (also syncs to localStorage)
     setTheme(newTheme);
+
+    // Only sync to database if user is logged in
+    if (!user) return;
 
     try {
       await supabase
