@@ -11,6 +11,7 @@ import { LevelUpProvider } from "@/contexts/LevelUpContext";
 import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
 import { FaviconNotificationProvider } from "@/contexts/FaviconNotificationContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { RouteRestorer } from "@/components/RouteRestorer";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -96,6 +97,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <RouteRestorer />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
