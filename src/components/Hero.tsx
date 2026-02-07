@@ -1,20 +1,21 @@
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Zap, Trophy, Target, Users, TrendingUp, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import HeroIllustration from "./HeroIllustration";
 
-// Animated stat component
-const AnimatedStat = ({ 
+// Animated counter component
+const AnimatedCounter = ({ 
   value, 
-  suffix, 
-  label, 
-  isDecimal = false 
+  suffix = "", 
+  prefix = "",
+  label,
+  icon: Icon,
 }: { 
   value: number; 
-  suffix: string; 
-  label: string; 
-  isDecimal?: boolean;
+  suffix?: string;
+  prefix?: string;
+  label: string;
+  icon: React.ElementType;
 }) => {
   const [count, setCount] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
@@ -48,12 +49,7 @@ const AnimatedStat = ({
       if (!startTime) startTime = currentTime;
       const progress = Math.min((currentTime - startTime) / duration, 1);
       const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      
-      if (isDecimal) {
-        setCount(parseFloat((easeOutQuart * value).toFixed(1)));
-      } else {
-        setCount(Math.floor(easeOutQuart * value));
-      }
+      setCount(Math.floor(easeOutQuart * value));
 
       if (progress < 1) {
         animationFrame = requestAnimationFrame(animate);
@@ -63,98 +59,135 @@ const AnimatedStat = ({
     animationFrame = requestAnimationFrame(animate);
 
     return () => cancelAnimationFrame(animationFrame);
-  }, [hasStarted, value, isDecimal]);
+  }, [hasStarted, value]);
 
   return (
-    <div ref={ref} className="text-center">
-      <div className="text-2xl sm:text-3xl font-bold gradient-text">
-        {isDecimal ? count.toFixed(1) : count}{suffix}
+    <motion.div 
+      ref={ref} 
+      className="relative group"
+      whileHover={{ scale: 1.05 }}
+      transition={{ type: "spring", stiffness: 400 }}
+    >
+      <div className="flex flex-col items-center p-4 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 border border-border/50 backdrop-blur-sm">
+        <div className="p-2 rounded-xl bg-primary/10 mb-2">
+          <Icon className="w-5 h-5 text-primary" />
+        </div>
+        <div className="text-2xl sm:text-3xl font-black text-foreground">
+          {prefix}{count}{suffix}
+        </div>
+        <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-1">{label}</div>
       </div>
-      <div className="text-sm text-muted-foreground mt-1">{label}</div>
-    </div>
+    </motion.div>
   );
 };
+
+// Feature pill component
+const FeaturePill = ({ icon: Icon, text, delay }: { icon: React.ElementType; text: string; delay: number }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.5 }}
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 border border-border/50 backdrop-blur-sm"
+  >
+    <Icon className="w-4 h-4 text-primary" />
+    <span className="text-sm font-medium text-foreground">{text}</span>
+  </motion.div>
+);
 
 const Hero = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Animated Background Elements */}
+      {/* Enhanced Background */}
       <div className="absolute inset-0 z-0">
-        {/* Base gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5" />
+        {/* Deep gradient base */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-primary/5" />
         
-        {/* Animated orbs - Dark mode */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse-slow dark:block hidden" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-orange-500/15 rounded-full blur-3xl animate-pulse-slow dark:block hidden" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl dark:block hidden" />
+        {/* Animated gradient orbs */}
+        <motion.div 
+          className="absolute top-20 left-10 w-[500px] h-[500px] bg-gradient-to-r from-primary/30 to-orange-500/20 rounded-full blur-[120px]"
+          animate={{ 
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div 
+          className="absolute bottom-20 right-10 w-[400px] h-[400px] bg-gradient-to-r from-orange-500/20 to-amber-500/30 rounded-full blur-[100px]"
+          animate={{ 
+            scale: [1.2, 1, 1.2],
+            opacity: [0.4, 0.2, 0.4],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[150px]" />
         
-        {/* Animated orbs - Light mode */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse-slow dark:hidden block" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-orange-400/10 rounded-full blur-3xl animate-pulse-slow dark:hidden block" style={{ animationDelay: '1s' }} />
-        
-        {/* Grid pattern overlay */}
+        {/* Grid pattern */}
         <div 
-          className="absolute inset-0 opacity-[0.02] dark:opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px'
+            backgroundSize: '80px 80px'
           }}
         />
-        
-        {/* Radial gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-background" />
+
+        {/* Noise texture overlay */}
+        <div className="absolute inset-0 opacity-[0.02] bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E')]" />
       </div>
 
       {/* Floating particles */}
       <div className="absolute inset-0 z-0 overflow-hidden">
-        {[...Array(6)].map((_, i) => (
+        {[...Array(12)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-2 h-2 bg-primary/30 rounded-full"
+            className="absolute w-1 h-1 bg-primary/40 rounded-full"
             style={{
-              left: `${15 + i * 15}%`,
-              top: `${20 + (i % 3) * 25}%`,
+              left: `${10 + i * 8}%`,
+              top: `${15 + (i % 4) * 20}%`,
             }}
             animate={{
-              y: [-20, 20, -20],
-              opacity: [0.3, 0.6, 0.3],
+              y: [-30, 30, -30],
+              x: [-10, 10, -10],
+              opacity: [0.2, 0.6, 0.2],
             }}
             transition={{
-              duration: 4 + i,
+              duration: 6 + i * 0.5,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: i * 0.5,
+              delay: i * 0.3,
             }}
           />
         ))}
       </div>
 
-      {/* Animated Illustration */}
-      <HeroIllustration />
-
-      {/* Content */}
-      <div className="relative z-10 section-container text-center lg:text-left pt-28 pb-32 lg:pr-[400px]">
-        {/* Badge */}
+      {/* Main Content */}
+      <div className="relative z-10 section-container text-center pt-32 pb-20">
+        {/* Trust Badge */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-8"
+          transition={{ duration: 0.6 }}
+          className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm mb-8"
         >
-          <Sparkles className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium text-foreground">Trusted by 10,000+ students worldwide</span>
+          <div className="flex -space-x-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-orange-500 border-2 border-background" />
+            ))}
+          </div>
+          <span className="text-sm font-semibold text-foreground">Join 10,000+ students crushing their goals</span>
+          <Sparkles className="w-4 h-4 text-primary animate-pulse" />
         </motion.div>
 
-        {/* Headline */}
+        {/* Main Headline */}
         <motion.h1 
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight"
+          transition={{ duration: 0.7, delay: 0.1 }}
+          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tight mb-8"
         >
-          <span className="gradient-text">Turn Learning Chaos</span>
-          <br />
-          <span className="text-foreground">Into Career Progress</span>
+          <span className="block text-foreground">Turn Learning</span>
+          <span className="block bg-gradient-to-r from-primary via-orange-500 to-amber-500 bg-clip-text text-transparent">
+            Into Results
+          </span>
         </motion.h1>
 
         {/* Subheadline */}
@@ -162,44 +195,64 @@ const Hero = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
+          className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
         >
-          Replace scattered notes, random spreadsheets, and UI frustrations. 
-          This is focused learning time, structured for students — built for 
-          clarity and career progress.
+          The all-in-one platform for <span className="text-foreground font-semibold">DSA practice</span>, 
+          <span className="text-foreground font-semibold"> interview prep</span>, and 
+          <span className="text-foreground font-semibold"> placement success</span>. 
+          Track progress, build streaks, and land your dream job.
         </motion.p>
+
+        {/* Feature Pills */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="flex flex-wrap justify-center gap-3 mb-10"
+        >
+          <FeaturePill icon={Target} text="500+ DSA Problems" delay={0.35} />
+          <FeaturePill icon={TrendingUp} text="Progress Analytics" delay={0.4} />
+          <FeaturePill icon={Trophy} text="Achievements & XP" delay={0.45} />
+          <FeaturePill icon={Zap} text="AI-Powered Learning" delay={0.5} />
+        </motion.div>
 
         {/* CTA Buttons */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
         >
-          <Link to="/signup" className="btn-primary inline-flex items-center gap-2 text-lg group">
-            Start Learning Clearly
+          <Link 
+            to="/signup" 
+            className="group relative inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-primary to-orange-500 text-white font-bold text-lg shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300 hover:scale-105"
+          >
+            <span>Start Free Today</span>
             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary to-orange-500 blur-xl opacity-50 group-hover:opacity-70 transition-opacity -z-10" />
           </Link>
-          <button className="px-6 py-3 rounded-full border border-border bg-secondary/50 text-foreground font-medium hover:bg-secondary transition-colors">
+          <button className="inline-flex items-center gap-2 px-6 py-4 rounded-full border-2 border-border bg-card/50 backdrop-blur-sm text-foreground font-semibold hover:bg-card hover:border-primary/50 transition-all duration-300">
+            <Play className="w-5 h-5 text-primary" />
             Watch Demo
           </button>
         </motion.div>
 
-        {/* Stats row */}
+        {/* Stats Grid */}
         <motion.div 
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto lg:mx-0"
+          transition={{ duration: 0.7, delay: 0.6 }}
+          className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto"
         >
-          <AnimatedStat value={10} suffix="K+" label="Active Users" />
-          <AnimatedStat value={95} suffix="%" label="Success Rate" />
-          <AnimatedStat value={4.9} suffix="★" label="User Rating" isDecimal />
+          <AnimatedCounter value={10000} suffix="+" label="Active Users" icon={Users} />
+          <AnimatedCounter value={500} suffix="+" label="DSA Problems" icon={Target} />
+          <AnimatedCounter value={95} suffix="%" label="Success Rate" icon={TrendingUp} />
+          <AnimatedCounter value={50} suffix="+" label="Companies Hired" icon={Trophy} />
         </motion.div>
       </div>
 
       {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent z-10" />
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background via-background/80 to-transparent z-10" />
     </section>
   );
 };
