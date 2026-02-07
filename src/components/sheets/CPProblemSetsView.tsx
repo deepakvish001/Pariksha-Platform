@@ -669,6 +669,9 @@ const CPProblemSetsView = () => {
   // Revision tab filter - show only unsolved
   const [showOnlyUnsolved, setShowOnlyUnsolved] = useState(false);
   
+  // Revision tab - expanded problem sets
+  const [expandedRevisionSets, setExpandedRevisionSets] = useState<number[]>([]);
+  
   // Clear revision confirmation dialog
   const [clearRevisionDialogOpen, setClearRevisionDialogOpen] = useState(false);
   const [problemsToClear, setProblemsToClear] = useState<number[]>([]);
@@ -1437,17 +1440,28 @@ const CPProblemSetsView = () => {
               </motion.div>
             </TabsContent>
 
-            {/* Revision View - Problems marked for revision */}
+            {/* Revision View - Problems marked for revision, grouped by Problem Set */}
             <TabsContent value="revision" className="mt-4 space-y-4">
               {(() => {
-                // Get all problems marked for revision
-                const revisionProblems = cpProblemSets.flatMap(ps => 
-                  ps.problems
-                    .filter(p => isRevision(p.id))
-                    .map(p => ({ ...p, problemSetTitle: ps.title, problemSetId: ps.id, trackId: ps.trackId }))
-                );
+                // Get all problems marked for revision, grouped by problem set
+                const revisionBySet: Record<number, { 
+                  problemSet: CPProblemSet; 
+                  problems: (typeof cpProblemSets[0]['problems'][0] & { problemSetTitle: string; problemSetId: number; trackId: string })[] 
+                }> = {};
                 
-                const count = revisionProblems.length;
+                cpProblemSets.forEach(ps => {
+                  const revProblems = ps.problems
+                    .filter(p => isRevision(p.id))
+                    .map(p => ({ ...p, problemSetTitle: ps.title, problemSetId: ps.id, trackId: ps.trackId }));
+                  
+                  if (revProblems.length > 0) {
+                    revisionBySet[ps.id] = { problemSet: ps, problems: revProblems };
+                  }
+                });
+                
+                const allRevisionProblems = Object.values(revisionBySet).flatMap(g => g.problems);
+                const count = allRevisionProblems.length;
+                const setCount = Object.keys(revisionBySet).length;
                 
                 if (count === 0) {
                   return (
@@ -1468,24 +1482,16 @@ const CPProblemSetsView = () => {
                   );
                 }
                 
-                // Filter by unsolved if enabled
-                const filteredRevisionProblems = showOnlyUnsolved 
-                  ? revisionProblems.filter(p => !isSolved(p.id))
-                  : revisionProblems;
+                const unsolvedCount = allRevisionProblems.filter(p => !isSolved(p.id)).length;
                 
-                // Sort revision problems
-                const difficultyOrder = { Easy: 0, Medium: 1, Hard: 2 };
-                const sortedProblems = [...filteredRevisionProblems].sort((a, b) => {
-                  if (revisionSort === "difficulty") {
-                    return difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
-                  } else if (revisionSort === "set") {
-                    return a.problemSetTitle.localeCompare(b.problemSetTitle);
-                  } else {
-                    return a.title.localeCompare(b.title);
-                  }
-                });
-                
-                const unsolvedCount = revisionProblems.filter(p => !isSolved(p.id)).length;
+                // Toggle expansion of a revision set
+                const toggleRevisionSetExpansion = (setId: number) => {
+                  setExpandedRevisionSets(prev => 
+                    prev.includes(setId) 
+                      ? prev.filter(id => id !== setId)
+                      : [...prev, setId]
+                  );
+                };
                 
                 return (
                   <>
@@ -1493,7 +1499,7 @@ const CPProblemSetsView = () => {
                       <div className="flex items-center gap-3">
                         <Badge variant="secondary" className="gap-1">
                           <Star className="h-3 w-3 fill-current text-amber-500" />
-                          {count} {count === 1 ? 'problem' : 'problems'}
+                          {count} {count === 1 ? 'problem' : 'problems'} in {setCount} {setCount === 1 ? 'set' : 'sets'}
                         </Badge>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -1509,48 +1515,31 @@ const CPProblemSetsView = () => {
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Sort by:</span>
-                          <div className="flex rounded-md border border-input overflow-hidden">
-                            <button
-                              onClick={() => setRevisionSort("difficulty")}
-                              className={cn(
-                                "px-3 py-1.5 text-xs transition-colors",
-                                revisionSort === "difficulty" 
-                                  ? "bg-primary text-primary-foreground" 
-                                  : "bg-background hover:bg-muted"
-                              )}
-                            >
-                              Difficulty
-                            </button>
-                            <button
-                              onClick={() => setRevisionSort("set")}
-                              className={cn(
-                                "px-3 py-1.5 text-xs border-l border-input transition-colors",
-                                revisionSort === "set" 
-                                  ? "bg-primary text-primary-foreground" 
-                                  : "bg-background hover:bg-muted"
-                              )}
-                            >
-                              Set
-                            </button>
-                            <button
-                              onClick={() => setRevisionSort("name")}
-                              className={cn(
-                                "px-3 py-1.5 text-xs border-l border-input transition-colors",
-                                revisionSort === "name" 
-                                  ? "bg-primary text-primary-foreground" 
-                                  : "bg-background hover:bg-muted"
-                              )}
-                            >
-                              Name
-                            </button>
-                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const allSetIds = Object.keys(revisionBySet).map(Number);
+                              setExpandedRevisionSets(allSetIds);
+                            }}
+                            className="h-8 text-xs"
+                          >
+                            Expand All
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setExpandedRevisionSets([])}
+                            className="h-8 text-xs"
+                          >
+                            Collapse All
+                          </Button>
                         </div>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            setProblemsToClear(sortedProblems.map(p => p.id));
+                            setProblemsToClear(allRevisionProblems.map(p => p.id));
                             setClearRevisionDialogOpen(true);
                           }}
                           className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -1564,97 +1553,164 @@ const CPProblemSetsView = () => {
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
+                      className="space-y-2"
                     >
-                      <Card className="overflow-hidden">
-                        <CardContent className="p-0">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-12 text-center">Status</TableHead>
-                                <TableHead className="w-12 text-center">#</TableHead>
-                                <TableHead>Problem</TableHead>
-                                <TableHead className="hidden sm:table-cell">Set</TableHead>
-                                <TableHead className="w-20">Difficulty</TableHead>
-                                <TableHead className="w-14 text-center">Star</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {sortedProblems.map((problem, index) => (
-                                <motion.tr
-                                  key={problem.id}
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: index * 0.02 }}
-                                  className={cn(
-                                    "border-b transition-colors",
-                                    isSolved(problem.id) && "bg-primary/5"
-                                  )}
+                      {Object.entries(revisionBySet).map(([setIdStr, { problemSet, problems }]) => {
+                        const setId = Number(setIdStr);
+                        const isExpanded = expandedRevisionSets.includes(setId);
+                        const track = cpTracks.find(t => t.id === problemSet.trackId);
+                        
+                        // Filter problems if unsolved only is enabled
+                        const displayProblems = showOnlyUnsolved 
+                          ? problems.filter(p => !isSolved(p.id))
+                          : problems;
+                        
+                        if (displayProblems.length === 0) return null;
+                        
+                        const solvedInSet = displayProblems.filter(p => isSolved(p.id)).length;
+                        const progressPercent = Math.round((solvedInSet / displayProblems.length) * 100);
+                        
+                        return (
+                          <Card key={setId} className="overflow-hidden">
+                            <Collapsible open={isExpanded} onOpenChange={() => toggleRevisionSetExpansion(setId)}>
+                              <CollapsibleTrigger asChild>
+                                <motion.div
+                                  className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                                  whileHover={{ backgroundColor: "hsl(var(--muted) / 0.5)" }}
                                 >
-                                  <TableCell className="w-12 text-center py-2">
-                                    <motion.button
-                                      onClick={() => toggleSolved(problem.id)}
-                                      className="text-muted-foreground hover:text-foreground transition-colors"
-                                      whileHover={{ scale: 1.1 }}
-                                      whileTap={{ scale: 0.95 }}
+                                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                                    <motion.div
+                                      animate={{ rotate: isExpanded ? 90 : 0 }}
+                                      transition={{ duration: 0.2 }}
                                     >
-                                      {isSolved(problem.id) ? (
-                                        <CheckSquare className="h-4 w-4 text-primary" />
-                                      ) : (
-                                        <Square className="h-4 w-4" />
-                                      )}
-                                    </motion.button>
-                                  </TableCell>
-                                  <TableCell className="w-12 text-center py-2">
-                                    <span className="text-xs text-muted-foreground">{index + 1}</span>
-                                  </TableCell>
-                                  <TableCell className="py-2">
-                                    <div className="flex items-center gap-2">
-                                      <span className={cn(
-                                        "font-medium text-sm",
-                                        isSolved(problem.id) && "line-through text-muted-foreground"
-                                      )}>
-                                        {problem.title}
-                                      </span>
-                                      {problem.problemUrl && (
-                                        <a
-                                          href={problem.problemUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-muted-foreground hover:text-primary transition-colors"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          <ExternalLink className="h-3 w-3" />
-                                        </a>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="hidden sm:table-cell py-2">
+                                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    </motion.div>
                                     <Badge 
-                                      variant="outline" 
-                                      className={cn("text-[10px] px-1.5 py-0", getTrackBadgeClass(problem.trackId))}
+                                      variant="outline"
+                                      className={cn(
+                                        "text-[10px] px-1.5 py-0 shrink-0 hidden sm:inline-flex",
+                                        track?.color
+                                      )}
                                     >
-                                      {problem.problemSetTitle}
+                                      {track?.name || problemSet.trackId}
                                     </Badge>
-                                  </TableCell>
-                                  <TableCell className="w-20 py-2">
-                                    <DifficultyBadge difficulty={problem.difficulty} />
-                                  </TableCell>
-                                  <TableCell className="w-14 text-center py-2">
-                                    <motion.button
-                                      onClick={() => toggleRevision(problem.id)}
-                                      className="text-amber-500 hover:text-amber-600 transition-colors"
-                                      whileHover={{ scale: 1.2 }}
-                                      whileTap={{ scale: 0.9 }}
+                                    <Badge 
+                                      variant="secondary"
+                                      className="text-[10px] px-1.5 py-0 shrink-0 gap-1"
                                     >
-                                      <Star className="h-3.5 w-3.5 fill-current" />
-                                    </motion.button>
-                                  </TableCell>
-                                </motion.tr>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </CardContent>
-                      </Card>
+                                      <Star className="h-2.5 w-2.5 fill-current text-amber-500" />
+                                      {displayProblems.length}
+                                    </Badge>
+                                    <span className="font-medium text-sm truncate">{problemSet.title}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                        {solvedInSet} / {displayProblems.length}
+                                      </span>
+                                      <Progress value={progressPercent} className="w-16 sm:w-24 h-1.5" />
+                                      <span className="text-xs text-muted-foreground w-8 text-right hidden sm:inline">
+                                        {progressPercent}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              </CollapsibleTrigger>
+                              
+                              <AnimatePresence>
+                                {isExpanded && (
+                                  <CollapsibleContent forceMount>
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: "auto" }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                      transition={{ duration: 0.2 }}
+                                    >
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow>
+                                            <TableHead className="w-12 text-center">Status</TableHead>
+                                            <TableHead className="w-12 text-center">#</TableHead>
+                                            <TableHead>Problem</TableHead>
+                                            <TableHead className="w-20">Difficulty</TableHead>
+                                            <TableHead className="w-14 text-center">Star</TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {displayProblems.map((problem, index) => (
+                                            <motion.tr
+                                              key={problem.id}
+                                              initial={{ opacity: 0, x: -10 }}
+                                              animate={{ opacity: 1, x: 0 }}
+                                              transition={{ delay: index * 0.02 }}
+                                              className={cn(
+                                                "border-b transition-colors",
+                                                isSolved(problem.id) && "bg-primary/5"
+                                              )}
+                                            >
+                                              <TableCell className="w-12 text-center py-2">
+                                                <motion.button
+                                                  onClick={() => toggleSolved(problem.id)}
+                                                  className="text-muted-foreground hover:text-foreground transition-colors"
+                                                  whileHover={{ scale: 1.1 }}
+                                                  whileTap={{ scale: 0.95 }}
+                                                >
+                                                  {isSolved(problem.id) ? (
+                                                    <CheckSquare className="h-4 w-4 text-primary" />
+                                                  ) : (
+                                                    <Square className="h-4 w-4" />
+                                                  )}
+                                                </motion.button>
+                                              </TableCell>
+                                              <TableCell className="w-12 text-center py-2">
+                                                <span className="text-xs text-muted-foreground">{index + 1}</span>
+                                              </TableCell>
+                                              <TableCell className="py-2">
+                                                <div className="flex items-center gap-2">
+                                                  <span className={cn(
+                                                    "font-medium text-sm",
+                                                    isSolved(problem.id) && "line-through text-muted-foreground"
+                                                  )}>
+                                                    {problem.title}
+                                                  </span>
+                                                  {problem.problemUrl && (
+                                                    <a
+                                                      href={problem.problemUrl}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-muted-foreground hover:text-primary transition-colors"
+                                                      onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                      <ExternalLink className="h-3 w-3" />
+                                                    </a>
+                                                  )}
+                                                </div>
+                                              </TableCell>
+                                              <TableCell className="w-20 py-2">
+                                                <DifficultyBadge difficulty={problem.difficulty} />
+                                              </TableCell>
+                                              <TableCell className="w-14 text-center py-2">
+                                                <motion.button
+                                                  onClick={() => toggleRevision(problem.id)}
+                                                  className="text-amber-500 hover:text-amber-600 transition-colors"
+                                                  whileHover={{ scale: 1.2 }}
+                                                  whileTap={{ scale: 0.9 }}
+                                                >
+                                                  <Star className="h-3.5 w-3.5 fill-current" />
+                                                </motion.button>
+                                              </TableCell>
+                                            </motion.tr>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    </motion.div>
+                                  </CollapsibleContent>
+                                )}
+                              </AnimatePresence>
+                            </Collapsible>
+                          </Card>
+                        );
+                      })}
                     </motion.div>
                   </>
                 );
