@@ -64,6 +64,7 @@ import MyActivity from "./pages/research/MyActivity";
 
 // Platform Pages
 import AstraAI from "./pages/platform/AstraAI";
+import AIGenerate from "./pages/platform/AIGenerate";
 import Resources from "./pages/platform/Resources";
 import Collections from "./pages/platform/Collections";
 
@@ -177,9 +178,9 @@ const App = () => (
                 {/* Platform routes */}
                 <Route path="/platform" element={<DashboardLayoutWrapper />}>
                   <Route path="ai" element={<AstraAI />} />
+                  <Route path="ai/generate" element={<AIGenerate />} />
                   <Route path="resources" element={<Resources />} />
                   <Route path="collections" element={<Collections />} />
-                  
                 </Route>
 
                 {/* Settings */}

@@ -95,9 +95,16 @@ const homeNavItems = [
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
 ];
 
-// AI Tools section - AI-powered features
+// AI Tools section - "Create with AI" features
+const createWithAIItems = [
+  { title: "Course", url: "/platform/ai/generate?type=course", icon: BookOpen },
+  { title: "Guide", url: "/platform/ai/generate?type=guide", icon: FileText },
+  { title: "Roadmap", url: "/platform/ai/generate?type=roadmap", icon: Map },
+  { title: "Quiz", url: "/platform/ai/generate?type=quiz", icon: HelpCircle },
+];
+
 const aiToolsItems = [
-  { title: "Byteskill AI", url: "/platform/ai", icon: Sparkles },
+  { title: "Ask AI", url: "/platform/ai", icon: Sparkles },
 ];
 
 // My Learning section - organized learning progression
@@ -505,18 +512,18 @@ export function DashboardSidebar() {
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
+                <CollapsibleGroup title="Create with AI" items={createWithAIItems} groupIcon={Sparkles} iconColor="text-primary" />
                 {aiToolsItems.map((item) => (
                   <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                     <SidebarMenuButton
                       asChild
                       isActive={location.pathname === item.url}
                       tooltip={item.title}
-                      size="lg"
                       className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
                     >
-                      <Link to={item.url} className="group-data-[collapsible=icon]:justify-center">
-                        <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
-                        <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
+                      <Link to={item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
+                        <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
