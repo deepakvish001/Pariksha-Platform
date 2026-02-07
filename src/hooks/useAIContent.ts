@@ -144,16 +144,29 @@ export function useAIContent(contentType?: AIContentType) {
   };
 }
 
+export interface PublicAIContent extends AIGeneratedContent {
+  creator?: {
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
 export function usePublicAIContent(contentType?: AIContentType) {
   const { data: contents, isLoading } = useQuery({
     queryKey: ["public-ai-content", contentType],
     queryFn: async () => {
       let query = supabase
         .from("ai_generated_content")
-        .select("*")
+        .select(`
+          *,
+          profiles!ai_generated_content_user_id_fkey (
+            full_name,
+            avatar_url
+          )
+        `)
         .eq("is_public", true)
         .order("likes_count", { ascending: false })
-        .limit(20);
+        .limit(50);
       
       if (contentType) {
         query = query.eq("content_type", contentType);
@@ -162,7 +175,16 @@ export function usePublicAIContent(contentType?: AIContentType) {
       const { data, error } = await query;
       
       if (error) throw error;
-      return data as AIGeneratedContent[];
+      
+      // Transform the data to include creator info
+      return (data || []).map((item: any) => ({
+        ...item,
+        creator: item.profiles ? {
+          full_name: item.profiles.full_name,
+          avatar_url: item.profiles.avatar_url,
+        } : null,
+        profiles: undefined,
+      })) as PublicAIContent[];
     },
   });
 

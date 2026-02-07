@@ -3,9 +3,10 @@ import { Star, Sparkles, BookOpen, FileText, Map, HelpCircle, ClipboardList, Clo
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePublicAIContent, AIContentType } from "@/hooks/useAIContent";
+import { usePublicAIContent, AIContentType, PublicAIContent } from "@/hooks/useAIContent";
 import { formatDistanceToNow } from "date-fns";
 import { LikeButton } from "@/components/ai/LikeButton";
+import { CreatorCard } from "@/components/ai/CreatorCard";
 
 const typeIcons: Record<AIContentType, React.ComponentType<{ className?: string }>> = {
   plan: ClipboardList,
@@ -49,14 +50,20 @@ const StaffPicks = () => {
                   <Skeleton className="h-4 w-64 mt-2" />
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <Skeleton className="h-4 w-32" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-6 w-6 rounded-full" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                    <Skeleton className="h-4 w-12" />
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         ) : staffPicks.length > 0 ? (
           <div className="grid gap-4">
-            {staffPicks.map((item, index) => {
+            {staffPicks.map((item: PublicAIContent, index) => {
               const Icon = typeIcons[item.content_type as AIContentType] || BookOpen;
               return (
                 <Card 
@@ -81,11 +88,20 @@ const StaffPicks = () => {
                     <CardDescription>Topic: {item.topic}</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        {item.creator && (
+                          <CreatorCard 
+                            name={item.creator.full_name} 
+                            avatarUrl={item.creator.avatar_url}
+                            size="sm"
+                          />
+                        )}
+                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
                       <LikeButton contentId={item.id} likesCount={item.likes_count} size="sm" />
                     </div>
                   </CardContent>
