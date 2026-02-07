@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { memo, useCallback, useState } from "react";
 import {
   CheckCircle2,
   Circle,
@@ -9,6 +10,8 @@ import {
   Video,
   Code2,
   StickyNote,
+  Sparkles,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   Tooltip,
@@ -28,26 +31,29 @@ interface CPProblemTableProps {
   onOpenNote: (problemId: number, title: string) => void;
 }
 
-// Striver-style Difficulty Badge
+// Enhanced Difficulty Badge with icon
 function DifficultyBadge({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
   const styles = {
-    Easy: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-    Medium: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-    Hard: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+    Easy: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-emerald-500/5",
+    Medium: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 shadow-amber-500/5",
+    Hard: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30 shadow-red-500/5",
   };
 
   return (
-    <span className={cn(
-      "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border",
-      styles[difficulty]
-    )}>
+    <motion.span 
+      className={cn(
+        "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border shadow-sm",
+        styles[difficulty]
+      )}
+      whileHover={{ scale: 1.05 }}
+    >
       {difficulty}
-    </span>
+    </motion.span>
   );
 }
 
-// Resource Link Button (Striver-style)
-function ResourceLink({ 
+// Enhanced Resource Link Button with better hover states
+const ResourceLink = memo(function ResourceLink({ 
   href, 
   icon: Icon, 
   label, 
@@ -60,21 +66,21 @@ function ResourceLink({
 }) {
   const variantStyles = {
     default: "text-muted-foreground/40 hover:text-foreground hover:bg-muted/50",
-    article: "text-blue-500/60 hover:text-blue-500 hover:bg-blue-500/10",
-    video: "text-red-500/60 hover:text-red-500 hover:bg-red-500/10",
-    practice: "text-emerald-500/60 hover:text-emerald-500 hover:bg-emerald-500/10",
+    article: "text-blue-500/50 hover:text-blue-500 hover:bg-blue-500/10 hover:shadow-blue-500/10",
+    video: "text-red-500/50 hover:text-red-500 hover:bg-red-500/10 hover:shadow-red-500/10",
+    practice: "text-emerald-500/50 hover:text-emerald-500 hover:bg-emerald-500/10 hover:shadow-emerald-500/10",
   };
 
   if (!href) {
     return (
       <div className="flex items-center justify-center w-8 h-8">
-        <Icon className="h-4 w-4 text-muted-foreground/20" />
+        <Icon className="h-4 w-4 text-muted-foreground/15" />
       </div>
     );
   }
 
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
           <motion.a
@@ -82,24 +88,28 @@ function ResourceLink({
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-              "flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200",
+              "flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 shadow-sm",
               variantStyles[variant]
             )}
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.15, y: -1 }}
             whileTap={{ scale: 0.95 }}
+            onClick={(e) => e.stopPropagation()}
           >
             <Icon className="h-4 w-4" />
           </motion.a>
         </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs font-medium">
-          {label}
+        <TooltipContent side="top" className="text-xs font-medium px-2 py-1">
+          <div className="flex items-center gap-1">
+            {label}
+            <ArrowUpRight className="h-3 w-3 opacity-60" />
+          </div>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
-}
+});
 
-// Table Header Cell
+// Table Header Cell with sort indicator capability
 function TableHeaderCell({ 
   children, 
   className,
@@ -112,6 +122,7 @@ function TableHeaderCell({
   return (
     <div className={cn(
       "text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 py-3 px-2",
+      "select-none",
       align === "center" && "text-center",
       align === "right" && "text-right",
       className
@@ -124,8 +135,8 @@ function TableHeaderCell({
 // Grid column definition for consistency
 const TABLE_GRID_COLS = "grid-cols-[50px_50px_1fr_56px_56px_56px_56px_56px_100px]";
 
-// Striver-style Problem Row
-function CPProblemRow({
+// Enhanced Striver-style Problem Row with keyboard navigation
+const CPProblemRow = memo(function CPProblemRow({
   problem,
   index,
   isSolved,
@@ -142,39 +153,74 @@ function CPProblemRow({
   onToggleRevision: () => void;
   onOpenNote: () => void;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+  
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: index * 0.015, duration: 0.2 }}
+      initial={{ opacity: 0, x: -5 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: Math.min(index * 0.01, 0.3), duration: 0.2 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
       className={cn(
-        "group grid items-center",
+        "group grid items-center relative",
         TABLE_GRID_COLS,
-        "border-b border-border/5 last:border-0",
+        "border-b border-border/10 last:border-0",
         "transition-all duration-200",
-        // Alternating row colors
-        index % 2 === 0 ? "bg-transparent" : "bg-muted/20",
-        // Override with solved state styling
+        // Enhanced row styling
+        index % 2 === 0 ? "bg-transparent" : "bg-muted/10",
         isSolved 
-          ? "bg-emerald-500/5 hover:bg-emerald-500/8" 
-          : "hover:bg-muted/40"
+          ? "bg-emerald-500/5 hover:bg-emerald-500/10" 
+          : "hover:bg-muted/30"
       )}
+      role="row"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggleSolved();
+        } else if (e.key === "s") {
+          onToggleRevision();
+        }
+      }}
     >
+      {/* Highlight bar on hover */}
+      <motion.div
+        className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary rounded-r"
+        initial={{ scaleY: 0 }}
+        animate={{ scaleY: isHovered && !isSolved ? 1 : 0 }}
+        transition={{ duration: 0.2 }}
+      />
+      
+      {/* Solved indicator bar */}
+      {isSolved && (
+        <motion.div
+          className="absolute left-0 top-0 bottom-0 w-[3px] bg-emerald-500 rounded-r"
+          layoutId={`solved-bar-${problem.id}`}
+        />
+      )}
+
       {/* Status Checkbox */}
       <div className="flex items-center justify-center py-3.5 px-1">
         <motion.button
           onClick={onToggleSolved}
-          className="p-1.5 rounded-lg transition-colors hover:bg-muted/50"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.9 }}
+          className={cn(
+            "p-1.5 rounded-lg transition-colors",
+            "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1",
+            isSolved ? "hover:bg-emerald-500/20" : "hover:bg-muted/50"
+          )}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.85 }}
+          aria-label={isSolved ? "Mark as unsolved" : "Mark as solved"}
         >
           <AnimatePresence mode="wait">
             {isSolved ? (
               <motion.div
                 key="checked"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0 }}
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: 180 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
               >
                 <CheckCircle2 className="h-5 w-5 text-emerald-500" />
               </motion.div>
@@ -185,35 +231,53 @@ function CPProblemRow({
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
               >
-                <Circle className="h-5 w-5 text-muted-foreground/25 group-hover:text-muted-foreground/40" />
+                <Circle className="h-5 w-5 text-muted-foreground/25 group-hover:text-muted-foreground/50 transition-colors" />
               </motion.div>
             )}
           </AnimatePresence>
         </motion.button>
       </div>
 
-      {/* Problem Number */}
+      {/* Problem Number with rank styling */}
       <div className="flex items-center justify-center py-3.5">
-        <span className={cn(
-          "text-xs font-semibold tabular-nums w-6 h-6 flex items-center justify-center rounded-md",
-          isSolved 
-            ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10" 
-            : "text-muted-foreground/50 bg-muted/30"
-        )}>
+        <motion.span 
+          className={cn(
+            "text-xs font-bold tabular-nums w-6 h-6 flex items-center justify-center rounded-md transition-colors",
+            isSolved 
+              ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/15" 
+              : "text-muted-foreground/40 bg-muted/20 group-hover:bg-muted/40"
+          )}
+          animate={{ scale: isSolved ? [1, 1.1, 1] : 1 }}
+          transition={{ duration: 0.2 }}
+        >
           {index + 1}
-        </span>
+        </motion.span>
       </div>
 
-      {/* Problem Title */}
+      {/* Problem Title with link */}
       <div className="py-3.5 px-3 min-w-0">
-        <span className={cn(
-          "text-[13px] font-medium truncate block transition-colors",
-          isSolved 
-            ? "text-muted-foreground line-through decoration-emerald-500/30" 
-            : "text-foreground group-hover:text-primary"
-        )}>
-          {problem.title}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "text-[13px] font-medium truncate transition-colors",
+            isSolved 
+              ? "text-muted-foreground line-through decoration-emerald-500/40" 
+              : "text-foreground group-hover:text-primary"
+          )}>
+            {problem.title}
+          </span>
+          {problem.problemUrl && (
+            <motion.a
+              href={problem.problemUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground/30 hover:text-primary transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+              onClick={(e) => e.stopPropagation()}
+              whileHover={{ scale: 1.1 }}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </motion.a>
+          )}
+        </div>
       </div>
 
       {/* Article Link */}
@@ -248,14 +312,15 @@ function CPProblemRow({
 
       {/* Notes Button */}
       <div className="flex items-center justify-center py-3.5">
-        <TooltipProvider delayDuration={200}>
+        <TooltipProvider delayDuration={150}>
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.button
                 onClick={onOpenNote}
-                className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground/30 hover:text-amber-500 hover:bg-amber-500/10 transition-all"
-                whileHover={{ scale: 1.05 }}
+                className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground/25 hover:text-amber-500 hover:bg-amber-500/10 transition-all"
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
+                aria-label="Add notes"
               >
                 <StickyNote className="h-4 w-4" />
               </motion.button>
@@ -265,9 +330,9 @@ function CPProblemRow({
         </TooltipProvider>
       </div>
 
-      {/* Revision Star */}
+      {/* Revision Star with animation */}
       <div className="flex items-center justify-center py-3.5">
-        <TooltipProvider delayDuration={200}>
+        <TooltipProvider delayDuration={150}>
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.button
@@ -275,13 +340,22 @@ function CPProblemRow({
                 className={cn(
                   "flex items-center justify-center w-8 h-8 rounded-lg transition-all",
                   isRevision 
-                    ? "text-amber-500 bg-amber-500/10" 
-                    : "text-muted-foreground/25 hover:text-amber-500/50 hover:bg-amber-500/5"
+                    ? "text-amber-500 bg-amber-500/15" 
+                    : "text-muted-foreground/20 hover:text-amber-500/60 hover:bg-amber-500/5"
                 )}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.15, rotate: isRevision ? 0 : 15 }}
+                whileTap={{ scale: 0.9 }}
+                aria-label={isRevision ? "Remove from revision" : "Mark for revision"}
               >
-                <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
+                <motion.div
+                  animate={isRevision ? { 
+                    rotate: [0, -15, 15, -10, 10, 0],
+                    scale: [1, 1.2, 1]
+                  } : {}}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
+                </motion.div>
               </motion.button>
             </TooltipTrigger>
             <TooltipContent side="top" className="text-xs">
@@ -297,7 +371,7 @@ function CPProblemRow({
       </div>
     </motion.div>
   );
-}
+});
 
 // Striver-style Mobile Row
 function CPProblemRowMobile({
