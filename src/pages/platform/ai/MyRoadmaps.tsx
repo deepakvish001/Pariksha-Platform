@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Map, Plus, Trash2, Globe, Lock, MoreVertical, Clock, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ interface RoadmapContent {
 }
 
 const MyRoadmaps = () => {
+  const navigate = useNavigate();
   const { contents, isLoading, deleteContent, togglePublic } = useAIContent("roadmap");
 
   if (isLoading) {
@@ -77,7 +78,11 @@ const MyRoadmaps = () => {
             {contents.map((roadmap) => {
               const content = roadmap.content as RoadmapContent;
               return (
-                <Card key={roadmap.id} className="hover:shadow-md transition-shadow">
+                <Card 
+                  key={roadmap.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/platform/ai/content/${roadmap.id}`)}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -100,14 +105,14 @@ const MyRoadmaps = () => {
                         </CardDescription>
                       </div>
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() => togglePublic.mutate({ id: roadmap.id, isPublic: !roadmap.is_public })}
+                            onClick={(e) => { e.stopPropagation(); togglePublic.mutate({ id: roadmap.id, isPublic: !roadmap.is_public }); }}
                           >
                             {roadmap.is_public ? (
                               <>
@@ -123,7 +128,7 @@ const MyRoadmaps = () => {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
-                            onClick={() => deleteContent.mutate(roadmap.id)}
+                            onClick={(e) => { e.stopPropagation(); deleteContent.mutate(roadmap.id); }}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
