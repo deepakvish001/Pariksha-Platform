@@ -129,11 +129,11 @@ function CPProblemRow({
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.02, duration: 0.3, ease: "easeOut" }}
       className={cn(
-        "group relative grid grid-cols-[52px_44px_1fr_90px_88px_44px_44px] items-center",
+        "group relative grid grid-cols-[48px_1fr_100px_80px_44px_44px_90px] items-center",
         "border-b border-border/10 last:border-0",
         "transition-all duration-300",
         isSolved 
-          ? "bg-gradient-to-r from-emerald-500/8 via-emerald-500/4 to-transparent" 
+          ? "bg-gradient-to-r from-emerald-500/8 via-emerald-500/4 to-transparent"
           : "hover:bg-gradient-to-r hover:from-muted/50 hover:via-muted/30 hover:to-transparent"
       )}
     >
@@ -148,7 +148,7 @@ function CPProblemRow({
       )}
 
       {/* Status Checkbox */}
-      <div className="flex items-center justify-center py-3.5 px-2">
+      <div className="flex items-center justify-center py-3.5 px-1">
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -194,50 +194,29 @@ function CPProblemRow({
         </TooltipProvider>
       </div>
 
-      {/* Problem Number */}
-      <div className="flex items-center justify-center py-3.5">
+      {/* Problem Title */}
+      <div className="py-3.5 px-3 min-w-0">
         <span className={cn(
-          "inline-flex items-center justify-center min-w-[26px] h-6 text-[10px] font-bold rounded-md tabular-nums transition-all duration-300",
+          "text-[13px] font-medium truncate block transition-all duration-300",
           isSolved 
-            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20" 
-            : "bg-muted/40 text-muted-foreground/70 group-hover:bg-muted/60"
+            ? "text-muted-foreground line-through decoration-emerald-500/50 decoration-[1.5px]" 
+            : "text-foreground group-hover:text-primary"
         )}>
-          {String(index + 1).padStart(2, '0')}
+          {problem.title}
         </span>
       </div>
 
-      {/* Problem Title & Platform */}
-      <div className="py-3.5 px-3 min-w-0">
-        <div className="flex items-center gap-3">
-          <span className={cn(
-            "text-[13px] font-medium truncate transition-all duration-300",
-            isSolved 
-              ? "text-muted-foreground line-through decoration-emerald-500/50 decoration-[1.5px]" 
-              : "text-foreground group-hover:text-primary"
-          )}>
-            {problem.title}
-          </span>
-          {problem.platform && (
-            <span className="hidden lg:inline shrink-0">
-              <PlatformBadge platform={problem.platform} />
-            </span>
-          )}
-        </div>
-        {/* Mobile: show platform below title */}
-        {problem.platform && (
-          <div className="lg:hidden mt-1.5">
-            <PlatformBadge platform={problem.platform} />
-          </div>
+      {/* Resource/Platform */}
+      <div className="flex items-center justify-center py-3.5 px-2">
+        {problem.platform ? (
+          <PlatformBadge platform={problem.platform} />
+        ) : (
+          <span className="text-muted-foreground/20 text-xs">—</span>
         )}
       </div>
 
-      {/* Difficulty */}
-      <div className="flex items-center justify-center py-3.5 px-2">
-        <DifficultyBadge difficulty={problem.difficulty} />
-      </div>
-
       {/* Practice Link */}
-      <div className="flex items-center justify-center py-3.5 px-2">
+      <div className="flex items-center justify-center py-3.5 px-1">
         {problem.problemUrl ? (
           <TooltipProvider delayDuration={300}>
             <Tooltip>
@@ -247,8 +226,8 @@ function CPProblemRow({
                   target="_blank"
                   rel="noopener noreferrer"
                   className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
-                    "bg-gradient-to-r from-primary/15 to-primary/10 text-primary text-[10px] font-bold uppercase tracking-wide",
+                    "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg",
+                    "bg-gradient-to-r from-primary/15 to-primary/10 text-primary text-[9px] font-bold uppercase tracking-wide",
                     "border border-primary/25 hover:border-primary/40",
                     "hover:from-primary/20 hover:to-primary/15 hover:shadow-[0_0_12px_rgba(var(--primary),0.15)]",
                     "transition-all duration-300"
@@ -258,7 +237,6 @@ function CPProblemRow({
                 >
                   <Zap className="h-3 w-3" />
                   <span>Solve</span>
-                  <ExternalLink className="h-2.5 w-2.5 opacity-60" />
                 </motion.a>
               </TooltipTrigger>
               <TooltipContent className="text-xs">
@@ -314,6 +292,11 @@ function CPProblemRow({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+      </div>
+
+      {/* Difficulty */}
+      <div className="flex items-center justify-center py-3.5 px-2">
+        <DifficultyBadge difficulty={problem.difficulty} />
       </div>
     </motion.div>
   );
@@ -548,14 +531,14 @@ export default function CPProblemTable({
       {/* Desktop Table */}
       <div className="hidden sm:block">
         {/* Table Header */}
-        <div className="grid grid-cols-[52px_44px_1fr_90px_88px_44px_44px] items-center bg-muted/10">
-          <TableHeaderCell align="center">Done</TableHeaderCell>
-          <TableHeaderCell align="center">#</TableHeaderCell>
-          <TableHeaderCell>Problem Title</TableHeaderCell>
-          <TableHeaderCell align="center">Difficulty</TableHeaderCell>
+        <div className="grid grid-cols-[48px_1fr_100px_80px_44px_44px_90px] items-center bg-muted/10">
+          <TableHeaderCell align="center">Status</TableHeaderCell>
+          <TableHeaderCell>Problem</TableHeaderCell>
+          <TableHeaderCell align="center">Resource</TableHeaderCell>
           <TableHeaderCell align="center">Practice</TableHeaderCell>
-          <TableHeaderCell align="center">Notes</TableHeaderCell>
-          <TableHeaderCell align="center">Star</TableHeaderCell>
+          <TableHeaderCell align="center">Note</TableHeaderCell>
+          <TableHeaderCell align="center">Revision</TableHeaderCell>
+          <TableHeaderCell align="center">Difficulty</TableHeaderCell>
         </div>
         
         {/* Table Body */}
