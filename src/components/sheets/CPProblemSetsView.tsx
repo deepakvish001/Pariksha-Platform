@@ -54,7 +54,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -654,6 +665,10 @@ const CPProblemSetsView = () => {
   
   // Revision tab sorting
   const [revisionSort, setRevisionSort] = useState<"difficulty" | "set" | "name">("difficulty");
+  
+  // Clear revision confirmation dialog
+  const [clearRevisionDialogOpen, setClearRevisionDialogOpen] = useState(false);
+  const [problemsToClear, setProblemsToClear] = useState<number[]>([]);
 
   // Calculate problem set counts per track
   const problemSetCounts = useMemo(() => {
@@ -1514,7 +1529,8 @@ const CPProblemSetsView = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            sortedProblems.forEach(p => toggleRevision(p.id));
+                            setProblemsToClear(sortedProblems.map(p => p.id));
+                            setClearRevisionDialogOpen(true);
                           }}
                           className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
@@ -1652,6 +1668,30 @@ const CPProblemSetsView = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Clear Revision Confirmation Dialog */}
+      <AlertDialog open={clearRevisionDialogOpen} onOpenChange={setClearRevisionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all revision marks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove {problemsToClear.length} {problemsToClear.length === 1 ? 'problem' : 'problems'} from your revision list. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                problemsToClear.forEach(id => toggleRevision(id));
+                setProblemsToClear([]);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Clear All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
