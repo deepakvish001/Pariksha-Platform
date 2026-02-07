@@ -19,7 +19,10 @@ import {
   Layers,
   Tags,
   Save,
-  Bookmark
+  Bookmark,
+  Circle,
+  Hexagon,
+  Sparkles
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,7 +94,11 @@ import {
   type CPProblemSet,
   type CPProblem 
 } from "@/data/competitiveProgrammingData";
+import { getTrackIcon, getTrackColors, getTopicIcon, difficultyConfig, getPlatformColor } from "@/data/cpIconMappings";
 import CPFilterSidebar from "@/components/sheets/CPFilterSidebar";
+import CPHeroSection from "@/components/sheets/CPHeroSection";
+import CPStatsDashboard from "@/components/sheets/CPStatsDashboard";
+import CPEmptyState from "@/components/sheets/CPEmptyState";
 import StreakCounter from "@/components/StreakCounter";
 import { useCPProgress } from "@/hooks/useCPProgress";
 import { useAuth } from "@/contexts/AuthContext";
@@ -430,7 +437,7 @@ function ProblemSetSection({
   );
 }
 
-// Track Section Component (simplified - no internal search/pagination)
+// Track Section Component (enhanced with icons and colors)
 function TrackSection({
   trackId,
   problemSets,
@@ -460,6 +467,8 @@ function TrackSection({
   
   if (!track) return null;
 
+  const TrackIcon = getTrackIcon(trackId);
+  const colors = getTrackColors(trackId);
   const totalProblems = problemSets.reduce((acc, ps) => acc + ps.problems.length, 0);
   const completedProblems = problemSets.reduce((acc, ps) => 
     acc + ps.problems.filter(p => isSolved(p.id)).length, 0);
@@ -470,34 +479,71 @@ function TrackSection({
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
       <CollapsibleTrigger className="w-full">
         <motion.div 
-          className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors border-b border-border/50 bg-muted/20"
+          className={cn(
+            "flex items-center justify-between p-4 hover:bg-muted/30 transition-colors border-b border-border/50",
+            "relative overflow-hidden"
+          )}
           whileHover={{ backgroundColor: "hsl(var(--muted) / 0.4)" }}
         >
-          <div className="flex items-center gap-3 min-w-0">
+          {/* Left gradient accent border */}
+          <div className={cn("absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b", colors.gradient)} />
+          
+          <div className="flex items-center gap-3 min-w-0 pl-2">
             <motion.div
               animate={{ rotate: isExpanded ? 90 : 0 }}
               transition={{ duration: 0.2 }}
             >
               <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </motion.div>
-            <Badge className={cn("text-xs shrink-0", track.color)}>
+            
+            {/* Track icon with colored background */}
+            <div className={cn("p-1.5 rounded-lg shrink-0", colors.bg)}>
+              <TrackIcon className={cn("h-4 w-4", colors.text)} />
+            </div>
+            
+            <Badge className={cn("text-xs shrink-0 border", colors.bg, colors.text, colors.border)}>
               {problemSets.length} sets
             </Badge>
             <span className="font-semibold text-sm sm:text-base truncate">{track.name}</span>
             <DifficultyBadge difficulty={difficulty} />
           </div>
+          
           <div className="flex items-center gap-3 shrink-0">
+            {/* Mini progress ring */}
             <div className="hidden sm:flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
+              <div className="relative w-8 h-8">
+                <svg className="w-8 h-8 rotate-[-90deg]">
+                  <circle
+                    cx="16" cy="16" r="12"
+                    fill="none"
+                    stroke="hsl(var(--muted))"
+                    strokeWidth="3"
+                  />
+                  <circle
+                    cx="16" cy="16" r="12"
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeDasharray={75.4}
+                    strokeDashoffset={75.4 - (progressPercent / 100) * 75.4}
+                    className="transition-all duration-500"
+                  />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold">
+                  {progressPercent}%
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
                 {completedProblems}/{totalProblems}
               </span>
-              <Progress value={progressPercent} className="w-20 h-1.5" />
-              <span className="text-xs text-muted-foreground w-8">{progressPercent}%</span>
             </div>
-            <ChevronDown className={cn(
-              "h-4 w-4 text-muted-foreground transition-transform duration-200",
-              isExpanded && "rotate-180"
-            )} />
+            <motion.div
+              animate={{ rotate: isExpanded ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </motion.div>
           </div>
         </motion.div>
       </CollapsibleTrigger>
@@ -510,6 +556,7 @@ function TrackSection({
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
+              className="bg-muted/5"
             >
               {problemSets.map((ps) => (
                 <ProblemSetSection
@@ -532,7 +579,7 @@ function TrackSection({
   );
 }
 
-// Topic Section Component (simplified - no internal search/pagination)
+// Topic Section Component (enhanced with icons)
 function TopicSection({
   topicId,
   problemSets,
@@ -562,6 +609,7 @@ function TopicSection({
   
   if (!topic) return null;
 
+  const TopicIcon = getTopicIcon(topicId);
   const totalProblems = problemSets.reduce((acc, ps) => acc + ps.problems.length, 0);
   const completedProblems = problemSets.reduce((acc, ps) => 
     acc + ps.problems.filter(p => isSolved(p.id)).length, 0);
@@ -571,33 +619,67 @@ function TopicSection({
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
       <CollapsibleTrigger className="w-full">
         <motion.div 
-          className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors border-b border-border/50 bg-muted/20"
+          className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors border-b border-border/50 relative overflow-hidden"
           whileHover={{ backgroundColor: "hsl(var(--muted) / 0.4)" }}
         >
-          <div className="flex items-center gap-3 min-w-0">
+          {/* Left accent border */}
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-purple-500" />
+          
+          <div className="flex items-center gap-3 min-w-0 pl-2">
             <motion.div
               animate={{ rotate: isExpanded ? 90 : 0 }}
               transition={{ duration: 0.2 }}
             >
               <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </motion.div>
-            <Badge variant="secondary" className="text-xs shrink-0">
+            
+            {/* Topic icon */}
+            <div className="p-1.5 rounded-lg bg-indigo-500/10 shrink-0">
+              <TopicIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            
+            <Badge variant="secondary" className="text-xs shrink-0 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30">
               {problemSets.length} sets
             </Badge>
             <span className="font-semibold text-sm sm:text-base truncate">{topic.name}</span>
           </div>
+          
           <div className="flex items-center gap-3 shrink-0">
+            {/* Mini progress ring */}
             <div className="hidden sm:flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
+              <div className="relative w-8 h-8">
+                <svg className="w-8 h-8 rotate-[-90deg]">
+                  <circle
+                    cx="16" cy="16" r="12"
+                    fill="none"
+                    stroke="hsl(var(--muted))"
+                    strokeWidth="3"
+                  />
+                  <circle
+                    cx="16" cy="16" r="12"
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeDasharray={75.4}
+                    strokeDashoffset={75.4 - (progressPercent / 100) * 75.4}
+                    className="transition-all duration-500"
+                  />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold">
+                  {progressPercent}%
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
                 {completedProblems}/{totalProblems}
               </span>
-              <Progress value={progressPercent} className="w-20 h-1.5" />
-              <span className="text-xs text-muted-foreground w-8">{progressPercent}%</span>
             </div>
-            <ChevronDown className={cn(
-              "h-4 w-4 text-muted-foreground transition-transform duration-200",
-              isExpanded && "rotate-180"
-            )} />
+            <motion.div
+              animate={{ rotate: isExpanded ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </motion.div>
           </div>
         </motion.div>
       </CollapsibleTrigger>
@@ -610,6 +692,7 @@ function TopicSection({
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
+              className="bg-muted/5"
             >
               {problemSets.map((ps) => (
                 <ProblemSetSection
@@ -784,6 +867,29 @@ const CPProblemSetsView = () => {
     return cpProblemSets.flatMap(ps => ps.problems).filter(p => isRevision(p.id)).length;
   }, [isRevision]);
 
+  // Calculate difficulty counts
+  const difficultyCounts = useMemo(() => {
+    const counts = { Easy: 0, Medium: 0, Hard: 0, EasySolved: 0, MediumSolved: 0, HardSolved: 0 };
+    allProblems.forEach(p => {
+      counts[p.difficulty]++;
+      if (isSolved(p.id)) {
+        counts[`${p.difficulty}Solved` as keyof typeof counts]++;
+      }
+    });
+    return counts;
+  }, [allProblems, isSolved]);
+
+  // Calculate tracks completed (any track with >50% solved)
+  const tracksCompleted = useMemo(() => {
+    return cpTracks.filter(track => {
+      const trackProblems = cpProblemSets
+        .filter(ps => ps.trackId === track.id)
+        .flatMap(ps => ps.problems);
+      const solved = trackProblems.filter(p => isSolved(p.id)).length;
+      return trackProblems.length > 0 && (solved / trackProblems.length) >= 0.5;
+    }).length;
+  }, [isSolved]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -803,7 +909,8 @@ const CPProblemSetsView = () => {
           </div>
           <StreakCounter variant="mini" />
           {isProgressLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          <Badge variant="outline" className="hidden md:flex text-xs whitespace-nowrap">
+          <Badge variant="outline" className="hidden md:flex text-xs whitespace-nowrap gap-1.5">
+            <Sparkles className="h-3 w-3" />
             {completedCount}/{totalProblemCount} solved
           </Badge>
         </div>
@@ -826,57 +933,33 @@ const CPProblemSetsView = () => {
 
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
-          {/* Description */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Master algorithms through structured problem sets from Codeforces, AtCoder & ICPC World Finals.{" "}
-              <a href="https://progvar.fun" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                Learn more at ProgVar.fun
-              </a>
-            </p>
-          </motion.div>
+          {/* New Hero Section */}
+          <CPHeroSection
+            totalProblems={totalProblemCount}
+            solvedCount={completedCount}
+            tracksCount={cpTracks.length}
+            revisionCount={revisionCount}
+          />
 
-          {/* Stats Card */}
+          {/* Enhanced Stats Dashboard */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Card className="bg-card/50 border-border/50">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-full border-4 border-muted flex items-center justify-center">
-                      <span className="text-lg font-bold">{progressPercent}%</span>
-                    </div>
-                    <div>
-                      <p className="font-medium">Overall Progress</p>
-                      <p className="text-sm text-muted-foreground">
-                        {completedCount}/{totalProblemCount} problems · {cpProblemSets.length} sets
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 sm:gap-6">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                      <span className="text-sm">Easy</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                      <span className="text-sm">Medium</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
-                      <span className="text-sm">Hard</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <CPStatsDashboard
+              totalProblems={totalProblemCount}
+              solvedCount={completedCount}
+              progressPercent={progressPercent}
+              easyCount={difficultyCounts.Easy}
+              mediumCount={difficultyCounts.Medium}
+              hardCount={difficultyCounts.Hard}
+              easySolved={difficultyCounts.EasySolved}
+              mediumSolved={difficultyCounts.MediumSolved}
+              hardSolved={difficultyCounts.HardSolved}
+              tracksCompleted={tracksCompleted}
+              totalTracks={cpTracks.length}
+            />
           </motion.div>
 
           {/* Sign in prompt for unauthenticated users */}
@@ -885,9 +968,11 @@ const CPProblemSetsView = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className="bg-primary/5 border-primary/20">
+              <Card className="bg-gradient-to-r from-primary/5 to-amber-500/5 border-primary/20">
                 <CardContent className="p-4 flex items-center gap-3">
-                  <Trophy className="h-5 w-5 text-primary shrink-0" />
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Trophy className="h-5 w-5 text-primary" />
+                  </div>
                   <p className="text-sm">
                     <span className="font-medium">Sign in to track your progress</span>
                     <span className="text-muted-foreground"> across devices and sync with your profile.</span>
@@ -978,30 +1063,47 @@ const CPProblemSetsView = () => {
 
           {/* Tabs for View Selection */}
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ViewTab)} className="w-full">
-            <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:inline-flex h-10 sm:h-9">
-              <TabsTrigger value="all" className="gap-1.5 text-xs sm:text-sm">
+            <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:inline-flex h-11 sm:h-10 p-1 bg-muted/50 backdrop-blur-sm">
+              <TabsTrigger 
+                value="all" 
+                className="gap-1.5 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+              >
                 <List className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">All Sets</span>
                 <span className="sm:hidden">All</span>
               </TabsTrigger>
-              <TabsTrigger value="by-track" className="gap-1.5 text-xs sm:text-sm">
+              <TabsTrigger 
+                value="by-track" 
+                className="gap-1.5 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              >
                 <Layers className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">By Track</span>
                 <span className="sm:hidden">Track</span>
               </TabsTrigger>
-              <TabsTrigger value="by-topic" className="gap-1.5 text-xs sm:text-sm">
+              <TabsTrigger 
+                value="by-topic" 
+                className="gap-1.5 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              >
                 <Tags className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">By Topic</span>
                 <span className="sm:hidden">Topic</span>
               </TabsTrigger>
-              <TabsTrigger value="revision" className="gap-1.5 text-xs sm:text-sm relative">
-                <Bookmark className="h-3.5 w-3.5" />
+              <TabsTrigger 
+                value="revision" 
+                className="gap-1.5 text-xs sm:text-sm relative data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              >
+                <Star className={cn("h-3.5 w-3.5", activeTab === "revision" && "fill-current")} />
                 <span className="hidden sm:inline">Revision</span>
                 <span className="sm:hidden">Rev</span>
                 {revisionCount > 0 && (
                   <Badge 
                     variant="secondary" 
-                    className="ml-1 h-5 min-w-5 px-1.5 text-[10px] bg-amber-500/20 text-amber-600 dark:text-amber-400 border-0"
+                    className={cn(
+                      "ml-1 h-5 min-w-5 px-1.5 text-[10px] border-0",
+                      activeTab === "revision" 
+                        ? "bg-white/20 text-white" 
+                        : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                    )}
                   >
                     {revisionCount}
                   </Badge>
@@ -1013,7 +1115,7 @@ const CPProblemSetsView = () => {
             <TabsContent value="all" className="mt-4 space-y-4">
               {/* Controls: Expand/Collapse All with indicator */}
               {paginatedProblemSets.length > 0 && (
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-muted-foreground">
                       {paginatedProblemSets.filter(ps => expandedSets.includes(ps.id)).length} of {paginatedProblemSets.length} expanded
@@ -1035,8 +1137,9 @@ const CPProblemSetsView = () => {
                           return Array.from(newExpanded);
                         });
                       }}
-                      className="h-8 text-xs"
+                      className="h-8 text-xs gap-1"
                     >
+                      <ChevronDown className="h-3 w-3" />
                       Expand All
                     </Button>
                     <Button
@@ -1046,8 +1149,9 @@ const CPProblemSetsView = () => {
                         const allSetIds = paginatedProblemSets.map(ps => ps.id);
                         setExpandedSets(prev => prev.filter(id => !allSetIds.includes(id)));
                       }}
-                      className="h-8 text-xs"
+                      className="h-8 text-xs gap-1"
                     >
+                      <ChevronRight className="h-3 w-3" />
                       Collapse All
                     </Button>
                   </div>
@@ -1058,28 +1162,34 @@ const CPProblemSetsView = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <Card className="overflow-hidden">
+                <Card className="overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm">
                   <CardContent className="p-0">
                     {paginatedProblemSets.length > 0 ? (
-                      paginatedProblemSets.map((ps) => (
-                        <ProblemSetSection
+                      paginatedProblemSets.map((ps, index) => (
+                        <motion.div
                           key={ps.id}
-                          problemSet={ps}
-                          isExpanded={expandedSets.includes(ps.id)}
-                          onToggle={() => toggleSetExpansion(ps.id)}
-                          isSolved={isSolved}
-                          isRevision={isRevision}
-                          toggleSolved={toggleSolved}
-                          toggleRevision={toggleRevision}
-                          onOpenNote={openNoteDialog}
-                        />
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.02 }}
+                        >
+                          <ProblemSetSection
+                            problemSet={ps}
+                            isExpanded={expandedSets.includes(ps.id)}
+                            onToggle={() => toggleSetExpansion(ps.id)}
+                            isSolved={isSolved}
+                            isRevision={isRevision}
+                            toggleSolved={toggleSolved}
+                            toggleRevision={toggleRevision}
+                            onOpenNote={openNoteDialog}
+                          />
+                        </motion.div>
                       ))
                     ) : (
-                      <div className="p-12 text-center">
-                        <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No problem sets found matching your filters.</p>
-                        <Button variant="link" onClick={clearFilters} className="mt-2">Clear filters</Button>
-                      </div>
+                      <CPEmptyState 
+                        type="no-results" 
+                        onAction={clearFilters}
+                        actionLabel="Clear Filters"
+                      />
                     )}
                   </CardContent>
                 </Card>
@@ -1309,11 +1419,11 @@ const CPProblemSetsView = () => {
                       );
                     })}
                     {filteredProblemSets.length === 0 && (
-                      <div className="p-12 text-center">
-                        <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No problem sets found matching your filters.</p>
-                        <Button variant="link" onClick={clearFilters} className="mt-2">Clear filters</Button>
-                      </div>
+                      <CPEmptyState 
+                        type="no-results" 
+                        onAction={clearFilters}
+                        actionLabel="Clear Filters"
+                      />
                     )}
                   </CardContent>
                 </Card>
@@ -1429,11 +1539,11 @@ const CPProblemSetsView = () => {
                       );
                     })}
                     {filteredProblemSets.length === 0 && (
-                      <div className="p-12 text-center">
-                        <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No problem sets found matching your filters.</p>
-                        <Button variant="link" onClick={clearFilters} className="mt-2">Clear filters</Button>
-                      </div>
+                      <CPEmptyState 
+                        type="no-results" 
+                        onAction={clearFilters}
+                        actionLabel="Clear Filters"
+                      />
                     )}
                   </CardContent>
                 </Card>
@@ -1469,13 +1579,13 @@ const CPProblemSetsView = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                     >
-                      <Card className="overflow-hidden">
-                        <CardContent className="p-12 text-center">
-                          <Bookmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                          <p className="text-muted-foreground mb-2">No problems marked for revision yet.</p>
-                          <p className="text-sm text-muted-foreground">
-                            Click the star icon on any problem to add it to your revision list.
-                          </p>
+                      <Card className="overflow-hidden border-amber-500/20 bg-gradient-to-br from-card to-amber-500/5">
+                        <CardContent className="p-0">
+                          <CPEmptyState 
+                            type="no-revision" 
+                            onAction={() => setActiveTab("all")}
+                            actionLabel="Browse Problems"
+                          />
                         </CardContent>
                       </Card>
                     </motion.div>
