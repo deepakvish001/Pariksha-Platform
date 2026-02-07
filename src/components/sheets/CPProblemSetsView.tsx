@@ -1265,9 +1265,15 @@ const CPProblemSetsView = () => {
               {/* Controls: Expand/Collapse All with indicator */}
               {paginatedProblemSets.length > 0 && (
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm text-muted-foreground">
-                    {paginatedProblemSets.filter(ps => expandedSets.includes(ps.id)).length} of {paginatedProblemSets.length} expanded
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {paginatedProblemSets.filter(ps => expandedSets.includes(ps.id)).length} of {paginatedProblemSets.length} expanded
+                    </span>
+                    <Progress 
+                      value={paginatedProblemSets.length > 0 ? (paginatedProblemSets.filter(ps => expandedSets.includes(ps.id)).length / paginatedProblemSets.length) * 100 : 0} 
+                      className="w-20 h-1.5" 
+                    />
+                  </div>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -1485,6 +1491,14 @@ const CPProblemSetsView = () => {
                   <span className="text-sm text-muted-foreground">
                     {expandedTracks.filter(id => cpTracks.some(t => t.id === id && (groupedByTrack[t.id] || []).length > 0)).length} of {cpTracks.filter(t => (groupedByTrack[t.id] || []).length > 0).length} expanded
                   </span>
+                  <Progress 
+                    value={(() => {
+                      const total = cpTracks.filter(t => (groupedByTrack[t.id] || []).length > 0).length;
+                      const expanded = expandedTracks.filter(id => cpTracks.some(t => t.id === id && (groupedByTrack[t.id] || []).length > 0)).length;
+                      return total > 0 ? (expanded / total) * 100 : 0;
+                    })()} 
+                    className="w-20 h-1.5" 
+                  />
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -1592,6 +1606,14 @@ const CPProblemSetsView = () => {
                   <span className="text-sm text-muted-foreground">
                     {expandedTopics.filter(id => cpTopics.some(t => t.id === id && (groupedByTopic[t.id] || []).length > 0)).length} of {cpTopics.filter(t => (groupedByTopic[t.id] || []).length > 0).length} expanded
                   </span>
+                  <Progress 
+                    value={(() => {
+                      const total = cpTopics.filter(t => (groupedByTopic[t.id] || []).length > 0).length;
+                      const expanded = expandedTopics.filter(id => cpTopics.some(t => t.id === id && (groupedByTopic[t.id] || []).length > 0)).length;
+                      return total > 0 ? (expanded / total) * 100 : 0;
+                    })()} 
+                    className="w-20 h-1.5" 
+                  />
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
