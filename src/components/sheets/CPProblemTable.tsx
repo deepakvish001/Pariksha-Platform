@@ -7,19 +7,12 @@ import {
   FileText,
   Diamond,
   Hexagon,
-  Sparkles,
-  Trophy,
   Zap,
+  Trophy,
+  Sparkles,
+  ArrowUpRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
@@ -39,56 +32,73 @@ interface CPProblemTableProps {
   onOpenNote: (problemId: number, title: string) => void;
 }
 
-// Difficulty icon component with shapes
-function DifficultyIcon({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
+// Difficulty icon with consistent sizing
+function DifficultyIcon({ difficulty, size = "sm" }: { difficulty: "Easy" | "Medium" | "Hard"; size?: "xs" | "sm" }) {
+  const sizeClasses = size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3";
   const config = {
-    Easy: { Icon: Circle, color: "text-emerald-500", fill: "fill-emerald-500/40" },
-    Medium: { Icon: Diamond, color: "text-amber-500", fill: "fill-amber-500/40" },
-    Hard: { Icon: Hexagon, color: "text-red-500", fill: "fill-red-500/40" },
+    Easy: { Icon: Circle, color: "text-emerald-500", fill: "fill-emerald-500" },
+    Medium: { Icon: Diamond, color: "text-amber-500", fill: "fill-amber-500/60" },
+    Hard: { Icon: Hexagon, color: "text-red-500", fill: "fill-red-500/60" },
   };
   const { Icon, color, fill } = config[difficulty];
-  return <Icon className={cn("h-3 w-3", color, fill)} />;
+  return <Icon className={cn(sizeClasses, color, fill)} />;
 }
 
-// Enhanced Difficulty Badge with gradient
+// Enhanced Difficulty Badge
 function DifficultyBadge({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
   const styles = {
-    Easy: "bg-gradient-to-r from-emerald-500/20 to-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-emerald-500/5",
-    Medium: "bg-gradient-to-r from-amber-500/20 to-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 shadow-amber-500/5",
-    Hard: "bg-gradient-to-r from-red-500/20 to-red-500/10 text-red-600 dark:text-red-400 border-red-500/30 shadow-red-500/5",
+    Easy: "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+    Medium: "bg-amber-500/12 text-amber-600 dark:text-amber-400 border-amber-500/25",
+    Hard: "bg-red-500/12 text-red-600 dark:text-red-400 border-red-500/25",
   };
 
   return (
-    <Badge 
-      variant="outline" 
-      className={cn(
-        "text-[10px] px-2.5 py-0.5 gap-1.5 font-semibold shadow-sm border backdrop-blur-sm",
-        styles[difficulty]
-      )}
-    >
-      <DifficultyIcon difficulty={difficulty} />
+    <span className={cn(
+      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border",
+      styles[difficulty]
+    )}>
+      <DifficultyIcon difficulty={difficulty} size="xs" />
       {difficulty}
-    </Badge>
+    </span>
   );
 }
 
-// Platform Badge Component with brand colors
+// Platform Badge
 function PlatformBadge({ platform }: { platform: string }) {
   const colorClasses = getPlatformColor(platform);
   return (
-    <Badge 
-      variant="outline" 
-      className={cn(
-        "text-[9px] px-2 py-0.5 font-medium tracking-wide uppercase",
-        colorClasses
-      )}
-    >
+    <span className={cn(
+      "inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border",
+      colorClasses
+    )}>
       {platform}
-    </Badge>
+    </span>
   );
 }
 
-// Enhanced Problem Row with better visual hierarchy
+// Table Header Cell Component for consistency
+function TableHeaderCell({ 
+  children, 
+  className,
+  align = "left" 
+}: { 
+  children: React.ReactNode; 
+  className?: string;
+  align?: "left" | "center" | "right";
+}) {
+  return (
+    <div className={cn(
+      "text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 py-3 px-3",
+      align === "center" && "text-center",
+      align === "right" && "text-right",
+      className
+    )}>
+      {children}
+    </div>
+  );
+}
+
+// Individual Problem Row
 function CPProblemRow({
   problem,
   index,
@@ -97,7 +107,6 @@ function CPProblemRow({
   onToggleSolved,
   onToggleRevision,
   onOpenNote,
-  totalProblems,
 }: {
   problem: CPProblem;
   index: number;
@@ -106,44 +115,36 @@ function CPProblemRow({
   onToggleSolved: () => void;
   onToggleRevision: () => void;
   onOpenNote: () => void;
-  totalProblems: number;
 }) {
   return (
-    <motion.tr
-      initial={{ opacity: 0, y: 8 }}
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.02, duration: 0.3 }}
+      transition={{ delay: index * 0.015, duration: 0.25 }}
       className={cn(
-        "group relative transition-all duration-300",
-        "border-b border-border/20 last:border-0",
+        "group grid grid-cols-[56px_48px_1fr_100px_80px_48px_48px] items-center",
+        "border-b border-border/15 last:border-0",
+        "transition-all duration-200",
         isSolved 
-          ? "bg-gradient-to-r from-emerald-500/8 via-emerald-500/4 to-transparent" 
-          : "hover:bg-gradient-to-r hover:from-primary/8 hover:via-primary/4 hover:to-transparent"
+          ? "bg-gradient-to-r from-emerald-500/6 via-emerald-500/3 to-transparent" 
+          : "hover:bg-muted/30"
       )}
     >
-      {/* Animated left indicator on hover */}
-      <motion.div
-        className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary rounded-full"
-        initial={{ scaleY: 0 }}
-        whileHover={{ scaleY: 1 }}
-        transition={{ duration: 0.2 }}
-      />
-
-      {/* Status Checkbox */}
-      <TableCell className="w-16 text-center py-4">
-        <TooltipProvider delayDuration={300}>
+      {/* Status Checkbox - 56px */}
+      <div className="flex items-center justify-center py-3 px-2">
+        <TooltipProvider delayDuration={400}>
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.button
                 onClick={onToggleSolved}
                 className={cn(
-                  "relative p-2 rounded-xl transition-all duration-300",
+                  "relative p-1.5 rounded-lg transition-all duration-200",
                   isSolved 
-                    ? "bg-emerald-500/15 hover:bg-emerald-500/25" 
-                    : "hover:bg-muted/60"
+                    ? "bg-emerald-500/15" 
+                    : "hover:bg-muted/50"
                 )}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.85 }}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
               >
                 <AnimatePresence mode="wait">
                   {isSolved ? (
@@ -152,9 +153,9 @@ function CPProblemRow({
                       initial={{ scale: 0, rotate: -180 }}
                       animate={{ scale: 1, rotate: 0 }}
                       exit={{ scale: 0, rotate: 180 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 20 }}
                     >
-                      <CheckCircle2 className="h-5 w-5 text-emerald-500 fill-emerald-500/20" />
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -162,67 +163,64 @@ function CPProblemRow({
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       exit={{ scale: 0 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 15 }}
                     >
-                      <Circle className="h-5 w-5 text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors" />
+                      <Circle className="h-5 w-5 text-muted-foreground/30 group-hover:text-muted-foreground/50 transition-colors" />
                     </motion.div>
                   )}
                 </AnimatePresence>
               </motion.button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs font-medium">
+            <TooltipContent side="right" className="text-xs">
               {isSolved ? "Mark incomplete" : "Mark complete"}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      </TableCell>
+      </div>
 
-      {/* Problem Number with visual treatment */}
-      <TableCell className="w-14 text-center py-4">
-        <motion.span 
-          className={cn(
-            "inline-flex items-center justify-center w-8 h-8 text-xs font-bold rounded-lg transition-all duration-300",
-            isSolved 
-              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20" 
-              : "bg-muted/60 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-          )}
-          whileHover={{ scale: 1.05 }}
-        >
+      {/* Problem Number - 48px */}
+      <div className="flex items-center justify-center py-3">
+        <span className={cn(
+          "inline-flex items-center justify-center min-w-[28px] h-7 text-[11px] font-bold rounded-md tabular-nums",
+          isSolved 
+            ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400" 
+            : "bg-muted/50 text-muted-foreground"
+        )}>
           {String(index + 1).padStart(2, '0')}
-        </motion.span>
-      </TableCell>
+        </span>
+      </div>
 
-      {/* Problem Title & Platform */}
-      <TableCell className="py-4 min-w-0">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+      {/* Problem Title & Platform - Flex grow */}
+      <div className="py-3 px-2 min-w-0">
+        <div className="flex items-center gap-2.5">
           <span className={cn(
-            "text-sm font-medium transition-all duration-300 truncate",
-            isSolved && "line-through text-muted-foreground decoration-emerald-500/50 decoration-2"
+            "text-[13px] font-medium truncate transition-all",
+            isSolved && "line-through text-muted-foreground decoration-emerald-500/40 decoration-1"
           )}>
             {problem.title}
           </span>
           {problem.platform && (
-            <span className="hidden sm:inline shrink-0">
+            <span className="hidden md:inline shrink-0">
               <PlatformBadge platform={problem.platform} />
             </span>
           )}
         </div>
-        {/* Mobile difficulty badge */}
-        <div className="flex items-center gap-2 mt-1.5 sm:hidden">
-          <DifficultyBadge difficulty={problem.difficulty} />
-          {problem.platform && <PlatformBadge platform={problem.platform} />}
-        </div>
-      </TableCell>
+        {/* Mobile: show platform below title */}
+        {problem.platform && (
+          <div className="md:hidden mt-1">
+            <PlatformBadge platform={problem.platform} />
+          </div>
+        )}
+      </div>
 
-      {/* Difficulty - Desktop */}
-      <TableCell className="w-28 text-center py-4 hidden sm:table-cell">
+      {/* Difficulty - 100px */}
+      <div className="flex items-center justify-center py-3 px-2">
         <DifficultyBadge difficulty={problem.difficulty} />
-      </TableCell>
+      </div>
 
-      {/* Practice Link - Enhanced CTA */}
-      <TableCell className="w-24 text-center py-4">
-        {problem.problemUrl && (
-          <TooltipProvider delayDuration={300}>
+      {/* Practice Link - 80px */}
+      <div className="flex items-center justify-center py-3 px-2">
+        {problem.problemUrl ? (
+          <TooltipProvider delayDuration={400}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <motion.a
@@ -230,81 +228,185 @@ function CPProblemRow({
                   target="_blank"
                   rel="noopener noreferrer"
                   className={cn(
-                    "inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg",
-                    "bg-gradient-to-br from-primary/15 via-primary/10 to-transparent",
-                    "text-primary font-medium text-xs",
-                    "border border-primary/25 hover:border-primary/40",
-                    "transition-all duration-300 shadow-sm hover:shadow-md hover:shadow-primary/15"
+                    "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md",
+                    "bg-primary/10 text-primary text-[11px] font-semibold",
+                    "border border-primary/20 hover:border-primary/35",
+                    "hover:bg-primary/15 transition-all duration-200"
                   )}
-                  whileHover={{ scale: 1.03, y: -1 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <Zap className="h-3 w-3" />
-                  <span className="hidden lg:inline">Solve</span>
-                  <ExternalLink className="h-3 w-3 lg:hidden" />
+                  <span>Solve</span>
                 </motion.a>
               </TooltipTrigger>
-              <TooltipContent className="font-medium">
-                Practice on {problem.platform || "Platform"}
+              <TooltipContent>
+                Open on {problem.platform || "Platform"}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+        ) : (
+          <span className="text-muted-foreground/30">—</span>
         )}
-      </TableCell>
+      </div>
 
-      {/* Notes Button */}
-      <TableCell className="w-14 text-center py-4">
-        <TooltipProvider delayDuration={300}>
+      {/* Notes - 48px */}
+      <div className="flex items-center justify-center py-3">
+        <TooltipProvider delayDuration={400}>
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.button
                 onClick={onOpenNote}
-                className={cn(
-                  "p-2 rounded-lg transition-all duration-300",
-                  "text-muted-foreground/60 hover:text-foreground",
-                  "hover:bg-muted/60"
-                )}
+                className="p-1.5 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 transition-all"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
                 <FileText className="h-4 w-4" />
               </motion.button>
             </TooltipTrigger>
-            <TooltipContent className="font-medium">Add notes</TooltipContent>
+            <TooltipContent>Add notes</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      </TableCell>
+      </div>
 
-      {/* Revision Star */}
-      <TableCell className="w-14 text-center py-4">
-        <TooltipProvider delayDuration={300}>
+      {/* Revision Star - 48px */}
+      <div className="flex items-center justify-center py-3">
+        <TooltipProvider delayDuration={400}>
           <Tooltip>
             <TooltipTrigger asChild>
               <motion.button
                 onClick={onToggleRevision}
                 className={cn(
-                  "p-2 rounded-lg transition-all duration-300",
+                  "p-1.5 rounded-md transition-all",
                   isRevision 
-                    ? "text-amber-500 bg-amber-500/15 ring-1 ring-amber-500/25" 
-                    : "text-muted-foreground/40 hover:text-amber-500/70 hover:bg-amber-500/10"
+                    ? "text-amber-500 bg-amber-500/12" 
+                    : "text-muted-foreground/30 hover:text-amber-500/60 hover:bg-amber-500/8"
                 )}
-                whileHover={{ scale: 1.15, rotate: isRevision ? -15 : 15 }}
-                whileTap={{ scale: 0.85 }}
+                whileHover={{ scale: 1.12, rotate: isRevision ? -12 : 12 }}
+                whileTap={{ scale: 0.88 }}
               >
-                <Star className={cn("h-4 w-4 transition-all duration-300", isRevision && "fill-current")} />
+                <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
               </motion.button>
             </TooltipTrigger>
-            <TooltipContent className="font-medium">
-              {isRevision ? "Remove from revision" : "Mark for revision"}
+            <TooltipContent>
+              {isRevision ? "Remove from revision" : "Add to revision"}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      </TableCell>
-    </motion.tr>
+      </div>
+    </motion.div>
   );
 }
 
-// Main Problem Table Component with premium styling
+// Mobile Problem Row (stacked layout)
+function CPProblemRowMobile({
+  problem,
+  index,
+  isSolved,
+  isRevision,
+  onToggleSolved,
+  onToggleRevision,
+  onOpenNote,
+}: {
+  problem: CPProblem;
+  index: number;
+  isSolved: boolean;
+  isRevision: boolean;
+  onToggleSolved: () => void;
+  onToggleRevision: () => void;
+  onOpenNote: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.02, duration: 0.25 }}
+      className={cn(
+        "group p-3 border-b border-border/15 last:border-0",
+        "transition-all duration-200",
+        isSolved 
+          ? "bg-gradient-to-r from-emerald-500/6 to-transparent" 
+          : "hover:bg-muted/20"
+      )}
+    >
+      {/* Top row: checkbox, number, title */}
+      <div className="flex items-start gap-2.5">
+        <motion.button
+          onClick={onToggleSolved}
+          className={cn(
+            "p-1 rounded-lg shrink-0 mt-0.5",
+            isSolved ? "bg-emerald-500/15" : "hover:bg-muted/50"
+          )}
+          whileTap={{ scale: 0.9 }}
+        >
+          {isSolved ? (
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          ) : (
+            <Circle className="h-5 w-5 text-muted-foreground/30" />
+          )}
+        </motion.button>
+
+        <span className={cn(
+          "inline-flex items-center justify-center min-w-[24px] h-6 text-[10px] font-bold rounded shrink-0 mt-0.5",
+          isSolved 
+            ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400" 
+            : "bg-muted/50 text-muted-foreground"
+        )}>
+          {String(index + 1).padStart(2, '0')}
+        </span>
+
+        <div className="flex-1 min-w-0">
+          <span className={cn(
+            "text-sm font-medium block",
+            isSolved && "line-through text-muted-foreground decoration-emerald-500/40"
+          )}>
+            {problem.title}
+          </span>
+          
+          {/* Badges row */}
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            <DifficultyBadge difficulty={problem.difficulty} />
+            {problem.platform && <PlatformBadge platform={problem.platform} />}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom row: actions */}
+      <div className="flex items-center justify-end gap-1 mt-2.5 pl-8">
+        {problem.problemUrl && (
+          <a
+            href={problem.problemUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-semibold border border-primary/20"
+          >
+            <Zap className="h-3 w-3" />
+            Solve
+          </a>
+        )}
+        <button
+          onClick={onOpenNote}
+          className="p-1.5 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-muted/50"
+        >
+          <FileText className="h-4 w-4" />
+        </button>
+        <button
+          onClick={onToggleRevision}
+          className={cn(
+            "p-1.5 rounded-md",
+            isRevision 
+              ? "text-amber-500 bg-amber-500/12" 
+              : "text-muted-foreground/30 hover:text-amber-500/60"
+          )}
+        >
+          <Star className={cn("h-4 w-4", isRevision && "fill-current")} />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// Main Table Component
 export default function CPProblemTable({
   problems,
   isSolved,
@@ -318,139 +420,125 @@ export default function CPProblemTable({
   const revisionCount = problems.filter(p => isRevision(p.id)).length;
   
   // Difficulty breakdown
-  const difficultyStats = problems.reduce(
+  const stats = problems.reduce(
     (acc, p) => ({ ...acc, [p.difficulty]: acc[p.difficulty] + 1 }),
     { Easy: 0, Medium: 0, Hard: 0 }
   );
   
   return (
     <div className="relative">
-      {/* Enhanced Table Header with Stats */}
+      {/* Stats Header */}
       <div className={cn(
-        "flex flex-wrap items-center justify-between gap-3 px-5 py-3",
-        "bg-gradient-to-r from-muted/50 via-muted/30 to-transparent",
-        "border-b border-border/40"
+        "flex flex-wrap items-center justify-between gap-3 px-4 py-3",
+        "bg-gradient-to-r from-muted/40 via-muted/20 to-transparent",
+        "border-b border-border/30"
       )}>
-        {/* Left Stats */}
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Problem count */}
+        {/* Left: counts */}
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-md bg-primary/10">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-            </div>
-            <span className="text-xs font-semibold text-foreground">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-semibold">
               {problems.length} <span className="text-muted-foreground font-normal">problems</span>
             </span>
           </div>
           
-          {/* Divider */}
-          <div className="w-px h-4 bg-border/60 hidden sm:block" />
-          
-          {/* Difficulty breakdown */}
-          <div className="hidden sm:flex items-center gap-2">
-            {difficultyStats.Easy > 0 && (
-              <span className="flex items-center gap-1 text-xs">
-                <Circle className="h-2.5 w-2.5 text-emerald-500 fill-emerald-500" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">{difficultyStats.Easy}</span>
+          {/* Difficulty legend */}
+          <div className="hidden sm:flex items-center gap-3 pl-3 border-l border-border/40">
+            {stats.Easy > 0 && (
+              <span className="flex items-center gap-1 text-[11px]">
+                <DifficultyIcon difficulty="Easy" size="xs" />
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{stats.Easy}</span>
               </span>
             )}
-            {difficultyStats.Medium > 0 && (
-              <span className="flex items-center gap-1 text-xs">
-                <Diamond className="h-2.5 w-2.5 text-amber-500 fill-amber-500/50" />
-                <span className="text-amber-600 dark:text-amber-400 font-medium">{difficultyStats.Medium}</span>
+            {stats.Medium > 0 && (
+              <span className="flex items-center gap-1 text-[11px]">
+                <DifficultyIcon difficulty="Medium" size="xs" />
+                <span className="text-amber-600 dark:text-amber-400 font-semibold">{stats.Medium}</span>
               </span>
             )}
-            {difficultyStats.Hard > 0 && (
-              <span className="flex items-center gap-1 text-xs">
-                <Hexagon className="h-2.5 w-2.5 text-red-500 fill-red-500/50" />
-                <span className="text-red-600 dark:text-red-400 font-medium">{difficultyStats.Hard}</span>
+            {stats.Hard > 0 && (
+              <span className="flex items-center gap-1 text-[11px]">
+                <DifficultyIcon difficulty="Hard" size="xs" />
+                <span className="text-red-600 dark:text-red-400 font-semibold">{stats.Hard}</span>
               </span>
             )}
           </div>
         </div>
         
-        {/* Right Stats */}
-        <div className="flex items-center gap-3">
-          {/* Revision count */}
+        {/* Right: progress */}
+        <div className="flex items-center gap-2">
           {revisionCount > 0 && (
-            <Badge 
-              variant="outline"
-              className="text-[10px] px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 gap-1"
-            >
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
               <Star className="h-3 w-3 fill-current" />
               {revisionCount}
-            </Badge>
+            </span>
           )}
           
-          {/* Solved count */}
-          <Badge 
-            variant={isAllComplete ? "default" : "outline"}
-            className={cn(
-              "text-[10px] px-2.5 py-0.5 gap-1.5 font-semibold",
-              isAllComplete 
-                ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-md shadow-emerald-500/25" 
-                : "bg-muted/50 border-border/60"
-            )}
-          >
+          <span className={cn(
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold",
+            isAllComplete 
+              ? "bg-emerald-500 text-white" 
+              : "bg-muted/60 text-foreground"
+          )}>
             {isAllComplete ? (
               <>
-                <Trophy className="h-3 w-3" />
+                <Trophy className="h-3.5 w-3.5" />
                 Complete!
               </>
             ) : (
               <>
-                <CheckCircle2 className="h-3 w-3" />
+                <CheckCircle2 className="h-3.5 w-3.5" />
                 {solvedCount}/{problems.length}
               </>
             )}
-          </Badge>
+          </span>
         </div>
       </div>
       
-      {/* Table with responsive design */}
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-b border-border/30 bg-muted/20">
-              <TableHead className="w-16 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 py-3">
-                Done
-              </TableHead>
-              <TableHead className="w-14 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 py-3">
-                #
-              </TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 py-3">
-                Problem
-              </TableHead>
-              <TableHead className="w-28 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 hidden sm:table-cell py-3">
-                Level
-              </TableHead>
-              <TableHead className="w-24 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 py-3">
-                Practice
-              </TableHead>
-              <TableHead className="w-14 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 py-3">
-                Notes
-              </TableHead>
-              <TableHead className="w-14 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 py-3">
-                Star
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {problems.map((problem, idx) => (
-              <CPProblemRow
-                key={problem.id}
-                problem={problem}
-                index={idx}
-                isSolved={isSolved(problem.id)}
-                isRevision={isRevision(problem.id)}
-                onToggleSolved={() => toggleSolved(problem.id)}
-                onToggleRevision={() => toggleRevision(problem.id)}
-                onOpenNote={() => onOpenNote(problem.id, problem.title)}
-                totalProblems={problems.length}
-              />
-            ))}
-          </TableBody>
-        </Table>
+      {/* Desktop Table */}
+      <div className="hidden sm:block">
+        {/* Table Header */}
+        <div className="grid grid-cols-[56px_48px_1fr_100px_80px_48px_48px] items-center bg-muted/20 border-b border-border/30">
+          <TableHeaderCell align="center">Done</TableHeaderCell>
+          <TableHeaderCell align="center">#</TableHeaderCell>
+          <TableHeaderCell>Problem</TableHeaderCell>
+          <TableHeaderCell align="center">Level</TableHeaderCell>
+          <TableHeaderCell align="center">Practice</TableHeaderCell>
+          <TableHeaderCell align="center">Note</TableHeaderCell>
+          <TableHeaderCell align="center">Rev</TableHeaderCell>
+        </div>
+        
+        {/* Table Body */}
+        <div>
+          {problems.map((problem, idx) => (
+            <CPProblemRow
+              key={problem.id}
+              problem={problem}
+              index={idx}
+              isSolved={isSolved(problem.id)}
+              isRevision={isRevision(problem.id)}
+              onToggleSolved={() => toggleSolved(problem.id)}
+              onToggleRevision={() => toggleRevision(problem.id)}
+              onOpenNote={() => onOpenNote(problem.id, problem.title)}
+            />
+          ))}
+        </div>
+      </div>
+      
+      {/* Mobile Layout */}
+      <div className="sm:hidden">
+        {problems.map((problem, idx) => (
+          <CPProblemRowMobile
+            key={problem.id}
+            problem={problem}
+            index={idx}
+            isSolved={isSolved(problem.id)}
+            isRevision={isRevision(problem.id)}
+            onToggleSolved={() => toggleSolved(problem.id)}
+            onToggleRevision={() => toggleRevision(problem.id)}
+            onOpenNote={() => onOpenNote(problem.id, problem.title)}
+          />
+        ))}
       </div>
     </div>
   );
