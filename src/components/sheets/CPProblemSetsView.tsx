@@ -643,7 +643,7 @@ function TrackSection({
   );
 }
 
-// Topic Section Component
+// Topic Section Component with pagination and search
 function TopicSection({
   topicId,
   problemSets,
@@ -670,12 +670,50 @@ function TopicSection({
   onOpenNote: (problemId: number, title: string) => void;
 }) {
   const topic = cpTopics.find(t => t.id === topicId);
+  const storageKey = `cp-topic-page-size-${topicId}`;
+  
+  const [pageSize, setPageSize] = useState<PageSize>(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved && PAGE_SIZE_OPTIONS.includes(Number(saved) as PageSize)) {
+      return Number(saved) as PageSize;
+    }
+    return 10;
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [topicSearchQuery, setTopicSearchQuery] = useState("");
+  
+  // Persist page size to localStorage
+  useEffect(() => {
+    localStorage.setItem(storageKey, String(pageSize));
+  }, [pageSize, storageKey]);
+  
+  // Reset page when page size or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pageSize, topicSearchQuery]);
+  
   if (!topic) return null;
+
+  // Filter problem sets by search query within this topic
+  const filteredTopicSets = topicSearchQuery
+    ? problemSets.filter(ps =>
+        ps.title.toLowerCase().includes(topicSearchQuery.toLowerCase()) ||
+        ps.problems.some(p => p.title.toLowerCase().includes(topicSearchQuery.toLowerCase()))
+      )
+    : problemSets;
 
   const totalProblems = problemSets.reduce((acc, ps) => acc + ps.problems.length, 0);
   const completedProblems = problemSets.reduce((acc, ps) => 
     acc + ps.problems.filter(p => isSolved(p.id)).length, 0);
   const progressPercent = totalProblems > 0 ? Math.round((completedProblems / totalProblems) * 100) : 0;
+  
+  // Pagination logic for filtered problem sets within this topic
+  const totalPages = Math.ceil(filteredTopicSets.length / pageSize);
+  const paginatedSets = filteredTopicSets.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+  const needsPagination = filteredTopicSets.length > pageSize;
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
@@ -721,19 +759,153 @@ function TopicSection({
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {problemSets.map((ps) => (
-                <ProblemSetSection
-                  key={ps.id}
-                  problemSet={ps}
-                  isExpanded={expandedSets.includes(ps.id)}
-                  onToggle={() => toggleSetExpansion(ps.id)}
-                  isSolved={isSolved}
-                  isRevision={isRevision}
-                  toggleSolved={toggleSolved}
-                  toggleRevision={toggleRevision}
-                  onOpenNote={onOpenNote}
-                />
-              ))}
+              {/* Search filter within topic */}
+              <div className="px-4 py-3 border-b border-border/30 bg-muted/5">
+                <div className="relative max-w-sm">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder={`Search in ${topic.name}...`}
+                    value={topicSearchQuery}
+                    onChange={(e) => setTopicSearchQuery(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="pl-8 h-8 text-sm"
+                  />
+                  {topicSearchQuery && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTopicSearchQuery("");
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {topicSearchQuery && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Found {filteredTopicSets.length} of {problemSets.length} sets
+                  </p>
+                )}
+              </div>
+              
+              {paginatedSets.length > 0 ? (
+                paginatedSets.map((ps) => (
+                  <ProblemSetSection
+                    key={ps.id}
+                    problemSet={ps}
+                    isExpanded={expandedSets.includes(ps.id)}
+                    onToggle={() => toggleSetExpansion(ps.id)}
+                    isSolved={isSolved}
+                    isRevision={isRevision}
+                    toggleSolved={toggleSolved}
+                    toggleRevision={toggleRevision}
+                    onOpenNote={onOpenNote}
+                  />
+                ))
+              ) : (
+                <div className="p-8 text-center">
+                  <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No sets found matching "{topicSearchQuery}"</p>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTopicSearchQuery("");
+                    }}
+                    className="mt-1"
+                  >
+                    Clear search
+                  </Button>
+                </div>
+              )}
+              
+              {/* Pagination for topics with many sets */}
+              {needsPagination && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-border/30 bg-muted/10">
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      Showing {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, filteredTopicSets.length)} of {filteredTopicSets.length} sets
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Per page:</span>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setPageSize(Number(e.target.value) as PageSize);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-7 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring z-50"
+                      >
+                        {PAGE_SIZE_OPTIONS.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentPage(p => Math.max(1, p - 1));
+                      }}
+                      disabled={currentPage === 1}
+                      className="h-7 px-2"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let page: number;
+                      if (totalPages <= 5) {
+                        page = i + 1;
+                      } else if (currentPage <= 3) {
+                        page = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        page = totalPages - 4 + i;
+                      } else {
+                        page = currentPage - 2 + i;
+                      }
+                      
+                      if (page < 1 || page > totalPages) return null;
+                      
+                      return (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "ghost"}
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentPage(page);
+                          }}
+                          className="h-7 w-7 p-0 text-xs"
+                        >
+                          {page}
+                        </Button>
+                      );
+                    })}
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentPage(p => Math.min(totalPages, p + 1));
+                      }}
+                      disabled={currentPage === totalPages}
+                      className="h-7 px-2"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </CollapsibleContent>
         )}
@@ -1238,38 +1410,64 @@ const CPProblemSetsView = () => {
 
             {/* By Track View - Grouped by Track */}
             <TabsContent value="by-track" className="mt-4 space-y-4">
-              {/* Jump to Track dropdown */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">Jump to:</span>
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const trackId = e.target.value;
-                    if (trackId) {
-                      // Expand the track if not already expanded
-                      if (!expandedTracks.includes(trackId)) {
-                        setExpandedTracks(prev => [...prev, trackId]);
+              {/* Controls: Jump to + Expand/Collapse All */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">Jump to:</span>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const trackId = e.target.value;
+                      if (trackId) {
+                        // Expand the track if not already expanded
+                        if (!expandedTracks.includes(trackId)) {
+                          setExpandedTracks(prev => [...prev, trackId]);
+                        }
+                        // Scroll to the track section
+                        const element = document.getElementById(`track-section-${trackId}`);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
                       }
-                      // Scroll to the track section
-                      const element = document.getElementById(`track-section-${trackId}`);
-                      if (element) {
-                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }
-                    }
-                  }}
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px]"
-                >
-                  <option value="">Select a track...</option>
-                  {cpTracks.map((track) => {
-                    const trackSets = groupedByTrack[track.id] || [];
-                    if (trackSets.length === 0) return null;
-                    return (
-                      <option key={track.id} value={track.id}>
-                        {track.name} ({trackSets.length} sets)
-                      </option>
-                    );
-                  })}
-                </select>
+                    }}
+                    className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px]"
+                  >
+                    <option value="">Select a track...</option>
+                    {cpTracks.map((track) => {
+                      const trackSets = groupedByTrack[track.id] || [];
+                      if (trackSets.length === 0) return null;
+                      return (
+                        <option key={track.id} value={track.id}>
+                          {track.name} ({trackSets.length} sets)
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const allTrackIds = cpTracks
+                        .filter(t => (groupedByTrack[t.id] || []).length > 0)
+                        .map(t => t.id);
+                      setExpandedTracks(allTrackIds);
+                    }}
+                    className="h-8 text-xs"
+                  >
+                    Expand All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setExpandedTracks([])}
+                    className="h-8 text-xs"
+                  >
+                    Collapse All
+                  </Button>
+                </div>
               </div>
               
               <motion.div
@@ -1313,7 +1511,67 @@ const CPProblemSetsView = () => {
             </TabsContent>
 
             {/* By Topic View - Grouped by Topic */}
-            <TabsContent value="by-topic" className="mt-4">
+            <TabsContent value="by-topic" className="mt-4 space-y-4">
+              {/* Controls: Jump to + Expand/Collapse All */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">Jump to:</span>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const topicId = e.target.value;
+                      if (topicId) {
+                        // Expand the topic if not already expanded
+                        if (!expandedTopics.includes(topicId)) {
+                          setExpandedTopics(prev => [...prev, topicId]);
+                        }
+                        // Scroll to the topic section
+                        const element = document.getElementById(`topic-section-${topicId}`);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }
+                    }}
+                    className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[200px]"
+                  >
+                    <option value="">Select a topic...</option>
+                    {cpTopics.map((topic) => {
+                      const topicSets = groupedByTopic[topic.id] || [];
+                      if (topicSets.length === 0) return null;
+                      return (
+                        <option key={topic.id} value={topic.id}>
+                          {topic.name} ({topicSets.length} sets)
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const allTopicIds = cpTopics
+                        .filter(t => (groupedByTopic[t.id] || []).length > 0)
+                        .map(t => t.id);
+                      setExpandedTopics(allTopicIds);
+                    }}
+                    className="h-8 text-xs"
+                  >
+                    Expand All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setExpandedTopics([])}
+                    className="h-8 text-xs"
+                  >
+                    Collapse All
+                  </Button>
+                </div>
+              </div>
+              
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1325,20 +1583,21 @@ const CPProblemSetsView = () => {
                       if (topicSets.length === 0) return null;
                       
                       return (
-                        <TopicSection
-                          key={topic.id}
-                          topicId={topic.id}
-                          problemSets={topicSets}
-                          isExpanded={expandedTopics.includes(topic.id)}
-                          onToggle={() => toggleTopicExpansion(topic.id)}
-                          expandedSets={expandedSets}
-                          toggleSetExpansion={toggleSetExpansion}
-                          isSolved={isSolved}
-                          isRevision={isRevision}
-                          toggleSolved={toggleSolved}
-                          toggleRevision={toggleRevision}
-                          onOpenNote={openNoteDialog}
-                        />
+                        <div key={topic.id} id={`topic-section-${topic.id}`}>
+                          <TopicSection
+                            topicId={topic.id}
+                            problemSets={topicSets}
+                            isExpanded={expandedTopics.includes(topic.id)}
+                            onToggle={() => toggleTopicExpansion(topic.id)}
+                            expandedSets={expandedSets}
+                            toggleSetExpansion={toggleSetExpansion}
+                            isSolved={isSolved}
+                            isRevision={isRevision}
+                            toggleSolved={toggleSolved}
+                            toggleRevision={toggleRevision}
+                            onOpenNote={openNoteDialog}
+                          />
+                        </div>
                       );
                     })}
                     {filteredProblemSets.length === 0 && (
