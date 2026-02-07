@@ -39,7 +39,8 @@ import AptitudeQuestions from "./pages/library/AptitudeQuestions";
 import CoreCSSubjects from "./pages/library/CoreCSSubjects";
 import HandwrittenNotes from "./pages/library/HandwrittenNotes";
 import Quiz from "./pages/library/Quiz";
- import QuizHistory from "./pages/library/QuizHistory";
+import QuizHistory from "./pages/library/QuizHistory";
+import CompetitiveProgramming from "./pages/library/CompetitiveProgramming";
 
 // Fundamentals Pages
 import Language from "./pages/fundamentals/Language";
@@ -139,7 +140,8 @@ const App = () => (
                   <Route path="cs" element={<CoreCSSubjects />} />
                   <Route path="notes" element={<HandwrittenNotes />} />
                   <Route path="quiz" element={<Quiz />} />
-                   <Route path="quiz-history" element={<QuizHistory />} />
+                  <Route path="quiz-history" element={<QuizHistory />} />
+                  <Route path="cp" element={<CompetitiveProgramming />} />
                 </Route>
 
                 {/* Fundamentals routes */}
