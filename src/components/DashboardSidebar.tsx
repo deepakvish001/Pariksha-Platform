@@ -109,7 +109,6 @@ const fundamentalsItems = [
 const libraryItems = [
   { title: "DSA Questions", url: "/library/dsa", icon: Code2 },
   { title: "SQL Questions", url: "/library/sql", icon: Database },
-  { title: "Competitive Programming", url: "/library/cp", icon: Trophy },
   { title: "Aptitude Questions", url: "/library/aptitude", icon: HelpCircle },
   { title: "Core CS Subjects", url: "/library/cs", icon: Cpu },
   { title: "Interview Questions", url: "/library/interview", icon: MessageSquare },
