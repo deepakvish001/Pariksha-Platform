@@ -85,13 +85,20 @@ import NotificationPreferences from "./pages/NotificationPreferences";
 
 const queryClient = new QueryClient();
 
-// Layout wrapper for dashboard routes
-const DashboardLayoutWrapper = () => (
+// Protected layout - requires login + onboarding
+const ProtectedDashboardWrapper = () => (
   <ProtectedRoute requireOnboarding>
     <DashboardLayout>
       <Outlet />
     </DashboardLayout>
   </ProtectedRoute>
+);
+
+// Public layout - no auth required, just the dashboard shell
+const PublicDashboardWrapper = () => (
+  <DashboardLayout>
+    <Outlet />
+  </DashboardLayout>
 );
 
 const App = () => (
@@ -126,19 +133,23 @@ const App = () => (
                   }
                 />
                 
-                {/* Dashboard routes with shared layout */}
-                <Route path="/dashboard" element={<DashboardLayoutWrapper />}>
-                  <Route index element={<DashboardMatrix />} />
-                  <Route path="sheets" element={<DashboardSheets />} />
-                  <Route path="sheets/:sheetId" element={<SheetDetail />} />
+                {/* Protected dashboard routes (personal pages) */}
+                <Route path="/dashboard" element={<ProtectedDashboardWrapper />}>
                   <Route path="profile" element={<DashboardProfile />} />
                   <Route path="achievements" element={<Achievements />} />
                   <Route path="notifications" element={<NotificationCenter />} />
                   <Route path="notifications/preferences" element={<NotificationPreferences />} />
                 </Route>
 
-                {/* Library routes */}
-                <Route path="/library" element={<DashboardLayoutWrapper />}>
+                {/* Public dashboard routes (viewable without login) */}
+                <Route path="/dashboard" element={<PublicDashboardWrapper />}>
+                  <Route index element={<DashboardMatrix />} />
+                  <Route path="sheets" element={<DashboardSheets />} />
+                  <Route path="sheets/:sheetId" element={<SheetDetail />} />
+                </Route>
+
+                {/* Library routes - public */}
+                <Route path="/library" element={<PublicDashboardWrapper />}>
                   <Route path="positions" element={<PositionResources />} />
                   <Route path="positions/:roleId" element={<PositionDetail />} />
                   <Route path="companies" element={<CompanyResources />} />
@@ -152,27 +163,26 @@ const App = () => (
                   <Route path="notes" element={<HandwrittenNotes />} />
                   <Route path="quiz" element={<Quiz />} />
                   <Route path="quiz-history" element={<QuizHistory />} />
-                  
                 </Route>
 
-                {/* Fundamentals routes */}
-                <Route path="/fundamentals" element={<DashboardLayoutWrapper />}>
+                {/* Fundamentals routes - public */}
+                <Route path="/fundamentals" element={<PublicDashboardWrapper />}>
                   <Route index element={<FundamentalsOverview />} />
                   <Route path="overview" element={<FundamentalsOverview />} />
                   <Route path="language" element={<Language />} />
                   <Route path="oops" element={<OOPsConcepts />} />
                 </Route>
 
-                {/* System Design routes */}
-                <Route path="/system-design" element={<DashboardLayoutWrapper />}>
+                {/* System Design routes - public */}
+                <Route path="/system-design" element={<PublicDashboardWrapper />}>
                   <Route index element={<SystemDesignOverview />} />
                   <Route path="overview" element={<SystemDesignOverview />} />
                   <Route path="hld" element={<HighLevelDesign />} />
                   <Route path="lld" element={<LowLevelDesign />} />
                 </Route>
 
-                {/* Research routes */}
-                <Route path="/research" element={<DashboardLayoutWrapper />}>
+                {/* Research routes - public (except activity) */}
+                <Route path="/research" element={<PublicDashboardWrapper />}>
                   <Route index element={<ResearchOverview />} />
                   <Route path="overview" element={<ResearchOverview />} />
                   <Route path="jobs" element={<JobPortals />} />
@@ -181,11 +191,23 @@ const App = () => (
                   <Route path="resume" element={<ResumeTemplates />} />
                   <Route path="analyser" element={<ResumeAnalyser />} />
                   <Route path="outreach" element={<ColdOutreach />} />
+                </Route>
+
+                {/* Research - protected routes */}
+                <Route path="/research" element={<ProtectedDashboardWrapper />}>
                   <Route path="activity" element={<MyActivity />} />
                 </Route>
 
-                {/* Platform routes */}
-                <Route path="/platform" element={<DashboardLayoutWrapper />}>
+                {/* Platform routes - public */}
+                <Route path="/platform" element={<PublicDashboardWrapper />}>
+                  <Route path="ai/staff-picks" element={<StaffPicks />} />
+                  <Route path="ai/community" element={<Community />} />
+                  <Route path="ai/content/:contentId" element={<AIContentDetail />} />
+                  <Route path="resources" element={<Resources />} />
+                </Route>
+
+                {/* Platform routes - protected */}
+                <Route path="/platform" element={<ProtectedDashboardWrapper />}>
                   <Route path="ai" element={<AstraAI />} />
                   <Route path="ai/generate" element={<AIGenerate />} />
                   <Route path="ai/my-plans" element={<MyPlans />} />
@@ -194,14 +216,10 @@ const App = () => (
                   <Route path="ai/my-roadmaps" element={<MyRoadmaps />} />
                   <Route path="ai/my-quizzes" element={<MyQuizzes />} />
                   <Route path="ai/roadmap-chat" element={<RoadmapChat />} />
-                  <Route path="ai/staff-picks" element={<StaffPicks />} />
-                  <Route path="ai/community" element={<Community />} />
-                  <Route path="ai/content/:contentId" element={<AIContentDetail />} />
-                  <Route path="resources" element={<Resources />} />
                   <Route path="collections" element={<Collections />} />
                 </Route>
 
-                {/* Settings */}
+                {/* Settings - protected */}
                 <Route
                   path="/settings"
                   element={

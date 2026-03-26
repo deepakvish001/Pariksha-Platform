@@ -6,6 +6,7 @@ import {
   FileSpreadsheet,
   User,
   LogOut,
+  LogIn,
   ChevronRight,
   ChevronDown,
   Layers,
@@ -307,6 +308,7 @@ export function DashboardSidebar() {
   const [shouldShakeBell, setShouldShakeBell] = useState(false);
   const [prevUnreadCount, setPrevUnreadCount] = useState(unreadCount);
   const isCollapsed = state === "collapsed";
+  const isGuest = !user;
 
   const getNextTheme = () => {
     if (theme === "light") return "dark";
@@ -687,9 +689,11 @@ export function DashboardSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
+          {!isGuest && (
+          <>
           <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
 
-          {/* Progress & Profile Section */}
+          {/* Progress & Profile Section - only for logged-in users */}
           <SidebarGroup className="space-y-1">
             {!isCollapsed && (
               <div className="flex items-center gap-2 px-3 py-1.5">
@@ -756,71 +760,113 @@ export function DashboardSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+          </>
+          )}
         </SidebarContent>
 
-        {/* Footer with User Profile and Sign Out */}
+        {/* Footer with User Profile and Sign Out / Guest Sign In */}
         <SidebarFooter className="border-t border-sidebar-border p-3 group-data-[collapsible=icon]:p-2 space-y-2">
-          {/* User Profile */}
-          {isCollapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center justify-center cursor-pointer">
-                  <Avatar className="h-10 w-10 border-2 border-primary/20 transition-transform duration-200 hover:scale-105">
+          {isGuest ? (
+            /* Guest user - show sign in buttons */
+            isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="icon"
+                    onClick={() => navigate("/login")}
+                    className="h-10 w-10 mx-auto rounded-lg"
+                  >
+                    <LogIn className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Sign In</TooltipContent>
+              </Tooltip>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={() => navigate("/login")}
+                  className="w-full gap-2"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Sign In
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/signup")}
+                  className="w-full gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  Sign Up
+                </Button>
+              </div>
+            )
+          ) : (
+            /* Logged-in user */
+            <>
+              {/* User Profile */}
+              {isCollapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-center cursor-pointer">
+                      <Avatar className="h-10 w-10 border-2 border-primary/20 transition-transform duration-200 hover:scale-105">
+                        <AvatarImage src={profile?.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                          {getInitials(profile?.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="center">
+                    <div>
+                      <p className="font-medium">{profile?.full_name || "User"}</p>
+                      <p className="text-xs text-muted-foreground">Free plan</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent/30 transition-all duration-200 cursor-pointer group/profile">
+                  <Avatar className="h-10 w-10 border-2 border-primary/20 transition-transform duration-200 group-hover/profile:scale-105">
                     <AvatarImage src={profile?.avatar_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary font-bold">
                       {getInitials(profile?.full_name)}
                     </AvatarFallback>
                   </Avatar>
+                  <div className="flex-1 min-w-0 transition-transform duration-200 group-hover/profile:translate-x-0.5">
+                    <p className="text-sm font-medium text-sidebar-foreground truncate">
+                      {profile?.full_name || "User"}
+                    </p>
+                    <p className="text-xs text-primary truncate">Free plan</p>
+                  </div>
                 </div>
-              </TooltipTrigger>
-              <TooltipContent side="right" align="center">
-                <div>
-                  <p className="font-medium">{profile?.full_name || "User"}</p>
-                  <p className="text-xs text-muted-foreground">Free plan</p>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent/30 transition-all duration-200 cursor-pointer group/profile">
-              <Avatar className="h-10 w-10 border-2 border-primary/20 transition-transform duration-200 group-hover/profile:scale-105">
-                <AvatarImage src={profile?.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                  {getInitials(profile?.full_name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0 transition-transform duration-200 group-hover/profile:translate-x-0.5">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  {profile?.full_name || "User"}
-                </p>
-                <p className="text-xs text-primary truncate">Free plan</p>
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* Sign Out Button */}
-          {isCollapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
+              {/* Sign Out Button */}
+              {isCollapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsSignOutDialogOpen(true)}
+                      className="h-10 w-10 mx-auto rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Sign Out</TooltipContent>
+                </Tooltip>
+              ) : (
                 <Button
                   variant="ghost"
-                  size="icon"
                   onClick={() => setIsSignOutDialogOpen(true)}
-                  className="h-10 w-10 mx-auto rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+                  className="w-full justify-start gap-2 h-10 px-3 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-200 group/signout"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-4 w-4 transition-transform duration-200 group-hover/signout:scale-110" />
+                  <span className="text-sm font-medium">Sign Out</span>
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Sign Out</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Button
-              variant="ghost"
-              onClick={() => setIsSignOutDialogOpen(true)}
-              className="w-full justify-start gap-2 h-10 px-3 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-200 group/signout"
-            >
-              <LogOut className="h-4 w-4 transition-transform duration-200 group-hover/signout:scale-110" />
-              <span className="text-sm font-medium">Sign Out</span>
-            </Button>
+              )}
+            </>
           )}
         </SidebarFooter>
       </Sidebar>
