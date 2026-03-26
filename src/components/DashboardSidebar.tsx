@@ -688,9 +688,11 @@ export function DashboardSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
+          {!isGuest && (
+          <>
           <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
 
-          {/* Progress & Profile Section */}
+          {/* Progress & Profile Section - only for logged-in users */}
           <SidebarGroup className="space-y-1">
             {!isCollapsed && (
               <div className="flex items-center gap-2 px-3 py-1.5">
@@ -757,6 +759,8 @@ export function DashboardSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+          </>
+          )}
         </SidebarContent>
 
         {/* Footer with User Profile and Sign Out */}
