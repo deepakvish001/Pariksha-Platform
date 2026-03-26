@@ -6,6 +6,7 @@ import {
   FileSpreadsheet,
   User,
   LogOut,
+  LogIn,
   ChevronRight,
   ChevronDown,
   Layers,
