@@ -14,7 +14,7 @@ import OutreachUsageAnalytics from "@/components/outreach/OutreachUsageAnalytics
 import { useOutreachFavorites } from "@/hooks/useOutreachFavorites";
 import { useOutreachCopy } from "@/hooks/useOutreachCopy";
 import { useOutreachCustomTemplates, CustomTemplate } from "@/hooks/useOutreachCustomTemplates";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import {
   outreachTemplates,
   OutreachTemplate,
@@ -26,7 +26,7 @@ import {
 } from "@/data/coldOutreachData";
 
 const ColdOutreach = () => {
-  const { user } = useAuth();
+  const { requireAuth, user, LoginPromptDialog } = useRequireAuth();
   
   // Tabs state
   const [activeTab, setActiveTab] = useState("all");
@@ -119,12 +119,10 @@ const ColdOutreach = () => {
               </div>
             </div>
           </div>
-          {user && (
-            <Button onClick={() => setShowCreateForm(true)} className="gap-2 rounded-xl shadow-lg shadow-primary/20 dark:shadow-primary/40">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Create Template</span>
-            </Button>
-          )}
+          <Button onClick={() => requireAuth(() => setShowCreateForm(true))} className="gap-2 rounded-xl shadow-lg shadow-primary/20 dark:shadow-primary/40">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Create Template</span>
+          </Button>
         </div>
       </header>
 
@@ -270,6 +268,7 @@ const ColdOutreach = () => {
           isEditing
         />
       )}
+      {LoginPromptDialog}
     </div>
   );
 };

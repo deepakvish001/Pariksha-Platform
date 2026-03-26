@@ -66,6 +66,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import MobileFAB from "@/components/MobileFAB";
 
 // Types
@@ -1442,6 +1443,7 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { requireAuth, LoginPromptDialog } = useRequireAuth();
   const { currentStreak, todayCompleted, refreshStreak } = useStreak();
   
   const currentSheetId = sheetId;
@@ -1733,7 +1735,7 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
     });
   }, [toast, allTopics.length, sheetData?.title]);
 
-  const handleToggleTopic = async (topicId: string) => {
+  const handleToggleTopicInternal = async (topicId: string) => {
     const topic = allTopics.find(t => t.id === topicId);
     const newCompleted = !topic?.completed;
 
@@ -1755,13 +1757,16 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
 
     await saveProgress(topicId, { completed: newCompleted });
     
-    // Refresh streak when topic is completed
     if (newCompleted) {
       refreshStreak();
     }
   };
 
-  const handleToggleRevision = async (topicId: string) => {
+  const handleToggleTopic = (topicId: string) => {
+    requireAuth(() => handleToggleTopicInternal(topicId));
+  };
+
+  const handleToggleRevisionInternal = async (topicId: string) => {
     const topic = allTopics.find(t => t.id === topicId);
     const newRevision = !topic?.isRevision;
 
@@ -1784,10 +1789,16 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
     await saveProgress(topicId, { is_revision: newRevision });
   };
 
+  const handleToggleRevision = (topicId: string) => {
+    requireAuth(() => handleToggleRevisionInternal(topicId));
+  };
+
   const handleOpenNote = (topic: Topic) => {
-    setEditingTopic(topic);
-    setNoteText(topic.note);
-    setNoteModalOpen(true);
+    requireAuth(() => {
+      setEditingTopic(topic);
+      setNoteText(topic.note);
+      setNoteModalOpen(true);
+    });
   };
 
   const handleSaveNote = async () => {
@@ -2046,6 +2057,7 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {LoginPromptDialog}
     </div>
   );
 }

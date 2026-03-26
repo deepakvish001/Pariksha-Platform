@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 interface ResumeUploadZoneProps {
   onUpload: (file: File, jobDescription?: string) => void;
@@ -27,6 +28,7 @@ export const ResumeUploadZone = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { requireAuth, LoginPromptDialog: AuthDialog } = useRequireAuth();
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -80,9 +82,9 @@ export const ResumeUploadZone = ({
 
   const handleAnalyze = useCallback(() => {
     if (selectedFile) {
-      onUpload(selectedFile, jobDescription || undefined);
+      requireAuth(() => onUpload(selectedFile, jobDescription || undefined));
     }
-  }, [selectedFile, jobDescription, onUpload]);
+  }, [selectedFile, jobDescription, onUpload, requireAuth]);
 
   const isProcessing = isUploading || isAnalyzing;
 
@@ -201,6 +203,7 @@ export const ResumeUploadZone = ({
           </Button>
         </motion.div>
       )}
+      {AuthDialog}
     </div>
   );
 };

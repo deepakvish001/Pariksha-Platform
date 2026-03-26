@@ -105,6 +105,7 @@ import CPProblemTable from "@/components/sheets/CPProblemTable";
 import StreakCounter from "@/components/StreakCounter";
 import { useCPProgress } from "@/hooks/useCPProgress";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 type PageSize = typeof PAGE_SIZE_OPTIONS[number];
@@ -415,7 +416,12 @@ function TopicSection({
 const CPProblemSetsView = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { requireAuth, LoginPromptDialog: AuthDialog } = useRequireAuth();
   const { isSolved, isRevision, toggleSolved, toggleRevision, getTotalSolved, isLoading: isProgressLoading } = useCPProgress();
+  
+  // Auth-gated toggle wrappers
+  const gatedToggleSolved = (id: number) => requireAuth(() => toggleSolved(id));
+  const gatedToggleRevision = (id: number) => requireAuth(() => toggleRevision(id));
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTrack, setSelectedTrack] = useState("all");
   const [selectedTopic, setSelectedTopic] = useState("all");
@@ -540,9 +546,11 @@ const CPProblemSetsView = () => {
   };
 
   const openNoteDialog = (problemId: number, title: string) => {
-    setCurrentNoteProblem({ id: problemId, title });
-    setNoteContent("");
-    setNoteDialogOpen(true);
+    requireAuth(() => {
+      setCurrentNoteProblem({ id: problemId, title });
+      setNoteContent("");
+      setNoteDialogOpen(true);
+    });
   };
 
   const saveNote = () => {
@@ -875,8 +883,8 @@ const CPProblemSetsView = () => {
                             onToggle={() => toggleSetExpansion(ps.id)}
                             isSolved={isSolved}
                             isRevision={isRevision}
-                            toggleSolved={toggleSolved}
-                            toggleRevision={toggleRevision}
+                            toggleSolved={gatedToggleSolved}
+                            toggleRevision={gatedToggleRevision}
                             onOpenNote={openNoteDialog}
                           />
                         </motion.div>
@@ -1108,8 +1116,8 @@ const CPProblemSetsView = () => {
                             toggleSetExpansion={toggleSetExpansion}
                             isSolved={isSolved}
                             isRevision={isRevision}
-                            toggleSolved={toggleSolved}
-                            toggleRevision={toggleRevision}
+                            toggleSolved={gatedToggleSolved}
+                            toggleRevision={gatedToggleRevision}
                             onOpenNote={openNoteDialog}
                           />
                         </div>
@@ -1228,8 +1236,8 @@ const CPProblemSetsView = () => {
                             toggleSetExpansion={toggleSetExpansion}
                             isSolved={isSolved}
                             isRevision={isRevision}
-                            toggleSolved={toggleSolved}
-                            toggleRevision={toggleRevision}
+                            toggleSolved={gatedToggleSolved}
+                            toggleRevision={gatedToggleRevision}
                             onOpenNote={openNoteDialog}
                           />
                         </div>
@@ -1583,6 +1591,7 @@ const CPProblemSetsView = () => {
         totalCount={totalProblemCount}
         revisionCount={revisionCount}
       />
+      {AuthDialog}
     </div>
   );
 };
