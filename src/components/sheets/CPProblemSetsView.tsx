@@ -1589,6 +1589,7 @@ const CPProblemSetsView = () => {
         totalCount={totalProblemCount}
         revisionCount={revisionCount}
       />
+      {AuthDialog}
     </div>
   );
 };
