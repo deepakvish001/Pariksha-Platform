@@ -416,7 +416,12 @@ function TopicSection({
 const CPProblemSetsView = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { requireAuth, LoginPromptDialog: AuthDialog } = useRequireAuth();
   const { isSolved, isRevision, toggleSolved, toggleRevision, getTotalSolved, isLoading: isProgressLoading } = useCPProgress();
+  
+  // Auth-gated toggle wrappers
+  const gatedToggleSolved = (id: number) => requireAuth(() => toggleSolved(id));
+  const gatedToggleRevision = (id: number) => requireAuth(() => toggleRevision(id));
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTrack, setSelectedTrack] = useState("all");
   const [selectedTopic, setSelectedTopic] = useState("all");
