@@ -119,18 +119,10 @@ const ColdOutreach = () => {
               </div>
             </div>
           </div>
-          {user && (
-            <Button onClick={() => requireAuth(() => setShowCreateForm(true))} className="gap-2 rounded-xl shadow-lg shadow-primary/20 dark:shadow-primary/40">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Create Template</span>
-            </Button>
-          )}
-          {!user && (
-            <Button onClick={() => requireAuth(() => {})} className="gap-2 rounded-xl shadow-lg shadow-primary/20 dark:shadow-primary/40">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Create Template</span>
-            </Button>
-          )}
+          <Button onClick={() => requireAuth(() => setShowCreateForm(true))} className="gap-2 rounded-xl shadow-lg shadow-primary/20 dark:shadow-primary/40">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Create Template</span>
+          </Button>
         </div>
       </header>
 
