@@ -105,6 +105,7 @@ import CPProblemTable from "@/components/sheets/CPProblemTable";
 import StreakCounter from "@/components/StreakCounter";
 import { useCPProgress } from "@/hooks/useCPProgress";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 type PageSize = typeof PAGE_SIZE_OPTIONS[number];
