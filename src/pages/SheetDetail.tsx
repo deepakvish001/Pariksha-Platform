@@ -66,6 +66,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import MobileFAB from "@/components/MobileFAB";
 
 // Types
