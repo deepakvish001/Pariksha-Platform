@@ -546,9 +546,11 @@ const CPProblemSetsView = () => {
   };
 
   const openNoteDialog = (problemId: number, title: string) => {
-    setCurrentNoteProblem({ id: problemId, title });
-    setNoteContent("");
-    setNoteDialogOpen(true);
+    requireAuth(() => {
+      setCurrentNoteProblem({ id: problemId, title });
+      setNoteContent("");
+      setNoteDialogOpen(true);
+    });
   };
 
   const saveNote = () => {
