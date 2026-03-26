@@ -203,6 +203,7 @@ export const ResumeUploadZone = ({
           </Button>
         </motion.div>
       )}
+      {AuthDialog}
     </div>
   );
 };
