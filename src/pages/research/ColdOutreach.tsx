@@ -268,7 +268,7 @@ const ColdOutreach = () => {
           isEditing
         />
       )}
-    </div>
+      {LoginPromptDialog}
   );
 };
 
