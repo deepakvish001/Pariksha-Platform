@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 interface ResumeUploadZoneProps {
   onUpload: (file: File, jobDescription?: string) => void;
