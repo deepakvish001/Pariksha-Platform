@@ -82,9 +82,9 @@ export const ResumeUploadZone = ({
 
   const handleAnalyze = useCallback(() => {
     if (selectedFile) {
-      onUpload(selectedFile, jobDescription || undefined);
+      requireAuth(() => onUpload(selectedFile, jobDescription || undefined));
     }
-  }, [selectedFile, jobDescription, onUpload]);
+  }, [selectedFile, jobDescription, onUpload, requireAuth]);
 
   const isProcessing = isUploading || isAnalyzing;
 
