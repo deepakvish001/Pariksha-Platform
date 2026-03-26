@@ -307,6 +307,7 @@ export function DashboardSidebar() {
   const [shouldShakeBell, setShouldShakeBell] = useState(false);
   const [prevUnreadCount, setPrevUnreadCount] = useState(unreadCount);
   const isCollapsed = state === "collapsed";
+  const isGuest = !user;
 
   const getNextTheme = () => {
     if (theme === "light") return "dark";
