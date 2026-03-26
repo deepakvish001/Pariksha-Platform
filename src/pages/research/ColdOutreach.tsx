@@ -269,6 +269,7 @@ const ColdOutreach = () => {
         />
       )}
       {LoginPromptDialog}
+    </div>
   );
 };
 
