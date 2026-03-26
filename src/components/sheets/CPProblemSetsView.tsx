@@ -262,8 +262,8 @@ function TrackSection({
                   onToggle={() => toggleSetExpansion(ps.id)}
                   isSolved={isSolved}
                   isRevision={isRevision}
-                  toggleSolved={gatedToggleSolved}
-                  toggleRevision={gatedToggleRevision}
+                  toggleSolved={toggleSolved}
+                  toggleRevision={toggleRevision}
                   onOpenNote={onOpenNote}
                   showTrackBadge={false}
                 />
