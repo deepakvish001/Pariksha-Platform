@@ -14,7 +14,7 @@ import OutreachUsageAnalytics from "@/components/outreach/OutreachUsageAnalytics
 import { useOutreachFavorites } from "@/hooks/useOutreachFavorites";
 import { useOutreachCopy } from "@/hooks/useOutreachCopy";
 import { useOutreachCustomTemplates, CustomTemplate } from "@/hooks/useOutreachCustomTemplates";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import {
   outreachTemplates,
   OutreachTemplate,
@@ -26,7 +26,7 @@ import {
 } from "@/data/coldOutreachData";
 
 const ColdOutreach = () => {
-  const { user } = useAuth();
+  const { requireAuth, user, LoginPromptDialog } = useRequireAuth();
   
   // Tabs state
   const [activeTab, setActiveTab] = useState("all");

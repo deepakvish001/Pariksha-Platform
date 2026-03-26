@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useContentProgress } from "@/hooks/useContentProgress";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 interface ContentProgressProps {
   contentId: string;
@@ -18,29 +18,30 @@ export const ContentProgressCheckbox = ({
   itemId,
   className,
 }: Omit<ContentProgressProps, "showProgress" | "totalItems">) => {
-  const { user } = useAuth();
+  const { requireAuth, user, LoginPromptDialog } = useRequireAuth();
   const { completedItems, toggleItemComplete, isUpdating } = useContentProgress(contentId);
   const isCompleted = completedItems.includes(itemId);
 
-  if (!user) return null;
-
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={(e) => {
-        e.stopPropagation();
-        toggleItemComplete(itemId);
-      }}
-      disabled={isUpdating}
-      className={cn("h-6 w-6 p-0", className)}
-    >
-      {isCompleted ? (
-        <CheckCircle2 className="h-5 w-5 text-green-500" />
-      ) : (
-        <Circle className="h-5 w-5 text-muted-foreground" />
-      )}
-    </Button>
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={(e) => {
+          e.stopPropagation();
+          requireAuth(() => toggleItemComplete(itemId));
+        }}
+        disabled={isUpdating}
+        className={cn("h-6 w-6 p-0", className)}
+      >
+        {isCompleted ? (
+          <CheckCircle2 className="h-5 w-5 text-green-500" />
+        ) : (
+          <Circle className="h-5 w-5 text-muted-foreground" />
+        )}
+      </Button>
+      {LoginPromptDialog}
+    </>
   );
 };
 
@@ -49,7 +50,7 @@ export const ContentProgressBar = ({
   totalItems,
   className,
 }: Omit<ContentProgressProps, "itemId" | "showProgress">) => {
-  const { user } = useAuth();
+  const { user } = useRequireAuth();
   const { completedItems } = useContentProgress(contentId);
 
   if (!user || !totalItems) return null;

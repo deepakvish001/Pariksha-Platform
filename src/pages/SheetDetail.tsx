@@ -2057,6 +2057,7 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {LoginPromptDialog}
     </div>
   );
 }

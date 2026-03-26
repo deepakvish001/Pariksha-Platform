@@ -17,9 +17,11 @@
    const { user } = useAuth();
  
    const saveQuizResult = useCallback(
-     async (data: QuizResultData) => {
-       if (!user) return null;
- 
+      async (data: QuizResultData) => {
+        if (!user) {
+          console.warn("Must be logged in to save quiz results");
+          return null;
+        }
        try {
          const { data: result, error } = await supabase
            .from("quiz_results")
