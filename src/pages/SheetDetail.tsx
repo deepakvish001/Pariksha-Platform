@@ -1443,6 +1443,7 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { requireAuth, LoginPromptDialog } = useRequireAuth();
   const { currentStreak, todayCompleted, refreshStreak } = useStreak();
   
   const currentSheetId = sheetId;
