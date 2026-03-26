@@ -28,6 +28,7 @@ export const ResumeUploadZone = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { requireAuth, LoginPromptDialog: AuthDialog } = useRequireAuth();
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
