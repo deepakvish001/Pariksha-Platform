@@ -262,8 +262,8 @@ function TrackSection({
                   onToggle={() => toggleSetExpansion(ps.id)}
                   isSolved={isSolved}
                   isRevision={isRevision}
-                  toggleSolved={toggleSolved}
-                  toggleRevision={toggleRevision}
+                  toggleSolved={gatedToggleSolved}
+                  toggleRevision={gatedToggleRevision}
                   onOpenNote={onOpenNote}
                   showTrackBadge={false}
                 />
@@ -399,8 +399,8 @@ function TopicSection({
                   onToggle={() => toggleSetExpansion(ps.id)}
                   isSolved={isSolved}
                   isRevision={isRevision}
-                  toggleSolved={toggleSolved}
-                  toggleRevision={toggleRevision}
+                  toggleSolved={gatedToggleSolved}
+                  toggleRevision={gatedToggleRevision}
                   onOpenNote={onOpenNote}
                   showTrackBadge={false}
                 />
@@ -881,8 +881,8 @@ const CPProblemSetsView = () => {
                             onToggle={() => toggleSetExpansion(ps.id)}
                             isSolved={isSolved}
                             isRevision={isRevision}
-                            toggleSolved={toggleSolved}
-                            toggleRevision={toggleRevision}
+                            toggleSolved={gatedToggleSolved}
+                            toggleRevision={gatedToggleRevision}
                             onOpenNote={openNoteDialog}
                           />
                         </motion.div>
@@ -1114,8 +1114,8 @@ const CPProblemSetsView = () => {
                             toggleSetExpansion={toggleSetExpansion}
                             isSolved={isSolved}
                             isRevision={isRevision}
-                            toggleSolved={toggleSolved}
-                            toggleRevision={toggleRevision}
+                            toggleSolved={gatedToggleSolved}
+                            toggleRevision={gatedToggleRevision}
                             onOpenNote={openNoteDialog}
                           />
                         </div>
@@ -1234,8 +1234,8 @@ const CPProblemSetsView = () => {
                             toggleSetExpansion={toggleSetExpansion}
                             isSolved={isSolved}
                             isRevision={isRevision}
-                            toggleSolved={toggleSolved}
-                            toggleRevision={toggleRevision}
+                            toggleSolved={gatedToggleSolved}
+                            toggleRevision={gatedToggleRevision}
                             onOpenNote={openNoteDialog}
                           />
                         </div>
