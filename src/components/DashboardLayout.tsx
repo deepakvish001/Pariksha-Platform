@@ -4,6 +4,7 @@ import { DashboardSidebar } from "@/components/DashboardSidebar";
 import StreakReminderProvider from "@/components/StreakReminderProvider";
 import { useRoutePersistence } from "@/hooks/useRoutePeristence";
 import { GuestSignupBanner } from "@/components/GuestSignupBanner";
+import { DelayedLoginPrompt } from "@/components/DelayedLoginPrompt";
 
 interface DashboardLayoutProps {
   children: ReactNode;
