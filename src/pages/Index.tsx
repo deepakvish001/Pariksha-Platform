@@ -27,7 +27,7 @@ const Index = () => {
         </section>
       </LazySection>
       <LazySection><Testimonials /></LazySection>
-      <LazySection><FAQ /></LazySection>
+      <LazySection><section id="faq"><FAQ /></section></LazySection>
       <LazySection><CTA /></LazySection>
       <LazySection><Footer /></LazySection>
     </main>
