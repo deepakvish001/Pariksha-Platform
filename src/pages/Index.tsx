@@ -10,10 +10,12 @@ import Pricing from "@/components/Pricing";
 import FAQ from "@/components/FAQ";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
+import { DelayedLoginPrompt } from "@/components/DelayedLoginPrompt";
 
 const Index = () => {
   return (
     <main className="min-h-screen bg-background">
+      <DelayedLoginPrompt />
       <Navbar />
       <Hero />
       <CompanyLogos />
