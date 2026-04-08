@@ -210,7 +210,7 @@ const Navbar = () => {
                   >
                     Sign In
                   </Link>
-                  <Link to="/signup" className="btn-primary text-sm py-2 px-5">
+                  <Link to="/dashboard" className="btn-primary text-sm py-2 px-5">
                     Get Started
                   </Link>
                 </div>
@@ -307,7 +307,7 @@ const Navbar = () => {
                         Sign In
                       </Link>
                       <Link
-                        to="/signup"
+                        to="/dashboard"
                         className="btn-primary w-full text-sm py-2 mt-2 text-center block"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
