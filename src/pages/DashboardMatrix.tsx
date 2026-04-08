@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LayoutGrid, CheckCircle2, Target, Zap, Star, Loader2, Flame, Trophy, Settings2 } from "lucide-react";
+import { GuestProgressTeaser } from "@/components/GuestProgressTeaser";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -447,6 +448,9 @@ const DashboardMatrix = () => {
 
       {/* Content */}
       <main className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8 w-full">
+        {/* Guest Progress Teaser */}
+        {!user && <GuestProgressTeaser />}
+        
         {/* Overview Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
