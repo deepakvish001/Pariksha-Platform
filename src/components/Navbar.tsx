@@ -17,8 +17,7 @@ import BrandLogo from "@/components/BrandLogo";
 
 const navLinks = [
   { label: "Features", href: "#features" },
-  { label: "Analytics", href: "#analytics" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "FAQ", href: "#faq" },
 ];
 
 const Navbar = () => {
