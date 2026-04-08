@@ -94,6 +94,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import NotificationBell from "@/components/NotificationBell";
 import BrandLogo from "@/components/BrandLogo";
+import { GuestSidebarTooltip } from "@/components/GuestSidebarTooltip";
 
 // Home section - Main entry points
 const homeNavItems = [
@@ -278,17 +279,19 @@ const CollapsibleGroup = ({ title, items, groupIcon, iconColor = "text-muted-for
       <CollapsibleContent className="space-y-1">
         {items.map((item) => (
           <SidebarMenuItem key={item.title}>
-            <SidebarMenuButton
-              asChild
-              isActive={location.pathname === item.url}
-              tooltip={item.title}
-              className="transition-all duration-200 hover:translate-x-0.5 group/item"
-            >
-              <Link to={item.url} className="pl-8">
-                <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/item:scale-110" />
-                <span>{item.title}</span>
-              </Link>
-            </SidebarMenuButton>
+            <GuestSidebarTooltip url={item.url}>
+              <SidebarMenuButton
+                asChild
+                isActive={location.pathname === item.url}
+                tooltip={item.title}
+                className="transition-all duration-200 hover:translate-x-0.5 group/item"
+              >
+                <Link to={item.url} className="pl-8">
+                  <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/item:scale-110" />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </GuestSidebarTooltip>
           </SidebarMenuItem>
         ))}
       </CollapsibleContent>
