@@ -74,12 +74,14 @@ import { striversA2ZSections, striversA2ZMeta } from "@/data/striversA2ZData";
 import { dbmsSections, dbmsMeta } from "@/data/dbmsData";
 import { cnSections, cnMeta } from "@/data/cnData";
 import { osSections, osMeta } from "@/data/osData";
-import { acmIcpcSections, acmIcpcMeta } from "@/data/acmIcpcTrainingData";
+import { acmIcpcSections, acmIcpcMeta, acmIcpcFaqs, acmIcpcChecklist } from "@/data/acmIcpcTrainingData";
+import RoadmapFAQ from "@/components/roadmap/RoadmapFAQ";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import MobileFAB from "@/components/MobileFAB";
 import CPFloatingProgress from "@/components/sheets/CPFloatingProgress";
+import ACMChecklistCard from "@/components/sheets/ACMChecklistCard";
 
 // Types
 interface Topic {
@@ -2275,6 +2277,14 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
           </Card>
         </motion.div>
       </main>
+
+      {/* ACM-ICPC FAQ & Checklist */}
+      {currentSheetId === "acm-icpc-training" && (
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 space-y-6">
+          <ACMChecklistCard checklist={acmIcpcChecklist} />
+          <RoadmapFAQ faqs={acmIcpcFaqs} title="ACM-ICPC Training FAQ" />
+        </main>
+      )}
 
       {/* Floating Progress Widget */}
       <CPFloatingProgress
