@@ -70,6 +70,7 @@ import { dsaLevel3Sections, dsaLevel3Meta } from "@/data/dsaLevel3Data";
 import { blind75Sections, blind75Meta } from "@/data/blind75Data";
 import { neetcode150Sections, neetcode150Meta } from "@/data/neetcode150Data";
 import { neetcode250Sections, neetcode250Meta } from "@/data/neetcode250Data";
+import { striversA2ZSections, striversA2ZMeta } from "@/data/striversA2ZData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
