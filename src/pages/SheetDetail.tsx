@@ -72,6 +72,7 @@ import { neetcode150Sections, neetcode150Meta } from "@/data/neetcode150Data";
 import { neetcode250Sections, neetcode250Meta } from "@/data/neetcode250Data";
 import { striversA2ZSections, striversA2ZMeta } from "@/data/striversA2ZData";
 import { dbmsSections, dbmsMeta } from "@/data/dbmsData";
+import { cnSections, cnMeta } from "@/data/cnData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -562,6 +563,10 @@ const mockSheetData: Record<string, SheetData> = {
   "dbms-sheet": {
     ...dbmsMeta,
     sections: dbmsSections,
+  },
+  "cn-sheet": {
+    ...cnMeta,
+    sections: cnSections,
   },
   "sql-practice": {
     id: "sql-practice",
