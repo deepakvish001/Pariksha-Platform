@@ -1528,14 +1528,21 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
 
     setIsSaving(true);
     try {
+      const payload: Record<string, unknown> = {
+        user_id: user.id,
+        sheet_id: currentSheetId,
+        topic_id: topicId,
+        ...updates,
+      };
+
+      // Set completed_at timestamp when completing/uncompleting
+      if (updates.completed !== undefined) {
+        payload.completed_at = updates.completed ? new Date().toISOString() : null;
+      }
+
       const { error } = await supabase
         .from("user_topic_progress")
-        .upsert({
-          user_id: user.id,
-          sheet_id: currentSheetId,
-          topic_id: topicId,
-          ...updates,
-        }, {
+        .upsert(payload, {
           onConflict: "user_id,sheet_id,topic_id",
         });
 
@@ -1592,6 +1599,10 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
             // Difficulty filter
             if (difficultyFilter !== "all" && topic.difficulty.toLowerCase() !== difficultyFilter) return false;
             
+            // Category filter (completed/pending)
+            if (categoryFilter === "completed" && !topic.completed) return false;
+            if (categoryFilter === "pending" && topic.completed) return false;
+            
             return true;
           })
         }))
@@ -1599,7 +1610,7 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
     })).filter(section => section.subSections.length > 0);
     
     return sections;
-  }, [sheetData, activeTab, searchQuery, difficultyFilter]);
+  }, [sheetData, activeTab, searchQuery, difficultyFilter, categoryFilter]);
 
   const filteredSections = getFilteredSections();
 
