@@ -554,6 +554,10 @@ const mockSheetData: Record<string, SheetData> = {
     ...neetcode250Meta,
     sections: neetcode250Sections,
   },
+  "strivers-a2z-dsa": {
+    ...striversA2ZMeta,
+    sections: striversA2ZSections,
+  },
   "sql-practice": {
     id: "sql-practice",
     title: "SQL Practice Sheet",
