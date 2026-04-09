@@ -33,17 +33,10 @@ import XPGoalsCard from "@/components/XPGoalsCard";
 // Sheet definitions with total counts
 const sheetDefinitions = [
   {
-    id: "machine-learning",
-    name: "Machine Learning",
-    total: 26,
-    topics: ["Linear Algebra", "Calculus", "Probability", "ML Fundamentals"],
-    route: "/dashboard/sheets/machine-learning",
-  },
-  {
     id: "strivers-sde-sheet",
     name: "Striver's SDE Sheet",
-    total: 191,
-    topics: ["Arrays", "Linked Lists", "Trees", "Graphs", "DP"],
+    total: 134,
+    topics: ["Arrays", "Binary Search", "Strings", "Trees", "DP"],
     route: "/dashboard/sheets/strivers-sde-sheet",
   },
   {
@@ -61,6 +54,20 @@ const sheetDefinitions = [
     route: "/dashboard/sheets/neetcode-150",
   },
   {
+    id: "dsa-level-1",
+    name: "Java DSA Level 1",
+    total: 467,
+    topics: ["Basics", "Recursion", "DP", "OOPS", "Data Structures"],
+    route: "/dashboard/sheets/dsa-level-1",
+  },
+  {
+    id: "competitive-programming",
+    name: "Competitive Programming",
+    total: 97,
+    topics: ["Number Theory", "Graphs", "DP", "Strings"],
+    route: "/dashboard/sheets/competitive-programming",
+  },
+  {
     id: "sql-practice",
     name: "SQL Practice",
     total: 75,
@@ -73,6 +80,13 @@ const sheetDefinitions = [
     total: 25,
     topics: ["HLD", "LLD", "Databases", "Caching"],
     route: "/dashboard/sheets/system-design",
+  },
+  {
+    id: "machine-learning",
+    name: "Machine Learning",
+    total: 184,
+    topics: ["Linear Algebra", "Probability", "ML Models", "Deep Learning"],
+    route: "/dashboard/sheets/machine-learning",
   },
 ];
 
@@ -153,7 +167,12 @@ const DashboardMatrix = () => {
             .maybeSingle(),
           supabase
             .from("leaderboard_view")
-            .select("*"),
+            .select("*")
+            .then(res => {
+              // leaderboard_view may not exist — treat errors as empty
+              if (res.error) return { data: [], error: null };
+              return res;
+            }),
           supabase
             .from("user_achievements")
             .select("achievement_id, earned_at")
