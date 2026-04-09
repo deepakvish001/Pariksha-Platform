@@ -74,6 +74,7 @@ import { striversA2ZSections, striversA2ZMeta } from "@/data/striversA2ZData";
 import { dbmsSections, dbmsMeta } from "@/data/dbmsData";
 import { cnSections, cnMeta } from "@/data/cnData";
 import { osSections, osMeta } from "@/data/osData";
+import { juniorTrainingSections, juniorTrainingMeta } from "@/data/juniorTrainingData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -572,6 +573,10 @@ const mockSheetData: Record<string, SheetData> = {
   "os-sheet": {
     ...osMeta,
     sections: osSections,
+  },
+  "junior-training-sheet": {
+    ...juniorTrainingMeta,
+    sections: juniorTrainingSections,
   },
   "sql-practice": {
     id: "sql-practice",
