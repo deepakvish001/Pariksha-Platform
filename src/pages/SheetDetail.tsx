@@ -1394,13 +1394,15 @@ function SubSectionCard({
   onToggleTopic,
   onOpenNote,
   onToggleRevision,
-  onSectionComplete
+  onSectionComplete,
+  expandAllSignal
 }: { 
   subSection: SubSection; 
   onToggleTopic: (id: string) => void;
   onOpenNote: (topic: Topic) => void;
   onToggleRevision: (id: string) => void;
   onSectionComplete?: (title: string) => void;
+  expandAllSignal?: { expanded: boolean; timestamp: number } | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const completed = subSection.topics.filter(t => t.completed).length;
@@ -1499,13 +1501,15 @@ function SectionCard({
   onToggleTopic,
   onOpenNote,
   onToggleRevision,
-  onSectionComplete
+  onSectionComplete,
+  expandAllSignal
 }: { 
   section: Section; 
   onToggleTopic: (id: string) => void;
   onOpenNote: (topic: Topic) => void;
   onToggleRevision: (id: string) => void;
   onSectionComplete?: (title: string) => void;
+  expandAllSignal?: { expanded: boolean; timestamp: number } | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const allTopics = section.subSections.flatMap(s => s.topics);
