@@ -1363,6 +1363,15 @@ export type Database = {
       }
     }
     Functions: {
+      award_xp: {
+        Args: {
+          _amount: number
+          _description?: string
+          _source: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       calculate_profile_completion: {
         Args: {
           profile_row: Database["public"]["Tables"]["user_profiles_extended"]["Row"]
