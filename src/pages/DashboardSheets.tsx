@@ -48,6 +48,15 @@ const sheets = [
     starred: false,
   },
   {
+    id: "neetcode-250",
+    title: "NeetCode 250",
+    description: "The complete NeetCode collection — 250 problems across all DSA patterns",
+    category: "DSA",
+    problems: 250,
+    difficulty: "Medium",
+    starred: true,
+  },
+  {
     id: "competitive-programming",
     title: "Competitive Programming",
     description: "Master algorithms through structured problem sets from Codeforces, AtCoder & ICPC",
