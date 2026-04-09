@@ -1,117 +1,53 @@
 
 
-# Make All Features Publicly Accessible (Login Required Only for Tracking Actions)
+# Dashboard & Sheets — Full Functionality & Next Features
 
-## Overview
-Currently, all dashboard/library/research/platform routes are wrapped in `ProtectedRoute`, requiring login to even view content. The goal is to make everything viewable without login, but prompt login when users try to perform tracked actions (mark progress, like, save, generate AI content, etc.).
+## Current State Assessment
 
-## Architecture Change
+**What works:**
+- Dashboard (`/dashboard`) loads with stats, heatmap, goals, leaderboard, achievements, weekly activity chart
+- Sheets listing (`/dashboard/sheets`) shows 8 sheet cards with progress tracking from database
+- Sheet detail pages load with sections/subsections, toggle completion, notes, revision marks, all persisted to `user_topic_progress`
+- DSA Level 1 sheet (467 topics) integrated from CSV data
+- CP sheet has its own dedicated view (`CPProblemSetsView`)
+- Guest users can browse with delayed login prompts
 
-### 1. Remove ProtectedRoute from Content Routes
-- Replace `DashboardLayoutWrapper` (which wraps everything in `ProtectedRoute`) with a new `PublicDashboardLayoutWrapper` that renders `DashboardLayout` without auth gating
-- Keep `ProtectedRoute` only for truly personal pages: Settings, Profile, Notifications, Onboarding
+**Issues to fix:**
+1. **DashboardMatrix missing sheets**: The `sheetDefinitions` array only has 6 sheets (missing `dsa-level-1` and `competitive-programming`), so those don't appear in the progress cards at bottom
+2. **Striver's sheet has only ~130 mock topics** but claims `totalProblems: 446` — the difficulty counts (easy/medium/hard) are wrong relative to actual topics
+3. **`leaderboard_view` doesn't exist** — the dashboard queries it but it's not a real table/view, causing silent errors
+4. **`completed_at` not set on toggle** — when marking a topic complete, `saveProgress` doesn't send `completed_at: new Date().toISOString()`, so sheet completion dates are never tracked
+5. **Category filter (Completed/Pending) not wired** — the `categoryFilter` select exists but isn't used in `getFilteredSections`
+6. **Console warning**: `DelayedLoginPrompt` can't receive refs (minor)
 
-### 2. Create a `useRequireAuth` Hook
-A reusable hook that checks if user is logged in before performing an action. If not logged in, shows a login prompt dialog/toast and redirects to login.
+## Plan
 
-```text
-useRequireAuth() → { requireAuth: (callback) => void, user, LoginPromptDialog }
-- If user exists: executes callback immediately
-- If no user: shows modal "Sign in to continue" with Login/Signup buttons
-```
+### Step 1: Fix DashboardMatrix sheet definitions
+Add `dsa-level-1` (467 topics) and `competitive-programming` (97 topics) to the `sheetDefinitions` array so their progress shows on the main dashboard cards.
 
-### 3. Create `LoginPromptDialog` Component
-A modal dialog that appears when unauthenticated users try to perform tracked actions. Shows a message like "Sign in to track your progress" with Login and Sign Up buttons.
+### Step 2: Fix `completed_at` timestamp in SheetDetail
+Update `saveProgress` to include `completed_at: new Date().toISOString()` when `completed: true`, and `completed_at: null` when uncompleting. This enables the "Recently Completed" section on the sheets page to work.
 
-### 4. Update All Action Handlers Across the App
-Wrap tracked/interactive actions with `requireAuth()`:
-- **Progress tracking**: marking topics solved/completed, sheet progress checkboxes
-- **Likes**: LikeButton component already has a toast for this, upgrade to dialog
-- **AI generation**: generating content, saving content
-- **Quiz**: saving quiz results, quiz history
-- **Collections**: creating/managing folders
-- **Resume**: uploading/analyzing resumes, downloading templates (tracked)
-- **Outreach**: copying templates (tracked)
-- **Chat**: Astra AI, Roadmap Chat
-- **Settings/Profile**: already protected, keep as-is
-- **Achievements/XP**: viewing personal achievements page
-- **Streak/Activity**: personal activity feed
+### Step 3: Wire up the Completed/Pending category filter
+In `getFilteredSections`, add logic for `categoryFilter === "completed"` (show only completed topics) and `categoryFilter === "pending"` (show only uncompleted topics).
 
-### 5. Update DashboardSidebar
-- Show sidebar to all users (logged in or not)
-- Hide personal sections (My Activity, Profile, etc.) for unauthenticated users OR show them but redirect to login on click
-- Show sign-in button in sidebar for unauthenticated users
+### Step 4: Fix totalProblems count for Striver's sheet
+Update the `totalProblems` in the mock data to match the actual number of topics defined (currently ~130, not 446). Adjust `easy`/`medium`/`hard` counts accordingly.
 
-### 6. Route Changes in App.tsx
+### Step 5: Handle missing leaderboard view gracefully
+The dashboard queries `leaderboard_view` which doesn't exist. Add error handling so the leaderboard section shows the empty state instead of failing silently. Optionally create it as a simple query from `user_topic_progress` joined with `profiles`.
 
-**Keep protected** (require login to even view):
-- `/onboarding`
-- `/settings`
-- `/dashboard/profile`
-- `/dashboard/notifications`
-- `/dashboard/notifications/preferences`
-- `/dashboard/achievements`
+### Step 6: Add Machine Learning sheet data
+The ML sheet card exists but has no detail data in `mockSheetData`. Add a structured section/topic layout so clicking it shows actual content instead of "Sheet not found".
 
-**Make public** (viewable without login):
-- `/dashboard` (main dashboard - show read-only view)
-- `/dashboard/sheets`, `/dashboard/sheets/:sheetId`
-- All `/library/*` routes
-- All `/fundamentals/*` routes
-- All `/system-design/*` routes
-- All `/research/*` routes (except activity)
-- `/platform/ai/community`, `/platform/ai/staff-picks`, `/platform/ai/content/:id`
-- `/platform/resources`
-
-**Require login on action** (viewable but actions gated):
-- `/platform/ai/generate`, `/platform/ai/my-*` pages
-- `/platform/ai` (Astra chat)
-- `/platform/ai/roadmap-chat`
-- `/platform/collections`
-- `/research/activity`
-- `/research/analyser` (upload action)
+### Step 7: Improve next feature set
+- **Floating progress widget on SheetDetail**: A sticky mini-card at bottom-right showing current progress %, completed count, and a "next unsolved" button
+- **Bulk actions**: "Mark section as complete" button on section headers
+- **Export progress**: Download progress as CSV from sheet detail page
 
 ## Technical Details
 
-### New Files
-- `src/hooks/useRequireAuth.ts` - Hook returning `requireAuth` wrapper + dialog state
-- `src/components/LoginPromptDialog.tsx` - Reusable login prompt modal
-
-### Modified Files
-- `src/App.tsx` - Split routes into public (new `PublicDashboardLayout`) and protected groups
-- `src/components/DashboardLayout.tsx` - Remove auth dependency, work for all users
-- `src/components/DashboardSidebar.tsx` - Show login CTA for guests, conditionally show personal items
-- `src/components/ProtectedRoute.tsx` - Keep for personal-only routes
-- `src/hooks/useSheetProgress.ts` - Gate mutations with auth check
-- `src/hooks/useContentLike.ts` - Already has toast, upgrade to dialog
-- `src/hooks/useStreak.ts`, `useXPSystem.ts` - Skip for unauthenticated users
-- `src/components/ai/LikeButton.tsx` - Use LoginPromptDialog
-- Various progress/action components - Add `requireAuth` gate before mutations
-
-### Key Pattern
-```typescript
-// useRequireAuth hook usage
-const { requireAuth, LoginPromptDialog } = useRequireAuth();
-
-const handleSolve = () => {
-  requireAuth(() => {
-    // actual tracking logic
-    toggleSolved(topicId);
-  });
-};
-
-return (
-  <>
-    <Button onClick={handleSolve}>Mark Solved</Button>
-    <LoginPromptDialog />
-  </>
-);
-```
-
-## Implementation Order
-1. Create `useRequireAuth` hook and `LoginPromptDialog`
-2. Create `PublicDashboardLayout` wrapper (no ProtectedRoute)
-3. Update `App.tsx` routes - split public vs protected
-4. Update `DashboardSidebar` for guest users
-5. Update key action components to use `requireAuth` gate
-6. Test all flows end-to-end
+- **Files modified**: `src/pages/DashboardMatrix.tsx`, `src/pages/SheetDetail.tsx`
+- **No database changes needed** — all fixes use existing `user_topic_progress` table
+- **No new dependencies**
 
