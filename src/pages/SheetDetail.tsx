@@ -564,6 +564,10 @@ const mockSheetData: Record<string, SheetData> = {
     ...dbmsMeta,
     sections: dbmsSections,
   },
+  "cn-sheet": {
+    ...cnMeta,
+    sections: cnSections,
+  },
   "sql-practice": {
     id: "sql-practice",
     title: "SQL Practice Sheet",
