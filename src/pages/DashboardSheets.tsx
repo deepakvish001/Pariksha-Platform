@@ -103,12 +103,12 @@ const sheets = [
   },
   {
     id: "sql-practice",
-    title: "SQL Practice Sheet",
-    description: "Essential SQL queries for interviews",
+    title: "LeetCode SQL 50",
+    description: "50 essential SQL problems from LeetCode covering Select, Joins, Aggregations, Subqueries & more",
     category: "SQL",
-    problems: 75,
+    problems: 50,
     difficulty: "Easy-Medium",
-    starred: false,
+    starred: true,
   },
   {
     id: "dsa-level-1",
