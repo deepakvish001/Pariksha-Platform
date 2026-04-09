@@ -586,7 +586,7 @@ const mockSheetData: Record<string, SheetData> = {
     ...tleCp31Meta,
     sections: tleCp31Sections,
   },
-    id: "sql-practice",
+  "sql-practice": {
     title: "SQL Practice Sheet",
     description: "Essential SQL queries for acing database interviews",
     lastUpdated: "January 20, 2026",
