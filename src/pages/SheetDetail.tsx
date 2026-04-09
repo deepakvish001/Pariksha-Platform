@@ -116,11 +116,11 @@ const mockSheetData: Record<string, SheetData> = {
     title: "Striver's A2Z Sheet - Learn DSA from A to Z",
     description: "This course is made for people who want to learn DSA from A to Z for free in a well-organised and structured manner.",
     lastUpdated: "December 13, 2025",
-    totalProblems: 446,
+    totalProblems: 134,
     completed: 0,
-    easy: 128,
-    medium: 177,
-    hard: 141,
+    easy: 72,
+    medium: 42,
+    hard: 20,
     sections: [
       {
         id: "learn-basics",
