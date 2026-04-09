@@ -57,6 +57,15 @@ const sheets = [
     starred: false,
   },
   {
+    id: "dsa-level-1",
+    title: "Java DSA Level 1",
+    description: "Complete Java DSA prep from basics to advanced data structures — 467 topics",
+    category: "DSA",
+    problems: 467,
+    difficulty: "Mixed",
+    starred: true,
+  },
+  {
     id: "system-design",
     title: "System Design Concepts",
     description: "HLD and LLD concepts with examples",

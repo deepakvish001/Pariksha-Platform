@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { dsaLevel1Sections, dsaLevel1Meta } from "@/data/dsaLevel1Data";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -936,6 +937,10 @@ const mockSheetData: Record<string, SheetData> = {
         ],
       },
     ],
+  },
+  "dsa-level-1": {
+    ...dsaLevel1Meta,
+    sections: dsaLevel1Sections,
   },
 };
 
