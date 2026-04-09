@@ -2224,7 +2224,56 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
           </Card>
         </motion.div>
 
-        {/* Expand/Collapse All + Sections */}
+        {/* ACM-ICPC Time Estimation Breakdown */}
+        {currentSheetId === "acm-icpc-training" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <Card className="bg-card/50 border-border/50 overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-primary/40 via-amber-500/40 to-red-500/40" />
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary/20 to-amber-500/20 flex items-center justify-center">
+                    <Flame className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Estimated Time Breakdown</p>
+                    <p className="text-xs text-muted-foreground">~700–900 hours total · Practical limit ~1300 hours</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {[
+                    { level: "≤ 2.5", count: 215, avg: 20, color: "from-emerald-500/15 to-emerald-500/5 border-emerald-500/20", text: "text-emerald-600 dark:text-emerald-400" },
+                    { level: "≤ 3.5", count: 93, avg: 30, color: "from-green-500/15 to-green-500/5 border-green-500/20", text: "text-green-600 dark:text-green-400" },
+                    { level: "≤ 4.5", count: 270, avg: 40, color: "from-amber-500/15 to-amber-500/5 border-amber-500/20", text: "text-amber-600 dark:text-amber-400" },
+                    { level: "≤ 5.25", count: 178, avg: 60, color: "from-orange-500/15 to-orange-500/5 border-orange-500/20", text: "text-orange-600 dark:text-orange-400" },
+                    { level: "≤ 5.75", count: 127, avg: 75, color: "from-red-500/15 to-red-500/5 border-red-500/20", text: "text-red-600 dark:text-red-400" },
+                    { level: "> 5.75", count: 53, avg: 90, color: "from-rose-500/15 to-rose-500/5 border-rose-500/20", text: "text-rose-600 dark:text-rose-400" },
+                  ].map((tier) => (
+                    <div
+                      key={tier.level}
+                      className={cn(
+                        "rounded-lg border p-3 bg-gradient-to-b text-center",
+                        tier.color
+                      )}
+                    >
+                      <p className={cn("text-lg font-bold", tier.text)}>{tier.count}</p>
+                      <p className="text-xs text-muted-foreground">problems</p>
+                      <p className="text-[11px] font-medium mt-1.5">Level {tier.level}</p>
+                      <p className="text-[11px] text-muted-foreground">~{tier.avg} min each</p>
+                      <p className={cn("text-xs font-semibold mt-1", tier.text)}>
+                        {Math.round((tier.count * tier.avg) / 60)}h
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
