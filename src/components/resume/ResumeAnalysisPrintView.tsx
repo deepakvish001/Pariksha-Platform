@@ -17,6 +17,10 @@ export const ResumeAnalysisPrintView = ({ analysis }: ResumeAnalysisPrintViewPro
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
+    const escapeHtml = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+       .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
     const getScoreColor = (score: number) => {
       if (score >= 80) return "#22c55e";
       if (score >= 60) return "#eab308";
@@ -43,7 +47,8 @@ export const ResumeAnalysisPrintView = ({ analysis }: ResumeAnalysisPrintViewPro
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Resume Analysis - ${analysis.file_name}</title>
+          <meta http-equiv="Content-Security-Policy" content="script-src 'none'">
+          <title>Resume Analysis - ${escapeHtml(analysis.file_name)}</title>
           <style>
             * {
               margin: 0;
@@ -221,7 +226,7 @@ export const ResumeAnalysisPrintView = ({ analysis }: ResumeAnalysisPrintViewPro
           <div class="header">
             <div>
               <h1>Resume Analysis Report</h1>
-              <p class="subtitle">${analysis.file_name}</p>
+              <p class="subtitle">${escapeHtml(analysis.file_name)}</p>
             </div>
             <div class="date">
               <p>Generated: ${new Date().toLocaleDateString()}</p>
@@ -254,7 +259,7 @@ export const ResumeAnalysisPrintView = ({ analysis }: ResumeAnalysisPrintViewPro
 
           <div class="section">
             <h2>Summary</h2>
-            <p class="summary">${analysis.summary}</p>
+            <p class="summary">${escapeHtml(analysis.summary || '')}</p>
           </div>
 
           <div class="section">
@@ -262,8 +267,8 @@ export const ResumeAnalysisPrintView = ({ analysis }: ResumeAnalysisPrintViewPro
             <ul class="suggestions-list">
               ${analysis.suggestions.map(s => `
                 <li class="suggestion-item">
-                  <span class="priority-badge" style="color: ${getPriorityColor(s.priority)};">${s.priority}</span>
-                  <span>${s.text}</span>
+                  <span class="priority-badge" style="color: ${getPriorityColor(escapeHtml(s.priority))};">${escapeHtml(s.priority)}</span>
+                  <span>${escapeHtml(s.text)}</span>
                 </li>
               `).join("")}
             </ul>
@@ -273,7 +278,7 @@ export const ResumeAnalysisPrintView = ({ analysis }: ResumeAnalysisPrintViewPro
             <h2>Strengths</h2>
             <ul class="strengths-list">
               ${analysis.strengths.map(s => `
-                <li class="strength-item">${s}</li>
+                <li class="strength-item">${escapeHtml(s)}</li>
               `).join("")}
             </ul>
           </div>
@@ -282,7 +287,7 @@ export const ResumeAnalysisPrintView = ({ analysis }: ResumeAnalysisPrintViewPro
             <h2>Keywords Found</h2>
             <div class="keywords-container">
               ${analysis.keywords_found.map(k => `
-                <span class="keyword">${k}</span>
+                <span class="keyword">${escapeHtml(k)}</span>
               `).join("")}
             </div>
           </div>

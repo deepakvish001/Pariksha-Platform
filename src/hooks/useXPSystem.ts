@@ -143,42 +143,38 @@
    ) => {
      if (!user || amount <= 0) return;
  
-     try {
-       // Insert transaction
-       await supabase.from("xp_transactions").insert({
-         user_id: user.id,
-         amount,
-         source,
-         description,
-       });
- 
-       // Update profile XP
-       const newTotalXP = totalXP + amount;
-       const newLevel = calculateLevel(newTotalXP);
-       const leveledUp = newLevel > currentLevel;
- 
-       await supabase
-         .from("user_profiles_extended")
-         .update({
-           total_xp: newTotalXP,
-           current_level: newLevel,
-           xp_this_week: xpThisWeek + amount,
-         })
-         .eq("user_id", user.id);
- 
-       setTotalXP(newTotalXP);
-       setCurrentLevel(newLevel);
-       setXpThisWeek(xpThisWeek + amount);
- 
-      // Set pending level up for celebration
-      if (leveledUp) {
-        setPendingLevelUp(newLevel);
-       }
- 
-       return { leveledUp, newLevel, newTotalXP };
-     } catch (error) {
-       console.error("Error awarding XP:", error);
-     }
+      try {
+        // Use secure server-side function to award XP
+        const { data, error } = await supabase.rpc("award_xp", {
+          _user_id: user.id,
+          _amount: amount,
+          _source: source,
+          _description: description || null,
+        });
+
+        if (error) {
+          console.error("Error awarding XP:", error);
+          return;
+        }
+
+        const result = data as unknown as { total_xp: number; current_level: number; amount: number } | null;
+        const newTotalXP = result?.total_xp ?? totalXP + amount;
+        const newLevel = result?.current_level ?? calculateLevel(newTotalXP);
+        const leveledUp = newLevel > currentLevel;
+
+        setTotalXP(newTotalXP);
+        setCurrentLevel(newLevel);
+        setXpThisWeek(xpThisWeek + amount);
+
+       // Set pending level up for celebration
+       if (leveledUp) {
+         setPendingLevelUp(newLevel);
+        }
+
+        return { leveledUp, newLevel, newTotalXP };
+      } catch (error) {
+        console.error("Error awarding XP:", error);
+      }
   }, [user, totalXP, currentLevel, xpThisWeek]);
 
   const clearPendingLevelUp = useCallback(() => {
