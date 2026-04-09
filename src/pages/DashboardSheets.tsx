@@ -111,6 +111,15 @@ const sheets = [
     starred: true,
   },
   {
+    id: "adv-sql-practice",
+    title: "LeetCode Advanced SQL 50",
+    description: "50 advanced SQL problems — Window Functions, Subqueries, CTEs & more",
+    category: "SQL",
+    problems: 50,
+    difficulty: "Medium-Hard",
+    starred: true,
+  },
+  {
     id: "dsa-level-1",
     title: "Java DSA Level 1",
     description: "Complete Java DSA prep from basics to advanced data structures — 467 topics",

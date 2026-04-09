@@ -79,6 +79,7 @@ import { tleCp31Sections, tleCp31Meta } from "@/data/tleCp31Data";
 import { striverSDESections, striverSDEMeta } from "@/data/striverSDEData";
 import { striverSDSections, striverSDMeta } from "@/data/striverSDData";
 import { sqlPracticeSections, sqlPracticeMeta } from "@/data/sqlPracticeData";
+import { advSqlSections, advSqlMeta } from "@/data/advSqlData";
 import RoadmapFAQ from "@/components/roadmap/RoadmapFAQ";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -201,6 +202,10 @@ const mockSheetData: Record<string, SheetData> = {
   "sql-practice": {
     ...sqlPracticeMeta,
     sections: sqlPracticeSections,
+  },
+  "adv-sql-practice": {
+    ...advSqlMeta,
+    sections: advSqlSections,
   },
   "system-design": {
     id: "system-design",
