@@ -2277,6 +2277,14 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
         </motion.div>
       </main>
 
+      {/* ACM-ICPC FAQ & Checklist */}
+      {currentSheetId === "acm-icpc-training" && (
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 space-y-6">
+          <ACMChecklistCard checklist={acmIcpcChecklist} />
+          <RoadmapFAQ faqs={acmIcpcFaqs} title="ACM-ICPC Training FAQ" />
+        </main>
+      )}
+
       {/* Floating Progress Widget */}
       <CPFloatingProgress
         solvedCount={completedCount}
