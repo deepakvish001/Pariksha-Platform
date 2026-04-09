@@ -69,6 +69,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import MobileFAB from "@/components/MobileFAB";
+import CPFloatingProgress from "@/components/sheets/CPFloatingProgress";
 
 // Types
 interface Topic {
