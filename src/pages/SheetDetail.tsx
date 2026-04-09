@@ -75,6 +75,7 @@ import { dbmsSections, dbmsMeta } from "@/data/dbmsData";
 import { cnSections, cnMeta } from "@/data/cnData";
 import { osSections, osMeta } from "@/data/osData";
 import { acmIcpcSections, acmIcpcMeta, acmIcpcFaqs, acmIcpcChecklist } from "@/data/acmIcpcTrainingData";
+import { tleCp31Sections, tleCp31Meta } from "@/data/tleCp31Data";
 import RoadmapFAQ from "@/components/roadmap/RoadmapFAQ";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -581,8 +582,11 @@ const mockSheetData: Record<string, SheetData> = {
     ...acmIcpcMeta,
     sections: acmIcpcSections,
   },
+  "tle-cp31-sheet": {
+    ...tleCp31Meta,
+    sections: tleCp31Sections,
+  },
   "sql-practice": {
-    id: "sql-practice",
     title: "SQL Practice Sheet",
     description: "Essential SQL queries for acing database interviews",
     lastUpdated: "January 20, 2026",
