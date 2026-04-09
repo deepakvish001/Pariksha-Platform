@@ -138,6 +138,15 @@ const sheets = [
     starred: true,
   },
   {
+    id: "striver-sd-sheet",
+    title: "Striver's System Design Sheet",
+    description: "97 topics covering HLD, LLD, and system design fundamentals for interviews",
+    category: "System Design",
+    problems: 97,
+    difficulty: "Medium-Hard",
+    starred: true,
+  },
+  {
     id: "system-design",
     title: "System Design Concepts",
     description: "HLD and LLD concepts with examples",

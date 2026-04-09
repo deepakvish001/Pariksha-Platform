@@ -77,6 +77,7 @@ import { osSections, osMeta } from "@/data/osData";
 import { acmIcpcSections, acmIcpcMeta, acmIcpcFaqs, acmIcpcChecklist } from "@/data/acmIcpcTrainingData";
 import { tleCp31Sections, tleCp31Meta } from "@/data/tleCp31Data";
 import { striverSDESections, striverSDEMeta } from "@/data/striverSDEData";
+import { striverSDSections, striverSDMeta } from "@/data/striverSDData";
 import RoadmapFAQ from "@/components/roadmap/RoadmapFAQ";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -191,6 +192,10 @@ const mockSheetData: Record<string, SheetData> = {
   "tle-cp31-sheet": {
     ...tleCp31Meta,
     sections: tleCp31Sections,
+  },
+  "striver-sd-sheet": {
+    ...striverSDMeta,
+    sections: striverSDSections,
   },
   "sql-practice": {
     id: "sql-practice",
