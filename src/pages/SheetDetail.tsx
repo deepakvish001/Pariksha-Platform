@@ -1402,7 +1402,7 @@ function SubSectionCard({
   onToggleRevision: (id: string) => void;
   onSectionComplete?: (title: string) => void;
 }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const completed = subSection.topics.filter(t => t.completed).length;
   const total = subSection.topics.length;
   const prevCompletedRef = useRef(completed);
