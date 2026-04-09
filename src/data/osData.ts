@@ -196,7 +196,10 @@ export const osSections: Section[] = Array.from(topicGroups.entries()).map(
 export const osMeta = {
   id: "os-sheet",
   title: "Operating Systems Interview Sheet",
+  description: "135 essential OS interview questions — from basics to disk scheduling.",
+  lastUpdated: "April 9, 2026",
   totalProblems: raw.length,
+  completed: 0,
   easy: raw.filter((q) => q.importance === "Medium").length,
   medium: raw.filter((q) => q.importance === "High").length,
   hard: raw.filter((q) => q.importance === "Very High").length,
