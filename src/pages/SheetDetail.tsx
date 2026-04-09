@@ -71,6 +71,7 @@ import { blind75Sections, blind75Meta } from "@/data/blind75Data";
 import { neetcode150Sections, neetcode150Meta } from "@/data/neetcode150Data";
 import { neetcode250Sections, neetcode250Meta } from "@/data/neetcode250Data";
 import { striversA2ZSections, striversA2ZMeta } from "@/data/striversA2ZData";
+import { dbmsSections, dbmsMeta } from "@/data/dbmsData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -557,6 +558,10 @@ const mockSheetData: Record<string, SheetData> = {
   "strivers-a2z-dsa": {
     ...striversA2ZMeta,
     sections: striversA2ZSections,
+  },
+  "dbms-sheet": {
+    ...dbmsMeta,
+    sections: dbmsSections,
   },
   "sql-practice": {
     id: "sql-practice",

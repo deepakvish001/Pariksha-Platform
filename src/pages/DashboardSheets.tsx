@@ -75,6 +75,15 @@ const sheets = [
     starred: true,
   },
   {
+    id: "dbms-sheet",
+    title: "DBMS Interview Sheet",
+    description: "124 essential DBMS interview questions — from basics to scaling",
+    category: "DBMS",
+    problems: 124,
+    difficulty: "Mixed",
+    starred: true,
+  },
+  {
     id: "sql-practice",
     title: "SQL Practice Sheet",
     description: "Essential SQL queries for interviews",
