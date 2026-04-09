@@ -75,6 +75,15 @@ const sheets = [
     starred: true,
   },
   {
+    id: "dsa-level-3",
+    title: "Java DSA Level 3",
+    description: "Expert DSA — Tries, Segment Trees, Advanced DP & Graphs — 226 problems",
+    category: "DSA",
+    problems: 226,
+    difficulty: "Hard",
+    starred: true,
+  },
+  {
     id: "system-design",
     title: "System Design Concepts",
     description: "HLD and LLD concepts with examples",
