@@ -93,6 +93,15 @@ const sheets = [
     starred: true,
   },
   {
+    id: "os-sheet",
+    title: "Operating Systems Sheet",
+    description: "135 essential OS interview questions — from basics to disk scheduling",
+    category: "OS",
+    problems: 135,
+    difficulty: "Mixed",
+    starred: true,
+  },
+  {
     id: "sql-practice",
     title: "SQL Practice Sheet",
     description: "Essential SQL queries for interviews",
