@@ -222,7 +222,7 @@ export const striverSDSections: Section[] = [
 
 export const striverSDMeta = {
   id: "striver-sd-sheet" as const,
-  title: "Striver"s System Design Sheet",
+  title: "Striver's System Design Sheet",
   description: "97 topics covering HLD, LLD, and system design fundamentals for interviews",
   lastUpdated: "April 2026",
   totalProblems: 97,
