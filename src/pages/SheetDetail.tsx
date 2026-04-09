@@ -82,6 +82,7 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import MobileFAB from "@/components/MobileFAB";
 import CPFloatingProgress from "@/components/sheets/CPFloatingProgress";
 import ACMChecklistCard from "@/components/sheets/ACMChecklistCard";
+import ACMPaceCalculator from "@/components/sheets/ACMPaceCalculator";
 
 // Types
 interface Topic {
