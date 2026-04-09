@@ -83,6 +83,7 @@ interface Topic {
   practiceUrl?: string;
   note: string;
   isRevision: boolean;
+  estTime?: string;
 }
 
 interface SubSection {
