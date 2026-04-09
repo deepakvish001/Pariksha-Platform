@@ -1639,6 +1639,9 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
   const [activeTab, setActiveTab] = useState<"all" | "revision">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  
+  // Expand/Collapse all
+  const [expandAllSignal, setExpandAllSignal] = useState<{ expanded: boolean; timestamp: number } | null>(null);
   const [difficultyFilter, setDifficultyFilter] = useState("all");
 
   // Load user progress from database
