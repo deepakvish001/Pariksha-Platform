@@ -66,6 +66,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { dsaLevel1Sections, dsaLevel1Meta } from "@/data/dsaLevel1Data";
 import { dsaLevel2Sections, dsaLevel2Meta } from "@/data/dsaLevel2Data";
+import { dsaLevel3Sections, dsaLevel3Meta } from "@/data/dsaLevel3Data";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -920,6 +921,10 @@ const mockSheetData: Record<string, SheetData> = {
   "dsa-level-2": {
     ...dsaLevel2Meta,
     sections: dsaLevel2Sections,
+  },
+  "dsa-level-3": {
+    ...dsaLevel3Meta,
+    sections: dsaLevel3Sections,
   },
   "machine-learning": {
     id: "machine-learning",
