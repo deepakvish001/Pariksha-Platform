@@ -345,6 +345,13 @@ const CPProblemRow = memo(function CPProblemRow({
       <div className="flex items-center justify-center py-3.5 px-2">
         <DifficultyBadge difficulty={problem.difficulty} />
       </div>
+
+      {/* Est Time */}
+      <div className="flex items-center justify-center py-3.5">
+        <span className="text-xs text-muted-foreground">
+          {problem.difficulty === "Easy" ? "15 min" : problem.difficulty === "Medium" ? "30 min" : "45 min"}
+        </span>
+      </div>
     </motion.div>
   );
 });
