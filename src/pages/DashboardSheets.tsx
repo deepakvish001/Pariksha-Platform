@@ -164,6 +164,15 @@ const sheets = [
     difficulty: "Mixed",
     starred: true,
   },
+  {
+    id: "tle-cp31-sheet",
+    title: "TLE CP-31 Sheet",
+    description: "372 handpicked Codeforces problems — 31 per rating from 800 to 1900",
+    category: "CP",
+    problems: 372,
+    difficulty: "Mixed",
+    starred: true,
+  },
 ];
 
 const difficultyOrder: Record<string, number> = {
