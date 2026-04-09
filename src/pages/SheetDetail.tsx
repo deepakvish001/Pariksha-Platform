@@ -2269,6 +2269,50 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
                     </div>
                   ))}
                 </div>
+
+                {/* Dynamic Time Remaining */}
+                {(() => {
+                  const easyRemaining = easyTotal - easyCompleted;
+                  const medRemaining = mediumTotal - mediumCompleted;
+                  const hardRemaining = hardTotal - hardCompleted;
+                  // Weighted avg: easy~25min, medium~45min, hard~75min
+                  const totalMinRemaining = easyRemaining * 25 + medRemaining * 45 + hardRemaining * 75;
+                  const totalHoursRemaining = Math.round(totalMinRemaining / 60);
+                  const totalMinAll = easyTotal * 25 + mediumTotal * 45 + hardTotal * 75;
+                  const timeProgress = totalMinAll > 0 ? Math.round(((totalMinAll - totalMinRemaining) / totalMinAll) * 100) : 0;
+                  const problemsRemaining = (easyTotal + mediumTotal + hardTotal) - completedCount;
+
+                  return (
+                    <div className="mt-4 rounded-lg border border-border/50 bg-muted/30 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium">Time Remaining Estimate</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{timeProgress}% time completed</span>
+                      </div>
+                      <Progress value={timeProgress} className="h-2" />
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                        <div>
+                          <p className="text-xl font-bold text-primary">{totalHoursRemaining}h</p>
+                          <p className="text-[11px] text-muted-foreground">Est. remaining</p>
+                        </div>
+                        <div>
+                          <p className="text-xl font-bold text-foreground">{problemsRemaining}</p>
+                          <p className="text-[11px] text-muted-foreground">Problems left</p>
+                        </div>
+                        <div>
+                          <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{easyRemaining}</p>
+                          <p className="text-[11px] text-muted-foreground">Easy left (~{Math.round(easyRemaining * 25 / 60)}h)</p>
+                        </div>
+                        <div>
+                          <p className="text-xl font-bold text-red-600 dark:text-red-400">{hardRemaining}</p>
+                          <p className="text-[11px] text-muted-foreground">Hard left (~{Math.round(hardRemaining * 75 / 60)}h)</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </motion.div>
