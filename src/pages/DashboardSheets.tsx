@@ -84,6 +84,15 @@ const sheets = [
     starred: true,
   },
   {
+    id: "cn-sheet",
+    title: "Computer Networks Sheet",
+    description: "115 essential CN interview questions — from basics to security",
+    category: "CN",
+    problems: 115,
+    difficulty: "Mixed",
+    starred: true,
+  },
+  {
     id: "sql-practice",
     title: "SQL Practice Sheet",
     description: "Essential SQL queries for interviews",
