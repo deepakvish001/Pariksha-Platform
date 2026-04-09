@@ -1394,19 +1394,28 @@ function SubSectionCard({
   onToggleTopic,
   onOpenNote,
   onToggleRevision,
-  onSectionComplete
+  onSectionComplete,
+  expandAllSignal
 }: { 
   subSection: SubSection; 
   onToggleTopic: (id: string) => void;
   onOpenNote: (topic: Topic) => void;
   onToggleRevision: (id: string) => void;
   onSectionComplete?: (title: string) => void;
+  expandAllSignal?: { expanded: boolean; timestamp: number } | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const completed = subSection.topics.filter(t => t.completed).length;
   const total = subSection.topics.length;
   const prevCompletedRef = useRef(completed);
   const isComplete = completed === total && total > 0;
+
+  // React to expand/collapse all signal
+  useEffect(() => {
+    if (expandAllSignal) {
+      setIsOpen(expandAllSignal.expanded);
+    }
+  }, [expandAllSignal]);
 
   // Check for section completion
   useEffect(() => {
@@ -1499,13 +1508,15 @@ function SectionCard({
   onToggleTopic,
   onOpenNote,
   onToggleRevision,
-  onSectionComplete
+  onSectionComplete,
+  expandAllSignal
 }: { 
   section: Section; 
   onToggleTopic: (id: string) => void;
   onOpenNote: (topic: Topic) => void;
   onToggleRevision: (id: string) => void;
   onSectionComplete?: (title: string) => void;
+  expandAllSignal?: { expanded: boolean; timestamp: number } | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const allTopics = section.subSections.flatMap(s => s.topics);
@@ -1513,6 +1524,13 @@ function SectionCard({
   const total = allTopics.length;
   const prevCompletedRef = useRef(completed);
   const isComplete = completed === total && total > 0;
+
+  // React to expand/collapse all signal
+  useEffect(() => {
+    if (expandAllSignal) {
+      setIsOpen(expandAllSignal.expanded);
+    }
+  }, [expandAllSignal]);
 
   // Check for section completion
   useEffect(() => {
@@ -1584,6 +1602,7 @@ function SectionCard({
                       onOpenNote={onOpenNote}
                       onToggleRevision={onToggleRevision}
                       onSectionComplete={onSectionComplete}
+                      expandAllSignal={expandAllSignal}
                     />
                   </motion.div>
                 ))}
@@ -1639,6 +1658,9 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
   const [activeTab, setActiveTab] = useState<"all" | "revision">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  
+  // Expand/Collapse all
+  const [expandAllSignal, setExpandAllSignal] = useState<{ expanded: boolean; timestamp: number } | null>(null);
   const [difficultyFilter, setDifficultyFilter] = useState("all");
 
   // Load user progress from database
@@ -2178,12 +2200,29 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
           </Card>
         </motion.div>
 
-        {/* Sections */}
+        {/* Expand/Collapse All + Sections */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
+          <div className="flex items-center justify-end mb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setExpandAllSignal(prev => ({
+                expanded: !prev?.expanded,
+                timestamp: Date.now()
+              }))}
+              className="gap-2 text-xs"
+            >
+              <ChevronDown className={cn(
+                "h-3.5 w-3.5 transition-transform",
+                expandAllSignal?.expanded && "rotate-180"
+              )} />
+              {expandAllSignal?.expanded ? "Collapse All" : "Expand All"}
+            </Button>
+          </div>
           <Card className="overflow-hidden">
             <CardContent className="p-0">
               {filteredSections.length > 0 ? (
@@ -2195,6 +2234,7 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
                     onOpenNote={handleOpenNote}
                     onToggleRevision={handleToggleRevision}
                     onSectionComplete={handleSectionComplete}
+                    expandAllSignal={expandAllSignal}
                   />
                 ))
               ) : (
