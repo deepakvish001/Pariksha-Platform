@@ -81,6 +81,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import MobileFAB from "@/components/MobileFAB";
 import CPFloatingProgress from "@/components/sheets/CPFloatingProgress";
+import ACMChecklistCard from "@/components/sheets/ACMChecklistCard";
 
 // Types
 interface Topic {
