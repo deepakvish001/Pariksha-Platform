@@ -559,6 +559,10 @@ const mockSheetData: Record<string, SheetData> = {
     ...striversA2ZMeta,
     sections: striversA2ZSections,
   },
+  "dbms-sheet": {
+    ...dbmsMeta,
+    sections: dbmsSections,
+  },
   "sql-practice": {
     id: "sql-practice",
     title: "SQL Practice Sheet",
