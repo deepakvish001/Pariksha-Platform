@@ -2199,6 +2199,14 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
         </motion.div>
       </main>
 
+      {/* Floating Progress Widget */}
+      <CPFloatingProgress
+        solvedCount={completedCount}
+        totalCount={allTopics.length}
+        revisionCount={revisionCount}
+        streak={currentStreak}
+      />
+
       {/* Mobile FAB */}
       <MobileFAB />
 
