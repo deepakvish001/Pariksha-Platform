@@ -21,6 +21,15 @@ const sheets = [
     starred: true,
   },
   {
+    id: "strivers-a2z-dsa",
+    title: "Striver's A2Z DSA Sheet",
+    description: "Complete A2Z DSA course — 445 problems from basics to advanced topics",
+    category: "DSA",
+    problems: 445,
+    difficulty: "Mixed",
+    starred: true,
+  },
+  {
     id: "love-babbar-450",
     title: "Love Babbar 450",
     description: "450 curated DSA problems by topic",
