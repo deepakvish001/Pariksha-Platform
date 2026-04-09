@@ -1525,6 +1525,13 @@ function SectionCard({
   const prevCompletedRef = useRef(completed);
   const isComplete = completed === total && total > 0;
 
+  // React to expand/collapse all signal
+  useEffect(() => {
+    if (expandAllSignal) {
+      setIsOpen(expandAllSignal.expanded);
+    }
+  }, [expandAllSignal]);
+
   // Check for section completion
   useEffect(() => {
     if (completed === total && total > 0 && prevCompletedRef.current < total) {
