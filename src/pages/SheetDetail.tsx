@@ -69,6 +69,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import MobileFAB from "@/components/MobileFAB";
+import CPFloatingProgress from "@/components/sheets/CPFloatingProgress";
 
 // Types
 interface Topic {
@@ -116,11 +117,11 @@ const mockSheetData: Record<string, SheetData> = {
     title: "Striver's A2Z Sheet - Learn DSA from A to Z",
     description: "This course is made for people who want to learn DSA from A to Z for free in a well-organised and structured manner.",
     lastUpdated: "December 13, 2025",
-    totalProblems: 446,
+    totalProblems: 134,
     completed: 0,
-    easy: 128,
-    medium: 177,
-    hard: 141,
+    easy: 72,
+    medium: 42,
+    hard: 20,
     sections: [
       {
         id: "learn-basics",
@@ -620,34 +621,6 @@ const mockSheetData: Record<string, SheetData> = {
       },
     ],
   },
-  "machine-learning": {
-    id: "machine-learning",
-    title: "Machine Learning Complete Roadmap",
-    description: "Comprehensive ML roadmap covering prerequisites to advanced topics",
-    lastUpdated: "January 28, 2026",
-    totalProblems: 184,
-    completed: 0,
-    easy: 50,
-    medium: 100,
-    hard: 34,
-    sections: [
-      {
-        id: "prerequisites",
-        title: "Prerequisites & Foundation",
-        subSections: [
-          {
-            id: "linear-algebra",
-            title: "Linear Algebra",
-            topics: [
-              { id: "ml-1", title: "Vectors and Vector Spaces", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-              { id: "ml-2", title: "Matrix Operations", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-              { id: "ml-3", title: "Eigenvalues and Eigenvectors", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-        ],
-      },
-    ],
-  },
   "competitive-programming": {
     id: "competitive-programming",
     title: "Competitive Programming Sheet",
@@ -941,6 +914,193 @@ const mockSheetData: Record<string, SheetData> = {
   "dsa-level-1": {
     ...dsaLevel1Meta,
     sections: dsaLevel1Sections,
+  },
+  "machine-learning": {
+    id: "machine-learning",
+    title: "Machine Learning Complete Roadmap",
+    description: "From fundamentals to advanced ML concepts with hands-on practice",
+    lastUpdated: "March 20, 2026",
+    totalProblems: 184,
+    completed: 0,
+    easy: 62,
+    medium: 78,
+    hard: 44,
+    sections: [
+      {
+        id: "ml-math-foundations",
+        title: "Mathematical Foundations",
+        subSections: [
+          {
+            id: "ml-linear-algebra",
+            title: "Linear Algebra",
+            topics: [
+              { id: "ml-1", title: "Vectors and Matrices", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-2", title: "Matrix Operations", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-3", title: "Eigenvalues and Eigenvectors", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-4", title: "Singular Value Decomposition", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-5", title: "Principal Component Analysis", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "ml-calculus",
+            title: "Calculus for ML",
+            topics: [
+              { id: "ml-6", title: "Derivatives and Gradients", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-7", title: "Partial Derivatives", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-8", title: "Chain Rule and Backpropagation", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-9", title: "Gradient Descent Optimization", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-10", title: "Convex Optimization", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "ml-probability",
+            title: "Probability & Statistics",
+            topics: [
+              { id: "ml-11", title: "Probability Basics", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-12", title: "Bayes' Theorem", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-13", title: "Distributions (Normal, Bernoulli, Poisson)", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-14", title: "Hypothesis Testing", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-15", title: "Maximum Likelihood Estimation", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "ml-supervised",
+        title: "Supervised Learning",
+        subSections: [
+          {
+            id: "ml-regression",
+            title: "Regression",
+            topics: [
+              { id: "ml-16", title: "Linear Regression", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-17", title: "Polynomial Regression", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-18", title: "Ridge and Lasso Regression", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-19", title: "Logistic Regression", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-20", title: "Evaluation Metrics (MSE, R², MAE)", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "ml-classification",
+            title: "Classification",
+            topics: [
+              { id: "ml-21", title: "K-Nearest Neighbors", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-22", title: "Naive Bayes Classifier", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-23", title: "Support Vector Machines", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-24", title: "Decision Trees", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-25", title: "Random Forest", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-26", title: "Gradient Boosting (XGBoost, LightGBM)", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-27", title: "Confusion Matrix, Precision, Recall, F1", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-28", title: "ROC-AUC Curve", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "ml-unsupervised",
+        title: "Unsupervised Learning",
+        subSections: [
+          {
+            id: "ml-clustering",
+            title: "Clustering",
+            topics: [
+              { id: "ml-29", title: "K-Means Clustering", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-30", title: "Hierarchical Clustering", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-31", title: "DBSCAN", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-32", title: "Gaussian Mixture Models", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "ml-dimensionality",
+            title: "Dimensionality Reduction",
+            topics: [
+              { id: "ml-33", title: "PCA in Practice", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-34", title: "t-SNE", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-35", title: "UMAP", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "ml-deep-learning",
+        title: "Deep Learning",
+        subSections: [
+          {
+            id: "ml-neural-networks",
+            title: "Neural Networks Fundamentals",
+            topics: [
+              { id: "ml-36", title: "Perceptron and Activation Functions", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-37", title: "Feedforward Neural Networks", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-38", title: "Backpropagation Algorithm", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-39", title: "Batch Normalization", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-40", title: "Dropout and Regularization", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-41", title: "Optimizers (Adam, SGD, RMSProp)", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "ml-cnn",
+            title: "Convolutional Neural Networks",
+            topics: [
+              { id: "ml-42", title: "Convolution Operation", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-43", title: "Pooling Layers", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-44", title: "CNN Architectures (LeNet, AlexNet, VGG)", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-45", title: "ResNet and Skip Connections", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-46", title: "Transfer Learning", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-47", title: "Object Detection (YOLO, SSD)", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "ml-rnn",
+            title: "Recurrent Neural Networks",
+            topics: [
+              { id: "ml-48", title: "RNN Basics", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-49", title: "LSTM Networks", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-50", title: "GRU Networks", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-51", title: "Sequence-to-Sequence Models", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-52", title: "Attention Mechanism", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "ml-transformers",
+            title: "Transformers & Modern Architectures",
+            topics: [
+              { id: "ml-53", title: "Self-Attention and Multi-Head Attention", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-54", title: "Transformer Architecture", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-55", title: "BERT and Pre-training", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-56", title: "GPT Models", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-57", title: "Vision Transformers (ViT)", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: "ml-practical",
+        title: "ML in Practice",
+        subSections: [
+          {
+            id: "ml-data-prep",
+            title: "Data Preprocessing",
+            topics: [
+              { id: "ml-58", title: "Data Cleaning & Missing Values", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-59", title: "Feature Scaling (Normalization, Standardization)", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-60", title: "Feature Engineering", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-61", title: "Handling Imbalanced Data (SMOTE, Oversampling)", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-62", title: "Cross-Validation Techniques", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+          {
+            id: "ml-deployment",
+            title: "Model Deployment",
+            topics: [
+              { id: "ml-63", title: "Model Serialization (Pickle, ONNX)", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-64", title: "Flask/FastAPI for ML APIs", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-65", title: "Docker for ML", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+              { id: "ml-66", title: "MLOps Basics", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
+            ],
+          },
+        ],
+      },
+    ],
   },
 };
 
@@ -1528,14 +1688,19 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
 
     setIsSaving(true);
     try {
+      const payload = {
+        user_id: user.id,
+        sheet_id: currentSheetId,
+        topic_id: topicId,
+        ...updates,
+        ...(updates.completed !== undefined
+          ? { completed_at: updates.completed ? new Date().toISOString() : null }
+          : {}),
+      };
+
       const { error } = await supabase
         .from("user_topic_progress")
-        .upsert({
-          user_id: user.id,
-          sheet_id: currentSheetId,
-          topic_id: topicId,
-          ...updates,
-        }, {
+        .upsert(payload, {
           onConflict: "user_id,sheet_id,topic_id",
         });
 
@@ -1592,6 +1757,10 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
             // Difficulty filter
             if (difficultyFilter !== "all" && topic.difficulty.toLowerCase() !== difficultyFilter) return false;
             
+            // Category filter (completed/pending)
+            if (categoryFilter === "completed" && !topic.completed) return false;
+            if (categoryFilter === "pending" && topic.completed) return false;
+            
             return true;
           })
         }))
@@ -1599,7 +1768,7 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
     })).filter(section => section.subSections.length > 0);
     
     return sections;
-  }, [sheetData, activeTab, searchQuery, difficultyFilter]);
+  }, [sheetData, activeTab, searchQuery, difficultyFilter, categoryFilter]);
 
   const filteredSections = getFilteredSections();
 
@@ -2030,6 +2199,14 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
           </Card>
         </motion.div>
       </main>
+
+      {/* Floating Progress Widget */}
+      <CPFloatingProgress
+        solvedCount={completedCount}
+        totalCount={allTopics.length}
+        revisionCount={revisionCount}
+        streak={currentStreak}
+      />
 
       {/* Mobile FAB */}
       <MobileFAB />
