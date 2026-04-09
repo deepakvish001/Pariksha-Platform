@@ -66,6 +66,15 @@ const sheets = [
     starred: true,
   },
   {
+    id: "dsa-level-2",
+    title: "Java DSA Level 2",
+    description: "Advanced DSA — Recursion, DP, Graphs, Trees & more — 309 problems",
+    category: "DSA",
+    problems: 309,
+    difficulty: "Medium-Hard",
+    starred: true,
+  },
+  {
     id: "system-design",
     title: "System Design Concepts",
     description: "HLD and LLD concepts with examples",

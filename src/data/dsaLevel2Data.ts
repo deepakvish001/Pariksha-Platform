@@ -3368,3 +3368,15 @@ export const dsaLevel2Sections: Section[] = [
     ],
   },
 ];
+
+export const dsaLevel2Meta = {
+  id: "dsa-level-2",
+  title: "Java DSA Level 2 Sheet",
+  description: "Advanced Java DSA preparation with 309 curated problems covering recursion, DP, graphs, trees & more.",
+  lastUpdated: "April 9, 2026",
+  totalProblems: 309,
+  completed: 0,
+  easy: 38,
+  medium: 201,
+  hard: 70,
+};
