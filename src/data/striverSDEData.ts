@@ -563,7 +563,7 @@ export const striverSDESections: Section[] = [
 ];
 
 export const striverSDEMeta = {
-  id: "striver-sde-sheet" as const,
+  id: "strivers-sde-sheet" as const,
   title: "Striver SDE Sheet",
   description: "Curated 199 problems by Striver covering all important DSA topics for SDE interviews",
   lastUpdated: "April 2026",
