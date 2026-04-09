@@ -155,6 +155,15 @@ const sheets = [
     difficulty: "Mixed",
     starred: true,
   },
+  {
+    id: "junior-training-sheet",
+    title: "Junior Training Sheet V7.0",
+    description: "201 competitive programming problems for beginners — Codeforces, UVA & SPOJ",
+    category: "CP",
+    problems: 201,
+    difficulty: "Easy-Medium",
+    starred: true,
+  },
 ];
 
 const difficultyOrder: Record<string, number> = {
