@@ -68,6 +68,7 @@ import { dsaLevel1Sections, dsaLevel1Meta } from "@/data/dsaLevel1Data";
 import { dsaLevel2Sections, dsaLevel2Meta } from "@/data/dsaLevel2Data";
 import { dsaLevel3Sections, dsaLevel3Meta } from "@/data/dsaLevel3Data";
 import { blind75Sections, blind75Meta } from "@/data/blind75Data";
+import { neetcode150Sections, neetcode150Meta } from "@/data/neetcode150Data";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -544,32 +545,8 @@ const mockSheetData: Record<string, SheetData> = {
     ],
   },
   "neetcode-150": {
-    id: "neetcode-150",
-    title: "Neetcode 150",
-    description: "Blind 75 extended with additional patterns for comprehensive preparation",
-    lastUpdated: "February 1, 2026",
-    totalProblems: 150,
-    completed: 0,
-    easy: 40,
-    medium: 80,
-    hard: 30,
-    sections: [
-      {
-        id: "arrays-hashing",
-        title: "Arrays & Hashing",
-        subSections: [
-          {
-            id: "ah-problems",
-            title: "Problems",
-            topics: [
-              { id: "nc-1", title: "Contains Duplicate", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-              { id: "nc-2", title: "Valid Anagram", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-              { id: "nc-3", title: "Two Sum", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-        ],
-      },
-    ],
+    ...neetcode150Meta,
+    sections: neetcode150Sections,
   },
   "sql-practice": {
     id: "sql-practice",
