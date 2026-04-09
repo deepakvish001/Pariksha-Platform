@@ -18,13 +18,13 @@ const wrapSheet = (
 });
 
 export const acmIcpcSections: Section[] = [
-  wrapSheet("a", "Sheet A — Beginner", juniorTrainingSections),
-  wrapSheet("b", "Sheet B — Elementary", juniorTrainingBSections),
-  wrapSheet("c1", "Sheet C1 — Intermediate I", juniorTrainingC1Sections),
-  wrapSheet("c2", "Sheet C2 — Intermediate II", juniorTrainingC2Sections),
-  wrapSheet("d1", "Sheet D1 — Advanced I", juniorTrainingD1Sections),
-  wrapSheet("d2", "Sheet D2 — Advanced II", juniorTrainingD2Sections),
-  wrapSheet("d3", "Sheet D3 — Advanced III", juniorTrainingD3Sections),
+  wrapSheet("a", "Level 1 — Warm-up & Fundamentals", juniorTrainingSections),
+  wrapSheet("b", "Level 2 — Core Techniques", juniorTrainingBSections),
+  wrapSheet("c1", "Level 3 — Problem Solving I", juniorTrainingC1Sections),
+  wrapSheet("c2", "Level 4 — Problem Solving II", juniorTrainingC2Sections),
+  wrapSheet("d1", "Level 5 — Advanced Algorithms I", juniorTrainingD1Sections),
+  wrapSheet("d2", "Level 6 — Advanced Algorithms II", juniorTrainingD2Sections),
+  wrapSheet("d3", "Level 7 — Expert Challenges", juniorTrainingD3Sections),
 ];
 
 export const acmIcpcMeta = {
