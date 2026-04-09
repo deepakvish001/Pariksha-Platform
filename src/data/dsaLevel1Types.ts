@@ -9,6 +9,7 @@ export interface Topic {
   practiceUrl?: string;
   note: string;
   isRevision: boolean;
+  estTime?: string;
 }
 
 export interface SubSection {

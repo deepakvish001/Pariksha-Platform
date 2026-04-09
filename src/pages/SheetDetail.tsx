@@ -83,6 +83,7 @@ interface Topic {
   practiceUrl?: string;
   note: string;
   isRevision: boolean;
+  estTime?: string;
 }
 
 interface SubSection {
@@ -1160,6 +1161,16 @@ function TopicRow({
   onOpenNote: (topic: Topic) => void;
   onToggleRevision: (id: string) => void;
 }) {
+  const getEstTime = (topic: Topic) => {
+    if (topic.estTime) return topic.estTime;
+    switch (topic.difficulty) {
+      case "Easy": return "15 min";
+      case "Medium": return "30 min";
+      case "Hard": return "45 min";
+      default: return "20 min";
+    }
+  };
+
   return (
     <motion.tr
       className="border-b transition-colors hover:bg-muted/40 data-[state=selected]:bg-muted group"
@@ -1171,7 +1182,7 @@ function TopicRow({
       }}
     >
       {/* Status */}
-      <TableCell className="w-16">
+      <TableCell className="w-14">
         <motion.button
           onClick={() => onToggle(topic.id)}
           className="text-muted-foreground hover:text-foreground transition-colors"
@@ -1221,25 +1232,52 @@ function TopicRow({
         </motion.span>
       </TableCell>
       
-      {/* Solve Button */}
-      <TableCell className="w-20">
-        {topic.practiceUrl && (
-          <motion.a 
-            href={topic.practiceUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 text-sm font-medium inline-block"
-            whileHover={{ scale: 1.05, x: 2 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Solve
-          </motion.a>
+      {/* Problem Link */}
+      <TableCell className="w-24 text-center">
+        {topic.practiceUrl && topic.practiceUrl !== "#" ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <motion.a 
+                  href={topic.practiceUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded bg-primary/10 hover:bg-primary/20 transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <ExternalLink className="h-4 w-4 text-primary" />
+                </motion.a>
+              </TooltipTrigger>
+              <TooltipContent>Solve Problem</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
         )}
       </TableCell>
       
-      {/* Resource Plus (Video) */}
+      {/* Resource Articles */}
       <TableCell className="w-24 text-center">
-        {topic.resourceType === "youtube" && topic.resourceUrl && (
+        {topic.articleUrl && topic.articleUrl !== "#" ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <motion.a 
+                  href={topic.articleUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded bg-muted hover:bg-muted/80 transition-colors"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <FileText className="h-4 w-4 text-foreground" />
+                </motion.a>
+              </TooltipTrigger>
+              <TooltipContent>Read Article</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : topic.resourceType === "article" && topic.resourceUrl && topic.resourceUrl !== "#" ? (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -1247,70 +1285,48 @@ function TopicRow({
                   href={topic.resourceUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center w-8 h-8 rounded bg-primary/20 hover:bg-primary/30 transition-colors"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded bg-muted hover:bg-muted/80 transition-colors"
+                  whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.9 }}
                 >
-                  <Youtube className="h-4 w-4 text-primary" />
+                  <FileText className="h-4 w-4 text-foreground" />
+                </motion.a>
+              </TooltipTrigger>
+              <TooltipContent>Read Article</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        )}
+      </TableCell>
+      
+      {/* Resource Videos */}
+      <TableCell className="w-24 text-center">
+        {topic.resourceType === "youtube" && topic.resourceUrl && topic.resourceUrl !== "#" ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <motion.a 
+                  href={topic.resourceUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded bg-destructive/10 hover:bg-destructive/20 transition-colors"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <Youtube className="h-4 w-4 text-destructive" />
                 </motion.a>
               </TooltipTrigger>
               <TooltipContent>Watch Video</TooltipContent>
             </Tooltip>
           </TooltipProvider>
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
         )}
       </TableCell>
       
-      {/* Resource (Article + Video) */}
-      <TableCell className="w-24">
-        <div className="flex items-center justify-center gap-2">
-          {topic.articleUrl && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <motion.a 
-                    href={topic.articleUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    whileHover={{ scale: 1.15, y: -2 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <FileText className="h-4 w-4" />
-                  </motion.a>
-                </TooltipTrigger>
-                <TooltipContent>Read Article</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          {topic.resourceUrl && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <motion.a 
-                    href={topic.resourceUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-destructive hover:text-destructive/80 transition-colors"
-                    whileHover={{ scale: 1.15, y: -2 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <Youtube className="h-4 w-4" />
-                  </motion.a>
-                </TooltipTrigger>
-                <TooltipContent>Watch Video</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-      </TableCell>
-      
-      {/* Practice */}
-      <TableCell className="w-20 text-center text-muted-foreground text-sm">
-        ---
-      </TableCell>
-      
       {/* Note */}
-      <TableCell className="w-16 text-center">
+      <TableCell className="w-14 text-center">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1355,13 +1371,18 @@ function TopicRow({
       </TableCell>
       
       {/* Difficulty */}
-      <TableCell className="w-24">
+      <TableCell className="w-24 text-center">
         <motion.div
           whileHover={{ scale: 1.05 }}
           transition={{ duration: 0.15 }}
         >
           <DifficultyBadge difficulty={topic.difficulty} />
         </motion.div>
+      </TableCell>
+
+      {/* Est Time */}
+      <TableCell className="w-20 text-center">
+        <span className="text-xs text-muted-foreground">{getEstTime(topic)}</span>
       </TableCell>
     </motion.tr>
   );
@@ -1440,22 +1461,15 @@ function SubSectionCard({
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-border/30 hover:bg-transparent">
-                      <TableHead className="w-16 text-xs font-medium">Status</TableHead>
+                      <TableHead className="w-14 text-xs font-medium">Status</TableHead>
                       <TableHead className="text-xs font-medium">Problem</TableHead>
-                      <TableHead className="w-20 text-xs font-medium text-center">
-                        <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px]">Plus</Badge>
-                      </TableHead>
-                      <TableHead className="w-24 text-xs font-medium text-center">
-                        Resource
-                        <div className="text-[10px] text-muted-foreground">
-                          <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px] mt-0.5">Plus</Badge>
-                        </div>
-                      </TableHead>
-                      <TableHead className="w-24 text-xs font-medium text-center">Resource</TableHead>
-                      <TableHead className="w-20 text-xs font-medium text-center">Practice</TableHead>
-                      <TableHead className="w-16 text-xs font-medium text-center">Note</TableHead>
+                      <TableHead className="w-24 text-xs font-medium text-center">Problem Link</TableHead>
+                      <TableHead className="w-24 text-xs font-medium text-center">Resource Articles</TableHead>
+                      <TableHead className="w-24 text-xs font-medium text-center">Resource Videos</TableHead>
+                      <TableHead className="w-14 text-xs font-medium text-center">Note</TableHead>
                       <TableHead className="w-20 text-xs font-medium text-center">Revision</TableHead>
                       <TableHead className="w-24 text-xs font-medium text-center">Difficulty</TableHead>
+                      <TableHead className="w-20 text-xs font-medium text-center">Est Time</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
