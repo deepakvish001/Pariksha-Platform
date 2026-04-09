@@ -78,6 +78,7 @@ import { acmIcpcSections, acmIcpcMeta, acmIcpcFaqs, acmIcpcChecklist } from "@/d
 import { tleCp31Sections, tleCp31Meta } from "@/data/tleCp31Data";
 import { striverSDESections, striverSDEMeta } from "@/data/striverSDEData";
 import { striverSDSections, striverSDMeta } from "@/data/striverSDData";
+import { sqlPracticeSections, sqlPracticeMeta } from "@/data/sqlPracticeData";
 import RoadmapFAQ from "@/components/roadmap/RoadmapFAQ";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -198,31 +199,8 @@ const mockSheetData: Record<string, SheetData> = {
     sections: striverSDSections,
   },
   "sql-practice": {
-    id: "sql-practice",
-    title: "SQL Practice Sheet",
-    description: "Essential SQL queries for acing database interviews",
-    lastUpdated: "January 20, 2026",
-    totalProblems: 75,
-    completed: 0,
-    easy: 30,
-    medium: 30,
-    hard: 15,
-    sections: [
-      {
-        id: "basic-queries",
-        title: "Basic Queries",
-        subSections: [
-          {
-            id: "select-queries",
-            title: "SELECT Statements",
-            topics: [
-              { id: "sql-1", title: "Recyclable and Low Fat Products", completed: false, difficulty: "Easy", resourceType: "article", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-              { id: "sql-2", title: "Find Customer Referee", completed: false, difficulty: "Easy", resourceType: "article", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-        ],
-      },
-    ],
+    ...sqlPracticeMeta,
+    sections: sqlPracticeSections,
   },
   "system-design": {
     id: "system-design",
