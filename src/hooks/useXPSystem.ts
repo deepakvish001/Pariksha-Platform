@@ -157,8 +157,9 @@
           return;
         }
 
-        const newTotalXP = data?.total_xp ?? totalXP + amount;
-        const newLevel = data?.current_level ?? calculateLevel(newTotalXP);
+        const result = data as unknown as { total_xp: number; current_level: number; amount: number } | null;
+        const newTotalXP = result?.total_xp ?? totalXP + amount;
+        const newLevel = result?.current_level ?? calculateLevel(newTotalXP);
         const leveledUp = newLevel > currentLevel;
 
         setTotalXP(newTotalXP);
