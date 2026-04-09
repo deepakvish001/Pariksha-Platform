@@ -927,6 +927,10 @@ const mockSheetData: Record<string, SheetData> = {
     ...dsaLevel3Meta,
     sections: dsaLevel3Sections,
   },
+  "blind-75": {
+    ...blind75Meta,
+    sections: blind75Sections,
+  },
   "machine-learning": {
     id: "machine-learning",
     title: "Machine Learning Complete Roadmap",
