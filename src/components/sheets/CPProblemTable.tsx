@@ -133,7 +133,7 @@ function TableHeaderCell({
 }
 
 // Grid column definition for consistency
-const TABLE_GRID_COLS = "grid-cols-[50px_50px_1fr_56px_56px_56px_56px_56px_100px]";
+const TABLE_GRID_COLS = "grid-cols-[50px_1fr_56px_56px_56px_56px_56px_100px_70px]";
 
 // Enhanced Striver-style Problem Row with keyboard navigation
 const CPProblemRow = memo(function CPProblemRow({
@@ -526,14 +526,14 @@ export default function CPProblemTable({
           "bg-muted/30 backdrop-blur-md border-b border-border/20"
         )}>
           <TableHeaderCell align="center">Status</TableHeaderCell>
-          <TableHeaderCell align="center">#</TableHeaderCell>
           <TableHeaderCell className="pl-3">Problem</TableHeaderCell>
-          <TableHeaderCell align="center">Article</TableHeaderCell>
-          <TableHeaderCell align="center">Video</TableHeaderCell>
-          <TableHeaderCell align="center">Practice</TableHeaderCell>
+          <TableHeaderCell align="center">Problem Link</TableHeaderCell>
+          <TableHeaderCell align="center">Articles</TableHeaderCell>
+          <TableHeaderCell align="center">Videos</TableHeaderCell>
           <TableHeaderCell align="center">Note</TableHeaderCell>
           <TableHeaderCell align="center">Rev</TableHeaderCell>
           <TableHeaderCell align="center">Difficulty</TableHeaderCell>
+          <TableHeaderCell align="center">Est Time</TableHeaderCell>
         </div>
         
         {/* Table Body */}
