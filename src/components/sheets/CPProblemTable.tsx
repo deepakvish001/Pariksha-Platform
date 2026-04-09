@@ -238,23 +238,7 @@ const CPProblemRow = memo(function CPProblemRow({
         </motion.button>
       </div>
 
-      {/* Problem Number with rank styling */}
-      <div className="flex items-center justify-center py-3.5">
-        <motion.span 
-          className={cn(
-            "text-xs font-bold tabular-nums w-6 h-6 flex items-center justify-center rounded-md transition-colors",
-            isSolved 
-              ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/15" 
-              : "text-muted-foreground/40 bg-muted/20 group-hover:bg-muted/40"
-          )}
-          animate={{ scale: isSolved ? [1, 1.1, 1] : 1 }}
-          transition={{ duration: 0.2 }}
-        >
-          {index + 1}
-        </motion.span>
-      </div>
-
-      {/* Problem Title with link */}
+      {/* Problem Title */}
       <div className="py-3.5 px-3 min-w-0">
         <div className="flex items-center gap-2">
           <span className={cn(
@@ -265,19 +249,21 @@ const CPProblemRow = memo(function CPProblemRow({
           )}>
             {problem.title}
           </span>
-          {problem.problemUrl && (
-            <motion.a
-              href={problem.problemUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground/30 hover:text-primary transition-colors shrink-0 opacity-0 group-hover:opacity-100"
-              onClick={(e) => e.stopPropagation()}
-              whileHover={{ scale: 1.1 }}
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </motion.a>
-          )}
         </div>
+      </div>
+
+      {/* Problem Link */}
+      <div className="flex items-center justify-center py-3.5">
+        {problem.problemUrl ? (
+          <ResourceLink 
+            href={problem.problemUrl} 
+            icon={ExternalLink} 
+            label="Solve Problem"
+            variant="practice"
+          />
+        ) : (
+          <span className="text-muted-foreground/30 text-xs">—</span>
+        )}
       </div>
 
       {/* Article Link */}
@@ -297,16 +283,6 @@ const CPProblemRow = memo(function CPProblemRow({
           icon={Video} 
           label="Watch Video"
           variant="video"
-        />
-      </div>
-
-      {/* Practice Link */}
-      <div className="flex items-center justify-center py-3.5">
-        <ResourceLink 
-          href={problem.problemUrl} 
-          icon={Code2} 
-          label={`Practice on ${problem.platform || 'Platform'}`}
-          variant="practice"
         />
       </div>
 
