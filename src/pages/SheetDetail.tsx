@@ -1528,17 +1528,15 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
 
     setIsSaving(true);
     try {
-      const payload: Record<string, unknown> = {
+      const payload = {
         user_id: user.id,
         sheet_id: currentSheetId,
         topic_id: topicId,
         ...updates,
+        ...(updates.completed !== undefined
+          ? { completed_at: updates.completed ? new Date().toISOString() : null }
+          : {}),
       };
-
-      // Set completed_at timestamp when completing/uncompleting
-      if (updates.completed !== undefined) {
-        payload.completed_at = updates.completed ? new Date().toISOString() : null;
-      }
 
       const { error } = await supabase
         .from("user_topic_progress")
