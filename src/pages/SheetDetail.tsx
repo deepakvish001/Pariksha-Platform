@@ -68,6 +68,7 @@ import { dsaLevel1Sections, dsaLevel1Meta } from "@/data/dsaLevel1Data";
 import { dsaLevel2Sections, dsaLevel2Meta } from "@/data/dsaLevel2Data";
 import { dsaLevel3Sections, dsaLevel3Meta } from "@/data/dsaLevel3Data";
 import { blind75Sections, blind75Meta } from "@/data/blind75Data";
+import { neetcode150Sections, neetcode150Meta } from "@/data/neetcode150Data";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
