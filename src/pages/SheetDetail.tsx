@@ -206,6 +206,7 @@ const mockSheetData: Record<string, SheetData> = {
   "adv-sql-practice": {
     ...advSqlMeta,
     sections: advSqlSections,
+  },
   "system-design": {
     id: "system-design",
     title: "System Design Concepts",
