@@ -620,34 +620,6 @@ const mockSheetData: Record<string, SheetData> = {
       },
     ],
   },
-  "machine-learning": {
-    id: "machine-learning",
-    title: "Machine Learning Complete Roadmap",
-    description: "Comprehensive ML roadmap covering prerequisites to advanced topics",
-    lastUpdated: "January 28, 2026",
-    totalProblems: 184,
-    completed: 0,
-    easy: 50,
-    medium: 100,
-    hard: 34,
-    sections: [
-      {
-        id: "prerequisites",
-        title: "Prerequisites & Foundation",
-        subSections: [
-          {
-            id: "linear-algebra",
-            title: "Linear Algebra",
-            topics: [
-              { id: "ml-1", title: "Vectors and Vector Spaces", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-              { id: "ml-2", title: "Matrix Operations", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-              { id: "ml-3", title: "Eigenvalues and Eigenvectors", completed: false, difficulty: "Hard", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-        ],
-      },
-    ],
-  },
   "competitive-programming": {
     id: "competitive-programming",
     title: "Competitive Programming Sheet",
