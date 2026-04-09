@@ -74,13 +74,7 @@ import { striversA2ZSections, striversA2ZMeta } from "@/data/striversA2ZData";
 import { dbmsSections, dbmsMeta } from "@/data/dbmsData";
 import { cnSections, cnMeta } from "@/data/cnData";
 import { osSections, osMeta } from "@/data/osData";
-import { juniorTrainingSections, juniorTrainingMeta } from "@/data/juniorTrainingData";
-import { juniorTrainingBSections, juniorTrainingBMeta } from "@/data/juniorTrainingBData";
-import { juniorTrainingC1Sections, juniorTrainingC1Meta } from "@/data/juniorTrainingC1Data";
-import { juniorTrainingC2Sections, juniorTrainingC2Meta } from "@/data/juniorTrainingC2Data";
-import { juniorTrainingD1Sections, juniorTrainingD1Meta } from "@/data/juniorTrainingD1Data";
-import { juniorTrainingD2Sections, juniorTrainingD2Meta } from "@/data/juniorTrainingD2Data";
-import { juniorTrainingD3Sections, juniorTrainingD3Meta } from "@/data/juniorTrainingD3Data";
+import { acmIcpcSections, acmIcpcMeta } from "@/data/acmIcpcTrainingData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -580,33 +574,9 @@ const mockSheetData: Record<string, SheetData> = {
     ...osMeta,
     sections: osSections,
   },
-  "junior-training-sheet": {
-    ...juniorTrainingMeta,
-    sections: juniorTrainingSections,
-  },
-  "junior-training-b": {
-    ...juniorTrainingBMeta,
-    sections: juniorTrainingBSections,
-  },
-  "junior-training-c1": {
-    ...juniorTrainingC1Meta,
-    sections: juniorTrainingC1Sections,
-  },
-  "junior-training-c2": {
-    ...juniorTrainingC2Meta,
-    sections: juniorTrainingC2Sections,
-  },
-  "junior-training-d1": {
-    ...juniorTrainingD1Meta,
-    sections: juniorTrainingD1Sections,
-  },
-  "junior-training-d2": {
-    ...juniorTrainingD2Meta,
-    sections: juniorTrainingD2Sections,
-  },
-  "junior-training-d3": {
-    ...juniorTrainingD3Meta,
-    sections: juniorTrainingD3Sections,
+  "acm-icpc-training": {
+    ...acmIcpcMeta,
+    sections: acmIcpcSections,
   },
   "sql-practice": {
     id: "sql-practice",
