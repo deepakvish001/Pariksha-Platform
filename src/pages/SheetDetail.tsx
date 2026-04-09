@@ -1602,6 +1602,7 @@ function SectionCard({
                       onOpenNote={onOpenNote}
                       onToggleRevision={onToggleRevision}
                       onSectionComplete={onSectionComplete}
+                      expandAllSignal={expandAllSignal}
                     />
                   </motion.div>
                 ))}
