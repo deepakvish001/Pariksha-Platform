@@ -30,6 +30,15 @@ const sheets = [
     starred: true,
   },
   {
+    id: "blind-75",
+    title: "Blind 75",
+    description: "The essential 75 LeetCode problems for tech interviews",
+    category: "DSA",
+    problems: 75,
+    difficulty: "Medium",
+    starred: true,
+  },
+  {
     id: "neetcode-150",
     title: "Neetcode 150",
     description: "Blind 75 extended with additional patterns",
