@@ -1441,22 +1441,15 @@ function SubSectionCard({
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-border/30 hover:bg-transparent">
-                      <TableHead className="w-16 text-xs font-medium">Status</TableHead>
+                      <TableHead className="w-14 text-xs font-medium">Status</TableHead>
                       <TableHead className="text-xs font-medium">Problem</TableHead>
-                      <TableHead className="w-20 text-xs font-medium text-center">
-                        <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px]">Plus</Badge>
-                      </TableHead>
-                      <TableHead className="w-24 text-xs font-medium text-center">
-                        Resource
-                        <div className="text-[10px] text-muted-foreground">
-                          <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px] mt-0.5">Plus</Badge>
-                        </div>
-                      </TableHead>
-                      <TableHead className="w-24 text-xs font-medium text-center">Resource</TableHead>
-                      <TableHead className="w-20 text-xs font-medium text-center">Practice</TableHead>
-                      <TableHead className="w-16 text-xs font-medium text-center">Note</TableHead>
+                      <TableHead className="w-24 text-xs font-medium text-center">Problem Link</TableHead>
+                      <TableHead className="w-24 text-xs font-medium text-center">Resource Articles</TableHead>
+                      <TableHead className="w-24 text-xs font-medium text-center">Resource Videos</TableHead>
+                      <TableHead className="w-14 text-xs font-medium text-center">Note</TableHead>
                       <TableHead className="w-20 text-xs font-medium text-center">Revision</TableHead>
                       <TableHead className="w-24 text-xs font-medium text-center">Difficulty</TableHead>
+                      <TableHead className="w-20 text-xs font-medium text-center">Est Time</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
