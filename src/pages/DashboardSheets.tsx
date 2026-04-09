@@ -14,9 +14,9 @@ const sheets = [
   {
     id: "strivers-sde-sheet",
     title: "Striver's SDE Sheet",
-    description: "Comprehensive DSA problems for SDE interviews",
+    description: "Curated 199 problems by Striver covering all important DSA topics for SDE interviews",
     category: "DSA",
-    problems: 191,
+    problems: 199,
     difficulty: "Medium-Hard",
     starred: true,
   },
