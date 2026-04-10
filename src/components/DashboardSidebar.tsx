@@ -334,12 +334,10 @@ const CollapsibleGroup = ({ title, items, groupIcon, iconColor = "text-muted-for
           </SidebarMenuItem>
           );
         })}
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </GuestSidebarTooltip>
-          </SidebarMenuItem>
-        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
       </CollapsibleContent>
     </Collapsible>
   );
