@@ -136,34 +136,6 @@ const mockSheetData: Record<string, SheetData> = {
     ...striverSDEMeta,
     sections: striverSDESections,
   },
-  "love-babbar-450": {
-    id: "love-babbar-450",
-    title: "Love Babbar 450 DSA Sheet",
-    description: "450 curated DSA problems to crack any coding interview",
-    lastUpdated: "January 15, 2026",
-    totalProblems: 450,
-    completed: 0,
-    easy: 150,
-    medium: 200,
-    hard: 100,
-    sections: [
-      {
-        id: "arrays",
-        title: "Arrays",
-        subSections: [
-          {
-            id: "array-problems",
-            title: "Array Problems",
-            topics: [
-              { id: "lb-1", title: "Reverse the array", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-              { id: "lb-2", title: "Find the maximum and minimum element in an array", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-              { id: "lb-3", title: "Find the Kth max and min element", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-        ],
-      },
-    ],
-  },
   "neetcode-150": {
     ...neetcode150Meta,
     sections: neetcode150Sections,
