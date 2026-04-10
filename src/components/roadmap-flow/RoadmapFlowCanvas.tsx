@@ -6,7 +6,6 @@ import {
   MiniMap,
   type Node,
   type NodeTypes,
-  type OnNodeClick,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
