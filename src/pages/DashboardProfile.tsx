@@ -669,6 +669,7 @@ const DashboardProfile = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {loginDialog}
     </div>
   );
 };
