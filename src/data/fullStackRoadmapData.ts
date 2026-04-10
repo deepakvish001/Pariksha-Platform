@@ -207,12 +207,13 @@ export const roadmapNodesData: RoadmapNodeData[] = [
 
 // ── Build roadmap.sh-style branching layout ──
 const SPINE_X = 400;
-const BRANCH_OFFSET = 220;
+const SECTION_W = 200;
+const BRANCH_OFFSET = 230;
 const NODE_W = 180;
 const NODE_H = 36;
-const SECTION_H = 40;
-const Y_SECTION_GAP = 60;
-const Y_PAIR_GAP = 50;
+const SECTION_H = 42;
+const Y_SECTION_GAP = 50;
+const Y_PAIR_GAP = 46;
 
 function buildFlowNodes() {
   const nodes: Array<{
@@ -235,7 +236,7 @@ function buildFlowNodes() {
     nodes.push({
       id: sectionId,
       type: 'sectionNode',
-      position: { x: SPINE_X - 90, y },
+      position: { x: SPINE_X - SECTION_W / 2, y },
       data: { title: sec, sectionColor: color },
     });
 
