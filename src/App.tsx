@@ -136,7 +136,6 @@ const App = () => (
                 
                 {/* Protected dashboard routes (personal pages) */}
                 <Route path="/dashboard" element={<ProtectedDashboardWrapper />}>
-                  <Route path="profile" element={<DashboardProfile />} />
                   <Route path="achievements" element={<Achievements />} />
                   <Route path="notifications" element={<NotificationCenter />} />
                   <Route path="notifications/preferences" element={<NotificationPreferences />} />
@@ -147,6 +146,7 @@ const App = () => (
                   <Route index element={<DashboardMatrix />} />
                   <Route path="sheets" element={<DashboardSheets />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
+                  <Route path="profile" element={<DashboardProfile />} />
                 </Route>
 
                 {/* Library routes - public */}
@@ -220,15 +220,13 @@ const App = () => (
                   <Route path="collections" element={<Collections />} />
                 </Route>
 
-                {/* Settings - protected */}
+                {/* Settings - public browsable */}
                 <Route
                   path="/settings"
                   element={
-                    <ProtectedRoute requireOnboarding>
-                      <DashboardLayout>
-                        <Settings />
-                      </DashboardLayout>
-                    </ProtectedRoute>
+                    <DashboardLayout>
+                      <Settings />
+                    </DashboardLayout>
                   }
                 />
 
