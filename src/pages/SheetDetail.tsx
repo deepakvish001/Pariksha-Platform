@@ -513,6 +513,7 @@ const mockSheetData: Record<string, SheetData> = {
     ...blind75Meta,
     sections: blind75Sections,
   },
+};
 
 // Difficulty badge component
 function DifficultyBadge({ difficulty }: { difficulty: "Easy" | "Medium" | "Hard" }) {
