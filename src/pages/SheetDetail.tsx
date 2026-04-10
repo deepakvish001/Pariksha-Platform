@@ -1774,13 +1774,6 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
         </main>
       )}
 
-      {/* Floating Progress Widget */}
-      <CPFloatingProgress
-        solvedCount={completedCount}
-        totalCount={allTopics.length}
-        revisionCount={revisionCount}
-        streak={currentStreak}
-      />
 
       {/* Mobile FAB */}
       <MobileFAB />
