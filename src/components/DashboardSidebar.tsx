@@ -101,6 +101,8 @@ import { GuestSidebarTooltip } from "@/components/GuestSidebarTooltip";
 const homeNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
+  { title: "Profile", url: "/dashboard/profile", icon: User },
+  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 // Active (unlocked) routes
@@ -198,9 +200,7 @@ const resourceItems = [
 const progressNavItems = [
   { title: "My Activity", url: "/research/activity", icon: Activity },
   { title: "Achievements", url: "/dashboard/achievements", icon: Trophy },
-  { title: "Profile", url: "/dashboard/profile", icon: User },
   { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
-  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 interface NavItem {
