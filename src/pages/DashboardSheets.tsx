@@ -341,6 +341,16 @@ const DashboardSheets = () => {
     ? Object.values(progressData).reduce((acc, p) => acc + p.completedCount, 0) 
     : 0;
 
+  // Category-level progress for the breakdown bar
+  const categoryProgress = useMemo(() => {
+    return categoryOrder.map(cat => {
+      const catSheets = sheets.filter(s => s.category === cat);
+      const total = catSheets.reduce((acc, s) => acc + s.problems, 0);
+      const completed = catSheets.reduce((acc, s) => acc + getSheetCompletedCount(s.id), 0);
+      return { category: cat, total, completed };
+    });
+  }, [progressData]);
+
   const renderSheetCard = (sheet: typeof sortedSheets[0], index: number) => (
     <SheetCard
       key={sheet.id}
@@ -365,6 +375,13 @@ const DashboardSheets = () => {
 
       {/* Content */}
       <main className="p-4 md:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
+        {/* Category Progress Breakdown */}
+        <CategoryProgressBar
+          categories={categoryProgress}
+          totalProblems={totalProblems}
+          totalCompleted={totalCompleted}
+        />
+
         {/* Continue Learning / Quick Start Row */}
         <div className="space-y-6">
           {recentlyCompletedSheets.length > 0 && (
