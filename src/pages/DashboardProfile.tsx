@@ -293,13 +293,17 @@ const DashboardProfile = () => {
     }
     setIsSaving(true);
     try {
-      const completionPercent = calculateCompletion(editForm as ExtendedProfile);
+      const savePct = Math.round(Object.values({
+        bio: editForm.bio, location: editForm.location, occupation: editForm.occupation,
+        skills: (editForm.skills?.length ? "f" : null), goals: (editForm.goals?.length ? "f" : null),
+        linkedin: editForm.linkedin_url, github: editForm.github_url, leetcode: editForm.leetcode_url,
+      } as Record<string, string | null | undefined>).filter(v => v && v !== "").length / 8 * 100);
       const { error } = await supabase
         .from("user_profiles_extended")
-        .update({ ...editForm, profile_completion_percentage: completionPercent })
+        .update({ ...editForm, profile_completion_percentage: savePct })
         .eq("id", extendedProfile.id);
       if (error) throw error;
-      setExtendedProfile(prev => prev ? { ...prev, ...editForm, profile_completion_percentage: completionPercent } : null);
+      setExtendedProfile(prev => prev ? { ...prev, ...editForm, profile_completion_percentage: savePct } : null);
       toast({ title: "Profile updated!" });
       setIsEditModalOpen(false);
     } catch (error: any) {
@@ -322,8 +326,6 @@ const DashboardProfile = () => {
     setEditForm(prev => ({ ...prev, [field]: currentArray.filter((_, i) => i !== index) }));
   };
 
-  const completionPercent = calculateCompletion(extendedProfile);
-  const incompleteFields = 8 - Math.round(completionPercent * 8 / 100);
 
   if (isLoading) {
     return (
