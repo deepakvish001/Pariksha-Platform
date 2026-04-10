@@ -65,13 +65,13 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.2}
-        maxZoom={1.5}
+        fitViewOptions={{ padding: 0.3 }}
+        minZoom={0.15}
+        maxZoom={2}
         proOptions={{ hideAttribution: true }}
         className="!bg-background"
       >
-        <Background gap={24} size={1} className="!bg-background" />
+        <Background gap={32} size={1} className="!bg-background" />
         <Controls className="!bg-card !border-border !shadow-md [&>button]:!bg-card [&>button]:!border-border [&>button]:!text-foreground" />
         <MiniMap
           nodeColor={(n) => {

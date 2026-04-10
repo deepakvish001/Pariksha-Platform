@@ -14,6 +14,7 @@ export interface RoadmapNodeData {
   sectionColor: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   resources: RoadmapResource[];
+  isAlternative?: boolean;
 }
 
 export const sectionColors: Record<string, string> = {
@@ -31,10 +32,7 @@ export const sectionColors: Record<string, string> = {
 
 export const sections = Object.keys(sectionColors);
 
-const COL_CENTER = 400;
-const COL_LEFT = 200;
-const COL_RIGHT = 600;
-
+// ── Roadmap node data ──
 export const roadmapNodesData: RoadmapNodeData[] = [
   // Internet Basics
   { id: 'internet-how', title: 'How the Internet Works', description: 'Learn the fundamentals of how data travels across the internet, including packets, protocols, and routing.', section: 'Internet Basics', sectionColor: sectionColors['Internet Basics'], difficulty: 'Beginner', resources: [{ title: 'How the Internet Works - MDN', url: 'https://developer.mozilla.org/en-US/docs/Learn/Common_questions/How_does_the_Internet_work', type: 'docs' }, { title: 'How the Internet Works in 5 Minutes', url: 'https://www.youtube.com/watch?v=7_LPdttKXPc', type: 'video' }] },
@@ -53,7 +51,7 @@ export const roadmapNodesData: RoadmapNodeData[] = [
   { id: 'css-flexbox', title: 'Flexbox', description: 'Master flexible box layout for one-dimensional layouts — aligning and distributing space among items.', section: 'CSS', sectionColor: sectionColors['CSS'], difficulty: 'Beginner', resources: [{ title: 'Flexbox Guide - CSS-Tricks', url: 'https://css-tricks.com/snippets/css/a-guide-to-flexbox/', type: 'article' }, { title: 'Flexbox in 15 Minutes', url: 'https://www.youtube.com/watch?v=fYq5PXgSsbE', type: 'video' }] },
   { id: 'css-grid', title: 'CSS Grid', description: 'Build complex two-dimensional layouts with CSS Grid, defining rows, columns, and areas.', section: 'CSS', sectionColor: sectionColors['CSS'], difficulty: 'Intermediate', resources: [{ title: 'CSS Grid Guide - CSS-Tricks', url: 'https://css-tricks.com/snippets/css/complete-guide-grid/', type: 'article' }, { title: 'CSS Grid Course', url: 'https://www.youtube.com/watch?v=9zBsdzdE4sM', type: 'video' }] },
   { id: 'css-responsive', title: 'Responsive Design', description: 'Create layouts that adapt to different screen sizes using media queries, fluid units, and mobile-first approach.', section: 'CSS', sectionColor: sectionColors['CSS'], difficulty: 'Intermediate', resources: [{ title: 'Responsive Design - MDN', url: 'https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Responsive_Design', type: 'docs' }, { title: 'Responsive Design Tutorial', url: 'https://www.youtube.com/watch?v=srvUrASNj0s', type: 'video' }] },
-  { id: 'css-tailwind', title: 'Tailwind CSS', description: 'Utility-first CSS framework for rapidly building custom designs without writing custom CSS.', section: 'CSS', sectionColor: sectionColors['CSS'], difficulty: 'Intermediate', resources: [{ title: 'Tailwind CSS Docs', url: 'https://tailwindcss.com/docs', type: 'docs' }, { title: 'Tailwind CSS Crash Course', url: 'https://www.youtube.com/watch?v=UBOj6rqRUME', type: 'video' }] },
+  { id: 'css-tailwind', title: 'Tailwind CSS', description: 'Utility-first CSS framework for rapidly building custom designs without writing custom CSS.', section: 'CSS', sectionColor: sectionColors['CSS'], difficulty: 'Intermediate', isAlternative: true, resources: [{ title: 'Tailwind CSS Docs', url: 'https://tailwindcss.com/docs', type: 'docs' }, { title: 'Tailwind CSS Crash Course', url: 'https://www.youtube.com/watch?v=UBOj6rqRUME', type: 'video' }] },
 
   // JavaScript
   { id: 'js-basics', title: 'JavaScript Basics', description: 'Variables, data types, operators, control flow, loops, and basic syntax of JavaScript.', section: 'JavaScript', sectionColor: sectionColors['JavaScript'], difficulty: 'Beginner', resources: [{ title: 'JavaScript Guide - MDN', url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide', type: 'docs' }, { title: 'JavaScript Tutorial for Beginners', url: 'https://www.youtube.com/watch?v=W6NZfCO5SIk', type: 'video' }] },
@@ -69,7 +67,7 @@ export const roadmapNodesData: RoadmapNodeData[] = [
   { id: 'react-state', title: 'State Management', description: 'Context API, Redux, Zustand, or React Query for managing application state at scale.', section: 'React', sectionColor: sectionColors['React'], difficulty: 'Advanced', resources: [{ title: 'Managing State - React Docs', url: 'https://react.dev/learn/managing-state', type: 'docs' }, { title: 'React State Management', url: 'https://www.youtube.com/watch?v=zpUMRsAO6-Y', type: 'video' }] },
   { id: 'react-router', title: 'React Router', description: 'Client-side routing, nested routes, dynamic params, and navigation in single-page React apps.', section: 'React', sectionColor: sectionColors['React'], difficulty: 'Intermediate', resources: [{ title: 'React Router Docs', url: 'https://reactrouter.com/en/main', type: 'docs' }, { title: 'React Router Tutorial', url: 'https://www.youtube.com/watch?v=Ul3y1LXxzdU', type: 'video' }] },
   { id: 'react-forms', title: 'Forms in React', description: 'Controlled components, form libraries (React Hook Form), validation (Zod), and form handling patterns.', section: 'React', sectionColor: sectionColors['React'], difficulty: 'Intermediate', resources: [{ title: 'React Hook Form', url: 'https://react-hook-form.com/', type: 'docs' }, { title: 'React Forms Tutorial', url: 'https://www.youtube.com/watch?v=SfiOimv5_S0', type: 'video' }] },
-  { id: 'react-testing', title: 'Testing React Apps', description: 'Unit and integration testing with Jest, React Testing Library, and end-to-end testing with Cypress.', section: 'React', sectionColor: sectionColors['React'], difficulty: 'Advanced', resources: [{ title: 'Testing Library Docs', url: 'https://testing-library.com/docs/react-testing-library/intro/', type: 'docs' }, { title: 'React Testing Crash Course', url: 'https://www.youtube.com/watch?v=8Xwq35cPwYg', type: 'video' }] },
+  { id: 'react-testing', title: 'Testing React Apps', description: 'Unit and integration testing with Jest, React Testing Library, and end-to-end testing with Cypress.', section: 'React', sectionColor: sectionColors['React'], difficulty: 'Advanced', isAlternative: true, resources: [{ title: 'Testing Library Docs', url: 'https://testing-library.com/docs/react-testing-library/intro/', type: 'docs' }, { title: 'React Testing Crash Course', url: 'https://www.youtube.com/watch?v=8Xwq35cPwYg', type: 'video' }] },
 
   // Node.js
   { id: 'node-basics', title: 'Node.js Fundamentals', description: 'Runtime environment, modules, file system, event-driven architecture, and npm package management.', section: 'Node.js', sectionColor: sectionColors['Node.js'], difficulty: 'Intermediate', resources: [{ title: 'Node.js Getting Started', url: 'https://nodejs.org/en/learn/getting-started/introduction-to-nodejs', type: 'docs' }, { title: 'Node.js Crash Course', url: 'https://www.youtube.com/watch?v=fBNz5xF-Kx4', type: 'video' }] },
@@ -80,12 +78,12 @@ export const roadmapNodesData: RoadmapNodeData[] = [
   // Databases
   { id: 'db-sql', title: 'SQL Fundamentals', description: 'Relational databases, SQL queries, joins, indexes, transactions, and database design principles.', section: 'Databases', sectionColor: sectionColors['Databases'], difficulty: 'Intermediate', resources: [{ title: 'SQL Tutorial - W3Schools', url: 'https://www.w3schools.com/sql/', type: 'docs' }, { title: 'SQL Full Course', url: 'https://www.youtube.com/watch?v=HXV3zeQKqGY', type: 'video' }] },
   { id: 'db-postgres', title: 'PostgreSQL', description: 'Advanced relational database with JSON support, full-text search, and excellent performance.', section: 'Databases', sectionColor: sectionColors['Databases'], difficulty: 'Intermediate', resources: [{ title: 'PostgreSQL Tutorial', url: 'https://www.postgresqltutorial.com/', type: 'docs' }, { title: 'PostgreSQL Crash Course', url: 'https://www.youtube.com/watch?v=qw--VYLpxG4', type: 'video' }] },
-  { id: 'db-mongodb', title: 'MongoDB', description: 'NoSQL document database storing data as flexible JSON-like documents with dynamic schemas.', section: 'Databases', sectionColor: sectionColors['Databases'], difficulty: 'Intermediate', resources: [{ title: 'MongoDB Docs', url: 'https://www.mongodb.com/docs/manual/', type: 'docs' }, { title: 'MongoDB Crash Course', url: 'https://www.youtube.com/watch?v=ofme2o29ngU', type: 'video' }] },
+  { id: 'db-mongodb', title: 'MongoDB', description: 'NoSQL document database storing data as flexible JSON-like documents with dynamic schemas.', section: 'Databases', sectionColor: sectionColors['Databases'], difficulty: 'Intermediate', isAlternative: true, resources: [{ title: 'MongoDB Docs', url: 'https://www.mongodb.com/docs/manual/', type: 'docs' }, { title: 'MongoDB Crash Course', url: 'https://www.youtube.com/watch?v=ofme2o29ngU', type: 'video' }] },
   { id: 'db-orm', title: 'ORMs (Prisma / Drizzle)', description: 'Object-Relational Mapping tools for type-safe database queries, migrations, and schema management.', section: 'Databases', sectionColor: sectionColors['Databases'], difficulty: 'Intermediate', resources: [{ title: 'Prisma Docs', url: 'https://www.prisma.io/docs', type: 'docs' }, { title: 'Prisma Crash Course', url: 'https://www.youtube.com/watch?v=RebA5J-rlwg', type: 'video' }] },
 
   // APIs
   { id: 'api-rest', title: 'REST API Design', description: 'RESTful principles, resource naming, HTTP methods, status codes, versioning, and best practices.', section: 'APIs', sectionColor: sectionColors['APIs'], difficulty: 'Intermediate', resources: [{ title: 'REST API Tutorial', url: 'https://restfulapi.net/', type: 'article' }, { title: 'REST API Design', url: 'https://www.youtube.com/watch?v=-MTSQjw5DrM', type: 'video' }] },
-  { id: 'api-graphql', title: 'GraphQL', description: 'Query language for APIs with a single endpoint, type system, and client-driven data fetching.', section: 'APIs', sectionColor: sectionColors['APIs'], difficulty: 'Advanced', resources: [{ title: 'GraphQL Docs', url: 'https://graphql.org/learn/', type: 'docs' }, { title: 'GraphQL Crash Course', url: 'https://www.youtube.com/watch?v=ed8SzALpx1Q', type: 'video' }] },
+  { id: 'api-graphql', title: 'GraphQL', description: 'Query language for APIs with a single endpoint, type system, and client-driven data fetching.', section: 'APIs', sectionColor: sectionColors['APIs'], difficulty: 'Advanced', isAlternative: true, resources: [{ title: 'GraphQL Docs', url: 'https://graphql.org/learn/', type: 'docs' }, { title: 'GraphQL Crash Course', url: 'https://www.youtube.com/watch?v=ed8SzALpx1Q', type: 'video' }] },
   { id: 'api-websockets', title: 'WebSockets', description: 'Real-time bidirectional communication between client and server for live features like chat.', section: 'APIs', sectionColor: sectionColors['APIs'], difficulty: 'Advanced', resources: [{ title: 'WebSocket API - MDN', url: 'https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API', type: 'docs' }, { title: 'WebSockets Tutorial', url: 'https://www.youtube.com/watch?v=8ARodQ4Wlf4', type: 'video' }] },
   { id: 'api-auth-strategies', title: 'API Authentication', description: 'API keys, OAuth 2.0, JWT tokens, session-based auth for securing your API endpoints.', section: 'APIs', sectionColor: sectionColors['APIs'], difficulty: 'Advanced', resources: [{ title: 'OAuth 2.0 Simplified', url: 'https://www.oauth.com/', type: 'article' }, { title: 'API Auth Explained', url: 'https://www.youtube.com/watch?v=GhrvZ5nUWNg', type: 'video' }] },
 
@@ -98,97 +96,153 @@ export const roadmapNodesData: RoadmapNodeData[] = [
   // Deployment
   { id: 'deploy-hosting', title: 'Web Hosting & Domains', description: 'Understanding hosting providers, domain setup, DNS configuration, and SSL certificates.', section: 'Deployment', sectionColor: sectionColors['Deployment'], difficulty: 'Beginner', resources: [{ title: 'Web Hosting Guide', url: 'https://www.cloudflare.com/learning/web-hosting/', type: 'article' }, { title: 'Deploy Your Website', url: 'https://www.youtube.com/watch?v=p1QU3kLFPdg', type: 'video' }] },
   { id: 'deploy-vercel', title: 'Vercel / Netlify', description: 'Deploy frontend apps with zero-config, automatic previews, serverless functions, and edge CDN.', section: 'Deployment', sectionColor: sectionColors['Deployment'], difficulty: 'Beginner', resources: [{ title: 'Vercel Docs', url: 'https://vercel.com/docs', type: 'docs' }, { title: 'Deploy with Vercel', url: 'https://www.youtube.com/watch?v=8lGpZkjnkt4', type: 'video' }] },
-  { id: 'deploy-aws', title: 'AWS / Cloud Basics', description: 'Core cloud services: EC2, S3, Lambda, RDS — building scalable applications on AWS.', section: 'Deployment', sectionColor: sectionColors['Deployment'], difficulty: 'Advanced', resources: [{ title: 'AWS Getting Started', url: 'https://aws.amazon.com/getting-started/', type: 'docs' }, { title: 'AWS Crash Course', url: 'https://www.youtube.com/watch?v=ulprqHHWlng', type: 'video' }] },
+  { id: 'deploy-aws', title: 'AWS / Cloud Basics', description: 'Core cloud services: EC2, S3, Lambda, RDS — building scalable applications on AWS.', section: 'Deployment', sectionColor: sectionColors['Deployment'], difficulty: 'Advanced', isAlternative: true, resources: [{ title: 'AWS Getting Started', url: 'https://aws.amazon.com/getting-started/', type: 'docs' }, { title: 'AWS Crash Course', url: 'https://www.youtube.com/watch?v=ulprqHHWlng', type: 'video' }] },
   { id: 'deploy-monitoring', title: 'Monitoring & Logging', description: 'Application monitoring, error tracking, performance metrics, and logging with tools like Sentry.', section: 'Deployment', sectionColor: sectionColors['Deployment'], difficulty: 'Advanced', resources: [{ title: 'Sentry Docs', url: 'https://docs.sentry.io/', type: 'docs' }, { title: 'App Monitoring Guide', url: 'https://www.youtube.com/watch?v=SHDilCMd5LM', type: 'video' }] },
 ];
 
-// Helper to build React Flow nodes with pre-computed positions
-function buildFlowNodes() {
-  const nodes: Array<{ id: string; type: string; position: { x: number; y: number }; data: RoadmapNodeData & { nodeType: string } }> = [];
-  let y = 0;
-  const Y_SECTION_GAP = 80;
-  const Y_NODE_GAP = 100;
+// ── Build roadmap.sh-style branching layout ──
+// Central spine with section headers, topics branch left & right
 
+const SPINE_X = 400;
+const BRANCH_OFFSET = 220;
+const NODE_W = 180;
+const NODE_H = 36;
+const SECTION_H = 40;
+const Y_SECTION_GAP = 60;
+const Y_BRANCH_GAP = 50;
+const Y_PAIR_GAP = 50;
+
+function buildFlowNodes() {
+  const nodes: Array<{
+    id: string;
+    type: string;
+    position: { x: number; y: number };
+    data: any;
+  }> = [];
+
+  let y = 40;
   let currentSection = '';
-  const sectionIndices: Record<string, number> = {};
+  let sectionNodes: RoadmapNodeData[] = [];
+
+  const flushSection = () => {
+    if (!sectionNodes.length) return;
+    const sec = sectionNodes[0].section;
+    const color = sectionNodes[0].sectionColor;
+
+    // Section header on spine
+    const sectionId = `section-${sec.replace(/\s+/g, '-').toLowerCase()}`;
+    nodes.push({
+      id: sectionId,
+      type: 'sectionNode',
+      position: { x: SPINE_X - 90, y },
+      data: { title: sec, sectionColor: color },
+    });
+
+    y += SECTION_H + 20;
+
+    // Place nodes in pairs: left & right
+    for (let i = 0; i < sectionNodes.length; i += 2) {
+      const left = sectionNodes[i];
+      const right = sectionNodes[i + 1];
+
+      if (left) {
+        nodes.push({
+          id: left.id,
+          type: 'roadmapNode',
+          position: { x: SPINE_X - BRANCH_OFFSET - NODE_W / 2, y },
+          data: { ...left, nodeType: 'topic' },
+        });
+      }
+      if (right) {
+        nodes.push({
+          id: right.id,
+          type: 'roadmapNode',
+          position: { x: SPINE_X + BRANCH_OFFSET - NODE_W / 2, y },
+          data: { ...right, nodeType: 'topic' },
+        });
+      }
+
+      y += Y_PAIR_GAP;
+    }
+
+    y += Y_SECTION_GAP - Y_PAIR_GAP; // gap before next section
+    sectionNodes = [];
+  };
 
   roadmapNodesData.forEach((nd) => {
     if (nd.section !== currentSection) {
+      flushSection();
       currentSection = nd.section;
-      sectionIndices[currentSection] = 0;
-      // Add section header node
-      y += Y_SECTION_GAP;
-      nodes.push({
-        id: `section-${nd.section.replace(/\s+/g, '-').toLowerCase()}`,
-        type: 'sectionNode',
-        position: { x: COL_CENTER - 100, y },
-        data: { ...nd, nodeType: 'section', title: nd.section, id: `section-${nd.section}` },
-      });
-      y += 80;
     }
-
-    const idx = sectionIndices[currentSection]!;
-    // Alternate left-center-right for visual variety
-    const xPositions = [COL_CENTER, COL_LEFT, COL_RIGHT, COL_CENTER];
-    const x = xPositions[idx % 4];
-
-    nodes.push({
-      id: nd.id,
-      type: 'roadmapNode',
-      position: { x, y },
-      data: { ...nd, nodeType: 'topic' },
-    });
-
-    sectionIndices[currentSection] = idx + 1;
-    y += Y_NODE_GAP;
+    sectionNodes.push(nd);
   });
+  flushSection();
 
   return nodes;
 }
 
 function buildFlowEdges() {
-  const edges: Array<{ id: string; source: string; target: string; type: string; animated: boolean; style: Record<string, string> }> = [];
-  
-  // Connect within sections sequentially
-  let prevId: string | null = null;
-  let prevSection = '';
-  
+  const edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+    sourceHandle?: string;
+    targetHandle?: string;
+    type: string;
+    animated: boolean;
+    style: Record<string, any>;
+  }> = [];
+
+  // Build section order and edges between section headers
+  const sectionOrder: string[] = [];
   roadmapNodesData.forEach((nd) => {
-    if (nd.section !== prevSection) {
-      // Connect section header to first node
-      const sectionId = `section-${nd.section.replace(/\s+/g, '-').toLowerCase()}`;
+    const sid = `section-${nd.section.replace(/\s+/g, '-').toLowerCase()}`;
+    if (!sectionOrder.includes(sid)) sectionOrder.push(sid);
+  });
+
+  // Connect section headers vertically (spine)
+  for (let i = 0; i < sectionOrder.length - 1; i++) {
+    edges.push({
+      id: `spine-${i}`,
+      source: sectionOrder[i],
+      target: sectionOrder[i + 1],
+      type: 'smoothstep',
+      animated: false,
+      style: { stroke: '#525252', strokeWidth: 2 },
+    });
+  }
+
+  // Connect section headers to their child nodes
+  let currentSection = '';
+  let sectionNodes: RoadmapNodeData[] = [];
+
+  const flushEdges = () => {
+    if (!sectionNodes.length) return;
+    const sid = `section-${sectionNodes[0].section.replace(/\s+/g, '-').toLowerCase()}`;
+    const color = sectionNodes[0].sectionColor;
+
+    sectionNodes.forEach((nd) => {
       edges.push({
-        id: `e-${sectionId}-${nd.id}`,
-        source: sectionId,
-        target: nd.id,
-        type: 'smoothstep',
-        animated: true,
-        style: { stroke: nd.sectionColor },
-      });
-      // Connect last node of prev section to this section header
-      if (prevId) {
-        edges.push({
-          id: `e-${prevId}-${sectionId}`,
-          source: prevId,
-          target: sectionId,
-          type: 'smoothstep',
-          animated: true,
-          style: { stroke: '#525252' },
-        });
-      }
-      prevSection = nd.section;
-    } else if (prevId) {
-      edges.push({
-        id: `e-${prevId}-${nd.id}`,
-        source: prevId,
+        id: `e-${sid}-${nd.id}`,
+        source: sid,
         target: nd.id,
         type: 'smoothstep',
         animated: false,
-        style: { stroke: nd.sectionColor },
+        style: { stroke: color, strokeWidth: 1.5, opacity: 0.6 },
       });
+    });
+
+    sectionNodes = [];
+  };
+
+  roadmapNodesData.forEach((nd) => {
+    if (nd.section !== currentSection) {
+      flushEdges();
+      currentSection = nd.section;
     }
-    prevId = nd.id;
+    sectionNodes.push(nd);
   });
+  flushEdges();
 
   return edges;
 }
