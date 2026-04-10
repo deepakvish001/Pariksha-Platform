@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Search, Filter, Star, Code, Database, Cpu, Brain, LayoutGrid, ArrowUpDown, TrendingUp, Hash, Gauge } from "lucide-react";
+import { Search, Star, Code, Database, Cpu, LayoutGrid, ArrowUpDown, TrendingUp, Hash, Gauge, Swords, Network, HardDrive, ServerCog } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,15 +19,19 @@ interface SheetsFilterBarProps {
   onTabChange: (value: string) => void;
   sortBy: SortOption;
   onSortChange: (value: SortOption) => void;
+  sheetCounts?: Record<string, number>;
 }
 
 const tabs = [
   { id: "all", label: "All Sheets", icon: LayoutGrid },
   { id: "starred", label: "Starred", icon: Star },
   { id: "dsa", label: "DSA", icon: Code },
+  { id: "cp", label: "CP", icon: Swords },
   { id: "sql", label: "SQL", icon: Database },
+  { id: "dbms", label: "DBMS", icon: ServerCog },
+  { id: "cn", label: "CN", icon: Network },
+  { id: "os", label: "OS", icon: HardDrive },
   { id: "system design", label: "System Design", icon: Cpu },
-  { id: "ml", label: "ML", icon: Brain },
 ];
 
 const sortOptions = [
@@ -46,6 +50,7 @@ const SheetsFilterBar = ({
   onTabChange,
   sortBy,
   onSortChange,
+  sheetCounts,
 }: SheetsFilterBarProps) => {
   const currentSort = sortOptions.find(s => s.id === sortBy) || sortOptions[0];
 
@@ -103,6 +108,7 @@ const SheetsFilterBar = ({
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
+          const count = sheetCounts?.[tab.id];
           
           return (
             <Button
@@ -122,6 +128,16 @@ const SheetsFilterBar = ({
                 isActive && tab.id === "starred" && "fill-current"
               )} />
               <span className="text-xs font-medium">{tab.label}</span>
+              {count !== undefined && (
+                <span className={cn(
+                  "text-[10px] font-semibold rounded-full px-1.5 py-0.5 min-w-[20px] text-center",
+                  isActive 
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                )}>
+                  {count}
+                </span>
+              )}
             </Button>
           );
         })}
