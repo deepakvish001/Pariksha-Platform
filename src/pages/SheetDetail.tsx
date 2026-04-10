@@ -11,6 +11,7 @@ import {
   PlusCircle, 
   Star,
   ChevronRight,
+  ArrowLeft,
   X,
   Save,
   Loader2,
@@ -1687,6 +1688,14 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/dashboard/sheets")}
+            className="shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg sm:text-xl font-bold truncate">{sheetData.title}</h1>
           </div>
