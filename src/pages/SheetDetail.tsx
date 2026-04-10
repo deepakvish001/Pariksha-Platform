@@ -1030,20 +1030,6 @@ function SheetDetailWrapper() {
   const { sheetId } = useParams<{ sheetId: string }>();
   const currentSheetId = sheetId || "strivers-sde-sheet";
   
-  // Render dedicated CP view for competitive programming sheet
-  if (currentSheetId === "competitive-programming") {
-    const CPProblemSetsView = React.lazy(() => import("@/components/sheets/CPProblemSetsView"));
-    return (
-      <React.Suspense fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      }>
-        <CPProblemSetsView />
-      </React.Suspense>
-    );
-  }
-  
   return <SheetDetailContent sheetId={currentSheetId} />;
 }
 
