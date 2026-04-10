@@ -26,7 +26,9 @@ import {
   AlertCircle,
   Sparkles,
   Save,
-  Share2
+  Share2,
+  ChevronRight,
+  CheckCircle2
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -198,17 +200,22 @@ const DashboardProfile = () => {
     return name.split(" ").map(n => n.charAt(0)).join("").toUpperCase().slice(0, 2);
   };
 
-  const calculateCompletion = (profileData: ExtendedProfile | null): number => {
-    if (!profileData) return 0;
-    const fields = [
-      profileData.bio, profileData.location, profileData.occupation,
-      profileData.skills?.length ? "filled" : null,
-      profileData.goals?.length ? "filled" : null,
-      profileData.linkedin_url, profileData.github_url, profileData.leetcode_url,
-    ];
-    const filled = fields.filter(f => f && f !== "").length;
-    return Math.round((filled / fields.length) * 100);
-  };
+  const profileChecklist = [
+    { key: "bio", label: "Add a bio", tip: "Tell others about yourself", section: "info", filled: !!extendedProfile?.bio },
+    { key: "location", label: "Add your location", tip: "Helps connect with local peers", section: "info", filled: !!extendedProfile?.location },
+    { key: "occupation", label: "Set your occupation", tip: "Shows your current role", section: "info", filled: !!extendedProfile?.occupation },
+    { key: "skills", label: "Add skills", tip: "Highlight what you know", section: "skills", filled: !!(extendedProfile?.skills?.length) },
+    { key: "goals", label: "Set your goals", tip: "Track what you're working toward", section: "skills", filled: !!(extendedProfile?.goals?.length) },
+    { key: "linkedin", label: "Link your LinkedIn", tip: "Boost professional visibility", section: "links", filled: !!extendedProfile?.linkedin_url },
+    { key: "github", label: "Link your GitHub", tip: "Showcase your projects", section: "links", filled: !!extendedProfile?.github_url },
+    { key: "leetcode", label: "Link your LeetCode", tip: "Show your problem-solving stats", section: "links", filled: !!extendedProfile?.leetcode_url },
+  ];
+
+  const filledCount = profileChecklist.filter(c => c.filled).length;
+  const completionPercent = Math.round((filledCount / profileChecklist.length) * 100);
+  const nextTips = profileChecklist.filter(c => !c.filled).slice(0, 3);
+  const strengthLabel = completionPercent >= 100 ? "Strong" : completionPercent >= 60 ? "Good" : completionPercent >= 30 ? "Fair" : "Weak";
+  const strengthColor = completionPercent >= 100 ? "text-emerald-500" : completionPercent >= 60 ? "text-blue-500" : completionPercent >= 30 ? "text-amber-500" : "text-red-500";
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -286,13 +293,17 @@ const DashboardProfile = () => {
     }
     setIsSaving(true);
     try {
-      const completionPercent = calculateCompletion(editForm as ExtendedProfile);
+      const savePct = Math.round(Object.values({
+        bio: editForm.bio, location: editForm.location, occupation: editForm.occupation,
+        skills: (editForm.skills?.length ? "f" : null), goals: (editForm.goals?.length ? "f" : null),
+        linkedin: editForm.linkedin_url, github: editForm.github_url, leetcode: editForm.leetcode_url,
+      } as Record<string, string | null | undefined>).filter(v => v && v !== "").length / 8 * 100);
       const { error } = await supabase
         .from("user_profiles_extended")
-        .update({ ...editForm, profile_completion_percentage: completionPercent })
+        .update({ ...editForm, profile_completion_percentage: savePct })
         .eq("id", extendedProfile.id);
       if (error) throw error;
-      setExtendedProfile(prev => prev ? { ...prev, ...editForm, profile_completion_percentage: completionPercent } : null);
+      setExtendedProfile(prev => prev ? { ...prev, ...editForm, profile_completion_percentage: savePct } : null);
       toast({ title: "Profile updated!" });
       setIsEditModalOpen(false);
     } catch (error: any) {
@@ -315,8 +326,6 @@ const DashboardProfile = () => {
     setEditForm(prev => ({ ...prev, [field]: currentArray.filter((_, i) => i !== index) }));
   };
 
-  const completionPercent = calculateCompletion(extendedProfile);
-  const incompleteFields = 8 - Math.round(completionPercent * 8 / 100);
 
   if (isLoading) {
     return (
@@ -344,36 +353,78 @@ const DashboardProfile = () => {
       </header>
 
       <main className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
-        {/* Profile Completion Banner */}
-        {completionPercent < 100 && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-transparent">
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="h-12 w-12 rounded-full border-4 border-primary/20 flex items-center justify-center bg-card">
-                        <span className="text-base font-bold text-primary">{completionPercent}%</span>
-                      </div>
-                      <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-yellow-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-sm flex items-center gap-2">
-                        Complete your profile
-                        <Badge variant="secondary" className="text-xs">{incompleteFields} fields left</Badge>
-                      </h3>
-                      <p className="text-xs text-muted-foreground">A complete profile helps you stand out</p>
+        {/* Profile Strength Card */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-primary/20">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Score circle */}
+                <div className="flex items-center gap-4">
+                  <div className="relative h-16 w-16 shrink-0">
+                    <svg className="h-16 w-16 -rotate-90" viewBox="0 0 36 36">
+                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none" stroke="hsl(var(--primary))" strokeWidth="3"
+                        strokeDasharray={`${completionPercent}, 100`} strokeLinecap="round" />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm font-bold">{completionPercent}%</span>
                     </div>
                   </div>
-                  <Button size="sm" onClick={() => openEditModal("info")} className="gap-1.5">
-                    <Edit2 className="w-3.5 h-3.5" /> Complete Now
-                  </Button>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Profile Strength</p>
+                    <p className={cn("text-lg font-bold", strengthColor)}>{strengthLabel}</p>
+                    <p className="text-xs text-muted-foreground">{filledCount}/{profileChecklist.length} fields completed</p>
+                  </div>
                 </div>
-                <Progress value={completionPercent} className="mt-3 h-2" />
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+
+                {/* Checklist / Tips */}
+                {nextTips.length > 0 && (
+                  <div className="flex-1 border-t sm:border-t-0 sm:border-l border-border pt-3 sm:pt-0 sm:pl-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Complete next to boost your score</p>
+                    <div className="space-y-1.5">
+                      {nextTips.map((tip) => (
+                        <button
+                          key={tip.key}
+                          onClick={() => openEditModal(tip.section)}
+                          className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+                        >
+                          <div className="h-6 w-6 rounded-full border-2 border-primary/30 flex items-center justify-center shrink-0 group-hover:border-primary/60">
+                            <Plus className="h-3 w-3 text-primary/50 group-hover:text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{tip.label}</p>
+                            <p className="text-xs text-muted-foreground">{tip.tip}</p>
+                          </div>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* All complete state */}
+                {nextTips.length === 0 && (
+                  <div className="flex-1 flex items-center justify-center border-t sm:border-t-0 sm:border-l border-border pt-3 sm:pt-0 sm:pl-4">
+                    <div className="text-center">
+                      <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-1" />
+                      <p className="text-sm font-medium">Profile complete!</p>
+                      <p className="text-xs text-muted-foreground">You're all set</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Mini checklist progress */}
+              <div className="flex gap-1 mt-4">
+                {profileChecklist.map((item) => (
+                  <div key={item.key} className={cn("h-1.5 flex-1 rounded-full transition-colors", item.filled ? "bg-primary" : "bg-muted")} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Profile Header Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
