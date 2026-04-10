@@ -2,11 +2,9 @@ import { useCallback, useMemo } from 'react';
 import {
   ReactFlow,
   Background,
-  type Node,
-  type Edge,
+  Controls,
+  MiniMap,
   type NodeTypes,
-  useNodesState,
-  useEdgesState,
   ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -29,11 +27,10 @@ const nodeTypes: NodeTypes = {
   checkpoint: RoadmapFlowCheckpointNode,
 };
 
-export default function RoadmapFlowCanvas({ progress, search, sectionFilter, statusFilter, onNodeClick }: Props) {
-  const { nodes: rawNodes, edges: rawEdges } = useMemo(() => buildFlowElements(), []);
+const { nodes: rawNodes, edges: staticEdges } = buildFlowElements();
 
-  // Enrich nodes with status & dimming
-  const enrichedNodes = useMemo(() => {
+export default function RoadmapFlowCanvas({ progress, search, sectionFilter, statusFilter, onNodeClick }: Props) {
+  const nodes = useMemo(() => {
     return rawNodes.map((n) => {
       if (n.data.invisible) {
         return { ...n, style: { width: 2, height: 2, opacity: 0, pointerEvents: 'none' as const } };
@@ -46,15 +43,9 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
         if (sectionFilter !== 'all' && nodeData.section !== sectionFilter) dimmed = true;
         if (statusFilter !== 'all' && status !== statusFilter) dimmed = true;
       }
-      return {
-        ...n,
-        data: { ...n.data, status, dimmed },
-      };
+      return { ...n, data: { ...n.data, status, dimmed } };
     });
-  }, [rawNodes, progress, search, sectionFilter, statusFilter]);
-
-  const [nodes] = useNodesState(enrichedNodes as any);
-  const [edges] = useEdgesState(rawEdges as any);
+  }, [progress, search, sectionFilter, statusFilter]);
 
   const handleNodeClick = useCallback((_: any, node: any) => {
     if (node.data?.invisible || node.type === 'section' || node.type === 'checkpoint') return;
@@ -63,24 +54,40 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
   }, [onNodeClick]);
 
   return (
-    <div className="w-full border border-border rounded-xl overflow-hidden bg-background" style={{ height: '80vh', minHeight: 600 }}>
+    <div className="w-full border border-border/50 rounded-2xl overflow-hidden bg-background/50 backdrop-blur-sm" style={{ height: '80vh', minHeight: 600 }}>
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={nodes as any}
+        edges={staticEdges as any}
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
         connectionMode={ConnectionMode.Loose}
-        defaultViewport={{ x: 0, y: 10, zoom: 0.85 }}
+        fitView
+        fitViewOptions={{ padding: 0.2 }}
         minZoom={0.2}
         maxZoom={2.5}
         proOptions={{ hideAttribution: true }}
         panOnScroll
-        zoomOnScroll={false}
         nodesDraggable={false}
         nodesConnectable={false}
-        elementsSelectable={true}
+        elementsSelectable
       >
-        <Background color="hsl(var(--border))" gap={30} size={1} />
+        <Background color="hsl(var(--border))" gap={24} size={1} />
+        <Controls
+          showInteractive={false}
+          className="!bg-card !border-border !rounded-lg !shadow-lg"
+        />
+        <MiniMap
+          nodeColor={(node) => {
+            if (node.type === 'section') return 'hsl(var(--primary))';
+            if (node.type === 'checkpoint') return '#1e293b';
+            const status = (node.data as any)?.status;
+            if (status === 'done') return '#22c55e';
+            if (status === 'in-progress') return '#eab308';
+            return (node.data as any)?.sectionColor || '#3b82f6';
+          }}
+          className="!bg-card/90 !border-border !rounded-lg"
+          maskColor="rgba(0,0,0,0.7)"
+        />
       </ReactFlow>
     </div>
   );
