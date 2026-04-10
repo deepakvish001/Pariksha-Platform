@@ -5,6 +5,7 @@ import RoadmapFlowCanvas from '@/components/roadmap-flow/RoadmapFlowCanvas';
 import RoadmapFlowDetailPanel from '@/components/roadmap-flow/RoadmapFlowDetailPanel';
 import RoadmapFlowProgressBar from '@/components/roadmap-flow/RoadmapFlowProgressBar';
 import RoadmapFlowSearchBar from '@/components/roadmap-flow/RoadmapFlowSearchBar';
+import RoadmapFlowSectionNav from '@/components/roadmap-flow/RoadmapFlowSectionNav';
 import { useRoadmapFlowProgress } from '@/hooks/useRoadmapFlowProgress';
 import type { RoadmapNodeData } from '@/data/fullStackRoadmapData';
 

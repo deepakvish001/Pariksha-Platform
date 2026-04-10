@@ -105,12 +105,12 @@ export const sections = Object.keys(sectionColors);
 
 // ── React Flow Node/Edge Generation ──
 
-const SPINE_X = 500;
-const NODE_W = 220;
-const NODE_H = 110;
-const ROW_GAP = 140;
-const SECTION_GAP = 160;
-const BRANCH_OFFSET = 280;
+const SPINE_X = 520;
+const NODE_W = 240;
+const NODE_H = 130;
+const ROW_GAP = 165;
+const SECTION_GAP = 185;
+const BRANCH_OFFSET = 300;
 
 interface FlowRow {
   type: 'section' | 'checkpoint' | 'nodes';
