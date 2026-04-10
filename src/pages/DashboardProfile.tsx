@@ -66,6 +66,7 @@ import {
   validateUsername,
 } from "@/lib/validation";
 import { useProfileFollowCounts } from "@/hooks/useProfileFollowCounts";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 interface ExtendedProfile {
   id: string;
@@ -259,10 +260,12 @@ const DashboardProfile = () => {
   };
 
   const openEditModal = (section: string) => {
-    setEditSection(section);
-    setEditForm(extendedProfile || {});
-    setValidationErrors({});
-    setIsEditModalOpen(true);
+    requireAuth(() => {
+      setEditSection(section);
+      setEditForm(extendedProfile || {});
+      setValidationErrors({});
+      setIsEditModalOpen(true);
+    });
   };
 
   const validateAllUrls = (): boolean => {
