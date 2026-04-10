@@ -338,10 +338,8 @@ const CollapsibleGroup = ({ title, items, groupIcon, iconColor = "text-muted-for
     </Collapsible>
   );
 };
-      </CollapsibleContent>
-    </Collapsible>
-  );
-};
+
+
 
 export function DashboardSidebar() {
   const { user, profile, signOut } = useAuth();
