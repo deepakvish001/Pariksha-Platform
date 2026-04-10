@@ -149,7 +149,7 @@ const App = () => (
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
                   <Route path="profile" element={<DashboardProfile />} />
                   <Route path="roadmap/fullstack" element={<FullStackRoadmap />} />
-
+                </Route>
                 {/* Library routes - public */}
                 <Route path="/library" element={<PublicDashboardWrapper />}>
                   <Route path="positions" element={<PositionResources />} />
