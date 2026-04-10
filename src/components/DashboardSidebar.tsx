@@ -108,8 +108,6 @@ const ACTIVE_ROUTES = new Set([
   "/dashboard",
   "/dashboard/sheets",
   "/dashboard/profile",
-  "/dashboard/notifications",
-  "/dashboard/achievements",
   "/settings",
 ]);
 
