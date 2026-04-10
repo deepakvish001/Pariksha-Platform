@@ -200,17 +200,22 @@ const DashboardProfile = () => {
     return name.split(" ").map(n => n.charAt(0)).join("").toUpperCase().slice(0, 2);
   };
 
-  const calculateCompletion = (profileData: ExtendedProfile | null): number => {
-    if (!profileData) return 0;
-    const fields = [
-      profileData.bio, profileData.location, profileData.occupation,
-      profileData.skills?.length ? "filled" : null,
-      profileData.goals?.length ? "filled" : null,
-      profileData.linkedin_url, profileData.github_url, profileData.leetcode_url,
-    ];
-    const filled = fields.filter(f => f && f !== "").length;
-    return Math.round((filled / fields.length) * 100);
-  };
+  const profileChecklist = [
+    { key: "bio", label: "Add a bio", tip: "Tell others about yourself", section: "info", filled: !!extendedProfile?.bio },
+    { key: "location", label: "Add your location", tip: "Helps connect with local peers", section: "info", filled: !!extendedProfile?.location },
+    { key: "occupation", label: "Set your occupation", tip: "Shows your current role", section: "info", filled: !!extendedProfile?.occupation },
+    { key: "skills", label: "Add skills", tip: "Highlight what you know", section: "skills", filled: !!(extendedProfile?.skills?.length) },
+    { key: "goals", label: "Set your goals", tip: "Track what you're working toward", section: "skills", filled: !!(extendedProfile?.goals?.length) },
+    { key: "linkedin", label: "Link your LinkedIn", tip: "Boost professional visibility", section: "links", filled: !!extendedProfile?.linkedin_url },
+    { key: "github", label: "Link your GitHub", tip: "Showcase your projects", section: "links", filled: !!extendedProfile?.github_url },
+    { key: "leetcode", label: "Link your LeetCode", tip: "Show your problem-solving stats", section: "links", filled: !!extendedProfile?.leetcode_url },
+  ];
+
+  const filledCount = profileChecklist.filter(c => c.filled).length;
+  const completionPercent = Math.round((filledCount / profileChecklist.length) * 100);
+  const nextTips = profileChecklist.filter(c => !c.filled).slice(0, 3);
+  const strengthLabel = completionPercent >= 100 ? "Strong" : completionPercent >= 60 ? "Good" : completionPercent >= 30 ? "Fair" : "Weak";
+  const strengthColor = completionPercent >= 100 ? "text-emerald-500" : completionPercent >= 60 ? "text-blue-500" : completionPercent >= 30 ? "text-amber-500" : "text-red-500";
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
