@@ -3,6 +3,7 @@ import {
   CheckCircle2, Clock, SkipForward, Globe, Shield, Server,
   Code2, FileCode, Palette, Box, GitBranch, Terminal, Database,
   Lock, Cloud, Gauge, Rocket, TestTube, Wrench, Zap, Layers,
+  Timer, BookOpen,
   type LucideIcon,
 } from 'lucide-react';
 import type { RoadmapNodeData, NodeStatus } from '@/data/fullStackRoadmapData';
@@ -71,9 +72,9 @@ const sectionGradients: Record<string, { from: string; to: string; glow: string 
 };
 
 const difficultyConfig = {
-  Beginner:     { label: 'Beginner', bg: 'rgba(34,197,94,0.15)', text: '#4ade80', border: 'rgba(34,197,94,0.3)' },
-  Intermediate: { label: 'Medium', bg: 'rgba(234,179,8,0.15)', text: '#fde047', border: 'rgba(234,179,8,0.3)' },
-  Advanced:     { label: 'Advanced', bg: 'rgba(239,68,68,0.15)', text: '#fca5a5', border: 'rgba(239,68,68,0.3)' },
+  Beginner:     { label: 'Beginner', icon: '🟢', bg: 'rgba(34,197,94,0.12)', text: '#4ade80', border: 'rgba(34,197,94,0.25)' },
+  Intermediate: { label: 'Medium', icon: '🟡', bg: 'rgba(234,179,8,0.12)', text: '#fde047', border: 'rgba(234,179,8,0.25)' },
+  Advanced:     { label: 'Advanced', icon: '🔴', bg: 'rgba(239,68,68,0.12)', text: '#fca5a5', border: 'rgba(239,68,68,0.25)' },
 };
 
 function RoadmapFlowNodeCard({ node, status, dimmed, onClick }: Props) {
@@ -83,6 +84,7 @@ function RoadmapFlowNodeCard({ node, status, dimmed, onClick }: Props) {
   const TechIcon = tech?.icon || Code2;
   const techColor = tech?.color || gradient.to;
   const diff = difficultyConfig[node.difficulty];
+  const resourceCount = node.resources.length;
 
   const isDone = status === 'done';
   const isIP = status === 'in-progress';
@@ -90,34 +92,34 @@ function RoadmapFlowNodeCard({ node, status, dimmed, onClick }: Props) {
 
   let bg: string, borderColor: string, textColor: string, shadow: string, borderStyle: string;
   if (isDone) {
-    bg = 'rgba(34,197,94,0.10)';
+    bg = 'linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.06))';
     borderColor = '#22c55e';
     textColor = '#86efac';
-    shadow = '0 0 24px rgba(34,197,94,0.2), inset 0 1px 0 rgba(255,255,255,0.05)';
+    shadow = '0 0 28px rgba(34,197,94,0.2), 0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)';
     borderStyle = 'solid';
   } else if (isIP) {
-    bg = 'rgba(234,179,8,0.10)';
+    bg = 'linear-gradient(135deg, rgba(234,179,8,0.12), rgba(234,179,8,0.06))';
     borderColor = '#eab308';
     textColor = '#fde047';
-    shadow = '0 0 24px rgba(234,179,8,0.2), inset 0 1px 0 rgba(255,255,255,0.05)';
+    shadow = '0 0 28px rgba(234,179,8,0.2), 0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)';
     borderStyle = 'solid';
   } else if (isSkipped) {
-    bg = 'rgba(100,116,139,0.08)';
+    bg = 'linear-gradient(135deg, rgba(100,116,139,0.08), rgba(100,116,139,0.03))';
     borderColor = '#334155';
     textColor = '#94a3b8';
-    shadow = 'none';
+    shadow = '0 2px 8px rgba(0,0,0,0.15)';
     borderStyle = 'solid';
   } else if (isAlt) {
-    bg = 'rgba(139,92,246,0.06)';
+    bg = 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(139,92,246,0.03))';
     borderColor = '#6d28d9';
     textColor = '#c4b5fd';
-    shadow = '0 0 20px rgba(139,92,246,0.08)';
+    shadow = '0 0 20px rgba(139,92,246,0.1), 0 4px 16px rgba(0,0,0,0.2)';
     borderStyle = 'dashed';
   } else {
-    bg = `rgba(${gradient.glow},0.06)`;
+    bg = `linear-gradient(135deg, rgba(${gradient.glow},0.08), rgba(${gradient.glow},0.03))`;
     borderColor = gradient.to;
     textColor = '#e2e8f0';
-    shadow = `0 4px 20px rgba(0,0,0,0.3), 0 0 20px rgba(${gradient.glow},0.08)`;
+    shadow = `0 4px 24px rgba(0,0,0,0.3), 0 0 20px rgba(${gradient.glow},0.08), inset 0 1px 0 rgba(255,255,255,0.04)`;
     borderStyle = 'solid';
   }
 
@@ -125,9 +127,9 @@ function RoadmapFlowNodeCard({ node, status, dimmed, onClick }: Props) {
     <button
       onClick={onClick}
       className={`
-        group relative flex flex-col gap-1.5 rounded-xl cursor-pointer
+        group relative flex flex-col gap-1 rounded-xl cursor-pointer
         transition-all duration-300 ease-out
-        hover:-translate-y-1 hover:brightness-110 active:translate-y-0 active:scale-[0.98]
+        hover:-translate-y-1.5 hover:brightness-110 active:translate-y-0 active:scale-[0.98]
         ${dimmed ? 'opacity-10 pointer-events-none' : ''}
       `}
       style={{
@@ -135,48 +137,61 @@ function RoadmapFlowNodeCard({ node, status, dimmed, onClick }: Props) {
         border: `1.5px ${borderStyle} ${borderColor}`,
         color: textColor,
         boxShadow: shadow,
-        width: 190,
-        backdropFilter: 'blur(12px)',
-        padding: '10px 14px',
+        width: 200,
+        backdropFilter: 'blur(16px)',
+        padding: '10px 12px 8px',
       }}
     >
-      {/* Gradient top accent */}
+      {/* Gradient top accent line */}
       {!isDone && !isIP && !isSkipped && (
         <div
-          className="absolute top-0 left-3 right-3 h-[2px] rounded-full"
+          className="absolute top-0 left-2 right-2 h-[2px] rounded-full"
           style={{
             background: `linear-gradient(90deg, transparent, ${borderColor}, transparent)`,
-            opacity: 0.6,
+            opacity: 0.5,
           }}
         />
       )}
 
-      {/* Hover glow ring */}
+      {/* Status completion bar at top */}
+      {(isDone || isIP) && (
+        <div
+          className="absolute top-0 left-0 right-0 h-[3px] rounded-t-xl"
+          style={{
+            background: isDone
+              ? 'linear-gradient(90deg, #22c55e, #4ade80, #22c55e)'
+              : 'linear-gradient(90deg, #eab308, #fde047, #eab308)',
+          }}
+        />
+      )}
+
+      {/* Hover glow */}
       <div
-        className="absolute -inset-[1px] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        className="absolute -inset-[2px] rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none"
         style={{
-          background: `linear-gradient(135deg, ${borderColor}22, transparent, ${borderColor}11)`,
+          background: `linear-gradient(135deg, ${borderColor}20, transparent 60%, ${borderColor}10)`,
+          filter: 'blur(1px)',
         }}
       />
 
-      {/* Top row: Icon + Title + Status */}
+      {/* Row 1: Icon + Title */}
       <div className="flex items-center gap-2 w-full">
-        {/* Tech icon */}
         <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
+          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
           style={{
-            background: `${techColor}18`,
-            border: `1px solid ${techColor}30`,
+            background: `linear-gradient(135deg, ${techColor}20, ${techColor}08)`,
+            border: `1px solid ${techColor}35`,
+            boxShadow: `0 0 12px ${techColor}15`,
           }}
         >
           {isDone ? (
-            <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#4ade80' }} />
+            <CheckCircle2 className="w-4 h-4" style={{ color: '#4ade80' }} />
           ) : isIP ? (
-            <Clock className="w-3.5 h-3.5" style={{ color: '#facc15' }} />
+            <Clock className="w-4 h-4 animate-pulse" style={{ color: '#facc15' }} />
           ) : isSkipped ? (
-            <SkipForward className="w-3.5 h-3.5" style={{ color: '#94a3b8' }} />
+            <SkipForward className="w-4 h-4" style={{ color: '#94a3b8' }} />
           ) : (
-            <TechIcon className="w-3.5 h-3.5" style={{ color: techColor }} />
+            <TechIcon className="w-4 h-4" style={{ color: techColor }} />
           )}
         </div>
 
@@ -185,11 +200,11 @@ function RoadmapFlowNodeCard({ node, status, dimmed, onClick }: Props) {
         </span>
       </div>
 
-      {/* Bottom row: Tags */}
-      <div className="flex items-center gap-1.5 pl-9">
+      {/* Row 2: Tags */}
+      <div className="flex items-center gap-1 pl-10 flex-wrap">
         {/* Difficulty tag */}
         <span
-          className="text-[9px] font-semibold px-1.5 py-[1px] rounded-full leading-tight"
+          className="text-[8px] font-bold px-1.5 py-[2px] rounded-md leading-tight uppercase tracking-wider"
           style={{
             background: diff.bg,
             color: diff.text,
@@ -201,22 +216,36 @@ function RoadmapFlowNodeCard({ node, status, dimmed, onClick }: Props) {
 
         {/* Section tag */}
         <span
-          className="text-[9px] font-medium px-1.5 py-[1px] rounded-full leading-tight"
+          className="text-[8px] font-semibold px-1.5 py-[2px] rounded-md leading-tight"
           style={{
-            background: `rgba(${gradient.glow},0.1)`,
-            color: `rgba(${gradient.glow.split(',').map(() => '200').join(',')},0.8)`,
-            border: `1px solid rgba(${gradient.glow},0.15)`,
+            background: `rgba(${gradient.glow},0.08)`,
+            color: textColor,
+            border: `1px solid rgba(${gradient.glow},0.12)`,
+            opacity: 0.7,
           }}
         >
           {node.section}
         </span>
 
-        {/* Alternative badge */}
         {isAlt && (
-          <span className="text-[9px] font-medium px-1.5 py-[1px] rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
+          <span className="text-[8px] font-bold px-1.5 py-[2px] rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 uppercase tracking-wider">
             Alt
           </span>
         )}
+      </div>
+
+      {/* Row 3: Time + Resources */}
+      <div className="flex items-center gap-2.5 pl-10 mt-0.5">
+        {node.timeEstimate && (
+          <span className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
+            <Timer className="w-2.5 h-2.5" />
+            {node.timeEstimate}
+          </span>
+        )}
+        <span className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
+          <BookOpen className="w-2.5 h-2.5" />
+          {resourceCount} resources
+        </span>
       </div>
     </button>
   );
