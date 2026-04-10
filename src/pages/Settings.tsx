@@ -8,6 +8,8 @@ import SettingsSecurityTab from "@/components/settings/SettingsSecurityTab";
 import SettingsNotificationsTab from "@/components/settings/SettingsNotificationsTab";
 import SettingsAccountTab from "@/components/settings/SettingsAccountTab";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { LoginPromptDialog } from "@/components/LoginPromptDialog";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User, color: "text-primary" },
@@ -18,12 +20,21 @@ const tabs = [
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("profile");
+  const { user } = useAuth();
+  const [showLoginPrompt, setShowLoginPrompt] = useState(!user);
 
   return (
     <div className="min-h-screen bg-background">
       <SettingsHeader />
 
       <main className="max-w-4xl mx-auto px-4 md:px-6 py-6">
+        {!user && (
+          <LoginPromptDialog
+            open={showLoginPrompt}
+            onOpenChange={setShowLoginPrompt}
+            message="Sign in to access and modify your settings."
+          />
+        )}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
             <TabsList className="w-full grid grid-cols-4 bg-card/80 backdrop-blur-sm border border-border p-1.5 rounded-xl h-auto">

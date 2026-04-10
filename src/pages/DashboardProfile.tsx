@@ -66,6 +66,7 @@ import {
   validateUsername,
 } from "@/lib/validation";
 import { useProfileFollowCounts } from "@/hooks/useProfileFollowCounts";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 interface ExtendedProfile {
   id: string;
@@ -154,6 +155,7 @@ const ArrayField = ({
 
 const DashboardProfile = () => {
   const { user, profile } = useAuth();
+  const { requireAuth, LoginPromptDialog: loginDialog } = useRequireAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { followersCount, followingCount, isLoading: isLoadingCounts } = useProfileFollowCounts(user?.id);
@@ -258,10 +260,12 @@ const DashboardProfile = () => {
   };
 
   const openEditModal = (section: string) => {
-    setEditSection(section);
-    setEditForm(extendedProfile || {});
-    setValidationErrors({});
-    setIsEditModalOpen(true);
+    requireAuth(() => {
+      setEditSection(section);
+      setEditForm(extendedProfile || {});
+      setValidationErrors({});
+      setIsEditModalOpen(true);
+    });
   };
 
   const validateAllUrls = (): boolean => {
@@ -665,6 +669,7 @@ const DashboardProfile = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {loginDialog}
     </div>
   );
 };
