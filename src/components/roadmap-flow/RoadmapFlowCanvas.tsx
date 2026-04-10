@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
-import { roadmapBlocks, roadmapNodesData, getNodeById, type NodeStatus, type RoadmapNodeData } from '@/data/fullStackRoadmapData';
+import { roadmapBlocks, getNodeById, type NodeStatus, type RoadmapNodeData } from '@/data/fullStackRoadmapData';
+import RoadmapFlowNodeCard from './RoadmapFlowNodeCard';
+import RoadmapFlowCheckpoint from './RoadmapFlowCheckpoint';
+import RoadmapFlowLegendBar from './RoadmapFlowLegendBar';
 
 interface Props {
   progress: Record<string, NodeStatus>;
@@ -8,12 +10,6 @@ interface Props {
   statusFilter: string;
   onNodeClick: (nodeData: RoadmapNodeData) => void;
 }
-
-const statusStyles: Record<string, { bg: string; border: string; ring?: string }> = {
-  done: { bg: '#166534', border: '#22c55e', ring: '0 0 0 2px #22c55e44' },
-  'in-progress': { bg: '#854d0e', border: '#eab308', ring: '0 0 0 2px #eab30844' },
-  skipped: { bg: '#374151', border: '#6b7280', ring: 'none' },
-};
 
 export default function RoadmapFlowCanvas({ progress, search, sectionFilter, statusFilter, onNodeClick }: Props) {
   const getStatus = (id: string): NodeStatus => progress[id] || 'pending';
@@ -30,30 +26,40 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
 
   return (
     <div className="relative w-full pb-8">
-      {/* Central vertical spine line */}
-      <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-blue-500/60 -translate-x-1/2 z-0" />
+      {/* Central gradient spine */}
+      <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 z-0 w-[3px]">
+        <div className="w-full h-full bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 opacity-70 rounded-full" />
+        <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 opacity-30 blur-md rounded-full" />
+      </div>
 
-      <div className="relative z-10 flex flex-col items-center gap-3 py-6">
+      <div className="relative z-10 flex flex-col items-center gap-0 py-6">
         {roadmapBlocks.map((block, i) => {
           if (block.type === 'section-label') {
             return (
-              <div key={i} className="flex flex-col items-center gap-1 py-6">
-                <h2 className="text-2xl font-bold text-foreground">{block.label}</h2>
-                {block.subtitle && <p className="text-sm text-muted-foreground text-center max-w-md">{block.subtitle}</p>}
+              <div key={i} className="flex flex-col items-center gap-2 py-8 relative">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-40 h-40 rounded-full bg-primary/5 blur-3xl" />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent relative">
+                  {block.label}
+                </h2>
+                {block.subtitle && (
+                  <p className="text-xs sm:text-sm text-muted-foreground text-center max-w-md relative">{block.subtitle}</p>
+                )}
               </div>
             );
           }
 
           if (block.type === 'divider') {
             return (
-              <div key={i} className="flex items-center gap-4 py-6 w-full max-w-2xl">
-                <div className="flex-1 h-px bg-border" />
+              <div key={i} className="relative flex items-center gap-4 py-8 w-full max-w-2xl px-4">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                 {block.label && (
-                  <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80 whitespace-nowrap px-3 py-1.5 rounded-full border border-border/50 bg-card/80 backdrop-blur-sm">
                     {block.label}
                   </span>
                 )}
-                <div className="flex-1 h-px bg-border" />
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
               </div>
             );
           }
@@ -62,97 +68,58 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
             return (
               <div
                 key={i}
-                className={`max-w-xs text-[13px] text-muted-foreground leading-relaxed px-4 py-3 rounded-lg border border-border/50 bg-card/50 backdrop-blur-sm ${
-                  block.side === 'left' ? 'self-start ml-4 sm:ml-16' :
-                  block.side === 'right' ? 'self-end mr-4 sm:mr-16' :
-                  'self-center'
-                }`}
+                className={`max-w-[280px] text-[12px] text-muted-foreground/80 leading-relaxed px-4 py-3 rounded-xl 
+                  border border-border/30 bg-card/40 backdrop-blur-md italic my-2
+                  ${block.side === 'left' ? 'self-start ml-4 sm:ml-16' :
+                    block.side === 'right' ? 'self-end mr-4 sm:mr-16' :
+                    'self-center'}`}
               >
-                {block.text}
+                <span className="text-primary/60 mr-1">💡</span> {block.text}
               </div>
             );
           }
 
           if (block.type === 'checkpoint') {
-            return (
-              <div key={i} className="py-1">
-                <div
-                  className="px-6 py-3 rounded-lg text-sm font-semibold text-white text-center"
-                  style={{
-                    background: 'linear-gradient(135deg, #1f2937, #111827)',
-                    border: '1px solid #374151',
-                    minWidth: 240,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                  }}
-                >
-                  {block.label}
-                </div>
-                {/* Dashed line below checkpoint */}
-                <div className="flex justify-center py-1">
-                  <div className="w-0.5 h-4 border-l-2 border-dashed border-blue-500/40" />
-                </div>
-              </div>
-            );
+            return <RoadmapFlowCheckpoint key={i} label={block.label} />;
           }
 
           if (block.type === 'row') {
             const isDashed = block.connector === 'dashed';
             return (
-              <div key={i} className="py-1">
-                {/* Connector dot on spine */}
-                <div className="flex justify-center mb-1">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-blue-500/30" />
+              <div key={i} className="py-2 w-full">
+                {/* Spine dot */}
+                <div className="flex justify-center mb-2">
+                  <div className="relative">
+                    <div className="w-3 h-3 rounded-full bg-blue-500 ring-4 ring-blue-500/20" />
+                    <div className="absolute inset-0 w-3 h-3 rounded-full bg-blue-400 animate-ping opacity-30" />
+                  </div>
                 </div>
-                {/* Horizontal line + nodes */}
-                <div className="relative flex items-center justify-center gap-0">
-                  {/* Horizontal connector line behind nodes */}
+                {/* Horizontal connector + nodes */}
+                <div className="relative flex items-center justify-center">
                   {block.nodes.length > 1 && (
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 z-0"
+                      className="absolute top-1/2 -translate-y-1/2 z-0 h-[2px]"
                       style={{
                         left: '50%',
                         transform: 'translateX(-50%) translateY(-50%)',
-                        width: `${(block.nodes.length - 1) * 160 + 40}px`,
-                        height: 2,
-                        background: isDashed ? 'none' : '#3b82f6',
-                        borderTop: isDashed ? '2px dashed #3b82f6' : 'none',
-                        opacity: 0.6,
+                        width: `${(block.nodes.length - 1) * 170 + 60}px`,
+                        background: isDashed ? 'none' : 'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.5), transparent)',
+                        borderTop: isDashed ? '2px dashed hsl(var(--primary) / 0.4)' : 'none',
                       }}
                     />
                   )}
-                  {/* Nodes */}
-                  <div className="relative z-10 flex items-center gap-3 flex-wrap justify-center">
+                  <div className="relative z-10 flex items-center gap-3 flex-wrap justify-center px-4">
                     {block.nodes.map((nodeId) => {
                       const node = getNodeById(nodeId);
                       if (!node) return null;
-                      const status = getStatus(nodeId);
-                      const dim = isDimmed(nodeId);
-                      const styles = statusStyles[status];
-                      const isAlt = node.isAlternative;
-
                       return (
-                        <button
+                        <RoadmapFlowNodeCard
                           key={nodeId}
+                          node={node}
+                          status={getStatus(nodeId)}
+                          dimmed={isDimmed(nodeId)}
                           onClick={() => onNodeClick(node)}
-                          className={`
-                            relative px-5 py-2.5 rounded-md font-semibold text-sm
-                            transition-all duration-200 cursor-pointer
-                            hover:scale-105 hover:shadow-lg active:scale-100
-                            ${dim ? 'opacity-20 pointer-events-none' : ''}
-                          `}
-                          style={{
-                            background: styles?.bg || (isAlt ? '#1e1b4b' : '#fef08a'),
-                            color: styles ? '#fff' : (isAlt ? '#c4b5fd' : '#1a1a1a'),
-                            border: `2px solid ${styles?.border || (isAlt ? '#7c3aed' : '#eab308')}`,
-                            borderStyle: isAlt && !styles ? 'dashed' : 'solid',
-                            boxShadow: styles?.ring || (isAlt ? 'none' : '0 2px 8px rgba(234,179,8,0.15)'),
-                            minWidth: 100,
-                          }}
-                        >
-                          {status === 'done' && <span className="mr-1">✓</span>}
-                          {status === 'in-progress' && <span className="mr-1">◐</span>}
-                          {node.title}
-                        </button>
+                        />
                       );
                     })}
                   </div>
@@ -163,18 +130,19 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
 
           if (block.type === 'continue') {
             return (
-              <div key={i} className="py-8">
-                <div
-                  className="flex flex-col items-center gap-4 px-8 py-6 rounded-xl border border-border bg-card/80 backdrop-blur-sm"
-                  style={{ minWidth: 300, maxWidth: 500 }}
-                >
-                  <p className="text-sm font-semibold text-foreground text-center">Continue Learning with following relevant tracks</p>
+              <div key={i} className="py-10 w-full flex justify-center">
+                <div className="flex flex-col items-center gap-5 px-8 py-7 rounded-2xl border border-border/50 bg-gradient-to-b from-card/90 to-card/50 backdrop-blur-xl max-w-lg">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-lg">🚀</span>
+                  </div>
+                  <p className="text-sm font-semibold text-foreground text-center">
+                    Continue Learning with these tracks
+                  </p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {block.tracks.map((track) => (
                       <span
                         key={track}
-                        className="px-4 py-2 rounded-md text-sm font-bold text-white"
-                        style={{ background: '#4f46e5' }}
+                        className="px-5 py-2 rounded-lg text-sm font-bold text-primary-foreground bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow cursor-pointer"
                       >
                         {track}
                       </span>
@@ -189,25 +157,7 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
         })}
       </div>
 
-      {/* Legend */}
-      <div className="sticky bottom-4 z-20 flex items-center justify-center gap-4 px-4 py-2.5 mx-auto w-fit rounded-lg border border-border bg-card/95 backdrop-blur-sm text-xs mt-4">
-        <span className="flex items-center gap-1.5">
-          <span className="w-4 h-3 rounded-sm" style={{ background: '#fef08a', border: '1px solid #eab308' }} />
-          <span className="text-muted-foreground">Key Topic</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-4 h-3 rounded-sm" style={{ background: '#1f2937', border: '1px solid #374151' }} />
-          <span className="text-muted-foreground">Checkpoint</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-4 h-3 rounded-sm border-dashed" style={{ background: '#1e1b4b', border: '2px dashed #7c3aed' }} />
-          <span className="text-muted-foreground">Alternative</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-4 h-3 rounded-sm" style={{ background: '#166534', border: '1px solid #22c55e' }} />
-          <span className="text-muted-foreground">Done</span>
-        </span>
-      </div>
+      <RoadmapFlowLegendBar />
     </div>
   );
 }
