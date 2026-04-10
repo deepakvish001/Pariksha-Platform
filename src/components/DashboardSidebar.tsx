@@ -205,13 +205,31 @@ const progressNavItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
+interface NavItem {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
 interface CollapsibleGroupProps {
   title: string;
-  items: { title: string; url: string; icon: React.ComponentType<{ className?: string }> }[];
+  items: NavItem[];
   groupIcon?: React.ComponentType<{ className?: string }>;
   iconColor?: string;
   defaultOpen?: boolean;
 }
+
+const LockedNavLink = ({ item, className, children }: { item: NavItem; className?: string; children: React.ReactNode }) => {
+  const locked = isRouteLocked(item.url);
+  if (locked) {
+    return (
+      <Link to="/under-construction" className={cn(className, "opacity-50")}>
+        {children}
+      </Link>
+    );
+  }
+  return <Link to={item.url} className={className}>{children}</Link>;
+};
 
 const CollapsibleGroup = ({ title, items, groupIcon, iconColor = "text-muted-foreground", defaultOpen = false }: CollapsibleGroupProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
