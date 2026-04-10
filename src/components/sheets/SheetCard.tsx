@@ -34,12 +34,18 @@ const getCategoryStyles = (category: string) => {
   switch (category.toLowerCase()) {
     case "dsa":
       return { bg: "bg-blue-500/10", text: "text-blue-500", border: "border-blue-500/20" };
+    case "cp":
+      return { bg: "bg-orange-500/10", text: "text-orange-500", border: "border-orange-500/20" };
     case "sql":
       return { bg: "bg-emerald-500/10", text: "text-emerald-500", border: "border-emerald-500/20" };
+    case "dbms":
+      return { bg: "bg-violet-500/10", text: "text-violet-500", border: "border-violet-500/20" };
+    case "cn":
+      return { bg: "bg-cyan-500/10", text: "text-cyan-500", border: "border-cyan-500/20" };
+    case "os":
+      return { bg: "bg-rose-500/10", text: "text-rose-500", border: "border-rose-500/20" };
     case "system design":
       return { bg: "bg-purple-500/10", text: "text-purple-500", border: "border-purple-500/20" };
-    case "ml":
-      return { bg: "bg-amber-500/10", text: "text-amber-500", border: "border-amber-500/20" };
     default:
       return { bg: "bg-primary/10", text: "text-primary", border: "border-primary/20" };
   }
