@@ -51,7 +51,7 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
     });
   }, [progress, search, sectionFilter, statusFilter, getStatus]);
 
-  const handleNodeClick: OnNodeClick<Node> = useCallback((_event, node) => {
+  const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     if (node.type === 'sectionNode') return;
     const nodeData = roadmapNodesData.find((nd) => nd.id === node.id);
     if (nodeData) onNodeClick(nodeData);
