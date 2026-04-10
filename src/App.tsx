@@ -25,6 +25,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import UnderConstruction from "./components/UnderConstruction";
 import SheetDetail from "./pages/SheetDetail";
 
 // Library Pages
@@ -230,6 +231,11 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+
+                {/* Under Construction page for locked features */}
+                <Route path="/under-construction" element={<PublicDashboardWrapper />}>
+                  <Route index element={<UnderConstruction />} />
+                </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
