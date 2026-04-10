@@ -13,6 +13,8 @@ export interface RoadmapNodeData {
   section: string;
   sectionColor: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  timeEstimate?: string;
+  prerequisites?: string[];
   resources: RoadmapResource[];
   isAlternative?: boolean;
   nodeType?: 'topic' | 'section' | 'checkpoint';
