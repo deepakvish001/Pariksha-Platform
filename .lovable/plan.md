@@ -1,53 +1,105 @@
 
 
-# Dashboard & Sheets — Full Functionality & Next Features
+## Full Stack Developer Roadmap — Implementation Plan
 
-## Current State Assessment
+### Overview
+Build an interactive, visual Full Stack Developer Roadmap page using **@xyflow/react** (React Flow) with a vertical flowchart layout, clickable nodes opening detail panels, progress tracking (localStorage), and a search/filter bar. Dark theme, color-coded sections, fully responsive.
 
-**What works:**
-- Dashboard (`/dashboard`) loads with stats, heatmap, goals, leaderboard, achievements, weekly activity chart
-- Sheets listing (`/dashboard/sheets`) shows 8 sheet cards with progress tracking from database
-- Sheet detail pages load with sections/subsections, toggle completion, notes, revision marks, all persisted to `user_topic_progress`
-- DSA Level 1 sheet (467 topics) integrated from CSV data
-- CP sheet has its own dedicated view (`CPProblemSetsView`)
-- Guest users can browse with delayed login prompts
+---
 
-**Issues to fix:**
-1. **DashboardMatrix missing sheets**: The `sheetDefinitions` array only has 6 sheets (missing `dsa-level-1` and `competitive-programming`), so those don't appear in the progress cards at bottom
-2. **Striver's sheet has only ~130 mock topics** but claims `totalProblems: 446` — the difficulty counts (easy/medium/hard) are wrong relative to actual topics
-3. **`leaderboard_view` doesn't exist** — the dashboard queries it but it's not a real table/view, causing silent errors
-4. **`completed_at` not set on toggle** — when marking a topic complete, `saveProgress` doesn't send `completed_at: new Date().toISOString()`, so sheet completion dates are never tracked
-5. **Category filter (Completed/Pending) not wired** — the `categoryFilter` select exists but isn't used in `getFilteredSections`
-6. **Console warning**: `DelayedLoginPrompt` can't receive refs (minor)
+### Architecture
 
-## Plan
+```text
+src/
+├── data/fullStackRoadmapData.ts        # All roadmap nodes/edges JSON
+├── pages/FullStackRoadmap.tsx           # Main page component
+├── components/roadmap-flow/
+│   ├── RoadmapFlowCanvas.tsx            # React Flow canvas wrapper
+│   ├── RoadmapFlowNode.tsx              # Custom node component
+│   ├── RoadmapFlowSectionNode.tsx       # Section header node
+│   ├── RoadmapFlowDetailPanel.tsx       # Side panel for node details
+│   ├── RoadmapFlowProgressBar.tsx       # Top progress bar
+│   ├── RoadmapFlowSearchBar.tsx         # Search/filter toolbar
+│   └── RoadmapFlowLegend.tsx            # Status legend
+└── hooks/useRoadmapFlowProgress.ts      # localStorage progress hook
+```
 
-### Step 1: Fix DashboardMatrix sheet definitions
-Add `dsa-level-1` (467 topics) and `competitive-programming` (97 topics) to the `sheetDefinitions` array so their progress shows on the main dashboard cards.
+---
 
-### Step 2: Fix `completed_at` timestamp in SheetDetail
-Update `saveProgress` to include `completed_at: new Date().toISOString()` when `completed: true`, and `completed_at: null` when uncompleting. This enables the "Recently Completed" section on the sheets page to work.
+### Step-by-step Plan
 
-### Step 3: Wire up the Completed/Pending category filter
-In `getFilteredSections`, add logic for `categoryFilter === "completed"` (show only completed topics) and `categoryFilter === "pending"` (show only uncompleted topics).
+**1. Install @xyflow/react**
+Add the React Flow library to the project.
 
-### Step 4: Fix totalProblems count for Striver's sheet
-Update the `totalProblems` in the mock data to match the actual number of topics defined (currently ~130, not 446). Adjust `easy`/`medium`/`hard` counts accordingly.
+**2. Create roadmap data file (`src/data/fullStackRoadmapData.ts`)**
+- Define ~60-80 nodes across 10 sections: Internet Basics, HTML, CSS, JavaScript, React, Node.js, Databases, APIs, DevOps, Deployment
+- Each node: `{ id, title, description, section, sectionColor, difficulty, resources: [{title, url, type}], status }` 
+- Define edges connecting nodes in a vertical flow with section groupings
+- Color scheme per section: Internet=slate, HTML=orange, CSS=blue, JS=yellow, React=cyan, Node=green, DB=violet, APIs=rose, DevOps=amber, Deploy=emerald
 
-### Step 5: Handle missing leaderboard view gracefully
-The dashboard queries `leaderboard_view` which doesn't exist. Add error handling so the leaderboard section shows the empty state instead of failing silently. Optionally create it as a simple query from `user_topic_progress` joined with `profiles`.
+**3. Create progress hook (`src/hooks/useRoadmapFlowProgress.ts`)**
+- Store node statuses in localStorage (`fullstack-roadmap-progress`)
+- Methods: `getStatus(nodeId)`, `setStatus(nodeId, 'done'|'in-progress'|'skipped')`, `resetAll()`
+- Compute overall completion percentage
 
-### Step 6: Add Machine Learning sheet data
-The ML sheet card exists but has no detail data in `mockSheetData`. Add a structured section/topic layout so clicking it shows actual content instead of "Sheet not found".
+**4. Create custom React Flow node (`src/components/roadmap-flow/RoadmapFlowNode.tsx`)**
+- Renders title, difficulty badge, section color border/accent
+- Color-coded by status: green (done), yellow (in-progress), grey (skipped), default (pending)
+- Click handler to open detail panel
+- Source/target handles for edge connections
 
-### Step 7: Improve next feature set
-- **Floating progress widget on SheetDetail**: A sticky mini-card at bottom-right showing current progress %, completed count, and a "next unsolved" button
-- **Bulk actions**: "Mark section as complete" button on section headers
-- **Export progress**: Download progress as CSV from sheet detail page
+**5. Create section header node (`RoadmapFlowSectionNode.tsx`)**
+- Larger styled node acting as a section divider/label with section color gradient
 
-## Technical Details
+**6. Create detail side panel (`RoadmapFlowDetailPanel.tsx`)**
+- Slides in from right on node click
+- Shows: title, description, difficulty badge, 2-3 resource links with icons
+- Status toggle buttons (Done / In Progress / Skipped)
+- Close button
 
-- **Files modified**: `src/pages/DashboardMatrix.tsx`, `src/pages/SheetDetail.tsx`
-- **No database changes needed** — all fixes use existing `user_topic_progress` table
-- **No new dependencies**
+**7. Create progress bar (`RoadmapFlowProgressBar.tsx`)**
+- Fixed at top of the roadmap page
+- Shows percentage and count (e.g., "32/68 completed")
+- Uses existing Progress component with emerald indicator at 100%
+
+**8. Create search/filter bar (`RoadmapFlowSearchBar.tsx`)**
+- Text search to filter/highlight nodes by title
+- Filter by section dropdown
+- Filter by status (All / Done / In Progress / Skipped / Pending)
+- When filtering, non-matching nodes dim/fade
+
+**9. Create legend component (`RoadmapFlowLegend.tsx`)**
+- Small floating legend showing color meanings for Done/In Progress/Skipped/Pending
+
+**10. Build main canvas (`RoadmapFlowCanvas.tsx`)**
+- React Flow canvas with custom node types registered
+- Vertical layout (top-to-bottom)
+- Animated edges with step/smoothstep type
+- Zoom controls, minimap
+- Fit-view on load
+- Pan and zoom enabled
+
+**11. Create page (`src/pages/FullStackRoadmap.tsx`)**
+- Combines all components: ProgressBar, SearchBar, Canvas, DetailPanel, Legend
+- Full-height layout within DashboardLayout
+
+**12. Add routing and navigation**
+- Add route `/dashboard/roadmap/fullstack` under PublicDashboardWrapper in App.tsx
+- Add a new sheet card entry in DashboardSheets.tsx for the Full Stack Roadmap (category: "Roadmap", linking to the new route)
+- Add sidebar entry if appropriate
+
+**13. Mobile responsiveness**
+- On mobile: detail panel becomes a bottom sheet/dialog instead of side panel
+- React Flow canvas remains zoomable/pannable
+- Search bar collapses to icon on small screens
+
+---
+
+### Technical Details
+
+- **Library**: `@xyflow/react` (v12+) with `@xyflow/react` CSS imported
+- **Node layout**: Pre-computed x/y positions in data file (vertical flow, centered)
+- **Edge style**: `smoothstep` type with animated dash for pending, solid for completed sections
+- **Progress persistence**: `localStorage` key `fullstack-roadmap-progress` storing `Record<string, 'done'|'in-progress'|'skipped'>`
+- **No database needed** — localStorage only as requested
 
