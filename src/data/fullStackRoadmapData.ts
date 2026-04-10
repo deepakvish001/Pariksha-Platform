@@ -236,7 +236,7 @@ function buildFlowNodes() {
     nodes.push({
       id: sectionId,
       type: 'sectionNode',
-      position: { x: SPINE_X - 90, y },
+      position: { x: SPINE_X - SECTION_W / 2, y },
       data: { title: sec, sectionColor: color },
     });
 
