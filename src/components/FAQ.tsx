@@ -8,28 +8,28 @@ import ScrollReveal from "./ScrollReveal";
 
 const faqs = [
   {
-    question: "How does Byteskill help me stay consistent with my studies?",
-    answer: "Byteskill uses streak tracking, daily reminders, and gamification to keep you motivated. Our analytics show your progress patterns, helping you identify when you're most productive and optimize your study schedule accordingly.",
+    question: "Is Byteskill free to use?",
+    answer: "Yes! Byteskill is completely free. You can access all available features including DSA sheets, progress tracking, streaks, and profile — with no credit card required.",
   },
   {
-    question: "Is Byteskill suitable for all types of students?",
-    answer: "Absolutely! Whether you're an engineering student, preparing for competitive exams, pursuing an MBA, or studying any other field, Byteskill adapts to your specific needs. Our customizable task categories and flexible tracking system work for any academic discipline.",
+    question: "What DSA sheets are available?",
+    answer: "We offer curated problem sheets from Striver's SDE Sheet, A2Z Sheet, Love Babbar's DSA Sheet, NeetCode 150, NeetCode 250, Blind 75, and more — all with built-in progress tracking.",
   },
   {
-    question: "Can I access Byteskill on mobile devices?",
-    answer: "Yes! Byteskill is fully responsive and works seamlessly on all devices. Access your dashboard, track tasks, and view analytics from your phone, tablet, or desktop. Your data syncs in real-time across all devices.",
+    question: "How does progress tracking work?",
+    answer: "Mark problems as solved or for revision, and your progress is automatically saved. View your stats on a GitHub-style activity heatmap, track daily/weekly goals, and maintain streaks to stay consistent.",
   },
   {
-    question: "What happens to my data if I downgrade or cancel?",
-    answer: "Your data is always yours. If you downgrade, you retain access to your historical data in read-only mode. We also provide easy data export options so you can download all your progress, notes, and analytics anytime.",
+    question: "Can I access Byteskill on mobile?",
+    answer: "Yes! Byteskill is fully responsive and works on all devices. Your data syncs in real-time so you can switch between phone, tablet, and desktop seamlessly.",
   },
   {
-    question: "How is Byteskill different from other productivity apps?",
-    answer: "Byteskill is specifically designed for Indian college students. Unlike generic productivity tools, we understand the unique challenges of competitive exams, placement preparation, and the Indian academic system. Our features are tailored to help you succeed in this context.",
+    question: "What features are coming next?",
+    answer: "We're actively building AI-powered learning assistant, learning roadmaps, resume builder, interview prep, and more. These are marked as 'Coming Soon' and will be unlocked progressively.",
   },
   {
-    question: "Do you offer student discounts or scholarships?",
-    answer: "Yes! We believe in making productivity tools accessible to all students. We offer a generous free tier, student discounts on yearly plans, and a scholarship program for students who demonstrate financial need. Contact our support team for more details.",
+    question: "Do I need to create an account?",
+    answer: "Yes, a free account is required to save your progress across sessions. Sign up takes less than 30 seconds with email or Google authentication.",
   },
 ];
 
