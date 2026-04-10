@@ -154,6 +154,7 @@ const ArrayField = ({
 
 const DashboardProfile = () => {
   const { user, profile } = useAuth();
+  const { requireAuth, LoginPromptDialog: loginDialog } = useRequireAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { followersCount, followingCount, isLoading: isLoadingCounts } = useProfileFollowCounts(user?.id);

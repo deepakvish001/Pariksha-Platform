@@ -8,6 +8,8 @@ import SettingsSecurityTab from "@/components/settings/SettingsSecurityTab";
 import SettingsNotificationsTab from "@/components/settings/SettingsNotificationsTab";
 import SettingsAccountTab from "@/components/settings/SettingsAccountTab";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { LoginPromptDialog } from "@/components/LoginPromptDialog";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User, color: "text-primary" },
