@@ -207,7 +207,7 @@ export function buildFlowElements(): { nodes: FlowNodeData[]; edges: FlowEdgeDat
       nodes.push({
         id,
         type: 'section',
-        position: { x: SPINE_X - 140, y },
+        position: { x: SPINE_X - 155, y },
         data: { label: row.label, subtitle: row.subtitle },
       });
       addSpineEdge(id);
@@ -217,7 +217,7 @@ export function buildFlowElements(): { nodes: FlowNodeData[]; edges: FlowEdgeDat
       nodes.push({
         id,
         type: 'checkpoint',
-        position: { x: SPINE_X - 130, y },
+        position: { x: SPINE_X - 140, y },
         data: { label: row.label },
       });
       addSpineEdge(id);
