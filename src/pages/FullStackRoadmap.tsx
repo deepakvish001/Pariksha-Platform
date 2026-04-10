@@ -29,12 +29,19 @@ export default function FullStackRoadmap() {
         <meta name="description" content="Interactive full stack developer roadmap with progress tracking. Learn web development step by step." />
       </Helmet>
 
-      <div className="w-full px-2 sm:px-4 py-4 space-y-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Full Stack Developer Roadmap</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Click any topic to learn more and track your progress</p>
+      <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 py-4 space-y-4">
+        <div className="text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold">Full Stack Developer</h1>
+          <p className="text-sm text-muted-foreground mt-1">Step by step guide to becoming a modern full stack developer in 2026</p>
         </div>
+
         <RoadmapFlowProgressBar stats={stats} onReset={resetAll} />
+
+        <div className="flex items-center justify-center gap-2 text-xs border border-border rounded-lg px-4 py-2.5 bg-card/50">
+          <span className="text-primary">✦</span>
+          <span className="text-muted-foreground">Click any topic to start tracking</span>
+        </div>
+
         <RoadmapFlowSearchBar
           search={search}
           onSearchChange={setSearch}

@@ -1,8 +1,5 @@
 import { useMemo } from 'react';
-import RoadmapFlowNode from './RoadmapFlowNode';
-import RoadmapFlowSectionNode from './RoadmapFlowSectionNode';
-import RoadmapFlowLegend from './RoadmapFlowLegend';
-import { flowNodes, flowEdges, type NodeStatus, type RoadmapNodeData, roadmapNodesData } from '@/data/fullStackRoadmapData';
+import { roadmapBlocks, roadmapNodesData, getNodeById, type NodeStatus, type RoadmapNodeData } from '@/data/fullStackRoadmapData';
 
 interface Props {
   progress: Record<string, NodeStatus>;
@@ -12,145 +9,205 @@ interface Props {
   onNodeClick: (nodeData: RoadmapNodeData) => void;
 }
 
-const SECTION_W = 200;
-const SECTION_H = 42;
-const NODE_W = 180;
-const NODE_H = 36;
+const statusStyles: Record<string, { bg: string; border: string; ring?: string }> = {
+  done: { bg: '#166534', border: '#22c55e', ring: '0 0 0 2px #22c55e44' },
+  'in-progress': { bg: '#854d0e', border: '#eab308', ring: '0 0 0 2px #eab30844' },
+  skipped: { bg: '#374151', border: '#6b7280', ring: 'none' },
+};
 
 export default function RoadmapFlowCanvas({ progress, search, sectionFilter, statusFilter, onNodeClick }: Props) {
   const getStatus = (id: string): NodeStatus => progress[id] || 'pending';
 
-  const { nodes, canvasHeight, canvasWidth } = useMemo(() => {
-    const searchLower = search.toLowerCase();
-    let maxY = 0;
-    let maxX = 0;
-
-    const mapped = flowNodes.map((n) => {
-      const isTopic = n.type === 'roadmapNode';
-      const status = isTopic ? getStatus(n.id) : 'pending';
-
-      let dimmed = false;
-      if (isTopic) {
-        if (search && !n.data.title.toLowerCase().includes(searchLower)) dimmed = true;
-        if (sectionFilter !== 'all' && n.data.section !== sectionFilter) dimmed = true;
-        if (statusFilter !== 'all' && status !== statusFilter) dimmed = true;
-      }
-
-      const w = n.type === 'sectionNode' ? SECTION_W : NODE_W;
-      const h = n.type === 'sectionNode' ? SECTION_H : NODE_H;
-      const bottom = n.position.y + h;
-      const right = n.position.x + w;
-      if (bottom > maxY) maxY = bottom;
-      if (right > maxX) maxX = right;
-
-      return { ...n, data: { ...n.data, status, dimmed } };
-    });
-
-    return { nodes: mapped, canvasHeight: maxY + 80, canvasWidth: Math.max(maxX + 40, 800) };
-  }, [progress, search, sectionFilter, statusFilter]);
-
-  // Build SVG connections: roadmap.sh style with straight lines
-  const svgElements = useMemo(() => {
-    const nodeMap = new Map(flowNodes.map((n) => [n.id, n]));
-    const elements: React.ReactNode[] = [];
-
-    flowEdges.forEach((edge) => {
-      const src = nodeMap.get(edge.source);
-      const tgt = nodeMap.get(edge.target);
-      if (!src || !tgt) return;
-
-      const srcW = src.type === 'sectionNode' ? SECTION_W : NODE_W;
-      const srcH = src.type === 'sectionNode' ? SECTION_H : NODE_H;
-      const tgtW = tgt.type === 'sectionNode' ? SECTION_W : NODE_W;
-      const tgtH = tgt.type === 'sectionNode' ? SECTION_H : NODE_H;
-
-      const srcCx = src.position.x + srcW / 2;
-      const srcCy = src.position.y + srcH / 2;
-      const tgtCx = tgt.position.x + tgtW / 2;
-      const tgtCy = tgt.position.y + tgtH / 2;
-
-      const isSpine = src.type === 'sectionNode' && tgt.type === 'sectionNode';
-      const isBranch = src.type === 'sectionNode' && tgt.type === 'roadmapNode';
-
-      const strokeColor = edge.style?.stroke || '#525252';
-      const strokeWidth = edge.style?.strokeWidth || 1.5;
-      const opacity = edge.style?.opacity || 1;
-
-      if (isSpine) {
-        // Vertical spine line: from bottom of source to top of target
-        const x = srcCx;
-        const y1 = src.position.y + srcH;
-        const y2 = tgt.position.y;
-        elements.push(
-          <line
-            key={edge.id}
-            x1={x} y1={y1} x2={x} y2={y2}
-            stroke={strokeColor} strokeWidth={strokeWidth + 0.5} opacity={opacity}
-            strokeDasharray="none"
-          />
-        );
-      } else if (isBranch) {
-        // Horizontal branch: from section center to node
-        const spineX = srcCx;
-        const nodeY = tgtCy;
-        const nodeEdgeX = tgtCx < spineX
-          ? tgt.position.x + tgtW  // node is left, connect to right edge
-          : tgt.position.x;         // node is right, connect to left edge
-
-        // Vertical segment from spine to branch Y, then horizontal to node
-        elements.push(
-          <g key={edge.id} opacity={opacity}>
-            {/* Small dot on spine at branch point */}
-            <circle cx={spineX} cy={nodeY} r={3} fill={strokeColor} />
-            {/* Horizontal line from spine to node */}
-            <line
-              x1={spineX} y1={nodeY} x2={nodeEdgeX} y2={nodeY}
-              stroke={strokeColor} strokeWidth={strokeWidth}
-            />
-          </g>
-        );
-      }
-    });
-
-    return elements;
-  }, []);
-
-  const handleClick = (nodeId: string) => {
-    const nodeData = roadmapNodesData.find((nd) => nd.id === nodeId);
-    if (nodeData) onNodeClick(nodeData);
+  const isDimmed = (id: string) => {
+    const node = getNodeById(id);
+    if (!node) return false;
+    const status = getStatus(id);
+    if (search && !node.title.toLowerCase().includes(search.toLowerCase())) return true;
+    if (sectionFilter !== 'all' && node.section !== sectionFilter) return true;
+    if (statusFilter !== 'all' && status !== statusFilter) return true;
+    return false;
   };
 
   return (
-    <div className="relative w-full overflow-x-auto">
-      <div className="relative mx-auto" style={{ width: canvasWidth, minHeight: canvasHeight }}>
-        {/* SVG connector lines */}
-        <svg
-          className="absolute inset-0 pointer-events-none"
-          width={canvasWidth}
-          height={canvasHeight}
-        >
-          {svgElements}
-        </svg>
+    <div className="relative w-full pb-8">
+      {/* Central vertical spine line */}
+      <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-blue-500/60 -translate-x-1/2 z-0" />
 
-        {/* Nodes */}
-        {nodes.map((node) => (
-          <div
-            key={node.id}
-            className="absolute"
-            style={{ left: node.position.x, top: node.position.y }}
-          >
-            {node.type === 'sectionNode' ? (
-              <RoadmapFlowSectionNode data={node.data} />
-            ) : (
-              <div onClick={() => handleClick(node.id)}>
-                <RoadmapFlowNode data={node.data} selected={false} />
+      <div className="relative z-10 flex flex-col items-center gap-3 py-6">
+        {roadmapBlocks.map((block, i) => {
+          if (block.type === 'section-label') {
+            return (
+              <div key={i} className="flex flex-col items-center gap-1 py-6">
+                <h2 className="text-2xl font-bold text-foreground">{block.label}</h2>
+                {block.subtitle && <p className="text-sm text-muted-foreground text-center max-w-md">{block.subtitle}</p>}
               </div>
-            )}
-          </div>
-        ))}
+            );
+          }
+
+          if (block.type === 'divider') {
+            return (
+              <div key={i} className="flex items-center gap-4 py-6 w-full max-w-2xl">
+                <div className="flex-1 h-px bg-border" />
+                {block.label && (
+                  <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap">
+                    {block.label}
+                  </span>
+                )}
+                <div className="flex-1 h-px bg-border" />
+              </div>
+            );
+          }
+
+          if (block.type === 'annotation') {
+            return (
+              <div
+                key={i}
+                className={`max-w-xs text-[13px] text-muted-foreground leading-relaxed px-4 py-3 rounded-lg border border-border/50 bg-card/50 backdrop-blur-sm ${
+                  block.side === 'left' ? 'self-start ml-4 sm:ml-16' :
+                  block.side === 'right' ? 'self-end mr-4 sm:mr-16' :
+                  'self-center'
+                }`}
+              >
+                {block.text}
+              </div>
+            );
+          }
+
+          if (block.type === 'checkpoint') {
+            return (
+              <div key={i} className="py-1">
+                <div
+                  className="px-6 py-3 rounded-lg text-sm font-semibold text-white text-center"
+                  style={{
+                    background: 'linear-gradient(135deg, #1f2937, #111827)',
+                    border: '1px solid #374151',
+                    minWidth: 240,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                  }}
+                >
+                  {block.label}
+                </div>
+                {/* Dashed line below checkpoint */}
+                <div className="flex justify-center py-1">
+                  <div className="w-0.5 h-4 border-l-2 border-dashed border-blue-500/40" />
+                </div>
+              </div>
+            );
+          }
+
+          if (block.type === 'row') {
+            const isDashed = block.connector === 'dashed';
+            return (
+              <div key={i} className="py-1">
+                {/* Connector dot on spine */}
+                <div className="flex justify-center mb-1">
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-blue-500/30" />
+                </div>
+                {/* Horizontal line + nodes */}
+                <div className="relative flex items-center justify-center gap-0">
+                  {/* Horizontal connector line behind nodes */}
+                  {block.nodes.length > 1 && (
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 z-0"
+                      style={{
+                        left: '50%',
+                        transform: 'translateX(-50%) translateY(-50%)',
+                        width: `${(block.nodes.length - 1) * 160 + 40}px`,
+                        height: 2,
+                        background: isDashed ? 'none' : '#3b82f6',
+                        borderTop: isDashed ? '2px dashed #3b82f6' : 'none',
+                        opacity: 0.6,
+                      }}
+                    />
+                  )}
+                  {/* Nodes */}
+                  <div className="relative z-10 flex items-center gap-3 flex-wrap justify-center">
+                    {block.nodes.map((nodeId) => {
+                      const node = getNodeById(nodeId);
+                      if (!node) return null;
+                      const status = getStatus(nodeId);
+                      const dim = isDimmed(nodeId);
+                      const styles = statusStyles[status];
+                      const isAlt = node.isAlternative;
+
+                      return (
+                        <button
+                          key={nodeId}
+                          onClick={() => onNodeClick(node)}
+                          className={`
+                            relative px-5 py-2.5 rounded-md font-semibold text-sm
+                            transition-all duration-200 cursor-pointer
+                            hover:scale-105 hover:shadow-lg active:scale-100
+                            ${dim ? 'opacity-20 pointer-events-none' : ''}
+                          `}
+                          style={{
+                            background: styles?.bg || (isAlt ? '#1e1b4b' : '#fef08a'),
+                            color: styles ? '#fff' : (isAlt ? '#c4b5fd' : '#1a1a1a'),
+                            border: `2px solid ${styles?.border || (isAlt ? '#7c3aed' : '#eab308')}`,
+                            borderStyle: isAlt && !styles ? 'dashed' : 'solid',
+                            boxShadow: styles?.ring || (isAlt ? 'none' : '0 2px 8px rgba(234,179,8,0.15)'),
+                            minWidth: 100,
+                          }}
+                        >
+                          {status === 'done' && <span className="mr-1">✓</span>}
+                          {status === 'in-progress' && <span className="mr-1">◐</span>}
+                          {node.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (block.type === 'continue') {
+            return (
+              <div key={i} className="py-8">
+                <div
+                  className="flex flex-col items-center gap-4 px-8 py-6 rounded-xl border border-border bg-card/80 backdrop-blur-sm"
+                  style={{ minWidth: 300, maxWidth: 500 }}
+                >
+                  <p className="text-sm font-semibold text-foreground text-center">Continue Learning with following relevant tracks</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {block.tracks.map((track) => (
+                      <span
+                        key={track}
+                        className="px-4 py-2 rounded-md text-sm font-bold text-white"
+                        style={{ background: '#4f46e5' }}
+                      >
+                        {track}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          return null;
+        })}
       </div>
 
-      <RoadmapFlowLegend />
+      {/* Legend */}
+      <div className="sticky bottom-4 z-20 flex items-center justify-center gap-4 px-4 py-2.5 mx-auto w-fit rounded-lg border border-border bg-card/95 backdrop-blur-sm text-xs mt-4">
+        <span className="flex items-center gap-1.5">
+          <span className="w-4 h-3 rounded-sm" style={{ background: '#fef08a', border: '1px solid #eab308' }} />
+          <span className="text-muted-foreground">Key Topic</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-4 h-3 rounded-sm" style={{ background: '#1f2937', border: '1px solid #374151' }} />
+          <span className="text-muted-foreground">Checkpoint</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-4 h-3 rounded-sm border-dashed" style={{ background: '#1e1b4b', border: '2px dashed #7c3aed' }} />
+          <span className="text-muted-foreground">Alternative</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-4 h-3 rounded-sm" style={{ background: '#166534', border: '1px solid #22c55e' }} />
+          <span className="text-muted-foreground">Done</span>
+        </span>
+      </div>
     </div>
   );
 }
