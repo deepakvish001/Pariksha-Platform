@@ -167,15 +167,6 @@ const sheets = [
     difficulty: "Medium-Hard",
     starred: true,
   },
-  {
-    id: "system-design",
-    title: "System Design Concepts",
-    description: "HLD and LLD concepts with examples",
-    category: "System Design",
-    problems: 25,
-    difficulty: "Hard",
-    starred: true,
-  },
 ];
 
 const categoryMeta: Record<string, { icon: LucideIcon; label: string; color: string }> = {
