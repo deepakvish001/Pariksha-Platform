@@ -342,6 +342,62 @@ const DashboardMatrix = () => {
           ))}
         </motion.div>
 
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.06 }}
+          className="grid gap-3 grid-cols-1 sm:grid-cols-3"
+        >
+          <Card
+            className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all group"
+            onClick={() => navigate("/library/quiz")}
+          >
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                <Brain className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">Start a Quiz</p>
+                <p className="text-xs text-muted-foreground">DSA, CS, SQL & more</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-md hover:border-emerald-500/30 transition-all group"
+            onClick={() => navigate("/dashboard/sheets")}
+          >
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition-colors">
+                <BookOpen className="h-5 w-5 text-emerald-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">Resume a Sheet</p>
+                <p className="text-xs text-muted-foreground">{activeSheets.length > 0 ? `${activeSheets.length} in progress` : "Pick a sheet to start"}</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald-500 transition-colors" />
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-md hover:border-purple-500/30 transition-all group"
+            onClick={() => navigate("/research/roadmap")}
+          >
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0 group-hover:bg-purple-500/20 transition-colors">
+                <Map className="h-5 w-5 text-purple-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">Explore Roadmaps</p>
+                <p className="text-xs text-muted-foreground">Career learning paths</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-purple-500 transition-colors" />
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Goals + Weekly Activity Row */}
         <div className="grid gap-4 lg:grid-cols-2">
           {/* Daily & Weekly Goals */}
