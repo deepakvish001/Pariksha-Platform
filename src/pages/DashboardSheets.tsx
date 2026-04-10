@@ -7,7 +7,6 @@ import SheetsEmptyState from "@/components/sheets/SheetsEmptyState";
 import ContinueLearningSection from "@/components/sheets/ContinueLearningSection";
 import RecentlyCompletedSection from "@/components/sheets/RecentlyCompletedSection";
 import QuickStartSection from "@/components/sheets/QuickStartSection";
-import WeeklyProgressChart from "@/components/sheets/WeeklyProgressChart";
 import { useSheetProgress, calculateProgressPercentage } from "@/hooks/useSheetProgress";
 
 const sheets = [
@@ -26,15 +25,6 @@ const sheets = [
     description: "Complete A2Z DSA course — 445 problems from basics to advanced topics",
     category: "DSA",
     problems: 445,
-    difficulty: "Mixed",
-    starred: true,
-  },
-  {
-    id: "love-babbar-450",
-    title: "Love Babbar 450",
-    description: "450 curated DSA problems by topic",
-    category: "DSA",
-    problems: 450,
     difficulty: "Mixed",
     starred: true,
   },
@@ -162,15 +152,6 @@ const sheets = [
     category: "System Design",
     problems: 25,
     difficulty: "Hard",
-    starred: true,
-  },
-  {
-    id: "machine-learning",
-    title: "Machine Learning",
-    description: "Complete ML roadmap with resources",
-    category: "ML",
-    problems: 184,
-    difficulty: "Mixed",
     starred: true,
   },
   {
@@ -341,27 +322,22 @@ const DashboardSheets = () => {
 
       {/* Content */}
       <main className="p-4 md:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
-        {/* Weekly Progress Chart + Continue Learning Row */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-            <WeeklyProgressChart />
-          </div>
-          <div className="lg:col-span-2 space-y-6">
-            {/* Recently Completed Section */}
-            {recentlyCompletedSheets.length > 0 && (
-              <RecentlyCompletedSection sheets={recentlyCompletedSheets} />
-            )}
+        {/* Continue Learning / Quick Start Row */}
+        <div className="space-y-6">
+          {/* Recently Completed Section */}
+          {recentlyCompletedSheets.length > 0 && (
+            <RecentlyCompletedSection sheets={recentlyCompletedSheets} />
+          )}
 
-            {/* Continue Learning Section */}
-            {inProgressSheets.length > 0 && (
-              <ContinueLearningSection sheets={inProgressSheets} />
-            )}
+          {/* Continue Learning Section */}
+          {inProgressSheets.length > 0 && (
+            <ContinueLearningSection sheets={inProgressSheets} />
+          )}
 
-            {/* Quick Start Section - only show if no progress */}
-            {inProgressSheets.length === 0 && recentlyCompletedSheets.length === 0 && (
-              <QuickStartSection sheets={quickStartSheets} />
-            )}
-          </div>
+          {/* Quick Start Section - only show if no progress */}
+          {inProgressSheets.length === 0 && recentlyCompletedSheets.length === 0 && (
+            <QuickStartSection sheets={quickStartSheets} />
+          )}
         </div>
 
         {/* Filter Bar */}
