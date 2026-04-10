@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { buildFlowElements, getNodeById, sectionColors, type NodeStatus, type RoadmapNodeData } from '@/data/fullStackRoadmapData';
+import { buildFlowElements, getNodeById, roadmapNodesData, sectionColors, type NodeStatus, type RoadmapNodeData } from '@/data/fullStackRoadmapData';
 import RoadmapFlowNodeCard from './RoadmapFlowNodeCard';
 import RoadmapFlowLegendBar from './RoadmapFlowLegendBar';
-import { Flag, Sparkles, Trophy } from 'lucide-react';
+import { Flag, Trophy, ChevronRight } from 'lucide-react';
 
 interface Props {
   progress: Record<string, NodeStatus>;
@@ -30,10 +30,42 @@ const sectionGradients: Record<string, { from: string; to: string }> = {
   'DevOps & Deployment': { from: '#d97706', to: '#f59e0b' },
 };
 
+const sectionToKey: Record<string, string> = {
+  'Internet Fundamentals': 'Internet',
+  'Frontend Development': 'Frontend',
+  'Testing': 'Testing',
+  'Backend Development': 'Backend',
+  'Web Security': 'Security',
+  'DevOps & Deployment': 'DevOps',
+};
+
 export default function RoadmapFlowCanvas({ progress, search, sectionFilter, statusFilter, onNodeClick }: Props) {
   const { nodes, edges } = useMemo(() => buildFlowElements(), []);
 
   const getStatus = (id: string): NodeStatus => progress[id] || 'pending';
+
+  // Compute recommended nodes (all prereqs done, node itself pending)
+  const recommendedIds = useMemo(() => {
+    const set = new Set<string>();
+    roadmapNodesData.forEach(n => {
+      if (progress[n.id] && progress[n.id] !== 'pending') return;
+      if (!n.prerequisites || n.prerequisites.length === 0) return;
+      const allDone = n.prerequisites.every(p => progress[p] === 'done');
+      if (allDone) set.add(n.id);
+    });
+    return set;
+  }, [progress]);
+
+  // Section progress stats
+  const sectionStats = useMemo(() => {
+    const stats: Record<string, { total: number; done: number }> = {};
+    roadmapNodesData.forEach(n => {
+      if (!stats[n.section]) stats[n.section] = { total: 0, done: 0 };
+      stats[n.section].total++;
+      if (progress[n.id] === 'done') stats[n.section].done++;
+    });
+    return stats;
+  }, [progress]);
 
   const isDimmed = (id: string) => {
     const node = getNodeById(id);
@@ -48,10 +80,10 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
   const { width: canvasW, height: canvasH } = useMemo(() => {
     let maxX = 0, maxY = 0;
     nodes.forEach(n => {
-      maxX = Math.max(maxX, n.position.x + 230);
-      maxY = Math.max(maxY, n.position.y + 90);
+      maxX = Math.max(maxX, n.position.x + 260);
+      maxY = Math.max(maxY, n.position.y + 120);
     });
-    return { width: maxX + 60, height: maxY + 60 };
+    return { width: maxX + 80, height: maxY + 80 };
   }, [nodes]);
 
   return (
@@ -61,8 +93,8 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
           to { stroke-dashoffset: -24; }
         }
         @keyframes flowGlow {
-          0%, 100% { opacity: 0.2; }
-          50% { opacity: 0.6; }
+          0%, 100% { opacity: 0.15; }
+          50% { opacity: 0.5; }
         }
         .flow-edge { animation: flowDash 2s linear infinite; }
         .flow-edge-glow { animation: flowGlow 3s ease-in-out infinite; }
@@ -75,14 +107,18 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
           50% { transform: scale(1.2); opacity: 0; }
           100% { transform: scale(0.8); opacity: 0; }
         }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
       `}</style>
 
-      <div className="relative mx-auto" style={{ width: canvasW, height: canvasH, minWidth: 950 }}>
+      <div className="relative mx-auto" style={{ width: canvasW, height: canvasH, minWidth: 1050 }}>
         {/* Subtle dot grid */}
-        <svg className="absolute inset-0 pointer-events-none z-0 opacity-[0.04]" width={canvasW} height={canvasH}>
+        <svg className="absolute inset-0 pointer-events-none z-0 opacity-[0.03]" width={canvasW} height={canvasH}>
           <defs>
-            <pattern id="dotGrid" width="24" height="24" patternUnits="userSpaceOnUse">
-              <circle cx="12" cy="12" r="1" fill="white" />
+            <pattern id="dotGrid" width="28" height="28" patternUnits="userSpaceOnUse">
+              <circle cx="14" cy="14" r="1" fill="white" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#dotGrid)" />
@@ -116,9 +152,9 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
 
             const isInvisibleSrc = sourceNode.data?.invisible;
             const isInvisibleTgt = targetNode.data?.invisible;
-            const sW = isInvisibleSrc ? 2 : (sourceNode.type === 'section' ? 320 : sourceNode.type === 'checkpoint' ? 290 : 200);
-            const sH = isInvisibleSrc ? 2 : (sourceNode.type === 'section' ? 76 : sourceNode.type === 'checkpoint' ? 52 : 68);
-            const tW = isInvisibleTgt ? 2 : (targetNode.type === 'section' ? 320 : targetNode.type === 'checkpoint' ? 290 : 200);
+            const sW = isInvisibleSrc ? 2 : (sourceNode.type === 'section' ? 340 : sourceNode.type === 'checkpoint' ? 310 : 220);
+            const sH = isInvisibleSrc ? 2 : (sourceNode.type === 'section' ? 90 : sourceNode.type === 'checkpoint' ? 56 : 110);
+            const tW = isInvisibleTgt ? 2 : (targetNode.type === 'section' ? 340 : targetNode.type === 'checkpoint' ? 310 : 220);
 
             const sx = sourceNode.position.x + sW / 2;
             const sy = sourceNode.position.y + sH;
@@ -133,36 +169,33 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
 
             return (
               <g key={edge.id}>
-                {/* Wide glow */}
                 <path
                   d={d} fill="none"
                   stroke={isSpine ? 'url(#spineGrad)' : strokeColor}
                   strokeWidth={isSpine ? 6 : 4}
-                  opacity={0.06}
+                  opacity={0.05}
                   className="flow-edge-glow"
                   filter="url(#edgeGlow)"
                 />
-                {/* Main line */}
                 <path
                   d={d} fill="none"
                   stroke={isSpine ? 'url(#spineGrad)' : strokeColor}
                   strokeWidth={isSpine ? 2.5 : 1.5}
                   strokeDasharray={isDashed ? '6 4' : isSpine ? undefined : '10 5'}
                   strokeLinecap="round"
-                  opacity={isSpine ? 0.65 : 0.35}
+                  opacity={isSpine ? 0.6 : 0.3}
                   className={isDashed || !isSpine ? 'flow-edge' : undefined}
                   markerEnd={!isSpine ? 'url(#arrow)' : undefined}
                 />
-                {/* Flowing particles on spine */}
                 {isSpine && (
                   <>
-                    <circle r="2.5" fill="#3b82f6" opacity="0.8">
+                    <circle r="2.5" fill="#3b82f6" opacity="0.7">
                       <animateMotion dur="3s" repeatCount="indefinite" path={d} />
                     </circle>
-                    <circle r="6" fill="#3b82f6" opacity="0.1">
+                    <circle r="6" fill="#3b82f6" opacity="0.08">
                       <animateMotion dur="3s" repeatCount="indefinite" path={d} />
                     </circle>
-                    <circle r="2" fill="#8b5cf6" opacity="0.6">
+                    <circle r="2" fill="#8b5cf6" opacity="0.5">
                       <animateMotion dur="4.5s" repeatCount="indefinite" path={d} begin="1.5s" />
                     </circle>
                   </>
@@ -179,10 +212,14 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
           if (node.type === 'section') {
             const emoji = sectionIcons[node.data.label] || '📦';
             const grad = sectionGradients[node.data.label] || { from: '#3b82f6', to: '#6366f1' };
+            const sKey = sectionToKey[node.data.label];
+            const stats = sKey ? sectionStats[sKey] : null;
+            const pct = stats && stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+
             return (
-              <div key={node.id} className="absolute z-10" style={{ left: node.position.x, top: node.position.y, width: 320 }}>
+              <div key={node.id} className="absolute z-10" style={{ left: node.position.x, top: node.position.y, width: 340 }}>
                 <div
-                  className="relative px-6 py-4 rounded-2xl text-center overflow-hidden"
+                  className="relative px-6 py-4 rounded-2xl overflow-hidden"
                   style={{
                     background: `linear-gradient(135deg, ${grad.from}18, ${grad.to}0a)`,
                     border: `1.5px solid ${grad.to}30`,
@@ -199,18 +236,39 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
                       animation: 'shimmer 5s ease-in-out infinite',
                     }}
                   />
-                  {/* Left colored accent */}
+                  {/* Left accent */}
                   <div
                     className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full"
                     style={{ background: `linear-gradient(180deg, ${grad.from}, ${grad.to})` }}
                   />
-                  <div className="flex items-center justify-center gap-2.5 relative">
-                    <span className="text-xl">{emoji}</span>
-                    <h3 className="text-base font-extrabold text-foreground tracking-tight">{node.data.label}</h3>
+                  <div className="flex items-center justify-between relative">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl">{emoji}</span>
+                      <div>
+                        <h3 className="text-base font-extrabold text-foreground tracking-tight">{node.data.label}</h3>
+                        {node.data.subtitle && (
+                          <p className="text-[11px] text-muted-foreground font-medium">{node.data.subtitle}</p>
+                        )}
+                      </div>
+                    </div>
+                    {/* Section progress */}
+                    {stats && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${pct}%`,
+                              background: `linear-gradient(90deg, ${grad.from}, ${grad.to})`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-bold" style={{ color: grad.to }}>
+                          {stats.done}/{stats.total}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  {node.data.subtitle && (
-                    <p className="text-[11px] text-muted-foreground mt-1.5 font-medium relative">{node.data.subtitle}</p>
-                  )}
                 </div>
               </div>
             );
@@ -218,9 +276,9 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
 
           if (node.type === 'checkpoint') {
             return (
-              <div key={node.id} className="absolute z-10" style={{ left: node.position.x, top: node.position.y, width: 290 }}>
+              <div key={node.id} className="absolute z-10" style={{ left: node.position.x, top: node.position.y, width: 310 }}>
                 <div
-                  className="relative flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-bold overflow-hidden group"
+                  className="relative flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-sm font-bold overflow-hidden group"
                   style={{
                     background: 'linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,41,59,0.8))',
                     border: '1px solid rgba(59,130,246,0.15)',
@@ -252,6 +310,7 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
                 node={nodeData}
                 status={getStatus(node.id)}
                 dimmed={isDimmed(node.id)}
+                isRecommended={recommendedIds.has(node.id)}
                 onClick={() => onNodeClick(nodeData)}
               />
             </div>
