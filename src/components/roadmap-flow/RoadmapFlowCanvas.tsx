@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { buildFlowElements, getNodeById, roadmapNodesData, sectionColors, type NodeStatus, type RoadmapNodeData } from '@/data/fullStackRoadmapData';
+import { buildFlowElements, getNodeById, roadmapNodesData, type NodeStatus, type RoadmapNodeData } from '@/data/fullStackRoadmapData';
 import RoadmapFlowNodeCard from './RoadmapFlowNodeCard';
 import RoadmapFlowLegendBar from './RoadmapFlowLegendBar';
-import { Trophy, Milestone, ChevronRight, Flame, Sparkles } from 'lucide-react';
+import { Trophy, Milestone, Sparkles, Zap } from 'lucide-react';
 
 interface Props {
   progress: Record<string, NodeStatus>;
@@ -90,24 +90,27 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
         @keyframes flowGlow { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.35; } }
         @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
         @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.3); opacity: 0; } 100% { transform: scale(0.8); opacity: 0; } }
-        @keyframes float-y { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        @keyframes float-y { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         @keyframes section-shine { 0% { left: -100%; } 100% { left: 200%; } }
-        @keyframes orbit { 0% { transform: rotate(0deg) translateX(6px) rotate(0deg); } 100% { transform: rotate(360deg) translateX(6px) rotate(-360deg); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes comet { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes dash-flow { to { stroke-dashoffset: -40; } }
       `}</style>
 
       <div className="relative mx-auto" style={{ width: canvasW, height: canvasH, minWidth: 1100 }}>
         {/* Enhanced animated grid background */}
         <svg className="absolute inset-0 pointer-events-none z-0" width={canvasW} height={canvasH}>
           <defs>
-            <pattern id="dotGrid3" width="28" height="28" patternUnits="userSpaceOnUse">
-              <circle cx="14" cy="14" r="0.6" fill="white" opacity="0.04" />
+            <pattern id="dotGrid3" width="32" height="32" patternUnits="userSpaceOnUse">
+              <circle cx="16" cy="16" r="0.7" fill="white" opacity="0.04" />
             </pattern>
-            <pattern id="crossGrid2" width="84" height="84" patternUnits="userSpaceOnUse">
-              <line x1="42" y1="38" x2="42" y2="46" stroke="white" strokeWidth="0.4" opacity="0.025" />
-              <line x1="38" y1="42" x2="46" y2="42" stroke="white" strokeWidth="0.4" opacity="0.025" />
+            <pattern id="crossGrid2" width="96" height="96" patternUnits="userSpaceOnUse">
+              <line x1="48" y1="44" x2="48" y2="52" stroke="white" strokeWidth="0.4" opacity="0.03" />
+              <line x1="44" y1="48" x2="52" y2="48" stroke="white" strokeWidth="0.4" opacity="0.03" />
             </pattern>
-            <radialGradient id="centerGlow" cx="50%" cy="30%" r="50%">
-              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.03" />
+            <radialGradient id="centerGlow" cx="50%" cy="25%" r="50%">
+              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.04" />
+              <stop offset="60%" stopColor="#3b82f6" stopOpacity="0.02" />
               <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
             </radialGradient>
           </defs>
@@ -119,23 +122,36 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
         {/* SVG edges with rich animated connections */}
         <svg className="absolute inset-0 pointer-events-none z-[1]" width={canvasW} height={canvasH}>
           <defs>
+            {/* Rainbow spine gradient */}
             <linearGradient id="spineGrad3" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#8b5cf6" />
-              <stop offset="20%" stopColor="#6366f1" />
-              <stop offset="40%" stopColor="#3b82f6" />
-              <stop offset="60%" stopColor="#06b6d4" />
-              <stop offset="80%" stopColor="#10b981" />
-              <stop offset="100%" stopColor="#22c55e" />
+              <stop offset="15%" stopColor="#6366f1" />
+              <stop offset="30%" stopColor="#3b82f6" />
+              <stop offset="50%" stopColor="#06b6d4" />
+              <stop offset="70%" stopColor="#10b981" />
+              <stop offset="85%" stopColor="#22c55e" />
+              <stop offset="100%" stopColor="#f59e0b" />
             </linearGradient>
+            {/* Glow filters */}
             <filter id="edgeGlow3" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="5" result="blur" />
+              <feGaussianBlur stdDeviation="6" result="blur" />
               <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
             </filter>
             <filter id="particleGlow2">
-              <feGaussianBlur stdDeviation="2.5" />
+              <feGaussianBlur stdDeviation="3" />
             </filter>
-            <marker id="arrowHead2" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-              <path d="M 0 2 L 10 6 L 0 10 z" fill="#3b82f6" opacity="0.3" />
+            <filter id="cometGlow">
+              <feGaussianBlur stdDeviation="4" />
+            </filter>
+            {/* Arrow markers */}
+            <marker id="arrowHead2" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 2 L 10 6 L 0 10 z" fill="#3b82f6" opacity="0.35" />
+            </marker>
+            <marker id="arrowGreen" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 2 L 10 6 L 0 10 z" fill="#22c55e" opacity="0.4" />
+            </marker>
+            <marker id="arrowYellow" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 2 L 10 6 L 0 10 z" fill="#eab308" opacity="0.4" />
             </marker>
           </defs>
 
@@ -146,9 +162,9 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
 
             const isInvisibleSrc = sourceNode.data?.invisible;
             const isInvisibleTgt = targetNode.data?.invisible;
-            const sW = isInvisibleSrc ? 2 : (sourceNode.type === 'section' ? 380 : sourceNode.type === 'checkpoint' ? 350 : 250);
-            const sH = isInvisibleSrc ? 2 : (sourceNode.type === 'section' ? 100 : sourceNode.type === 'checkpoint' ? 60 : 140);
-            const tW = isInvisibleTgt ? 2 : (targetNode.type === 'section' ? 380 : targetNode.type === 'checkpoint' ? 350 : 250);
+            const sW = isInvisibleSrc ? 2 : (sourceNode.type === 'section' ? 380 : sourceNode.type === 'checkpoint' ? 350 : 260);
+            const sH = isInvisibleSrc ? 2 : (sourceNode.type === 'section' ? 100 : sourceNode.type === 'checkpoint' ? 60 : 150);
+            const tW = isInvisibleTgt ? 2 : (targetNode.type === 'section' ? 380 : targetNode.type === 'checkpoint' ? 350 : 260);
 
             const sx = sourceNode.position.x + sW / 2;
             const sy = sourceNode.position.y + sH;
@@ -161,53 +177,72 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
             const isSpine = Math.abs(sx - tx) < 50;
             const d = `M ${sx} ${sy} C ${sx} ${midY}, ${tx} ${midY}, ${tx} ${ty}`;
 
+            // Check if connected nodes are done
+            const srcDone = progress[edge.source] === 'done';
+            const tgtDone = progress[edge.target] === 'done';
+            const bothDone = srcDone && tgtDone;
+            const srcIP = progress[edge.source] === 'in-progress';
+            const tgtIP = progress[edge.target] === 'in-progress';
+
+            const activeColor = bothDone ? '#22c55e' : (srcIP || tgtIP) ? '#eab308' : strokeColor;
+            const activeMarker = bothDone ? 'url(#arrowGreen)' : (srcIP || tgtIP) ? 'url(#arrowYellow)' : 'url(#arrowHead2)';
+
             return (
               <g key={edge.id}>
                 {/* Wide glow layer */}
                 <path d={d} fill="none"
-                  stroke={isSpine ? 'url(#spineGrad3)' : strokeColor}
-                  strokeWidth={isSpine ? 10 : 6}
-                  opacity={0.04}
-                  className="flow-edge-glow" filter="url(#edgeGlow3)"
+                  stroke={isSpine ? 'url(#spineGrad3)' : activeColor}
+                  strokeWidth={isSpine ? 12 : 8}
+                  opacity={bothDone ? 0.08 : 0.04}
+                  filter="url(#edgeGlow3)"
                 />
                 {/* Main line */}
                 <path d={d} fill="none"
-                  stroke={isSpine ? 'url(#spineGrad3)' : strokeColor}
-                  strokeWidth={isSpine ? 2.5 : 1.5}
-                  strokeDasharray={isDashed ? '5 5' : isSpine ? undefined : '8 6'}
+                  stroke={isSpine ? 'url(#spineGrad3)' : activeColor}
+                  strokeWidth={isSpine ? 2.5 : bothDone ? 2 : 1.5}
+                  strokeDasharray={isDashed ? '5 5' : isSpine ? undefined : '10 8'}
                   strokeLinecap="round"
-                  opacity={isSpine ? 0.55 : 0.25}
-                  className={isDashed || !isSpine ? 'flow-edge' : undefined}
-                  markerEnd={!isSpine ? 'url(#arrowHead2)' : undefined}
+                  opacity={isSpine ? 0.6 : bothDone ? 0.45 : 0.25}
+                  markerEnd={!isSpine ? activeMarker : undefined}
+                  style={!isSpine && !isDashed ? { animation: 'dash-flow 2s linear infinite' } : undefined}
                 />
-                {/* Spine particles */}
+                {/* Spine particles - 6 colors */}
                 {isSpine && (
                   <>
-                    <circle r="3.5" fill="#6366f1" opacity="0.85" filter="url(#particleGlow2)">
-                      <animateMotion dur="2.5s" repeatCount="indefinite" path={d} />
+                    <circle r="4" fill="#8b5cf6" opacity="0.9" filter="url(#particleGlow2)">
+                      <animateMotion dur="2.2s" repeatCount="indefinite" path={d} />
                     </circle>
-                    <circle r="10" fill="#6366f1" opacity="0.04">
-                      <animateMotion dur="2.5s" repeatCount="indefinite" path={d} />
+                    <circle r="12" fill="#8b5cf6" opacity="0.04">
+                      <animateMotion dur="2.2s" repeatCount="indefinite" path={d} />
                     </circle>
-                    <circle r="2.5" fill="#3b82f6" opacity="0.7" filter="url(#particleGlow2)">
-                      <animateMotion dur="3.2s" repeatCount="indefinite" path={d} begin="0.8s" />
+                    <circle r="3" fill="#3b82f6" opacity="0.8" filter="url(#particleGlow2)">
+                      <animateMotion dur="2.8s" repeatCount="indefinite" path={d} begin="0.5s" />
                     </circle>
-                    <circle r="2" fill="#06b6d4" opacity="0.6">
-                      <animateMotion dur="4s" repeatCount="indefinite" path={d} begin="1.6s" />
+                    <circle r="2.5" fill="#06b6d4" opacity="0.7" filter="url(#particleGlow2)">
+                      <animateMotion dur="3.5s" repeatCount="indefinite" path={d} begin="1.2s" />
                     </circle>
-                    <circle r="1.5" fill="#22c55e" opacity="0.5">
-                      <animateMotion dur="5s" repeatCount="indefinite" path={d} begin="2.8s" />
+                    <circle r="2" fill="#10b981" opacity="0.6">
+                      <animateMotion dur="4.2s" repeatCount="indefinite" path={d} begin="2s" />
+                    </circle>
+                    <circle r="2" fill="#f59e0b" opacity="0.5">
+                      <animateMotion dur="5s" repeatCount="indefinite" path={d} begin="3s" />
+                    </circle>
+                    <circle r="1.5" fill="#ef4444" opacity="0.4">
+                      <animateMotion dur="6s" repeatCount="indefinite" path={d} begin="4s" />
                     </circle>
                   </>
                 )}
-                {/* Branch particles */}
+                {/* Branch comet trails */}
                 {!isSpine && !isDashed && (
                   <>
-                    <circle r="2" fill={strokeColor} opacity="0.5">
-                      <animateMotion dur="2s" repeatCount="indefinite" path={d} />
+                    <circle r="2.5" fill={activeColor} opacity="0.6" filter="url(#particleGlow2)">
+                      <animateMotion dur="1.8s" repeatCount="indefinite" path={d} />
                     </circle>
-                    <circle r="1" fill={strokeColor} opacity="0.3">
-                      <animateMotion dur="2.8s" repeatCount="indefinite" path={d} begin="1s" />
+                    <circle r="6" fill={activeColor} opacity="0.03">
+                      <animateMotion dur="1.8s" repeatCount="indefinite" path={d} />
+                    </circle>
+                    <circle r="1.5" fill={activeColor} opacity="0.35">
+                      <animateMotion dur="2.5s" repeatCount="indefinite" path={d} begin="0.8s" />
                     </circle>
                   </>
                 )}
@@ -234,20 +269,20 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
                   className="relative px-6 py-5 rounded-2xl overflow-hidden group cursor-default"
                   style={{
                     background: isComplete
-                      ? 'linear-gradient(145deg, rgba(34,197,94,0.12), rgba(16,185,129,0.06), rgba(15,23,42,0.6))'
-                      : `linear-gradient(145deg, ${grad.from}15, ${grad.to}08, rgba(15,23,42,0.6))`,
-                    border: `1.5px solid ${isComplete ? '#22c55e30' : `${grad.to}25`}`,
-                    backdropFilter: 'blur(20px)',
-                    boxShadow: `0 12px 48px rgba(0,0,0,0.35), 0 0 36px ${isComplete ? 'rgba(34,197,94,0.08)' : `${grad.to}06`}, inset 0 1px 0 rgba(255,255,255,0.04)`,
+                      ? 'linear-gradient(145deg, rgba(34,197,94,0.14), rgba(16,185,129,0.06), rgba(15,23,42,0.6))'
+                      : `linear-gradient(145deg, ${grad.from}18, ${grad.to}0a, rgba(15,23,42,0.65))`,
+                    border: `1.5px solid ${isComplete ? '#22c55e35' : `${grad.to}28`}`,
+                    backdropFilter: 'blur(24px)',
+                    boxShadow: `0 14px 52px rgba(0,0,0,0.4), 0 0 40px ${isComplete ? 'rgba(34,197,94,0.08)' : `${grad.to}08`}, inset 0 1px 0 rgba(255,255,255,0.05)`,
                   }}
                 >
                   {/* Shimmer */}
                   <div
                     className="absolute inset-0 pointer-events-none overflow-hidden"
                     style={{
-                      background: `linear-gradient(90deg, transparent 0%, ${grad.to}06 50%, transparent 100%)`,
+                      background: `linear-gradient(90deg, transparent 0%, ${grad.to}08 50%, transparent 100%)`,
                       backgroundSize: '200% 100%',
-                      animation: 'shimmer 6s ease-in-out infinite',
+                      animation: 'shimmer 5s ease-in-out infinite',
                     }}
                   />
                   {/* Left accent bar */}
@@ -257,20 +292,20 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
                   />
                   {/* Top accent line */}
                   <div
-                    className="absolute top-0 left-6 right-6 h-[1.5px] rounded-full"
-                    style={{ background: `linear-gradient(90deg, transparent, ${isComplete ? '#22c55e40' : `${grad.to}40`}, transparent)` }}
+                    className="absolute top-0 left-6 right-6 h-[2px] rounded-full"
+                    style={{ background: `linear-gradient(90deg, transparent, ${isComplete ? '#22c55e50' : `${grad.to}45`}, transparent)` }}
                   />
 
                   <div className="flex items-center justify-between relative">
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-11 h-11 rounded-xl flex items-center justify-center text-lg"
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
                         style={{
                           background: isComplete
-                            ? 'rgba(34,197,94,0.12)'
-                            : `linear-gradient(135deg, ${grad.from}25, ${grad.to}10)`,
-                          border: `1.5px solid ${isComplete ? 'rgba(34,197,94,0.3)' : `${grad.to}20`}`,
-                          boxShadow: `0 0 16px ${isComplete ? 'rgba(34,197,94,0.1)' : `${grad.to}08`}`,
+                            ? 'rgba(34,197,94,0.14)'
+                            : `linear-gradient(135deg, ${grad.from}28, ${grad.to}12)`,
+                          border: `1.5px solid ${isComplete ? 'rgba(34,197,94,0.35)' : `${grad.to}22`}`,
+                          boxShadow: `0 0 20px ${isComplete ? 'rgba(34,197,94,0.12)' : `${grad.to}0a`}`,
                         }}
                       >
                         {isComplete ? '✅' : emoji}
@@ -278,7 +313,7 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
                       <div>
                         <h3 className="text-[15px] font-extrabold text-foreground tracking-tight leading-tight">{node.data.label}</h3>
                         {node.data.subtitle && (
-                          <p className="text-[11px] text-muted-foreground/60 font-medium mt-0.5">{node.data.subtitle}</p>
+                          <p className="text-[11px] text-muted-foreground/55 font-medium mt-0.5">{node.data.subtitle}</p>
                         )}
                       </div>
                     </div>
@@ -286,12 +321,12 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
                     {stats && (
                       <div className="flex flex-col items-end gap-1.5">
                         <div className="flex items-center gap-1.5">
-                          {isComplete && <Sparkles className="w-3 h-3 text-emerald-400" />}
-                          <span className="text-[11px] font-bold" style={{ color: isComplete ? '#4ade80' : grad.to }}>
+                          {isComplete && <Sparkles className="w-3.5 h-3.5 text-emerald-400" />}
+                          <span className="text-[12px] font-bold" style={{ color: isComplete ? '#4ade80' : grad.to }}>
                             {stats.done}/{stats.total}
                           </span>
                         </div>
-                        <div className="w-24 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                        <div className="w-28 h-2 rounded-full bg-white/5 overflow-hidden">
                           <div
                             className="h-full rounded-full transition-all duration-700 ease-out"
                             style={{
@@ -299,7 +334,7 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
                               background: isComplete
                                 ? 'linear-gradient(90deg, #22c55e, #4ade80)'
                                 : `linear-gradient(90deg, ${grad.from}, ${grad.to})`,
-                              boxShadow: pct > 0 ? `0 0 8px ${isComplete ? 'rgba(34,197,94,0.3)' : `${grad.to}30`}` : 'none',
+                              boxShadow: pct > 0 ? `0 0 10px ${isComplete ? 'rgba(34,197,94,0.35)' : `${grad.to}35`}` : 'none',
                             }}
                           />
                         </div>
@@ -318,19 +353,23 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
                 <div
                   className="relative flex items-center gap-3 px-5 py-4 rounded-xl text-sm font-bold overflow-hidden group"
                   style={{
-                    background: 'linear-gradient(145deg, rgba(15,23,42,0.9), rgba(30,41,59,0.7))',
-                    border: '1px solid rgba(99,102,241,0.15)',
+                    background: 'linear-gradient(145deg, rgba(15,23,42,0.92), rgba(30,41,59,0.7))',
+                    border: '1.5px solid rgba(99,102,241,0.18)',
                     color: '#e2e8f0',
-                    boxShadow: '0 6px 28px rgba(0,0,0,0.4), 0 0 20px rgba(99,102,241,0.04), inset 0 1px 0 rgba(255,255,255,0.04)',
-                    backdropFilter: 'blur(16px)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 0 24px rgba(99,102,241,0.05), inset 0 1px 0 rgba(255,255,255,0.05)',
+                    backdropFilter: 'blur(20px)',
                   }}
                 >
                   <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-indigo-500 via-purple-500 to-cyan-500 rounded-l-xl" />
+                  <div className="absolute top-0 left-4 right-4 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.2), transparent)' }} />
                   <div className="relative">
-                    <Milestone className="w-4.5 h-4.5 text-indigo-400 shrink-0" />
+                    <Milestone className="w-5 h-5 text-indigo-400 shrink-0" />
                   </div>
                   <span className="text-center flex-1 text-[12px] tracking-tight font-semibold">{node.data.label}</span>
-                  <Trophy className="w-3.5 h-3.5 text-yellow-500/30 shrink-0" />
+                  <div className="flex items-center gap-1">
+                    <Zap className="w-3 h-3 text-yellow-500/40" />
+                    <Trophy className="w-3.5 h-3.5 text-yellow-500/35 shrink-0" />
+                  </div>
                 </div>
               </div>
             );
