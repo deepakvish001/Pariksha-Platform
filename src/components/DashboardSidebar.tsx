@@ -51,6 +51,7 @@ import {
   UsersRound,
   MessageCircle,
   Route,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -101,6 +102,18 @@ const homeNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
 ];
+
+// Active (unlocked) routes
+const ACTIVE_ROUTES = new Set([
+  "/dashboard",
+  "/dashboard/sheets",
+  "/dashboard/profile",
+  "/dashboard/notifications",
+  "/dashboard/achievements",
+  "/settings",
+]);
+
+const isRouteLocked = (url: string) => !ACTIVE_ROUTES.has(url.split("?")[0]);
 
 // AI Tools section - "Byteskill AI" features
 const createWithAIItems = [
