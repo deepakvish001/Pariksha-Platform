@@ -4,6 +4,7 @@ import {
   Code2, FileCode, Palette, Box, GitBranch, Terminal, Database,
   Lock, Cloud, Gauge, Rocket, TestTube, Wrench, Zap, Layers,
   Timer, BookOpen, ArrowRight, Star, Sparkles, ExternalLink,
+  CircleDot, Flame, Award,
   type LucideIcon,
 } from 'lucide-react';
 import type { RoadmapNodeData, NodeStatus } from '@/data/fullStackRoadmapData';
@@ -22,7 +23,7 @@ const techIcons: Record<string, { icon: LucideIcon; color: string; bg: string }>
   'dns': { icon: Server, color: '#67e8f9', bg: 'rgba(103,232,249,0.12)' },
   'browsers': { icon: Globe, color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
   'html': { icon: FileCode, color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
-  'css': { icon: Palette, color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+  'css': { icon: Palette, color: '#38bdf8', bg: 'rgba(56,189,248,0.12)' },
   'javascript': { icon: Zap, color: '#eab308', bg: 'rgba(234,179,8,0.12)' },
   'npm': { icon: Box, color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
   'react': { icon: Code2, color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
@@ -72,9 +73,9 @@ const sectionGradients: Record<string, { from: string; to: string; glow: string;
 };
 
 const difficultyConfig = {
-  Beginner:     { label: '● Beginner', bg: 'rgba(34,197,94,0.10)', text: '#4ade80', border: 'rgba(34,197,94,0.20)', icon: '🟢' },
-  Intermediate: { label: '● Medium', bg: 'rgba(234,179,8,0.10)', text: '#fde047', border: 'rgba(234,179,8,0.20)', icon: '🟡' },
-  Advanced:     { label: '● Advanced', bg: 'rgba(239,68,68,0.10)', text: '#fca5a5', border: 'rgba(239,68,68,0.20)', icon: '🔴' },
+  Beginner:     { label: 'Beginner', bg: 'rgba(34,197,94,0.10)', text: '#4ade80', border: 'rgba(34,197,94,0.25)', dot: '#22c55e' },
+  Intermediate: { label: 'Intermediate', bg: 'rgba(234,179,8,0.10)', text: '#fde047', border: 'rgba(234,179,8,0.25)', dot: '#eab308' },
+  Advanced:     { label: 'Advanced', bg: 'rgba(239,68,68,0.10)', text: '#fca5a5', border: 'rgba(239,68,68,0.25)', dot: '#ef4444' },
 };
 
 function RoadmapFlowNodeCard({ node, status, dimmed, isRecommended, onClick }: Props) {
@@ -93,46 +94,40 @@ function RoadmapFlowNodeCard({ node, status, dimmed, isRecommended, onClick }: P
   const isIP = status === 'in-progress';
   const isSkipped = status === 'skipped';
 
-  // Card styling based on status
-  let cardBg: string, borderColor: string, textColor: string, shadow: string, borderStyle: string, statusGlow: string;
+  let cardBg: string, borderColor: string, textColor: string, statusGlow: string, borderStyle: string;
   if (isDone) {
-    cardBg = 'linear-gradient(145deg, rgba(34,197,94,0.12) 0%, rgba(16,185,129,0.06) 50%, rgba(34,197,94,0.03) 100%)';
-    borderColor = 'rgba(34,197,94,0.45)';
+    cardBg = 'linear-gradient(145deg, rgba(34,197,94,0.14) 0%, rgba(16,185,129,0.06) 50%, rgba(6,78,40,0.04) 100%)';
+    borderColor = 'rgba(34,197,94,0.5)';
     textColor = '#a7f3d0';
-    shadow = '0 0 40px rgba(34,197,94,0.15), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)';
-    borderStyle = 'solid';
     statusGlow = '34,197,94';
-  } else if (isIP) {
-    cardBg = 'linear-gradient(145deg, rgba(234,179,8,0.12) 0%, rgba(245,158,11,0.06) 50%, rgba(234,179,8,0.03) 100%)';
-    borderColor = 'rgba(234,179,8,0.45)';
-    textColor = '#fef08a';
-    shadow = '0 0 40px rgba(234,179,8,0.15), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)';
     borderStyle = 'solid';
+  } else if (isIP) {
+    cardBg = 'linear-gradient(145deg, rgba(234,179,8,0.14) 0%, rgba(245,158,11,0.06) 50%, rgba(120,80,0,0.04) 100%)';
+    borderColor = 'rgba(234,179,8,0.5)';
+    textColor = '#fef08a';
     statusGlow = '234,179,8';
+    borderStyle = 'solid';
   } else if (isSkipped) {
     cardBg = 'linear-gradient(145deg, rgba(100,116,139,0.06) 0%, rgba(71,85,105,0.03) 100%)';
     borderColor = 'rgba(51,65,85,0.4)';
     textColor = '#94a3b8';
-    shadow = '0 4px 16px rgba(0,0,0,0.2)';
-    borderStyle = 'solid';
     statusGlow = '100,116,139';
+    borderStyle = 'solid';
   } else if (isAlt) {
     cardBg = 'linear-gradient(145deg, rgba(139,92,246,0.08) 0%, rgba(168,85,247,0.04) 100%)';
     borderColor = 'rgba(109,40,217,0.35)';
     textColor = '#c4b5fd';
-    shadow = '0 0 24px rgba(139,92,246,0.08), 0 8px 28px rgba(0,0,0,0.25)';
-    borderStyle = 'dashed';
     statusGlow = '139,92,246';
+    borderStyle = 'dashed';
   } else {
     cardBg = `linear-gradient(145deg, rgba(${gradient.glow},0.10) 0%, rgba(${gradient.glow},0.04) 50%, rgba(15,23,42,0.6) 100%)`;
     borderColor = `rgba(${gradient.glow},0.25)`;
     textColor = '#e2e8f0';
-    shadow = `0 8px 36px rgba(0,0,0,0.35), 0 0 28px rgba(${gradient.glow},0.06), inset 0 1px 0 rgba(255,255,255,0.04)`;
-    borderStyle = 'solid';
     statusGlow = gradient.glow;
+    borderStyle = 'solid';
   }
 
-  const descPreview = node.description.length > 60 ? node.description.slice(0, 60) + '…' : node.description;
+  const descPreview = node.description.length > 55 ? node.description.slice(0, 55) + '…' : node.description;
 
   return (
     <button
@@ -150,26 +145,38 @@ function RoadmapFlowNodeCard({ node, status, dimmed, isRecommended, onClick }: P
         border: `1.5px ${borderStyle} ${borderColor}`,
         color: textColor,
         boxShadow: hovered
-          ? `0 16px 48px rgba(0,0,0,0.45), 0 0 48px rgba(${statusGlow},0.12), inset 0 1px 0 rgba(255,255,255,0.08)`
-          : shadow,
-        width: 240,
+          ? `0 20px 60px rgba(0,0,0,0.5), 0 0 50px rgba(${statusGlow},0.15), inset 0 1px 0 rgba(255,255,255,0.08)`
+          : `0 8px 36px rgba(0,0,0,0.35), 0 0 28px rgba(${statusGlow},0.06), inset 0 1px 0 rgba(255,255,255,0.04)`,
+        width: 250,
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        padding: '14px 16px 12px',
+        padding: '16px 18px 14px',
       }}
     >
       {/* Recommended badge */}
       {isRecommended && !isDone && !isIP && (
         <div
-          className="absolute -top-3 -right-3 flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest z-20"
+          className="absolute -top-3.5 -right-3 flex items-center gap-1 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest z-20"
           style={{
             background: 'linear-gradient(135deg, #f59e0b, #f97316)',
             color: '#1c1917',
-            boxShadow: '0 4px 16px rgba(249,115,22,0.5), 0 0 20px rgba(249,115,22,0.2)',
+            boxShadow: '0 4px 16px rgba(249,115,22,0.5), 0 0 24px rgba(249,115,22,0.25)',
           }}
         >
           <Star className="w-3 h-3 fill-current" />
-          Next
+          Up Next
+        </div>
+      )}
+
+      {/* Completion ribbon for done */}
+      {isDone && (
+        <div className="absolute -top-1 -left-1 w-8 h-8 overflow-hidden z-20">
+          <div
+            className="absolute top-[6px] -left-[6px] w-12 h-4 rotate-[-45deg] flex items-center justify-center"
+            style={{ background: 'linear-gradient(90deg, #16a34a, #22c55e)' }}
+          >
+            <CheckCircle2 className="w-2.5 h-2.5 text-white" />
+          </div>
         </div>
       )}
 
@@ -182,7 +189,16 @@ function RoadmapFlowNodeCard({ node, status, dimmed, isRecommended, onClick }: P
             : isIP
               ? 'linear-gradient(90deg, transparent, #eab308, #fde047, #eab308, transparent)'
               : `linear-gradient(90deg, transparent, ${gradient.accent}, transparent)`,
-          opacity: hovered ? 0.8 : 0.4,
+          opacity: hovered ? 1 : 0.4,
+        }}
+      />
+
+      {/* Bottom gradient accent line */}
+      <div
+        className="absolute bottom-0 left-6 right-6 h-[1px] rounded-full transition-opacity duration-500"
+        style={{
+          background: `linear-gradient(90deg, transparent, rgba(${statusGlow},0.2), transparent)`,
+          opacity: hovered ? 0.8 : 0,
         }}
       />
 
@@ -191,20 +207,20 @@ function RoadmapFlowNodeCard({ node, status, dimmed, isRecommended, onClick }: P
         className="absolute -inset-[1px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-[-1]"
         style={{
           background: `linear-gradient(135deg, rgba(${statusGlow},0.15), transparent 40%, rgba(${statusGlow},0.08))`,
-          filter: 'blur(2px)',
+          filter: 'blur(3px)',
         }}
       />
 
       {/* Row 1: Icon + Title + Status */}
       <div className="flex items-start gap-3 w-full">
-        {/* Tech icon with animated ring */}
+        {/* Tech icon */}
         <div className="relative shrink-0">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
+            className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
             style={{
               background: isDone ? 'rgba(34,197,94,0.15)' : isIP ? 'rgba(234,179,8,0.15)' : techBg,
-              border: `1px solid ${isDone ? 'rgba(34,197,94,0.3)' : isIP ? 'rgba(234,179,8,0.3)' : `${techColor}30`}`,
-              boxShadow: `0 0 16px ${isDone ? 'rgba(34,197,94,0.1)' : isIP ? 'rgba(234,179,8,0.1)' : `${techColor}10`}`,
+              border: `1.5px solid ${isDone ? 'rgba(34,197,94,0.35)' : isIP ? 'rgba(234,179,8,0.35)' : `${techColor}35`}`,
+              boxShadow: `0 0 20px ${isDone ? 'rgba(34,197,94,0.12)' : isIP ? 'rgba(234,179,8,0.12)' : `${techColor}12`}`,
             }}
           >
             {isDone ? (
@@ -217,17 +233,25 @@ function RoadmapFlowNodeCard({ node, status, dimmed, isRecommended, onClick }: P
               <TechIcon className="w-5 h-5" style={{ color: techColor }} />
             )}
           </div>
-          {/* Subtle ring animation for in-progress */}
           {isIP && (
-            <div className="absolute -inset-1 rounded-xl border-2 border-yellow-400/30 animate-ping" style={{ animationDuration: '2s' }} />
+            <div className="absolute -inset-1.5 rounded-xl border-2 border-yellow-400/20 animate-ping" style={{ animationDuration: '2.5s' }} />
           )}
+          {isDone && (
+            <div className="absolute -inset-1 rounded-xl border border-emerald-400/15 animate-pulse" style={{ animationDuration: '3s' }} />
+          )}
+          {/* Difficulty dot on icon corner */}
+          <div
+            className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
+            style={{
+              background: diff.dot,
+              borderColor: 'rgba(15,23,42,0.9)',
+              boxShadow: `0 0 6px ${diff.dot}60`,
+            }}
+          />
         </div>
 
         <div className="flex-1 min-w-0">
-          <span className="text-[13px] font-bold leading-tight block truncate">
-            {node.title}
-          </span>
-          {/* Time estimate inline */}
+          <span className="text-[13px] font-bold leading-tight block truncate">{node.title}</span>
           {node.timeEstimate && (
             <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60 mt-0.5">
               <Timer className="w-2.5 h-2.5" />
@@ -236,10 +260,12 @@ function RoadmapFlowNodeCard({ node, status, dimmed, isRecommended, onClick }: P
           )}
         </div>
 
-        {/* Hover arrow / status indicator */}
+        {/* Status micro-icon */}
         <div className="shrink-0 mt-0.5">
           {isDone ? (
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400/60" />
+            <Award className="w-4 h-4 text-emerald-400/70" />
+          ) : isIP ? (
+            <Flame className="w-4 h-4 text-yellow-400/70 animate-pulse" />
           ) : (
             <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-50 transition-all duration-200 group-hover:translate-x-0.5" />
           )}
@@ -247,20 +273,16 @@ function RoadmapFlowNodeCard({ node, status, dimmed, isRecommended, onClick }: P
       </div>
 
       {/* Row 2: Description */}
-      <p className="text-[10px] leading-[1.5] text-muted-foreground/45 mt-2 pl-[52px] pr-1 line-clamp-2">
+      <p className="text-[10px] leading-[1.5] text-muted-foreground/45 mt-2.5 pl-[56px] pr-1 line-clamp-2">
         {descPreview}
       </p>
 
-      {/* Row 3: Tags row */}
-      <div className="flex items-center gap-1.5 mt-2 pl-[52px] flex-wrap">
+      {/* Row 3: Tags */}
+      <div className="flex items-center gap-1.5 mt-2.5 pl-[56px] flex-wrap">
         {/* Difficulty badge */}
         <span
-          className="text-[8px] font-bold px-2 py-[3px] rounded-md leading-tight tracking-wider"
-          style={{
-            background: diff.bg,
-            color: diff.text,
-            border: `1px solid ${diff.border}`,
-          }}
+          className="text-[8px] font-bold px-2 py-[3px] rounded-md leading-tight tracking-wider uppercase"
+          style={{ background: diff.bg, color: diff.text, border: `1px solid ${diff.border}` }}
         >
           {diff.label}
         </span>
@@ -269,56 +291,63 @@ function RoadmapFlowNodeCard({ node, status, dimmed, isRecommended, onClick }: P
         <span
           className="text-[8px] font-semibold px-2 py-[3px] rounded-md leading-tight"
           style={{
-            background: `rgba(${gradient.glow},0.06)`,
+            background: `rgba(${gradient.glow},0.08)`,
             color: gradient.accent,
-            border: `1px solid rgba(${gradient.glow},0.10)`,
+            border: `1px solid rgba(${gradient.glow},0.15)`,
           }}
         >
           {node.section}
         </span>
 
-        {/* Alt badge */}
         {isAlt && (
-          <span className="text-[8px] font-bold px-2 py-[3px] rounded-md bg-purple-500/8 text-purple-300 border border-purple-500/15 uppercase tracking-wider">
+          <span className="text-[8px] font-bold px-2 py-[3px] rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 uppercase tracking-wider">
             Alt
+          </span>
+        )}
+
+        {prereqCount > 0 && (
+          <span className="text-[8px] font-semibold px-2 py-[3px] rounded-md bg-sky-500/8 text-sky-300/70 border border-sky-500/15">
+            {prereqCount} prereq
           </span>
         )}
       </div>
 
-      {/* Row 4: Bottom meta row */}
-      <div className="flex items-center justify-between mt-2 pl-[52px] pr-1">
+      {/* Row 4: Bottom meta */}
+      <div className="flex items-center justify-between mt-2.5 pl-[56px] pr-1">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1 text-[9px] text-muted-foreground/45">
             <BookOpen className="w-2.5 h-2.5" />
             {resourceCount} resources
           </span>
-          {prereqCount > 0 && (
-            <span className="flex items-center gap-1 text-[9px] text-sky-300/50">
-              <ExternalLink className="w-2.5 h-2.5" />
-              {prereqCount} prereq
-            </span>
-          )}
         </div>
 
-        {/* Mini progress dot */}
-        <div
-          className="w-2 h-2 rounded-full transition-colors duration-300"
-          style={{
-            background: isDone ? '#22c55e' : isIP ? '#eab308' : isSkipped ? '#64748b' : `rgba(${gradient.glow},0.2)`,
-            boxShadow: isDone ? '0 0 8px rgba(34,197,94,0.4)' : isIP ? '0 0 8px rgba(234,179,8,0.4)' : 'none',
-          }}
-        />
+        {/* Status line indicator */}
+        <div className="flex items-center gap-1">
+          <div
+            className="w-6 h-1 rounded-full transition-colors duration-300"
+            style={{
+              background: isDone ? '#22c55e' : isIP ? '#eab308' : isSkipped ? '#64748b' : `rgba(${gradient.glow},0.15)`,
+              boxShadow: isDone ? '0 0 8px rgba(34,197,94,0.4)' : isIP ? '0 0 8px rgba(234,179,8,0.4)' : 'none',
+            }}
+          />
+          <CircleDot
+            className="w-2.5 h-2.5 transition-colors duration-300"
+            style={{
+              color: isDone ? '#22c55e' : isIP ? '#eab308' : isSkipped ? '#64748b' : `rgba(${gradient.glow},0.2)`,
+            }}
+          />
+        </div>
       </div>
 
       {/* Hover tooltip */}
       {hovered && !dimmed && (
         <div
-          className="absolute left-1/2 -translate-x-1/2 -bottom-[48px] z-50 px-3 py-2 rounded-xl text-[10px] leading-[1.4] max-w-[220px] text-center pointer-events-none"
+          className="absolute left-1/2 -translate-x-1/2 -bottom-[52px] z-50 px-4 py-2 rounded-xl text-[10px] leading-[1.4] max-w-[230px] text-center pointer-events-none"
           style={{
             background: 'rgba(15,23,42,0.95)',
             border: '1px solid rgba(148,163,184,0.12)',
             color: '#94a3b8',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+            boxShadow: '0 8px 28px rgba(0,0,0,0.5)',
             backdropFilter: 'blur(12px)',
           }}
         >
