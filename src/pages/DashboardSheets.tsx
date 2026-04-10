@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import MobileFAB from "@/components/MobileFAB";
 import SheetsHeroSection from "@/components/sheets/SheetsHeroSection";
 import SheetsFilterBar, { SortOption } from "@/components/sheets/SheetsFilterBar";
@@ -8,6 +9,8 @@ import ContinueLearningSection from "@/components/sheets/ContinueLearningSection
 import RecentlyCompletedSection from "@/components/sheets/RecentlyCompletedSection";
 import QuickStartSection from "@/components/sheets/QuickStartSection";
 import { useSheetProgress, calculateProgressPercentage } from "@/hooks/useSheetProgress";
+import { Code, Swords, Database, ServerCog, Network, HardDrive, Cpu, LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const sheets = [
   {
@@ -56,11 +59,74 @@ const sheets = [
     starred: true,
   },
   {
+    id: "dsa-level-1",
+    title: "Java DSA Level 1",
+    description: "Complete Java DSA prep from basics to advanced data structures — 467 topics",
+    category: "DSA",
+    problems: 467,
+    difficulty: "Mixed",
+    starred: true,
+  },
+  {
+    id: "dsa-level-2",
+    title: "Java DSA Level 2",
+    description: "Advanced DSA — Recursion, DP, Graphs, Trees & more — 309 problems",
+    category: "DSA",
+    problems: 309,
+    difficulty: "Medium-Hard",
+    starred: true,
+  },
+  {
+    id: "dsa-level-3",
+    title: "Java DSA Level 3",
+    description: "Expert DSA — Tries, Segment Trees, Advanced DP & Graphs — 226 problems",
+    category: "DSA",
+    problems: 226,
+    difficulty: "Hard",
+    starred: true,
+  },
+  {
     id: "competitive-programming",
     title: "Competitive Programming",
     description: "Master algorithms through structured problem sets from Codeforces, AtCoder & ICPC",
     category: "CP",
     problems: 270,
+    difficulty: "Medium-Hard",
+    starred: true,
+  },
+  {
+    id: "acm-icpc-training",
+    title: "ACM-ICPC CP Training Sheet",
+    description: "1243 problems across 7 levels (A→D3) — Codeforces, UVA, SPOJ & more",
+    category: "CP",
+    problems: 1243,
+    difficulty: "Mixed",
+    starred: true,
+  },
+  {
+    id: "tle-cp31-sheet",
+    title: "TLE CP-31 Sheet",
+    description: "372 handpicked Codeforces problems — 31 per rating from 800 to 1900",
+    category: "CP",
+    problems: 372,
+    difficulty: "Mixed",
+    starred: true,
+  },
+  {
+    id: "sql-practice",
+    title: "LeetCode SQL 50",
+    description: "50 essential SQL problems from LeetCode covering Select, Joins, Aggregations, Subqueries & more",
+    category: "SQL",
+    problems: 50,
+    difficulty: "Easy-Medium",
+    starred: true,
+  },
+  {
+    id: "adv-sql-practice",
+    title: "LeetCode Advanced SQL 50",
+    description: "50 advanced SQL problems — Window Functions, Subqueries, CTEs & more",
+    category: "SQL",
+    problems: 50,
     difficulty: "Medium-Hard",
     starred: true,
   },
@@ -92,51 +158,6 @@ const sheets = [
     starred: true,
   },
   {
-    id: "sql-practice",
-    title: "LeetCode SQL 50",
-    description: "50 essential SQL problems from LeetCode covering Select, Joins, Aggregations, Subqueries & more",
-    category: "SQL",
-    problems: 50,
-    difficulty: "Easy-Medium",
-    starred: true,
-  },
-  {
-    id: "adv-sql-practice",
-    title: "LeetCode Advanced SQL 50",
-    description: "50 advanced SQL problems — Window Functions, Subqueries, CTEs & more",
-    category: "SQL",
-    problems: 50,
-    difficulty: "Medium-Hard",
-    starred: true,
-  },
-  {
-    id: "dsa-level-1",
-    title: "Java DSA Level 1",
-    description: "Complete Java DSA prep from basics to advanced data structures — 467 topics",
-    category: "DSA",
-    problems: 467,
-    difficulty: "Mixed",
-    starred: true,
-  },
-  {
-    id: "dsa-level-2",
-    title: "Java DSA Level 2",
-    description: "Advanced DSA — Recursion, DP, Graphs, Trees & more — 309 problems",
-    category: "DSA",
-    problems: 309,
-    difficulty: "Medium-Hard",
-    starred: true,
-  },
-  {
-    id: "dsa-level-3",
-    title: "Java DSA Level 3",
-    description: "Expert DSA — Tries, Segment Trees, Advanced DP & Graphs — 226 problems",
-    category: "DSA",
-    problems: 226,
-    difficulty: "Hard",
-    starred: true,
-  },
-  {
     id: "striver-sd-sheet",
     title: "Striver's System Design Sheet",
     description: "97 topics covering HLD, LLD, and system design fundamentals for interviews",
@@ -154,25 +175,19 @@ const sheets = [
     difficulty: "Hard",
     starred: true,
   },
-  {
-    id: "acm-icpc-training",
-    title: "ACM-ICPC CP Training Sheet",
-    description: "1243 problems across 7 levels (A→D3) — Codeforces, UVA, SPOJ & more",
-    category: "CP",
-    problems: 1243,
-    difficulty: "Mixed",
-    starred: true,
-  },
-  {
-    id: "tle-cp31-sheet",
-    title: "TLE CP-31 Sheet",
-    description: "372 handpicked Codeforces problems — 31 per rating from 800 to 1900",
-    category: "CP",
-    problems: 372,
-    difficulty: "Mixed",
-    starred: true,
-  },
 ];
+
+const categoryMeta: Record<string, { icon: LucideIcon; label: string; color: string }> = {
+  "DSA": { icon: Code, label: "Data Structures & Algorithms", color: "text-blue-500" },
+  "CP": { icon: Swords, label: "Competitive Programming", color: "text-orange-500" },
+  "SQL": { icon: Database, label: "SQL & Databases", color: "text-emerald-500" },
+  "DBMS": { icon: ServerCog, label: "Database Management Systems", color: "text-violet-500" },
+  "CN": { icon: Network, label: "Computer Networks", color: "text-cyan-500" },
+  "OS": { icon: HardDrive, label: "Operating Systems", color: "text-rose-500" },
+  "System Design": { icon: Cpu, label: "System Design", color: "text-purple-500" },
+};
+
+const categoryOrder = ["DSA", "CP", "SQL", "DBMS", "CN", "OS", "System Design"];
 
 const difficultyOrder: Record<string, number> = {
   "Easy": 1,
@@ -208,6 +223,16 @@ const DashboardSheets = () => {
     if (!progressData || !progressData[sheetId]) return 0;
     return progressData[sheetId].streak;
   };
+
+  // Sheet counts per category
+  const sheetCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: sheets.length, starred: sheets.filter(s => s.starred).length };
+    sheets.forEach(s => {
+      const key = s.category.toLowerCase();
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, []);
 
   // Filter sheets
   const filteredSheets = useMemo(() => {
@@ -246,7 +271,20 @@ const DashboardSheets = () => {
     }
   }, [filteredSheets, sortBy, progressData]);
 
-  // Sheets with partial progress for "Continue Learning" section
+  // Group sheets by category (only when in "all" tab and default sort)
+  const groupedSheets = useMemo(() => {
+    if (activeTab !== "all" || sortBy !== "default" || searchQuery) {
+      return null; // flat mode
+    }
+    const groups: Record<string, typeof sortedSheets> = {};
+    sortedSheets.forEach(sheet => {
+      if (!groups[sheet.category]) groups[sheet.category] = [];
+      groups[sheet.category].push(sheet);
+    });
+    return groups;
+  }, [sortedSheets, activeTab, sortBy, searchQuery]);
+
+  // In-progress and completed sheets
   const inProgressSheets = useMemo(() => {
     return sheets
       .map(sheet => ({
@@ -267,7 +305,6 @@ const DashboardSheets = () => {
       });
   }, [progressData]);
 
-  // Recently completed sheets (100% progress)
   const recentlyCompletedSheets = useMemo(() => {
     return sheets
       .map(sheet => {
@@ -290,7 +327,6 @@ const DashboardSheets = () => {
       }) as { id: string; title: string; category: string; problems: number; completedAt: string }[];
   }, [progressData]);
 
-  // Quick start recommendations
   const quickStartSheets = useMemo(() => {
     return [
       { ...sheets.find(s => s.id === "strivers-sde-sheet")!, reason: "popular" as const },
@@ -304,15 +340,21 @@ const DashboardSheets = () => {
     ? Object.values(progressData).reduce((acc, p) => acc + p.completedCount, 0) 
     : 0;
 
+  const renderSheetCard = (sheet: typeof sortedSheets[0], index: number) => (
+    <SheetCard
+      key={sheet.id}
+      sheet={sheet}
+      index={index}
+      progress={sheet.progress}
+      completedCount={getSheetCompletedCount(sheet.id)}
+      lastActivityAt={getSheetLastActivity(sheet.id)}
+      streak={getSheetStreak(sheet.id)}
+      isLoading={isProgressLoading}
+    />
+  );
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="flex h-14 items-center gap-4 px-4 md:px-6">
-          <span className="text-sm font-medium text-muted-foreground">Practice Sheets</span>
-        </div>
-      </header>
-
       {/* Hero Section */}
       <SheetsHeroSection 
         totalSheets={sheets.length} 
@@ -324,17 +366,12 @@ const DashboardSheets = () => {
       <main className="p-4 md:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
         {/* Continue Learning / Quick Start Row */}
         <div className="space-y-6">
-          {/* Recently Completed Section */}
           {recentlyCompletedSheets.length > 0 && (
             <RecentlyCompletedSection sheets={recentlyCompletedSheets} />
           )}
-
-          {/* Continue Learning Section */}
           {inProgressSheets.length > 0 && (
             <ContinueLearningSection sheets={inProgressSheets} />
           )}
-
-          {/* Quick Start Section - only show if no progress */}
           {inProgressSheets.length === 0 && recentlyCompletedSheets.length === 0 && (
             <QuickStartSection sheets={quickStartSheets} />
           )}
@@ -348,30 +385,66 @@ const DashboardSheets = () => {
           onTabChange={setActiveTab}
           sortBy={sortBy}
           onSortChange={setSortBy}
+          sheetCounts={sheetCounts}
         />
 
         {/* Cards Grid */}
         {sortedSheets.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {sortedSheets.map((sheet, index) => (
-              <SheetCard
-                key={sheet.id}
-                sheet={sheet}
-                index={index}
-                progress={sheet.progress}
-                completedCount={getSheetCompletedCount(sheet.id)}
-                lastActivityAt={getSheetLastActivity(sheet.id)}
-                streak={getSheetStreak(sheet.id)}
-                isLoading={isProgressLoading}
-              />
-            ))}
-          </div>
+          groupedSheets ? (
+            // Grouped by category
+            <div className="space-y-10">
+              {categoryOrder
+                .filter(cat => groupedSheets[cat]?.length)
+                .map((cat, catIdx) => {
+                  const meta = categoryMeta[cat];
+                  const Icon = meta?.icon;
+                  const catSheets = groupedSheets[cat];
+                  const catProblems = catSheets.reduce((acc, s) => acc + s.problems, 0);
+                  
+                  return (
+                    <motion.section
+                      key={cat}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: catIdx * 0.08 }}
+                    >
+                      {/* Category Header */}
+                      <div className="flex items-center gap-3 mb-4">
+                        {Icon && (
+                          <div className={cn(
+                            "h-9 w-9 rounded-lg flex items-center justify-center bg-muted/80",
+                            meta.color
+                          )}>
+                            <Icon className="h-4.5 w-4.5" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h2 className="text-lg font-semibold">{meta?.label || cat}</h2>
+                          <p className="text-xs text-muted-foreground">
+                            {catSheets.length} {catSheets.length === 1 ? "sheet" : "sheets"} · {catProblems.toLocaleString()} problems
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Category Grid */}
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {catSheets.map((sheet, index) => renderSheetCard(sheet, index))}
+                      </div>
+                    </motion.section>
+                  );
+                })}
+            </div>
+          ) : (
+            // Flat grid (filtered/sorted)
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {sortedSheets.map((sheet, index) => renderSheetCard(sheet, index))}
+            </div>
+          )
         ) : (
           <SheetsEmptyState hasSearchQuery={searchQuery.length > 0} />
         )}
       </main>
 
-      {/* Mobile FAB */}
       <MobileFAB />
     </div>
   );
