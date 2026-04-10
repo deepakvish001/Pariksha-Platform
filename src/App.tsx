@@ -27,6 +27,7 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import UnderConstruction from "./components/UnderConstruction";
 import SheetDetail from "./pages/SheetDetail";
+import FullStackRoadmap from "./pages/FullStackRoadmap";
 
 // Library Pages
 import PositionResources from "./pages/library/PositionResources";
@@ -147,7 +148,7 @@ const App = () => (
                   <Route path="sheets" element={<DashboardSheets />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
                   <Route path="profile" element={<DashboardProfile />} />
-                </Route>
+                  <Route path="roadmap/fullstack" element={<FullStackRoadmap />} />
 
                 {/* Library routes - public */}
                 <Route path="/library" element={<PublicDashboardWrapper />}>
