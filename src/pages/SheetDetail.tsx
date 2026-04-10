@@ -180,33 +180,6 @@ const mockSheetData: Record<string, SheetData> = {
     ...advSqlMeta,
     sections: advSqlSections,
   },
-  "system-design": {
-    id: "system-design",
-    title: "System Design Concepts",
-    description: "HLD and LLD concepts with real-world examples",
-    lastUpdated: "December 20, 2025",
-    totalProblems: 25,
-    completed: 0,
-    easy: 5,
-    medium: 12,
-    hard: 8,
-    sections: [
-      {
-        id: "hld-basics",
-        title: "HLD Basics",
-        subSections: [
-          {
-            id: "scalability",
-            title: "Scalability",
-            topics: [
-              { id: "sd-1", title: "Horizontal vs Vertical Scaling", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-              { id: "sd-2", title: "Load Balancing", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "#", articleUrl: "#", practiceUrl: "#", note: "", isRevision: false },
-            ],
-          },
-        ],
-      },
-    ],
-  },
   "competitive-programming": {
     id: "competitive-programming",
     title: "Competitive Programming Sheet",
