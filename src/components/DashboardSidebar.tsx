@@ -219,17 +219,6 @@ interface CollapsibleGroupProps {
   defaultOpen?: boolean;
 }
 
-const LockedNavLink = ({ item, className, children }: { item: NavItem; className?: string; children: React.ReactNode }) => {
-  const locked = isRouteLocked(item.url);
-  if (locked) {
-    return (
-      <Link to="/under-construction" className={cn(className, "opacity-50")}>
-        {children}
-      </Link>
-    );
-  }
-  return <Link to={item.url} className={className}>{children}</Link>;
-};
 
 const CollapsibleGroup = ({ title, items, groupIcon, iconColor = "text-muted-foreground", defaultOpen = false }: CollapsibleGroupProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
