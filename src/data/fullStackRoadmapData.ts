@@ -15,20 +15,12 @@ export interface RoadmapNodeData {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   resources: RoadmapResource[];
   isAlternative?: boolean;
+  nodeType?: 'topic' | 'section' | 'checkpoint';
 }
-
-// Block types for the visual layout
-export type RoadmapBlock =
-  | { type: 'section-label'; label: string; subtitle?: string }
-  | { type: 'row'; nodes: string[]; connector?: 'solid' | 'dashed' }
-  | { type: 'checkpoint'; label: string; id?: string }
-  | { type: 'annotation'; text: string; side?: 'left' | 'right' | 'center' }
-  | { type: 'divider'; label?: string }
-  | { type: 'continue'; tracks: string[] };
 
 const r = (title: string, url: string, type: 'video' | 'docs' | 'article'): RoadmapResource => ({ title, url, type });
 
-// ── All topic nodes (referenced by id in blocks) ──
+// ── All topic nodes ──
 export const roadmapNodesData: RoadmapNodeData[] = [
   // Internet & Basics
   { id: 'internet-how', title: 'How Internet Works', description: 'Learn the fundamentals of how data travels across the internet, including packets, protocols, and routing.', section: 'Internet', sectionColor: '#64748b', difficulty: 'Beginner', resources: [r('How the Internet Works - MDN', 'https://developer.mozilla.org/en-US/docs/Learn/Common_questions/How_does_the_Internet_work', 'docs'), r('How the Internet Works in 5 Min', 'https://www.youtube.com/watch?v=7_LPdttKXPc', 'video')] },
@@ -61,7 +53,7 @@ export const roadmapNodesData: RoadmapNodeData[] = [
   { id: 'rtl', title: 'React Testing Library', description: 'Testing React components from the user perspective — queries, events, and async patterns.', section: 'Testing', sectionColor: '#14b8a6', difficulty: 'Intermediate', resources: [r('Testing Library Docs', 'https://testing-library.com/docs/react-testing-library/intro/', 'docs'), r('React Testing Crash Course', 'https://www.youtube.com/watch?v=8Xwq35cPwYg', 'video')] },
   { id: 'cypress', title: 'Cypress / Playwright', description: 'End-to-end testing in real browser environments for complete user flow testing.', section: 'Testing', sectionColor: '#14b8a6', difficulty: 'Advanced', isAlternative: true, resources: [r('Playwright Docs', 'https://playwright.dev/docs/intro', 'docs'), r('Cypress Crash Course', 'https://www.youtube.com/watch?v=BQqzfHQkREo', 'video')] },
 
-  // Backend - Node.js
+  // Backend
   { id: 'nodejs', title: 'Node.js', description: 'Runtime environment, modules, file system, event loop, streams, and npm package management.', section: 'Backend', sectionColor: '#22c55e', difficulty: 'Intermediate', resources: [r('Node.js Getting Started', 'https://nodejs.org/en/learn/getting-started/introduction-to-nodejs', 'docs'), r('Node.js Crash Course', 'https://www.youtube.com/watch?v=fBNz5xF-Kx4', 'video')] },
   { id: 'express', title: 'Express.js', description: 'Build web servers and REST APIs — routing, middleware, error handling, and templates.', section: 'Backend', sectionColor: '#22c55e', difficulty: 'Intermediate', resources: [r('Express.js Guide', 'https://expressjs.com/en/guide/routing.html', 'docs'), r('Express Crash Course', 'https://www.youtube.com/watch?v=SccSCuHhOw0', 'video')] },
   { id: 'postgres', title: 'PostgreSQL', description: 'Advanced relational database with JSON support, full-text search, CTEs, and excellent performance.', section: 'Backend', sectionColor: '#8b5cf6', difficulty: 'Intermediate', resources: [r('PostgreSQL Tutorial', 'https://www.postgresqltutorial.com/', 'docs'), r('PostgreSQL Crash Course', 'https://www.youtube.com/watch?v=qw--VYLpxG4', 'video')] },
@@ -70,8 +62,6 @@ export const roadmapNodesData: RoadmapNodeData[] = [
   { id: 'rest-api', title: 'RESTful APIs', description: 'Design RESTful APIs with proper resource naming, HTTP methods, status codes, and versioning.', section: 'Backend', sectionColor: '#22c55e', difficulty: 'Intermediate', resources: [r('REST API Tutorial', 'https://restfulapi.net/', 'article'), r('REST API Design', 'https://www.youtube.com/watch?v=-MTSQjw5DrM', 'video')] },
   { id: 'graphql', title: 'GraphQL', description: 'Query language for APIs with a single endpoint, type system, and client-driven data fetching.', section: 'Backend', sectionColor: '#e91e8f', difficulty: 'Advanced', isAlternative: true, resources: [r('GraphQL Docs', 'https://graphql.org/learn/', 'docs'), r('GraphQL Crash Course', 'https://www.youtube.com/watch?v=ed8SzALpx1Q', 'video')] },
   { id: 'websockets', title: 'WebSockets', description: 'Real-time bidirectional communication for live features like chat, notifications, and gaming.', section: 'Backend', sectionColor: '#22c55e', difficulty: 'Advanced', resources: [r('WebSocket API - MDN', 'https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API', 'docs'), r('WebSockets Tutorial', 'https://www.youtube.com/watch?v=8ARodQ4Wlf4', 'video')] },
-
-  // ORM & DB
   { id: 'prisma', title: 'Prisma / Drizzle', description: 'Type-safe ORM tools for database queries, migrations, and schema management.', section: 'Backend', sectionColor: '#8b5cf6', difficulty: 'Intermediate', resources: [r('Prisma Docs', 'https://www.prisma.io/docs', 'docs'), r('Prisma Crash Course', 'https://www.youtube.com/watch?v=RebA5J-rlwg', 'video')] },
   { id: 'mongodb', title: 'MongoDB', description: 'NoSQL document database with flexible schemas, aggregation pipeline, and horizontal scaling.', section: 'Backend', sectionColor: '#22c55e', difficulty: 'Intermediate', isAlternative: true, resources: [r('MongoDB Docs', 'https://www.mongodb.com/docs/manual/', 'docs'), r('MongoDB Crash Course', 'https://www.youtube.com/watch?v=ofme2o29ngU', 'video')] },
 
@@ -95,88 +85,11 @@ export const roadmapNodesData: RoadmapNodeData[] = [
   { id: 'railway', title: 'Railway / Render', description: 'Full-stack deployment platforms for Node.js, databases, and background workers.', section: 'Deployment', sectionColor: '#10b981', difficulty: 'Beginner', resources: [r('Railway Docs', 'https://docs.railway.app/', 'docs'), r('Railway Tutorial', 'https://www.youtube.com/watch?v=Kx7VIy67XkI', 'video')] },
 ];
 
-// Node lookup map
+// Node lookup
 const nodeMap = new Map(roadmapNodesData.map(n => [n.id, n]));
 export const getNodeById = (id: string) => nodeMap.get(id);
 
-// ── Visual layout blocks ──
-export const roadmapBlocks: RoadmapBlock[] = [
-  // Internet
-  { type: 'section-label', label: 'Internet Fundamentals', subtitle: 'Learn how the web works before building for it' },
-  { type: 'row', nodes: ['internet-how', 'http-https', 'dns', 'browsers'] },
-
-  // Frontend core
-  { type: 'divider', label: 'Frontend Development' },
-  { type: 'annotation', text: 'Start with the three pillars of the web. Master these before moving to frameworks.', side: 'right' },
-  { type: 'row', nodes: ['html', 'css', 'javascript'] },
-  { type: 'checkpoint', label: 'Checkpoint — Static Webpages', id: 'cp-static' },
-  { type: 'annotation', text: 'Build 2-3 static websites with HTML, CSS and JS to solidify your fundamentals.', side: 'left' },
-
-  // Package manager
-  { type: 'row', nodes: ['npm'] },
-  { type: 'checkpoint', label: 'Checkpoint — Interactivity & Packages', id: 'cp-packages' },
-
-  // Framework & tooling
-  { type: 'row', nodes: ['react', 'tailwind'] },
-  { type: 'row', nodes: ['github', 'git'] },
-  { type: 'checkpoint', label: 'Checkpoint — Frontend Apps', id: 'cp-frontend' },
-  { type: 'annotation', text: 'Build a complete frontend app with React, Tailwind, and version control with Git.', side: 'right' },
-
-  // TypeScript & Build tools
-  { type: 'row', nodes: ['typescript'] },
-  { type: 'row', nodes: ['vite', 'eslint'] },
-  { type: 'row', nodes: ['webpack'], connector: 'dashed' },
-  { type: 'checkpoint', label: 'Checkpoint — Production Frontend', id: 'cp-prod-fe' },
-
-  // Testing
-  { type: 'divider', label: 'Testing' },
-  { type: 'annotation', text: 'Learn to write tests to ensure your code works correctly and catches bugs early.', side: 'left' },
-  { type: 'row', nodes: ['jest', 'rtl'] },
-  { type: 'row', nodes: ['cypress'], connector: 'dashed' },
-
-  // Backend
-  { type: 'divider', label: 'Backend Development' },
-  { type: 'annotation', text: 'Pick Node.js since you already know JavaScript. It\'s the easiest transition to backend.', side: 'right' },
-  { type: 'row', nodes: ['nodejs', 'express'] },
-  { type: 'checkpoint', label: 'Checkpoint — CLI Apps', id: 'cp-cli' },
-
-  { type: 'row', nodes: ['postgres'] },
-  { type: 'row', nodes: ['mongodb'], connector: 'dashed' },
-  { type: 'checkpoint', label: 'Checkpoint — Simple CRUD Apps', id: 'cp-crud' },
-
-  { type: 'row', nodes: ['redis', 'jwt', 'rest-api'] },
-  { type: 'row', nodes: ['graphql', 'websockets'], connector: 'dashed' },
-  { type: 'row', nodes: ['prisma'] },
-  { type: 'checkpoint', label: 'Checkpoint — Complete App', id: 'cp-complete' },
-  { type: 'annotation', text: 'Use the checkpoints and don\'t forget to practice! Build project ideas at each checkpoint to solidify your knowledge.', side: 'left' },
-
-  // Security
-  { type: 'divider', label: 'Web Security' },
-  { type: 'row', nodes: ['cors', 'xss', 'owasp'] },
-
-  // DevOps
-  { type: 'divider', label: 'DevOps' },
-  { type: 'row', nodes: ['linux', 'aws'] },
-  { type: 'checkpoint', label: 'Checkpoint — Deployment', id: 'cp-deploy' },
-
-  { type: 'row', nodes: ['docker', 'nginx'] },
-  { type: 'row', nodes: ['github-actions'] },
-  { type: 'checkpoint', label: 'Checkpoint — CI / CD', id: 'cp-cicd' },
-
-  { type: 'row', nodes: ['ansible'], connector: 'dashed' },
-  { type: 'row', nodes: ['terraform'], connector: 'dashed' },
-  { type: 'row', nodes: ['monitoring'] },
-  { type: 'checkpoint', label: 'Checkpoint — Infrastructure', id: 'cp-infra' },
-
-  // Deployment
-  { type: 'divider', label: 'Deployment & Hosting' },
-  { type: 'row', nodes: ['vercel', 'railway'] },
-
-  // Continue
-  { type: 'continue', tracks: ['Frontend', 'Backend', 'DevOps', 'AWS'] },
-];
-
-// Keep legacy exports for compatibility with progress hook
+// Section colors & list
 export const sectionColors: Record<string, string> = {
   'Internet': '#64748b',
   'Frontend': '#3b82f6',
@@ -186,9 +99,203 @@ export const sectionColors: Record<string, string> = {
   'DevOps': '#f59e0b',
   'Deployment': '#10b981',
 };
-
 export const sections = Object.keys(sectionColors);
 
-// Legacy exports (empty — no longer using React Flow nodes/edges)
-export const flowNodes: any[] = [];
-export const flowEdges: any[] = [];
+// ── React Flow Node/Edge Generation ──
+
+const SPINE_X = 400;
+const NODE_W = 180;
+const NODE_H = 44;
+const ROW_GAP = 70;
+const SECTION_GAP = 90;
+const BRANCH_OFFSET = 220;
+
+interface FlowRow {
+  type: 'section' | 'checkpoint' | 'nodes';
+  label?: string;
+  subtitle?: string;
+  nodeIds?: string[];
+  dashed?: boolean;
+}
+
+const flowLayout: FlowRow[] = [
+  { type: 'section', label: 'Internet Fundamentals', subtitle: 'Learn how the web works' },
+  { type: 'nodes', nodeIds: ['internet-how', 'http-https', 'dns', 'browsers'] },
+
+  { type: 'section', label: 'Frontend Development', subtitle: 'Build user interfaces' },
+  { type: 'nodes', nodeIds: ['html', 'css', 'javascript'] },
+  { type: 'checkpoint', label: 'Checkpoint — Static Webpages' },
+  { type: 'nodes', nodeIds: ['npm'] },
+  { type: 'nodes', nodeIds: ['react', 'tailwind'] },
+  { type: 'nodes', nodeIds: ['github', 'git'] },
+  { type: 'checkpoint', label: 'Checkpoint — Frontend Apps' },
+  { type: 'nodes', nodeIds: ['typescript'] },
+  { type: 'nodes', nodeIds: ['vite', 'eslint'] },
+  { type: 'nodes', nodeIds: ['webpack'], dashed: true },
+  { type: 'checkpoint', label: 'Checkpoint — Production Frontend' },
+
+  { type: 'section', label: 'Testing', subtitle: 'Ensure code quality' },
+  { type: 'nodes', nodeIds: ['jest', 'rtl'] },
+  { type: 'nodes', nodeIds: ['cypress'], dashed: true },
+
+  { type: 'section', label: 'Backend Development', subtitle: 'Server-side logic & APIs' },
+  { type: 'nodes', nodeIds: ['nodejs', 'express'] },
+  { type: 'checkpoint', label: 'Checkpoint — CLI Apps' },
+  { type: 'nodes', nodeIds: ['postgres'] },
+  { type: 'nodes', nodeIds: ['mongodb'], dashed: true },
+  { type: 'checkpoint', label: 'Checkpoint — Simple CRUD' },
+  { type: 'nodes', nodeIds: ['redis', 'jwt', 'rest-api'] },
+  { type: 'nodes', nodeIds: ['graphql', 'websockets'], dashed: true },
+  { type: 'nodes', nodeIds: ['prisma'] },
+  { type: 'checkpoint', label: 'Checkpoint — Complete App' },
+
+  { type: 'section', label: 'Web Security', subtitle: 'Protect your apps' },
+  { type: 'nodes', nodeIds: ['cors', 'xss', 'owasp'] },
+
+  { type: 'section', label: 'DevOps & Deployment', subtitle: 'Ship and maintain' },
+  { type: 'nodes', nodeIds: ['linux', 'aws'] },
+  { type: 'checkpoint', label: 'Checkpoint — Deployment' },
+  { type: 'nodes', nodeIds: ['docker', 'nginx'] },
+  { type: 'nodes', nodeIds: ['github-actions'] },
+  { type: 'checkpoint', label: 'Checkpoint — CI / CD' },
+  { type: 'nodes', nodeIds: ['ansible', 'terraform'], dashed: true },
+  { type: 'nodes', nodeIds: ['monitoring'] },
+  { type: 'nodes', nodeIds: ['vercel', 'railway'] },
+];
+
+export interface FlowNodeData {
+  id: string;
+  type: 'topic' | 'section' | 'checkpoint';
+  position: { x: number; y: number };
+  data: Record<string, any>;
+}
+
+export interface FlowEdgeData {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  animated?: boolean;
+  style?: Record<string, any>;
+}
+
+export function buildFlowElements(): { nodes: FlowNodeData[]; edges: FlowEdgeData[] } {
+  const nodes: FlowNodeData[] = [];
+  const edges: FlowEdgeData[] = [];
+  let y = 60;
+  let prevId: string | null = null;
+
+  const addSpineEdge = (targetId: string, dashed = false) => {
+    if (prevId) {
+      edges.push({
+        id: `e-${prevId}-${targetId}`,
+        source: prevId,
+        target: targetId,
+        type: 'smoothstep',
+        animated: dashed,
+        style: { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: dashed ? '6 4' : undefined },
+      });
+    }
+    prevId = targetId;
+  };
+
+  for (const row of flowLayout) {
+    if (row.type === 'section') {
+      const id = `sec-${row.label!.replace(/\s+/g, '-').toLowerCase()}`;
+      nodes.push({
+        id,
+        type: 'section',
+        position: { x: SPINE_X - 140, y },
+        data: { label: row.label, subtitle: row.subtitle },
+      });
+      addSpineEdge(id);
+      y += SECTION_GAP;
+    } else if (row.type === 'checkpoint') {
+      const id = `cp-${row.label!.replace(/\s+/g, '-').toLowerCase()}`;
+      nodes.push({
+        id,
+        type: 'checkpoint',
+        position: { x: SPINE_X - 130, y },
+        data: { label: row.label },
+      });
+      addSpineEdge(id);
+      y += ROW_GAP;
+    } else if (row.type === 'nodes' && row.nodeIds) {
+      const count = row.nodeIds.length;
+      // Position nodes symmetrically around spine
+      const positions: number[] = [];
+      if (count === 1) {
+        positions.push(SPINE_X - NODE_W / 2);
+      } else if (count === 2) {
+        positions.push(SPINE_X - BRANCH_OFFSET - NODE_W / 2);
+        positions.push(SPINE_X + BRANCH_OFFSET - NODE_W / 2);
+      } else if (count === 3) {
+        positions.push(SPINE_X - BRANCH_OFFSET - NODE_W / 2);
+        positions.push(SPINE_X - NODE_W / 2);
+        positions.push(SPINE_X + BRANCH_OFFSET - NODE_W / 2);
+      } else {
+        // 4+ nodes spread evenly
+        const totalW = (count - 1) * (NODE_W + 20);
+        const startX = SPINE_X - totalW / 2;
+        for (let i = 0; i < count; i++) {
+          positions.push(startX + i * (NODE_W + 20));
+        }
+      }
+
+      // Add a connector node on spine if multiple nodes
+      const connId = `conn-${y}`;
+      if (count > 1) {
+        // invisible connector on the spine
+        nodes.push({
+          id: connId,
+          type: 'topic', // will be invisible
+          position: { x: SPINE_X - 1, y: y + NODE_H / 2 - 1 },
+          data: { invisible: true },
+        });
+        addSpineEdge(connId, row.dashed);
+      }
+
+      row.nodeIds.forEach((nodeId, idx) => {
+        const node = getNodeById(nodeId);
+        if (!node) return;
+        nodes.push({
+          id: nodeId,
+          type: 'topic',
+          position: { x: positions[idx], y },
+          data: {
+            label: node.title,
+            section: node.section,
+            sectionColor: node.sectionColor,
+            difficulty: node.difficulty,
+            isAlternative: node.isAlternative,
+            dashed: row.dashed,
+          },
+        });
+
+        if (count === 1) {
+          addSpineEdge(nodeId, row.dashed);
+        } else {
+          // Connect from spine connector to each node
+          edges.push({
+            id: `e-${connId}-${nodeId}`,
+            source: connId,
+            target: nodeId,
+            type: 'smoothstep',
+            animated: row.dashed,
+            style: { stroke: node.sectionColor || '#3b82f6', strokeWidth: 1.5, strokeDasharray: row.dashed ? '5 3' : undefined },
+          });
+        }
+      });
+
+      if (count === 1) {
+        // prevId already updated
+      } else {
+        // prevId stays as connId for vertical spine
+      }
+
+      y += ROW_GAP;
+    }
+  }
+
+  return { nodes, edges };
+}
