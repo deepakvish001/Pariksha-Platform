@@ -110,6 +110,12 @@ export default function FullStackRoadmap() {
           onStatusChange={handleStatusChange}
           onClose={() => setSelectedNode(null)}
         />
+
+        {/* Floating Section Navigator */}
+        <RoadmapFlowSectionNav
+          sectionFilter={sectionFilter}
+          onSectionFilterChange={setSectionFilter}
+        />
       </div>
     </>
   );
