@@ -8,6 +8,7 @@ import SheetsEmptyState from "@/components/sheets/SheetsEmptyState";
 import ContinueLearningSection from "@/components/sheets/ContinueLearningSection";
 import RecentlyCompletedSection from "@/components/sheets/RecentlyCompletedSection";
 import QuickStartSection from "@/components/sheets/QuickStartSection";
+import CategoryProgressBar from "@/components/sheets/CategoryProgressBar";
 import { useSheetProgress, calculateProgressPercentage } from "@/hooks/useSheetProgress";
 import { Code, Swords, Database, ServerCog, Network, HardDrive, Cpu, LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
