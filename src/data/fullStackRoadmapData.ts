@@ -105,12 +105,12 @@ export const sections = Object.keys(sectionColors);
 
 // ── React Flow Node/Edge Generation ──
 
-const SPINE_X = 480;
-const NODE_W = 200;
-const NODE_H = 68;
-const ROW_GAP = 95;
-const SECTION_GAP = 110;
-const BRANCH_OFFSET = 250;
+const SPINE_X = 500;
+const NODE_W = 220;
+const NODE_H = 110;
+const ROW_GAP = 140;
+const SECTION_GAP = 160;
+const BRANCH_OFFSET = 280;
 
 interface FlowRow {
   type: 'section' | 'checkpoint' | 'nodes';
@@ -207,7 +207,7 @@ export function buildFlowElements(): { nodes: FlowNodeData[]; edges: FlowEdgeDat
       nodes.push({
         id,
         type: 'section',
-        position: { x: SPINE_X - 140, y },
+        position: { x: SPINE_X - 155, y },
         data: { label: row.label, subtitle: row.subtitle },
       });
       addSpineEdge(id);
@@ -217,7 +217,7 @@ export function buildFlowElements(): { nodes: FlowNodeData[]; edges: FlowEdgeDat
       nodes.push({
         id,
         type: 'checkpoint',
-        position: { x: SPINE_X - 130, y },
+        position: { x: SPINE_X - 140, y },
         data: { label: row.label },
       });
       addSpineEdge(id);
