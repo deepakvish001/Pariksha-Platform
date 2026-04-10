@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LayoutGrid, CheckCircle2, Target, Zap, Star, Flame, Trophy, Settings2, ChevronRight, BookOpen } from "lucide-react";
+import { LayoutGrid, CheckCircle2, Target, Zap, Star, Flame, Trophy, Settings2, ChevronRight, BookOpen, Play, Map, Brain } from "lucide-react";
 import { GuestProgressTeaser } from "@/components/GuestProgressTeaser";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
