@@ -70,10 +70,9 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
         connectionMode={ConnectionMode.Loose}
-        fitView
-        fitViewOptions={{ padding: 0.15 }}
-        minZoom={0.2}
-        maxZoom={1.5}
+        defaultViewport={{ x: 50, y: 20, zoom: 0.85 }}
+        minZoom={0.3}
+        maxZoom={2}
         proOptions={{ hideAttribution: true }}
         panOnScroll
         zoomOnScroll={false}
