@@ -63,16 +63,15 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
   }, [onNodeClick]);
 
   return (
-    <div className="w-full border border-border rounded-xl overflow-hidden bg-background" style={{ height: '75vh', minHeight: 500 }}>
+    <div className="w-full border border-border rounded-xl overflow-hidden bg-background" style={{ height: '80vh', minHeight: 600 }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodeClick={handleNodeClick}
         connectionMode={ConnectionMode.Loose}
-        fitView
-        fitViewOptions={{ padding: 0.3, minZoom: 0.5, maxZoom: 1 }}
-        minZoom={0.3}
+        defaultViewport={{ x: -50, y: 10, zoom: 0.9 }}
+        minZoom={0.25}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
         panOnScroll
