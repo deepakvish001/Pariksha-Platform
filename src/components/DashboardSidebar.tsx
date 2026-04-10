@@ -581,36 +581,44 @@ export function DashboardSidebar() {
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
                 <CollapsibleGroup title="Create with AI" items={createWithAIItems} groupIcon={Sparkles} iconColor="text-primary" />
                 <CollapsibleGroup title="My Learning" items={myAILearningItems} groupIcon={GraduationCap} iconColor="text-primary" />
-                {aiChatItems.map((item) => (
+                {aiChatItems.map((item) => {
+                  const locked = isRouteLocked(item.url);
+                  return (
                   <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                     <SidebarMenuButton
                       asChild
                       isActive={location.pathname === item.url}
                       tooltip={item.title}
-                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
+                      className={cn("transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg", locked && "opacity-50")}
                     >
-                      <Link to={item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
+                      <Link to={locked ? "/under-construction" : item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
                         <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
-                        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                        <span className="group-data-[collapsible=icon]:hidden flex-1">{item.title}</span>
+                        {locked && <Lock className="h-3 w-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
-                {aiCommunityItems.map((item) => (
+                  );
+                })}
+                {aiCommunityItems.map((item) => {
+                  const locked = isRouteLocked(item.url);
+                  return (
                   <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                     <SidebarMenuButton
                       asChild
                       isActive={location.pathname === item.url}
                       tooltip={item.title}
-                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
+                      className={cn("transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg", locked && "opacity-50")}
                     >
-                      <Link to={item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
+                      <Link to={locked ? "/under-construction" : item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
                         <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
-                        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                        <span className="group-data-[collapsible=icon]:hidden flex-1">{item.title}</span>
+                        {locked && <Lock className="h-3 w-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -715,21 +723,25 @@ export function DashboardSidebar() {
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                {resourceItems.map((item) => (
+                {resourceItems.map((item) => {
+                  const locked = isRouteLocked(item.url);
+                  return (
                   <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                     <SidebarMenuButton
                       asChild
                       isActive={location.pathname === item.url}
                       tooltip={item.title}
-                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
+                      className={cn("transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg", locked && "opacity-50")}
                     >
-                      <Link to={item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
+                      <Link to={locked ? "/under-construction" : item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
                         <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
-                        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                        <span className="group-data-[collapsible=icon]:hidden flex-1">{item.title}</span>
+                        {locked && <Lock className="h-3 w-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -764,15 +776,17 @@ export function DashboardSidebar() {
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                {progressNavItems.map((item) => (
+                {progressNavItems.map((item) => {
+                  const locked = isRouteLocked(item.url);
+                  return (
                   <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                     <SidebarMenuButton
                       asChild
                       isActive={location.pathname === item.url}
                       tooltip={item.title}
-                      className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
+                      className={cn("transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg", locked && "opacity-50")}
                     >
-                      <Link to={item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
+                      <Link to={locked ? "/under-construction" : item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
                         <div className="relative">
                           <motion.div
                             animate={item.title === "Notifications" && shouldShakeBell ? {
@@ -797,11 +811,13 @@ export function DashboardSidebar() {
                             )}
                           </AnimatePresence>
                         </div>
-                        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                        <span className="group-data-[collapsible=icon]:hidden flex-1">{item.title}</span>
+                        {locked && <Lock className="h-3 w-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
