@@ -26,7 +26,9 @@ import {
   AlertCircle,
   Sparkles,
   Save,
-  Share2
+  Share2,
+  ChevronRight,
+  CheckCircle2
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
