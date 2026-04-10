@@ -268,19 +268,24 @@ const CollapsibleGroup = ({ title, items, groupIcon, iconColor = "text-muted-for
           <TooltipContent side="right" align="start" className="p-0 w-48">
             <div className="py-2">
               <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
-              {items.map((item) => (
+              {items.map((item) => {
+                const locked = isRouteLocked(item.url);
+                return (
                 <Link
                   key={item.title}
-                  to={item.url}
+                  to={locked ? "/under-construction" : item.url}
                   className={cn(
                     "flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors",
+                    locked && "opacity-50",
                     location.pathname === item.url && "bg-accent text-accent-foreground font-medium"
                   )}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
-                  <span>{item.title}</span>
+                  <span className="flex-1">{item.title}</span>
+                  {locked && <Lock className="h-3 w-3 text-muted-foreground" />}
                 </Link>
-              ))}
+                );
+              })}
             </div>
           </TooltipContent>
         </Tooltip>
@@ -308,17 +313,27 @@ const CollapsibleGroup = ({ title, items, groupIcon, iconColor = "text-muted-for
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-1">
-        {items.map((item) => (
+        {items.map((item) => {
+          const locked = isRouteLocked(item.url);
+          return (
           <SidebarMenuItem key={item.title}>
             <GuestSidebarTooltip url={item.url}>
               <SidebarMenuButton
                 asChild
                 isActive={location.pathname === item.url}
                 tooltip={item.title}
-                className="transition-all duration-200 hover:translate-x-0.5 group/item"
+                className={cn("transition-all duration-200 hover:translate-x-0.5 group/item", locked && "opacity-50")}
               >
-                <Link to={item.url} className="pl-8">
+                <Link to={locked ? "/under-construction" : item.url} className="pl-8">
                   <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/item:scale-110" />
+                  <span className="flex-1">{item.title}</span>
+                  {locked && <Lock className="h-3 w-3 text-muted-foreground" />}
+                </Link>
+              </SidebarMenuButton>
+            </GuestSidebarTooltip>
+          </SidebarMenuItem>
+          );
+        })}
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>
