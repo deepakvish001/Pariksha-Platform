@@ -178,152 +178,121 @@ export const roadmapNodesData: RoadmapNodeData[] = [
   { id: 'career-open-source', title: 'Open Source', description: 'Contributing to open source projects, understanding codebases, and building your developer reputation.', section: 'Career', sectionColor: sectionColors['Career'], difficulty: 'Intermediate', resources: [{ title: 'First Contributions', url: 'https://firstcontributions.github.io/', type: 'docs' }, { title: 'Open Source Guide', url: 'https://www.youtube.com/watch?v=yzeVMecydCE', type: 'video' }] },
 ];
 
-// ── Build roadmap.sh-style branching layout ──
-// Central spine with section headers, topics branch left & right
+// ── Zig-zag layout: nodes alternate left ↔ right down a central spine ──
+// Each node gets a sequential number so reading order is crystal clear.
 
 const SPINE_X = 400;
-const BRANCH_OFFSET = 220;
-const NODE_W = 180;
-const NODE_H = 36;
+const BRANCH_OFFSET = 240;
+const NODE_W = 200;
+const NODE_H = 38;
 const SECTION_H = 40;
-const Y_SECTION_GAP = 60;
-const Y_BRANCH_GAP = 50;
-const Y_PAIR_GAP = 50;
+const Y_GAP = 56;          // vertical gap between consecutive nodes
+const Y_SECTION_GAP = 70;  // extra gap before a new section header
 
-function buildFlowNodes() {
-  const nodes: Array<{
-    id: string;
-    type: string;
-    position: { x: number; y: number };
-    data: any;
-  }> = [];
-
-  let y = 40;
-  let currentSection = '';
-  let sectionNodes: RoadmapNodeData[] = [];
-
-  const flushSection = () => {
-    if (!sectionNodes.length) return;
-    const sec = sectionNodes[0].section;
-    const color = sectionNodes[0].sectionColor;
-
-    // Section header on spine
-    const sectionId = `section-${sec.replace(/\s+/g, '-').toLowerCase()}`;
-    nodes.push({
-      id: sectionId,
-      type: 'sectionNode',
-      position: { x: SPINE_X - 90, y },
-      data: { title: sec, sectionColor: color },
-    });
-
-    y += SECTION_H + 20;
-
-    // Place nodes in pairs: left & right
-    for (let i = 0; i < sectionNodes.length; i += 2) {
-      const left = sectionNodes[i];
-      const right = sectionNodes[i + 1];
-
-      if (left) {
-        nodes.push({
-          id: left.id,
-          type: 'roadmapNode',
-          position: { x: SPINE_X - BRANCH_OFFSET - NODE_W / 2, y },
-          data: { ...left, nodeType: 'topic' },
-        });
-      }
-      if (right) {
-        nodes.push({
-          id: right.id,
-          type: 'roadmapNode',
-          position: { x: SPINE_X + BRANCH_OFFSET - NODE_W / 2, y },
-          data: { ...right, nodeType: 'topic' },
-        });
-      }
-
-      y += Y_PAIR_GAP;
-    }
-
-    y += Y_SECTION_GAP - Y_PAIR_GAP; // gap before next section
-    sectionNodes = [];
-  };
-
-  roadmapNodesData.forEach((nd) => {
-    if (nd.section !== currentSection) {
-      flushSection();
-      currentSection = nd.section;
-    }
-    sectionNodes.push(nd);
-  });
-  flushSection();
-
-  return nodes;
+interface FlowNode {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  data: any;
+}
+interface FlowEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  animated: boolean;
+  style: Record<string, any>;
 }
 
-function buildFlowEdges() {
-  const edges: Array<{
-    id: string;
-    source: string;
-    target: string;
-    sourceHandle?: string;
-    targetHandle?: string;
-    type: string;
-    animated: boolean;
-    style: Record<string, any>;
-  }> = [];
+function buildLayout() {
+  const nodes: FlowNode[] = [];
+  const edges: FlowEdge[] = [];
 
-  // Build section order and edges between section headers
-  const sectionOrder: string[] = [];
-  roadmapNodesData.forEach((nd) => {
-    const sid = `section-${nd.section.replace(/\s+/g, '-').toLowerCase()}`;
-    if (!sectionOrder.includes(sid)) sectionOrder.push(sid);
-  });
-
-  // Connect section headers vertically (spine)
-  for (let i = 0; i < sectionOrder.length - 1; i++) {
-    edges.push({
-      id: `spine-${i}`,
-      source: sectionOrder[i],
-      target: sectionOrder[i + 1],
-      type: 'smoothstep',
-      animated: false,
-      style: { stroke: '#525252', strokeWidth: 2 },
-    });
-  }
-
-  // Connect section headers to their child nodes
+  let y = 40;
+  let globalIndex = 0;       // sequential topic counter
+  let prevNodeId: string | null = null;
   let currentSection = '';
-  let sectionNodes: RoadmapNodeData[] = [];
+  const sectionHeaderIds: string[] = [];
 
-  const flushEdges = () => {
-    if (!sectionNodes.length) return;
-    const sid = `section-${sectionNodes[0].section.replace(/\s+/g, '-').toLowerCase()}`;
-    const color = sectionNodes[0].sectionColor;
+  roadmapNodesData.forEach((nd) => {
+    // ── Section header when section changes ──
+    if (nd.section !== currentSection) {
+      currentSection = nd.section;
+      const sectionId = `section-${nd.section.replace(/\s+/g, '-').toLowerCase()}`;
 
-    sectionNodes.forEach((nd) => {
+      // Extra gap before section (except first)
+      if (sectionHeaderIds.length > 0) y += Y_SECTION_GAP;
+
+      nodes.push({
+        id: sectionId,
+        type: 'sectionNode',
+        position: { x: SPINE_X - 90, y },
+        data: { title: nd.section, sectionColor: nd.sectionColor },
+      });
+
+      // Connect previous node → section header
+      if (prevNodeId) {
+        edges.push({
+          id: `e-${prevNodeId}-${sectionId}`,
+          source: prevNodeId,
+          target: sectionId,
+          type: 'smoothstep',
+          animated: false,
+          style: { stroke: '#525252', strokeWidth: 2 },
+        });
+      }
+
+      // Connect consecutive section headers (spine)
+      if (sectionHeaderIds.length > 0) {
+        edges.push({
+          id: `spine-${sectionHeaderIds.length}`,
+          source: sectionHeaderIds[sectionHeaderIds.length - 1],
+          target: sectionId,
+          type: 'smoothstep',
+          animated: false,
+          style: { stroke: '#525252', strokeWidth: 2, opacity: 0.3 },
+        });
+      }
+
+      sectionHeaderIds.push(sectionId);
+      prevNodeId = sectionId;
+      y += SECTION_H + 16;
+    }
+
+    // ── Zig-zag: even index → left, odd index → right ──
+    const isLeft = globalIndex % 2 === 0;
+    const nodeX = isLeft
+      ? SPINE_X - BRANCH_OFFSET - NODE_W / 2
+      : SPINE_X + BRANCH_OFFSET - NODE_W / 2;
+
+    nodes.push({
+      id: nd.id,
+      type: 'roadmapNode',
+      position: { x: nodeX, y },
+      data: { ...nd, nodeType: 'topic', order: globalIndex + 1 },
+    });
+
+    // Connect previous → this node
+    if (prevNodeId) {
+      const color = nd.sectionColor;
       edges.push({
-        id: `e-${sid}-${nd.id}`,
-        source: sid,
+        id: `e-${prevNodeId}-${nd.id}`,
+        source: prevNodeId,
         target: nd.id,
         type: 'smoothstep',
         animated: false,
-        style: { stroke: color, strokeWidth: 1.5, opacity: 0.6 },
+        style: { stroke: color, strokeWidth: 1.5, opacity: 0.7 },
       });
-    });
-
-    sectionNodes = [];
-  };
-
-  roadmapNodesData.forEach((nd) => {
-    if (nd.section !== currentSection) {
-      flushEdges();
-      currentSection = nd.section;
     }
-    sectionNodes.push(nd);
-  });
-  flushEdges();
 
-  return edges;
+    prevNodeId = nd.id;
+    globalIndex++;
+    y += Y_GAP;
+  });
+
+  return { nodes, edges };
 }
 
-export const flowNodes = buildFlowNodes();
-export const flowEdges = buildFlowEdges();
+const layout = buildLayout();
+export const flowNodes = layout.nodes;
+export const flowEdges = layout.edges;
