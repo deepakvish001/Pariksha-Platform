@@ -181,13 +181,13 @@ export const roadmapNodesData: RoadmapNodeData[] = [
 // ── Zig-zag layout: nodes alternate left ↔ right down a central spine ──
 // Each node gets a sequential number so reading order is crystal clear.
 
-const SPINE_X = 400;
-const BRANCH_OFFSET = 240;
-const NODE_W = 200;
-const NODE_H = 38;
-const SECTION_H = 40;
-const Y_GAP = 56;          // vertical gap between consecutive nodes
-const Y_SECTION_GAP = 70;  // extra gap before a new section header
+const SPINE_X = 440;
+const BRANCH_OFFSET = 260;
+const NODE_W = 220;
+const NODE_H = 58;
+const SECTION_H = 44;
+const Y_GAP = 72;          // vertical gap between consecutive nodes
+const Y_SECTION_GAP = 80;  // extra gap before a new section header
 
 interface FlowNode {
   id: string;
