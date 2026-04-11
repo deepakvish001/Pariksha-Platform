@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import RoadmapFlowNode from './RoadmapFlowNode';
 import RoadmapFlowSectionNode from './RoadmapFlowSectionNode';
 import RoadmapFlowLegend from './RoadmapFlowLegend';
@@ -12,13 +12,14 @@ interface Props {
   onNodeClick: (nodeData: RoadmapNodeData) => void;
 }
 
-const SECTION_W = 180;
-const SECTION_H = 40;
-const NODE_W = 200;
-const NODE_H = 38;
+const SECTION_W = 200;
+const SECTION_H = 44;
+const NODE_W = 220;
+const NODE_H = 58;
 
 export default function RoadmapFlowCanvas({ progress, search, sectionFilter, statusFilter, onNodeClick }: Props) {
   const getStatus = useCallback((id: string): NodeStatus => progress[id] || 'pending', [progress]);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   const nodes = useMemo(() => {
     const searchLower = search.toLowerCase();
@@ -35,28 +36,54 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
     });
   }, [progress, search, sectionFilter, statusFilter, getStatus]);
 
+  // Build the path highlight set: all nodes from start up to (and including) the hovered node
+  const highlightedNodeIds = useMemo(() => {
+    if (!hoveredNodeId) return new Set<string>();
+    const set = new Set<string>();
+    // Walk through topic nodes in order until we hit the hovered one
+    for (const nd of roadmapNodesData) {
+      set.add(nd.id);
+      if (nd.id === hoveredNodeId) break;
+    }
+    return set;
+  }, [hoveredNodeId]);
+
+  // Build highlighted edge set
+  const highlightedEdgeIds = useMemo(() => {
+    if (!hoveredNodeId) return new Set<string>();
+    const set = new Set<string>();
+    for (const edge of flowEdges) {
+      if (highlightedNodeIds.has(edge.source) || highlightedNodeIds.has(edge.target)) {
+        // Only include edges where BOTH endpoints are in the path
+        const srcInPath = highlightedNodeIds.has(edge.source) || edge.source.startsWith('section-');
+        const tgtInPath = highlightedNodeIds.has(edge.target) || edge.target.startsWith('section-');
+        if (srcInPath && tgtInPath) set.add(edge.id);
+      }
+    }
+    return set;
+  }, [hoveredNodeId, highlightedNodeIds]);
+
   const handleNodeClick = useCallback((nodeId: string) => {
     const nodeData = roadmapNodesData.find((nd) => nd.id === nodeId);
     if (nodeData) onNodeClick(nodeData);
   }, [onNodeClick]);
 
-  // Calculate canvas dimensions
   const canvasDimensions = useMemo(() => {
     let maxX = 0, maxY = 0;
     nodes.forEach((n) => {
       const w = n.type === 'sectionNode' ? SECTION_W : NODE_W;
       const h = n.type === 'sectionNode' ? SECTION_H : NODE_H;
-      const right = n.position.x + w;
-      const bottom = n.position.y + h;
-      if (right > maxX) maxX = right;
-      if (bottom > maxY) maxY = bottom;
+      if (n.position.x + w > maxX) maxX = n.position.x + w;
+      if (n.position.y + h > maxY) maxY = n.position.y + h;
     });
     return { width: maxX + 80, height: maxY + 100 };
   }, [nodes]);
 
-  // Build SVG paths for edges — zig-zag connections
+  // Build SVG paths
   const svgPaths = useMemo(() => {
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+    const isHovering = hoveredNodeId !== null;
+
     return flowEdges.map((edge) => {
       const src = nodeMap.get(edge.source);
       const tgt = nodeMap.get(edge.target);
@@ -73,22 +100,26 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
       const tgtCx = tgt.position.x + tgtW / 2;
       const tgtTop = tgt.position.y;
 
-      // For zig-zag: go down from source center, then across to target center
       const midY = (srcBottom + tgtTop) / 2;
       const d = `M ${srcCx} ${srcBottom} C ${srcCx} ${midY}, ${tgtCx} ${midY}, ${tgtCx} ${tgtTop}`;
+
+      const isHighlighted = highlightedEdgeIds.has(edge.id);
+      const baseStroke = edge.style?.stroke || '#525252';
 
       return (
         <path
           key={edge.id}
           d={d}
           fill="none"
-          stroke={edge.style?.stroke || '#525252'}
-          strokeWidth={edge.style?.strokeWidth || 1.5}
-          opacity={edge.style?.opacity || 1}
+          stroke={isHighlighted ? '#60a5fa' : baseStroke}
+          strokeWidth={isHighlighted ? 3 : (edge.style?.strokeWidth || 1.5)}
+          opacity={isHovering ? (isHighlighted ? 1 : 0.15) : (edge.style?.opacity || 0.7)}
+          className="transition-all duration-300"
+          strokeLinecap="round"
         />
       );
     });
-  }, [nodes]);
+  }, [nodes, hoveredNodeId, highlightedEdgeIds]);
 
   return (
     <div className="relative w-full rounded-xl border border-border overflow-auto bg-background">
@@ -102,25 +133,49 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
           width={canvasDimensions.width}
           height={canvasDimensions.height}
         >
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
           {svgPaths}
         </svg>
 
         {/* Nodes layer */}
-        {nodes.map((node) => (
-          <div
-            key={node.id}
-            className="absolute"
-            style={{ left: node.position.x, top: node.position.y }}
-          >
-            {node.type === 'sectionNode' ? (
-              <RoadmapFlowSectionNode data={node.data} />
-            ) : (
-              <div onClick={() => handleNodeClick(node.id)}>
-                <RoadmapFlowNode data={node.data as any} />
-              </div>
-            )}
-          </div>
-        ))}
+        {nodes.map((node) => {
+          const isHovering = hoveredNodeId !== null;
+          const isInPath = highlightedNodeIds.has(node.id);
+          const isSectionInPath = node.type === 'sectionNode' && isHovering;
+
+          return (
+            <div
+              key={node.id}
+              className={`absolute transition-opacity duration-300 ${
+                isHovering && !isInPath && node.type !== 'sectionNode' ? 'opacity-20' : ''
+              }`}
+              style={{ left: node.position.x, top: node.position.y }}
+              onMouseEnter={() => {
+                if (node.type === 'roadmapNode') setHoveredNodeId(node.id);
+              }}
+              onMouseLeave={() => setHoveredNodeId(null)}
+            >
+              {node.type === 'sectionNode' ? (
+                <RoadmapFlowSectionNode data={node.data} />
+              ) : (
+                <div onClick={() => handleNodeClick(node.id)}>
+                  <RoadmapFlowNode
+                    data={node.data as any}
+                    highlighted={isHovering && isInPath}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <RoadmapFlowLegend />
