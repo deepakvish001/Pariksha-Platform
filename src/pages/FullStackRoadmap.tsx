@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { ReactFlowProvider } from '@xyflow/react';
 import RoadmapFlowCanvas from '@/components/roadmap-flow/RoadmapFlowCanvas';
 import RoadmapFlowDetailPanel from '@/components/roadmap-flow/RoadmapFlowDetailPanel';
 import RoadmapFlowProgressBar from '@/components/roadmap-flow/RoadmapFlowProgressBar';
@@ -30,7 +29,7 @@ export default function FullStackRoadmap() {
         <meta name="description" content="Interactive full stack developer roadmap with progress tracking. Learn web development step by step." />
       </Helmet>
 
-      <div className="flex flex-col h-[calc(100vh-4rem)] gap-3 p-2 sm:p-4">
+      <div className="flex flex-col gap-3 p-2 sm:p-4">
         <div className="space-y-3">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">Full Stack Developer Roadmap</h1>
@@ -47,17 +46,13 @@ export default function FullStackRoadmap() {
           />
         </div>
 
-        <div className="flex-1 min-h-0">
-          <ReactFlowProvider>
-            <RoadmapFlowCanvas
-              progress={progress}
-              search={search}
-              sectionFilter={sectionFilter}
-              statusFilter={statusFilter}
-              onNodeClick={handleNodeClick}
-            />
-          </ReactFlowProvider>
-        </div>
+        <RoadmapFlowCanvas
+          progress={progress}
+          search={search}
+          sectionFilter={sectionFilter}
+          statusFilter={statusFilter}
+          onNodeClick={handleNodeClick}
+        />
 
         <RoadmapFlowDetailPanel
           node={selectedNode}
