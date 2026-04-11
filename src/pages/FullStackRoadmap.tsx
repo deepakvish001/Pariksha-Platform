@@ -1,11 +1,10 @@
 import { useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Sparkles, ArrowDown } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import RoadmapFlowCanvas from '@/components/roadmap-flow/RoadmapFlowCanvas';
 import RoadmapFlowDetailPanel from '@/components/roadmap-flow/RoadmapFlowDetailPanel';
 import RoadmapFlowProgressBar from '@/components/roadmap-flow/RoadmapFlowProgressBar';
 import RoadmapFlowSearchBar from '@/components/roadmap-flow/RoadmapFlowSearchBar';
-import RoadmapFlowSectionNav from '@/components/roadmap-flow/RoadmapFlowSectionNav';
 import { useRoadmapFlowProgress } from '@/hooks/useRoadmapFlowProgress';
 import type { RoadmapNodeData } from '@/data/fullStackRoadmapData';
 
@@ -24,11 +23,6 @@ export default function FullStackRoadmap() {
     if (selectedNode) setStatus(selectedNode.id, status);
   }, [selectedNode, setStatus]);
 
-  const handleSectionJump = useCallback((section: string) => {
-    const el = document.getElementById(`section-${section.toLowerCase()}`);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, []);
-
   return (
     <>
       <Helmet>
@@ -38,31 +32,22 @@ export default function FullStackRoadmap() {
 
       <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-6 space-y-5">
         {/* Header */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-            <Sparkles className="w-3 h-3" />
-            Interactive Roadmap
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-foreground via-foreground/90 to-foreground/50 bg-clip-text text-transparent">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
             Full Stack Developer
           </h1>
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto">
-            Step by step guide to becoming a modern full stack developer in 2026.
-            Click any topic to view resources, mark progress, and track your journey.
+          <p className="text-sm text-muted-foreground">
+            Step by step guide to becoming a modern full stack developer in 2026
           </p>
         </div>
 
         {/* Progress */}
         <RoadmapFlowProgressBar stats={stats} onReset={resetAll} />
 
-        {/* Tip banner */}
-        <div className="flex items-center justify-center gap-2 text-xs rounded-xl px-4 py-2.5 bg-primary/5 border border-primary/10">
-          <ArrowDown className="w-3 h-3 text-primary animate-bounce" />
-          <span className="text-muted-foreground">
-            <span className="text-foreground font-medium">Click any topic</span> to view resources and track progress •
-            <span className="text-blue-400"> ⭐ Up Next</span> shows recommended topics •
-            <span className="text-violet-400"> ◇ Dashed</span> = alternative
-          </span>
+        {/* Tip */}
+        <div className="flex items-center justify-center gap-2 text-xs rounded-lg px-4 py-2.5 bg-primary/5 border border-primary/10">
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <span className="text-muted-foreground">Click any topic to view resources and track progress • Scroll to pan • Pinch to zoom</span>
         </div>
 
         {/* Filters */}
@@ -75,20 +60,13 @@ export default function FullStackRoadmap() {
           onStatusFilterChange={setStatusFilter}
         />
 
-        {/* Canvas */}
+        {/* React Flow Canvas */}
         <RoadmapFlowCanvas
           progress={progress}
           search={search}
           sectionFilter={sectionFilter}
           statusFilter={statusFilter}
           onNodeClick={handleNodeClick}
-        />
-
-        {/* Section Nav */}
-        <RoadmapFlowSectionNav
-          progress={progress}
-          activeSection={sectionFilter}
-          onSectionClick={handleSectionJump}
         />
 
         {/* Detail Panel */}
