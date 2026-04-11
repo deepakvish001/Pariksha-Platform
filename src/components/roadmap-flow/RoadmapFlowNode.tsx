@@ -3,11 +3,10 @@ import {
   Globe, FileCode, Paintbrush, Code2, GitBranch, Package, Wrench,
   Atom, TestTube, Shield, Server, Database, Plug, Zap, Terminal,
   Container, RefreshCw, Cloud, Rocket, Gauge, Users, Briefcase,
-  CheckCircle2, Clock, SkipForward, Star, BookOpen, Video, FileText,
+  CheckCircle2, Clock, SkipForward, Star,
 } from 'lucide-react';
 import type { NodeStatus } from '@/data/fullStackRoadmapData';
 
-// Section → icon mapping
 const sectionIcons: Record<string, React.ReactNode> = {
   'Internet Basics': <Globe className="w-4 h-4" />,
   'HTML': <FileCode className="w-4 h-4" />,
@@ -34,9 +33,9 @@ const sectionIcons: Record<string, React.ReactNode> = {
 };
 
 const difficultyConfig = {
-  Beginner: { label: 'Beginner', bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-  Intermediate: { label: 'Medium', bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/30' },
-  Advanced: { label: 'Hard', bg: 'bg-rose-500/15', text: 'text-rose-400', border: 'border-rose-500/30' },
+  Beginner: { label: 'Beginner', cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' },
+  Intermediate: { label: 'Medium', cls: 'bg-amber-500/15 text-amber-400 border-amber-500/25' },
+  Advanced: { label: 'Hard', cls: 'bg-rose-500/15 text-rose-400 border-rose-500/25' },
 };
 
 interface Props {
@@ -51,6 +50,7 @@ interface Props {
     status?: NodeStatus;
     dimmed?: boolean;
     order?: number;
+    isLeft?: boolean;
   };
   selected?: boolean;
   highlighted?: boolean;
@@ -68,6 +68,7 @@ function RoadmapFlowNode({ data, selected, highlighted }: Props) {
   const isDone = status === 'done';
   const isInProgress = status === 'in-progress';
   const isSkipped = status === 'skipped';
+  const icon = sectionIcons[data.section] || <Code2 className="w-4 h-4" />;
 
   const borderColor = isDone
     ? '#22c55e'
@@ -79,40 +80,55 @@ function RoadmapFlowNode({ data, selected, highlighted }: Props) {
     ? '#a78bfa'
     : data.sectionColor;
 
-  const icon = sectionIcons[data.section] || <Code2 className="w-4 h-4" />;
-
   return (
     <div
       className={`
-        relative flex flex-col gap-1 px-3 py-2.5 rounded-xl border
+        group relative flex flex-col gap-1.5 px-3.5 py-3 rounded-xl border backdrop-blur-sm
         cursor-pointer transition-all duration-200
-        hover:shadow-xl hover:scale-[1.03]
-        ${isDone ? 'bg-emerald-500/5' : isInProgress ? 'bg-yellow-500/5' : isSkipped ? 'bg-muted/30 opacity-50' : 'bg-card/80 backdrop-blur-sm'}
-        ${selected ? 'ring-2 ring-primary shadow-xl scale-[1.03]' : ''}
-        ${highlighted ? 'ring-2 ring-primary/60 shadow-lg shadow-primary/10' : ''}
+        hover:shadow-2xl hover:scale-[1.04]
+        ${isDone ? 'bg-emerald-950/40' : isInProgress ? 'bg-yellow-950/30' : isSkipped ? 'bg-muted/20 opacity-50' : 'bg-card/90'}
+        ${selected ? 'ring-2 ring-primary shadow-xl scale-[1.04]' : ''}
+        ${highlighted ? 'ring-2 ring-blue-400/70 shadow-lg shadow-blue-500/20 scale-[1.02]' : ''}
         ${data.dimmed ? 'opacity-15 pointer-events-none' : ''}
       `}
       style={{
         borderColor,
-        borderWidth: status !== 'pending' || highlighted ? 2 : 1,
-        width: 220,
+        borderWidth: (status !== 'pending' || highlighted) ? 2 : 1,
+        width: 230,
+        boxShadow: highlighted
+          ? `0 0 20px ${data.sectionColor}30, 0 4px 16px rgba(0,0,0,0.3)`
+          : status !== 'pending'
+          ? `0 2px 12px ${borderColor}15`
+          : undefined,
       }}
     >
       {/* Order badge */}
       {data.order && (
         <span
-          className="absolute -top-3 -left-3 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md ring-2 ring-background"
-          style={{ background: `linear-gradient(135deg, ${data.sectionColor}, ${data.sectionColor}dd)` }}
+          className="absolute -top-3 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg ring-2 ring-background"
+          style={{
+            background: `linear-gradient(135deg, ${data.sectionColor}, ${data.sectionColor}bb)`,
+            [data.isLeft ? 'right' : 'left']: -8,
+          }}
         >
           {data.order}
         </span>
       )}
 
+      {/* Connector dot (towards spine) */}
+      <span
+        className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-background"
+        style={{
+          background: borderColor,
+          [data.isLeft ? 'right' : 'left']: -6,
+        }}
+      />
+
       {/* Top row: icon + title + status */}
       <div className="flex items-center gap-2">
         <span
-          className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-          style={{ background: `${data.sectionColor}20`, color: data.sectionColor }}
+          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
+          style={{ background: `${data.sectionColor}18`, color: data.sectionColor }}
         >
           {icon}
         </span>
@@ -122,13 +138,13 @@ function RoadmapFlowNode({ data, selected, highlighted }: Props) {
         {statusIcon[status] && <span className="shrink-0">{statusIcon[status]}</span>}
       </div>
 
-      {/* Bottom row: tags */}
-      <div className="flex items-center gap-1.5 mt-0.5">
-        <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-medium ${diff.bg} ${diff.text} ${diff.border}`}>
+      {/* Tags row */}
+      <div className="flex items-center gap-1.5 pl-9">
+        <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-medium ${diff.cls}`}>
           {diff.label}
         </span>
         {data.isAlternative && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-violet-500/30 bg-violet-500/15 text-violet-400 font-medium flex items-center gap-0.5">
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-violet-500/25 bg-violet-500/15 text-violet-400 font-medium flex items-center gap-0.5">
             <Star className="w-2.5 h-2.5" /> Alt
           </span>
         )}
