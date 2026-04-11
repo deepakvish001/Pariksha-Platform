@@ -12,6 +12,11 @@ interface Props {
   onNodeClick: (nodeData: RoadmapNodeData) => void;
 }
 
+const SECTION_W = 180;
+const SECTION_H = 40;
+const NODE_W = 200;
+const NODE_H = 38;
+
 export default function RoadmapFlowCanvas({ progress, search, sectionFilter, statusFilter, onNodeClick }: Props) {
   const getStatus = useCallback((id: string): NodeStatus => progress[id] || 'pending', [progress]);
 
@@ -39,15 +44,17 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
   const canvasDimensions = useMemo(() => {
     let maxX = 0, maxY = 0;
     nodes.forEach((n) => {
-      const right = n.position.x + 200;
-      const bottom = n.position.y + 50;
+      const w = n.type === 'sectionNode' ? SECTION_W : NODE_W;
+      const h = n.type === 'sectionNode' ? SECTION_H : NODE_H;
+      const right = n.position.x + w;
+      const bottom = n.position.y + h;
       if (right > maxX) maxX = right;
       if (bottom > maxY) maxY = bottom;
     });
-    return { width: maxX + 60, height: maxY + 80 };
+    return { width: maxX + 80, height: maxY + 100 };
   }, [nodes]);
 
-  // Build SVG paths for edges
+  // Build SVG paths for edges — zig-zag connections
   const svgPaths = useMemo(() => {
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
     return flowEdges.map((edge) => {
@@ -55,20 +62,20 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
       const tgt = nodeMap.get(edge.target);
       if (!src || !tgt) return null;
 
-      const isSection = src.type === 'sectionNode';
-      const srcW = isSection ? 180 : 180;
-      const srcH = isSection ? 40 : 36;
-      const tgtW = tgt.type === 'sectionNode' ? 180 : 180;
-      const tgtH = tgt.type === 'sectionNode' ? 40 : 36;
+      const srcIsSection = src.type === 'sectionNode';
+      const tgtIsSection = tgt.type === 'sectionNode';
+      const srcW = srcIsSection ? SECTION_W : NODE_W;
+      const srcH = srcIsSection ? SECTION_H : NODE_H;
+      const tgtW = tgtIsSection ? SECTION_W : NODE_W;
 
-      const x1 = src.position.x + srcW / 2;
-      const y1 = src.position.y + srcH;
-      const x2 = tgt.position.x + tgtW / 2;
-      const y2 = tgt.position.y;
+      const srcCx = src.position.x + srcW / 2;
+      const srcBottom = src.position.y + srcH;
+      const tgtCx = tgt.position.x + tgtW / 2;
+      const tgtTop = tgt.position.y;
 
-      // Simple curved path
-      const midY = (y1 + y2) / 2;
-      const d = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+      // For zig-zag: go down from source center, then across to target center
+      const midY = (srcBottom + tgtTop) / 2;
+      const d = `M ${srcCx} ${srcBottom} C ${srcCx} ${midY}, ${tgtCx} ${midY}, ${tgtCx} ${tgtTop}`;
 
       return (
         <path
@@ -78,7 +85,6 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
           stroke={edge.style?.stroke || '#525252'}
           strokeWidth={edge.style?.strokeWidth || 1.5}
           opacity={edge.style?.opacity || 1}
-          strokeDasharray={edge.animated ? '5 5' : undefined}
         />
       );
     });
