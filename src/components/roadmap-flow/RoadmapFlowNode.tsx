@@ -1,5 +1,4 @@
 import { memo } from 'react';
-import { Handle, Position } from '@xyflow/react';
 import { CheckCircle2, Clock, SkipForward } from 'lucide-react';
 import type { NodeStatus } from '@/data/fullStackRoadmapData';
 
@@ -53,9 +52,6 @@ function RoadmapFlowNode({ data, selected }: Props) {
         maxWidth: 200,
       }}
     >
-      <Handle type="target" position={Position.Top} className="!bg-transparent !border-0 !w-0 !h-0" />
-      <Handle type="source" position={Position.Bottom} className="!bg-transparent !border-0 !w-0 !h-0" />
-
       {statusIcon[status] && <span>{statusIcon[status]}</span>}
       <span className="truncate text-foreground leading-tight">{data.title}</span>
       {data.isAlternative && (

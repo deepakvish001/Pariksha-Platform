@@ -9,7 +9,7 @@ export default function RoadmapFlowLegend() {
   ];
 
   return (
-    <div className="absolute bottom-4 left-4 z-10 flex items-center gap-3 px-3 py-2 rounded-lg border border-border bg-card/90 backdrop-blur-sm text-xs">
+    <div className="sticky bottom-4 left-4 z-10 inline-flex items-center gap-3 px-3 py-2 rounded-lg border border-border bg-card/90 backdrop-blur-sm text-xs ml-4 mb-4">
       {items.map((it) => (
         <span key={it.label} className="flex items-center gap-1.5">
           {it.icon}
