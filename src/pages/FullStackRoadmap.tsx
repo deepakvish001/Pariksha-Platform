@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Sparkles } from 'lucide-react';
+import { ReactFlowProvider } from '@xyflow/react';
 import RoadmapFlowCanvas from '@/components/roadmap-flow/RoadmapFlowCanvas';
 import RoadmapFlowDetailPanel from '@/components/roadmap-flow/RoadmapFlowDetailPanel';
 import RoadmapFlowProgressBar from '@/components/roadmap-flow/RoadmapFlowProgressBar';
@@ -26,50 +26,39 @@ export default function FullStackRoadmap() {
   return (
     <>
       <Helmet>
-        <title>Full Stack Developer Roadmap | Byteskill</title>
+        <title>Full Stack Developer Roadmap | PlacementPro</title>
         <meta name="description" content="Interactive full stack developer roadmap with progress tracking. Learn web development step by step." />
       </Helmet>
 
-      <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-6 space-y-5">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-            Full Stack Developer
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Step by step guide to becoming a modern full stack developer in 2026
-          </p>
+      <div className="flex flex-col h-[calc(100vh-4rem)] gap-3 p-2 sm:p-4">
+        <div className="space-y-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold">Full Stack Developer Roadmap</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Click any topic to learn more and track your progress</p>
+          </div>
+          <RoadmapFlowProgressBar stats={stats} onReset={resetAll} />
+          <RoadmapFlowSearchBar
+            search={search}
+            onSearchChange={setSearch}
+            sectionFilter={sectionFilter}
+            onSectionFilterChange={setSectionFilter}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+          />
         </div>
 
-        {/* Progress */}
-        <RoadmapFlowProgressBar stats={stats} onReset={resetAll} />
-
-        {/* Tip */}
-        <div className="flex items-center justify-center gap-2 text-xs rounded-lg px-4 py-2.5 bg-primary/5 border border-primary/10">
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
-          <span className="text-muted-foreground">Click any topic to view resources and track progress • Scroll to pan • Pinch to zoom</span>
+        <div className="flex-1 min-h-0">
+          <ReactFlowProvider>
+            <RoadmapFlowCanvas
+              progress={progress}
+              search={search}
+              sectionFilter={sectionFilter}
+              statusFilter={statusFilter}
+              onNodeClick={handleNodeClick}
+            />
+          </ReactFlowProvider>
         </div>
 
-        {/* Filters */}
-        <RoadmapFlowSearchBar
-          search={search}
-          onSearchChange={setSearch}
-          sectionFilter={sectionFilter}
-          onSectionFilterChange={setSectionFilter}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-        />
-
-        {/* React Flow Canvas */}
-        <RoadmapFlowCanvas
-          progress={progress}
-          search={search}
-          sectionFilter={sectionFilter}
-          statusFilter={statusFilter}
-          onNodeClick={handleNodeClick}
-        />
-
-        {/* Detail Panel */}
         <RoadmapFlowDetailPanel
           node={selectedNode}
           status={selectedNode ? getStatus(selectedNode.id) : 'pending'}

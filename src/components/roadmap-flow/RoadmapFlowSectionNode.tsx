@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { Handle, Position } from '@xyflow/react';
 
 interface Props {
   data: {
@@ -10,15 +11,11 @@ interface Props {
 function RoadmapFlowSectionNode({ data }: Props) {
   return (
     <div
-      className="flex items-center justify-center rounded-md font-bold text-sm text-white shadow-lg whitespace-nowrap"
-      style={{
-        background: `linear-gradient(135deg, ${data.sectionColor}, ${data.sectionColor}dd)`,
-        border: `2px solid ${data.sectionColor}`,
-        width: 200,
-        height: 42,
-        boxShadow: `0 0 20px ${data.sectionColor}33`,
-      }}
+      className="px-5 py-2 rounded-lg font-bold text-sm text-white shadow-md text-center whitespace-nowrap"
+      style={{ background: data.sectionColor }}
     >
+      <Handle type="target" position={Position.Top} className="!bg-transparent !border-0 !w-0 !h-0" />
+      <Handle type="source" position={Position.Bottom} className="!bg-transparent !border-0 !w-0 !h-0" />
       {data.title}
     </div>
   );
