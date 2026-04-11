@@ -2,7 +2,10 @@ import { useCallback, useMemo, useState } from 'react';
 import RoadmapFlowNode from './RoadmapFlowNode';
 import RoadmapFlowSectionNode from './RoadmapFlowSectionNode';
 import RoadmapFlowLegend from './RoadmapFlowLegend';
-import { flowNodes, flowEdges, type NodeStatus, type RoadmapNodeData, roadmapNodesData } from '@/data/fullStackRoadmapData';
+import {
+  flowNodes, flowEdges, type NodeStatus, type RoadmapNodeData, roadmapNodesData,
+  SPINE_X, NODE_W, NODE_H, SECTION_W, SECTION_H,
+} from '@/data/fullStackRoadmapData';
 
 interface Props {
   progress: Record<string, NodeStatus>;
@@ -11,11 +14,6 @@ interface Props {
   statusFilter: string;
   onNodeClick: (nodeData: RoadmapNodeData) => void;
 }
-
-const SECTION_W = 200;
-const SECTION_H = 44;
-const NODE_W = 220;
-const NODE_H = 58;
 
 export default function RoadmapFlowCanvas({ progress, search, sectionFilter, statusFilter, onNodeClick }: Props) {
   const getStatus = useCallback((id: string): NodeStatus => progress[id] || 'pending', [progress]);
@@ -36,11 +34,10 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
     });
   }, [progress, search, sectionFilter, statusFilter, getStatus]);
 
-  // Build the path highlight set: all nodes from start up to (and including) the hovered node
+  // Path highlighting
   const highlightedNodeIds = useMemo(() => {
     if (!hoveredNodeId) return new Set<string>();
     const set = new Set<string>();
-    // Walk through topic nodes in order until we hit the hovered one
     for (const nd of roadmapNodesData) {
       set.add(nd.id);
       if (nd.id === hoveredNodeId) break;
@@ -48,17 +45,13 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
     return set;
   }, [hoveredNodeId]);
 
-  // Build highlighted edge set
   const highlightedEdgeIds = useMemo(() => {
     if (!hoveredNodeId) return new Set<string>();
     const set = new Set<string>();
     for (const edge of flowEdges) {
-      if (highlightedNodeIds.has(edge.source) || highlightedNodeIds.has(edge.target)) {
-        // Only include edges where BOTH endpoints are in the path
-        const srcInPath = highlightedNodeIds.has(edge.source) || edge.source.startsWith('section-');
-        const tgtInPath = highlightedNodeIds.has(edge.target) || edge.target.startsWith('section-');
-        if (srcInPath && tgtInPath) set.add(edge.id);
-      }
+      const srcInPath = highlightedNodeIds.has(edge.source) || edge.source.startsWith('section-');
+      const tgtInPath = highlightedNodeIds.has(edge.target) || edge.target.startsWith('section-');
+      if (srcInPath && tgtInPath) set.add(edge.id);
     }
     return set;
   }, [hoveredNodeId, highlightedNodeIds]);
@@ -76,49 +69,84 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
       if (n.position.x + w > maxX) maxX = n.position.x + w;
       if (n.position.y + h > maxY) maxY = n.position.y + h;
     });
-    return { width: maxX + 80, height: maxY + 100 };
+    return { width: maxX + 80, height: maxY + 120 };
   }, [nodes]);
 
-  // Build SVG paths
-  const svgPaths = useMemo(() => {
-    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  // Build SVG elbow paths
+  const svgContent = useMemo(() => {
     const isHovering = hoveredNodeId !== null;
 
-    return flowEdges.map((edge) => {
-      const src = nodeMap.get(edge.source);
-      const tgt = nodeMap.get(edge.target);
-      if (!src || !tgt) return null;
+    // Draw the vertical spine line
+    let spineMinY = Infinity, spineMaxY = 0;
+    nodes.forEach((n) => {
+      if (n.type === 'sectionNode') {
+        const cy = n.position.y + SECTION_H / 2;
+        if (cy < spineMinY) spineMinY = cy;
+        if (cy > spineMaxY) spineMaxY = cy;
+      }
+    });
 
-      const srcIsSection = src.type === 'sectionNode';
-      const tgtIsSection = tgt.type === 'sectionNode';
-      const srcW = srcIsSection ? SECTION_W : NODE_W;
-      const srcH = srcIsSection ? SECTION_H : NODE_H;
-      const tgtW = tgtIsSection ? SECTION_W : NODE_W;
-
-      const srcCx = src.position.x + srcW / 2;
-      const srcBottom = src.position.y + srcH;
-      const tgtCx = tgt.position.x + tgtW / 2;
-      const tgtTop = tgt.position.y;
-
-      const midY = (srcBottom + tgtTop) / 2;
-      const d = `M ${srcCx} ${srcBottom} C ${srcCx} ${midY}, ${tgtCx} ${midY}, ${tgtCx} ${tgtTop}`;
-
+    const paths = flowEdges.map((edge) => {
+      if (!edge.meta) return null;
+      const { srcX, srcY, tgtX, tgtY, spineX, color } = edge.meta;
       const isHighlighted = highlightedEdgeIds.has(edge.id);
-      const baseStroke = edge.style?.stroke || '#525252';
+
+      // Build elbow path: source → down to midY → horizontal to spine → down → horizontal to target → down to target
+      const midY = (srcY + tgtY) / 2;
+
+      let d: string;
+      if (srcX === spineX && tgtX === spineX) {
+        // Both on spine — straight line
+        d = `M ${srcX} ${srcY} L ${tgtX} ${tgtY}`;
+      } else if (srcX === spineX) {
+        // Source on spine, target on a branch
+        d = `M ${srcX} ${srcY} L ${srcX} ${tgtY + NODE_H / 2} L ${tgtX > spineX ? tgtX : tgtX + NODE_W} ${tgtY + NODE_H / 2}`;
+      } else if (tgtX === spineX) {
+        // Source on branch, target on spine
+        const srcEdgeX = srcX < spineX ? srcX + NODE_W : srcX;
+        d = `M ${srcEdgeX < spineX ? srcX + NODE_W : srcX} ${srcY} L ${spineX} ${srcY} L ${spineX} ${tgtY}`;
+      } else {
+        // Both on branches — go through spine with rounded elbow
+        const srcEdgeX = srcX < spineX ? srcX + NODE_W / 2 + NODE_W / 2 : srcX + NODE_W / 2 - NODE_W / 2;
+        const tgtEdgeX = tgtX < spineX ? tgtX + NODE_W / 2 + NODE_W / 2 : tgtX + NODE_W / 2 - NODE_W / 2;
+        // Simplified: go down from src bottom center, then to spine, down, then to target
+        const srcCx = srcX < spineX ? srcX + NODE_W : srcX;
+        const tgtCxEdge = tgtX < spineX ? tgtX + NODE_W : tgtX;
+
+        d = `M ${srcX + NODE_W / 2} ${srcY + NODE_H} L ${srcX + NODE_W / 2} ${srcY + NODE_H + 8} L ${spineX} ${srcY + NODE_H + 8} L ${spineX} ${tgtY - 8} L ${tgtX + NODE_W / 2} ${tgtY - 8} L ${tgtX + NODE_W / 2} ${tgtY}`;
+      }
 
       return (
         <path
           key={edge.id}
           d={d}
           fill="none"
-          stroke={isHighlighted ? '#60a5fa' : baseStroke}
-          strokeWidth={isHighlighted ? 3 : (edge.style?.strokeWidth || 1.5)}
-          opacity={isHovering ? (isHighlighted ? 1 : 0.15) : (edge.style?.opacity || 0.7)}
-          className="transition-all duration-300"
+          stroke={isHighlighted ? '#60a5fa' : color}
+          strokeWidth={isHighlighted ? 3 : 2}
+          opacity={isHovering ? (isHighlighted ? 1 : 0.1) : 0.5}
           strokeLinecap="round"
+          strokeLinejoin="round"
+          className="transition-all duration-300"
+          filter={isHighlighted ? 'url(#pathGlow)' : undefined}
         />
       );
     });
+
+    // Spine dotted line
+    const spineLine = spineMinY < spineMaxY ? (
+      <line
+        x1={SPINE_X}
+        y1={spineMinY}
+        x2={SPINE_X}
+        y2={spineMaxY}
+        stroke="#333"
+        strokeWidth={1}
+        strokeDasharray="4 6"
+        opacity={0.4}
+      />
+    ) : null;
+
+    return { paths, spineLine };
   }, [nodes, hoveredNodeId, highlightedEdgeIds]);
 
   return (
@@ -127,35 +155,53 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
         className="relative mx-auto"
         style={{ width: canvasDimensions.width, height: canvasDimensions.height }}
       >
-        {/* SVG connections layer */}
+        {/* SVG layer */}
         <svg
           className="absolute inset-0 pointer-events-none"
           width={canvasDimensions.width}
           height={canvasDimensions.height}
         >
           <defs>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+            <filter id="pathGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
               <feMerge>
-                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
           </defs>
-          {svgPaths}
+          {svgContent.spineLine}
+          {svgContent.paths}
+
+          {/* Small circles at each node connection point on the spine */}
+          {flowEdges.map((edge) => {
+            if (!edge.meta) return null;
+            const isHighlighted = highlightedEdgeIds.has(edge.id);
+            const isHovering = hoveredNodeId !== null;
+            return (
+              <circle
+                key={`dot-${edge.id}`}
+                cx={SPINE_X}
+                cy={edge.meta.srcY + (edge.meta.tgtY - edge.meta.srcY) / 2}
+                r={isHighlighted ? 4 : 3}
+                fill={isHighlighted ? '#60a5fa' : edge.meta.color}
+                opacity={isHovering ? (isHighlighted ? 1 : 0.1) : 0.4}
+                className="transition-all duration-300"
+              />
+            );
+          })}
         </svg>
 
-        {/* Nodes layer */}
+        {/* Nodes */}
         {nodes.map((node) => {
           const isHovering = hoveredNodeId !== null;
           const isInPath = highlightedNodeIds.has(node.id);
-          const isSectionInPath = node.type === 'sectionNode' && isHovering;
 
           return (
             <div
               key={node.id}
-              className={`absolute transition-opacity duration-300 ${
-                isHovering && !isInPath && node.type !== 'sectionNode' ? 'opacity-20' : ''
+              className={`absolute transition-all duration-300 ${
+                isHovering && !isInPath && node.type !== 'sectionNode' ? 'opacity-15 scale-[0.97]' : ''
               }`}
               style={{ left: node.position.x, top: node.position.y }}
               onMouseEnter={() => {

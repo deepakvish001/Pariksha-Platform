@@ -178,16 +178,16 @@ export const roadmapNodesData: RoadmapNodeData[] = [
   { id: 'career-open-source', title: 'Open Source', description: 'Contributing to open source projects, understanding codebases, and building your developer reputation.', section: 'Career', sectionColor: sectionColors['Career'], difficulty: 'Intermediate', resources: [{ title: 'First Contributions', url: 'https://firstcontributions.github.io/', type: 'docs' }, { title: 'Open Source Guide', url: 'https://www.youtube.com/watch?v=yzeVMecydCE', type: 'video' }] },
 ];
 
-// ── Zig-zag layout: nodes alternate left ↔ right down a central spine ──
-// Each node gets a sequential number so reading order is crystal clear.
+// ── Zig-zag layout with elbow connectors through central spine ──
 
-const SPINE_X = 440;
-const BRANCH_OFFSET = 260;
+const SPINE_X = 400;
+const BRANCH_OFFSET = 230;
 const NODE_W = 220;
-const NODE_H = 58;
-const SECTION_H = 44;
-const Y_GAP = 72;          // vertical gap between consecutive nodes
-const Y_SECTION_GAP = 80;  // extra gap before a new section header
+const NODE_H = 62;
+const SECTION_H = 46;
+const SECTION_W = 200;
+const Y_GAP = 78;
+const Y_SECTION_GAP = 90;
 
 interface FlowNode {
   id: string;
@@ -202,64 +202,68 @@ interface FlowEdge {
   type: string;
   animated: boolean;
   style: Record<string, any>;
+  /** Extra metadata for the canvas renderer */
+  meta?: { srcX: number; srcY: number; tgtX: number; tgtY: number; spineX: number; color: string };
 }
 
 function buildLayout() {
   const nodes: FlowNode[] = [];
   const edges: FlowEdge[] = [];
 
-  let y = 40;
-  let globalIndex = 0;       // sequential topic counter
+  let y = 50;
+  let globalIndex = 0;
   let prevNodeId: string | null = null;
+  let prevNodeCenter: { x: number; y: number; isSection: boolean } | null = null;
   let currentSection = '';
   const sectionHeaderIds: string[] = [];
 
   roadmapNodesData.forEach((nd) => {
-    // ── Section header when section changes ──
+    // ── Section header ──
     if (nd.section !== currentSection) {
       currentSection = nd.section;
       const sectionId = `section-${nd.section.replace(/\s+/g, '-').toLowerCase()}`;
 
-      // Extra gap before section (except first)
       if (sectionHeaderIds.length > 0) y += Y_SECTION_GAP;
 
+      const sectionNodeX = SPINE_X - SECTION_W / 2;
       nodes.push({
         id: sectionId,
         type: 'sectionNode',
-        position: { x: SPINE_X - 90, y },
+        position: { x: sectionNodeX, y },
         data: { title: nd.section, sectionColor: nd.sectionColor },
       });
 
-      // Connect previous node → section header
-      if (prevNodeId) {
+      const sectionCenter = { x: SPINE_X, y: y + SECTION_H / 2, isSection: true };
+
+      // Edge from previous node → section
+      if (prevNodeCenter) {
+        const srcBottomY = prevNodeCenter.y + (prevNodeCenter.isSection ? SECTION_H / 2 : NODE_H / 2);
+        const tgtTopY = y;
         edges.push({
           id: `e-${prevNodeId}-${sectionId}`,
-          source: prevNodeId,
+          source: prevNodeId!,
           target: sectionId,
-          type: 'smoothstep',
+          type: 'elbow',
           animated: false,
           style: { stroke: '#525252', strokeWidth: 2 },
-        });
-      }
-
-      // Connect consecutive section headers (spine)
-      if (sectionHeaderIds.length > 0) {
-        edges.push({
-          id: `spine-${sectionHeaderIds.length}`,
-          source: sectionHeaderIds[sectionHeaderIds.length - 1],
-          target: sectionId,
-          type: 'smoothstep',
-          animated: false,
-          style: { stroke: '#525252', strokeWidth: 2, opacity: 0.3 },
+          meta: {
+            srcX: prevNodeCenter.x,
+            srcY: srcBottomY,
+            tgtX: SPINE_X,
+            tgtY: tgtTopY,
+            spineX: SPINE_X,
+            color: '#525252',
+          },
         });
       }
 
       sectionHeaderIds.push(sectionId);
       prevNodeId = sectionId;
-      y += SECTION_H + 16;
+      prevNodeCenter = sectionCenter;
+      y += SECTION_H + 20;
     }
 
-    // ── Zig-zag: even index → left, odd index → right ──
+    // ── Topic node — zig-zag ──
     const isLeft = globalIndex % 2 === 0;
     const nodeX = isLeft
       ? SPINE_X - BRANCH_OFFSET - NODE_W / 2
@@ -269,23 +273,35 @@ function buildLayout() {
       id: nd.id,
       type: 'roadmapNode',
       position: { x: nodeX, y },
-      data: { ...nd, nodeType: 'topic', order: globalIndex + 1 },
+      data: { ...nd, nodeType: 'topic', order: globalIndex + 1, isLeft },
     });
 
-    // Connect previous → this node
-    if (prevNodeId) {
-      const color = nd.sectionColor;
+    const nodeCenterX = nodeX + NODE_W / 2;
+
+    // Edge from previous → this (elbow through spine)
+    if (prevNodeCenter) {
+      const srcBottomY = prevNodeCenter.y + (prevNodeCenter.isSection ? SECTION_H / 2 : NODE_H / 2);
+      const tgtTopY = y;
       edges.push({
         id: `e-${prevNodeId}-${nd.id}`,
-        source: prevNodeId,
+        source: prevNodeId!,
         target: nd.id,
-        type: 'smoothstep',
+        type: 'elbow',
         animated: false,
-        style: { stroke: color, strokeWidth: 1.5, opacity: 0.7 },
+        style: { stroke: nd.sectionColor, strokeWidth: 2, opacity: 0.6 },
+        meta: {
+          srcX: prevNodeCenter.x,
+          srcY: srcBottomY,
+          tgtX: nodeCenterX,
+          tgtY: tgtTopY,
+          spineX: SPINE_X,
+          color: nd.sectionColor,
+        },
       });
     }
 
     prevNodeId = nd.id;
+    prevNodeCenter = { x: nodeCenterX, y: y + NODE_H / 2, isSection: false };
     globalIndex++;
     y += Y_GAP;
   });
@@ -296,3 +312,5 @@ function buildLayout() {
 const layout = buildLayout();
 export const flowNodes = layout.nodes;
 export const flowEdges = layout.edges;
+
+export { SPINE_X, NODE_W, NODE_H, SECTION_W, SECTION_H };
