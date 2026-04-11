@@ -94,7 +94,7 @@ function RoadmapFlowNode({ data, selected, highlighted }: Props) {
       style={{
         borderColor,
         borderWidth: (status !== 'pending' || highlighted) ? 2 : 1,
-        width: 230,
+        width: 220,
         boxShadow: highlighted
           ? `0 0 20px ${data.sectionColor}30, 0 4px 16px rgba(0,0,0,0.3)`
           : status !== 'pending'
