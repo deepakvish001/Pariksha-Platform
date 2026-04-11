@@ -180,12 +180,12 @@ export const roadmapNodesData: RoadmapNodeData[] = [
 
 // ── Zig-zag layout with elbow connectors through central spine ──
 
-const SPINE_X = 480;
-const BRANCH_OFFSET = 280;
-const NODE_W = 230;
+const SPINE_X = 400;
+const BRANCH_OFFSET = 230;
+const NODE_W = 220;
 const NODE_H = 62;
 const SECTION_H = 46;
-const SECTION_W = 210;
+const SECTION_W = 200;
 const Y_GAP = 78;
 const Y_SECTION_GAP = 90;
 
