@@ -209,11 +209,24 @@ const DashboardRoadmapCompare = () => {
   const [query, setQuery] = useState(initialQuery);
   const [sortMode, setSortMode] = useState<SortMode>(initialSort);
 
-  // Debounced query for URL updates (300ms after user stops typing)
+  // Debounced query for URL updates (300ms after user stops typing).
+  // Holds the active timer so other actions (e.g. clear) can cancel it.
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
+  const debounceRef = useRef<number | null>(null);
   useEffect(() => {
-    const handle = window.setTimeout(() => setDebouncedQuery(query), 300);
-    return () => window.clearTimeout(handle);
+    if (debounceRef.current !== null) {
+      window.clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = window.setTimeout(() => {
+      setDebouncedQuery(query);
+      debounceRef.current = null;
+    }, 300);
+    return () => {
+      if (debounceRef.current !== null) {
+        window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+    };
   }, [query]);
 
   // Sync URL → state (handles back/forward navigation, refresh, deep links)
