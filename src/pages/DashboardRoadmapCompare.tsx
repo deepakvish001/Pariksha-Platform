@@ -189,17 +189,32 @@ const DashboardRoadmapCompare = () => {
     roadmapTrees[1]?.id ??
     roadmapTrees[0]?.id ??
     "";
-  const initialLeafOnly =
-    (searchParams.get("leaf") ?? (stored.leafOnly ? "1" : "0")) === "1";
+  const initialLeafOnly = (() => {
+    const urlVal = searchParams.get("leaf");
+    if (urlVal !== null) return urlVal === "1";
+    return stored.leafOnly ?? false;
+  })();
   const initialQuery = searchParams.get("q") ?? "";
-  const initialSort: SortMode =
-    (searchParams.get("sort") as SortMode) === "alpha" ? "alpha" : "section";
+  const initialSort: SortMode = (() => {
+    const urlVal = searchParams.get("sort");
+    if (urlVal === "alpha" || urlVal === "section") return urlVal;
+    if (stored.sortMode === "alpha" || stored.sortMode === "section")
+      return stored.sortMode;
+    return "section";
+  })();
 
   const [aId, setAId] = useState(initialA);
   const [bId, setBId] = useState(initialB);
   const [leafOnly, setLeafOnly] = useState(initialLeafOnly);
   const [query, setQuery] = useState(initialQuery);
   const [sortMode, setSortMode] = useState<SortMode>(initialSort);
+
+  // Debounced query for URL updates (300ms after user stops typing)
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
+  useEffect(() => {
+    const handle = window.setTimeout(() => setDebouncedQuery(query), 300);
+    return () => window.clearTimeout(handle);
+  }, [query]);
 
   // Sync URL → state (handles back/forward navigation, refresh, deep links)
   const urlQuery = searchParams.get("q") ?? "";
@@ -208,7 +223,10 @@ const DashboardRoadmapCompare = () => {
   const urlLeaf = searchParams.get("leaf");
   const urlSort = searchParams.get("sort");
   useEffect(() => {
-    if (urlQuery !== query) setQuery(urlQuery);
+    if (urlQuery !== query) {
+      setQuery(urlQuery);
+      setDebouncedQuery(urlQuery);
+    }
     if (urlA && urlA !== aId) setAId(urlA);
     if (urlB && urlB !== bId) setBId(urlB);
     if (urlLeaf !== null) {
@@ -221,9 +239,9 @@ const DashboardRoadmapCompare = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlQuery, urlA, urlB, urlLeaf, urlSort]);
 
-  // Sync state → URL + localStorage. Use push for the search keyword so the
-  // browser back/forward buttons step through search history; selectors and
-  // toggle stay on `replace` to avoid history spam.
+  // Sync state → URL + localStorage. Use push for the (debounced) search
+  // keyword so back/forward steps through search history; selectors and
+  // toggles stay on `replace` to avoid history spam.
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
     const prevQ = next.get("q") ?? "";
@@ -231,15 +249,18 @@ const DashboardRoadmapCompare = () => {
     next.set("b", bId);
     next.set("leaf", leafOnly ? "1" : "0");
     next.set("sort", sortMode);
-    if (query) next.set("q", query);
+    if (debouncedQuery) next.set("q", debouncedQuery);
     else next.delete("q");
-    const queryChanged = prevQ !== query;
+    const queryChanged = prevQ !== debouncedQuery;
     setSearchParams(next, { replace: !queryChanged });
-    saveSelection({ a: aId, b: bId, leafOnly });
+    saveSelection({ a: aId, b: bId, leafOnly, sortMode });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aId, bId, leafOnly, query, sortMode]);
+  }, [aId, bId, leafOnly, debouncedQuery, sortMode]);
 
-  const clearFilter = () => setQuery("");
+  const clearFilter = () => {
+    setQuery("");
+    setDebouncedQuery("");
+  };
 
   const treeA = useMemo(() => roadmapTrees.find((t) => t.id === aId), [aId]);
   const treeB = useMemo(() => roadmapTrees.find((t) => t.id === bId), [bId]);
