@@ -184,15 +184,35 @@ const DashboardRoadmapCompare = () => {
   const [leafOnly, setLeafOnly] = useState(initialLeafOnly);
   const [query, setQuery] = useState(initialQuery);
 
-  // Sync state → URL + localStorage
+  // Sync URL → state (handles back/forward navigation, refresh, deep links)
+  const urlQuery = searchParams.get("q") ?? "";
+  const urlA = searchParams.get("a");
+  const urlB = searchParams.get("b");
+  const urlLeaf = searchParams.get("leaf");
+  useEffect(() => {
+    if (urlQuery !== query) setQuery(urlQuery);
+    if (urlA && urlA !== aId) setAId(urlA);
+    if (urlB && urlB !== bId) setBId(urlB);
+    if (urlLeaf !== null) {
+      const next = urlLeaf === "1";
+      if (next !== leafOnly) setLeafOnly(next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlQuery, urlA, urlB, urlLeaf]);
+
+  // Sync state → URL + localStorage. Use push for the search keyword so the
+  // browser back/forward buttons step through search history; selectors and
+  // toggle stay on `replace` to avoid history spam.
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
+    const prevQ = next.get("q") ?? "";
     next.set("a", aId);
     next.set("b", bId);
     next.set("leaf", leafOnly ? "1" : "0");
     if (query) next.set("q", query);
     else next.delete("q");
-    setSearchParams(next, { replace: true });
+    const queryChanged = prevQ !== query;
+    setSearchParams(next, { replace: !queryChanged });
     saveSelection({ a: aId, b: bId, leafOnly });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aId, bId, leafOnly, query]);
