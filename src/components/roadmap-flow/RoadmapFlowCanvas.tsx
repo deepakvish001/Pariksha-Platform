@@ -3,9 +3,33 @@ import RoadmapFlowNode from './RoadmapFlowNode';
 import RoadmapFlowSectionNode from './RoadmapFlowSectionNode';
 import RoadmapFlowLegend from './RoadmapFlowLegend';
 import {
-  flowNodes, flowEdges, type NodeStatus, type RoadmapNodeData, roadmapNodesData,
-  SPINE_X, NODE_W, NODE_H, SECTION_W, SECTION_H,
+  flowNodes as fsFlowNodes,
+  flowEdges as fsFlowEdges,
+  roadmapNodesData as fsRoadmapNodesData,
+  type NodeStatus,
+  type RoadmapNodeData,
+  SPINE_X as FS_SPINE_X,
+  NODE_W as FS_NODE_W,
+  NODE_H as FS_NODE_H,
+  SECTION_W as FS_SECTION_W,
+  SECTION_H as FS_SECTION_H,
 } from '@/data/fullStackRoadmapData';
+
+interface FlowNode {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  data: any;
+}
+interface FlowEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  animated: boolean;
+  style: Record<string, any>;
+  meta?: { srcX: number; srcY: number; tgtX: number; tgtY: number; spineX: number; color: string };
+}
 
 interface Props {
   progress: Record<string, NodeStatus>;
@@ -13,15 +37,46 @@ interface Props {
   sectionFilter: string;
   statusFilter: string;
   onNodeClick: (nodeData: RoadmapNodeData) => void;
+  /** Optional overrides — when provided, render an arbitrary roadmap. */
+  flowNodes?: FlowNode[];
+  flowEdges?: FlowEdge[];
+  topics?: RoadmapNodeData[];
+  layout?: {
+    SPINE_X: number;
+    NODE_W: number;
+    NODE_H: number;
+    SECTION_W: number;
+    SECTION_H: number;
+  };
 }
 
-export default function RoadmapFlowCanvas({ progress, search, sectionFilter, statusFilter, onNodeClick }: Props) {
+export default function RoadmapFlowCanvas({
+  progress,
+  search,
+  sectionFilter,
+  statusFilter,
+  onNodeClick,
+  flowNodes: propsFlowNodes,
+  flowEdges: propsFlowEdges,
+  topics: propsTopics,
+  layout: propsLayout,
+}: Props) {
+  // Resolve which dataset to render — either passed-in (generic) or Full Stack default.
+  const flowNodesData = propsFlowNodes ?? fsFlowNodes;
+  const flowEdgesData = propsFlowEdges ?? fsFlowEdges;
+  const topicsData = propsTopics ?? (fsRoadmapNodesData as unknown as RoadmapNodeData[]);
+  const SPINE_X = propsLayout?.SPINE_X ?? FS_SPINE_X;
+  const NODE_W = propsLayout?.NODE_W ?? FS_NODE_W;
+  const NODE_H = propsLayout?.NODE_H ?? FS_NODE_H;
+  const SECTION_W = propsLayout?.SECTION_W ?? FS_SECTION_W;
+  const SECTION_H = propsLayout?.SECTION_H ?? FS_SECTION_H;
+
   const getStatus = useCallback((id: string): NodeStatus => progress[id] || 'pending', [progress]);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   const nodes = useMemo(() => {
     const searchLower = search.toLowerCase();
-    return flowNodes.map((n) => {
+    return flowNodesData.map((n) => {
       const isTopic = n.type === 'roadmapNode';
       const status = isTopic ? getStatus(n.id) : 'pending';
       let dimmed = false;
@@ -32,34 +87,34 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
       }
       return { ...n, data: { ...n.data, status, dimmed } };
     });
-  }, [progress, search, sectionFilter, statusFilter, getStatus]);
+  }, [progress, search, sectionFilter, statusFilter, getStatus, flowNodesData]);
 
   // Path highlighting
   const highlightedNodeIds = useMemo(() => {
     if (!hoveredNodeId) return new Set<string>();
     const set = new Set<string>();
-    for (const nd of roadmapNodesData) {
+    for (const nd of topicsData) {
       set.add(nd.id);
       if (nd.id === hoveredNodeId) break;
     }
     return set;
-  }, [hoveredNodeId]);
+  }, [hoveredNodeId, topicsData]);
 
   const highlightedEdgeIds = useMemo(() => {
     if (!hoveredNodeId) return new Set<string>();
     const set = new Set<string>();
-    for (const edge of flowEdges) {
+    for (const edge of flowEdgesData) {
       const srcInPath = highlightedNodeIds.has(edge.source) || edge.source.startsWith('section-');
       const tgtInPath = highlightedNodeIds.has(edge.target) || edge.target.startsWith('section-');
       if (srcInPath && tgtInPath) set.add(edge.id);
     }
     return set;
-  }, [hoveredNodeId, highlightedNodeIds]);
+  }, [hoveredNodeId, highlightedNodeIds, flowEdgesData]);
 
   const handleNodeClick = useCallback((nodeId: string) => {
-    const nodeData = roadmapNodesData.find((nd) => nd.id === nodeId);
+    const nodeData = topicsData.find((nd) => nd.id === nodeId);
     if (nodeData) onNodeClick(nodeData);
-  }, [onNodeClick]);
+  }, [onNodeClick, topicsData]);
 
   const canvasDimensions = useMemo(() => {
     let maxX = 0, maxY = 0;
@@ -70,13 +125,11 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
       if (n.position.y + h > maxY) maxY = n.position.y + h;
     });
     return { width: maxX + 80, height: maxY + 120 };
-  }, [nodes]);
+  }, [nodes, SECTION_W, NODE_W, SECTION_H, NODE_H]);
 
-  // Build SVG elbow paths
   const svgContent = useMemo(() => {
     const isHovering = hoveredNodeId !== null;
 
-    // Draw the vertical spine line
     let spineMinY = Infinity, spineMaxY = 0;
     nodes.forEach((n) => {
       if (n.type === 'sectionNode') {
@@ -86,33 +139,20 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
       }
     });
 
-    const paths = flowEdges.map((edge) => {
+    const paths = flowEdgesData.map((edge) => {
       if (!edge.meta) return null;
       const { srcX, srcY, tgtX, tgtY, spineX, color } = edge.meta;
       const isHighlighted = highlightedEdgeIds.has(edge.id);
 
-      // Build elbow path: source → down to midY → horizontal to spine → down → horizontal to target → down to target
-      const midY = (srcY + tgtY) / 2;
-
       let d: string;
       if (srcX === spineX && tgtX === spineX) {
-        // Both on spine — straight line
         d = `M ${srcX} ${srcY} L ${tgtX} ${tgtY}`;
       } else if (srcX === spineX) {
-        // Source on spine, target on a branch
         d = `M ${srcX} ${srcY} L ${srcX} ${tgtY + NODE_H / 2} L ${tgtX > spineX ? tgtX : tgtX + NODE_W} ${tgtY + NODE_H / 2}`;
       } else if (tgtX === spineX) {
-        // Source on branch, target on spine
         const srcEdgeX = srcX < spineX ? srcX + NODE_W : srcX;
         d = `M ${srcEdgeX < spineX ? srcX + NODE_W : srcX} ${srcY} L ${spineX} ${srcY} L ${spineX} ${tgtY}`;
       } else {
-        // Both on branches — go through spine with rounded elbow
-        const srcEdgeX = srcX < spineX ? srcX + NODE_W / 2 + NODE_W / 2 : srcX + NODE_W / 2 - NODE_W / 2;
-        const tgtEdgeX = tgtX < spineX ? tgtX + NODE_W / 2 + NODE_W / 2 : tgtX + NODE_W / 2 - NODE_W / 2;
-        // Simplified: go down from src bottom center, then to spine, down, then to target
-        const srcCx = srcX < spineX ? srcX + NODE_W : srcX;
-        const tgtCxEdge = tgtX < spineX ? tgtX + NODE_W : tgtX;
-
         d = `M ${srcX + NODE_W / 2} ${srcY + NODE_H} L ${srcX + NODE_W / 2} ${srcY + NODE_H + 8} L ${spineX} ${srcY + NODE_H + 8} L ${spineX} ${tgtY - 8} L ${tgtX + NODE_W / 2} ${tgtY - 8} L ${tgtX + NODE_W / 2} ${tgtY}`;
       }
 
@@ -132,7 +172,6 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
       );
     });
 
-    // Spine dotted line
     const spineLine = spineMinY < spineMaxY ? (
       <line
         x1={SPINE_X}
@@ -147,7 +186,7 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
     ) : null;
 
     return { paths, spineLine };
-  }, [nodes, hoveredNodeId, highlightedEdgeIds]);
+  }, [nodes, hoveredNodeId, highlightedEdgeIds, flowEdgesData, SPINE_X, SECTION_H, NODE_W, NODE_H]);
 
   return (
     <div className="relative w-full rounded-xl border border-border overflow-auto bg-background">
@@ -155,7 +194,6 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
         className="relative mx-auto"
         style={{ width: canvasDimensions.width, height: canvasDimensions.height }}
       >
-        {/* SVG layer */}
         <svg
           className="absolute inset-0 pointer-events-none"
           width={canvasDimensions.width}
@@ -173,8 +211,7 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
           {svgContent.spineLine}
           {svgContent.paths}
 
-          {/* Small circles at each node connection point on the spine */}
-          {flowEdges.map((edge) => {
+          {flowEdgesData.map((edge) => {
             if (!edge.meta) return null;
             const isHighlighted = highlightedEdgeIds.has(edge.id);
             const isHovering = hoveredNodeId !== null;
@@ -192,7 +229,6 @@ export default function RoadmapFlowCanvas({ progress, search, sectionFilter, sta
           })}
         </svg>
 
-        {/* Nodes */}
         {nodes.map((node) => {
           const isHovering = hoveredNodeId !== null;
           const isInPath = highlightedNodeIds.has(node.id);
