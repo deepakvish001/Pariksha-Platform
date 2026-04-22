@@ -262,7 +262,7 @@ interface RoadmapCardProps {
 }
 
 const RoadmapCard = ({ roadmap, index }: RoadmapCardProps) => {
-  // For Full Stack, link to the rich flow page; others to generic detail
+  // Every roadmap now opens the same interactive flow view.
   const href =
     roadmap.id === "fullstack"
       ? "/dashboard/roadmap/fullstack"

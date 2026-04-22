@@ -151,7 +151,10 @@ const App = () => (
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
                   <Route path="profile" element={<DashboardProfile />} />
                   <Route path="roadmaps" element={<DashboardRoadmaps />} />
-                  <Route path="roadmaps/:roadmapId" element={<DashboardRoadmapDetail />} />
+                  {/* Legacy generic detail (kept reachable for older bookmarks) */}
+                  <Route path="roadmaps/:roadmapId/list" element={<DashboardRoadmapDetail />} />
+                  {/* All roadmaps now use the interactive flow view */}
+                  <Route path="roadmaps/:roadmapId" element={<FullStackRoadmap />} />
                   <Route path="roadmap/fullstack" element={<FullStackRoadmap />} />
                 </Route>
                 {/* Library routes - public */}
