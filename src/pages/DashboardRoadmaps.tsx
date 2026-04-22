@@ -174,14 +174,22 @@ const DashboardRoadmaps = () => {
         <main className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-6">
           {/* Filter bar */}
           <div className="space-y-4">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search roadmaps..."
-                className="pl-9"
-              />
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+              <div className="relative w-full sm:max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search roadmaps..."
+                  className="pl-9"
+                />
+              </div>
+              <Button asChild variant="outline" size="sm" className="self-start sm:self-auto">
+                <Link to="/dashboard/roadmaps/compare">
+                  <GitCompare className="h-4 w-4 mr-1.5" />
+                  Compare roadmaps
+                </Link>
+              </Button>
             </div>
 
             <div className="flex flex-wrap gap-2">
