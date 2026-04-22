@@ -30,6 +30,7 @@ import SheetDetail from "./pages/SheetDetail";
 import FullStackRoadmap from "./pages/FullStackRoadmap";
 import DashboardRoadmaps from "./pages/DashboardRoadmaps";
 import DashboardRoadmapDetail from "./pages/DashboardRoadmapDetail";
+import DashboardRoadmapCompare from "./pages/DashboardRoadmapCompare";
 
 // Library Pages
 import PositionResources from "./pages/library/PositionResources";
@@ -151,6 +152,7 @@ const App = () => (
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
                   <Route path="profile" element={<DashboardProfile />} />
                   <Route path="roadmaps" element={<DashboardRoadmaps />} />
+                  <Route path="roadmaps/compare" element={<DashboardRoadmapCompare />} />
                   {/* Legacy generic detail (kept reachable for older bookmarks) */}
                   <Route path="roadmaps/:roadmapId/list" element={<DashboardRoadmapDetail />} />
                   {/* All roadmaps now use the interactive flow view */}
