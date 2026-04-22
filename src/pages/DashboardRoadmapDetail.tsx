@@ -73,36 +73,70 @@ const DashboardRoadmapDetail = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [hydrated, setHydrated] = useState(false);
 
   const roadmap = roadmapId ? getRoadmapTreeById(roadmapId) : undefined;
 
   const storageKey = `roadmap-progress-${roadmapId}`;
+  const sectionsKey = `roadmap-open-sections-${roadmapId}`;
+  const searchKey = `roadmap-search-${roadmapId}`;
 
-  // Load progress
+  // Load persisted state when roadmap changes
   useEffect(() => {
+    if (!roadmapId) return;
+    setHydrated(false);
     try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) setCompleted(JSON.parse(raw));
+      const rawProgress = localStorage.getItem(storageKey);
+      setCompleted(rawProgress ? JSON.parse(rawProgress) : {});
+
+      const rawSections = localStorage.getItem(sectionsKey);
+      setOpenSections(rawSections ? JSON.parse(rawSections) : {});
+
+      const rawSearch = localStorage.getItem(searchKey);
+      setSearchQuery(rawSearch ?? "");
     } catch {
       /* ignore */
     }
-  }, [storageKey]);
+    setHydrated(true);
+  }, [roadmapId, storageKey, sectionsKey, searchKey]);
 
   // Save progress
   useEffect(() => {
+    if (!hydrated) return;
     try {
       localStorage.setItem(storageKey, JSON.stringify(completed));
     } catch {
       /* ignore */
     }
-  }, [completed, storageKey]);
+  }, [completed, storageKey, hydrated]);
 
-  // Auto-open first section
+  // Save open sections
   useEffect(() => {
-    if (roadmap && Object.keys(openSections).length === 0) {
-      setOpenSections({ [roadmap.nodes[0]?.id]: true });
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(sectionsKey, JSON.stringify(openSections));
+    } catch {
+      /* ignore */
     }
-  }, [roadmap]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [openSections, sectionsKey, hydrated]);
+
+  // Save search query
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(searchKey, searchQuery);
+    } catch {
+      /* ignore */
+    }
+  }, [searchQuery, searchKey, hydrated]);
+
+  // Auto-open first section only if no persisted preference exists
+  useEffect(() => {
+    if (!hydrated || !roadmap) return;
+    if (Object.keys(openSections).length === 0 && roadmap.nodes[0]) {
+      setOpenSections({ [roadmap.nodes[0].id]: true });
+    }
+  }, [hydrated, roadmap]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const allLeafNodes = useMemo(() => {
     if (!roadmap) return [] as RoadmapTreeNode[];
