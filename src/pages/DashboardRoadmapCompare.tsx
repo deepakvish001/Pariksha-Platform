@@ -146,7 +146,12 @@ const groupBySection = <T extends { section: string }>(
 };
 
 // ── localStorage persistence ─────────────────────────────────────────
-const loadSelection = (): { a?: string; b?: string; leafOnly?: boolean } => {
+const loadSelection = (): {
+  a?: string;
+  b?: string;
+  leafOnly?: boolean;
+  sortMode?: SortMode;
+} => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
@@ -155,7 +160,12 @@ const loadSelection = (): { a?: string; b?: string; leafOnly?: boolean } => {
   }
 };
 
-const saveSelection = (sel: { a: string; b: string; leafOnly: boolean }) => {
+const saveSelection = (sel: {
+  a: string;
+  b: string;
+  leafOnly: boolean;
+  sortMode: SortMode;
+}) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sel));
   } catch {
