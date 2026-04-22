@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
+import jsPDF from "jspdf";
 import {
   ArrowLeft,
   GitCompare,
@@ -10,10 +11,16 @@ import {
   Sparkles,
   Layers,
   ArrowRight,
+  Search,
+  X,
+  Download,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -26,13 +33,17 @@ import { cn } from "@/lib/utils";
 import {
   roadmapTrees,
   flattenLeafNodes,
+  flattenTreeNodes,
   type RoadmapTree,
   type RoadmapTreeNode,
 } from "@/data/roadmapTreesData";
+import { toast } from "sonner";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 const norm = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+const STORAGE_KEY = "roadmap-compare-selection";
 
 interface TopicInfo {
   id: string;
@@ -40,15 +51,23 @@ interface TopicInfo {
   section: string;
 }
 
-const collectTopics = (tree: RoadmapTree): TopicInfo[] => {
+const collectTopics = (tree: RoadmapTree, leafOnly: boolean): TopicInfo[] => {
   const out: TopicInfo[] = [];
   tree.nodes.forEach((sectionNode) => {
-    const leaves =
-      sectionNode.children && sectionNode.children.length > 0
-        ? flattenLeafNodes(sectionNode.children)
-        : [sectionNode];
-    leaves.forEach((leaf: RoadmapTreeNode) =>
-      out.push({ id: leaf.id, title: leaf.title, section: sectionNode.title })
+    const subtree = sectionNode.children ?? [];
+    if (subtree.length === 0) {
+      out.push({
+        id: sectionNode.id,
+        title: sectionNode.title,
+        section: sectionNode.title,
+      });
+      return;
+    }
+    const nodes = leafOnly
+      ? flattenLeafNodes(subtree)
+      : flattenTreeNodes(subtree);
+    nodes.forEach((n: RoadmapTreeNode) =>
+      out.push({ id: n.id, title: n.title, section: sectionNode.title })
     );
   });
   return out;
@@ -82,7 +101,6 @@ const computeDiff = (a: TopicInfo[], b: TopicInfo[]): DiffResult => {
 
   const onlyB = b.filter((t) => !matchedKeys.has(norm(t.title)));
 
-  // Section-level overlap (by normalized section name)
   const sectionMap = new Map<
     string,
     { name: string; aCount: number; bCount: number }
@@ -107,43 +125,232 @@ const computeDiff = (a: TopicInfo[], b: TopicInfo[]): DiffResult => {
   return { shared, onlyA, onlyB, sharedSections };
 };
 
+// Group an item list by its section name, preserving insertion order.
+const groupBySection = <T extends { section: string }>(
+  items: T[]
+): { section: string; items: T[] }[] => {
+  const map = new Map<string, T[]>();
+  items.forEach((it) => {
+    const list = map.get(it.section);
+    if (list) list.push(it);
+    else map.set(it.section, [it]);
+  });
+  return Array.from(map.entries()).map(([section, items]) => ({
+    section,
+    items,
+  }));
+};
+
+// ── localStorage persistence ─────────────────────────────────────────
+const loadSelection = (): { a?: string; b?: string; leafOnly?: boolean } => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveSelection = (sel: { a: string; b: string; leafOnly: boolean }) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sel));
+  } catch {
+    /* ignore */
+  }
+};
+
 // ── Page ──────────────────────────────────────────────────────────────
 const DashboardRoadmapCompare = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const stored = useMemo(loadSelection, []);
 
-  const initialA = searchParams.get("a") ?? roadmapTrees[0]?.id ?? "";
+  const initialA =
+    searchParams.get("a") ??
+    stored.a ??
+    roadmapTrees[0]?.id ??
+    "";
   const initialB =
-    searchParams.get("b") ?? roadmapTrees[1]?.id ?? roadmapTrees[0]?.id ?? "";
+    searchParams.get("b") ??
+    stored.b ??
+    roadmapTrees[1]?.id ??
+    roadmapTrees[0]?.id ??
+    "";
+  const initialLeafOnly =
+    (searchParams.get("leaf") ?? (stored.leafOnly ? "1" : "0")) === "1";
+  const initialQuery = searchParams.get("q") ?? "";
 
   const [aId, setAId] = useState(initialA);
   const [bId, setBId] = useState(initialB);
+  const [leafOnly, setLeafOnly] = useState(initialLeafOnly);
+  const [query, setQuery] = useState(initialQuery);
 
+  // Sync state → URL + localStorage
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
     next.set("a", aId);
     next.set("b", bId);
+    next.set("leaf", leafOnly ? "1" : "0");
+    if (query) next.set("q", query);
+    else next.delete("q");
     setSearchParams(next, { replace: true });
+    saveSelection({ a: aId, b: bId, leafOnly });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aId, bId]);
+  }, [aId, bId, leafOnly, query]);
 
-  const treeA = useMemo(
-    () => roadmapTrees.find((t) => t.id === aId),
-    [aId]
+  const treeA = useMemo(() => roadmapTrees.find((t) => t.id === aId), [aId]);
+  const treeB = useMemo(() => roadmapTrees.find((t) => t.id === bId), [bId]);
+
+  const topicsA = useMemo(
+    () => (treeA ? collectTopics(treeA, leafOnly) : []),
+    [treeA, leafOnly]
   );
-  const treeB = useMemo(
-    () => roadmapTrees.find((t) => t.id === bId),
-    [bId]
+  const topicsB = useMemo(
+    () => (treeB ? collectTopics(treeB, leafOnly) : []),
+    [treeB, leafOnly]
   );
 
-  const topicsA = useMemo(() => (treeA ? collectTopics(treeA) : []), [treeA]);
-  const topicsB = useMemo(() => (treeB ? collectTopics(treeB) : []), [treeB]);
+  const diff = useMemo(() => computeDiff(topicsA, topicsB), [topicsA, topicsB]);
 
-  const diff = useMemo(
-    () => computeDiff(topicsA, topicsB),
-    [topicsA, topicsB]
+  // Filtered (search-aware) versions
+  const q = query.trim().toLowerCase();
+  const matches = (t: TopicInfo) =>
+    !q ||
+    t.title.toLowerCase().includes(q) ||
+    t.section.toLowerCase().includes(q);
+
+  const filteredOnlyA = useMemo(
+    () => diff.onlyA.filter(matches),
+    [diff.onlyA, q]
+  );
+  const filteredOnlyB = useMemo(
+    () => diff.onlyB.filter(matches),
+    [diff.onlyB, q]
+  );
+  const filteredShared = useMemo(
+    () => diff.shared.filter(({ a, b }) => matches(a) || matches(b)),
+    [diff.shared, q]
   );
 
   const sameRoadmap = aId === bId;
+
+  // ── PDF export ──
+  const exportPdf = () => {
+    if (!treeA || !treeB) return;
+    try {
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const margin = 40;
+      let y = margin;
+
+      const ensureSpace = (needed: number) => {
+        if (y + needed > pageH - margin) {
+          doc.addPage();
+          y = margin;
+        }
+      };
+
+      // Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("Roadmap Comparison", margin, y);
+      y += 22;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(90);
+      doc.text(`${treeA.title}  vs  ${treeB.title}`, margin, y);
+      y += 14;
+      doc.setFontSize(9);
+      doc.text(
+        `Mode: ${leafOnly ? "Leaf topics only" : "All nodes"}  |  Generated ${new Date().toLocaleString()}`,
+        margin,
+        y
+      );
+      y += 18;
+      doc.setTextColor(0);
+
+      // Stats
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("Summary", margin, y);
+      y += 14;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      const stats = [
+        `Topics in ${treeA.title}: ${topicsA.length}`,
+        `Topics in ${treeB.title}: ${topicsB.length}`,
+        `Shared topics: ${diff.shared.length}`,
+        `Shared sections: ${diff.sharedSections.length}`,
+        `Only in ${treeA.title}: ${diff.onlyA.length}`,
+        `Only in ${treeB.title}: ${diff.onlyB.length}`,
+      ];
+      stats.forEach((s) => {
+        ensureSpace(14);
+        doc.text(`• ${s}`, margin + 8, y);
+        y += 14;
+      });
+      y += 8;
+
+      const writeSectionGroup = (
+        heading: string,
+        groups: { section: string; items: TopicInfo[] }[]
+      ) => {
+        ensureSpace(20);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text(heading, margin, y);
+        y += 16;
+        if (groups.length === 0) {
+          doc.setFont("helvetica", "italic");
+          doc.setFontSize(10);
+          doc.setTextColor(120);
+          ensureSpace(14);
+          doc.text("None", margin + 8, y);
+          y += 14;
+          doc.setTextColor(0);
+          return;
+        }
+        groups.forEach((g) => {
+          ensureSpace(16);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.setTextColor(60);
+          doc.text(`${g.section}  (${g.items.length})`, margin, y);
+          y += 13;
+          doc.setTextColor(0);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          g.items.forEach((it) => {
+            const lines = doc.splitTextToSize(`• ${it.title}`, pageW - margin * 2 - 12);
+            ensureSpace(lines.length * 11);
+            doc.text(lines, margin + 12, y);
+            y += lines.length * 11;
+          });
+          y += 4;
+        });
+        y += 6;
+      };
+
+      writeSectionGroup(
+        `Shared topics (${filteredShared.length})`,
+        groupBySection(filteredShared.map((s) => s.a))
+      );
+      writeSectionGroup(
+        `Only in ${treeA.title} (${filteredOnlyA.length})`,
+        groupBySection(filteredOnlyA)
+      );
+      writeSectionGroup(
+        `Only in ${treeB.title} (${filteredOnlyB.length})`,
+        groupBySection(filteredOnlyB)
+      );
+
+      doc.save(`roadmap-compare-${treeA.id}-vs-${treeB.id}.pdf`);
+      toast.success("Comparison exported as PDF");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to export PDF");
+    }
+  };
 
   return (
     <>
@@ -170,7 +377,7 @@ const DashboardRoadmapCompare = () => {
                 Back to Roadmaps
               </Link>
             </Button>
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                   <GitCompare className="h-3.5 w-3.5" />
@@ -184,6 +391,15 @@ const DashboardRoadmapCompare = () => {
                   path — pick smarter learning routes.
                 </p>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportPdf}
+                disabled={sameRoadmap || !treeA || !treeB}
+              >
+                <Download className="h-4 w-4 mr-1.5" />
+                Export PDF
+              </Button>
             </div>
 
             {/* Selectors */}
@@ -200,6 +416,41 @@ const DashboardRoadmapCompare = () => {
                 onChange={setBId}
                 accent="text-fuchsia-600 dark:text-fuchsia-400"
               />
+            </div>
+
+            {/* Search + leaf toggle */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Filter topics by keyword..."
+                  className="pl-9 pr-9 bg-card"
+                />
+                {query && (
+                  <button
+                    onClick={() => setQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-muted text-muted-foreground"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
+                <Switch
+                  id="leaf-only"
+                  checked={leafOnly}
+                  onCheckedChange={setLeafOnly}
+                />
+                <Label
+                  htmlFor="leaf-only"
+                  className="text-xs cursor-pointer whitespace-nowrap"
+                >
+                  Leaf topics only
+                </Label>
+              </div>
             </div>
           </div>
         </section>
@@ -223,13 +474,13 @@ const DashboardRoadmapCompare = () => {
               {/* Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <StatTile
-                  label="Topics in A"
+                  label={`Topics in A`}
                   value={topicsA.length}
                   icon={Layers}
                   tone="cyan"
                 />
                 <StatTile
-                  label="Topics in B"
+                  label={`Topics in B`}
                   value={topicsB.length}
                   icon={Layers}
                   tone="fuchsia"
@@ -274,38 +525,51 @@ const DashboardRoadmapCompare = () => {
                 </Card>
               )}
 
-              {/* Side-by-side diff */}
+              {/* Side-by-side diff (grouped by section) */}
               <div className="grid lg:grid-cols-3 gap-4">
                 <DiffColumn
                   title={`Only in ${treeA.title}`}
-                  emptyText="Every topic also exists in the other roadmap."
-                  items={diff.onlyA.map((t) => ({
-                    id: t.id,
-                    title: t.title,
-                    section: t.section,
-                  }))}
+                  emptyText={
+                    q
+                      ? "No matching topics."
+                      : "Every topic also exists in the other roadmap."
+                  }
+                  groups={groupBySection(filteredOnlyA)}
+                  totalRaw={diff.onlyA.length}
                   accent="cyan"
                   icon={Circle}
                 />
                 <DiffColumn
                   title="Shared topics"
-                  emptyText="No matching topics found between these roadmaps."
-                  items={diff.shared.map((s) => ({
-                    id: s.a.id,
-                    title: s.a.title,
-                    section: `${s.a.section}  ↔  ${s.b.section}`,
-                  }))}
+                  emptyText={
+                    q
+                      ? "No matching shared topics."
+                      : "No matching topics found between these roadmaps."
+                  }
+                  groups={groupBySection(
+                    filteredShared.map((s) => ({
+                      id: s.a.id,
+                      title: s.a.title,
+                      section: s.a.section,
+                      sub:
+                        norm(s.a.section) === norm(s.b.section)
+                          ? undefined
+                          : `also in: ${s.b.section}`,
+                    }))
+                  )}
+                  totalRaw={diff.shared.length}
                   accent="emerald"
                   icon={CheckCircle2}
                 />
                 <DiffColumn
                   title={`Only in ${treeB.title}`}
-                  emptyText="Every topic also exists in the other roadmap."
-                  items={diff.onlyB.map((t) => ({
-                    id: t.id,
-                    title: t.title,
-                    section: t.section,
-                  }))}
+                  emptyText={
+                    q
+                      ? "No matching topics."
+                      : "Every topic also exists in the other roadmap."
+                  }
+                  groups={groupBySection(filteredOnlyB)}
+                  totalRaw={diff.onlyB.length}
                   accent="fuchsia"
                   icon={Circle}
                 />
@@ -353,9 +617,16 @@ interface RoadmapSelectProps {
   onChange: (v: string) => void;
   accent: string;
 }
-const RoadmapSelect = ({ label, value, onChange, accent }: RoadmapSelectProps) => (
+const RoadmapSelect = ({
+  label,
+  value,
+  onChange,
+  accent,
+}: RoadmapSelectProps) => (
   <div className="space-y-1.5">
-    <label className={cn("text-xs font-medium uppercase tracking-wide", accent)}>
+    <label
+      className={cn("text-xs font-medium uppercase tracking-wide", accent)}
+    >
       {label}
     </label>
     <Select value={value} onValueChange={onChange}>
@@ -402,10 +673,18 @@ const StatTile = ({ label, value, icon: Icon, tone }: StatTileProps) => (
   </div>
 );
 
+interface GroupedItem {
+  id: string;
+  title: string;
+  section: string;
+  sub?: string;
+}
+
 interface DiffColumnProps {
   title: string;
   emptyText: string;
-  items: { id: string; title: string; section: string }[];
+  groups: { section: string; items: GroupedItem[] }[];
+  totalRaw: number;
   accent: "cyan" | "fuchsia" | "emerald";
   icon: React.ComponentType<{ className?: string }>;
 }
@@ -422,49 +701,72 @@ const accentText: Record<DiffColumnProps["accent"], string> = {
 const DiffColumn = ({
   title,
   emptyText,
-  items,
+  groups,
+  totalRaw,
   accent,
   icon: Icon,
-}: DiffColumnProps) => (
-  <Card className={cn("border-l-4", accentBorder[accent])}>
-    <CardHeader className="pb-2">
-      <CardTitle className="text-sm flex items-center justify-between">
-        <span className={cn("flex items-center gap-1.5", accentText[accent])}>
-          <Icon className="h-4 w-4" />
-          {title}
-        </span>
-        <Badge variant="secondary" className="text-[10px]">
-          {items.length}
-        </Badge>
-      </CardTitle>
-    </CardHeader>
-    <CardContent className="p-0">
-      <ScrollArea className="h-[420px] px-4 pb-4">
-        {items.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-6 text-center">
-            {emptyText}
-          </p>
-        ) : (
-          <ul className="space-y-1.5">
-            {items.map((it, i) => (
-              <motion.li
-                key={`${it.id}-${i}`}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.01, 0.2) }}
-                className="rounded-md border border-border/60 bg-card/50 px-2.5 py-1.5"
-              >
-                <div className="text-sm leading-snug">{it.title}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                  {it.section}
+}: DiffColumnProps) => {
+  const visibleCount = groups.reduce((acc, g) => acc + g.items.length, 0);
+  return (
+    <Card className={cn("border-l-4", accentBorder[accent])}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center justify-between">
+          <span className={cn("flex items-center gap-1.5", accentText[accent])}>
+            <Icon className="h-4 w-4" />
+            {title}
+          </span>
+          <Badge variant="secondary" className="text-[10px]">
+            {visibleCount}
+            {visibleCount !== totalRaw && (
+              <span className="opacity-60"> / {totalRaw}</span>
+            )}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ScrollArea className="h-[460px] px-4 pb-4">
+          {groups.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-6 text-center">
+              {emptyText}
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {groups.map((g, gi) => (
+                <div key={`${g.section}-${gi}`} className="space-y-1.5">
+                  <div className="flex items-center justify-between sticky top-0 bg-card/95 backdrop-blur-sm py-1 -mx-1 px-1 z-10">
+                    <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {g.section}
+                    </h4>
+                    <span className="text-[10px] text-muted-foreground">
+                      {g.items.length}
+                    </span>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {g.items.map((it, i) => (
+                      <motion.li
+                        key={`${it.id}-${i}`}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.01, 0.15) }}
+                        className="rounded-md border border-border/60 bg-card/50 px-2.5 py-1.5"
+                      >
+                        <div className="text-sm leading-snug">{it.title}</div>
+                        {it.sub && (
+                          <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                            {it.sub}
+                          </div>
+                        )}
+                      </motion.li>
+                    ))}
+                  </ul>
                 </div>
-              </motion.li>
-            ))}
-          </ul>
-        )}
-      </ScrollArea>
-    </CardContent>
-  </Card>
-);
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+};
 
 export default DashboardRoadmapCompare;
