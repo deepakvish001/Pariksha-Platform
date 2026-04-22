@@ -28,6 +28,8 @@ import NotFound from "./pages/NotFound";
 import UnderConstruction from "./components/UnderConstruction";
 import SheetDetail from "./pages/SheetDetail";
 import FullStackRoadmap from "./pages/FullStackRoadmap";
+import DashboardRoadmaps from "./pages/DashboardRoadmaps";
+import DashboardRoadmapDetail from "./pages/DashboardRoadmapDetail";
 
 // Library Pages
 import PositionResources from "./pages/library/PositionResources";
@@ -148,6 +150,8 @@ const App = () => (
                   <Route path="sheets" element={<DashboardSheets />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
                   <Route path="profile" element={<DashboardProfile />} />
+                  <Route path="roadmaps" element={<DashboardRoadmaps />} />
+                  <Route path="roadmaps/:roadmapId" element={<DashboardRoadmapDetail />} />
                   <Route path="roadmap/fullstack" element={<FullStackRoadmap />} />
                 </Route>
                 {/* Library routes - public */}
