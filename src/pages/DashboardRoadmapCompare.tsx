@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
@@ -209,11 +209,24 @@ const DashboardRoadmapCompare = () => {
   const [query, setQuery] = useState(initialQuery);
   const [sortMode, setSortMode] = useState<SortMode>(initialSort);
 
-  // Debounced query for URL updates (300ms after user stops typing)
+  // Debounced query for URL updates (300ms after user stops typing).
+  // Holds the active timer so other actions (e.g. clear) can cancel it.
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
+  const debounceRef = useRef<number | null>(null);
   useEffect(() => {
-    const handle = window.setTimeout(() => setDebouncedQuery(query), 300);
-    return () => window.clearTimeout(handle);
+    if (debounceRef.current !== null) {
+      window.clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = window.setTimeout(() => {
+      setDebouncedQuery(query);
+      debounceRef.current = null;
+    }, 300);
+    return () => {
+      if (debounceRef.current !== null) {
+        window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+    };
   }, [query]);
 
   // Sync URL → state (handles back/forward navigation, refresh, deep links)
@@ -258,8 +271,19 @@ const DashboardRoadmapCompare = () => {
   }, [aId, bId, leafOnly, debouncedQuery, sortMode]);
 
   const clearFilter = () => {
+    // Cancel any pending debounced URL write so it can't re-add `q`
+    if (debounceRef.current !== null) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
     setQuery("");
     setDebouncedQuery("");
+    // Immediately strip `q` from the URL (don't wait for the sync effect)
+    const next = new URLSearchParams(searchParams);
+    if (next.has("q")) {
+      next.delete("q");
+      setSearchParams(next, { replace: true });
+    }
   };
 
   const treeA = useMemo(() => roadmapTrees.find((t) => t.id === aId), [aId]);
