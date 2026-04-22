@@ -101,7 +101,7 @@ import { GuestSidebarTooltip } from "@/components/GuestSidebarTooltip";
 const homeNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
-  { title: "Roadmap", url: "/dashboard/roadmap/fullstack", icon: Route },
+  { title: "Roadmap", url: "/dashboard/roadmaps", icon: Route },
   { title: "Profile", url: "/dashboard/profile", icon: User },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
@@ -110,6 +110,7 @@ const homeNavItems = [
 const ACTIVE_ROUTES = new Set([
   "/dashboard",
   "/dashboard/sheets",
+  "/dashboard/roadmaps",
   "/dashboard/roadmap/fullstack",
   "/dashboard/profile",
   "/settings",
