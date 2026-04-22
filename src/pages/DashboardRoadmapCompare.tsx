@@ -758,10 +758,13 @@ interface GroupedItem {
 interface DiffColumnProps {
   title: string;
   emptyText: string;
-  groups: { section: string; items: GroupedItem[] }[];
+  items: GroupedItem[];
   totalRaw: number;
   accent: "cyan" | "fuchsia" | "emerald";
   icon: React.ComponentType<{ className?: string }>;
+  sortMode: SortMode;
+  /** Stable, unique-per-column prefix to avoid React key collisions across columns. */
+  keyPrefix: string;
 }
 const accentBorder: Record<DiffColumnProps["accent"], string> = {
   cyan: "border-l-cyan-500/60",
@@ -776,11 +779,23 @@ const accentText: Record<DiffColumnProps["accent"], string> = {
 const DiffColumn = ({
   title,
   emptyText,
-  groups,
+  items,
   totalRaw,
   accent,
   icon: Icon,
+  sortMode,
+  keyPrefix,
 }: DiffColumnProps) => {
+  const groups = useMemo(() => {
+    if (sortMode === "alpha") {
+      const sorted = [...items].sort((a, b) =>
+        a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+      );
+      return [{ section: "All topics (A → Z)", items: sorted }];
+    }
+    return groupBySection(items);
+  }, [items, sortMode]);
+
   const visibleCount = groups.reduce((acc, g) => acc + g.items.length, 0);
   return (
     <Card className={cn("border-l-4", accentBorder[accent])}>
@@ -800,14 +815,17 @@ const DiffColumn = ({
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[460px] px-4 pb-4">
-          {groups.length === 0 ? (
+          {groups.length === 0 || visibleCount === 0 ? (
             <p className="text-xs text-muted-foreground py-6 text-center">
               {emptyText}
             </p>
           ) : (
             <div className="space-y-4">
-              {groups.map((g, gi) => (
-                <div key={`${g.section}-${gi}`} className="space-y-1.5">
+              {groups.map((g) => (
+                <div
+                  key={`${keyPrefix}::group::${g.section}`}
+                  className="space-y-1.5"
+                >
                   <div className="flex items-center justify-between sticky top-0 bg-card/95 backdrop-blur-sm py-1 -mx-1 px-1 z-10">
                     <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       {g.section}
@@ -817,12 +835,12 @@ const DiffColumn = ({
                     </span>
                   </div>
                   <ul className="space-y-1.5">
-                    {g.items.map((it, i) => (
+                    {g.items.map((it) => (
                       <motion.li
-                        key={`${it.id}-${i}`}
+                        key={`${keyPrefix}::${g.section}::${it.id}`}
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(i * 0.01, 0.15) }}
+                        transition={{ duration: 0.12 }}
                         className="rounded-md border border-border/60 bg-card/50 px-2.5 py-1.5"
                       >
                         <div className="text-sm leading-snug">{it.title}</div>
