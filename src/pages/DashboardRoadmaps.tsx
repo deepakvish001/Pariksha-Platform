@@ -262,7 +262,7 @@ interface RoadmapCardProps {
 }
 
 const RoadmapCard = ({ roadmap, index }: RoadmapCardProps) => {
-  // For Full Stack, link to the rich flow page; others to generic detail
+  // Every roadmap now opens the same interactive flow view.
   const href =
     roadmap.id === "fullstack"
       ? "/dashboard/roadmap/fullstack"
@@ -325,21 +325,12 @@ const RoadmapCard = ({ roadmap, index }: RoadmapCardProps) => {
             </div>
 
             <div className="flex items-center justify-between pt-1">
-              {roadmap.id === "fullstack" ? (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
-                >
-                  ⚡ Interactive Flow
-                </Badge>
-              ) : (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/10"
-                >
-                  Step-by-Step
-                </Badge>
-              )}
+              <Badge
+                variant="outline"
+                className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+              >
+                ⚡ Interactive Flow
+              </Badge>
               <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                 Open
                 <ArrowRight className="h-3 w-3" />
