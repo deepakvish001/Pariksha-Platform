@@ -609,10 +609,12 @@ const DashboardRoadmapCompare = () => {
                       ? "No matching topics."
                       : "Every topic also exists in the other roadmap."
                   }
-                  groups={groupBySection(filteredOnlyA)}
+                  items={filteredOnlyA}
                   totalRaw={diff.onlyA.length}
                   accent="cyan"
                   icon={Circle}
+                  sortMode={sortMode}
+                  keyPrefix={`onlyA::${treeA.id}`}
                 />
                 <DiffColumn
                   title="Shared topics"
@@ -621,20 +623,20 @@ const DashboardRoadmapCompare = () => {
                       ? "No matching shared topics."
                       : "No matching topics found between these roadmaps."
                   }
-                  groups={groupBySection(
-                    filteredShared.map((s) => ({
-                      id: s.a.id,
-                      title: s.a.title,
-                      section: s.a.section,
-                      sub:
-                        norm(s.a.section) === norm(s.b.section)
-                          ? undefined
-                          : `also in: ${s.b.section}`,
-                    }))
-                  )}
+                  items={filteredShared.map((s) => ({
+                    id: s.a.id,
+                    title: s.a.title,
+                    section: s.a.section,
+                    sub:
+                      norm(s.a.section) === norm(s.b.section)
+                        ? undefined
+                        : `also in: ${s.b.section}`,
+                  }))}
                   totalRaw={diff.shared.length}
                   accent="emerald"
                   icon={CheckCircle2}
+                  sortMode={sortMode}
+                  keyPrefix={`shared::${treeA.id}-${treeB.id}`}
                 />
                 <DiffColumn
                   title={`Only in ${treeB.title}`}
@@ -643,10 +645,12 @@ const DashboardRoadmapCompare = () => {
                       ? "No matching topics."
                       : "Every topic also exists in the other roadmap."
                   }
-                  groups={groupBySection(filteredOnlyB)}
+                  items={filteredOnlyB}
                   totalRaw={diff.onlyB.length}
                   accent="fuchsia"
                   icon={Circle}
+                  sortMode={sortMode}
+                  keyPrefix={`onlyB::${treeB.id}`}
                 />
               </div>
 
