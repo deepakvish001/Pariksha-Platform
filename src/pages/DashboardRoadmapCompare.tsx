@@ -271,8 +271,19 @@ const DashboardRoadmapCompare = () => {
   }, [aId, bId, leafOnly, debouncedQuery, sortMode]);
 
   const clearFilter = () => {
+    // Cancel any pending debounced URL write so it can't re-add `q`
+    if (debounceRef.current !== null) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
     setQuery("");
     setDebouncedQuery("");
+    // Immediately strip `q` from the URL (don't wait for the sync effect)
+    const next = new URLSearchParams(searchParams);
+    if (next.has("q")) {
+      next.delete("q");
+      setSearchParams(next, { replace: true });
+    }
   };
 
   const treeA = useMemo(() => roadmapTrees.find((t) => t.id === aId), [aId]);
