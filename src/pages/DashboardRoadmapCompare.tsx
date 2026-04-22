@@ -14,6 +14,8 @@ import {
   Search,
   X,
   Download,
+  ArrowDownAZ,
+  ListTree,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -178,17 +180,21 @@ const DashboardRoadmapCompare = () => {
   const initialLeafOnly =
     (searchParams.get("leaf") ?? (stored.leafOnly ? "1" : "0")) === "1";
   const initialQuery = searchParams.get("q") ?? "";
+  const initialSort: SortMode =
+    (searchParams.get("sort") as SortMode) === "alpha" ? "alpha" : "section";
 
   const [aId, setAId] = useState(initialA);
   const [bId, setBId] = useState(initialB);
   const [leafOnly, setLeafOnly] = useState(initialLeafOnly);
   const [query, setQuery] = useState(initialQuery);
+  const [sortMode, setSortMode] = useState<SortMode>(initialSort);
 
   // Sync URL → state (handles back/forward navigation, refresh, deep links)
   const urlQuery = searchParams.get("q") ?? "";
   const urlA = searchParams.get("a");
   const urlB = searchParams.get("b");
   const urlLeaf = searchParams.get("leaf");
+  const urlSort = searchParams.get("sort");
   useEffect(() => {
     if (urlQuery !== query) setQuery(urlQuery);
     if (urlA && urlA !== aId) setAId(urlA);
@@ -197,8 +203,11 @@ const DashboardRoadmapCompare = () => {
       const next = urlLeaf === "1";
       if (next !== leafOnly) setLeafOnly(next);
     }
+    if (urlSort === "alpha" || urlSort === "section") {
+      if (urlSort !== sortMode) setSortMode(urlSort);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlQuery, urlA, urlB, urlLeaf]);
+  }, [urlQuery, urlA, urlB, urlLeaf, urlSort]);
 
   // Sync state → URL + localStorage. Use push for the search keyword so the
   // browser back/forward buttons step through search history; selectors and
@@ -209,13 +218,16 @@ const DashboardRoadmapCompare = () => {
     next.set("a", aId);
     next.set("b", bId);
     next.set("leaf", leafOnly ? "1" : "0");
+    next.set("sort", sortMode);
     if (query) next.set("q", query);
     else next.delete("q");
     const queryChanged = prevQ !== query;
     setSearchParams(next, { replace: !queryChanged });
     saveSelection({ a: aId, b: bId, leafOnly });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aId, bId, leafOnly, query]);
+  }, [aId, bId, leafOnly, query, sortMode]);
+
+  const clearFilter = () => setQuery("");
 
   const treeA = useMemo(() => roadmapTrees.find((t) => t.id === aId), [aId]);
   const treeB = useMemo(() => roadmapTrees.find((t) => t.id === bId), [bId]);
