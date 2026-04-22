@@ -452,9 +452,9 @@ const DashboardRoadmapCompare = () => {
               />
             </div>
 
-            {/* Search + leaf toggle */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
-              <div className="relative flex-1">
+            {/* Search + leaf toggle + sort */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 pt-2">
+              <div className="relative flex-1 min-w-[220px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={query}
@@ -464,13 +464,54 @@ const DashboardRoadmapCompare = () => {
                 />
                 {query && (
                   <button
-                    onClick={() => setQuery("")}
+                    onClick={clearFilter}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-muted text-muted-foreground"
                     aria-label="Clear search"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
                 )}
+              </div>
+              {query && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilter}
+                  className="self-start sm:self-auto text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Clear filter
+                </Button>
+              )}
+              <div className="inline-flex items-center rounded-md border border-border bg-card p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setSortMode("section")}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-sm transition-colors",
+                    sortMode === "section"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-pressed={sortMode === "section"}
+                >
+                  <ListTree className="h-3.5 w-3.5" />
+                  By section
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortMode("alpha")}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-sm transition-colors",
+                    sortMode === "alpha"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-pressed={sortMode === "alpha"}
+                >
+                  <ArrowDownAZ className="h-3.5 w-3.5" />
+                  Alphabetical
+                </button>
               </div>
               <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
                 <Switch
