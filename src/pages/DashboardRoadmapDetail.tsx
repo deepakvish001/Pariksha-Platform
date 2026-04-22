@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 import {
@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Circle,
   ChevronDown,
-  ChevronRight,
   Search,
   Star,
   Clock,
@@ -22,9 +21,11 @@ import {
   Smartphone,
   Brain,
   Database,
+  X,
+  FileDown,
   type LucideIcon,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -34,13 +35,26 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import {
   getRoadmapTreeById,
-  flattenTreeNodes,
+  flattenLeafNodes,
   type RoadmapTreeNode,
 } from "@/data/roadmapTreesData";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+
+const LAST_ROADMAP_KEY = "last-opened-roadmap-id";
 
 const iconMap: Record<string, LucideIcon> = {
   Layout,
@@ -66,14 +80,20 @@ const typeStyles: Record<string, string> = {
   optional: "bg-muted text-muted-foreground border-border",
 };
 
+const isLeaf = (node: RoadmapTreeNode) =>
+  !node.children || node.children.length === 0;
+
 const DashboardRoadmapDetail = () => {
   const { roadmapId } = useParams<{ roadmapId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [hydrated, setHydrated] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const roadmap = roadmapId ? getRoadmapTreeById(roadmapId) : undefined;
 
@@ -81,7 +101,17 @@ const DashboardRoadmapDetail = () => {
   const sectionsKey = `roadmap-open-sections-${roadmapId}`;
   const searchKey = `roadmap-search-${roadmapId}`;
 
-  // Load persisted state when roadmap changes
+  // Remember last opened roadmap so the sidebar link can restore it.
+  useEffect(() => {
+    if (!roadmapId) return;
+    try {
+      localStorage.setItem(LAST_ROADMAP_KEY, roadmapId);
+    } catch {
+      /* ignore */
+    }
+  }, [roadmapId]);
+
+  // Hydrate from URL params first (sharing), fall back to localStorage.
   useEffect(() => {
     if (!roadmapId) return;
     setHydrated(false);
@@ -89,18 +119,33 @@ const DashboardRoadmapDetail = () => {
       const rawProgress = localStorage.getItem(storageKey);
       setCompleted(rawProgress ? JSON.parse(rawProgress) : {});
 
-      const rawSections = localStorage.getItem(sectionsKey);
-      setOpenSections(rawSections ? JSON.parse(rawSections) : {});
+      const urlQ = searchParams.get("q");
+      const urlOpen = searchParams.get("open");
 
-      const rawSearch = localStorage.getItem(searchKey);
-      setSearchQuery(rawSearch ?? "");
+      if (urlQ !== null) {
+        setSearchQuery(urlQ);
+      } else {
+        const rawSearch = localStorage.getItem(searchKey);
+        setSearchQuery(rawSearch ?? "");
+      }
+
+      if (urlOpen !== null) {
+        const ids = urlOpen ? urlOpen.split(",").filter(Boolean) : [];
+        const map: Record<string, boolean> = {};
+        ids.forEach((id) => (map[id] = true));
+        setOpenSections(map);
+      } else {
+        const rawSections = localStorage.getItem(sectionsKey);
+        setOpenSections(rawSections ? JSON.parse(rawSections) : {});
+      }
     } catch {
       /* ignore */
     }
     setHydrated(true);
-  }, [roadmapId, storageKey, sectionsKey, searchKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roadmapId]);
 
-  // Save progress
+  // Persist progress
   useEffect(() => {
     if (!hydrated) return;
     try {
@@ -110,7 +155,7 @@ const DashboardRoadmapDetail = () => {
     }
   }, [completed, storageKey, hydrated]);
 
-  // Save open sections
+  // Persist open sections + reflect into URL
   useEffect(() => {
     if (!hydrated) return;
     try {
@@ -118,9 +163,21 @@ const DashboardRoadmapDetail = () => {
     } catch {
       /* ignore */
     }
-  }, [openSections, sectionsKey, hydrated]);
+    const openIds = Object.entries(openSections)
+      .filter(([, v]) => v)
+      .map(([k]) => k);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (openIds.length) next.set("open", openIds.join(","));
+        else next.delete("open");
+        return next;
+      },
+      { replace: true }
+    );
+  }, [openSections, sectionsKey, hydrated, setSearchParams]);
 
-  // Save search query
+  // Persist search + reflect into URL
   useEffect(() => {
     if (!hydrated) return;
     try {
@@ -128,7 +185,16 @@ const DashboardRoadmapDetail = () => {
     } catch {
       /* ignore */
     }
-  }, [searchQuery, searchKey, hydrated]);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (searchQuery.trim()) next.set("q", searchQuery);
+        else next.delete("q");
+        return next;
+      },
+      { replace: true }
+    );
+  }, [searchQuery, searchKey, hydrated, setSearchParams]);
 
   // Auto-open first section only if no persisted preference exists
   useEffect(() => {
@@ -136,17 +202,18 @@ const DashboardRoadmapDetail = () => {
     if (Object.keys(openSections).length === 0 && roadmap.nodes[0]) {
       setOpenSections({ [roadmap.nodes[0].id]: true });
     }
-  }, [hydrated, roadmap]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, roadmap]);
 
   const allLeafNodes = useMemo(() => {
     if (!roadmap) return [] as RoadmapTreeNode[];
-    return flattenTreeNodes(roadmap.nodes);
+    return flattenLeafNodes(roadmap.nodes);
   }, [roadmap]);
 
-  const totalNodes = allLeafNodes.length;
+  const totalLeaves = allLeafNodes.length;
   const completedCount = allLeafNodes.filter((n) => completed[n.id]).length;
-  const progressPercent = totalNodes
-    ? Math.round((completedCount / totalNodes) * 100)
+  const progressPercent = totalLeaves
+    ? Math.round((completedCount / totalLeaves) * 100)
     : 0;
 
   const toggleNode = (id: string) => {
@@ -166,11 +233,100 @@ const DashboardRoadmapDetail = () => {
 
   const collapseAll = () => setOpenSections({});
 
-  const resetProgress = () => {
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+    try {
+      localStorage.removeItem(searchKey);
+    } catch {
+      /* ignore */
+    }
+  }, [searchKey]);
+
+  const performReset = () => {
     setCompleted({});
+    setOpenSections(roadmap?.nodes[0] ? { [roadmap.nodes[0].id]: true } : {});
+    setSearchQuery("");
+    try {
+      localStorage.removeItem(storageKey);
+      localStorage.removeItem(sectionsKey);
+      localStorage.removeItem(searchKey);
+    } catch {
+      /* ignore */
+    }
+    setResetDialogOpen(false);
     toast({
-      title: "Progress reset",
-      description: "All topics marked as not started.",
+      title: "Roadmap reset",
+      description: "Progress, expanded sections, and search were cleared.",
+    });
+  };
+
+  const exportPDF = () => {
+    if (!roadmap) return;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const margin = 40;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let y = margin;
+
+    const ensureSpace = (lineHeight = 16) => {
+      if (y + lineHeight > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+      }
+    };
+
+    const writeLine = (
+      text: string,
+      opts: { size?: number; bold?: boolean; indent?: number; color?: [number, number, number] } = {}
+    ) => {
+      const { size = 11, bold = false, indent = 0, color } = opts;
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      doc.setFontSize(size);
+      if (color) doc.setTextColor(color[0], color[1], color[2]);
+      else doc.setTextColor(20, 20, 20);
+      const lines = doc.splitTextToSize(text, pageWidth - margin * 2 - indent);
+      lines.forEach((line: string) => {
+        ensureSpace(size + 4);
+        doc.text(line, margin + indent, y);
+        y += size + 4;
+      });
+    };
+
+    // Header
+    writeLine(`${roadmap.title} — Progress Report`, { size: 18, bold: true });
+    writeLine(roadmap.description, { size: 10, color: [100, 100, 100] });
+    y += 6;
+    writeLine(
+      `Progress: ${completedCount} / ${totalLeaves} topics  •  ${progressPercent}%  •  Generated ${new Date().toLocaleString()}`,
+      { size: 10, color: [80, 80, 80] }
+    );
+    y += 10;
+    doc.setDrawColor(220);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 14;
+
+    // Sections
+    roadmap.nodes.forEach((section, idx) => {
+      const sectionLeaves = flattenLeafNodes([section]);
+      const done = sectionLeaves.filter((n) => completed[n.id]).length;
+      const pct = sectionLeaves.length
+        ? Math.round((done / sectionLeaves.length) * 100)
+        : 0;
+      writeLine(
+        `${idx + 1}. ${section.title}  —  ${done}/${sectionLeaves.length} (${pct}%)`,
+        { size: 13, bold: true }
+      );
+      sectionLeaves.forEach((leaf) => {
+        const mark = completed[leaf.id] ? "[x]" : "[ ]";
+        writeLine(`${mark} ${leaf.title}`, { size: 10, indent: 16 });
+      });
+      y += 8;
+    });
+
+    doc.save(`${roadmap.id}-progress-${new Date().toISOString().split("T")[0]}.pdf`);
+    toast({
+      title: "PDF exported",
+      description: "Your roadmap progress report has been downloaded.",
     });
   };
 
@@ -262,7 +418,7 @@ const DashboardRoadmapDetail = () => {
                   </div>
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <CheckCircle2 className="h-4 w-4" />
-                    {totalNodes} topics
+                    {totalLeaves} topics
                   </div>
                   <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
                     <Sparkles className="h-4 w-4" />
@@ -296,10 +452,20 @@ const DashboardRoadmapDetail = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search topics..."
-                className="pl-9 h-9"
+                className="pl-9 pr-9 h-9"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -317,9 +483,18 @@ const DashboardRoadmapDetail = () => {
                 Collapse all
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                onClick={exportPDF}
+                className="text-xs"
+              >
+                <FileDown className="h-3.5 w-3.5 mr-1" />
+                Export PDF
+              </Button>
+              <Button
                 variant="ghost"
                 size="sm"
-                onClick={resetProgress}
+                onClick={() => setResetDialogOpen(true)}
                 className="text-xs text-muted-foreground hover:text-destructive"
               >
                 <RotateCcw className="h-3.5 w-3.5 mr-1" />
@@ -332,12 +507,18 @@ const DashboardRoadmapDetail = () => {
         {/* Sections */}
         <main className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 space-y-4">
           {filteredSections.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              No topics match your search.
+            <div className="text-center py-16 space-y-4">
+              <p className="text-muted-foreground">
+                No topics match your search.
+              </p>
+              <Button variant="outline" size="sm" onClick={clearSearch}>
+                <X className="h-3.5 w-3.5 mr-1" />
+                Clear search
+              </Button>
             </div>
           ) : (
             filteredSections.map((section, idx) => {
-              const sectionLeaves = flattenTreeNodes([section]);
+              const sectionLeaves = flattenLeafNodes([section]);
               const sectionDone = sectionLeaves.filter(
                 (n) => completed[n.id]
               ).length;
@@ -345,7 +526,7 @@ const DashboardRoadmapDetail = () => {
                 ? Math.round((sectionDone / sectionLeaves.length) * 100)
                 : 0;
               const isOpen = openSections[section.id] ?? false;
-              const isFullyDone = sectionPct === 100;
+              const isFullyDone = sectionPct === 100 && sectionLeaves.length > 0;
 
               return (
                 <motion.div
@@ -432,14 +613,6 @@ const DashboardRoadmapDetail = () => {
 
                       <CollapsibleContent>
                         <div className="border-t border-border bg-muted/20">
-                          {/* Mark section topic itself as completable */}
-                          <NodeRow
-                            node={section}
-                            isCompleted={!!completed[section.id]}
-                            onToggle={() => toggleNode(section.id)}
-                            depth={0}
-                            isSection
-                          />
                           {section.children?.map((child) => (
                             <RecursiveNode
                               key={child.id}
@@ -460,6 +633,29 @@ const DashboardRoadmapDetail = () => {
           )}
         </main>
       </div>
+
+      {/* Reset confirmation dialog */}
+      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset this roadmap?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will clear your saved progress, expanded sections, and search
+              query for <span className="font-medium">{roadmap.title}</span>.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={performReset}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Reset roadmap
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
@@ -494,13 +690,16 @@ const RecursiveNode = ({
 
   if (searchQuery && !matchesSearch && !childMatches) return null;
 
+  const leaf = isLeaf(node);
+
   return (
     <>
       <NodeRow
         node={node}
-        isCompleted={!!completed[node.id]}
-        onToggle={() => onToggle(node.id)}
+        isCompleted={leaf ? !!completed[node.id] : false}
+        onToggle={() => leaf && onToggle(node.id)}
         depth={depth}
+        isLeaf={leaf}
       />
       {node.children?.map((child) => (
         <RecursiveNode
@@ -528,7 +727,7 @@ interface NodeRowProps {
   isCompleted: boolean;
   onToggle: () => void;
   depth: number;
-  isSection?: boolean;
+  isLeaf: boolean;
 }
 
 const NodeRow = ({
@@ -536,35 +735,44 @@ const NodeRow = ({
   isCompleted,
   onToggle,
   depth,
-  isSection,
+  isLeaf: leaf,
 }: NodeRowProps) => {
   return (
     <div
       className={cn(
-        "flex items-start gap-3 px-4 md:px-5 py-3 border-b border-border/50 last:border-b-0 hover:bg-background transition-colors group",
+        "flex items-start gap-3 px-4 md:px-5 py-3 border-b border-border/50 last:border-b-0 transition-colors group",
+        leaf && "hover:bg-background",
+        !leaf && "bg-muted/10",
         isCompleted && "bg-emerald-500/5"
       )}
       style={{ paddingLeft: `${1 + depth * 1.25}rem` }}
     >
-      <button
-        onClick={onToggle}
-        aria-label={isCompleted ? "Mark as not done" : "Mark as done"}
-        className="mt-0.5 shrink-0 transition-transform hover:scale-110"
-      >
-        {isCompleted ? (
-          <CheckCircle2 className="h-5 w-5 text-emerald-500 fill-emerald-500/20" />
-        ) : (
-          <Circle className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
-        )}
-      </button>
+      {leaf ? (
+        <button
+          onClick={onToggle}
+          aria-label={isCompleted ? "Mark as not done" : "Mark as done"}
+          className="mt-0.5 shrink-0 transition-transform hover:scale-110"
+        >
+          {isCompleted ? (
+            <CheckCircle2 className="h-5 w-5 text-emerald-500 fill-emerald-500/20" />
+          ) : (
+            <Circle className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
+          )}
+        </button>
+      ) : (
+        <div
+          className="mt-1.5 shrink-0 h-2 w-2 rounded-full bg-primary/40"
+          aria-hidden
+        />
+      )}
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span
             className={cn(
               "text-sm",
-              isSection && "font-semibold",
-              isCompleted && "line-through text-muted-foreground"
+              !leaf && "font-semibold text-foreground/90",
+              isCompleted && leaf && "line-through text-muted-foreground"
             )}
           >
             {node.title}
@@ -572,7 +780,7 @@ const NodeRow = ({
           {node.isRecommended && (
             <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
           )}
-          {node.type && !isSection && (
+          {node.type && leaf && (
             <Badge
               variant="outline"
               className={cn(
@@ -583,7 +791,7 @@ const NodeRow = ({
               {node.type}
             </Badge>
           )}
-          {node.difficulty && (
+          {node.difficulty && leaf && (
             <Badge
               variant="outline"
               className={cn(
@@ -595,12 +803,12 @@ const NodeRow = ({
             </Badge>
           )}
         </div>
-        {node.description && !isSection && (
+        {node.description && leaf && (
           <p className="text-xs text-muted-foreground mt-0.5">
             {node.description}
           </p>
         )}
-        {node.resources && node.resources.length > 0 && (
+        {node.resources && node.resources.length > 0 && leaf && (
           <div className="flex flex-wrap gap-2 mt-1.5">
             {node.resources.slice(0, 3).map((r, i) => (
               <a

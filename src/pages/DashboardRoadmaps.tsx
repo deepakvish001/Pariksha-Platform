@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet-async";
@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { roadmapTrees, countTreeNodes } from "@/data/roadmapTreesData";
+import { roadmapTrees, countLeafNodes } from "@/data/roadmapTreesData";
 import MobileFAB from "@/components/MobileFAB";
 
 const iconMap: Record<string, LucideIcon> = {
@@ -36,24 +36,20 @@ const iconMap: Record<string, LucideIcon> = {
   Database,
 };
 
-// Read progress from localStorage for any roadmap
-const getRoadmapProgress = (roadmapId: string, totalNodes: number) => {
+// Read leaf-only progress from localStorage. Full Stack flow mirrors its progress
+// into `roadmap-progress-fullstack` so we can read every roadmap uniformly here.
+const getRoadmapProgress = (roadmapId: string, totalLeaves: number) => {
   try {
-    if (roadmapId === "fullstack") {
-      const raw = localStorage.getItem("fullstack-roadmap-progress");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const done = Object.values(parsed).filter(
-          (s) => s === "done"
-        ).length;
-        return { done, percent: totalNodes ? Math.round((done / totalNodes) * 100) : 0 };
-      }
-    }
     const raw = localStorage.getItem(`roadmap-progress-${roadmapId}`);
     if (raw) {
       const parsed = JSON.parse(raw);
       const done = Object.values(parsed).filter((v) => v === true).length;
-      return { done, percent: totalNodes ? Math.round((done / totalNodes) * 100) : 0 };
+      return {
+        done: Math.min(done, totalLeaves),
+        percent: totalLeaves
+          ? Math.min(100, Math.round((done / totalLeaves) * 100))
+          : 0,
+      };
     }
   } catch {
     /* ignore */
@@ -78,13 +74,13 @@ const DashboardRoadmaps = () => {
 
   const enrichedRoadmaps = useMemo(() => {
     return roadmapTrees.map((tree) => {
-      const totalNodes = countTreeNodes(tree.nodes);
+      const totalLeaves = countLeafNodes(tree.nodes);
       const Icon = iconMap[tree.icon] || MapIcon;
-      const { done, percent } = getRoadmapProgress(tree.id, totalNodes);
+      const { done, percent } = getRoadmapProgress(tree.id, totalLeaves);
       return {
         ...tree,
         Icon,
-        totalNodes,
+        totalNodes: totalLeaves,
         completedNodes: done,
         progress: percent,
         sections: tree.nodes.length,

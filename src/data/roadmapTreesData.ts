@@ -896,3 +896,22 @@ export const flattenTreeNodes = (nodes: RoadmapTreeNode[]): RoadmapTreeNode[] =>
 export const countTreeNodes = (nodes: RoadmapTreeNode[]): number => {
   return flattenTreeNodes(nodes).length;
 };
+
+// Helper to get only leaf nodes (no children) — used for accurate progress
+export const flattenLeafNodes = (nodes: RoadmapTreeNode[]): RoadmapTreeNode[] => {
+  const result: RoadmapTreeNode[] = [];
+  const traverse = (list: RoadmapTreeNode[]) => {
+    for (const node of list) {
+      if (!node.children || node.children.length === 0) {
+        result.push(node);
+      } else {
+        traverse(node.children);
+      }
+    }
+  };
+  traverse(nodes);
+  return result;
+};
+
+export const countLeafNodes = (nodes: RoadmapTreeNode[]): number =>
+  flattenLeafNodes(nodes).length;
