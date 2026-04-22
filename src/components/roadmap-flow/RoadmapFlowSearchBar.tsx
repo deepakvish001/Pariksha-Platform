@@ -1,7 +1,7 @@
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { sections } from '@/data/fullStackRoadmapData';
+import { sections as fullStackSections } from '@/data/fullStackRoadmapData';
 
 interface Props {
   search: string;
@@ -10,11 +10,15 @@ interface Props {
   onSectionFilterChange: (v: string) => void;
   statusFilter: string;
   onStatusFilterChange: (v: string) => void;
+  /** Override sections list (defaults to Full Stack sections for backwards compat). */
+  sections?: string[];
 }
 
 export default function RoadmapFlowSearchBar({
   search, onSearchChange, sectionFilter, onSectionFilterChange, statusFilter, onStatusFilterChange,
+  sections,
 }: Props) {
+  const sectionList = sections ?? fullStackSections;
   return (
     <div className="flex flex-col sm:flex-row gap-2">
       <div className="relative flex-1">
@@ -27,12 +31,12 @@ export default function RoadmapFlowSearchBar({
         />
       </div>
       <Select value={sectionFilter} onValueChange={onSectionFilterChange}>
-        <SelectTrigger className="w-full sm:w-[160px] h-9">
+        <SelectTrigger className="w-full sm:w-[180px] h-9">
           <SelectValue placeholder="All Sections" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Sections</SelectItem>
-          {sections.map((s) => (
+          {sectionList.map((s) => (
             <SelectItem key={s} value={s}>{s}</SelectItem>
           ))}
         </SelectContent>
