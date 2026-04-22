@@ -74,13 +74,13 @@ const DashboardRoadmaps = () => {
 
   const enrichedRoadmaps = useMemo(() => {
     return roadmapTrees.map((tree) => {
-      const totalNodes = countTreeNodes(tree.nodes);
+      const totalLeaves = countLeafNodes(tree.nodes);
       const Icon = iconMap[tree.icon] || MapIcon;
-      const { done, percent } = getRoadmapProgress(tree.id, totalNodes);
+      const { done, percent } = getRoadmapProgress(tree.id, totalLeaves);
       return {
         ...tree,
         Icon,
-        totalNodes,
+        totalNodes: totalLeaves,
         completedNodes: done,
         progress: percent,
         sections: tree.nodes.length,
