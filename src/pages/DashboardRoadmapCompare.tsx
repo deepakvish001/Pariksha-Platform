@@ -14,6 +14,8 @@ import {
   Search,
   X,
   Download,
+  ArrowDownAZ,
+  ListTree,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +46,8 @@ const norm = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 const STORAGE_KEY = "roadmap-compare-selection";
+
+export type SortMode = "section" | "alpha";
 
 interface TopicInfo {
   id: string;
@@ -178,17 +182,21 @@ const DashboardRoadmapCompare = () => {
   const initialLeafOnly =
     (searchParams.get("leaf") ?? (stored.leafOnly ? "1" : "0")) === "1";
   const initialQuery = searchParams.get("q") ?? "";
+  const initialSort: SortMode =
+    (searchParams.get("sort") as SortMode) === "alpha" ? "alpha" : "section";
 
   const [aId, setAId] = useState(initialA);
   const [bId, setBId] = useState(initialB);
   const [leafOnly, setLeafOnly] = useState(initialLeafOnly);
   const [query, setQuery] = useState(initialQuery);
+  const [sortMode, setSortMode] = useState<SortMode>(initialSort);
 
   // Sync URL → state (handles back/forward navigation, refresh, deep links)
   const urlQuery = searchParams.get("q") ?? "";
   const urlA = searchParams.get("a");
   const urlB = searchParams.get("b");
   const urlLeaf = searchParams.get("leaf");
+  const urlSort = searchParams.get("sort");
   useEffect(() => {
     if (urlQuery !== query) setQuery(urlQuery);
     if (urlA && urlA !== aId) setAId(urlA);
@@ -197,8 +205,11 @@ const DashboardRoadmapCompare = () => {
       const next = urlLeaf === "1";
       if (next !== leafOnly) setLeafOnly(next);
     }
+    if (urlSort === "alpha" || urlSort === "section") {
+      if (urlSort !== sortMode) setSortMode(urlSort);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlQuery, urlA, urlB, urlLeaf]);
+  }, [urlQuery, urlA, urlB, urlLeaf, urlSort]);
 
   // Sync state → URL + localStorage. Use push for the search keyword so the
   // browser back/forward buttons step through search history; selectors and
@@ -209,13 +220,16 @@ const DashboardRoadmapCompare = () => {
     next.set("a", aId);
     next.set("b", bId);
     next.set("leaf", leafOnly ? "1" : "0");
+    next.set("sort", sortMode);
     if (query) next.set("q", query);
     else next.delete("q");
     const queryChanged = prevQ !== query;
     setSearchParams(next, { replace: !queryChanged });
     saveSelection({ a: aId, b: bId, leafOnly });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aId, bId, leafOnly, query]);
+  }, [aId, bId, leafOnly, query, sortMode]);
+
+  const clearFilter = () => setQuery("");
 
   const treeA = useMemo(() => roadmapTrees.find((t) => t.id === aId), [aId]);
   const treeB = useMemo(() => roadmapTrees.find((t) => t.id === bId), [bId]);
@@ -438,9 +452,9 @@ const DashboardRoadmapCompare = () => {
               />
             </div>
 
-            {/* Search + leaf toggle */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
-              <div className="relative flex-1">
+            {/* Search + leaf toggle + sort */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 pt-2">
+              <div className="relative flex-1 min-w-[220px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={query}
@@ -450,13 +464,54 @@ const DashboardRoadmapCompare = () => {
                 />
                 {query && (
                   <button
-                    onClick={() => setQuery("")}
+                    onClick={clearFilter}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-muted text-muted-foreground"
                     aria-label="Clear search"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
                 )}
+              </div>
+              {query && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilter}
+                  className="self-start sm:self-auto text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Clear filter
+                </Button>
+              )}
+              <div className="inline-flex items-center rounded-md border border-border bg-card p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setSortMode("section")}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-sm transition-colors",
+                    sortMode === "section"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-pressed={sortMode === "section"}
+                >
+                  <ListTree className="h-3.5 w-3.5" />
+                  By section
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortMode("alpha")}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-sm transition-colors",
+                    sortMode === "alpha"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-pressed={sortMode === "alpha"}
+                >
+                  <ArrowDownAZ className="h-3.5 w-3.5" />
+                  Alphabetical
+                </button>
               </div>
               <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
                 <Switch
@@ -554,10 +609,12 @@ const DashboardRoadmapCompare = () => {
                       ? "No matching topics."
                       : "Every topic also exists in the other roadmap."
                   }
-                  groups={groupBySection(filteredOnlyA)}
+                  items={filteredOnlyA}
                   totalRaw={diff.onlyA.length}
                   accent="cyan"
                   icon={Circle}
+                  sortMode={sortMode}
+                  keyPrefix={`onlyA::${treeA.id}`}
                 />
                 <DiffColumn
                   title="Shared topics"
@@ -566,20 +623,20 @@ const DashboardRoadmapCompare = () => {
                       ? "No matching shared topics."
                       : "No matching topics found between these roadmaps."
                   }
-                  groups={groupBySection(
-                    filteredShared.map((s) => ({
-                      id: s.a.id,
-                      title: s.a.title,
-                      section: s.a.section,
-                      sub:
-                        norm(s.a.section) === norm(s.b.section)
-                          ? undefined
-                          : `also in: ${s.b.section}`,
-                    }))
-                  )}
+                  items={filteredShared.map((s) => ({
+                    id: s.a.id,
+                    title: s.a.title,
+                    section: s.a.section,
+                    sub:
+                      norm(s.a.section) === norm(s.b.section)
+                        ? undefined
+                        : `also in: ${s.b.section}`,
+                  }))}
                   totalRaw={diff.shared.length}
                   accent="emerald"
                   icon={CheckCircle2}
+                  sortMode={sortMode}
+                  keyPrefix={`shared::${treeA.id}-${treeB.id}`}
                 />
                 <DiffColumn
                   title={`Only in ${treeB.title}`}
@@ -588,10 +645,12 @@ const DashboardRoadmapCompare = () => {
                       ? "No matching topics."
                       : "Every topic also exists in the other roadmap."
                   }
-                  groups={groupBySection(filteredOnlyB)}
+                  items={filteredOnlyB}
                   totalRaw={diff.onlyB.length}
                   accent="fuchsia"
                   icon={Circle}
+                  sortMode={sortMode}
+                  keyPrefix={`onlyB::${treeB.id}`}
                 />
               </div>
 
@@ -703,10 +762,13 @@ interface GroupedItem {
 interface DiffColumnProps {
   title: string;
   emptyText: string;
-  groups: { section: string; items: GroupedItem[] }[];
+  items: GroupedItem[];
   totalRaw: number;
   accent: "cyan" | "fuchsia" | "emerald";
   icon: React.ComponentType<{ className?: string }>;
+  sortMode: SortMode;
+  /** Stable, unique-per-column prefix to avoid React key collisions across columns. */
+  keyPrefix: string;
 }
 const accentBorder: Record<DiffColumnProps["accent"], string> = {
   cyan: "border-l-cyan-500/60",
@@ -721,11 +783,23 @@ const accentText: Record<DiffColumnProps["accent"], string> = {
 const DiffColumn = ({
   title,
   emptyText,
-  groups,
+  items,
   totalRaw,
   accent,
   icon: Icon,
+  sortMode,
+  keyPrefix,
 }: DiffColumnProps) => {
+  const groups = useMemo(() => {
+    if (sortMode === "alpha") {
+      const sorted = [...items].sort((a, b) =>
+        a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+      );
+      return [{ section: "All topics (A → Z)", items: sorted }];
+    }
+    return groupBySection(items);
+  }, [items, sortMode]);
+
   const visibleCount = groups.reduce((acc, g) => acc + g.items.length, 0);
   return (
     <Card className={cn("border-l-4", accentBorder[accent])}>
@@ -745,14 +819,17 @@ const DiffColumn = ({
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[460px] px-4 pb-4">
-          {groups.length === 0 ? (
+          {groups.length === 0 || visibleCount === 0 ? (
             <p className="text-xs text-muted-foreground py-6 text-center">
               {emptyText}
             </p>
           ) : (
             <div className="space-y-4">
-              {groups.map((g, gi) => (
-                <div key={`${g.section}-${gi}`} className="space-y-1.5">
+              {groups.map((g) => (
+                <div
+                  key={`${keyPrefix}::group::${g.section}`}
+                  className="space-y-1.5"
+                >
                   <div className="flex items-center justify-between sticky top-0 bg-card/95 backdrop-blur-sm py-1 -mx-1 px-1 z-10">
                     <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       {g.section}
@@ -762,12 +839,12 @@ const DiffColumn = ({
                     </span>
                   </div>
                   <ul className="space-y-1.5">
-                    {g.items.map((it, i) => (
+                    {g.items.map((it) => (
                       <motion.li
-                        key={`${it.id}-${i}`}
+                        key={`${keyPrefix}::${g.section}::${it.id}`}
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(i * 0.01, 0.15) }}
+                        transition={{ duration: 0.12 }}
                         className="rounded-md border border-border/60 bg-card/50 px-2.5 py-1.5"
                       >
                         <div className="text-sm leading-snug">{it.title}</div>
