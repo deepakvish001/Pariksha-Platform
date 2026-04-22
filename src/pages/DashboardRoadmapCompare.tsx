@@ -47,6 +47,8 @@ const norm = (s: string) =>
 
 const STORAGE_KEY = "roadmap-compare-selection";
 
+export type SortMode = "section" | "alpha";
+
 interface TopicInfo {
   id: string;
   title: string;
