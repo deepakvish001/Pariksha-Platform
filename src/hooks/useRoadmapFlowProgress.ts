@@ -1,7 +1,10 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { NodeStatus, roadmapNodesData } from '@/data/fullStackRoadmapData';
 
 const STORAGE_KEY = 'fullstack-roadmap-progress';
+// Mirror key so the generic listing page (`/dashboard/roadmaps`) can read
+// fullstack progress in the same shape as other roadmaps.
+const SYNC_KEY = 'roadmap-progress-fullstack';
 
 type ProgressMap = Record<string, NodeStatus>;
 
@@ -14,8 +17,30 @@ function loadProgress(): ProgressMap {
   }
 }
 
+// Convert flow status map → boolean map (only "done" counts as completed).
+function toBooleanMap(progress: ProgressMap): Record<string, boolean> {
+  const result: Record<string, boolean> = {};
+  for (const [id, status] of Object.entries(progress)) {
+    if (status === 'done') result[id] = true;
+  }
+  return result;
+}
+
+function syncToGeneric(progress: ProgressMap) {
+  try {
+    localStorage.setItem(SYNC_KEY, JSON.stringify(toBooleanMap(progress)));
+  } catch {
+    /* ignore */
+  }
+}
+
 export function useRoadmapFlowProgress() {
   const [progress, setProgress] = useState<ProgressMap>(loadProgress);
+
+  // Keep generic mirror in sync whenever progress changes
+  useEffect(() => {
+    syncToGeneric(progress);
+  }, [progress]);
 
   const getStatus = useCallback((nodeId: string): NodeStatus => {
     return progress[nodeId] || 'pending';
@@ -30,12 +55,14 @@ export function useRoadmapFlowProgress() {
         next[nodeId] = status;
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      syncToGeneric(next);
       return next;
     });
   }, []);
 
   const resetAll = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(SYNC_KEY);
     setProgress({});
   }, []);
 
