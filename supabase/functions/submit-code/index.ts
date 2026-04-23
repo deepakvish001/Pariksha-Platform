@@ -147,18 +147,20 @@ Deno.serve(async (req) => {
 
   try {
     if (!JUDGE0_URL) {
-      return new Response(
-        JSON.stringify({ error: "JUDGE0_URL not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return respond<SubmitResult>({
+        ok: false,
+        error: "JUDGE0_URL not configured",
+        diagnostics: { error_stage: "config" },
+      });
     }
 
     // Auth required
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "Unauthorized",
+        diagnostics: { error_stage: "auth" },
       });
     }
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -166,9 +168,10 @@ Deno.serve(async (req) => {
     });
     const { data: userData, error: userErr } = await supabase.auth.getUser();
     if (userErr || !userData.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "Unauthorized",
+        diagnostics: { error_stage: "auth" },
       });
     }
     const userId = userData.user.id;
@@ -185,27 +188,31 @@ Deno.serve(async (req) => {
     } = body ?? {};
 
     if (!source_code || typeof source_code !== "string" || source_code.length > 50000) {
-      return new Response(JSON.stringify({ error: "Invalid source_code" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "Invalid source_code",
+        diagnostics: { error_stage: "validation" },
       });
     }
     if (typeof language_id !== "number" || typeof language !== "string") {
-      return new Response(JSON.stringify({ error: "Invalid language" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "Invalid language",
+        diagnostics: { error_stage: "validation" },
       });
     }
     if (!problem_slug || !Array.isArray(tests) || tests.length === 0) {
-      return new Response(JSON.stringify({ error: "tests required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "tests required",
+        diagnostics: { error_stage: "validation" },
       });
     }
     if (tests.length > 30) {
-      return new Response(JSON.stringify({ error: "Too many tests" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "Too many tests",
+        diagnostics: { error_stage: "validation" },
       });
     }
 
@@ -305,8 +312,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({
+    return respond<SubmitResult>({
+      ok: true,
+      data: {
         verdict,
         passed,
         total: tests.length,
@@ -315,14 +323,17 @@ Deno.serve(async (req) => {
         failing_case: failingCase,
         stderr: stderrCombined || null,
         submission_id: insertData?.id ?? null,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+      },
+    });
   } catch (err) {
     console.error("submit-code error:", err);
-    return new Response(
-      JSON.stringify({ error: (err as Error).message ?? "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    const diagnostics = err instanceof Judge0RequestError
+      ? err.diagnostics
+      : { error_stage: "unknown" as const };
+    return respond<SubmitResult>({
+      ok: false,
+      error: (err as Error).message ?? "Unknown error",
+      diagnostics,
+    });
   }
 });
