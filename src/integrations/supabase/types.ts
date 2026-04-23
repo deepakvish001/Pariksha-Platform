@@ -155,6 +155,111 @@ export type Database = {
           },
         ]
       }
+      code_drafts: {
+        Row: {
+          id: string
+          language: string
+          problem_slug: string
+          source_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          language: string
+          problem_slug: string
+          source_code?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          language?: string
+          problem_slug?: string
+          source_code?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      code_submissions: {
+        Row: {
+          created_at: string
+          failing_case: Json | null
+          id: string
+          is_submission: boolean
+          language: string
+          language_id: number
+          memory_kb: number | null
+          passed_tests: number
+          problem_slug: string
+          runtime_ms: number | null
+          source_code: string
+          stderr: string | null
+          total_tests: number
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          created_at?: string
+          failing_case?: Json | null
+          id?: string
+          is_submission?: boolean
+          language: string
+          language_id: number
+          memory_kb?: number | null
+          passed_tests?: number
+          problem_slug: string
+          runtime_ms?: number | null
+          source_code: string
+          stderr?: string | null
+          total_tests?: number
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          created_at?: string
+          failing_case?: Json | null
+          id?: string
+          is_submission?: boolean
+          language?: string
+          language_id?: number
+          memory_kb?: number | null
+          passed_tests?: number
+          problem_slug?: string
+          runtime_ms?: number | null
+          source_code?: string
+          stderr?: string | null
+          total_tests?: number
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
+      coding_problems_meta: {
+        Row: {
+          acceptance_rate: number
+          problem_slug: string
+          total_accepted: number
+          total_submissions: number
+          updated_at: string
+        }
+        Insert: {
+          acceptance_rate?: number
+          problem_slug: string
+          total_accepted?: number
+          total_submissions?: number
+          updated_at?: string
+        }
+        Update: {
+          acceptance_rate?: number
+          problem_slug?: string
+          total_accepted?: number
+          total_submissions?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string

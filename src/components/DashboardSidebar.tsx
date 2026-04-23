@@ -52,6 +52,7 @@ import {
   MessageCircle,
   Route,
   Lock,
+  Terminal,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -114,6 +115,7 @@ const ACTIVE_ROUTES = new Set([
   "/dashboard/roadmap/fullstack",
   "/dashboard/profile",
   "/settings",
+  "/library/problems",
 ]);
 
 const isRouteLocked = (url: string) => !ACTIVE_ROUTES.has(url.split("?")[0]);
@@ -153,6 +155,7 @@ const fundamentalsItems = [
 ];
 
 const practiceItems = [
+  { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "DSA Questions", url: "/library/dsa", icon: Code2 },
   { title: "SQL Questions", url: "/library/sql", icon: Database },
   { title: "Aptitude Questions", url: "/library/aptitude", icon: HelpCircle },
