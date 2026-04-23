@@ -1,105 +1,87 @@
 
 
-## Full Stack Developer Roadmap — Implementation Plan
+## LeetCode-style Coding Problems Hub
 
-### Overview
-Build an interactive, visual Full Stack Developer Roadmap page using **@xyflow/react** (React Flow) with a vertical flowchart layout, clickable nodes opening detail panels, progress tracking (localStorage), and a search/filter bar. Dark theme, color-coded sections, fully responsive.
+A new section where users browse coding problems in a list, open any problem to see the full statement alongside a Monaco code editor, run code against sample test cases, submit solutions, and review their submission history — all powered by real execution via Judge0.
 
----
+### What you'll see
 
-### Architecture
+**1. Problems list page — `/library/problems`**
+- LeetCode-style table: Status (✅/🟡/—), Title, Difficulty, Topic tags, Acceptance, Your attempts.
+- Search box, difficulty filter (Easy/Medium/Hard), topic filter, status filter (Solved / Attempted / Todo), and "Random pick" button.
+- Stats strip up top: solved counts by difficulty, total attempts, current streak.
+- Pagination (20/page).
 
-```text
-src/
-├── data/fullStackRoadmapData.ts        # All roadmap nodes/edges JSON
-├── pages/FullStackRoadmap.tsx           # Main page component
-├── components/roadmap-flow/
-│   ├── RoadmapFlowCanvas.tsx            # React Flow canvas wrapper
-│   ├── RoadmapFlowNode.tsx              # Custom node component
-│   ├── RoadmapFlowSectionNode.tsx       # Section header node
-│   ├── RoadmapFlowDetailPanel.tsx       # Side panel for node details
-│   ├── RoadmapFlowProgressBar.tsx       # Top progress bar
-│   ├── RoadmapFlowSearchBar.tsx         # Search/filter toolbar
-│   └── RoadmapFlowLegend.tsx            # Status legend
-└── hooks/useRoadmapFlowProgress.ts      # localStorage progress hook
-```
+**2. Problem detail page — `/library/problems/:problemId`**
+Two-pane split layout (resizable):
+- **Left pane** — tabs: `Description` · `Solution` · `Submissions` · `Discuss` (Discuss = "coming soon" placeholder).
+  - Description: title, difficulty badge, topic tags, problem statement (markdown), examples, constraints, hints (collapsible).
+  - Solution: gated until first AC submission, then shows reference solution + complexity.
+  - Submissions: user's history for this problem (status, language, runtime, memory, date) with click-to-view code.
+- **Right pane** — Monaco editor.
+  - Language picker: **Python, C++, Java, JavaScript, C, Go, TypeScript** (each with starter stub).
+  - Toolbar: Run, Submit, Reset to default, Format, Theme.
+  - Bottom panel: `Test Case` (editable cases) · `Output` (verdict, stdout, runtime, memory, failing case diff).
+- Mobile: stacked tabs (Problem / Code / Output) instead of split.
 
----
+**3. Backend execution**
+- Edge function `run-code` proxies to **Judge0 CE** (RapidAPI). Accepts `{ source, language_id, stdin, expected_output }`, polls until result, returns `{ status, stdout, stderr, time, memory }`.
+- Edge function `submit-code` runs source against ALL hidden test cases for the problem, computes verdict (`Accepted`, `Wrong Answer`, `TLE`, `Runtime Error`, `Compile Error`), inserts a row in `code_submissions`, awards XP on first AC.
+- Both functions require auth; Run is rate-limited (10/min/user), Submit (5/min/user) via in-memory token bucket.
 
-### Step-by-step Plan
+**4. Submission history**
+- Stored per-user; shown on problem detail "Submissions" tab and on a global page `/library/problems/submissions` (filter by problem, language, verdict).
+- Row click opens read-only Monaco viewer with the exact submitted code.
 
-**1. Install @xyflow/react**
-Add the React Flow library to the project.
-
-**2. Create roadmap data file (`src/data/fullStackRoadmapData.ts`)**
-- Define ~60-80 nodes across 10 sections: Internet Basics, HTML, CSS, JavaScript, React, Node.js, Databases, APIs, DevOps, Deployment
-- Each node: `{ id, title, description, section, sectionColor, difficulty, resources: [{title, url, type}], status }` 
-- Define edges connecting nodes in a vertical flow with section groupings
-- Color scheme per section: Internet=slate, HTML=orange, CSS=blue, JS=yellow, React=cyan, Node=green, DB=violet, APIs=rose, DevOps=amber, Deploy=emerald
-
-**3. Create progress hook (`src/hooks/useRoadmapFlowProgress.ts`)**
-- Store node statuses in localStorage (`fullstack-roadmap-progress`)
-- Methods: `getStatus(nodeId)`, `setStatus(nodeId, 'done'|'in-progress'|'skipped')`, `resetAll()`
-- Compute overall completion percentage
-
-**4. Create custom React Flow node (`src/components/roadmap-flow/RoadmapFlowNode.tsx`)**
-- Renders title, difficulty badge, section color border/accent
-- Color-coded by status: green (done), yellow (in-progress), grey (skipped), default (pending)
-- Click handler to open detail panel
-- Source/target handles for edge connections
-
-**5. Create section header node (`RoadmapFlowSectionNode.tsx`)**
-- Larger styled node acting as a section divider/label with section color gradient
-
-**6. Create detail side panel (`RoadmapFlowDetailPanel.tsx`)**
-- Slides in from right on node click
-- Shows: title, description, difficulty badge, 2-3 resource links with icons
-- Status toggle buttons (Done / In Progress / Skipped)
-- Close button
-
-**7. Create progress bar (`RoadmapFlowProgressBar.tsx`)**
-- Fixed at top of the roadmap page
-- Shows percentage and count (e.g., "32/68 completed")
-- Uses existing Progress component with emerald indicator at 100%
-
-**8. Create search/filter bar (`RoadmapFlowSearchBar.tsx`)**
-- Text search to filter/highlight nodes by title
-- Filter by section dropdown
-- Filter by status (All / Done / In Progress / Skipped / Pending)
-- When filtering, non-matching nodes dim/fade
-
-**9. Create legend component (`RoadmapFlowLegend.tsx`)**
-- Small floating legend showing color meanings for Done/In Progress/Skipped/Pending
-
-**10. Build main canvas (`RoadmapFlowCanvas.tsx`)**
-- React Flow canvas with custom node types registered
-- Vertical layout (top-to-bottom)
-- Animated edges with step/smoothstep type
-- Zoom controls, minimap
-- Fit-view on load
-- Pan and zoom enabled
-
-**11. Create page (`src/pages/FullStackRoadmap.tsx`)**
-- Combines all components: ProgressBar, SearchBar, Canvas, DetailPanel, Legend
-- Full-height layout within DashboardLayout
-
-**12. Add routing and navigation**
-- Add route `/dashboard/roadmap/fullstack` under PublicDashboardWrapper in App.tsx
-- Add a new sheet card entry in DashboardSheets.tsx for the Full Stack Roadmap (category: "Roadmap", linking to the new route)
-- Add sidebar entry if appropriate
-
-**13. Mobile responsiveness**
-- On mobile: detail panel becomes a bottom sheet/dialog instead of side panel
-- React Flow canvas remains zoomable/pannable
-- Search bar collapses to icon on small screens
+**5. Sidebar**
+- Add "Coding Problems" entry under the existing Practice group, icon `Terminal`.
 
 ---
 
-### Technical Details
+### Technical details
 
-- **Library**: `@xyflow/react` (v12+) with `@xyflow/react` CSS imported
-- **Node layout**: Pre-computed x/y positions in data file (vertical flow, centered)
-- **Edge style**: `smoothstep` type with animated dash for pending, solid for completed sections
-- **Progress persistence**: `localStorage` key `fullstack-roadmap-progress` storing `Record<string, 'done'|'in-progress'|'skipped'>`
-- **No database needed** — localStorage only as requested
+**New files**
+- `src/data/codingProblemsData.ts` — seed of ~30 LeetCode-style problems (Two Sum, Valid Parentheses, Reverse Linked List, etc.). Each: `{ id, slug, title, difficulty, topics[], description (md), examples[], constraints[], hints[], starterCode: Record<lang, string>, referenceSolution: Record<lang, string>, sampleTests[], hiddenTests[], timeLimitMs, memoryLimitKb }`.
+- `src/pages/library/CodingProblems.tsx` — list page.
+- `src/pages/library/CodingProblemDetail.tsx` — split-pane problem page.
+- `src/pages/library/CodingSubmissions.tsx` — global submissions history.
+- `src/components/coding/MonacoEditor.tsx` — wrapper around `@monaco-editor/react`.
+- `src/components/coding/LanguageSelect.tsx`, `TestCasePanel.tsx`, `OutputPanel.tsx`, `SubmissionRow.tsx`, `VerdictBadge.tsx`, `ProblemDescription.tsx`.
+- `src/hooks/useCodeRunner.ts`, `src/hooks/useCodingSubmissions.ts`, `src/hooks/useCodingProgress.ts`.
+- `supabase/functions/run-code/index.ts`, `supabase/functions/submit-code/index.ts`.
+
+**Database (migration)**
+- `coding_problems_meta` (optional cache for stats: `problem_slug`, `total_submissions`, `total_accepted`, `acceptance_rate`).
+- `code_submissions` (`id`, `user_id`, `problem_slug`, `language`, `source_code`, `verdict`, `runtime_ms`, `memory_kb`, `passed_tests`, `total_tests`, `failing_case`, `created_at`). RLS: users can `SELECT/INSERT` only their own rows; service role inserts via edge function.
+- `code_drafts` (`user_id`, `problem_slug`, `language`, `source_code`, `updated_at`) — autosaves the editor every 1.5s so users don't lose work. RLS: own rows only.
+- Trigger `log_code_submission_activity` → inserts into `user_activity_log` so coding submissions show up in My Activity heatmap.
+
+**Code execution — Judge0**
+- Use **Judge0 CE** via RapidAPI. Required secrets: `JUDGE0_API_KEY`, `JUDGE0_API_HOST` (e.g. `judge0-ce.p.rapidapi.com`). Will request both via `add_secret` once you approve the plan.
+- Language IDs mapped: Python 3 (71), C++17 (54), Java (62), JS Node (63), C (50), Go (60), TypeScript (74).
+- Submission flow: POST `/submissions?base64_encoded=true&wait=false` → poll `/submissions/{token}` until `status.id > 2` → return result.
+
+**Routing (`src/App.tsx`)**
+- Public: `/library/problems`, `/library/problems/:slug`.
+- Protected: `/library/problems/submissions` (requires login to view your own history).
+
+**Guest gating**
+- Browsing problems and reading statements: open to guests.
+- Run/Submit/draft autosave: prompt login (existing `LoginPromptDialog`).
+
+**Routes/sidebar**
+- `DashboardSidebar.tsx`: add `Coding Problems` to `practiceItems`, mark `/library/problems` in `ACTIVE_ROUTES`.
+
+**Dependencies**
+- Add `@monaco-editor/react` and `monaco-editor`.
+
+**XP & achievements**
+- First AC on a problem: +25 XP via existing `award_xp('topic_complete')`.
+- New achievements (data only): "First Accepted", "10 Problems Solved", "Polyglot" (solve in 3 languages).
+
+### Out of scope (future)
+- Discuss tab content (placeholder only).
+- Contest mode / leaderboards per problem.
+- Custom user-uploaded problems.
+- Linking existing DSA library questions to problems (queued for follow-up — schema already supports it via `problem_slug`).
 
