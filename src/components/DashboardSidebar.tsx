@@ -103,6 +103,7 @@ const homeNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
   { title: "Roadmap", url: "/dashboard/roadmaps", icon: Route },
+  { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "Profile", url: "/dashboard/profile", icon: User },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
