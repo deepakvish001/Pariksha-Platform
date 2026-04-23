@@ -103,6 +103,7 @@ const homeNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
   { title: "Roadmap", url: "/dashboard/roadmaps", icon: Route },
+  { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "Profile", url: "/dashboard/profile", icon: User },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
@@ -155,7 +156,6 @@ const fundamentalsItems = [
 ];
 
 const practiceItems = [
-  { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "DSA Questions", url: "/library/dsa", icon: Code2 },
   { title: "SQL Questions", url: "/library/sql", icon: Database },
   { title: "Aptitude Questions", url: "/library/aptitude", icon: HelpCircle },
