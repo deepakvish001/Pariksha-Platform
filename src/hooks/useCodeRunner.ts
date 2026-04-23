@@ -11,6 +11,31 @@ export interface RunResult {
   memory: number | null;
 }
 
+interface FunctionDiagnostics {
+  error_stage?: string;
+  requested_url?: string;
+  judge0_status?: number;
+  judge0_body?: string;
+}
+
+interface FunctionEnvelope<T> {
+  ok?: boolean;
+  data?: T;
+  error?: string;
+  diagnostics?: FunctionDiagnostics;
+}
+
+const buildFunctionError = (fallback: string, payload?: FunctionEnvelope<unknown>) => {
+  const parts = [payload?.error || fallback];
+  if (payload?.diagnostics?.error_stage) {
+    parts.push(`stage: ${payload.diagnostics.error_stage}`);
+  }
+  if (payload?.diagnostics?.judge0_status) {
+    parts.push(`Judge0 status: ${payload.diagnostics.judge0_status}`);
+  }
+  return new Error(parts.filter(Boolean).join(" • "));
+};
+
 export interface SubmitResult {
   verdict: string;
   passed: number;
@@ -42,9 +67,12 @@ export const useCodeRunner = () => {
       const { data, error } = await supabase.functions.invoke("run-code", {
         body: params,
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data as RunResult;
+      const payload = data as FunctionEnvelope<RunResult> | undefined;
+      if (error && !payload) throw error;
+      if (!payload?.ok || !payload.data) {
+        throw buildFunctionError(error?.message || "Run failed", payload);
+      }
+      return payload.data;
     } finally {
       setIsRunning(false);
     }
