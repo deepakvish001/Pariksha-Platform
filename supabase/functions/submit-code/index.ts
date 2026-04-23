@@ -14,6 +14,48 @@ const JUDGE0_AUTH_TOKEN = Deno.env.get("JUDGE0_AUTH_TOKEN") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
+interface SubmitResult {
+  verdict: string;
+  passed: number;
+  total: number;
+  runtime_ms: number;
+  memory_kb: number;
+  failing_case: Record<string, unknown> | null;
+  stderr: string | null;
+  submission_id: string | null;
+}
+
+interface Diagnostics {
+  error_stage?: "config" | "auth" | "validation" | "submit" | "poll" | "unknown";
+  requested_url?: string;
+  judge0_status?: number;
+  judge0_body?: string;
+}
+
+interface FunctionResponse<T> {
+  ok: boolean;
+  data?: T;
+  error?: string;
+  diagnostics?: Diagnostics;
+}
+
+class Judge0RequestError extends Error {
+  diagnostics: Diagnostics;
+
+  constructor(message: string, diagnostics: Diagnostics) {
+    super(message);
+    this.name = "Judge0RequestError";
+    this.diagnostics = diagnostics;
+  }
+}
+
+function respond<T>(payload: FunctionResponse<T>) {
+  return new Response(JSON.stringify(payload), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 function judge0Headers(): Record<string, string> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (JUDGE0_AUTH_TOKEN) headers[JUDGE0_AUTH_HEADER] = JUDGE0_AUTH_TOKEN;
@@ -45,22 +87,29 @@ async function runSingleCase(
   cpuLimit: number,
   memLimit: number,
 ) {
-  const submitRes = await fetch(
-    `${JUDGE0_URL}/submissions?base64_encoded=true&wait=false`,
-    {
-      method: "POST",
-      headers: judge0Headers(),
-      body: JSON.stringify({
-        source_code: b64encode(source_code),
-        language_id,
-        stdin: b64encode(test.input ?? ""),
-        cpu_time_limit: cpuLimit,
-        memory_limit: memLimit,
-      }),
-    },
-  );
+  const submitUrl = `${JUDGE0_URL}/submissions?base64_encoded=true&wait=false`;
+  const submitRes = await fetch(submitUrl, {
+    method: "POST",
+    headers: judge0Headers(),
+    body: JSON.stringify({
+      source_code: b64encode(source_code),
+      language_id,
+      stdin: b64encode(test.input ?? ""),
+      cpu_time_limit: cpuLimit,
+      memory_limit: memLimit,
+    }),
+  });
   if (!submitRes.ok) {
-    throw new Error(`Judge0 submit failed: ${await submitRes.text()}`);
+    const errText = await submitRes.text();
+    throw new Judge0RequestError(
+      `Judge0 submit failed (${submitRes.status})${errText ? `: ${errText}` : ""}`,
+      {
+        error_stage: "submit",
+        requested_url: submitUrl,
+        judge0_status: submitRes.status,
+        judge0_body: errText || undefined,
+      },
+    );
   }
   const { token } = await submitRes.json();
 
@@ -85,7 +134,10 @@ async function runSingleCase(
       };
     }
   }
-  throw new Error("Polling timed out");
+  throw new Judge0RequestError("Polling timed out", {
+    error_stage: "poll",
+    requested_url: `${JUDGE0_URL}/submissions/${token}`,
+  });
 }
 
 Deno.serve(async (req) => {
@@ -95,18 +147,20 @@ Deno.serve(async (req) => {
 
   try {
     if (!JUDGE0_URL) {
-      return new Response(
-        JSON.stringify({ error: "JUDGE0_URL not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return respond<SubmitResult>({
+        ok: false,
+        error: "JUDGE0_URL not configured",
+        diagnostics: { error_stage: "config" },
+      });
     }
 
     // Auth required
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "Unauthorized",
+        diagnostics: { error_stage: "auth" },
       });
     }
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -114,9 +168,10 @@ Deno.serve(async (req) => {
     });
     const { data: userData, error: userErr } = await supabase.auth.getUser();
     if (userErr || !userData.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "Unauthorized",
+        diagnostics: { error_stage: "auth" },
       });
     }
     const userId = userData.user.id;
@@ -133,27 +188,31 @@ Deno.serve(async (req) => {
     } = body ?? {};
 
     if (!source_code || typeof source_code !== "string" || source_code.length > 50000) {
-      return new Response(JSON.stringify({ error: "Invalid source_code" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "Invalid source_code",
+        diagnostics: { error_stage: "validation" },
       });
     }
     if (typeof language_id !== "number" || typeof language !== "string") {
-      return new Response(JSON.stringify({ error: "Invalid language" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "Invalid language",
+        diagnostics: { error_stage: "validation" },
       });
     }
     if (!problem_slug || !Array.isArray(tests) || tests.length === 0) {
-      return new Response(JSON.stringify({ error: "tests required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "tests required",
+        diagnostics: { error_stage: "validation" },
       });
     }
     if (tests.length > 30) {
-      return new Response(JSON.stringify({ error: "Too many tests" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return respond<SubmitResult>({
+        ok: false,
+        error: "Too many tests",
+        diagnostics: { error_stage: "validation" },
       });
     }
 
@@ -253,8 +312,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({
+    return respond<SubmitResult>({
+      ok: true,
+      data: {
         verdict,
         passed,
         total: tests.length,
@@ -263,14 +323,17 @@ Deno.serve(async (req) => {
         failing_case: failingCase,
         stderr: stderrCombined || null,
         submission_id: insertData?.id ?? null,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+      },
+    });
   } catch (err) {
     console.error("submit-code error:", err);
-    return new Response(
-      JSON.stringify({ error: (err as Error).message ?? "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    const diagnostics = err instanceof Judge0RequestError
+      ? err.diagnostics
+      : { error_stage: "unknown" as const };
+    return respond<SubmitResult>({
+      ok: false,
+      error: (err as Error).message ?? "Unknown error",
+      diagnostics,
+    });
   }
 });

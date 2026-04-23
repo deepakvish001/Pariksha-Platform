@@ -92,9 +92,12 @@ export const useCodeRunner = () => {
       const { data, error } = await supabase.functions.invoke("submit-code", {
         body: params,
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data as SubmitResult;
+      const payload = data as FunctionEnvelope<SubmitResult> | undefined;
+      if (error && !payload) throw error;
+      if (!payload?.ok || !payload.data) {
+        throw buildFunctionError(error?.message || "Submit failed", payload);
+      }
+      return payload.data;
     } finally {
       setIsSubmitting(false);
     }
