@@ -562,7 +562,7 @@ const CodingProblemDetail = () => {
       <LoginPromptDialog
         open={showLogin}
         onOpenChange={setShowLogin}
-        feature="run and submit code"
+        message="Sign in to run and submit code, and to save your progress."
       />
     </div>
   );

@@ -46,6 +46,8 @@ import CoreCSSubjects from "./pages/library/CoreCSSubjects";
 import HandwrittenNotes from "./pages/library/HandwrittenNotes";
 import Quiz from "./pages/library/Quiz";
 import QuizHistory from "./pages/library/QuizHistory";
+import CodingProblems from "./pages/library/CodingProblems";
+import CodingProblemDetail from "./pages/library/CodingProblemDetail";
 
 // Fundamentals Pages
 import Language from "./pages/fundamentals/Language";
@@ -174,6 +176,8 @@ const App = () => (
                   <Route path="notes" element={<HandwrittenNotes />} />
                   <Route path="quiz" element={<Quiz />} />
                   <Route path="quiz-history" element={<QuizHistory />} />
+                  <Route path="problems" element={<CodingProblems />} />
+                  <Route path="problems/:slug" element={<CodingProblemDetail />} />
                 </Route>
 
                 {/* Fundamentals routes - public */}
