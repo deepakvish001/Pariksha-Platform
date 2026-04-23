@@ -12,6 +12,47 @@ const JUDGE0_URL = Deno.env.get("JUDGE0_URL")?.replace(/\/$/, "") ?? "";
 const JUDGE0_AUTH_HEADER = Deno.env.get("JUDGE0_AUTH_HEADER") ?? "X-Auth-Token";
 const JUDGE0_AUTH_TOKEN = Deno.env.get("JUDGE0_AUTH_TOKEN") ?? "";
 
+interface RunResult {
+  status: { id: number; description: string };
+  stdout: string;
+  stderr: string;
+  compile_output: string;
+  message: string;
+  time: number | null;
+  memory: number | null;
+}
+
+interface Diagnostics {
+  error_stage?: "config" | "validation" | "submit" | "poll" | "unknown";
+  requested_url?: string;
+  judge0_status?: number;
+  judge0_body?: string;
+}
+
+interface FunctionResponse<T> {
+  ok: boolean;
+  data?: T;
+  error?: string;
+  diagnostics?: Diagnostics;
+}
+
+class Judge0RequestError extends Error {
+  diagnostics: Diagnostics;
+
+  constructor(message: string, diagnostics: Diagnostics) {
+    super(message);
+    this.name = "Judge0RequestError";
+    this.diagnostics = diagnostics;
+  }
+}
+
+function respond<T>(payload: FunctionResponse<T>) {
+  return new Response(JSON.stringify(payload), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 function judge0Headers(): Record<string, string> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (JUDGE0_AUTH_TOKEN) headers[JUDGE0_AUTH_HEADER] = JUDGE0_AUTH_TOKEN;
@@ -35,29 +76,35 @@ async function runOnJudge0(payload: {
   expected_output?: string;
   cpu_time_limit?: number;
   memory_limit?: number;
-}) {
+}): Promise<RunResult> {
+  const submitUrl = `${JUDGE0_URL}/submissions?base64_encoded=true&wait=false`;
   // Submit
-  const submitRes = await fetch(
-    `${JUDGE0_URL}/submissions?base64_encoded=true&wait=false`,
-    {
-      method: "POST",
-      headers: judge0Headers(),
-      body: JSON.stringify({
-        source_code: b64encode(payload.source_code),
-        language_id: payload.language_id,
-        stdin: payload.stdin ? b64encode(payload.stdin) : undefined,
-        expected_output: payload.expected_output
-          ? b64encode(payload.expected_output)
-          : undefined,
-        cpu_time_limit: payload.cpu_time_limit ?? 5,
-        memory_limit: payload.memory_limit ?? 256000,
-      }),
-    },
-  );
+  const submitRes = await fetch(submitUrl, {
+    method: "POST",
+    headers: judge0Headers(),
+    body: JSON.stringify({
+      source_code: b64encode(payload.source_code),
+      language_id: payload.language_id,
+      stdin: payload.stdin ? b64encode(payload.stdin) : undefined,
+      expected_output: payload.expected_output
+        ? b64encode(payload.expected_output)
+        : undefined,
+      cpu_time_limit: payload.cpu_time_limit ?? 5,
+      memory_limit: payload.memory_limit ?? 256000,
+    }),
+  });
 
   if (!submitRes.ok) {
     const errText = await submitRes.text();
-    throw new Error(`Judge0 submit failed (${submitRes.status}): ${errText}`);
+    throw new Judge0RequestError(
+      `Judge0 submit failed (${submitRes.status})${errText ? `: ${errText}` : ""}`,
+      {
+        error_stage: "submit",
+        requested_url: submitUrl,
+        judge0_status: submitRes.status,
+        judge0_body: errText || undefined,
+      },
+    );
   }
 
   const { token } = await submitRes.json();
@@ -85,7 +132,10 @@ async function runOnJudge0(payload: {
       };
     }
   }
-  throw new Error("Judge0 polling timed out");
+  throw new Judge0RequestError("Judge0 polling timed out", {
+    error_stage: "poll",
+    requested_url: `${JUDGE0_URL}/submissions/${token}`,
+  });
 }
 
 Deno.serve(async (req) => {
@@ -95,32 +145,36 @@ Deno.serve(async (req) => {
 
   try {
     if (!JUDGE0_URL) {
-      return new Response(
-        JSON.stringify({ error: "JUDGE0_URL not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return respond<RunResult>({
+        ok: false,
+        error: "JUDGE0_URL not configured",
+        diagnostics: { error_stage: "config" },
+      });
     }
 
     const body = await req.json();
     const { source_code, language_id, stdin, expected_output } = body ?? {};
 
     if (typeof source_code !== "string" || source_code.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "source_code required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return respond<RunResult>({
+        ok: false,
+        error: "source_code required",
+        diagnostics: { error_stage: "validation" },
+      });
     }
     if (source_code.length > 50000) {
-      return new Response(
-        JSON.stringify({ error: "source_code too large (50KB max)" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return respond<RunResult>({
+        ok: false,
+        error: "source_code too large (50KB max)",
+        diagnostics: { error_stage: "validation" },
+      });
     }
     if (typeof language_id !== "number") {
-      return new Response(
-        JSON.stringify({ error: "language_id required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return respond<RunResult>({
+        ok: false,
+        error: "language_id required",
+        diagnostics: { error_stage: "validation" },
+      });
     }
 
     const result = await runOnJudge0({
@@ -130,14 +184,16 @@ Deno.serve(async (req) => {
       expected_output: typeof expected_output === "string" ? expected_output : undefined,
     });
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respond<RunResult>({ ok: true, data: result });
   } catch (err) {
     console.error("run-code error:", err);
-    return new Response(
-      JSON.stringify({ error: (err as Error).message ?? "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    const diagnostics = err instanceof Judge0RequestError
+      ? err.diagnostics
+      : { error_stage: "unknown" as const };
+    return respond<RunResult>({
+      ok: false,
+      error: (err as Error).message ?? "Unknown error",
+      diagnostics,
+    });
   }
 });
