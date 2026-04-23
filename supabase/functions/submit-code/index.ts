@@ -14,6 +14,48 @@ const JUDGE0_AUTH_TOKEN = Deno.env.get("JUDGE0_AUTH_TOKEN") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
+interface SubmitResult {
+  verdict: string;
+  passed: number;
+  total: number;
+  runtime_ms: number;
+  memory_kb: number;
+  failing_case: Record<string, unknown> | null;
+  stderr: string | null;
+  submission_id: string | null;
+}
+
+interface Diagnostics {
+  error_stage?: "config" | "auth" | "validation" | "submit" | "poll" | "unknown";
+  requested_url?: string;
+  judge0_status?: number;
+  judge0_body?: string;
+}
+
+interface FunctionResponse<T> {
+  ok: boolean;
+  data?: T;
+  error?: string;
+  diagnostics?: Diagnostics;
+}
+
+class Judge0RequestError extends Error {
+  diagnostics: Diagnostics;
+
+  constructor(message: string, diagnostics: Diagnostics) {
+    super(message);
+    this.name = "Judge0RequestError";
+    this.diagnostics = diagnostics;
+  }
+}
+
+function respond<T>(payload: FunctionResponse<T>) {
+  return new Response(JSON.stringify(payload), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 function judge0Headers(): Record<string, string> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (JUDGE0_AUTH_TOKEN) headers[JUDGE0_AUTH_HEADER] = JUDGE0_AUTH_TOKEN;
@@ -45,22 +87,29 @@ async function runSingleCase(
   cpuLimit: number,
   memLimit: number,
 ) {
-  const submitRes = await fetch(
-    `${JUDGE0_URL}/submissions?base64_encoded=true&wait=false`,
-    {
-      method: "POST",
-      headers: judge0Headers(),
-      body: JSON.stringify({
-        source_code: b64encode(source_code),
-        language_id,
-        stdin: b64encode(test.input ?? ""),
-        cpu_time_limit: cpuLimit,
-        memory_limit: memLimit,
-      }),
-    },
-  );
+  const submitUrl = `${JUDGE0_URL}/submissions?base64_encoded=true&wait=false`;
+  const submitRes = await fetch(submitUrl, {
+    method: "POST",
+    headers: judge0Headers(),
+    body: JSON.stringify({
+      source_code: b64encode(source_code),
+      language_id,
+      stdin: b64encode(test.input ?? ""),
+      cpu_time_limit: cpuLimit,
+      memory_limit: memLimit,
+    }),
+  });
   if (!submitRes.ok) {
-    throw new Error(`Judge0 submit failed: ${await submitRes.text()}`);
+    const errText = await submitRes.text();
+    throw new Judge0RequestError(
+      `Judge0 submit failed (${submitRes.status})${errText ? `: ${errText}` : ""}`,
+      {
+        error_stage: "submit",
+        requested_url: submitUrl,
+        judge0_status: submitRes.status,
+        judge0_body: errText || undefined,
+      },
+    );
   }
   const { token } = await submitRes.json();
 
@@ -85,7 +134,10 @@ async function runSingleCase(
       };
     }
   }
-  throw new Error("Polling timed out");
+  throw new Judge0RequestError("Polling timed out", {
+    error_stage: "poll",
+    requested_url: `${JUDGE0_URL}/submissions/${token}`,
+  });
 }
 
 Deno.serve(async (req) => {
