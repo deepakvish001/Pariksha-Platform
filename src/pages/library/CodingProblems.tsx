@@ -75,6 +75,12 @@ import {
   SortableResizableHeader,
   type SortDir,
 } from "@/components/library/coding/SortableResizableHeader";
+import { RecommendationStrip } from "@/components/library/coding/RecommendationStrip";
+import { TopicMasteryChips } from "@/components/library/coding/TopicMasteryChips";
+import { SavedFiltersMenu } from "@/components/library/coding/SavedFiltersMenu";
+import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
+import { useSavedFilterPresets } from "@/hooks/useSavedFilterPresets";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: Difficulty) =>
