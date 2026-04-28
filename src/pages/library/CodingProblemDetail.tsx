@@ -48,6 +48,7 @@ import { VerdictBadge } from "@/components/coding/VerdictBadge";
 import { useCodeRunner, type RunResult, type SubmitResult } from "@/hooks/useCodeRunner";
 import { useCodeDraft } from "@/hooks/useCodeDraft";
 import { useCodingSubmissions } from "@/hooks/useCodingSubmissions";
+import { useCodeRuns } from "@/hooks/useCodeRuns";
 import { LoginPromptDialog } from "@/components/LoginPromptDialog";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +78,7 @@ const CodingProblemDetail = () => {
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
   const { submissions, refetch: refetchSubmissions } = useCodingSubmissions(slug);
+  const { runs, refetch: refetchRuns } = useCodeRuns(slug);
 
   // Initialize code from draft or starter
   useEffect(() => {
@@ -128,8 +130,11 @@ const CodingProblemDetail = () => {
         source_code: code,
         language_id: langInfo.judge0Id,
         stdin,
+        problem_slug: slug,
+        language,
       });
       setRunResult(result);
+      refetchRuns();
     } catch (err) {
       toast({
         title: "Run failed",
@@ -232,6 +237,11 @@ const CodingProblemDetail = () => {
               <TabsTrigger value="submissions">
                 Submissions {submissions.length > 0 && (
                   <span className="ml-1.5 text-xs text-muted-foreground">({submissions.length})</span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="runs">
+                Runs {runs.length > 0 && (
+                  <span className="ml-1.5 text-xs text-muted-foreground">({runs.length})</span>
                 )}
               </TabsTrigger>
             </TabsList>
@@ -369,6 +379,73 @@ const CodingProblemDetail = () => {
                           </div>
                         </div>
                       </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="runs" className="mt-0">
+                {!user ? (
+                  <Card className="p-8 text-center">
+                    <p className="text-muted-foreground mb-3">
+                      Sign in to view your run history.
+                    </p>
+                    <Button onClick={() => setShowLogin(true)}>Sign in</Button>
+                  </Card>
+                ) : runs.length === 0 ? (
+                  <Card className="p-8 text-center">
+                    <p className="text-muted-foreground">
+                      No runs yet. Hit <strong>Run</strong> to test your code with custom input.
+                    </p>
+                  </Card>
+                ) : (
+                  <div className="space-y-2">
+                    {runs.map((r) => (
+                      <Collapsible key={r.id}>
+                        <Card className="p-3 hover:bg-muted/30 transition-colors">
+                          <CollapsibleTrigger className="w-full text-left">
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                              <div className="flex items-center gap-3">
+                                <Badge variant="outline" className="text-xs">
+                                  {r.status ?? "Unknown"}
+                                </Badge>
+                                <span className="text-sm text-muted-foreground">{r.language}</span>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                {r.time_ms !== null && <span>{r.time_ms} ms</span>}
+                                {r.memory_kb !== null && <span>{(r.memory_kb / 1024).toFixed(1)} MB</span>}
+                                <span>{new Date(r.created_at).toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="mt-3 space-y-2 text-xs">
+                            {r.stdin && (
+                              <div>
+                                <p className="font-semibold text-muted-foreground mb-1">Stdin</p>
+                                <pre className="bg-muted/50 p-2 rounded border overflow-x-auto">{r.stdin}</pre>
+                              </div>
+                            )}
+                            {r.stdout && (
+                              <div>
+                                <p className="font-semibold text-muted-foreground mb-1">Stdout</p>
+                                <pre className="bg-muted/50 p-2 rounded border overflow-x-auto">{r.stdout}</pre>
+                              </div>
+                            )}
+                            {r.stderr && (
+                              <div>
+                                <p className="font-semibold text-destructive mb-1">Stderr</p>
+                                <pre className="bg-destructive/10 p-2 rounded border border-destructive/30 overflow-x-auto">{r.stderr}</pre>
+                              </div>
+                            )}
+                            {r.compile_output && (
+                              <div>
+                                <p className="font-semibold text-amber-500 mb-1">Compile output</p>
+                                <pre className="bg-muted/50 p-2 rounded border overflow-x-auto">{r.compile_output}</pre>
+                              </div>
+                            )}
+                          </CollapsibleContent>
+                        </Card>
+                      </Collapsible>
                     ))}
                   </div>
                 )}
