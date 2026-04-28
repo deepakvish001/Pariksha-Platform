@@ -1,58 +1,12 @@
-import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
-import { Copy, Link2, Trophy, Zap, MemoryStick, Info } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Copy, Link2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
+import { SubmissionPerformancePanel } from "./SubmissionPerformancePanel";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
-
-interface PercentileRow {
-  total_users: number;
-  runtime_beats: number | null;
-  memory_beats: number | null;
-  runtime_ms: number | null;
-  memory_kb: number | null;
-}
-
-const usePercentiles = (submission: CodeSubmissionRow | null) => {
-  const [data, setData] = useState<PercentileRow | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setData(null);
-    if (!submission || submission.verdict !== "Accepted") return;
-    setLoading(true);
-    (async () => {
-      const { data: rows, error } = await supabase.rpc(
-        "get_submission_percentiles",
-        { _submission_id: submission.id },
-      );
-      if (cancelled) return;
-      setLoading(false);
-      if (error) return;
-      const row = Array.isArray(rows) ? rows[0] : rows;
-      if (row) setData(row as PercentileRow);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [submission?.id, submission?.verdict]);
-
-  return { data, loading };
-};
-
-const beatsTone = (pct: number | null | undefined) => {
-  if (pct == null) return "text-muted-foreground border-border bg-muted/30";
-  if (pct >= 80) return "text-emerald-500 border-emerald-500/30 bg-emerald-500/10";
-  if (pct >= 50) return "text-amber-500 border-amber-500/30 bg-amber-500/10";
-  return "text-foreground/80 border-border bg-muted/40";
-};
 
 interface Props {
   submission: CodeSubmissionRow | null;
@@ -72,7 +26,6 @@ const copy = async (label: string, text: string) => {
 };
 
 export const SubmissionDetailsDrawer = ({ submission, open, onOpenChange, loading }: Props) => {
-  const { data: percentiles, loading: pctLoading } = usePercentiles(submission);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
@@ -156,128 +109,7 @@ export const SubmissionDetailsDrawer = ({ submission, open, onOpenChange, loadin
               </div>
             </div>
 
-            {submission.verdict === "Accepted" && (
-              <div className="rounded-lg border bg-card/40 p-3">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Trophy className="h-3.5 w-3.5 text-amber-500" />
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Performance vs. others
-                  </p>
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="text-muted-foreground hover:text-foreground"
-                          aria-label="What does Beats X% mean?"
-                        >
-                          <Info className="h-3 w-3" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
-                        We compare your accepted submission's runtime and memory
-                        against every other user's <strong>best accepted</strong>{" "}
-                        attempt on this problem in {submission.language}. Higher
-                        is better — 100% means no one was faster (or used less
-                        memory) than you.
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                {pctLoading ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Skeleton className="h-14 w-full rounded-md" />
-                    <Skeleton className="h-14 w-full rounded-md" />
-                  </div>
-                ) : !percentiles || percentiles.total_users === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    No other accepted {submission.language} submissions yet — you're the first to solve this!
-                  </p>
-                ) : (
-                  <TooltipProvider delayDuration={200}>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div
-                            className={cn(
-                              "rounded-md border p-2 text-xs cursor-help",
-                              beatsTone(percentiles.runtime_beats),
-                            )}
-                          >
-                            <div className="flex items-center gap-1.5 mb-0.5 opacity-80">
-                              <Zap className="h-3 w-3" />
-                              <span>Runtime</span>
-                            </div>
-                            <p className="font-semibold text-sm">
-                              {percentiles.runtime_beats != null
-                                ? `Beats ${percentiles.runtime_beats}%`
-                                : "—"}
-                            </p>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
-                          {percentiles.runtime_beats != null && percentiles.runtime_ms != null ? (
-                            <>
-                              Your submission ran in{" "}
-                              <strong>{percentiles.runtime_ms} ms</strong> — faster
-                              than <strong>{percentiles.runtime_beats}%</strong> of
-                              the {percentiles.total_users} other{" "}
-                              {percentiles.total_users === 1 ? "user" : "users"}{" "}
-                              who solved this in {submission.language} (using each
-                              user's fastest accepted attempt).
-                            </>
-                          ) : (
-                            <>Runtime data wasn't recorded for your submission, so we can't rank it.</>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
-
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div
-                            className={cn(
-                              "rounded-md border p-2 text-xs cursor-help",
-                              beatsTone(percentiles.memory_beats),
-                            )}
-                          >
-                            <div className="flex items-center gap-1.5 mb-0.5 opacity-80">
-                              <MemoryStick className="h-3 w-3" />
-                              <span>Memory</span>
-                            </div>
-                            <p className="font-semibold text-sm">
-                              {percentiles.memory_beats != null
-                                ? `Beats ${percentiles.memory_beats}%`
-                                : "—"}
-                            </p>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
-                          {percentiles.memory_beats != null && percentiles.memory_kb != null ? (
-                            <>
-                              Your submission used{" "}
-                              <strong>{(percentiles.memory_kb / 1024).toFixed(1)} MB</strong>{" "}
-                              — less memory than{" "}
-                              <strong>{percentiles.memory_beats}%</strong> of the{" "}
-                              {percentiles.total_users} other{" "}
-                              {percentiles.total_users === 1 ? "user" : "users"}{" "}
-                              who solved this in {submission.language} (using each
-                              user's lowest-memory accepted attempt).
-                            </>
-                          ) : (
-                            <>Memory data wasn't recorded for your submission, so we can't rank it.</>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mt-2">
-                      Compared against {percentiles.total_users}{" "}
-                      {percentiles.total_users === 1 ? "other user" : "other users"}
-                      {" "}who solved this in {submission.language}.
-                    </p>
-                  </TooltipProvider>
-                )}
-              </div>
-            )}
+            <SubmissionPerformancePanel submission={submission} />
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
