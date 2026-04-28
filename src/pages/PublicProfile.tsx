@@ -22,6 +22,8 @@ import {
   Copy,
   Check,
   Facebook,
+  User as UserIcon,
+  Trophy,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -132,6 +134,71 @@ const CodingProfileCard = ({
       </div>
       <ExternalLink className="w-4 h-4 text-muted-foreground" />
     </motion.a>
+  );
+};
+
+interface SideNavSection {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+const ProfileSideNav = ({ sections }: { sections: SideNavSection[] }) => {
+  const [active, setActive] = useState<string>(sections[0]?.id ?? "");
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]?.target?.id) setActive(visible[0].target.id);
+      },
+      { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    sections.forEach((s) => {
+      const el = document.getElementById(s.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [sections]);
+
+  const handleClick = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <aside className="hidden lg:block">
+      <nav
+        aria-label="Profile sections"
+        className="sticky top-24 space-y-1 rounded-xl border border-border/50 bg-card/40 backdrop-blur p-2"
+      >
+        <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          On this profile
+        </p>
+        {sections.map((s) => {
+          const Icon = s.icon;
+          const isActive = active === s.id;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => handleClick(s.id)}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left",
+                isActive
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+              )}
+              aria-current={isActive ? "true" : undefined}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{s.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+    </aside>
   );
 };
 
@@ -420,9 +487,23 @@ const PublicProfile = () => {
       
       <Navbar />
 
-      <main className="section-container py-12">
-        <div className="max-w-4xl mx-auto space-y-8">
+      <main className="section-container py-8 md:py-12">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 lg:gap-8">
+          {/* Left sidebar nav */}
+          <ProfileSideNav
+            sections={[
+              { id: "overview", label: "Overview", icon: UserIcon },
+              { id: "skills", label: "Skills & Interests", icon: Sparkles },
+              { id: "goals", label: "Goals", icon: Target },
+              ...(hasSocialLinks ? [{ id: "social", label: "Social", icon: Globe }] : []),
+              ...(hasCodingProfiles ? [{ id: "coding", label: "Coding Profiles", icon: Code }] : []),
+              { id: "achievements", label: "Achievements", icon: Trophy },
+            ]}
+          />
+
+          <div className="space-y-8 min-w-0">
           {/* Profile Header */}
+          <section id="overview" className="scroll-mt-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -563,8 +644,9 @@ const PublicProfile = () => {
               </CardContent>
             </Card>
           </motion.div>
+          </section>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div id="skills" className="scroll-mt-24 grid gap-6 lg:grid-cols-2">
             {/* Skills & Interests */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -750,8 +832,11 @@ const PublicProfile = () => {
 
              {/* Achievements */}
              {profile?.user_id && (
-               <PublicProfileAchievements userId={profile.user_id} />
+               <div id="achievements" className="scroll-mt-24">
+                 <PublicProfileAchievements userId={profile.user_id} />
+               </div>
              )}
+          </div>
           </div>
         </div>
       </main>
