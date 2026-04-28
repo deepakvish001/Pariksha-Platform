@@ -362,48 +362,70 @@ const DailyChallengeWeekly = () => {
             </div>
           ) : (
             <ol className="divide-y divide-border/60">
-              {entries.map((entry, idx) => (
-                <li
-                  key={entry.user_id}
-                  className={cn(
-                    "flex items-center gap-3 p-3 sm:p-3.5",
-                    user?.id === entry.user_id && "bg-primary/5",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "w-6 text-center text-xs font-bold tabular-nums",
-                      idx === 0 && "text-amber-500",
-                      idx === 1 && "text-zinc-400",
-                      idx === 2 && "text-orange-600",
-                      idx > 2 && "text-muted-foreground",
-                    )}
-                  >
-                    {idx + 1}
-                  </div>
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarImage src={entry.avatar_url ?? undefined} />
-                    <AvatarFallback className="text-[10px]">
-                      {initials(entry.display_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">
-                      {entry.display_name}
-                      {user?.id === entry.user_id && (
-                        <span className="ml-1.5 text-[10px] text-primary">(You)</span>
+              {entries.map((entry, idx) => {
+                const linkable = !!entry.username;
+                const RowContent = (
+                  <>
+                    <div
+                      className={cn(
+                        "w-6 text-center text-xs font-bold tabular-nums",
+                        idx === 0 && "text-amber-500",
+                        idx === 1 && "text-zinc-400",
+                        idx === 2 && "text-orange-600",
+                        idx > 2 && "text-muted-foreground",
                       )}
+                    >
+                      {idx + 1}
                     </div>
-                    <div className="text-[11px] text-muted-foreground tabular-nums">
-                      {entry.weekly_completions}/7 this week • {entry.total_completions} all-time
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarImage src={entry.avatar_url ?? undefined} />
+                      <AvatarFallback className="text-[10px]">
+                        {initials(entry.display_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium flex items-center gap-1.5">
+                        <span className="truncate">{entry.display_name}</span>
+                        {user?.id === entry.user_id && (
+                          <span className="text-[10px] text-primary">(You)</span>
+                        )}
+                        {linkable && (
+                          <span className="text-[10px] text-muted-foreground/70">
+                            @{entry.username}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground tabular-nums">
+                        {entry.weekly_completions}/7 this week • {entry.total_completions} all-time
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1 text-amber-500">
-                    <Flame className="h-4 w-4" />
-                    <span className="text-sm font-bold tabular-nums">{entry.current_streak}</span>
-                  </div>
-                </li>
-              ))}
+                    <div className="flex items-center gap-1 text-amber-500">
+                      <Flame className="h-4 w-4" />
+                      <span className="text-sm font-bold tabular-nums">{entry.current_streak}</span>
+                    </div>
+                  </>
+                );
+                const baseClass = cn(
+                  "flex items-center gap-3 p-3 sm:p-3.5",
+                  user?.id === entry.user_id && "bg-primary/5",
+                  linkable && "hover:bg-muted/30 transition-colors cursor-pointer",
+                );
+                return (
+                  <li key={entry.user_id}>
+                    {linkable ? (
+                      <Link
+                        to={`/u/${entry.username}`}
+                        className={baseClass}
+                        aria-label={`View ${entry.display_name}'s profile and weekly summary`}
+                      >
+                        {RowContent}
+                      </Link>
+                    ) : (
+                      <div className={baseClass}>{RowContent}</div>
+                    )}
+                  </li>
+                );
+              })}
             </ol>
           )}
         </Card>
