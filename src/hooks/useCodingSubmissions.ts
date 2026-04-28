@@ -54,7 +54,24 @@ export interface PagedSubmissionsParams {
   search?: string;
   verdict?: string;
   language?: string;
+  /** Inclusive lower bound on created_at (YYYY-MM-DD, local). */
+  dateFrom?: string;
+  /** Inclusive upper bound on created_at (YYYY-MM-DD, local; end-of-day). */
+  dateTo?: string;
 }
+
+/** Convert YYYY-MM-DD → ISO start-of-day in local TZ. */
+const startOfDayIso = (d?: string): string | null => {
+  if (!d) return null;
+  const dt = new Date(`${d}T00:00:00`);
+  return Number.isFinite(dt.getTime()) ? dt.toISOString() : null;
+};
+/** Convert YYYY-MM-DD → ISO end-of-day in local TZ. */
+const endOfDayIso = (d?: string): string | null => {
+  if (!d) return null;
+  const dt = new Date(`${d}T23:59:59.999`);
+  return Number.isFinite(dt.getTime()) ? dt.toISOString() : null;
+};
 
 export const usePagedCodingSubmissions = ({
   page,
@@ -62,6 +79,8 @@ export const usePagedCodingSubmissions = ({
   search,
   verdict,
   language,
+  dateFrom,
+  dateTo,
 }: PagedSubmissionsParams) => {
   const { user } = useAuth();
   const [submissions, setSubmissions] = useState<CodeSubmissionRow[]>([]);
@@ -85,6 +104,10 @@ export const usePagedCodingSubmissions = ({
       .range(from, to);
     if (verdict && verdict !== "all") q = q.eq("verdict", verdict);
     if (language && language !== "all") q = q.eq("language", language);
+    const fromIso = startOfDayIso(dateFrom);
+    const toIso = endOfDayIso(dateTo);
+    if (fromIso) q = q.gte("created_at", fromIso);
+    if (toIso) q = q.lte("created_at", toIso);
     if (search && search.trim()) {
       const term = `%${search.trim()}%`;
       q = q.or(`problem_slug.ilike.${term},source_code.ilike.${term}`);
@@ -95,7 +118,7 @@ export const usePagedCodingSubmissions = ({
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [user, page, pageSize, search, verdict, language]);
+  }, [user, page, pageSize, search, verdict, language, dateFrom, dateTo]);
 
   useEffect(() => {
     fetchPage();
@@ -103,6 +126,9 @@ export const usePagedCodingSubmissions = ({
 
   return { submissions, total, loading, refetch: fetchPage };
 };
+
+// Re-exported for the runs hook so both share identical date-range semantics.
+export const __dateBounds = { startOfDayIso, endOfDayIso };
 
 export const useUserSolvedSlugs = () => {
   const { user } = useAuth();

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { usePagedCodingSubmissions } from "@/hooks/useCodingSubmissions";
 import { usePagedCodeRuns, type CodeRunRow } from "@/hooks/useCodeRuns";
@@ -34,7 +34,23 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Code2, ExternalLink, Eye, Play, Loader2, X, Copy, Check } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format, isValid, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
+import {
+  Code2,
+  ExternalLink,
+  Eye,
+  Play,
+  Loader2,
+  X,
+  Copy,
+  Check,
+  Calendar as CalendarIcon,
+  FilterX,
+  Inbox,
+} from "lucide-react";
 
 const PAGE_SIZE = 20;
 const VERDICT_OPTIONS = [
@@ -177,13 +193,63 @@ export default function SubmissionsHistory() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // localStorage key for "last-used filters" (per-user). Reapplied only when the
+  // current URL has none of the filter params present (so a fresh deep-link or
+  // a "Clear all" reset still wins).
+  const PREFS_KEY = user ? `byteskill:submissions-history:prefs:${user.id}` : null;
+  const FILTER_KEYS = ["q", "verdict", "lang", "from", "to", "tab"] as const;
+
+  // ---- Hydrate persisted filter prefs into the URL on first mount ---------
+  // This runs only when no filter param is in the URL — so a shared link or a
+  // post-"Clear all" navigation always wins over saved prefs.
+  const hydratedPrefsRef = useRef(false);
+  useEffect(() => {
+    if (hydratedPrefsRef.current || !PREFS_KEY) return;
+    hydratedPrefsRef.current = true;
+    const hasAnyFilterParam = FILTER_KEYS.some((k) => searchParams.has(k));
+    if (hasAnyFilterParam) return;
+    try {
+      const raw = localStorage.getItem(PREFS_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Record<string, string | null>;
+      const next = new URLSearchParams(searchParams);
+      let dirty = false;
+      for (const k of FILTER_KEYS) {
+        const v = saved[k];
+        if (v && typeof v === "string" && v !== "all") {
+          next.set(k, v);
+          dirty = true;
+        }
+      }
+      if (dirty) setSearchParams(next, { replace: true });
+    } catch {
+      /* ignore corrupt prefs */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [PREFS_KEY]);
+
   // URL-backed state
   const search = searchParams.get("q") ?? "";
   const verdict = searchParams.get("verdict") ?? "all";
   const language = searchParams.get("lang") ?? "all";
+  const dateFrom = searchParams.get("from") ?? "";
+  const dateTo = searchParams.get("to") ?? "";
   const tab = searchParams.get("tab") ?? "submissions";
   const subPage = Math.max(1, parseInt(searchParams.get("subPage") ?? "1", 10) || 1);
   const runPage = Math.max(1, parseInt(searchParams.get("runPage") ?? "1", 10) || 1);
+
+  // Validate persisted dates so a stale/corrupt URL value doesn't break the
+  // calendar component.
+  const fromDate = useMemo(() => {
+    if (!dateFrom) return undefined;
+    const d = parseISO(dateFrom);
+    return isValid(d) ? d : undefined;
+  }, [dateFrom]);
+  const toDate = useMemo(() => {
+    if (!dateTo) return undefined;
+    const d = parseISO(dateTo);
+    return isValid(d) ? d : undefined;
+  }, [dateTo]);
 
   // Debounce search input for snappier typing
   const [searchInput, setSearchInput] = useState(search);
@@ -210,10 +276,46 @@ export default function SubmissionsHistory() {
     setSearchParams(next, { replace: true });
   };
 
+  // Persist filter prefs whenever they change (after hydration). We snapshot
+  // only the filter-shaped keys — pagination, the open drawer, etc. don't
+  // belong in saved prefs.
+  useEffect(() => {
+    if (!hydratedPrefsRef.current || !PREFS_KEY) return;
+    try {
+      const snapshot: Record<string, string> = {};
+      for (const k of FILTER_KEYS) {
+        const v = searchParams.get(k);
+        if (v && v !== "all") snapshot[k] = v;
+      }
+      if (Object.keys(snapshot).length === 0) {
+        localStorage.removeItem(PREFS_KEY);
+      } else {
+        localStorage.setItem(PREFS_KEY, JSON.stringify(snapshot));
+      }
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [search, verdict, language, dateFrom, dateTo, tab, PREFS_KEY, searchParams]);
+
   const { submissions, total: subTotal, loading: subsLoading, refetch: refetchSubs } =
-    usePagedCodingSubmissions({ page: subPage, pageSize: PAGE_SIZE, search, verdict, language });
+    usePagedCodingSubmissions({
+      page: subPage,
+      pageSize: PAGE_SIZE,
+      search,
+      verdict,
+      language,
+      dateFrom,
+      dateTo,
+    });
   const { runs, total: runTotal, loading: runsLoading, refetch: refetchRuns } =
-    usePagedCodeRuns({ page: runPage, pageSize: PAGE_SIZE, search, language });
+    usePagedCodeRuns({
+      page: runPage,
+      pageSize: PAGE_SIZE,
+      search,
+      language,
+      dateFrom,
+      dateTo,
+    });
 
   const { run, isRunning, cancelRun } = useCodeRunner();
   const { toast: legacyToast } = useToast();
@@ -279,10 +381,41 @@ export default function SubmissionsHistory() {
     setSearchInput("");
     setSearchParams(new URLSearchParams(), { replace: true });
     setDetailRunId(null);
+    if (PREFS_KEY) {
+      try {
+        localStorage.removeItem(PREFS_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
     toast.success("Filters cleared", {
-      description: "Search, verdict, language, tab, and pages reset to defaults.",
+      description: "Search, verdict, language, dates, tab, and pages reset to defaults.",
     });
   };
+
+  const setDateRange = (next: { from?: Date; to?: Date }) => {
+    const fromStr = next.from ? format(next.from, "yyyy-MM-dd") : null;
+    const toStr = next.to ? format(next.to, "yyyy-MM-dd") : null;
+    updateParams({ from: fromStr, to: toStr, subPage: null, runPage: null });
+  };
+
+  const dateRangeLabel = (() => {
+    if (fromDate && toDate) return `${format(fromDate, "MMM d")} – ${format(toDate, "MMM d, yyyy")}`;
+    if (fromDate) return `From ${format(fromDate, "MMM d, yyyy")}`;
+    if (toDate) return `Until ${format(toDate, "MMM d, yyyy")}`;
+    return "Any date";
+  })();
+
+  const hasActiveFilters =
+    !!search ||
+    verdict !== "all" ||
+    language !== "all" ||
+    !!dateFrom ||
+    !!dateTo ||
+    tab !== "submissions" ||
+    subPage !== 1 ||
+    runPage !== 1 ||
+    !!detailRunId;
 
   if (!user) {
     return (
@@ -337,13 +470,58 @@ export default function SubmissionsHistory() {
             {LANGUAGE_OPTIONS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
           </SelectContent>
         </Select>
-        {(search ||
-          verdict !== "all" ||
-          language !== "all" ||
-          tab !== "submissions" ||
-          subPage !== 1 ||
-          runPage !== 1 ||
-          detailRunId) && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="default"
+              className={cn(
+                "h-10 justify-start font-normal",
+                !fromDate && !toDate && "text-muted-foreground",
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateRangeLabel}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <div className="flex flex-col sm:flex-row">
+              <div className="border-b sm:border-b-0 sm:border-r">
+                <p className="px-3 pt-3 pb-1 text-xs font-semibold text-muted-foreground">From</p>
+                <Calendar
+                  mode="single"
+                  selected={fromDate}
+                  onSelect={(d) => setDateRange({ from: d ?? undefined, to: toDate })}
+                  disabled={(d) => (toDate ? d > toDate : false) || d > new Date()}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </div>
+              <div>
+                <p className="px-3 pt-3 pb-1 text-xs font-semibold text-muted-foreground">To</p>
+                <Calendar
+                  mode="single"
+                  selected={toDate}
+                  onSelect={(d) => setDateRange({ from: fromDate, to: d ?? undefined })}
+                  disabled={(d) => (fromDate ? d < fromDate : false) || d > new Date()}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </div>
+            </div>
+            {(fromDate || toDate) && (
+              <div className="flex justify-end p-2 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDateRange({ from: undefined, to: undefined })}
+                >
+                  <FilterX className="h-3.5 w-3.5 mr-1" /> Clear dates
+                </Button>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
+        {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={clearAllFilters}>
             <X className="h-4 w-4 mr-1" /> Clear all filters
           </Button>
@@ -364,7 +542,27 @@ export default function SubmissionsHistory() {
           {subsLoading ? (
             <>{Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)}</>
           ) : submissions.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground">No submissions match your filters.</Card>
+            <Card className="p-10 text-center space-y-3">
+              <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
+              <div className="space-y-1">
+                <p className="font-medium">No submissions match your filters</p>
+                <p className="text-sm text-muted-foreground">
+                  {hasActiveFilters
+                    ? "Try widening the date range, clearing search, or resetting filters."
+                    : "Solve a problem from the Coding Library to see it here."}
+                </p>
+              </div>
+              <div className="flex justify-center gap-2 pt-1">
+                {hasActiveFilters && (
+                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset filters
+                  </Button>
+                )}
+                <Button size="sm" asChild>
+                  <Link to="/library/problems">Browse problems</Link>
+                </Button>
+              </div>
+            </Card>
           ) : (
             <>
               {submissions.map((s) => (
@@ -406,7 +604,24 @@ export default function SubmissionsHistory() {
           {runsLoading ? (
             <>{Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)}</>
           ) : runs.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground">No runs match your filters.</Card>
+            <Card className="p-10 text-center space-y-3">
+              <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
+              <div className="space-y-1">
+                <p className="font-medium">No runs match your filters</p>
+                <p className="text-sm text-muted-foreground">
+                  {hasActiveFilters
+                    ? "Try a wider date range or clear the search/language filter."
+                    : "Use “Run” in the editor to see your test runs here."}
+                </p>
+              </div>
+              {hasActiveFilters && (
+                <div className="flex justify-center pt-1">
+                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset filters
+                  </Button>
+                </div>
+              )}
+            </Card>
           ) : (
             <>
               {runs.map((r) => {

@@ -54,9 +54,22 @@ export interface PagedRunsParams {
   pageSize: number;
   search?: string;
   language?: string;
+  /** Inclusive lower bound on created_at (YYYY-MM-DD, local). */
+  dateFrom?: string;
+  /** Inclusive upper bound on created_at (YYYY-MM-DD, local; end-of-day). */
+  dateTo?: string;
 }
 
-export const usePagedCodeRuns = ({ page, pageSize, search, language }: PagedRunsParams) => {
+import { __dateBounds } from "./useCodingSubmissions";
+
+export const usePagedCodeRuns = ({
+  page,
+  pageSize,
+  search,
+  language,
+  dateFrom,
+  dateTo,
+}: PagedRunsParams) => {
   const { user } = useAuth();
   const [runs, setRuns] = useState<CodeRunRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -78,6 +91,10 @@ export const usePagedCodeRuns = ({ page, pageSize, search, language }: PagedRuns
       .order("created_at", { ascending: false })
       .range(from, to);
     if (language && language !== "all") q = q.eq("language", language);
+    const fromIso = __dateBounds.startOfDayIso(dateFrom);
+    const toIso = __dateBounds.endOfDayIso(dateTo);
+    if (fromIso) q = q.gte("created_at", fromIso);
+    if (toIso) q = q.lte("created_at", toIso);
     if (search && search.trim()) {
       const term = `%${search.trim()}%`;
       q = q.or(`problem_slug.ilike.${term},source_code.ilike.${term}`);
@@ -88,7 +105,7 @@ export const usePagedCodeRuns = ({ page, pageSize, search, language }: PagedRuns
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [user, page, pageSize, search, language]);
+  }, [user, page, pageSize, search, language, dateFrom, dateTo]);
 
   useEffect(() => {
     fetchPage();
