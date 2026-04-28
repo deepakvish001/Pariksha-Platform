@@ -95,6 +95,12 @@ import { DraftSaveIndicator } from "@/components/library/coding/DraftSaveIndicat
 import { EditorSettingsPopover } from "@/components/library/coding/EditorSettingsPopover";
 import { useFormatOnSubmitOverride } from "@/hooks/useFormatOnSubmitOverride";
 import { ChevronScroller } from "@/components/library/coding/ChevronScroller";
+import {
+  useEditorTabsLayout,
+  type EditorTabId,
+} from "@/hooks/useEditorTabsLayout";
+import { SortableEditorTabs } from "@/components/library/coding/SortableEditorTabs";
+import { LayoutGrid } from "lucide-react";
 
 const difficultyClass = (d: string) =>
   d === "Easy"
@@ -235,6 +241,14 @@ const CodingProblemDetail = () => {
     override: formatOnSubmitOverride,
     setOverride: setFormatOnSubmitOverride,
   } = useFormatOnSubmitOverride(slug, language, editorPrefs.formatOnSubmit);
+  const {
+    order: tabOrder,
+    active: activeTab,
+    setOrder: setTabOrder,
+    setActive: setActiveTab,
+    reset: resetTabsLayout,
+    isCustomized: isLayoutCustomized,
+  } = useEditorTabsLayout(slug, language);
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
   // If the submission ID doesn't exist for this problem, clear the param so
@@ -729,37 +743,63 @@ const CodingProblemDetail = () => {
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* LEFT: tabs */}
         <ResizablePanel defaultSize={45} minSize={25}>
-          <Tabs defaultValue="description" className="h-full flex flex-col">
-            <div className="border-b overflow-x-auto overflow-y-hidden scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <TabsList className="rounded-none justify-start bg-transparent border-0 h-10 px-2 w-max min-w-full flex-nowrap">
-                <TabsTrigger value="description" className="shrink-0 whitespace-nowrap">Description</TabsTrigger>
-                <TabsTrigger value="my-solution" className="shrink-0 whitespace-nowrap">
-                  My Solution {hasMySolution && (
-                    <span
-                      className={cn(
-                        "ml-1.5 h-1.5 w-1.5 rounded-full inline-block",
-                        mySolutionIsComplete ? "bg-emerald-500" : "bg-amber-500",
-                      )}
-                    />
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="solution" className="shrink-0 whitespace-nowrap">Reference</TabsTrigger>
-                <TabsTrigger value="notes" className="shrink-0 whitespace-nowrap">
-                  Notes {notesValue.trim().length > 0 && (
-                    <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-primary inline-block" />
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="submissions" className="shrink-0 whitespace-nowrap">
-                  Submissions {submissions.length > 0 && (
-                    <span className="ml-1.5 text-xs text-muted-foreground">({submissions.length})</span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="runs" className="shrink-0 whitespace-nowrap">
-                  Runs {runs.length > 0 && (
-                    <span className="ml-1.5 text-xs text-muted-foreground">({runs.length})</span>
-                  )}
-                </TabsTrigger>
-              </TabsList>
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as EditorTabId)}
+            className="h-full flex flex-col"
+          >
+            <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+              <ChevronScroller>
+                <SortableEditorTabs
+                  order={tabOrder}
+                  onReorder={(next) => setTabOrder(next)}
+                  renderLabel={(id) => {
+                    switch (id) {
+                      case "description":
+                        return "Description";
+                      case "my-solution":
+                        return (
+                          <>
+                            My Solution {hasMySolution && (
+                              <span
+                                className={cn(
+                                  "ml-1.5 h-1.5 w-1.5 rounded-full inline-block",
+                                  mySolutionIsComplete ? "bg-emerald-500" : "bg-amber-500",
+                                )}
+                              />
+                            )}
+                          </>
+                        );
+                      case "solution":
+                        return "Reference";
+                      case "notes":
+                        return (
+                          <>
+                            Notes {notesValue.trim().length > 0 && (
+                              <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-primary inline-block" />
+                            )}
+                          </>
+                        );
+                      case "submissions":
+                        return (
+                          <>
+                            Submissions {submissions.length > 0 && (
+                              <span className="ml-1.5 text-xs text-muted-foreground">({submissions.length})</span>
+                            )}
+                          </>
+                        );
+                      case "runs":
+                        return (
+                          <>
+                            Runs {runs.length > 0 && (
+                              <span className="ml-1.5 text-xs text-muted-foreground">({runs.length})</span>
+                            )}
+                          </>
+                        );
+                    }
+                  }}
+                />
+              </ChevronScroller>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
@@ -1061,7 +1101,7 @@ const CodingProblemDetail = () => {
                 )}
               >
                 {/* Editor toolbar */}
-                <div className="px-3 py-2 border-b bg-muted/30">
+                <div className="sticky top-0 z-20 px-3 py-2 border-b bg-muted/40 backdrop-blur supports-[backdrop-filter]:bg-muted/30">
                   <ChevronScroller>
                     <div className="flex items-center gap-2 w-max min-w-full flex-nowrap">
                       <div className="flex items-center gap-2 min-w-0 shrink-0">
@@ -1197,6 +1237,38 @@ const CodingProblemDetail = () => {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Keyboard shortcuts</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const wasCustom = isLayoutCustomized;
+                              resetTabsLayout();
+                              toast({
+                                title: wasCustom
+                                  ? "Editor layout reset"
+                                  : "Editor layout already default",
+                                description: wasCustom
+                                  ? "Tab order and active tab restored to defaults."
+                                  : undefined,
+                              });
+                            }}
+                            className={cn(
+                              "h-8 w-8",
+                              isLayoutCustomized && "text-primary",
+                            )}
+                            aria-label="Reset editor layout"
+                          >
+                            <LayoutGrid className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {isLayoutCustomized
+                            ? "Reset editor layout (customized)"
+                            : "Reset editor layout"}
+                        </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                     <EditorSettingsPopover
