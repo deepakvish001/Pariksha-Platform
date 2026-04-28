@@ -321,6 +321,19 @@ const CodingProblems = () => {
     });
 
     // Sort
+    const acceptanceOf = (slug: string) => {
+      const s = perProblem.get(slug);
+      if (!s || s.attempts === 0) return -1; // unattempted sorts to bottom for asc
+      return Math.round(((s.accepted ?? 0) / s.attempts) * 100);
+    };
+    const statusRank = (slug: string) => {
+      // Solved (0) → Attempted (1) → Not started (2)
+      if (solved.has(slug)) return 0;
+      if (attempted.has(slug)) return 1;
+      return 2;
+    };
+    const attemptsOf = (slug: string) => perProblem.get(slug)?.attempts ?? 0;
+
     if (sort === "title") {
       list = [...list].sort((a, b) => a.title.localeCompare(b.title));
     } else if (sort === "diff-asc") {
@@ -333,6 +346,18 @@ const CodingProblems = () => {
         const lb = perProblem.get(b.slug)?.lastAttempt ?? "";
         return lb.localeCompare(la);
       });
+    } else if (sort === "status-asc") {
+      list = [...list].sort((a, b) => statusRank(a.slug) - statusRank(b.slug));
+    } else if (sort === "status-desc") {
+      list = [...list].sort((a, b) => statusRank(b.slug) - statusRank(a.slug));
+    } else if (sort === "accept-asc") {
+      list = [...list].sort((a, b) => acceptanceOf(a.slug) - acceptanceOf(b.slug));
+    } else if (sort === "accept-desc") {
+      list = [...list].sort((a, b) => acceptanceOf(b.slug) - acceptanceOf(a.slug));
+    } else if (sort === "attempts-asc") {
+      list = [...list].sort((a, b) => attemptsOf(a.slug) - attemptsOf(b.slug));
+    } else if (sort === "attempts-desc") {
+      list = [...list].sort((a, b) => attemptsOf(b.slug) - attemptsOf(a.slug));
     }
     return list;
   }, [
