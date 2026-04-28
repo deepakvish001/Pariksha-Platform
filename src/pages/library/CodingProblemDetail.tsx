@@ -66,10 +66,11 @@ const difficultyClass = (d: string) =>
       : "text-rose-500 bg-rose-500/10 border-rose-500/20";
 
 const LAST_OPENED_KEY = "byteskill:coding-last-opened-submission";
+const LAST_FAILED_KEY = "byteskill:coding-last-failed-submission";
 
-const readLastOpenedMap = (): Record<string, string> => {
+const readMap = (key: string): Record<string, string> => {
   try {
-    const raw = localStorage.getItem(LAST_OPENED_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return {};
     const v = JSON.parse(raw);
     return v && typeof v === "object" ? v : {};
@@ -78,16 +79,24 @@ const readLastOpenedMap = (): Record<string, string> => {
   }
 };
 
-const writeLastOpened = (slug: string, id: string | null) => {
+const writeMapEntry = (key: string, slug: string, id: string | null) => {
   try {
-    const map = readLastOpenedMap();
+    const map = readMap(key);
     if (id) map[slug] = id;
     else delete map[slug];
-    localStorage.setItem(LAST_OPENED_KEY, JSON.stringify(map));
+    localStorage.setItem(key, JSON.stringify(map));
   } catch {
     /* ignore */
   }
 };
+
+const readLastOpenedMap = () => readMap(LAST_OPENED_KEY);
+const writeLastOpened = (slug: string, id: string | null) =>
+  writeMapEntry(LAST_OPENED_KEY, slug, id);
+
+const readLastFailedMap = () => readMap(LAST_FAILED_KEY);
+const writeLastFailed = (slug: string, id: string | null) =>
+  writeMapEntry(LAST_FAILED_KEY, slug, id);
 
 const CodingProblemDetail = () => {
   const { slug } = useParams<{ slug: string }>();
