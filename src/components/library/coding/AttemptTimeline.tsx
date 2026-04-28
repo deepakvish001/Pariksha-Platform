@@ -8,6 +8,7 @@ interface Props {
   submissions: CodeSubmissionRow[];
   limit?: number;
   onSelect?: (submission: CodeSubmissionRow) => void;
+  highlightedId?: string | null;
 }
 
 const formatRelative = (iso: string) => {
@@ -23,7 +24,7 @@ const formatRelative = (iso: string) => {
   return new Date(iso).toLocaleDateString();
 };
 
-export const AttemptTimeline = ({ submissions, limit = 10, onSelect }: Props) => {
+export const AttemptTimeline = ({ submissions, limit = 10, onSelect, highlightedId }: Props) => {
   return (
     <Card className="p-3">
       <div className="flex items-center gap-2 mb-3">
@@ -50,20 +51,25 @@ export const AttemptTimeline = ({ submissions, limit = 10, onSelect }: Props) =>
         <ol className="relative border-l border-border ml-2 space-y-3">
           {submissions.slice(0, limit).map((s) => {
             const clickable = !!onSelect;
+            const isHighlighted = highlightedId === s.id;
             return (
               <li key={s.id} className="ml-4">
                 <span
-                  className={`absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full border-2 border-background ${
-                    s.verdict === "Accepted" ? "bg-emerald-500" : "bg-rose-500"
-                  }`}
+                  className={cn(
+                    "absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full border-2 border-background",
+                    s.verdict === "Accepted" ? "bg-emerald-500" : "bg-rose-500",
+                    isHighlighted && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                  )}
                 />
                 <button
                   type="button"
                   onClick={clickable ? () => onSelect?.(s) : undefined}
                   disabled={!clickable}
+                  aria-current={isHighlighted ? "true" : undefined}
                   className={cn(
                     "w-full text-left rounded-md -mx-2 px-2 py-1 transition-colors",
                     clickable && "hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none cursor-pointer",
+                    isHighlighted && "bg-primary/10 ring-1 ring-primary/40 hover:bg-primary/15",
                   )}
                   aria-label={clickable ? `Open submission details for ${s.verdict}` : undefined}
                 >
@@ -74,6 +80,11 @@ export const AttemptTimeline = ({ submissions, limit = 10, onSelect }: Props) =>
                       <span className="text-xs text-muted-foreground">
                         {s.passed_tests}/{s.total_tests}
                       </span>
+                      {isHighlighted && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+                          Last opened
+                        </span>
+                      )}
                     </div>
                     <time
                       className="text-xs text-muted-foreground"

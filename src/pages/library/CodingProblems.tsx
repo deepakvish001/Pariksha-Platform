@@ -74,7 +74,7 @@ const CodingProblems = () => {
     .filter(Boolean);
   const status = params.get("status") ?? "all";
   const sort = (params.get("sort") as SortKey) || "default";
-  const view = (params.get("view") as ViewMode) || "grid";
+  const view = (params.get("view") as ViewMode) || "table";
   const bookmarked = params.get("bm") === "1";
   const page = Math.max(1, parseInt(params.get("page") ?? "1", 10) || 1);
 
@@ -88,7 +88,15 @@ const CodingProblems = () => {
   const updateParams = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
     for (const [k, v] of Object.entries(patch)) {
-      if (v === null || v === "" || v === "all" || v === "default" || v === "grid" || (k === "page" && v === "1")) {
+      const isDefaultView = k === "view" && v === "table";
+      if (
+        v === null ||
+        v === "" ||
+        v === "all" ||
+        v === "default" ||
+        isDefaultView ||
+        (k === "page" && v === "1")
+      ) {
         next.delete(k);
       } else {
         next.set(k, v);
@@ -143,7 +151,7 @@ const CodingProblems = () => {
     if (selectedTopics.length > 0) next.set("topics", selectedTopics.join(","));
     if (status !== "all") next.set("status", status);
     if (sort !== "default") next.set("sort", sort);
-    if (view !== "grid") next.set("view", view);
+    if (view !== "table") next.set("view", view);
     if (bookmarked) next.set("bm", "1");
     if (page > 1) next.set("page", String(page));
     const qs = next.toString();
@@ -281,16 +289,33 @@ const CodingProblems = () => {
     clearSelection();
   };
   const performBulkUnbookmark = () => {
-    let removed = 0;
+    const removedSlugs: string[] = [];
     selected.forEach((slug) => {
       if (isBookmarked(slug)) {
         toggleBookmark(slug);
-        removed += 1;
+        removedSlugs.push(slug);
       }
     });
-    toast.success(`Removed ${removed} ${removed === 1 ? "bookmark" : "bookmarks"}`);
+    const removed = removedSlugs.length;
     clearSelection();
     setConfirmUnbookmark(false);
+
+    toast.success(`Removed ${removed} ${removed === 1 ? "bookmark" : "bookmarks"}`, {
+      duration: 8000,
+      action: removed > 0
+        ? {
+            label: "Undo",
+            onClick: () => {
+              removedSlugs.forEach((slug) => {
+                if (!isBookmarked(slug)) toggleBookmark(slug);
+              });
+              toast.success(
+                `Restored ${removed} ${removed === 1 ? "bookmark" : "bookmarks"}`,
+              );
+            },
+          }
+        : undefined,
+    });
   };
   const bulkUnbookmark = () => {
     // Count how many are actually bookmarked to decide whether to confirm

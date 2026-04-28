@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import {
   ArrowLeft,
@@ -64,12 +64,37 @@ const difficultyClass = (d: string) =>
       ? "text-amber-500 bg-amber-500/10 border-amber-500/20"
       : "text-rose-500 bg-rose-500/10 border-rose-500/20";
 
+const LAST_OPENED_KEY = "byteskill:coding-last-opened-submission";
+
+const readLastOpenedMap = (): Record<string, string> => {
+  try {
+    const raw = localStorage.getItem(LAST_OPENED_KEY);
+    if (!raw) return {};
+    const v = JSON.parse(raw);
+    return v && typeof v === "object" ? v : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeLastOpened = (slug: string, id: string | null) => {
+  try {
+    const map = readLastOpenedMap();
+    if (id) map[slug] = id;
+    else delete map[slug];
+    localStorage.setItem(LAST_OPENED_KEY, JSON.stringify(map));
+  } catch {
+    /* ignore */
+  }
+};
+
 const CodingProblemDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const problem = useMemo(() => (slug ? getProblemBySlug(slug) : undefined), [slug]);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [language, setLanguage] = useState<LangId>("python");
   const [code, setCode] = useState("");
@@ -80,12 +105,45 @@ const CodingProblemDetail = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [openHints, setOpenHints] = useState<Record<number, boolean>>({});
   const [detailSubmission, setDetailSubmission] = useState<CodeSubmissionRow | null>(null);
+  const [lastOpenedId, setLastOpenedId] = useState<string | null>(() =>
+    slug ? readLastOpenedMap()[slug] ?? null : null,
+  );
 
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
   const { submissions, refetch: refetchSubmissions } = useCodingSubmissions(slug);
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
+
+  // Open drawer when ?sub=<id> is in URL and submissions have loaded
+  useEffect(() => {
+    const subId = searchParams.get("sub");
+    if (!subId || submissions.length === 0) return;
+    const found = submissions.find((s) => s.id === subId);
+    if (found && (!detailSubmission || detailSubmission.id !== subId)) {
+      setDetailSubmission(found);
+      setLastOpenedId(subId);
+      if (slug) writeLastOpened(slug, subId);
+    }
+  }, [searchParams, submissions, slug, detailSubmission]);
+
+  const openSubmission = (s: CodeSubmissionRow) => {
+    setDetailSubmission(s);
+    setLastOpenedId(s.id);
+    if (slug) writeLastOpened(slug, s.id);
+    const next = new URLSearchParams(searchParams);
+    next.set("sub", s.id);
+    setSearchParams(next, { replace: true });
+  };
+
+  const closeSubmission = () => {
+    setDetailSubmission(null);
+    if (searchParams.get("sub")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("sub");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   // Derived per-problem stats
   const problemStats = useMemo(() => {
@@ -390,7 +448,8 @@ const CodingProblemDetail = () => {
                     <AttemptTimeline
                       submissions={submissions}
                       limit={10}
-                      onSelect={(s) => setDetailSubmission(s)}
+                      onSelect={openSubmission}
+                      highlightedId={lastOpenedId}
                     />
                     {submissions.length > 0 && (
                       <div className="space-y-2">
@@ -399,14 +458,17 @@ const CodingProblemDetail = () => {
                             key={s.id}
                             role="button"
                             tabIndex={0}
-                            onClick={() => setDetailSubmission(s)}
+                            onClick={() => openSubmission(s)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" || e.key === " ") {
                                 e.preventDefault();
-                                setDetailSubmission(s);
+                                openSubmission(s);
                               }
                             }}
-                            className="p-3 hover:bg-muted/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                            className={cn(
+                              "p-3 hover:bg-muted/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                              lastOpenedId === s.id && "ring-1 ring-primary/40 bg-primary/5",
+                            )}
                           >
                             <div className="flex items-center justify-between gap-3 flex-wrap">
                               <div className="flex items-center gap-3">
@@ -691,7 +753,7 @@ const CodingProblemDetail = () => {
       <SubmissionDetailsDrawer
         submission={detailSubmission}
         open={!!detailSubmission}
-        onOpenChange={(o) => !o && setDetailSubmission(null)}
+        onOpenChange={(o) => !o && closeSubmission()}
       />
     </div>
   );
