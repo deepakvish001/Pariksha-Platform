@@ -40,6 +40,17 @@ import { ProblemFiltersBar, type SortKey, type ViewMode } from "@/components/lib
 import { ProblemCard } from "@/components/library/coding/ProblemCard";
 import { RandomMenu } from "@/components/library/coding/RandomMenu";
 import { BulkActionsBar } from "@/components/library/coding/BulkActionsBar";
+import { useCodingSelection } from "@/hooks/useCodingSelection";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: Difficulty) =>
