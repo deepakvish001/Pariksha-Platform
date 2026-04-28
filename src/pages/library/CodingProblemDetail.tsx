@@ -1323,7 +1323,7 @@ const CodingProblemDetail = () => {
 
             <ResizableHandle withHandle />
 
-            <ResizablePanel defaultSize={35} minSize={15}>
+            <ResizablePanel defaultSize={layoutPreset.vertical[1]} minSize={15}>
               <Tabs
                 value={activeBottomTab}
                 onValueChange={(v) => setActiveBottomTab(v as "testcase" | "output")}
