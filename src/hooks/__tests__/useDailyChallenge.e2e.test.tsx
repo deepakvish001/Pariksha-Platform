@@ -78,9 +78,12 @@ vi.mock("@/integrations/supabase/client", () => {
   };
 });
 
-vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({ user: { id: "user-abc-123" } }),
-}));
+vi.mock("@/contexts/AuthContext", () => {
+  const stableUser = { id: "user-abc-123" };
+  return {
+    useAuth: () => ({ user: stableUser }),
+  };
+});
 
 // Imported AFTER mocks so the hook picks up the mocked modules.
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
