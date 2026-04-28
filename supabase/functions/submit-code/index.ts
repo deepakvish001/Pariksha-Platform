@@ -324,72 +324,118 @@ Deno.serve(async (req) => {
     let maxMemory = 0;
     let stderrCombined = "";
     let rawFermion: FermionRawDebug | null = null;
+    const caseResults: CaseResult[] = [];
+    let firstFailureSeen = false;
+
+    const labelFor = (s: string): string => {
+      switch (s) {
+        case "successful": return "Accepted";
+        case "wrong-answer": return "Wrong Answer";
+        case "time-limit-exceeded": return "Time Limit Exceeded";
+        case "compilation-error": return "Compile Error";
+        case "non-zero-exit-code": return "Runtime Error (NZEC)";
+        case "died-sigsev": return "Runtime Error (SIGSEGV)";
+        case "died-sigxfsz": return "Runtime Error (SIGXFSZ)";
+        case "died-sigfpe": return "Runtime Error (SIGFPE)";
+        case "died-sigabrt": return "Runtime Error (SIGABRT)";
+        case "internal-isolate-error": return "Internal Error";
+        default: return s || "Unknown";
+      }
+    };
 
     for (let i = 0; i < tests.length; i++) {
       const t = tests[i] as TestCase;
       const r = results.get(taskIds[i]);
       if (!r) {
-        verdict = "Internal Error";
-        stderrCombined = "Missing result for test case";
-        break;
+        if (!firstFailureSeen) { verdict = "Internal Error"; stderrCombined = "Missing result for test case"; firstFailureSeen = true; }
+        caseResults.push({
+          index: i, passed: false, runStatus: "missing", status_label: "Missing",
+          time_ms: 0, memory_kb: 0, input: t.input, expected: t.expected, stdout: "", stderr: "Missing result", raw: {},
+        });
+        continue;
       }
       totalTimeMs += r.timeMs;
       if (r.memoryKb > maxMemory) maxMemory = r.memoryKb;
 
+      // Determine pass/fail per case (using normalization for output comparison)
+      let casePassed = false;
+      let caseFailureReason = "";
       switch (r.runStatus) {
         case "compilation-error":
-          verdict = "Compile Error";
-          stderrCombined = r.stderr || "Compilation failed";
-          failingCase = { index: i, input: t.input, expected: t.expected, output: "", error: stderrCombined };
-          rawFermion = r.raw;
+          caseFailureReason = "Compile Error";
+          if (!firstFailureSeen) {
+            verdict = "Compile Error";
+            stderrCombined = r.stderr || "Compilation failed";
+            failingCase = { index: i, input: t.input, expected: t.expected, output: "", error: stderrCombined };
+            rawFermion = r.raw;
+            firstFailureSeen = true;
+          }
           break;
         case "time-limit-exceeded":
-          verdict = "Time Limit Exceeded";
-          failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
-          rawFermion = r.raw;
+          caseFailureReason = "TLE";
+          if (!firstFailureSeen) {
+            verdict = "Time Limit Exceeded";
+            failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
+            rawFermion = r.raw;
+            firstFailureSeen = true;
+          }
           break;
         case "non-zero-exit-code":
         case "died-sigsev":
         case "died-sigxfsz":
         case "died-sigfpe":
         case "died-sigabrt":
-          verdict = "Runtime Error";
-          stderrCombined = r.stderr || r.runStatus;
-          failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout, error: stderrCombined };
-          rawFermion = r.raw;
+          caseFailureReason = "Runtime Error";
+          if (!firstFailureSeen) {
+            verdict = "Runtime Error";
+            stderrCombined = r.stderr || r.runStatus;
+            failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout, error: stderrCombined };
+            rawFermion = r.raw;
+            firstFailureSeen = true;
+          }
           break;
         case "internal-isolate-error":
         case "unknown":
-          verdict = "Internal Error";
-          stderrCombined = r.stderr || "Judge internal error";
-          rawFermion = r.raw;
+          caseFailureReason = "Internal Error";
+          if (!firstFailureSeen) {
+            verdict = "Internal Error";
+            stderrCombined = r.stderr || "Judge internal error";
+            rawFermion = r.raw;
+            firstFailureSeen = true;
+          }
           break;
-        case "wrong-answer": {
-          // Re-check ourselves with normalization (Fermion ExactMatch may be strict on trailing newlines)
-          const got = normalize(r.stdout);
-          const want = normalize(t.expected ?? "");
-          if (got === want) { passed++; continue; }
-          verdict = "Wrong Answer";
-          failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
-          rawFermion = r.raw;
-          break;
-        }
+        case "wrong-answer":
         case "successful":
         default: {
           const got = normalize(r.stdout);
           const want = normalize(t.expected ?? "");
-          if (got !== want) {
-            verdict = "Wrong Answer";
-            failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
-            rawFermion = r.raw;
-            break;
+          if (got === want) { casePassed = true; passed++; }
+          else {
+            caseFailureReason = "Wrong Answer";
+            if (!firstFailureSeen) {
+              verdict = "Wrong Answer";
+              failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
+              rawFermion = r.raw;
+              firstFailureSeen = true;
+            }
           }
-          passed++;
-          continue;
+          break;
         }
       }
-      // Hit a failure case — stop iterating
-      break;
+
+      caseResults.push({
+        index: i,
+        passed: casePassed,
+        runStatus: r.runStatus,
+        status_label: casePassed ? "Accepted" : (caseFailureReason || labelFor(r.runStatus)),
+        time_ms: Math.round(r.timeMs),
+        memory_kb: r.memoryKb,
+        input: t.input,
+        expected: t.expected,
+        stdout: r.stdout,
+        stderr: r.stderr,
+        raw: r.raw,
+      });
     }
 
     const runtimeMs = Math.round(totalTimeMs);
