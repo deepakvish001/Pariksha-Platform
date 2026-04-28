@@ -262,7 +262,9 @@ export default function SubmissionsHistory() {
     } catch (e) {
       if (e instanceof RunCancelledError) {
         setLastCancelledId(r.id);
-        toast.info("Re-run cancelled", { description: r.problem_slug });
+        toast.info("Re-run cancelled", {
+          description: `${r.problem_slug} • run ${r.id.slice(0, 8)}`,
+        });
       } else {
         const msg = e instanceof Error ? e.message : "Unknown error";
         setLastRerunError({ id: r.id, message: msg });
