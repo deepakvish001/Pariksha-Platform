@@ -27,6 +27,7 @@ interface SubmitResult {
   failing_case: Record<string, unknown> | null;
   stderr: string | null;
   submission_id: string | null;
+  raw_fermion?: FermionRawDebug | null;
 }
 
 interface Diagnostics {
@@ -34,6 +35,7 @@ interface Diagnostics {
   requested_url?: string;
   judge0_status?: number;
   judge0_body?: string;
+  raw_fermion_response?: unknown;
 }
 
 interface FunctionResponse<T> {
@@ -97,6 +99,28 @@ function judge0ToFermion(id: number): string | null {
   }
 }
 
+interface RuntimeConfig { cpuMs: number; wallMs: number; memKb: number }
+const FERMION_SAFE_MAX: RuntimeConfig = { cpuMs: 5000, wallMs: 6500, memKb: 512000 };
+const RUNTIME_DEFAULTS: Record<string, RuntimeConfig> = {
+  C: { cpuMs: 2000, wallMs: 5000, memKb: 512000 },
+  Cpp: { cpuMs: 2000, wallMs: 5000, memKb: 512000 },
+  Java: { cpuMs: 3000, wallMs: 6000, memKb: 512000 },
+  Python: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+  NodeJs: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+  Go: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+};
+function runConfigFor(language: string, overrides?: { cpuSec?: number; memKb?: number }): RuntimeConfig {
+  const cfg = RUNTIME_DEFAULTS[language] ?? RUNTIME_DEFAULTS.Python;
+  const requestedCpuMs = typeof overrides?.cpuSec === "number" ? overrides.cpuSec * 1000 : cfg.cpuMs;
+  const requestedMemKb = typeof overrides?.memKb === "number" ? overrides.memKb : cfg.memKb;
+  const cpuMs = Math.min(requestedCpuMs, cfg.cpuMs, FERMION_SAFE_MAX.cpuMs);
+  return {
+    cpuMs,
+    wallMs: Math.min(Math.max(cfg.wallMs, cpuMs), FERMION_SAFE_MAX.wallMs),
+    memKb: Math.min(requestedMemKb, cfg.memKb, FERMION_SAFE_MAX.memKb),
+  };
+}
+
 interface TestCase { input: string; expected: string }
 interface CaseOutcome {
   runStatus: string;
@@ -104,6 +128,15 @@ interface CaseOutcome {
   stderr: string;
   timeMs: number;
   memoryKb: number;
+  raw: FermionRawDebug;
+}
+
+interface FermionRawDebug {
+  codingTaskStatus?: string;
+  runStatus?: string;
+  runResult?: unknown;
+  stdout?: string;
+  stderr?: string;
 }
 
 async function submitBatch(language: string, source: string, tests: TestCase[], cpuMs: number, wallMs: number, memKb: number): Promise<string[]> {
