@@ -38,7 +38,7 @@ import { useCodingAttemptStats } from "@/hooks/useCodingAttemptStats";
 import { useCodingProblemBookmarks } from "@/hooks/useCodingProblemBookmarks";
 import { ProblemStatsHeader } from "@/components/library/coding/ProblemStatsHeader";
 import { ProblemFiltersBar, type SortKey, type ViewMode } from "@/components/library/coding/ProblemFiltersBar";
-import { ProblemCard } from "@/components/library/coding/ProblemCard";
+
 import { RandomMenu } from "@/components/library/coding/RandomMenu";
 import { BulkActionsBar } from "@/components/library/coding/BulkActionsBar";
 import { useCodingSelection } from "@/hooks/useCodingSelection";
