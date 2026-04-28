@@ -137,6 +137,7 @@ export const useCodingProblemsTablePrefs = () => {
       visible: { ...prefs.visible },
       widths: { ...prefs.widths },
       sortBySlug: { ...(prefs.sortBySlug ?? {}) },
+      density: prefs.density,
     };
   }, [prefs]);
 
@@ -146,6 +147,7 @@ export const useCodingProblemsTablePrefs = () => {
       visible: { ...snap.visible },
       widths: { ...snap.widths },
       sortBySlug: { ...(snap.sortBySlug ?? {}) },
+      density: snap.density === "compact" ? "compact" : "comfortable",
     });
   }, []);
 
@@ -163,6 +165,11 @@ export const useCodingProblemsTablePrefs = () => {
     });
   }, []);
 
+  const density: TableDensity = prefs.density ?? "comfortable";
+  const setDensity = useCallback((next: TableDensity) => {
+    setPrefs((prev) => ({ ...prev, density: next }));
+  }, []);
+
   return {
     isVisible,
     widthOf,
@@ -173,5 +180,7 @@ export const useCodingProblemsTablePrefs = () => {
     restoreSnapshot,
     getSavedSort,
     setSavedSort,
+    density,
+    setDensity,
   };
 };
