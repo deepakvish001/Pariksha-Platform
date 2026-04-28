@@ -49,7 +49,10 @@ import { useCodeRunner, type RunResult, type SubmitResult } from "@/hooks/useCod
 import { useCodeDraft } from "@/hooks/useCodeDraft";
 import { useCodingSubmissions } from "@/hooks/useCodingSubmissions";
 import { useCodeRuns } from "@/hooks/useCodeRuns";
+import { useCodingProblemBookmarks } from "@/hooks/useCodingProblemBookmarks";
 import { LoginPromptDialog } from "@/components/LoginPromptDialog";
+import { ProblemDetailHeader } from "@/components/library/coding/ProblemDetailHeader";
+import { AttemptTimeline } from "@/components/library/coding/AttemptTimeline";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: string) =>
