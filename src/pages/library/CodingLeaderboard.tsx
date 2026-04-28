@@ -40,6 +40,7 @@ import {
   type CodingLeaderboardRow,
   type LeaderboardWindow,
 } from "@/hooks/useCodingLeaderboard";
+import { LeaderboardUserDrawer } from "@/components/library/coding/LeaderboardUserDrawer";
 
 const PAGE_SIZE = 50;
 
@@ -70,7 +71,15 @@ function formatRuntime(ms: number | null): string {
   return `${(ms / 1000).toFixed(2)} s`;
 }
 
-function PodiumCard({ row, rank }: { row: CodingLeaderboardRow; rank: 1 | 2 | 3 }) {
+function PodiumCard({
+  row,
+  rank,
+  onSelect,
+}: {
+  row: CodingLeaderboardRow;
+  rank: 1 | 2 | 3;
+  onSelect: (row: CodingLeaderboardRow) => void;
+}) {
   const heights = { 1: "md:translate-y-0", 2: "md:translate-y-4", 3: "md:translate-y-8" };
   const orders = { 1: "md:order-2", 2: "md:order-1", 3: "md:order-3" };
   return (
@@ -80,10 +89,12 @@ function PodiumCard({ row, rank }: { row: CodingLeaderboardRow; rank: 1 | 2 | 3 
       transition={{ delay: rank * 0.08, type: "spring", stiffness: 100 }}
       className={cn("flex-1", heights[rank], orders[rank])}
     >
-      <Link
-        to={row.username ? `/u/${row.username}` : "#"}
+      <button
+        type="button"
+        onClick={() => onSelect(row)}
+        aria-label={`View score breakdown for ${row.display_name}, rank ${rank}`}
         className={cn(
-          "block rounded-xl border-2 p-5 text-center transition-all hover:scale-[1.02] hover:shadow-lg",
+          "w-full block rounded-xl border-2 p-5 text-center transition-all hover:scale-[1.02] hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
           getRankBg(rank),
         )}
       >
@@ -116,7 +127,7 @@ function PodiumCard({ row, rank }: { row: CodingLeaderboardRow; rank: 1 | 2 | 3 
             </span>
           </div>
         </div>
-      </Link>
+      </button>
     </motion.div>
   );
 }
@@ -159,6 +170,7 @@ export default function CodingLeaderboard() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [drawerUser, setDrawerUser] = useState<{ id: string; rank: number } | null>(null);
 
   const { rows, loading } = useCodingLeaderboard({
     window,
@@ -176,6 +188,9 @@ export default function CodingLeaderboard() {
     () => (page === 1 && !search ? rows.slice(3) : rows),
     [rows, page, search],
   );
+
+  const openBreakdown = (row: CodingLeaderboardRow) =>
+    setDrawerUser({ id: row.user_id, rank: row.rank });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,9 +317,9 @@ export default function CodingLeaderboard() {
           </div>
         ) : podium.length >= 3 ? (
           <div className="flex flex-col md:flex-row gap-4 items-stretch">
-            <PodiumCard row={podium[1]} rank={2} />
-            <PodiumCard row={podium[0]} rank={1} />
-            <PodiumCard row={podium[2]} rank={3} />
+            <PodiumCard row={podium[1]} rank={2} onSelect={openBreakdown} />
+            <PodiumCard row={podium[0]} rank={1} onSelect={openBreakdown} />
+            <PodiumCard row={podium[2]} rank={3} onSelect={openBreakdown} />
           </div>
         ) : null}
 
@@ -336,11 +351,13 @@ export default function CodingLeaderboard() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: Math.min(i * 0.015, 0.3) }}
                   >
-                    <Link
-                      to={row.username ? `/u/${row.username}` : "#"}
+                    <button
+                      type="button"
+                      onClick={() => openBreakdown(row)}
+                      aria-label={`Open score breakdown for ${row.display_name}, rank ${row.rank}`}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border transition-all",
-                        "hover:bg-muted/30",
+                        "w-full text-left flex items-center gap-3 p-3 rounded-lg border transition-all",
+                        "hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                         getRankBg(row.rank),
                         user && row.user_id === user.id && "ring-2 ring-primary/40",
                       )}
@@ -429,7 +446,7 @@ export default function CodingLeaderboard() {
                           hard 5) + small speed bonus.
                         </TooltipContent>
                       </Tooltip>
-                    </Link>
+                    </button>
                   </motion.li>
                 ))}
               </ol>
@@ -479,6 +496,13 @@ export default function CodingLeaderboard() {
           </CardContent>
         </Card>
       </div>
+
+      <LeaderboardUserDrawer
+        open={drawerUser !== null}
+        onOpenChange={(o) => !o && setDrawerUser(null)}
+        userId={drawerUser?.id ?? null}
+        rank={drawerUser?.rank ?? null}
+      />
     </TooltipProvider>
   );
 }
