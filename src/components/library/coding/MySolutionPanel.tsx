@@ -367,11 +367,21 @@ export const MySolutionPanel = ({
               </TooltipTrigger>
               <TooltipContent>
                 {isCloudSynced
-                  ? "Your solution is being saved to your account so you can access it from any device."
+                  ? lastSyncedAt
+                    ? `Last synced ${new Date(lastSyncedAt).toLocaleString()}`
+                    : "Your solution is being saved to your account so you can access it from any device."
                   : "Sign in to sync your solution to your account and access it across devices."}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          {isCloudSynced && lastSyncedAt && (
+            <span
+              className="text-[11px] text-muted-foreground tabular-nums"
+              title={new Date(lastSyncedAt).toLocaleString()}
+            >
+              Last synced {formatTimestamp(lastSyncedAt, timestampFormat)}
+            </span>
+          )}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
