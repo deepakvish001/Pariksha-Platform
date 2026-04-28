@@ -494,6 +494,7 @@ const CodingProblemDetail = () => {
                       limit={10}
                       onSelect={openSubmission}
                       highlightedId={lastOpenedId}
+                      scrollToHighlightKey={timelineScrollKey}
                     />
                     {submissions.length > 0 && (
                       <div className="space-y-2">
