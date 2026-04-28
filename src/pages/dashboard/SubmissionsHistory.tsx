@@ -279,6 +279,9 @@ export default function SubmissionsHistory() {
     setSearchInput("");
     setSearchParams(new URLSearchParams(), { replace: true });
     setDetailRunId(null);
+    toast.success("Filters cleared", {
+      description: "Search, verdict, language, tab, and pages reset to defaults.",
+    });
   };
 
   if (!user) {
