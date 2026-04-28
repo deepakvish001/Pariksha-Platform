@@ -2,10 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+export type DraftSaveStatus = "idle" | "pending" | "saving" | "saved" | "error";
+
 export const useCodeDraft = (problemSlug: string, language: string) => {
   const { user } = useAuth();
   const [draft, setDraft] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [status, setStatus] = useState<DraftSaveStatus>("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const debounceRef = useRef<number | null>(null);
 
   // Load draft when problem/lang changes
