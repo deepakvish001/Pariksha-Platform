@@ -189,8 +189,8 @@ const CodingProblemDetail = () => {
      *  "Cancel restoration" can revert exactly to what the user had. */
     snapshot: string;
   } | null>(null);
-  /** Most recent snapshot saved before a restore was applied; used to power
-   *  the toast "Cancel restoration" undo action. Cleared on edit. */
+  /** Snapshot of editor contents BEFORE the dialog opened, so a one-click
+   *  "Cancel restoration" can revert exactly to what the user had. */
   const [restoreUndoSnapshot, setRestoreUndoSnapshot] = useState<string | null>(null);
   // Transient hint shown briefly when entering fullscreen.
   const [showFullscreenHint, setShowFullscreenHint] = useState(false);
