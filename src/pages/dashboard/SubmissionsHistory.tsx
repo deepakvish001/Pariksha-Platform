@@ -481,7 +481,7 @@ export default function SubmissionsHistory() {
                     )}
                     {lastCancelledId === r.id && (
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Re-run was cancelled.
+                        Re-run cancelled • {r.problem_slug} • run {r.id.slice(0, 8)}
                       </p>
                     )}
                   </Card>
