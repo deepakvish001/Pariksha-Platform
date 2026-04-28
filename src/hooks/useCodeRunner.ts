@@ -53,9 +53,21 @@ export interface SubmitResult {
   submission_id: string | null;
 }
 
+export class RunCancelledError extends Error {
+  constructor() {
+    super("Run cancelled");
+    this.name = "RunCancelledError";
+  }
+}
+
 export const useCodeRunner = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [runController, setRunController] = useState<AbortController | null>(null);
+
+  const cancelRun = () => {
+    runController?.abort();
+  };
 
   const run = async (params: {
     source_code: string;
@@ -64,11 +76,18 @@ export const useCodeRunner = () => {
     problem_slug?: string;
     language?: string;
   }): Promise<RunResult> => {
+    const controller = new AbortController();
+    setRunController(controller);
     setIsRunning(true);
     try {
-      const { data, error } = await supabase.functions.invoke("run-code", {
+      const invokePromise = supabase.functions.invoke("run-code", {
         body: params,
       });
+      const abortPromise = new Promise<never>((_, reject) => {
+        controller.signal.addEventListener("abort", () => reject(new RunCancelledError()));
+      });
+      const { data, error } = (await Promise.race([invokePromise, abortPromise])) as Awaited<typeof invokePromise>;
+      if (controller.signal.aborted) throw new RunCancelledError();
       const payload = data as FunctionEnvelope<RunResult> | undefined;
       if (error && !payload) throw error;
       if (!payload?.ok || !payload.data) {
@@ -77,6 +96,7 @@ export const useCodeRunner = () => {
       return payload.data;
     } finally {
       setIsRunning(false);
+      setRunController(null);
     }
   };
 
