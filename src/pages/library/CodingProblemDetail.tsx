@@ -160,12 +160,21 @@ const CodingProblemDetail = () => {
     clear: clearMySolution,
     restore: restoreMySolution,
     hasUnsavedCurrentCode: mySolutionHasUnsavedCurrentCode,
+    undoCodeChange: undoMySolutionCode,
+    canUndoCode: canUndoMySolutionCode,
     hasContent: hasMySolution,
     hasNotes: mySolutionHasNotes,
     hasAnyCode: mySolutionHasAnyCode,
     isComplete: mySolutionIsComplete,
   } = useProblemSolution(slug, mySolutionLanguage);
-  const { prefs: editorPrefs, incFontSize, decFontSize, MIN: FS_MIN, MAX: FS_MAX } = useEditorPrefs();
+  const {
+    prefs: editorPrefs,
+    incFontSize,
+    decFontSize,
+    toggleTimestampFormat,
+    MIN: FS_MIN,
+    MAX: FS_MAX,
+  } = useEditorPrefs();
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
   // If the submission ID doesn't exist for this problem, clear the param so
