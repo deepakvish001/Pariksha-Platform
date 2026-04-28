@@ -1,20 +1,22 @@
-// Submit user code against ALL hidden test cases, compute verdict, store result
+// Submit user code against ALL hidden test cases via Fermion Online Compiler.
+// Uses Fermion's built-in ExactMatch matcher per case, aggregates verdict,
+// stores the submission, and awards XP on first AC.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const FERMION_KEY = Deno.env.get("FERMION_RAPIDAPI_KEY") ?? "";
+
+const FERMION_HOST = "fermion-online-compiler.p.rapidapi.com";
+const FERMION_BASE = `https://${FERMION_HOST}/public`;
+const SUBMIT_URL = `${FERMION_BASE}/request-dsa-code-execution-batch`;
+const RESULT_URL = `${FERMION_BASE}/get-dsa-code-execution-result-batch`;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
-const JUDGE0_URL = Deno.env.get("JUDGE0_URL")?.replace(/\/$/, "") ?? "";
-const JUDGE0_AUTH_HEADER = Deno.env.get("JUDGE0_AUTH_HEADER") ?? "X-Auth-Token";
-const JUDGE0_AUTH_TOKEN = Deno.env.get("JUDGE0_AUTH_TOKEN") ?? "";
-const JUDGE0_EXTRA_HEADER_NAME = Deno.env.get("JUDGE0_EXTRA_HEADER_NAME") ?? "";
-const JUDGE0_EXTRA_HEADER_VALUE = Deno.env.get("JUDGE0_EXTRA_HEADER_VALUE") ?? "";
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
 interface SubmitResult {
   verdict: string;
@@ -41,12 +43,10 @@ interface FunctionResponse<T> {
   diagnostics?: Diagnostics;
 }
 
-class Judge0RequestError extends Error {
+class FermionError extends Error {
   diagnostics: Diagnostics;
-
   constructor(message: string, diagnostics: Diagnostics) {
     super(message);
-    this.name = "Judge0RequestError";
     this.diagnostics = diagnostics;
   }
 }
@@ -58,114 +58,150 @@ function respond<T>(payload: FunctionResponse<T>) {
   });
 }
 
-function judge0Headers(): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (JUDGE0_AUTH_TOKEN) headers[JUDGE0_AUTH_HEADER] = JUDGE0_AUTH_TOKEN;
-  if (JUDGE0_EXTRA_HEADER_NAME && JUDGE0_EXTRA_HEADER_VALUE) {
-    headers[JUDGE0_EXTRA_HEADER_NAME] = JUDGE0_EXTRA_HEADER_VALUE;
-  }
-  return headers;
+function fermionHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    "x-rapidapi-host": FERMION_HOST,
+    "x-rapidapi-key": FERMION_KEY,
+  };
 }
 
-function friendlyJudge0Error(status: number, body: string): string {
-  const isRapidApi = JUDGE0_URL.includes("rapidapi.com");
-  const provider = isRapidApi ? "RapidAPI Judge0" : "Judge0";
-  const where = isRapidApi
-    ? "Check your RapidAPI key & host header in Lovable Cloud → Backend → Secrets (JUDGE0_AUTH_TOKEN, JUDGE0_AUTH_HEADER, JUDGE0_EXTRA_HEADER_NAME, JUDGE0_EXTRA_HEADER_VALUE). Also confirm you are subscribed to the Judge0 CE API on RapidAPI."
-    : "Check JUDGE0_URL and JUDGE0_AUTH_TOKEN in Lovable Cloud → Backend → Secrets, and verify your Judge0 server is reachable.";
-
-  if (status === 401 || status === 403) {
-    return `${provider} rejected the request (${status} ${status === 401 ? "Unauthorized" : "Forbidden"}). Your API key/host headers are missing or invalid. ${where}`;
-  }
-  if (status === 429) {
-    return `${provider} rate limit hit (429). You've exceeded your RapidAPI quota — upgrade your plan or wait for the quota to reset.`;
-  }
-  if (status === 404) {
-    return `${provider} endpoint not found (404). Verify JUDGE0_URL is correct (e.g. https://judge0-ce.p.rapidapi.com — base URL only).`;
-  }
-  if (status >= 500) {
-    return `${provider} server error (${status}). The code execution service is temporarily unavailable. Try again in a moment.`;
-  }
-  return `${provider} request failed (${status})${body ? `: ${body.slice(0, 300)}` : ""}. ${where}`;
+function bytesToB64Url(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
-
-const b64encode = (s: string) => btoa(unescape(encodeURIComponent(s ?? "")));
-const b64decode = (s: string | null | undefined) => {
+const b64UrlEncode = (s: string) => bytesToB64Url(new TextEncoder().encode(s ?? ""));
+function b64UrlDecode(s: string | null | undefined): string {
   if (!s) return "";
   try {
-    return decodeURIComponent(escape(atob(s)));
+    const padded = s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4);
+    const bin = atob(padded);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
   } catch {
     return "";
   }
-};
-
-const normalizeOutput = (s: string) =>
-  s.replace(/\r\n/g, "\n").replace(/[ \t]+\n/g, "\n").trimEnd();
-
-interface TestCase {
-  input: string;
-  expected: string;
 }
 
-async function runSingleCase(
-  source_code: string,
-  language_id: number,
-  test: TestCase,
-  cpuLimit: number,
-  memLimit: number,
-) {
-  const submitUrl = `${JUDGE0_URL}/submissions?base64_encoded=true&wait=false`;
-  const submitRes = await fetch(submitUrl, {
-    method: "POST",
-    headers: judge0Headers(),
-    body: JSON.stringify({
-      source_code: b64encode(source_code),
-      language_id,
-      stdin: b64encode(test.input ?? ""),
-      cpu_time_limit: cpuLimit,
-      memory_limit: memLimit,
-    }),
-  });
-  if (!submitRes.ok) {
-    const errText = await submitRes.text();
-    throw new Judge0RequestError(
-      friendlyJudge0Error(submitRes.status, errText),
-      {
-        error_stage: "submit",
-        requested_url: submitUrl,
-        judge0_status: submitRes.status,
-        judge0_body: errText || undefined,
-      },
-    );
+function judge0ToFermion(id: number): string | null {
+  switch (id) {
+    case 71: case 70: return "Python";
+    case 54: case 76: return "Cpp";
+    case 62: return "Java";
+    case 63: case 74: return "NodeJs";
+    case 50: return "C";
+    case 60: return "Go";
+    default: return null;
   }
-  const { token } = await submitRes.json();
+}
 
-  for (let i = 0; i < 30; i++) {
-    await new Promise((r) => setTimeout(r, 500));
-    const r = await fetch(
-      `${JUDGE0_URL}/submissions/${token}?base64_encoded=true&fields=status,stdout,stderr,compile_output,message,time,memory`,
-      { headers: judge0Headers() },
-    );
-    if (!r.ok) continue;
-    const data = await r.json();
-    if (data.status && data.status.id > 2) {
-      return {
-        statusId: data.status.id as number,
-        statusDescription: data.status.description as string,
-        stdout: b64decode(data.stdout),
-        stderr: b64decode(data.stderr),
-        compile: b64decode(data.compile_output),
-        message: b64decode(data.message),
-        time: data.time ? parseFloat(data.time) : 0,
-        memory: data.memory ?? 0,
-      };
+interface TestCase { input: string; expected: string }
+interface CaseOutcome {
+  runStatus: string;
+  stdout: string;
+  stderr: string;
+  timeMs: number;
+  memoryKb: number;
+}
+
+async function submitBatch(language: string, source: string, tests: TestCase[], cpuMs: number, wallMs: number, memKb: number): Promise<string[]> {
+  const body = {
+    data: tests.map((t) => ({
+      data: {
+        language,
+        sourceCodeAsBase64UrlEncoded: b64UrlEncode(source),
+        runConfig: {
+          stdinStringAsBase64UrlEncoded: b64UrlEncode(t.input ?? ""),
+          customMatcherToUseForExpectedOutput: "ExactMatch",
+          expectedOutputAsBase64UrlEncoded: b64UrlEncode(t.expected ?? ""),
+          cpuTimeLimitInMilliseconds: cpuMs,
+          wallTimeLimitInMilliseconds: wallMs,
+          memoryLimitInKilobyte: memKb,
+        },
+      },
+    })),
+  };
+
+  const res = await fetch(SUBMIT_URL, {
+    method: "POST",
+    headers: fermionHeaders(),
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new FermionError(`Fermion submit failed (${res.status}): ${text.slice(0, 300)}`, {
+      error_stage: "submit", requested_url: SUBMIT_URL, judge0_status: res.status, judge0_body: text,
+    });
+  }
+  let json: any;
+  try { json = JSON.parse(text); } catch {
+    throw new FermionError("Fermion submit returned non-JSON", { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text });
+  }
+  const arr: any[] = json?.output?.data ?? json?.data ?? [];
+  const ids = arr.map((row: any) => row?.output?.taskUniqueId ?? row?.taskUniqueId).filter((x: unknown) => typeof x === "string");
+  if (ids.length !== tests.length) {
+    throw new FermionError(`Fermion submit: expected ${tests.length} task IDs, got ${ids.length}`, {
+      error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500),
+    });
+  }
+  return ids;
+}
+
+async function pollBatch(taskIds: string[]): Promise<Map<string, CaseOutcome>> {
+  const remaining = new Set(taskIds);
+  const out = new Map<string, CaseOutcome>();
+
+  for (let attempt = 0; attempt < 60 && remaining.size > 0; attempt++) {
+    await new Promise((r) => setTimeout(r, 800));
+    const res = await fetch(RESULT_URL, {
+      method: "POST",
+      headers: fermionHeaders(),
+      body: JSON.stringify({ data: [{ data: { taskUniqueIds: Array.from(remaining) } }] }),
+    });
+    if (!res.ok) continue;
+    const text = await res.text();
+    let json: any;
+    try { json = JSON.parse(text); } catch { continue; }
+
+    const entries: any[] =
+      json?.output?.data?.[0]?.output?.results ??
+      json?.output?.data?.[0]?.output?.tasks ??
+      json?.data?.[0]?.output?.results ??
+      json?.output?.results ??
+      [];
+
+    for (const task of entries) {
+      const taskId = task?.taskUniqueId ?? task?.id;
+      if (!taskId || !remaining.has(taskId)) continue;
+      const taskStatus = task?.taskStatus ?? task?.status;
+      if (taskStatus !== "Finished") continue;
+      const result = task?.executionResult ?? task?.result ?? task;
+      out.set(taskId, {
+        runStatus: result?.runStatus ?? result?.status ?? "unknown",
+        stdout: b64UrlDecode(result?.stdoutBase64UrlEncoded ?? result?.stdout),
+        stderr: b64UrlDecode(result?.stderrBase64UrlEncoded ?? result?.stderr),
+        timeMs:
+          typeof result?.timeTakenInMilliseconds === "number" ? result.timeTakenInMilliseconds :
+          typeof result?.cpuTimeInMilliseconds === "number" ? result.cpuTimeInMilliseconds : 0,
+        memoryKb:
+          typeof result?.memoryUsedInKilobyte === "number" ? result.memoryUsedInKilobyte :
+          typeof result?.memoryInKilobyte === "number" ? result.memoryInKilobyte : 0,
+      });
+      remaining.delete(taskId);
     }
   }
-  throw new Judge0RequestError("Polling timed out", {
-    error_stage: "poll",
-    requested_url: `${JUDGE0_URL}/submissions/${token}`,
-  });
+
+  if (remaining.size > 0) {
+    throw new FermionError(`Fermion polling timed out for ${remaining.size} task(s)`, {
+      error_stage: "poll", requested_url: RESULT_URL,
+    });
+  }
+  return out;
 }
+
+const normalize = (s: string) => s.replace(/\r\n/g, "\n").replace(/[ \t]+\n/g, "\n").trimEnd();
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -173,135 +209,117 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (!JUDGE0_URL) {
+    if (!FERMION_KEY) {
       return respond<SubmitResult>({
         ok: false,
-        error: "Code execution is not configured. Add JUDGE0_URL (and JUDGE0_AUTH_TOKEN / JUDGE0_AUTH_HEADER for RapidAPI) in Lovable Cloud → Backend → Secrets.",
-        diagnostics: { error_stage: "config" },
-      });
-    }
-    if (JUDGE0_URL.includes("rapidapi.com") && (!JUDGE0_AUTH_TOKEN || !JUDGE0_EXTRA_HEADER_VALUE)) {
-      return respond<SubmitResult>({
-        ok: false,
-        error: "RapidAPI Judge0 requires both an API key and host header. Set JUDGE0_AUTH_TOKEN (your x-rapidapi-key) and JUDGE0_EXTRA_HEADER_NAME=x-rapidapi-host + JUDGE0_EXTRA_HEADER_VALUE=judge0-ce.p.rapidapi.com.",
+        error: "Code execution is not configured. Add FERMION_RAPIDAPI_KEY in Lovable Cloud → Backend → Secrets.",
         diagnostics: { error_stage: "config" },
       });
     }
 
-    // Auth required
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return respond<SubmitResult>({
-        ok: false,
-        error: "Unauthorized",
-        diagnostics: { error_stage: "auth" },
-      });
-    }
+    if (!authHeader) return respond<SubmitResult>({ ok: false, error: "Unauthorized", diagnostics: { error_stage: "auth" } });
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !userData.user) {
-      return respond<SubmitResult>({
-        ok: false,
-        error: "Unauthorized",
-        diagnostics: { error_stage: "auth" },
-      });
-    }
+    if (userErr || !userData.user) return respond<SubmitResult>({ ok: false, error: "Unauthorized", diagnostics: { error_stage: "auth" } });
     const userId = userData.user.id;
 
     const body = await req.json();
-    const {
-      source_code,
-      language,
-      language_id,
-      problem_slug,
-      tests,
-      cpu_time_limit,
-      memory_limit,
-    } = body ?? {};
+    const { source_code, language, language_id, problem_slug, tests, cpu_time_limit, memory_limit } = body ?? {};
 
-    if (!source_code || typeof source_code !== "string" || source_code.length > 50000) {
-      return respond<SubmitResult>({
-        ok: false,
-        error: "Invalid source_code",
-        diagnostics: { error_stage: "validation" },
-      });
-    }
-    if (typeof language_id !== "number" || typeof language !== "string") {
-      return respond<SubmitResult>({
-        ok: false,
-        error: "Invalid language",
-        diagnostics: { error_stage: "validation" },
-      });
-    }
-    if (!problem_slug || !Array.isArray(tests) || tests.length === 0) {
-      return respond<SubmitResult>({
-        ok: false,
-        error: "tests required",
-        diagnostics: { error_stage: "validation" },
-      });
-    }
-    if (tests.length > 30) {
-      return respond<SubmitResult>({
-        ok: false,
-        error: "Too many tests",
-        diagnostics: { error_stage: "validation" },
-      });
-    }
+    if (!source_code || typeof source_code !== "string" || source_code.length > 50000)
+      return respond<SubmitResult>({ ok: false, error: "Invalid source_code", diagnostics: { error_stage: "validation" } });
+    if (typeof language_id !== "number" || typeof language !== "string")
+      return respond<SubmitResult>({ ok: false, error: "Invalid language", diagnostics: { error_stage: "validation" } });
+    if (!problem_slug || !Array.isArray(tests) || tests.length === 0)
+      return respond<SubmitResult>({ ok: false, error: "tests required", diagnostics: { error_stage: "validation" } });
+    if (tests.length > 30)
+      return respond<SubmitResult>({ ok: false, error: "Too many tests", diagnostics: { error_stage: "validation" } });
 
-    const cpuLimit = typeof cpu_time_limit === "number" ? Math.min(cpu_time_limit, 10) : 5;
-    const memLimit = typeof memory_limit === "number" ? Math.min(memory_limit, 512000) : 256000;
+    const fermionLang = judge0ToFermion(language_id);
+    if (!fermionLang)
+      return respond<SubmitResult>({ ok: false, error: `Language not supported by Fermion (language_id=${language_id})`, diagnostics: { error_stage: "validation" } });
+
+    const cpuMs = Math.min(typeof cpu_time_limit === "number" ? cpu_time_limit * 1000 : 5000, 10000);
+    const wallMs = Math.min(cpuMs * 2, 15000);
+    const memKb = Math.min(typeof memory_limit === "number" ? memory_limit : 262144, 524288);
+
+    // Submit all cases as a single batch, then poll.
+    const taskIds = await submitBatch(fermionLang, source_code, tests as TestCase[], cpuMs, wallMs, memKb);
+    const results = await pollBatch(taskIds);
 
     let passed = 0;
     let verdict: string = "Accepted";
     let failingCase: Record<string, unknown> | null = null;
-    let totalTime = 0;
+    let totalTimeMs = 0;
     let maxMemory = 0;
     let stderrCombined = "";
 
     for (let i = 0; i < tests.length; i++) {
       const t = tests[i] as TestCase;
-      const result = await runSingleCase(source_code, language_id, t, cpuLimit, memLimit);
-      totalTime += result.time;
-      if (result.memory > maxMemory) maxMemory = result.memory;
-
-      if (result.statusId === 6) {
-        verdict = "Compile Error";
-        stderrCombined = result.compile || result.stderr || "Compilation failed";
-        failingCase = { index: i, input: t.input, expected: t.expected, output: "", error: stderrCombined };
-        break;
-      }
-      if (result.statusId === 5) {
-        verdict = "Time Limit Exceeded";
-        failingCase = { index: i, input: t.input, expected: t.expected, output: result.stdout };
-        break;
-      }
-      if (result.statusId >= 7 && result.statusId <= 12) {
-        verdict = "Runtime Error";
-        stderrCombined = result.stderr || result.message || "Runtime error";
-        failingCase = { index: i, input: t.input, expected: t.expected, output: result.stdout, error: stderrCombined };
-        break;
-      }
-      if (result.statusId === 13 || result.statusId === 14) {
+      const r = results.get(taskIds[i]);
+      if (!r) {
         verdict = "Internal Error";
-        stderrCombined = result.message || "Judge internal error";
+        stderrCombined = "Missing result for test case";
         break;
       }
-      // Accepted-ish; compare output ourselves to be safe
-      const got = normalizeOutput(result.stdout);
-      const want = normalizeOutput(t.expected ?? "");
-      if (got !== want) {
-        verdict = "Wrong Answer";
-        failingCase = { index: i, input: t.input, expected: t.expected, output: result.stdout };
-        break;
+      totalTimeMs += r.timeMs;
+      if (r.memoryKb > maxMemory) maxMemory = r.memoryKb;
+
+      switch (r.runStatus) {
+        case "compilation-error":
+          verdict = "Compile Error";
+          stderrCombined = r.stderr || "Compilation failed";
+          failingCase = { index: i, input: t.input, expected: t.expected, output: "", error: stderrCombined };
+          break;
+        case "time-limit-exceeded":
+          verdict = "Time Limit Exceeded";
+          failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
+          break;
+        case "non-zero-exit-code":
+        case "died-sigsev":
+        case "died-sigxfsz":
+        case "died-sigfpe":
+        case "died-sigabrt":
+          verdict = "Runtime Error";
+          stderrCombined = r.stderr || r.runStatus;
+          failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout, error: stderrCombined };
+          break;
+        case "internal-isolate-error":
+        case "unknown":
+          verdict = "Internal Error";
+          stderrCombined = r.stderr || "Judge internal error";
+          break;
+        case "wrong-answer": {
+          // Re-check ourselves with normalization (Fermion ExactMatch may be strict on trailing newlines)
+          const got = normalize(r.stdout);
+          const want = normalize(t.expected ?? "");
+          if (got === want) { passed++; continue; }
+          verdict = "Wrong Answer";
+          failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
+          break;
+        }
+        case "successful":
+        default: {
+          const got = normalize(r.stdout);
+          const want = normalize(t.expected ?? "");
+          if (got !== want) {
+            verdict = "Wrong Answer";
+            failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
+            break;
+          }
+          passed++;
+          continue;
+        }
       }
-      passed++;
+      // Hit a failure case — stop iterating
+      break;
     }
 
-    const runtimeMs = Math.round(totalTime * 1000);
+    const runtimeMs = Math.round(totalTimeMs);
 
-    // Store submission
     const { data: insertData, error: insertErr } = await supabase
       .from("code_submissions")
       .insert({
@@ -322,11 +340,8 @@ Deno.serve(async (req) => {
       .select()
       .single();
 
-    if (insertErr) {
-      console.error("Insert error:", insertErr);
-    }
+    if (insertErr) console.error("Insert error:", insertErr);
 
-    // Award XP on first AC for this problem
     if (verdict === "Accepted") {
       const { data: priorAccepted } = await supabase
         .from("code_submissions")
@@ -335,7 +350,6 @@ Deno.serve(async (req) => {
         .eq("problem_slug", problem_slug)
         .eq("verdict", "Accepted")
         .limit(2);
-      // only first AC = exactly 1 row (the one we just inserted)
       if (priorAccepted && priorAccepted.length === 1) {
         await supabase.rpc("award_xp", {
           _user_id: userId,
@@ -361,9 +375,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("submit-code error:", err);
-    const diagnostics = err instanceof Judge0RequestError
-      ? err.diagnostics
-      : { error_stage: "unknown" as const };
+    const diagnostics = err instanceof FermionError ? err.diagnostics : { error_stage: "unknown" as const };
     return respond<SubmitResult>({
       ok: false,
       error: (err as Error).message ?? "Unknown error",
