@@ -154,6 +154,8 @@ export const MySolutionPanel = ({
   timestampFormat,
   onToggleTimestampFormat,
   fontSize = 13,
+  syncStatus = "idle",
+  isCloudSynced = false,
 }: Props) => {
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [copied, setCopied] = useState(false);
