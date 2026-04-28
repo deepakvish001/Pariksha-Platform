@@ -166,7 +166,8 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
 
       <ol className="space-y-2 list-none p-0 m-0" aria-label="Run history">
         {sorted.map((r, idx) => {
-          const tone = statusTone(r.status);
+          const meta = getVerdictMeta(r.status);
+          const VerdictIcon = meta.icon;
           const panelId = `run-${r.id}-panel`;
           return (
             <li key={r.id}>
@@ -175,7 +176,7 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
                   <CollapsibleTrigger
                     className="w-full text-left group"
                     aria-controls={panelId}
-                    aria-label={`Run #${runs.length - idx} from ${new Date(r.created_at).toLocaleString()} — ${r.status ?? "unknown"}`}
+                    aria-label={`Run #${runs.length - idx} from ${new Date(r.created_at).toLocaleString()} — ${meta.description}${r.status && r.status.toLowerCase() !== meta.label.toLowerCase() ? ` (${r.status})` : ""}`}
                   >
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-3 min-w-0">
@@ -183,10 +184,16 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
                           #{runs.length - idx}
                         </span>
                         <Badge
-                          variant={tone.variant}
-                          className={cn("text-[10px]", tone.className)}
+                          variant="outline"
+                          className={cn(
+                            "text-[10px] gap-1 inline-flex items-center",
+                            meta.className,
+                          )}
+                          title={r.status ?? undefined}
+                          data-verdict={meta.verdict}
                         >
-                          {r.status ?? "Unknown"}
+                          <VerdictIcon className="h-3 w-3" aria-hidden="true" />
+                          <span>{meta.label}</span>
                         </Badge>
                         <span className="text-xs text-muted-foreground truncate">
                           {r.language}
