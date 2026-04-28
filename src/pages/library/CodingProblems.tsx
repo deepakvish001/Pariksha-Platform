@@ -81,6 +81,7 @@ import { TopicMasteryChips } from "@/components/library/coding/TopicMasteryChips
 import { SavedFiltersMenu } from "@/components/library/coding/SavedFiltersMenu";
 import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
 import { useSavedFilterPresets } from "@/hooks/useSavedFilterPresets";
+import { useListingFocusMode } from "@/hooks/useListingFocusMode";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
