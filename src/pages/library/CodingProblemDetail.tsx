@@ -477,6 +477,8 @@ const CodingProblemDetail = () => {
                     </p>
                     <Button onClick={() => setShowLogin(true)}>Sign in</Button>
                   </Card>
+                ) : submissionsLoading && submissions.length === 0 ? (
+                  <AttemptTimeline submissions={[]} limit={10} loading />
                 ) : submissions.length === 0 ? (
                   <AttemptTimeline submissions={[]} limit={10} />
                 ) : (
