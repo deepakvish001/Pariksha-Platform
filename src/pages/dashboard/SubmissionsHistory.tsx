@@ -571,7 +571,7 @@ export default function SubmissionsHistory() {
                 )}
                 {lastCancelledId === detailRun.id && !isRunning && (
                   <div className="rounded border border-border bg-muted/30 p-2 text-muted-foreground">
-                    Re-run was cancelled.
+                    Re-run cancelled • {detailRun.problem_slug} • run {detailRun.id.slice(0, 8)}
                   </div>
                 )}
 
