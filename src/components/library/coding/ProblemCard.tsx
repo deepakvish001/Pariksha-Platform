@@ -130,18 +130,12 @@ export const ProblemCard = ({
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-1">
-            {problem.topics.slice(0, 3).map((t) => (
-              <Badge key={t} variant="secondary" className="text-[10px] font-normal px-1.5 py-0">
-                {t}
-              </Badge>
-            ))}
-            {problem.topics.length > 3 && (
-              <Badge variant="secondary" className="text-[10px] font-normal px-1.5 py-0">
-                +{problem.topics.length - 3}
-              </Badge>
-            )}
-          </div>
+          <TopicBadgesWithOverflow
+            topics={problem.topics}
+            visibleCount={3}
+            badgeClassName="text-[10px] font-normal px-1.5 py-0"
+            overflowBadgeClassName="text-[10px] font-normal px-1.5 py-0 cursor-pointer hover:bg-muted/60 transition-colors"
+          />
 
           <div className="mt-auto flex items-center justify-between gap-2 pt-2">
             <div className="flex items-center gap-2">
