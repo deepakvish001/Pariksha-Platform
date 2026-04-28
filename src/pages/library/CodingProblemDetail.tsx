@@ -82,6 +82,21 @@ const CodingProblemDetail = () => {
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
   const { submissions, refetch: refetchSubmissions } = useCodingSubmissions(slug);
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
+  const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
+
+  // Derived per-problem stats
+  const problemStats = useMemo(() => {
+    const attempts = submissions.length;
+    const accepted = submissions.filter((s) => s.verdict === "Accepted");
+    const isSolved = accepted.length > 0;
+    const isAttempted = attempts > 0;
+    // earliest accepted = solvedAt
+    let solvedAt: string | null = null;
+    for (const a of accepted) {
+      if (!solvedAt || a.created_at < solvedAt) solvedAt = a.created_at;
+    }
+    return { attempts, isSolved, isAttempted, solvedAt };
+  }, [submissions]);
 
   // Initialize code from draft or starter
   useEffect(() => {
