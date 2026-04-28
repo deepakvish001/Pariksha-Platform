@@ -78,7 +78,7 @@ import { FloatingActionBar } from "@/components/library/coding/FloatingActionBar
 import { SessionTimer, formatSolveTime, type SessionTimerHandle } from "@/components/library/coding/SessionTimer";
 import { TestCaseWorkbench } from "@/components/library/coding/TestCaseWorkbench";
 import { SchemaSeedToggle } from "@/components/library/coding/SchemaSeedToggle";
-import { SqlResultDiff } from "@/components/library/coding/SqlResultDiff";
+import { SqlResultDiff, SqlResultTable } from "@/components/library/coding/SqlResultDiff";
 import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
 import { useProblemNotes } from "@/hooks/useProblemNotes";
 import { useProblemSolution } from "@/hooks/useProblemSolution";
