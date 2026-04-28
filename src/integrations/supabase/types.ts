@@ -290,6 +290,39 @@ export type Database = {
         }
         Relationships: []
       }
+      coding_leaderboard_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          problems_solved: number
+          rank: number
+          snapshot_date: string
+          user_id: string
+          weighted_score: number
+          window_kind: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          problems_solved: number
+          rank: number
+          snapshot_date?: string
+          user_id: string
+          weighted_score: number
+          window_kind: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          problems_solved?: number
+          rank?: number
+          snapshot_date?: string
+          user_id?: string
+          weighted_score?: number
+          window_kind?: string
+        }
+        Relationships: []
+      }
       coding_problems_meta: {
         Row: {
           acceptance_rate: number
@@ -1632,25 +1665,59 @@ export type Database = {
         }
         Returns: number
       }
-      get_coding_leaderboard: {
-        Args: {
-          _limit?: number
-          _offset?: number
-          _search?: string
-          _window?: string
-        }
+      get_coding_leaderboard:
+        | {
+            Args: {
+              _limit?: number
+              _offset?: number
+              _search?: string
+              _window?: string
+            }
+            Returns: {
+              acceptance_rate: number
+              avatar_url: string
+              display_name: string
+              fastest_avg_runtime: number
+              last_accepted_at: string
+              problems_solved: number
+              rank: number
+              total_accepted: number
+              user_id: string
+              username: string
+              weighted_score: number
+            }[]
+          }
+        | {
+            Args: {
+              _accepted_only?: boolean
+              _difficulty?: string
+              _limit?: number
+              _offset?: number
+              _search?: string
+              _window?: string
+            }
+            Returns: {
+              acceptance_rate: number
+              avatar_url: string
+              display_name: string
+              fastest_avg_runtime: number
+              last_accepted_at: string
+              problems_solved: number
+              rank: number
+              total_accepted: number
+              user_id: string
+              username: string
+              weighted_score: number
+            }[]
+          }
+      get_coding_leaderboard_rank_delta: {
+        Args: { _user_id: string; _window?: string }
         Returns: {
-          acceptance_rate: number
-          avatar_url: string
-          display_name: string
-          fastest_avg_runtime: number
-          last_accepted_at: string
-          problems_solved: number
-          rank: number
-          total_accepted: number
-          user_id: string
-          username: string
-          weighted_score: number
+          current_rank: number
+          delta_day: number
+          delta_week: number
+          week_ago_rank: number
+          yesterday_rank: number
         }[]
       }
       get_coding_leaderboard_stats: {
@@ -1730,6 +1797,7 @@ export type Database = {
           total_users: number
         }[]
       }
+      snapshot_my_coding_leaderboard_rank: { Args: never; Returns: Json }
     }
     Enums: {
       study_year:
