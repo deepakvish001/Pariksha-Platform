@@ -541,8 +541,12 @@ export default function SubmissionsHistory() {
                       onClick={() => handleRerun(detailRun)}
                       disabled={isRunning}
                     >
-                      <Play className="h-3.5 w-3.5 mr-1" />
-                      Retry re-run
+                      {isRunning ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                      ) : (
+                        <Play className="h-3.5 w-3.5 mr-1" />
+                      )}
+                      {isRunning ? "Retrying…" : "Retry re-run"}
                     </Button>
                   ) : (
                     <Button
