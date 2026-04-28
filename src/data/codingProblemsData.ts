@@ -1872,6 +1872,297 @@ print(sum(1 for c in s if c in "aeiou"))`,
       { input: "The quick brown fox", expected: "5" },
     ],
   },
+
+  // =============================================================
+  //                   SQL PROBLEMS (SQLite)
+  // =============================================================
+  // Each SQL problem ships its own schema + seed dataset and a reference
+  // query. Run/Submit go through the run-sql / submit-sql edge functions.
+  // starterCode and referenceSolution intentionally omit non-SQL languages.
+  // ----------------------------------------------------------
+  {
+    slug: "sql-recyclable-low-fat-products",
+    title: "Recyclable and Low-Fat Products",
+    difficulty: "Easy",
+    topics: ["SQL", "WHERE", "Filtering"],
+    description: `Write a SQL query to find the IDs of products that are both **low fat** and **recyclable**.
+
+Return the result table in **any order**.`,
+    examples: [
+      {
+        input: "Products(product_id, low_fats, recyclable)",
+        output: "product_id\nP1\nP3",
+      },
+    ],
+    constraints: ["Use SELECT, WHERE", "Both flags are 'Y' or 'N'"],
+    hints: ["Filter where low_fats = 'Y' AND recyclable = 'Y'."],
+    starterCode: {},
+    referenceSolution: {
+      sql: `SELECT product_id FROM Products WHERE low_fats = 'Y' AND recyclable = 'Y';`,
+    },
+    sampleTests: [],
+    hiddenTests: [],
+    sql: {
+      schema: `CREATE TABLE Products (
+  product_id TEXT PRIMARY KEY,
+  low_fats   TEXT NOT NULL,
+  recyclable TEXT NOT NULL
+);`,
+      seed: `INSERT INTO Products VALUES
+  ('P1', 'Y', 'Y'),
+  ('P2', 'N', 'Y'),
+  ('P3', 'Y', 'Y'),
+  ('P4', 'Y', 'N'),
+  ('P5', 'N', 'N');`,
+      referenceQuery: `SELECT product_id FROM Products WHERE low_fats = 'Y' AND recyclable = 'Y';`,
+      orderMatters: false,
+      starter: `-- Find products that are both low-fat and recyclable.
+SELECT product_id
+FROM Products
+WHERE /* TODO */;
+`,
+    },
+  },
+  // ----------------------------------------------------------
+  {
+    slug: "sql-customer-referee",
+    title: "Find Customer Referee",
+    difficulty: "Easy",
+    topics: ["SQL", "NULL Handling"],
+    description: `Find the names of the customers that are **not** referred by the customer with id = 2.
+
+Return the result table in any order.`,
+    examples: [
+      { input: "Customer(id, name, referee_id)", output: "name\nWill\nJane\nAlex\nBill" },
+    ],
+    constraints: ["Be careful with NULL referee_id values."],
+    hints: ["referee_id IS NULL OR referee_id != 2."],
+    starterCode: {},
+    referenceSolution: {
+      sql: `SELECT name FROM Customer WHERE referee_id IS NULL OR referee_id <> 2;`,
+    },
+    sampleTests: [],
+    hiddenTests: [],
+    sql: {
+      schema: `CREATE TABLE Customer (
+  id          INTEGER PRIMARY KEY,
+  name        TEXT NOT NULL,
+  referee_id  INTEGER
+);`,
+      seed: `INSERT INTO Customer VALUES
+  (1, 'Will',   NULL),
+  (2, 'Jane',   NULL),
+  (3, 'Alex',   2),
+  (4, 'Bill',   NULL),
+  (5, 'Zack',   1),
+  (6, 'Mark',   2);`,
+      referenceQuery: `SELECT name FROM Customer WHERE referee_id IS NULL OR referee_id <> 2;`,
+      orderMatters: false,
+      starter: `SELECT name
+FROM Customer
+WHERE /* TODO: include rows where referee_id is not 2, including NULLs */;
+`,
+    },
+  },
+  // ----------------------------------------------------------
+  {
+    slug: "sql-big-countries",
+    title: "Big Countries",
+    difficulty: "Easy",
+    topics: ["SQL", "WHERE", "OR"],
+    description: `A country is **big** if its area is at least 3,000,000 km² **or** its population is at least 25,000,000.
+
+Write a SQL query to report the **name**, **population**, and **area** of each big country.`,
+    examples: [
+      { input: "World(name, continent, area, population, gdp)", output: "name\tpopulation\tarea\nAfghanistan\t25500100\t652230\nAlgeria\t37100000\t2381741" },
+    ],
+    constraints: ["Use OR for the threshold check."],
+    hints: ["WHERE area >= 3000000 OR population >= 25000000"],
+    starterCode: {},
+    referenceSolution: {
+      sql: `SELECT name, population, area FROM World WHERE area >= 3000000 OR population >= 25000000;`,
+    },
+    sampleTests: [],
+    hiddenTests: [],
+    sql: {
+      schema: `CREATE TABLE World (
+  name       TEXT PRIMARY KEY,
+  continent  TEXT NOT NULL,
+  area       INTEGER NOT NULL,
+  population INTEGER NOT NULL,
+  gdp        INTEGER NOT NULL
+);`,
+      seed: `INSERT INTO World VALUES
+  ('Afghanistan', 'Asia',   652230,  25500100,   20343000000),
+  ('Albania',     'Europe', 28748,    2831741,   12960000000),
+  ('Algeria',     'Africa', 2381741, 37100000,  188681000000),
+  ('Andorra',     'Europe', 468,         78115,    3712000000),
+  ('Angola',      'Africa', 1246700, 20609294,  100990000000);`,
+      referenceQuery: `SELECT name, population, area FROM World WHERE area >= 3000000 OR population >= 25000000;`,
+      orderMatters: false,
+      starter: `SELECT name, population, area
+FROM World
+WHERE /* TODO */;
+`,
+    },
+  },
+  // ----------------------------------------------------------
+  {
+    slug: "sql-employee-bonus",
+    title: "Employee Bonus",
+    difficulty: "Easy",
+    topics: ["SQL", "LEFT JOIN", "NULL Handling"],
+    description: `Report the **name** and **bonus amount** of each employee whose bonus is **less than 1000**.
+
+If an employee has no bonus, treat it as no bonus assigned (include them).`,
+    examples: [
+      { input: "Employee(empId, name, supervisor, salary), Bonus(empId, bonus)", output: "name\tbonus\nBrad\tNULL\nDan\tNULL\nThomas\t300" },
+    ],
+    constraints: ["Use LEFT JOIN.", "Filter bonus < 1000 OR bonus IS NULL."],
+    hints: ["LEFT JOIN Bonus on empId then filter."],
+    starterCode: {},
+    referenceSolution: {
+      sql: `SELECT e.name, b.bonus
+FROM Employee e
+LEFT JOIN Bonus b ON e.empId = b.empId
+WHERE b.bonus < 1000 OR b.bonus IS NULL;`,
+    },
+    sampleTests: [],
+    hiddenTests: [],
+    sql: {
+      schema: `CREATE TABLE Employee (
+  empId      INTEGER PRIMARY KEY,
+  name       TEXT NOT NULL,
+  supervisor INTEGER,
+  salary     INTEGER NOT NULL
+);
+CREATE TABLE Bonus (
+  empId INTEGER PRIMARY KEY,
+  bonus INTEGER
+);`,
+      seed: `INSERT INTO Employee VALUES
+  (3, 'Brad',   NULL, 4000),
+  (1, 'John',   3,    1000),
+  (2, 'Dan',    3,    2000),
+  (4, 'Thomas', 3,    4000);
+INSERT INTO Bonus VALUES
+  (2, 500),
+  (4, 2000);`,
+      referenceQuery: `SELECT e.name, b.bonus
+FROM Employee e
+LEFT JOIN Bonus b ON e.empId = b.empId
+WHERE b.bonus < 1000 OR b.bonus IS NULL;`,
+      orderMatters: false,
+      starter: `SELECT e.name, b.bonus
+FROM Employee e
+LEFT JOIN Bonus b ON /* TODO */
+WHERE /* TODO */;
+`,
+    },
+  },
+  // ----------------------------------------------------------
+  {
+    slug: "sql-second-highest-salary",
+    title: "Second Highest Salary",
+    difficulty: "Medium",
+    topics: ["SQL", "Subquery", "DISTINCT"],
+    description: `Write a SQL query to get the **second highest distinct salary** from the \`Employee\` table.
+
+If there is no second highest salary, return \`NULL\`. The output column must be named \`SecondHighestSalary\`.`,
+    examples: [
+      { input: "Employee(id, salary)", output: "SecondHighestSalary\n200" },
+    ],
+    constraints: ["Distinct salaries.", "Return a single row."],
+    hints: ["Use a subquery with MAX(salary) where salary < (SELECT MAX(salary))."],
+    starterCode: {},
+    referenceSolution: {
+      sql: `SELECT (SELECT MAX(salary) FROM Employee WHERE salary < (SELECT MAX(salary) FROM Employee)) AS SecondHighestSalary;`,
+    },
+    sampleTests: [],
+    hiddenTests: [],
+    sql: {
+      schema: `CREATE TABLE Employee (
+  id     INTEGER PRIMARY KEY,
+  salary INTEGER NOT NULL
+);`,
+      seed: `INSERT INTO Employee VALUES
+  (1, 100),
+  (2, 200),
+  (3, 300),
+  (4, 200);`,
+      referenceQuery: `SELECT (SELECT MAX(salary) FROM Employee WHERE salary < (SELECT MAX(salary) FROM Employee)) AS SecondHighestSalary;`,
+      orderMatters: false,
+      starter: `SELECT /* TODO */ AS SecondHighestSalary;
+`,
+    },
+  },
+  // ----------------------------------------------------------
+  {
+    slug: "sql-department-top-three-salaries",
+    title: "Department Top Three Salaries",
+    difficulty: "Hard",
+    topics: ["SQL", "Window Functions", "DENSE_RANK"],
+    description: `For each department, find the employees who earn one of the **top three unique salaries** in that department.
+
+Return the **department name**, **employee name**, and **salary**, ordered by department then salary descending.`,
+    examples: [
+      { input: "Employee(id, name, salary, departmentId), Department(id, name)", output: "Department\tEmployee\tSalary\nIT\tMax\t90000\nIT\tRandy\t85000\nIT\tJoe\t85000\nIT\tWill\t70000\nSales\tHenry\t80000\nSales\tSam\t60000" },
+    ],
+    constraints: ["Use DENSE_RANK() OVER (PARTITION BY ...).", "Top 3 distinct salaries per department."],
+    hints: ["DENSE_RANK gives ties the same rank without skipping.", "Filter rank <= 3."],
+    starterCode: {},
+    referenceSolution: {
+      sql: `SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary
+FROM (
+  SELECT name, salary, departmentId,
+         DENSE_RANK() OVER (PARTITION BY departmentId ORDER BY salary DESC) AS rk
+  FROM Employee
+) e
+JOIN Department d ON d.id = e.departmentId
+WHERE e.rk <= 3
+ORDER BY d.name, e.salary DESC;`,
+    },
+    sampleTests: [],
+    hiddenTests: [],
+    sql: {
+      schema: `CREATE TABLE Employee (
+  id           INTEGER PRIMARY KEY,
+  name         TEXT NOT NULL,
+  salary       INTEGER NOT NULL,
+  departmentId INTEGER NOT NULL
+);
+CREATE TABLE Department (
+  id   INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);`,
+      seed: `INSERT INTO Department VALUES
+  (1, 'IT'),
+  (2, 'Sales');
+INSERT INTO Employee VALUES
+  (1, 'Joe',    85000, 1),
+  (2, 'Henry',  80000, 2),
+  (3, 'Sam',    60000, 2),
+  (4, 'Max',    90000, 1),
+  (5, 'Janet',  69000, 1),
+  (6, 'Randy',  85000, 1),
+  (7, 'Will',   70000, 1);`,
+      referenceQuery: `SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary
+FROM (
+  SELECT name, salary, departmentId,
+         DENSE_RANK() OVER (PARTITION BY departmentId ORDER BY salary DESC) AS rk
+  FROM Employee
+) e
+JOIN Department d ON d.id = e.departmentId
+WHERE e.rk <= 3
+ORDER BY d.name, e.salary DESC;`,
+      orderMatters: true,
+      starter: `-- Top 3 unique salaries per department, with employee names.
+SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary
+FROM /* TODO */
+ORDER BY d.name, e.salary DESC;
+`,
+    },
+  },
 ];
 
 export const getProblemBySlug = (slug: string) =>
