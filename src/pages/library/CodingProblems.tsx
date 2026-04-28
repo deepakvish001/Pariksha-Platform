@@ -739,6 +739,29 @@ const CodingProblems = () => {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={focusMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={toggleFocusMode}
+                  className="gap-1.5 h-9"
+                  aria-pressed={focusMode}
+                >
+                  <Focus className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">
+                    {focusMode ? "Focus on" : "Focus"}
+                  </span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {focusMode
+                  ? "Show recommendations, stats, and topic mastery again."
+                  : "Hide ancillary panels and concentrate on the table."}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button variant="outline" size="sm" onClick={handleShareFilters} className="gap-1.5 h-9">
             <Share2 className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Share filters</span>
