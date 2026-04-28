@@ -140,11 +140,15 @@ export const MySolutionPanel = ({
   onUseCurrentDraft,
   onClear,
   onRestore,
+  onUndoCodeChange,
+  canUndoCode,
   hasUnsavedCurrentCode,
   savedAt,
   hasNotes,
   hasAnyCode,
   isComplete,
+  timestampFormat,
+  onToggleTimestampFormat,
   fontSize = 13,
 }: Props) => {
   const [mode, setMode] = useState<"edit" | "preview">("edit");
@@ -156,6 +160,7 @@ export const MySolutionPanel = ({
 
   const hasCode = code.trim().length > 0;
   const hasCurrentLangSaved = savedLanguages.includes(language);
+  const canUndoCurrent = canUndoCode(language);
 
   const handleCopy = async () => {
     if (!hasCode) return;
