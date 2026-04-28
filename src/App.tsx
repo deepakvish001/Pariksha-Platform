@@ -17,6 +17,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import DashboardMatrix from "./pages/DashboardMatrix";
+import SubmissionsHistory from "./pages/dashboard/SubmissionsHistory";
 import DashboardSheets from "./pages/DashboardSheets";
 import DashboardProfile from "./pages/DashboardProfile";
 import Settings from "./pages/Settings";
