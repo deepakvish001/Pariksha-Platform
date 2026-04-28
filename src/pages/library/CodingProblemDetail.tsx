@@ -212,8 +212,10 @@ const CodingProblemDetail = () => {
   const problem = useMemo(() => (slug ? getProblemBySlug(slug) : undefined), [slug]);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [language, setLanguage] = useState<LangId>("python");
-  const [mySolutionLanguage, setMySolutionLanguage] = useState<LangId>("python");
+  const isSQLProblem = !!problem?.sql;
+  const defaultLang: LangId = isSQLProblem ? "sql" : "python";
+  const [language, setLanguage] = useState<LangId>(defaultLang);
+  const [mySolutionLanguage, setMySolutionLanguage] = useState<LangId>(defaultLang);
   const [code, setCode] = useState("");
   const [stdin, setStdin] = useState("");
   const [activeBottomTab, setActiveBottomTab] = useState<"testcase" | "output">("testcase");
@@ -461,10 +463,17 @@ const CodingProblemDetail = () => {
     return { attempts, isSolved, isAttempted, solvedAt };
   }, [submissions]);
 
+  // Resolve starter code with SQL-aware fallback
+  const getStarter = (lang: LangId): string => {
+    if (!problem) return "";
+    if (lang === "sql") return problem.sql?.starter ?? "-- Write your SQL query here\n";
+    return problem.starterCode[lang] ?? "";
+  };
+
   // Initialize code from draft or starter
   useEffect(() => {
     if (!problem || !draftLoaded) return;
-    setCode(draft && draft.length > 0 ? draft : problem.starterCode[language]);
+    setCode(draft && draft.length > 0 ? draft : getStarter(language));
   }, [problem, language, draft, draftLoaded]);
 
   // Initialize stdin to first sample test
@@ -565,8 +574,9 @@ const CodingProblemDetail = () => {
   };
 
   const handleReset = () => {
-    setCode(problem.starterCode[language]);
-    saveDraft(problem.starterCode[language]);
+    const starter = getStarter(language);
+    setCode(starter);
+    saveDraft(starter);
     toast({ title: "Code reset", description: "Editor restored to starter template." });
   };
 
@@ -616,7 +626,7 @@ const CodingProblemDetail = () => {
       return;
     }
     const label = `${langInfo.label} · ${lastForLang.verdict ?? "Pending"} · ${new Date(lastForLang.created_at).toLocaleString()}`;
-    const baseline = draft ?? problem.starterCode[language];
+    const baseline = draft ?? getStarter(language);
     const hasUnsavedChanges = code !== baseline && code !== lastForLang.source_code;
     if (hasUnsavedChanges) {
       setPendingRestoreCode({
@@ -658,6 +668,9 @@ const CodingProblemDetail = () => {
         stdin,
         problem_slug: slug,
         language,
+        ...(problem.sql
+          ? { schema: problem.sql.schema, seed: problem.sql.seed }
+          : {}),
       });
       setRunResult(result);
       setExecutionErrorDetails(null);
@@ -726,6 +739,14 @@ const CodingProblemDetail = () => {
         tests: problem.hiddenTests,
         cpu_time_limit: problem.cpuTimeLimitSec,
         memory_limit: problem.memoryLimitKb,
+        ...(problem.sql
+          ? {
+              schema: problem.sql.schema,
+              seed: problem.sql.seed,
+              reference_query: problem.sql.referenceQuery,
+              order_matters: !!problem.sql.orderMatters,
+            }
+          : {}),
       });
       setSubmitResult(result);
       setExecutionErrorDetails(null);
@@ -960,6 +981,32 @@ const CodingProblemDetail = () => {
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.description}</ReactMarkdown>
                 </div>
+
+                {/* SQL Schema panel — only for SQL problems */}
+                {problem.sql && (
+                  <details
+                    open
+                    className="rounded-md border bg-muted/40 overflow-hidden"
+                  >
+                    <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted/60">
+                      Schema &amp; sample data (SQLite)
+                    </summary>
+                    <div className="border-t">
+                      <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Tables
+                      </div>
+                      <pre className="text-xs px-3 pb-3 overflow-x-auto whitespace-pre font-mono">
+                        <code>{problem.sql.schema.trim()}</code>
+                      </pre>
+                      <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-t">
+                        Seed data
+                      </div>
+                      <pre className="text-xs px-3 pb-3 overflow-x-auto whitespace-pre font-mono">
+                        <code>{problem.sql.seed.trim()}</code>
+                      </pre>
+                    </div>
+                  </details>
+                )}
 
                 {/* Examples */}
                 <div className="space-y-3">
@@ -1217,9 +1264,11 @@ const CodingProblemDetail = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {LANGUAGES.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
-                        ))}
+                        {LANGUAGES
+                          .filter((l) => (isSQLProblem ? l.id === "sql" : l.id !== "sql"))
+                          .map((l) => (
+                            <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                     <DraftSaveIndicator
@@ -1438,14 +1487,36 @@ const CodingProblemDetail = () => {
                 </div>
 
                 <TabsContent value="testcase" className="flex-1 m-0 p-3 overflow-y-auto">
-                  <TestCaseWorkbench
-                    slug={problem.slug}
-                    sampleTests={problem.sampleTests}
-                    stdin={stdin}
-                    onStdinChange={setStdin}
-                    onRun={handleRun}
-                    isRunning={isRunning}
-                  />
+                  {isSQLProblem ? (
+                    <div className="space-y-3">
+                      <div className="rounded-md border bg-muted/30 p-3 text-sm">
+                        <p className="font-medium mb-1">Seeded dataset</p>
+                        <p className="text-muted-foreground text-xs">
+                          Your query runs against the schema and seed data shown in the problem
+                          description. Click <span className="font-mono">Run</span> to execute and{" "}
+                          <span className="font-mono">Submit</span> to compare results with the
+                          reference query.
+                        </p>
+                      </div>
+                      <Button onClick={handleRun} disabled={isRunning} size="sm" className="gap-1.5">
+                        {isRunning ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Play className="h-3.5 w-3.5" />
+                        )}
+                        Run query
+                      </Button>
+                    </div>
+                  ) : (
+                    <TestCaseWorkbench
+                      slug={problem.slug}
+                      sampleTests={problem.sampleTests}
+                      stdin={stdin}
+                      onStdinChange={setStdin}
+                      onRun={handleRun}
+                      isRunning={isRunning}
+                    />
+                  )}
                 </TabsContent>
 
                 <TabsContent value="output" className="flex-1 m-0 p-3 overflow-y-auto">

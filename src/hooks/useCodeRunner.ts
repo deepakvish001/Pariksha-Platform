@@ -118,12 +118,16 @@ export const useCodeRunner = () => {
     stdin?: string;
     problem_slug?: string;
     language?: string;
+    // SQL-mode extensions
+    schema?: string;
+    seed?: string;
   }): Promise<RunResult> => {
     const controller = new AbortController();
     setRunController(controller);
     setIsRunning(true);
     try {
-      const invokePromise = supabase.functions.invoke("run-code", {
+      const fnName = params.language === "sql" ? "run-sql" : "run-code";
+      const invokePromise = supabase.functions.invoke(fnName, {
         body: params,
       });
       const abortPromise = new Promise<never>((_, reject) => {
@@ -151,10 +155,16 @@ export const useCodeRunner = () => {
     tests: { input: string; expected: string }[];
     cpu_time_limit?: number;
     memory_limit?: number;
+    // SQL-mode extensions
+    schema?: string;
+    seed?: string;
+    reference_query?: string;
+    order_matters?: boolean;
   }): Promise<SubmitResult> => {
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("submit-code", {
+      const fnName = params.language === "sql" ? "submit-sql" : "submit-code";
+      const { data, error } = await supabase.functions.invoke(fnName, {
         body: params,
       });
       const payload = data as FunctionEnvelope<SubmitResult> | undefined;

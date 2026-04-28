@@ -135,16 +135,138 @@ export const sqlPracticeSections: Section[] = [
       },
     ],
   },
+  {
+    id: "sql-window-functions",
+    title: "Window Functions",
+    subSections: [
+      {
+        id: "sql-window-functions-problems",
+        title: "Window Functions",
+        topics: [
+          { id: "sqlx-1",  title: "Rank Scores",                                completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Rank+Scores+SQL+solution",                                articleUrl: "", practiceUrl: "https://leetcode.com/problems/rank-scores/",                                 note: "DENSE_RANK, ORDER BY",                       isRevision: false, estTime: "30 min" },
+          { id: "sqlx-2",  title: "Nth Highest Salary",                         completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Nth+Highest+Salary+SQL+solution",                         articleUrl: "", practiceUrl: "https://leetcode.com/problems/nth-highest-salary/",                          note: "Function, OFFSET, DISTINCT",                 isRevision: false, estTime: "30 min" },
+          { id: "sqlx-3",  title: "Find the Start and End Number of Continuous Ranges", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Find+the+Start+and+End+Number+of+Continuous+Ranges", articleUrl: "", practiceUrl: "https://leetcode.com/problems/find-the-start-and-end-number-of-continuous-ranges/", note: "ROW_NUMBER, gaps and islands", isRevision: false, estTime: "45 min" },
+          { id: "sqlx-4",  title: "Median Employee Salary",                     completed: false, difficulty: "Hard",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Median+Employee+Salary",                                  articleUrl: "", practiceUrl: "https://leetcode.com/problems/median-employee-salary/",                       note: "ROW_NUMBER, COUNT, partition",               isRevision: false, estTime: "45 min" },
+          { id: "sqlx-5",  title: "Number of Transactions per Visit",           completed: false, difficulty: "Hard",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Number+of+Transactions+per+Visit",                          articleUrl: "", practiceUrl: "https://leetcode.com/problems/number-of-transactions-per-visit/",              note: "Recursive CTE, COUNT, JOIN",                 isRevision: false, estTime: "45 min" },
+          { id: "sqlx-6",  title: "Highest Grade for Each Student",             completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Highest+Grade+for+Each+Student",                              articleUrl: "", practiceUrl: "https://leetcode.com/problems/highest-grade-for-each-student/",                  note: "ROW_NUMBER, PARTITION BY",                   isRevision: false, estTime: "30 min" },
+          { id: "sqlx-7",  title: "Market Analysis I",                          completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Market+Analysis+I",                                       articleUrl: "", practiceUrl: "https://leetcode.com/problems/market-analysis-i/",                              note: "LEFT JOIN, COUNT, year filter",                isRevision: false, estTime: "30 min" },
+          { id: "sqlx-8",  title: "Sales Analysis III",                         completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Sales+Analysis+III",                                       articleUrl: "", practiceUrl: "https://leetcode.com/problems/sales-analysis-iii/",                              note: "GROUP BY, MIN, MAX, HAVING",                  isRevision: false, estTime: "15 min" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sql-ctes-and-recursion",
+    title: "CTEs & Recursion",
+    subSections: [
+      {
+        id: "sql-ctes-and-recursion-problems",
+        title: "CTEs & Recursion",
+        topics: [
+          { id: "sqlx-9",  title: "All People Report to the Given Manager",     completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+All+People+Report+to+the+Given+Manager",                  articleUrl: "", practiceUrl: "https://leetcode.com/problems/all-people-report-to-the-given-manager/",        note: "Recursive CTE, hierarchy",                   isRevision: false, estTime: "30 min" },
+          { id: "sqlx-10", title: "Tree Node",                                  completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Tree+Node+SQL",                                              articleUrl: "", practiceUrl: "https://leetcode.com/problems/tree-node/",                                       note: "CASE WHEN, hierarchy classification",         isRevision: false, estTime: "30 min" },
+          { id: "sqlx-11", title: "Human Traffic of Stadium",                   completed: false, difficulty: "Hard",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Human+Traffic+of+Stadium",                                articleUrl: "", practiceUrl: "https://leetcode.com/problems/human-traffic-of-stadium/",                       note: "CTE, consecutive rows, LAG/LEAD",            isRevision: false, estTime: "45 min" },
+          { id: "sqlx-12", title: "Trips and Users",                            completed: false, difficulty: "Hard",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Trips+and+Users",                                           articleUrl: "", practiceUrl: "https://leetcode.com/problems/trips-and-users/",                                 note: "JOIN, CASE, ratio aggregation",               isRevision: false, estTime: "45 min" },
+          { id: "sqlx-13", title: "Capital Gain/Loss",                          completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Capital+Gain%2FLoss",                                       articleUrl: "", practiceUrl: "https://leetcode.com/problems/capital-gainloss/",                                note: "SUM, CASE WHEN, GROUP BY",                    isRevision: false, estTime: "30 min" },
+          { id: "sqlx-14", title: "Department Highest Salary",                  completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Department+Highest+Salary",                                articleUrl: "", practiceUrl: "https://leetcode.com/problems/department-highest-salary/",                       note: "JOIN, MAX subquery, IN tuple",                isRevision: false, estTime: "30 min" },
+          { id: "sqlx-15", title: "Page Recommendations",                       completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Page+Recommendations",                                     articleUrl: "", practiceUrl: "https://leetcode.com/problems/page-recommendations/",                            note: "UNION, NOT IN, JOIN",                          isRevision: false, estTime: "30 min" },
+          { id: "sqlx-16", title: "Find Median Given Frequency of Numbers",     completed: false, difficulty: "Hard",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Find+Median+Given+Frequency+of+Numbers",                  articleUrl: "", practiceUrl: "https://leetcode.com/problems/find-median-given-frequency-of-numbers/",         note: "Cumulative SUM, window function",            isRevision: false, estTime: "45 min" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sql-advanced-aggregation",
+    title: "Advanced Aggregation",
+    subSections: [
+      {
+        id: "sql-advanced-aggregation-problems",
+        title: "Advanced Aggregation",
+        topics: [
+          { id: "sqlx-17", title: "Sales Person",                               completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Sales+Person+SQL",                                          articleUrl: "", practiceUrl: "https://leetcode.com/problems/sales-person/",                                   note: "NOT IN, JOIN",                                isRevision: false, estTime: "15 min" },
+          { id: "sqlx-18", title: "Customer Placing the Largest Number of Orders", completed: false, difficulty: "Easy", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Customer+Placing+the+Largest+Number+of+Orders",            articleUrl: "", practiceUrl: "https://leetcode.com/problems/customer-placing-the-largest-number-of-orders/",  note: "GROUP BY, ORDER BY, LIMIT",                   isRevision: false, estTime: "15 min" },
+          { id: "sqlx-19", title: "Customers Who Never Order",                  completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Customers+Who+Never+Order",                                articleUrl: "", practiceUrl: "https://leetcode.com/problems/customers-who-never-order/",                      note: "NOT IN, LEFT JOIN, IS NULL",                  isRevision: false, estTime: "15 min" },
+          { id: "sqlx-20", title: "Combine Two Tables",                         completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Combine+Two+Tables",                                       articleUrl: "", practiceUrl: "https://leetcode.com/problems/combine-two-tables/",                             note: "LEFT JOIN basics",                            isRevision: false, estTime: "15 min" },
+          { id: "sqlx-21", title: "Duplicate Emails",                           completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Duplicate+Emails",                                         articleUrl: "", practiceUrl: "https://leetcode.com/problems/duplicate-emails/",                               note: "GROUP BY, HAVING COUNT",                      isRevision: false, estTime: "15 min" },
+          { id: "sqlx-22", title: "Swap Salary",                                completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Swap+Salary",                                              articleUrl: "", practiceUrl: "https://leetcode.com/problems/swap-salary/",                                    note: "UPDATE, CASE WHEN",                           isRevision: false, estTime: "15 min" },
+          { id: "sqlx-23", title: "Reformat Department Table",                  completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Reformat+Department+Table",                                articleUrl: "", practiceUrl: "https://leetcode.com/problems/reformat-department-table/",                      note: "Pivot, CASE WHEN, SUM",                       isRevision: false, estTime: "30 min" },
+          { id: "sqlx-24", title: "Number of Calls Between Two Persons",        completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Number+of+Calls+Between+Two+Persons",                     articleUrl: "", practiceUrl: "https://leetcode.com/problems/number-of-calls-between-two-persons/",            note: "LEAST/GREATEST, GROUP BY",                    isRevision: false, estTime: "30 min" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sql-date-and-time",
+    title: "Date & Time",
+    subSections: [
+      {
+        id: "sql-date-and-time-problems",
+        title: "Date & Time",
+        topics: [
+          { id: "sqlx-25", title: "Game Play Analysis I",                       completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Game+Play+Analysis+I",                                   articleUrl: "", practiceUrl: "https://leetcode.com/problems/game-play-analysis-i/",                            note: "MIN, GROUP BY",                                isRevision: false, estTime: "15 min" },
+          { id: "sqlx-26", title: "Game Play Analysis II",                      completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Game+Play+Analysis+II",                                  articleUrl: "", practiceUrl: "https://leetcode.com/problems/game-play-analysis-ii/",                           note: "First login device",                          isRevision: false, estTime: "15 min" },
+          { id: "sqlx-27", title: "Game Play Analysis III",                     completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Game+Play+Analysis+III",                                 articleUrl: "", practiceUrl: "https://leetcode.com/problems/game-play-analysis-iii/",                          note: "Cumulative SUM, window",                       isRevision: false, estTime: "30 min" },
+          { id: "sqlx-28", title: "Active Users",                               completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Active+Users",                                              articleUrl: "", practiceUrl: "https://leetcode.com/problems/active-users/",                                    note: "Consecutive days, DATEDIFF",                   isRevision: false, estTime: "30 min" },
+          { id: "sqlx-29", title: "Reported Posts",                             completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Reported+Posts",                                            articleUrl: "", practiceUrl: "https://leetcode.com/problems/reported-posts/",                                  note: "GROUP BY, COUNT DISTINCT",                    isRevision: false, estTime: "15 min" },
+          { id: "sqlx-30", title: "New Users Daily Count",                      completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+New+Users+Daily+Count",                                    articleUrl: "", practiceUrl: "https://leetcode.com/problems/new-users-daily-count/",                          note: "First login per user, GROUP BY date",         isRevision: false, estTime: "30 min" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sql-string-and-pattern",
+    title: "Strings & Patterns",
+    subSections: [
+      {
+        id: "sql-string-and-pattern-problems",
+        title: "Strings & Patterns",
+        topics: [
+          { id: "sqlx-31", title: "Tenth Line",                                  completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Tenth+Line+SQL",                                            articleUrl: "", practiceUrl: "https://leetcode.com/problems/tenth-line/",                                      note: "LIMIT OFFSET",                                isRevision: false, estTime: "15 min" },
+          { id: "sqlx-32", title: "Big Trip",                                    completed: false, difficulty: "Medium", resourceType: "article", resourceUrl: "https://www.geeksforgeeks.org/sql-string-functions/",                                                              articleUrl: "https://www.geeksforgeeks.org/sql-string-functions/", practiceUrl: "https://leetcode.com/problemset/database/",                  note: "SUBSTRING, INSTR, CHAR_LENGTH",                isRevision: false, estTime: "30 min" },
+          { id: "sqlx-33", title: "Capitalize the Title",                        completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Capitalize+the+Title",                                       articleUrl: "", practiceUrl: "https://leetcode.com/problems/capitalize-the-title/",                            note: "INITCAP, CASE on length",                     isRevision: false, estTime: "15 min" },
+          { id: "sqlx-34", title: "Count Number of Occurrences",                 completed: false, difficulty: "Medium", resourceType: "article", resourceUrl: "https://www.geeksforgeeks.org/regular-expressions-in-sql/",                                                          articleUrl: "https://www.geeksforgeeks.org/regular-expressions-in-sql/", practiceUrl: "https://leetcode.com/problemset/database/",            note: "REGEXP, LIKE",                                isRevision: false, estTime: "30 min" },
+          { id: "sqlx-35", title: "Customers Who Bought Products A and B but Not C", completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Customers+Who+Bought+Products+A+and+B+but+Not+C",        articleUrl: "", practiceUrl: "https://leetcode.com/problems/customers-who-bought-products-a-and-b-but-not-c/", note: "GROUP BY, HAVING with conditions",            isRevision: false, estTime: "30 min" },
+          { id: "sqlx-36", title: "Find Total Time Spent by Each Employee",      completed: false, difficulty: "Easy",   resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=LeetCode+Find+Total+Time+Spent+by+Each+Employee",                    articleUrl: "", practiceUrl: "https://leetcode.com/problems/find-total-time-spent-by-each-employee/",         note: "SUM diff, GROUP BY",                          isRevision: false, estTime: "15 min" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "sql-optimization-and-design",
+    title: "Optimization & Design",
+    subSections: [
+      {
+        id: "sql-optimization-and-design-problems",
+        title: "Optimization & Design",
+        topics: [
+          { id: "sqlx-37", title: "Indexing fundamentals & B-Tree internals",     completed: false, difficulty: "Medium", resourceType: "article", resourceUrl: "https://use-the-index-luke.com/",                                                                                  articleUrl: "https://use-the-index-luke.com/", practiceUrl: "",                                                                                            note: "B-Tree, covering, composite indexes",         isRevision: false, estTime: "45 min" },
+          { id: "sqlx-38", title: "EXPLAIN / Query Plan reading",                  completed: false, difficulty: "Medium", resourceType: "article", resourceUrl: "https://www.postgresql.org/docs/current/using-explain.html",                                                       articleUrl: "https://www.postgresql.org/docs/current/using-explain.html", practiceUrl: "",                                                                  note: "Seq scan vs index scan",                       isRevision: false, estTime: "30 min" },
+          { id: "sqlx-39", title: "Normalization (1NF, 2NF, 3NF, BCNF)",           completed: false, difficulty: "Medium", resourceType: "article", resourceUrl: "https://www.geeksforgeeks.org/normal-forms-in-dbms/",                                                              articleUrl: "https://www.geeksforgeeks.org/normal-forms-in-dbms/", practiceUrl: "",                                                                          note: "Functional dependencies",                      isRevision: false, estTime: "30 min" },
+          { id: "sqlx-40", title: "Transactions & ACID properties",                completed: false, difficulty: "Medium", resourceType: "article", resourceUrl: "https://www.geeksforgeeks.org/acid-properties-in-dbms/",                                                          articleUrl: "https://www.geeksforgeeks.org/acid-properties-in-dbms/", practiceUrl: "",                                                                       note: "Atomicity, isolation levels",                  isRevision: false, estTime: "30 min" },
+          { id: "sqlx-41", title: "Isolation levels & phantom reads",              completed: false, difficulty: "Hard",   resourceType: "article", resourceUrl: "https://www.postgresql.org/docs/current/transaction-iso.html",                                                    articleUrl: "https://www.postgresql.org/docs/current/transaction-iso.html", practiceUrl: "",                                                              note: "READ COMMITTED, REPEATABLE READ, SERIALIZABLE", isRevision: false, estTime: "45 min" },
+          { id: "sqlx-42", title: "Deadlocks & how to avoid them",                 completed: false, difficulty: "Hard",   resourceType: "article", resourceUrl: "https://www.geeksforgeeks.org/deadlock-in-dbms/",                                                                  articleUrl: "https://www.geeksforgeeks.org/deadlock-in-dbms/", practiceUrl: "",                                                                            note: "Lock ordering, retry",                         isRevision: false, estTime: "30 min" },
+          { id: "sqlx-43", title: "Sharding strategies",                            completed: false, difficulty: "Hard",   resourceType: "article", resourceUrl: "https://www.geeksforgeeks.org/database-sharding-a-system-design-concept/",                                       articleUrl: "https://www.geeksforgeeks.org/database-sharding-a-system-design-concept/", practiceUrl: "",                                              note: "Range, hash, directory",                       isRevision: false, estTime: "30 min" },
+          { id: "sqlx-44", title: "Read replicas & replication lag",                completed: false, difficulty: "Medium", resourceType: "article", resourceUrl: "https://www.postgresql.org/docs/current/runtime-config-replication.html",                                          articleUrl: "https://www.postgresql.org/docs/current/runtime-config-replication.html", practiceUrl: "",                                                 note: "Sync vs async replication",                    isRevision: false, estTime: "30 min" },
+          { id: "sqlx-45", title: "OLTP vs OLAP design tradeoffs",                  completed: false, difficulty: "Medium", resourceType: "article", resourceUrl: "https://www.ibm.com/cloud/blog/olap-vs-oltp",                                                                     articleUrl: "https://www.ibm.com/cloud/blog/olap-vs-oltp", practiceUrl: "",                                                                                note: "Row vs columnar storage",                      isRevision: false, estTime: "30 min" },
+          { id: "sqlx-46", title: "Materialized views",                              completed: false, difficulty: "Medium", resourceType: "article", resourceUrl: "https://www.postgresql.org/docs/current/rules-materializedviews.html",                                            articleUrl: "https://www.postgresql.org/docs/current/rules-materializedviews.html", practiceUrl: "",                                                       note: "Refresh strategies",                            isRevision: false, estTime: "30 min" },
+          { id: "sqlx-47", title: "Window function: SUM/AVG OVER",                  completed: false, difficulty: "Medium", resourceType: "youtube", resourceUrl: "https://www.youtube.com/results?search_query=SQL+window+functions+OVER+PARTITION+tutorial",                      articleUrl: "", practiceUrl: "https://leetcode.com/problemset/database/",                                                                                       note: "Running totals, moving averages",              isRevision: false, estTime: "30 min" },
+          { id: "sqlx-48", title: "Common Table Expressions (WITH)",                completed: false, difficulty: "Easy",   resourceType: "article", resourceUrl: "https://www.postgresql.org/docs/current/queries-with.html",                                                       articleUrl: "https://www.postgresql.org/docs/current/queries-with.html", practiceUrl: "",                                                                  note: "Reusable, recursive CTEs",                     isRevision: false, estTime: "20 min" },
+          { id: "sqlx-49", title: "JSON columns in modern SQL",                     completed: false, difficulty: "Medium", resourceType: "article", resourceUrl: "https://www.postgresql.org/docs/current/datatype-json.html",                                                     articleUrl: "https://www.postgresql.org/docs/current/datatype-json.html", practiceUrl: "",                                                                 note: "JSONB ops, GIN index",                          isRevision: false, estTime: "30 min" },
+          { id: "sqlx-50", title: "Writing safe parameterized queries",             completed: false, difficulty: "Easy",   resourceType: "article", resourceUrl: "https://owasp.org/www-community/attacks/SQL_Injection",                                                          articleUrl: "https://owasp.org/www-community/attacks/SQL_Injection", practiceUrl: "",                                                                       note: "Avoid SQL injection",                          isRevision: false, estTime: "20 min" },
+        ],
+      },
+    ],
+  },
 ];
 
 export const sqlPracticeMeta = {
   id: "sql-practice" as const,
-  title: "LeetCode SQL 50",
-  description: "50 essential SQL problems from LeetCode covering Select, Joins, Aggregations, Subqueries & more",
+  title: "LeetCode SQL 50 + Advanced",
+  description: "100 SQL problems covering selects, joins, aggregations, window functions, CTEs, and database design",
   lastUpdated: "April 2026",
-  totalProblems: 50,
+  totalProblems: 100,
   completed: 0,
-  easy: 32,
-  medium: 17,
-  hard: 1,
+  easy: 47,
+  medium: 41,
+  hard: 12,
 };
