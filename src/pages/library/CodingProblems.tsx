@@ -252,7 +252,7 @@ const CodingProblems = () => {
   const setSearch = (v: string) => updateParams({ q: v, page: "1" });
   const setDifficulty = (v: string) => updateParams({ diff: v, page: "1" });
   const setStatus = (v: string) => updateParams({ status: v, page: "1" });
-  const setSort = (v: SortKey) => updateParams({ sort: v, page: "1" });
+  // setSort is defined further below — it needs access to tablePrefs for undo.
   const setView = (v: ViewMode) => updateParams({ view: v });
 
   // Persisted column visibility & widths (responsive — survives refresh).
