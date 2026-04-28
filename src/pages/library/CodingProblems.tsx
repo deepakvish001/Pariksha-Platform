@@ -11,10 +11,13 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
+  Share2,
+  CheckSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
@@ -36,6 +39,7 @@ import { ProblemStatsHeader } from "@/components/library/coding/ProblemStatsHead
 import { ProblemFiltersBar, type SortKey, type ViewMode } from "@/components/library/coding/ProblemFiltersBar";
 import { ProblemCard } from "@/components/library/coding/ProblemCard";
 import { RandomMenu } from "@/components/library/coding/RandomMenu";
+import { BulkActionsBar } from "@/components/library/coding/BulkActionsBar";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: Difficulty) =>
