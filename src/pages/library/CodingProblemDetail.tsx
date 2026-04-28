@@ -229,6 +229,11 @@ const CodingProblemDetail = () => {
     MIN: FS_MIN,
     MAX: FS_MAX,
   } = useEditorPrefs();
+  const {
+    effective: effectiveFormatOnSubmit,
+    override: formatOnSubmitOverride,
+    setOverride: setFormatOnSubmitOverride,
+  } = useFormatOnSubmitOverride(slug, language, editorPrefs.formatOnSubmit);
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
   // If the submission ID doesn't exist for this problem, clear the param so
