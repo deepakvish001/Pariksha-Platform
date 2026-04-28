@@ -799,6 +799,29 @@ const CodingProblemDetail = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {(() => {
+            const limits = getExecLimitsForLang(language, {
+              cpuSec: problem.cpuTimeLimitSec,
+              memKb: problem.memoryLimitKb,
+            });
+            return (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className="hidden md:inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide cursor-help"
+                  >
+                    <Cpu className="h-3 w-3" />
+                    {`${(limits.cpuMs / 1000).toFixed(1)}s · ${Math.round(limits.memKb / 1024)}MB`}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  <p className="font-medium mb-1">Execution limits ({langInfo.label})</p>
+                  <p className="text-muted-foreground">{formatLimits(limits)}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })()}
           <Button
             onClick={handleRun}
             disabled={isRunning || isSubmitting}
