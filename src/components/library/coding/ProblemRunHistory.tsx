@@ -181,34 +181,103 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
   }, [runs, sort]);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <p className="text-xs text-muted-foreground">
-          Showing {runs.length} recent run{runs.length === 1 ? "" : "s"}
-        </p>
-        <div className="flex items-center gap-2">
-          <label
-            htmlFor="run-history-sort"
-            className="text-xs text-muted-foreground"
+    <TooltipProvider delayDuration={150}>
+      <div className="space-y-3">
+        {runs.length > 0 && (
+          <Card
+            className="p-3 bg-muted/20"
+            aria-label="Run history summary"
           >
-            Sort
-          </label>
-          <Select value={sort} onValueChange={(v) => setSort(v as SortMode)}>
-            <SelectTrigger
-              id="run-history-sort"
-              className="h-7 w-[140px] text-xs"
-              aria-label="Sort run history"
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div
+                className="flex items-center gap-2 flex-wrap"
+                role="group"
+                aria-label="Verdict counts"
+              >
+                <SummaryChip
+                  meta={getVerdictMeta("accepted")}
+                  count={summary.counts.accepted}
+                />
+                <SummaryChip
+                  meta={getVerdictMeta("wrong")}
+                  count={summary.counts.wrong}
+                />
+                <SummaryChip
+                  meta={getVerdictMeta("error")}
+                  count={summary.counts.error}
+                />
+                {summary.counts.pending > 0 && (
+                  <SummaryChip
+                    meta={getVerdictMeta("pending")}
+                    count={summary.counts.pending}
+                  />
+                )}
+                {summary.counts.unknown > 0 && (
+                  <SummaryChip
+                    meta={getVerdictMeta("unknown")}
+                    count={summary.counts.unknown}
+                  />
+                )}
+              </div>
+              {summary.latest && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>Latest:</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px] gap-1 inline-flex items-center cursor-help",
+                          summary.latest.meta.className,
+                        )}
+                      >
+                        {(() => {
+                          const Icon = summary.latest.meta.icon;
+                          return <Icon className="h-3 w-3" aria-hidden="true" />;
+                        })()}
+                        <span>{summary.latest.meta.label}</span>
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <VerdictTooltipBody meta={summary.latest.meta} />
+                    </TooltipContent>
+                  </Tooltip>
+                  <span className="hidden sm:inline tabular-nums">
+                    {new Date(summary.latest.run.created_at).toLocaleString()}
+                  </span>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <p className="text-xs text-muted-foreground">
+            Showing {runs.length} recent run{runs.length === 1 ? "" : "s"}
+          </p>
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="run-history-sort"
+              className="text-xs text-muted-foreground"
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest first</SelectItem>
-              <SelectItem value="oldest">Oldest first</SelectItem>
-              <SelectItem value="fastest">Fastest first</SelectItem>
-            </SelectContent>
-          </Select>
+              Sort
+            </label>
+            <Select value={sort} onValueChange={(v) => setSort(v as SortMode)}>
+              <SelectTrigger
+                id="run-history-sort"
+                className="h-7 w-[140px] text-xs"
+                aria-label="Sort run history"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest first</SelectItem>
+                <SelectItem value="oldest">Oldest first</SelectItem>
+                <SelectItem value="fastest">Fastest first</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
 
       <ol className="space-y-2 list-none p-0 m-0" aria-label="Run history">
         {sorted.map((r, idx) => {
