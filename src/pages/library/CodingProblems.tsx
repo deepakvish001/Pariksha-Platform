@@ -895,21 +895,25 @@ const CodingProblems = () => {
       </motion.div>
 
       {/* Smart recommendations */}
-      <RecommendationStrip
-        stats={{ solved, attempted, perProblem, loading }}
-        bookmarks={bookmarks}
-        dismissedKey="library-problems"
-      />
+      {!focusMode && (
+        <RecommendationStrip
+          stats={{ solved, attempted, perProblem, loading }}
+          bookmarks={bookmarks}
+          dismissedKey="library-problems"
+        />
+      )}
 
       {/* Stats */}
-      <ProblemStatsHeader
-        counts={counts}
-        totalSolved={solved.size}
-        weekSolved={weekSolved}
-        prevWeekSolved={prevWeekSolved}
-        continueProblem={continueProblem}
-        loading={loading}
-      />
+      {!focusMode && (
+        <ProblemStatsHeader
+          counts={counts}
+          totalSolved={solved.size}
+          weekSolved={weekSolved}
+          prevWeekSolved={prevWeekSolved}
+          continueProblem={continueProblem}
+          loading={loading}
+        />
+      )}
 
       {/* Filters */}
       <Card className="p-4 mb-4 sticky top-2 z-10 backdrop-blur supports-[backdrop-filter]:bg-card/80">
