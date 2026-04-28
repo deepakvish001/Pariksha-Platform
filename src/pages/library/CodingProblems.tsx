@@ -710,6 +710,50 @@ const CodingProblems = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <SavedFiltersMenu
+            presets={presets}
+            buildCurrentQuery={buildCurrentQuery}
+            onApply={applyPresetQuery}
+            onSave={savePreset}
+            onRemove={removePreset}
+            onRename={renamePreset}
+          />
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleDensity}
+                  className="gap-1.5 h-9"
+                  aria-label="Toggle row density"
+                >
+                  {tablePrefs.density === "compact" ? (
+                    <Rows3 className="h-3.5 w-3.5" />
+                  ) : (
+                    <Rows2 className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {tablePrefs.density === "compact" ? "Comfortable rows" : "Compact rows"}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShortcutsOpen(true)}
+                  className="gap-1.5 h-9"
+                  aria-label="Keyboard shortcuts"
+                >
+                  <Keyboard className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Keyboard shortcuts (?)</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button
             variant={selectionMode ? "default" : "outline"}
             size="sm"
@@ -722,6 +766,13 @@ const CodingProblems = () => {
           <RandomMenu filtered={filtered} />
         </div>
       </motion.div>
+
+      {/* Smart recommendations */}
+      <RecommendationStrip
+        stats={{ solved, attempted, perProblem, loading }}
+        bookmarks={bookmarks}
+        dismissedKey="library-problems"
+      />
 
       {/* Stats */}
       <ProblemStatsHeader
