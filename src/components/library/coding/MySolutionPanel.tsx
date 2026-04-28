@@ -491,6 +491,27 @@ export const MySolutionPanel = ({
                 </Tooltip>
               </TooltipProvider>
             )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1.5 text-xs"
+                    onClick={handleUndoCurrentCode}
+                    disabled={!canUndoCurrent}
+                  >
+                    <Undo2 className="h-3 w-3" />
+                    Undo last edit
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {canUndoCurrent
+                    ? `Revert ${languageLabel} code to its previous value. Notes and other languages stay unchanged.`
+                    : `No prior ${languageLabel} edit recorded this session.`}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button
               size="sm"
               variant="ghost"
@@ -518,7 +539,7 @@ export const MySolutionPanel = ({
               const info = getLanguageById(id);
               const active = id === language;
               const ts = codeUpdatedAt[id];
-              const rel = formatRelative(ts);
+              const rel = formatTimestamp(ts, timestampFormat);
               return (
                 <TooltipProvider key={id}>
                   <Tooltip>
