@@ -94,21 +94,50 @@ const CodingProblems = () => {
   const SCROLL_KEY = "byteskill:coding-problems-scroll";
   const PAGE_KEY = "byteskill:coding-problems-last-page";
 
-  // On first mount: if URL has no ?page=, hydrate from last-page memory.
+  // Tracks whether the user has actively changed filters/page in this session
+  // (vs. the initial mount restoring previous state). Used so a fresh refresh
+  // restores scroll, but applying a filter / paginating jumps to the top.
+  const userInteractedRef = useRef(false);
+  const filterSig = `${search}|${difficulty}|${selectedTopics.join(",")}|${status}|${sort}|${bookmarked ? 1 : 0}|${page}`;
+
+  // On first mount: validate URL params (strip invalid view/page) and hydrate
+  // last page + scroll from storage.
   useEffect(() => {
     try {
-      if (!params.get("page")) {
+      const next = new URLSearchParams(params);
+      let dirty = false;
+
+      // Strip invalid view (only "table" is valid now; "grid" was retired)
+      if (next.has("view")) {
+        next.delete("view");
+        dirty = true;
+      }
+
+      // Validate page: must be a positive integer string
+      if (next.has("page")) {
+        const raw = next.get("page");
+        const n = raw !== null ? parseInt(raw, 10) : NaN;
+        if (!Number.isFinite(n) || n < 1 || String(n) !== raw) {
+          next.delete("page");
+          dirty = true;
+        }
+      }
+
+      // If no ?page=, hydrate from last-page memory.
+      if (!next.has("page")) {
         const saved = localStorage.getItem(PAGE_KEY);
         const n = saved ? parseInt(saved, 10) : NaN;
         if (Number.isFinite(n) && n > 1) {
-          const next = new URLSearchParams(params);
           next.set("page", String(n));
-          setParams(next, { replace: true });
+          dirty = true;
         }
       }
+
+      if (dirty) setParams(next, { replace: true });
     } catch {
       /* ignore */
     }
+
     // Restore scroll on next frame so layout has settled.
     try {
       const y = parseInt(sessionStorage.getItem(SCROLL_KEY) ?? "", 10);
@@ -129,6 +158,18 @@ const CodingProblems = () => {
       /* ignore */
     }
   }, [page]);
+
+  // After the user changes any filter or paginates, jump back to the top so
+  // they always see the first results — but only after the initial mount, so
+  // a refresh still restores their previous scroll position.
+  useEffect(() => {
+    if (!userInteractedRef.current) {
+      userInteractedRef.current = true;
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterSig]);
 
   // Save scroll position (throttled via rAF) and on unload.
   useEffect(() => {
