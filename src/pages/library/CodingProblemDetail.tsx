@@ -574,8 +574,9 @@ const CodingProblemDetail = () => {
   };
 
   const handleReset = () => {
-    setCode(problem.starterCode[language]);
-    saveDraft(problem.starterCode[language]);
+    const starter = getStarter(language);
+    setCode(starter);
+    saveDraft(starter);
     toast({ title: "Code reset", description: "Editor restored to starter template." });
   };
 
