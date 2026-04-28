@@ -56,16 +56,23 @@ export const useCodeDraft = (problemSlug: string, language: string) => {
 
   const persistRemote = async (source_code: string) => {
     if (!user) return;
-    await supabase.from("code_drafts").upsert(
-      {
-        user_id: user.id,
-        problem_slug: problemSlug,
-        language,
-        source_code,
-      },
-      { onConflict: "user_id,problem_slug,language" },
-    );
-    pendingRef.current = null;
+    setStatus("saving");
+    try {
+      await supabase.from("code_drafts").upsert(
+        {
+          user_id: user.id,
+          problem_slug: problemSlug,
+          language,
+          source_code,
+        },
+        { onConflict: "user_id,problem_slug,language" },
+      );
+      pendingRef.current = null;
+      setStatus("saved");
+      setLastSavedAt(Date.now());
+    } catch {
+      setStatus("error");
+    }
   };
 
   // Debounced save (also writes a local fallback immediately).
@@ -77,6 +84,7 @@ export const useCodeDraft = (problemSlug: string, language: string) => {
       /* ignore quota errors */
     }
     if (!user) return;
+    setStatus("pending");
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(() => {
       void persistRemote(source_code);
