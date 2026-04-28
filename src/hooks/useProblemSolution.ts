@@ -482,6 +482,10 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     isComplete: hasNotes && hasAnyCode,
     /** Cloud sync status: idle | syncing | synced | error | offline (signed-out). */
     syncStatus,
+    /** When the cloud sync last completed successfully (ms epoch). */
+    lastSyncedAt,
+    /** Set when the mount-time merge resolved a real local↔cloud conflict. */
+    lastConflictResolvedAt,
     /** True when the solution is being persisted to the cloud. */
     isCloudSynced: !!userId,
   };
