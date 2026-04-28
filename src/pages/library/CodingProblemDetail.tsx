@@ -128,6 +128,8 @@ const CodingProblemDetail = () => {
         source_code: code,
         language_id: langInfo.judge0Id,
         stdin,
+        problem_slug: slug,
+        language,
       });
       setRunResult(result);
     } catch (err) {
