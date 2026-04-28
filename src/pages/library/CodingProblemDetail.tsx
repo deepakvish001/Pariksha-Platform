@@ -173,7 +173,9 @@ const CodingProblemDetail = () => {
         action: target ? (
           <ToastAction
             altText={latestFailed ? "Go to failed cases" : "Go to last attempt"}
-            onClick={() => openSubmission(target)}
+            onClick={() =>
+              latestFailed ? jumpToFailed(latestFailed) : openSubmission(target)
+            }
           >
             {latestFailed ? "Go to failed cases" : "Go to last attempt"}
           </ToastAction>
@@ -194,6 +196,34 @@ const CodingProblemDetail = () => {
     setSearchParams(next, { replace: true });
   };
 
+  /**
+   * Jump to a failed submission: opens its drawer, persists it as the last
+   * highlighted failed attempt for this slug, and shows a confirmation toast
+   * that names the specific test case (when available).
+   */
+  const jumpToFailed = (s: CodeSubmissionRow) => {
+    openSubmission(s);
+    setLastFailedId(s.id);
+    if (slug) writeLastFailed(slug, s.id);
+
+    // Build a friendly description that names the failing case if we have it.
+    const failingCase = (s.failing_case ?? null) as
+      | { index?: number | null; name?: string | null }
+      | null;
+    const caseLabel = failingCase
+      ? failingCase.name
+        ? `case "${failingCase.name}"`
+        : typeof failingCase.index === "number"
+          ? `test case #${failingCase.index + 1}`
+          : "the failing case"
+      : `${s.passed_tests}/${s.total_tests} tests passed`;
+
+    toast({
+      title: "Jumped to failed attempt",
+      description: `Highlighted ${caseLabel} on the timeline.`,
+    });
+  };
+
   const closeSubmission = () => {
     setDetailSubmission(null);
     if (searchParams.get("sub")) {
@@ -202,6 +232,27 @@ const CodingProblemDetail = () => {
       setSearchParams(next, { replace: true });
     }
   };
+
+  // Restore previously-highlighted failed attempt when submissions arrive,
+  // but only if the user hasn't deep-linked a specific submission. Auto-scrolls
+  // the timeline to the same entry once.
+  useEffect(() => {
+    if (restoredFailedRef.current) return;
+    if (!slug || !lastFailedId) return;
+    if (submissions.length === 0) return;
+    if (searchParams.get("sub")) return;
+    const exists = submissions.some((s) => s.id === lastFailedId);
+    if (!exists) {
+      // Stale persisted id — clear it.
+      writeLastFailed(slug, null);
+      setLastFailedId(null);
+      restoredFailedRef.current = true;
+      return;
+    }
+    setLastOpenedId(lastFailedId);
+    setTimelineScrollKey((k) => k + 1);
+    restoredFailedRef.current = true;
+  }, [submissions, slug, lastFailedId, searchParams]);
 
   // Derived per-problem stats
   const problemStats = useMemo(() => {
