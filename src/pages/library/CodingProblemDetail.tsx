@@ -12,6 +12,10 @@ import {
   Type,
   ChevronRight,
   Keyboard,
+  Wand2,
+  History,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -52,7 +56,7 @@ import {
   getLanguageById,
   type LangId,
 } from "@/data/codingProblemsData";
-import { MonacoEditor } from "@/components/coding/MonacoEditor";
+import { MonacoEditor, type MonacoEditorHandle } from "@/components/coding/MonacoEditor";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
 import { useCodeRunner, type RunResult, type SubmitResult } from "@/hooks/useCodeRunner";
 import { useCodeDraft } from "@/hooks/useCodeDraft";
@@ -135,6 +139,8 @@ const CodingProblemDetail = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
+  const editorRef = useRef<MonacoEditorHandle>(null);
+  const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
   
   const [detailSubmission, setDetailSubmission] = useState<CodeSubmissionRow | null>(null);
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(() =>
