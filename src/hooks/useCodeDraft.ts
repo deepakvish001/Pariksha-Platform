@@ -29,27 +29,88 @@ export const useCodeDraft = (problemSlug: string, language: string) => {
     })();
   }, [user, problemSlug, language]);
 
-  // Debounced save
+  // Track latest pending value for flush-on-unload / explicit flush.
+  const pendingRef = useRef<string | null>(null);
+  // Local fallback so refresh doesn't lose changes even if the network save
+  // hasn't fired yet (e.g. user refreshes within the 1.5s debounce window).
+  const localKey = `byteskill:code-draft:${problemSlug}:${language}`;
+
+  // Hydrate from local fallback while remote fetch is in-flight, so the editor
+  // never momentarily flashes back to the starter template after a refresh.
+  useEffect(() => {
+    if (!problemSlug) return;
+    try {
+      const local = localStorage.getItem(localKey);
+      if (local && draft === null && !loaded) {
+        setDraft(local);
+      }
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [problemSlug, language]);
+
+  const persistRemote = async (source_code: string) => {
+    if (!user) return;
+    await supabase.from("code_drafts").upsert(
+      {
+        user_id: user.id,
+        problem_slug: problemSlug,
+        language,
+        source_code,
+      },
+      { onConflict: "user_id,problem_slug,language" },
+    );
+    pendingRef.current = null;
+  };
+
+  // Debounced save (also writes a local fallback immediately).
   const save = (source_code: string) => {
+    pendingRef.current = source_code;
+    try {
+      localStorage.setItem(localKey, source_code);
+    } catch {
+      /* ignore quota errors */
+    }
     if (!user) return;
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(async () => {
-      await supabase.from("code_drafts").upsert(
-        {
-          user_id: user.id,
-          problem_slug: problemSlug,
-          language,
-          source_code,
-        },
-        { onConflict: "user_id,problem_slug,language" },
-      );
+    debounceRef.current = window.setTimeout(() => {
+      void persistRemote(source_code);
     }, 1500);
   };
+
+  // Force-flush any pending change (used before unload / on demand).
+  const flushDraft = async () => {
+    if (debounceRef.current) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    if (pendingRef.current !== null && user) {
+      await persistRemote(pendingRef.current);
+    }
+  };
+
+  // Flush on tab hide / unload so refreshes never lose unsaved edits.
+  useEffect(() => {
+    const onHide = () => {
+      if (pendingRef.current !== null && user) {
+        // Fire-and-forget; browsers will let the request go out on pagehide.
+        void persistRemote(pendingRef.current);
+      }
+    };
+    window.addEventListener("pagehide", onHide);
+    window.addEventListener("beforeunload", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      window.removeEventListener("beforeunload", onHide);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, problemSlug, language]);
 
   // Cleanup on unmount
   useEffect(() => () => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
   }, []);
 
-  return { draft, draftLoaded: loaded, saveDraft: save };
+  return { draft, draftLoaded: loaded, saveDraft: save, flushDraft };
 };
