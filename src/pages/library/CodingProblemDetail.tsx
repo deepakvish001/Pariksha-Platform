@@ -90,6 +90,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CodeDiffPreview } from "@/components/library/coding/CodeDiffPreview";
+import { DraftSaveIndicator } from "@/components/library/coding/DraftSaveIndicator";
+import { EditorSettingsPopover } from "@/components/library/coding/EditorSettingsPopover";
 
 const difficultyClass = (d: string) =>
   d === "Easy"
@@ -168,7 +171,14 @@ const CodingProblemDetail = () => {
   const restoredFailedRef = useRef(false);
 
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
-  const { draft, draftLoaded, saveDraft, flushDraft } = useCodeDraft(slug ?? "", language);
+  const {
+    draft,
+    draftLoaded,
+    saveDraft,
+    flushDraft,
+    saveStatus,
+    lastSavedAt,
+  } = useCodeDraft(slug ?? "", language);
   // Pending candidate code for the "Last submitted" confirm dialog. When set,
   // the dialog is open and applying it replaces the editor contents.
   const [pendingRestoreCode, setPendingRestoreCode] = useState<{
@@ -208,6 +218,7 @@ const CodingProblemDetail = () => {
     incFontSize,
     decFontSize,
     toggleTimestampFormat,
+    setFormatOnSubmit,
     MIN: FS_MIN,
     MAX: FS_MAX,
   } = useEditorPrefs();
@@ -538,11 +549,30 @@ const CodingProblemDetail = () => {
     setRunResult(null);
     setActiveBottomTab("output");
     // Auto-format right before submit so submitted code has consistent style.
-    // Failures are non-blocking — we still submit whatever the editor has.
-    try {
-      await editorRef.current?.format();
-    } catch {
-      /* ignore formatter errors */
+    // Honors the user's "Format on submit" preference. Failures are non-blocking.
+    if (editorPrefs.formatOnSubmit !== "off") {
+      try {
+        await editorRef.current?.format();
+      } catch {
+        /* ignore formatter errors */
+      }
+    }
+    // Optional lightweight lint pass: trim trailing whitespace, collapse 3+
+    // blank lines into one, and ensure exactly one trailing newline.
+    let lintCleaned: string | null = null;
+    if (editorPrefs.formatOnSubmit === "format+lint") {
+      const current = editorRef.current?.getValue() ?? code;
+      const cleaned = current
+        .split("\n")
+        .map((l) => l.replace(/[ \t]+$/g, ""))
+        .join("\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .replace(/\s+$/g, "") + "\n";
+      if (cleaned !== current) {
+        lintCleaned = cleaned;
+        setCode(cleaned);
+        saveDraft(cleaned);
+      }
     }
     // Make sure the latest draft is persisted before we ship the submission.
     try {
@@ -550,9 +580,10 @@ const CodingProblemDetail = () => {
     } catch {
       /* ignore */
     }
-    // Read directly from the editor so we capture the freshly-formatted code
-    // (React state hasn't necessarily flushed by the time we get here).
-    const sourceToSubmit = editorRef.current?.getValue() ?? code;
+    // Prefer the lint-cleaned source if we computed one; otherwise read
+    // directly from the editor so we capture freshly-formatted code (React
+    // state may not have flushed yet).
+    const sourceToSubmit = lintCleaned ?? editorRef.current?.getValue() ?? code;
     try {
       const result = await submit({
         source_code: sourceToSubmit,
@@ -992,18 +1023,26 @@ const CodingProblemDetail = () => {
               >
                 {/* Editor toolbar */}
                 <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-muted/30">
-                  <Select value={language} onValueChange={(v) => setLanguage(v as LangId)}>
-                    <SelectTrigger className="w-[180px] h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-1">
-                    <TooltipProvider delayDuration={300}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Select value={language} onValueChange={(v) => setLanguage(v as LangId)}>
+                      <SelectTrigger className="w-[150px] h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LANGUAGES.map((l) => (
+                          <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <DraftSaveIndicator
+                      status={saveStatus}
+                      lastSavedAt={lastSavedAt}
+                      isAuthenticated={!!user}
+                      className="hidden sm:inline-flex"
+                    />
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <TooltipProvider delayDuration={200}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -1038,51 +1077,52 @@ const CodingProblemDetail = () => {
                         </TooltipTrigger>
                         <TooltipContent>Larger font</TooltipContent>
                       </Tooltip>
-                    </TooltipProvider>
-                    <div className="w-px h-5 bg-border mx-1" />
-                    <TooltipProvider delayDuration={300}>
+                      <div className="w-px h-5 bg-border mx-1" />
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={handleFormat}
-                            className="h-8 gap-1.5 text-xs"
+                            className="h-8 w-8"
+                            aria-label="Format code"
                           >
-                            <Wand2 className="h-3 w-3" />
-                            Format
+                            <Wand2 className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Format code (Monaco built-in)</TooltipContent>
+                        <TooltipContent>Format code</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={handleRestoreLastSubmitted}
                             disabled={submissionsLoading}
-                            className="h-8 gap-1.5 text-xs"
+                            className="h-8 w-8"
+                            aria-label="Restore last submitted code"
                           >
-                            <History className="h-3 w-3" />
-                            Last submitted
+                            <History className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Load your most recent {langInfo.label} submission</TooltipContent>
+                        <TooltipContent>Last submitted ({langInfo.label})</TooltipContent>
                       </Tooltip>
-                    </TooltipProvider>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleReset}
-                      className="h-8 gap-1.5 text-xs"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      Reset
-                    </Button>
-                    <div className="w-px h-5 bg-border mx-1" />
-                    {slug && <SessionTimer ref={sessionTimerRef} slug={slug} />}
-                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleReset}
+                            className="h-8 w-8"
+                            aria-label="Reset to starter code"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Reset to starter</TooltipContent>
+                      </Tooltip>
+                      <div className="w-px h-5 bg-border mx-1" />
+                      {slug && <SessionTimer ref={sessionTimerRef} slug={slug} />}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -1118,6 +1158,10 @@ const CodingProblemDetail = () => {
                         <TooltipContent>Keyboard shortcuts</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    <EditorSettingsPopover
+                      formatOnSubmit={editorPrefs.formatOnSubmit}
+                      onFormatOnSubmitChange={setFormatOnSubmit}
+                    />
                   </div>
                 </div>
                 <div className="flex-1 min-h-0 relative">
@@ -1307,7 +1351,7 @@ const CodingProblemDetail = () => {
         open={!!pendingRestoreCode}
         onOpenChange={(o) => !o && setPendingRestoreCode(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Replace your current code?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1316,10 +1360,17 @@ const CodingProblemDetail = () => {
               <span className="font-medium text-foreground">
                 {pendingRestoreCode?.label}
               </span>{" "}
-              will overwrite the code currently in the editor. This can't be
-              undone.
+              will overwrite the code currently in the editor. Review the diff
+              below before confirming — this can't be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {pendingRestoreCode && (
+            <CodeDiffPreview
+              before={code}
+              after={pendingRestoreCode.code}
+              maxLines={28}
+            />
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>Keep my code</AlertDialogCancel>
             <AlertDialogAction onClick={confirmRestoreLastSubmitted}>

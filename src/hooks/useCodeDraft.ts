@@ -2,10 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+export type DraftSaveStatus = "idle" | "pending" | "saving" | "saved" | "error";
+
 export const useCodeDraft = (problemSlug: string, language: string) => {
   const { user } = useAuth();
   const [draft, setDraft] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [status, setStatus] = useState<DraftSaveStatus>("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const debounceRef = useRef<number | null>(null);
 
   // Load draft when problem/lang changes
@@ -52,16 +56,23 @@ export const useCodeDraft = (problemSlug: string, language: string) => {
 
   const persistRemote = async (source_code: string) => {
     if (!user) return;
-    await supabase.from("code_drafts").upsert(
-      {
-        user_id: user.id,
-        problem_slug: problemSlug,
-        language,
-        source_code,
-      },
-      { onConflict: "user_id,problem_slug,language" },
-    );
-    pendingRef.current = null;
+    setStatus("saving");
+    try {
+      await supabase.from("code_drafts").upsert(
+        {
+          user_id: user.id,
+          problem_slug: problemSlug,
+          language,
+          source_code,
+        },
+        { onConflict: "user_id,problem_slug,language" },
+      );
+      pendingRef.current = null;
+      setStatus("saved");
+      setLastSavedAt(Date.now());
+    } catch {
+      setStatus("error");
+    }
   };
 
   // Debounced save (also writes a local fallback immediately).
@@ -73,6 +84,7 @@ export const useCodeDraft = (problemSlug: string, language: string) => {
       /* ignore quota errors */
     }
     if (!user) return;
+    setStatus("pending");
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(() => {
       void persistRemote(source_code);
@@ -112,5 +124,12 @@ export const useCodeDraft = (problemSlug: string, language: string) => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
   }, []);
 
-  return { draft, draftLoaded: loaded, saveDraft: save, flushDraft };
+  return {
+    draft,
+    draftLoaded: loaded,
+    saveDraft: save,
+    flushDraft,
+    saveStatus: status,
+    lastSavedAt,
+  };
 };

@@ -2,11 +2,21 @@ import { useCallback, useEffect, useState } from "react";
 
 export type LayoutPreset = "split" | "focus" | "reading";
 export type TimestampFormat = "relative" | "exact";
+/**
+ * Format-on-submit modes:
+ * - "off"       — never auto-format before submitting
+ * - "format"    — run Monaco's built-in document formatter
+ * - "format+lint" — formatter plus lightweight lint-style cleanups
+ *                   (trim trailing whitespace, collapse 3+ blank lines,
+ *                    ensure single trailing newline)
+ */
+export type FormatOnSubmit = "off" | "format" | "format+lint";
 
 export interface EditorPrefs {
   fontSize: number;
   layout: LayoutPreset;
   timestampFormat: TimestampFormat;
+  formatOnSubmit: FormatOnSubmit;
 }
 
 const KEY = "byteskill:coding-editor-prefs:v1";
@@ -17,6 +27,7 @@ const defaults = (): EditorPrefs => ({
   fontSize: 14,
   layout: "split",
   timestampFormat: "relative",
+  formatOnSubmit: "format",
 });
 
 const read = (): EditorPrefs => {
@@ -30,6 +41,10 @@ const read = (): EditorPrefs => {
       fontSize: typeof v.fontSize === "number" ? Math.min(MAX, Math.max(MIN, v.fontSize)) : base.fontSize,
       layout: v.layout === "focus" || v.layout === "reading" ? v.layout : "split",
       timestampFormat: v.timestampFormat === "exact" ? "exact" : "relative",
+      formatOnSubmit:
+        v.formatOnSubmit === "off" || v.formatOnSubmit === "format+lint"
+          ? v.formatOnSubmit
+          : "format",
     };
   } catch {
     return defaults();
@@ -74,6 +89,10 @@ export const useEditorPrefs = () => {
     }));
   }, []);
 
+  const setFormatOnSubmit = useCallback((mode: FormatOnSubmit) => {
+    setPrefs((p) => ({ ...p, formatOnSubmit: mode }));
+  }, []);
+
   return {
     prefs,
     setFontSize,
@@ -82,8 +101,10 @@ export const useEditorPrefs = () => {
     setLayout,
     setTimestampFormat,
     toggleTimestampFormat,
+    setFormatOnSubmit,
     MIN,
     MAX,
   };
 };
+
 
