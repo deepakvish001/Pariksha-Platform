@@ -168,6 +168,8 @@ const CodingProblemDetail = () => {
     isComplete: mySolutionIsComplete,
     syncStatus: mySolutionSyncStatus,
     isCloudSynced: mySolutionIsCloudSynced,
+    lastSyncedAt: mySolutionLastSyncedAt,
+    lastConflictResolvedAt: mySolutionLastConflictAt,
   } = useProblemSolution(slug, mySolutionLanguage);
   const {
     prefs: editorPrefs,
