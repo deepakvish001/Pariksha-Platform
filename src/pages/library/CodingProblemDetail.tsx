@@ -49,7 +49,10 @@ import { useCodeRunner, type RunResult, type SubmitResult } from "@/hooks/useCod
 import { useCodeDraft } from "@/hooks/useCodeDraft";
 import { useCodingSubmissions } from "@/hooks/useCodingSubmissions";
 import { useCodeRuns } from "@/hooks/useCodeRuns";
+import { useCodingProblemBookmarks } from "@/hooks/useCodingProblemBookmarks";
 import { LoginPromptDialog } from "@/components/LoginPromptDialog";
+import { ProblemDetailHeader } from "@/components/library/coding/ProblemDetailHeader";
+import { AttemptTimeline } from "@/components/library/coding/AttemptTimeline";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: string) =>
@@ -79,6 +82,21 @@ const CodingProblemDetail = () => {
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
   const { submissions, refetch: refetchSubmissions } = useCodingSubmissions(slug);
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
+  const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
+
+  // Derived per-problem stats
+  const problemStats = useMemo(() => {
+    const attempts = submissions.length;
+    const accepted = submissions.filter((s) => s.verdict === "Accepted");
+    const isSolved = accepted.length > 0;
+    const isAttempted = attempts > 0;
+    // earliest accepted = solvedAt
+    let solvedAt: string | null = null;
+    for (const a of accepted) {
+      if (!solvedAt || a.created_at < solvedAt) solvedAt = a.created_at;
+    }
+    return { attempts, isSolved, isAttempted, solvedAt };
+  }, [submissions]);
 
   // Initialize code from draft or starter
   useEffect(() => {
@@ -248,6 +266,14 @@ const CodingProblemDetail = () => {
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <TabsContent value="description" className="mt-0 space-y-6">
+                <ProblemDetailHeader
+                  isSolved={problemStats.isSolved}
+                  isAttempted={problemStats.isAttempted}
+                  attempts={problemStats.attempts}
+                  solvedAt={problemStats.solvedAt}
+                  isBookmarked={isBookmarked(problem.slug)}
+                  onToggleBookmark={() => toggleBookmark(problem.slug)}
+                />
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className={cn("font-medium sm:hidden", difficultyClass(problem.difficulty))}>
                     {problem.difficulty}
@@ -361,7 +387,9 @@ const CodingProblemDetail = () => {
                     </p>
                   </Card>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    <AttemptTimeline submissions={submissions} limit={10} />
+                    <div className="space-y-2">
                     {submissions.map((s) => (
                       <Card key={s.id} className="p-3 hover:bg-muted/30 transition-colors">
                         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -380,6 +408,7 @@ const CodingProblemDetail = () => {
                         </div>
                       </Card>
                     ))}
+                    </div>
                   </div>
                 )}
               </TabsContent>

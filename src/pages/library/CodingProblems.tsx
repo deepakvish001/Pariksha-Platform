@@ -11,10 +11,13 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
+  Share2,
+  CheckSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
@@ -36,6 +39,7 @@ import { ProblemStatsHeader } from "@/components/library/coding/ProblemStatsHead
 import { ProblemFiltersBar, type SortKey, type ViewMode } from "@/components/library/coding/ProblemFiltersBar";
 import { ProblemCard } from "@/components/library/coding/ProblemCard";
 import { RandomMenu } from "@/components/library/coding/RandomMenu";
+import { BulkActionsBar } from "@/components/library/coding/BulkActionsBar";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: Difficulty) =>
@@ -106,6 +110,33 @@ const CodingProblems = () => {
 
   const { solved, attempted, perProblem, loading } = useCodingAttemptStats();
   const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
+
+  // Selection (bulk actions)
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleSelected = (slug: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelected(new Set());
+  const exitSelection = () => {
+    setSelectionMode(false);
+    clearSelection();
+  };
+
+  const handleShareFilters = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied", { description: "Shareable URL with current filters copied to clipboard." });
+    } catch {
+      toast.error("Couldn't copy link", { description: url });
+    }
+  };
 
   // Filter
   const filtered = useMemo(() => {
@@ -209,6 +240,37 @@ const CodingProblems = () => {
     (bookmarked ? 1 : 0) +
     selectedTopics.length;
 
+  // Bulk action handlers
+  const selectAllVisible = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      pageSlice.forEach((p) => next.add(p.slug));
+      return next;
+    });
+  };
+  const bulkBookmark = () => {
+    let added = 0;
+    selected.forEach((slug) => {
+      if (!isBookmarked(slug)) {
+        toggleBookmark(slug);
+        added += 1;
+      }
+    });
+    toast.success(`Bookmarked ${added} ${added === 1 ? "problem" : "problems"}`);
+    clearSelection();
+  };
+  const bulkUnbookmark = () => {
+    let removed = 0;
+    selected.forEach((slug) => {
+      if (isBookmarked(slug)) {
+        toggleBookmark(slug);
+        removed += 1;
+      }
+    });
+    toast.success(`Removed ${removed} ${removed === 1 ? "bookmark" : "bookmarks"}`);
+    clearSelection();
+  };
+
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
       <Helmet>
@@ -236,7 +298,22 @@ const CodingProblems = () => {
             </p>
           </div>
         </div>
-        <RandomMenu filtered={filtered} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={handleShareFilters} className="gap-1.5 h-9">
+            <Share2 className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Share filters</span>
+          </Button>
+          <Button
+            variant={selectionMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
+            className="gap-1.5 h-9"
+          >
+            <CheckSquare className="h-3.5 w-3.5" />
+            {selectionMode ? "Done" : "Select"}
+          </Button>
+          <RandomMenu filtered={filtered} />
+        </div>
       </motion.div>
 
       {/* Stats */}
@@ -271,6 +348,17 @@ const CodingProblems = () => {
           onClearAll={clearAll}
         />
       </Card>
+
+      {/* Bulk actions */}
+      {selectionMode && (
+        <BulkActionsBar
+          selectedCount={selected.size}
+          onSelectAllVisible={selectAllVisible}
+          onBookmarkSelected={bulkBookmark}
+          onUnbookmarkSelected={bulkUnbookmark}
+          onClearSelection={clearSelection}
+        />
+      )}
 
       {/* Result meta */}
       <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground">
@@ -325,6 +413,9 @@ const CodingProblems = () => {
               stats={perProblem.get(p.slug)}
               onToggleBookmark={toggleBookmark}
               index={idx}
+              selectionMode={selectionMode}
+              selected={selected.has(p.slug)}
+              onToggleSelected={toggleSelected}
             />
           ))}
         </div>
@@ -333,6 +424,7 @@ const CodingProblems = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                {selectionMode && <TableHead className="w-[40px]"></TableHead>}
                 <TableHead className="w-[50px]">Status</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead className="hidden md:table-cell">Topics</TableHead>
@@ -348,7 +440,16 @@ const CodingProblems = () => {
                 const stats = perProblem.get(p.slug);
                 const bm = isBookmarked(p.slug);
                 return (
-                  <TableRow key={p.slug} className="group">
+                  <TableRow key={p.slug} className="group" data-selected={selected.has(p.slug)}>
+                    {selectionMode && (
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.has(p.slug)}
+                          onCheckedChange={() => toggleSelected(p.slug)}
+                          aria-label="Select problem"
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       {isSolved ? (
                         <CheckCircle2 className="h-4 w-4 text-emerald-500" />
