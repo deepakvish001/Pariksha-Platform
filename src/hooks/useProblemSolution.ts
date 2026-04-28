@@ -157,6 +157,11 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
   const setCode = useCallback(
     (code: string) => {
       setEntry((prev) => {
+        const previousCode = prev.code[language] ?? "";
+        // Only push to undo buffer if the value actually changed.
+        if (previousCode !== code) {
+          setUndoBuffer((b) => ({ ...b, [language]: previousCode }));
+        }
         const next = { ...prev, code: { ...prev.code, [language]: code } };
         schedule(next, { code: language });
         return next;
@@ -164,6 +169,30 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
       setDirty((d) => ({ ...d, code: { ...d.code, [language]: true } }));
     },
     [schedule, language],
+  );
+
+  /**
+   * Revert the current language's code to its previous value (one-step undo).
+   * Notes and other languages are untouched. Returns true if anything was
+   * undone so callers can show a toast.
+   */
+  const undoCodeChange = useCallback(
+    (lang: LangId): boolean => {
+      const prevValue = undoBuffer[lang];
+      if (prevValue === undefined) return false;
+      setEntry((prev) => {
+        const currentValue = prev.code[lang] ?? "";
+        // Re-arm the undo buffer with the value we are reverting from so a
+        // second click acts like a redo.
+        setUndoBuffer((b) => ({ ...b, [lang]: currentValue }));
+        const next = { ...prev, code: { ...prev.code, [lang]: prevValue } };
+        schedule(next, { code: lang });
+        return next;
+      });
+      setDirty((d) => ({ ...d, code: { ...d.code, [lang]: true } }));
+      return true;
+    },
+    [schedule, undoBuffer],
   );
 
   // Flush on unmount / slug change
