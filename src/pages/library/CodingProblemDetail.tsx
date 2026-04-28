@@ -7,9 +7,9 @@ import {
   Send,
   RotateCcw,
   Loader2,
-  Lightbulb,
-  ChevronDown,
-  ChevronRight,
+  Minus,
+  Plus,
+  Type,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -35,6 +35,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,6 +61,11 @@ import { LoginPromptDialog } from "@/components/LoginPromptDialog";
 import { ProblemDetailHeader } from "@/components/library/coding/ProblemDetailHeader";
 import { AttemptTimeline } from "@/components/library/coding/AttemptTimeline";
 import { SubmissionDetailsDrawer } from "@/components/library/coding/SubmissionDetailsDrawer";
+import { ProblemMetaStrip } from "@/components/library/coding/ProblemMetaStrip";
+import { NotesPanel } from "@/components/library/coding/NotesPanel";
+import { ProgressiveHints } from "@/components/library/coding/ProgressiveHints";
+import { useProblemNotes } from "@/hooks/useProblemNotes";
+import { useEditorPrefs } from "@/hooks/useEditorPrefs";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
 
@@ -113,7 +124,7 @@ const CodingProblemDetail = () => {
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [showLogin, setShowLogin] = useState(false);
-  const [openHints, setOpenHints] = useState<Record<number, boolean>>({});
+  
   const [detailSubmission, setDetailSubmission] = useState<CodeSubmissionRow | null>(null);
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(() =>
     slug ? readLastOpenedMap()[slug] ?? null : null,
@@ -134,6 +145,8 @@ const CodingProblemDetail = () => {
   const { submissions, loading: submissionsLoading, refetch: refetchSubmissions } = useCodingSubmissions(slug);
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
+  const { note: notesValue, setNote: setNotesValue, savedAt: notesSavedAt } = useProblemNotes(slug);
+  const { prefs: editorPrefs, incFontSize, decFontSize, MIN: FS_MIN, MAX: FS_MAX } = useEditorPrefs();
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
   // If the submission ID doesn't exist for this problem, clear the param so
@@ -422,6 +435,11 @@ const CodingProblemDetail = () => {
             <TabsList className="rounded-none justify-start bg-transparent border-b h-10 px-2">
               <TabsTrigger value="description">Description</TabsTrigger>
               <TabsTrigger value="solution">Solution</TabsTrigger>
+              <TabsTrigger value="notes">
+                Notes {notesValue.trim().length > 0 && (
+                  <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-primary inline-block" />
+                )}
+              </TabsTrigger>
               <TabsTrigger value="submissions">
                 Submissions {submissions.length > 0 && (
                   <span className="ml-1.5 text-xs text-muted-foreground">({submissions.length})</span>
@@ -444,6 +462,29 @@ const CodingProblemDetail = () => {
                   isBookmarked={isBookmarked(problem.slug)}
                   onToggleBookmark={() => toggleBookmark(problem.slug)}
                 />
+
+                {/* Personal acceptance + estimated solve time + companies */}
+                <ProblemMetaStrip
+                  acceptance={
+                    problemStats.attempts > 0
+                      ? Math.round(
+                          (submissions.filter((s) => s.verdict === "Accepted").length /
+                            problemStats.attempts) *
+                            100,
+                        )
+                      : null
+                  }
+                  attempts={problemStats.attempts}
+                  estimatedMinutes={
+                    problem.difficulty === "Easy"
+                      ? 15
+                      : problem.difficulty === "Medium"
+                        ? 30
+                        : 50
+                  }
+                  loading={submissionsLoading && submissions.length === 0}
+                />
+
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className={cn("font-medium sm:hidden", difficultyClass(problem.difficulty))}>
                     {problem.difficulty}
@@ -489,32 +530,16 @@ const CodingProblemDetail = () => {
                   </div>
                 )}
 
-                {/* Hints */}
-                {problem.hints.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-sm">Hints</h3>
-                    {problem.hints.map((h, i) => (
-                      <Collapsible
-                        key={i}
-                        open={openHints[i]}
-                        onOpenChange={(o) => setOpenHints((s) => ({ ...s, [i]: o }))}
-                      >
-                        <CollapsibleTrigger className="flex items-center gap-2 w-full text-left p-2.5 rounded-md hover:bg-muted/50 border text-sm">
-                          {openHints[i] ? (
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          ) : (
-                            <ChevronRight className="h-3.5 w-3.5" />
-                          )}
-                          <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
-                          <span className="font-medium">Hint {i + 1}</span>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="px-3 py-2 text-sm text-muted-foreground">
-                          {h}
-                        </CollapsibleContent>
-                      </Collapsible>
-                    ))}
-                  </div>
-                )}
+                {/* Hints — progressive disclosure */}
+                <ProgressiveHints hints={problem.hints} />
+              </TabsContent>
+
+              <TabsContent value="notes" className="mt-0">
+                <NotesPanel
+                  value={notesValue}
+                  onChange={setNotesValue}
+                  savedAt={notesSavedAt}
+                />
               </TabsContent>
 
               <TabsContent value="solution" className="mt-0">
@@ -693,21 +718,61 @@ const CodingProblemDetail = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleReset}
-                    className="h-8 gap-1.5 text-xs"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    Reset
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={decFontSize}
+                            disabled={editorPrefs.fontSize <= FS_MIN}
+                            className="h-8 w-8"
+                            aria-label="Decrease font size"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Smaller font</TooltipContent>
+                      </Tooltip>
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums px-1">
+                        <Type className="h-3 w-3" />
+                        {editorPrefs.fontSize}
+                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={incFontSize}
+                            disabled={editorPrefs.fontSize >= FS_MAX}
+                            className="h-8 w-8"
+                            aria-label="Increase font size"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Larger font</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <div className="w-px h-5 bg-border mx-1" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleReset}
+                      className="h-8 gap-1.5 text-xs"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Reset
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex-1 min-h-0">
                   <MonacoEditor
                     value={code}
                     onChange={handleCodeChange}
                     language={langInfo.monaco}
+                    fontSize={editorPrefs.fontSize}
                   />
                 </div>
               </div>

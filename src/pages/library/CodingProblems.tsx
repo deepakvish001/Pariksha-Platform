@@ -434,6 +434,83 @@ const CodingProblems = () => {
     toast.success(`Density: ${next}`);
   };
 
+  // Padding helper for cells based on density
+  const cellPadY = tablePrefs.density === "compact" ? "py-1.5" : "py-2.5";
+  const rowTextSize = tablePrefs.density === "compact" ? "text-xs" : "text-sm";
+
+  // Keyboard shortcuts: /, b, d, s, ?, Esc, ←, →
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const editable =
+        tag === "input" ||
+        tag === "textarea" ||
+        tag === "select" ||
+        target?.isContentEditable;
+
+      // "/" focuses the search even when not editable
+      if (e.key === "/" && !editable) {
+        e.preventDefault();
+        const el = document.querySelector<HTMLInputElement>(
+          'input[placeholder*="Search" i], input[type="search"]',
+        );
+        el?.focus();
+        el?.select();
+        return;
+      }
+
+      if (e.key === "?" && !editable) {
+        e.preventDefault();
+        setShortcutsOpen(true);
+        return;
+      }
+
+      if (e.key === "Escape") {
+        if (selectionMode) {
+          exitSelection();
+        }
+        return;
+      }
+
+      if (editable) return;
+
+      if (e.key === "b" || e.key === "B") {
+        e.preventDefault();
+        setBookmarked(!bookmarked);
+        return;
+      }
+      if (e.key === "d" || e.key === "D") {
+        e.preventDefault();
+        toggleDensity();
+        return;
+      }
+      if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        if (selectionMode) exitSelection();
+        else setSelectionMode(true);
+        return;
+      }
+      if (e.key === "ArrowLeft" && safePageRef.current > 1) {
+        e.preventDefault();
+        setPage(safePageRef.current - 1);
+        return;
+      }
+      if (e.key === "ArrowRight" && safePageRef.current < totalPagesRef.current) {
+        e.preventDefault();
+        setPage(safePageRef.current + 1);
+        return;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookmarked, selectionMode, tablePrefs.density]);
+
+  // Refs to keep keyboard handler closure-free for paging.
+  const safePageRef = useRef(1);
+  const totalPagesRef = useRef(1);
+
   // Filter
   const filtered = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
@@ -509,6 +586,12 @@ const CodingProblems = () => {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageSlice = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Keep refs in sync for the keyboard ←/→ pagination shortcut.
+  useEffect(() => {
+    safePageRef.current = safePage;
+    totalPagesRef.current = totalPages;
+  }, [safePage, totalPages]);
 
   // Stats
   const counts = useMemo(() => {
@@ -1063,7 +1146,7 @@ const CodingProblems = () => {
                       )}
                     >
                       {selectionMode && (
-                        <TableCell className="py-2.5">
+                        <TableCell className={`${cellPadY}`}>
                           <Checkbox
                             checked={isSel}
                             onCheckedChange={() => toggleSelected(p.slug)}
@@ -1072,12 +1155,12 @@ const CodingProblems = () => {
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("row") && (
-                        <TableCell className="py-2.5 text-center text-xs text-muted-foreground tabular-nums">
+                        <TableCell className={`${cellPadY} text-center text-xs text-muted-foreground tabular-nums`}>
                           {rowNumber}
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("status") && (
-                        <TableCell className="py-2.5">
+                        <TableCell className={`${cellPadY}`}>
                           {isSolved ? (
                             <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-label="Solved" />
                           ) : isAttempted ? (
@@ -1088,7 +1171,7 @@ const CodingProblems = () => {
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("title") && (
-                        <TableCell className="py-2.5 min-w-0">
+                        <TableCell className={`${cellPadY} min-w-0`}>
                           <Link
                             to={`/library/problems/${p.slug}`}
                             className="font-medium hover:text-primary transition-colors block truncate"
@@ -1110,7 +1193,7 @@ const CodingProblems = () => {
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("topics") && (
-                        <TableCell className="hidden md:table-cell py-2.5">
+                        <TableCell className={`hidden md:table-cell ${cellPadY}`}>
                           <div className="flex flex-wrap gap-1">
                             {p.topics.slice(0, 3).map((t) => (
                               <Badge key={t} variant="secondary" className="text-xs font-normal">
@@ -1126,7 +1209,7 @@ const CodingProblems = () => {
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("difficulty") && (
-                        <TableCell className="py-2.5">
+                        <TableCell className={`${cellPadY}`}>
                           <Badge
                             variant="outline"
                             className={cn("font-medium", difficultyClass(p.difficulty))}
@@ -1136,17 +1219,17 @@ const CodingProblems = () => {
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("acceptance") && (
-                        <TableCell className="hidden lg:table-cell py-2.5 text-right text-xs tabular-nums text-muted-foreground">
+                        <TableCell className={`hidden lg:table-cell ${cellPadY} text-right text-xs tabular-nums text-muted-foreground`}>
                           {acceptance !== null ? `${acceptance}%` : "—"}
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("attempts") && (
-                        <TableCell className="hidden sm:table-cell py-2.5 text-right text-xs text-muted-foreground tabular-nums">
+                        <TableCell className={`hidden sm:table-cell ${cellPadY} text-right text-xs text-muted-foreground tabular-nums`}>
                           {stats?.attempts ?? 0}
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("bookmark") && (
-                        <TableCell className="py-2.5">
+                        <TableCell className={`${cellPadY}`}>
                           <button
                             type="button"
                             onClick={() => toggleBookmark(p.slug)}
