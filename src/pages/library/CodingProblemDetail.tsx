@@ -212,8 +212,10 @@ const CodingProblemDetail = () => {
   const problem = useMemo(() => (slug ? getProblemBySlug(slug) : undefined), [slug]);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [language, setLanguage] = useState<LangId>("python");
-  const [mySolutionLanguage, setMySolutionLanguage] = useState<LangId>("python");
+  const isSQLProblem = !!problem?.sql;
+  const defaultLang: LangId = isSQLProblem ? "sql" : "python";
+  const [language, setLanguage] = useState<LangId>(defaultLang);
+  const [mySolutionLanguage, setMySolutionLanguage] = useState<LangId>(defaultLang);
   const [code, setCode] = useState("");
   const [stdin, setStdin] = useState("");
   const [activeBottomTab, setActiveBottomTab] = useState<"testcase" | "output">("testcase");
