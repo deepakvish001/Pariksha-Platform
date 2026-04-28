@@ -52,6 +52,7 @@ import { ProblemFiltersBar, type SortKey, type ViewMode } from "@/components/lib
 
 import { RandomMenu } from "@/components/library/coding/RandomMenu";
 import { BulkActionsBar } from "@/components/library/coding/BulkActionsBar";
+import { TopicBadgesWithOverflow } from "@/components/library/coding/TopicBadgesWithOverflow";
 import { useCodingSelection } from "@/hooks/useCodingSelection";
 import {
   AlertDialog,
