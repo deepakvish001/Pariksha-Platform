@@ -549,11 +549,28 @@ const CodingProblemDetail = () => {
     setRunResult(null);
     setActiveBottomTab("output");
     // Auto-format right before submit so submitted code has consistent style.
-    // Failures are non-blocking — we still submit whatever the editor has.
-    try {
-      await editorRef.current?.format();
-    } catch {
-      /* ignore formatter errors */
+    // Honors the user's "Format on submit" preference. Failures are non-blocking.
+    if (editorPrefs.formatOnSubmit !== "off") {
+      try {
+        await editorRef.current?.format();
+      } catch {
+        /* ignore formatter errors */
+      }
+    }
+    // Optional lightweight lint pass: trim trailing whitespace, collapse 3+
+    // blank lines into one, and ensure exactly one trailing newline.
+    if (editorPrefs.formatOnSubmit === "format+lint") {
+      const current = editorRef.current?.getValue() ?? code;
+      const cleaned = current
+        .split("\n")
+        .map((l) => l.replace(/[ \t]+$/g, ""))
+        .join("\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .replace(/\s+$/g, "") + "\n";
+      if (cleaned !== current) {
+        setCode(cleaned);
+        saveDraft(cleaned);
+      }
     }
     // Make sure the latest draft is persisted before we ship the submission.
     try {
