@@ -542,7 +542,27 @@ export default function SubmissionsHistory() {
           {subsLoading ? (
             <>{Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)}</>
           ) : submissions.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground">No submissions match your filters.</Card>
+            <Card className="p-10 text-center space-y-3">
+              <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
+              <div className="space-y-1">
+                <p className="font-medium">No submissions match your filters</p>
+                <p className="text-sm text-muted-foreground">
+                  {hasActiveFilters
+                    ? "Try widening the date range, clearing search, or resetting filters."
+                    : "Solve a problem from the Coding Library to see it here."}
+                </p>
+              </div>
+              <div className="flex justify-center gap-2 pt-1">
+                {hasActiveFilters && (
+                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset filters
+                  </Button>
+                )}
+                <Button size="sm" asChild>
+                  <Link to="/library/problems">Browse problems</Link>
+                </Button>
+              </div>
+            </Card>
           ) : (
             <>
               {submissions.map((s) => (
@@ -584,7 +604,24 @@ export default function SubmissionsHistory() {
           {runsLoading ? (
             <>{Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)}</>
           ) : runs.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground">No runs match your filters.</Card>
+            <Card className="p-10 text-center space-y-3">
+              <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
+              <div className="space-y-1">
+                <p className="font-medium">No runs match your filters</p>
+                <p className="text-sm text-muted-foreground">
+                  {hasActiveFilters
+                    ? "Try a wider date range or clear the search/language filter."
+                    : "Use “Run” in the editor to see your test runs here."}
+                </p>
+              </div>
+              {hasActiveFilters && (
+                <div className="flex justify-center pt-1">
+                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset filters
+                  </Button>
+                </div>
+              )}
+            </Card>
           ) : (
             <>
               {runs.map((r) => {
