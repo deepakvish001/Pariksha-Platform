@@ -1439,10 +1439,18 @@ const CodingProblemDetail = () => {
                   )}
                 </TabsContent>
 
-                <TabsContent value="output" className="flex-1 m-0 p-3 overflow-y-auto">
+                <TabsContent
+                  value="output"
+                  className="flex-1 m-0 p-3 overflow-y-auto"
+                  aria-label="Run and submit output"
+                >
                   {isRunning || isSubmitting ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    <div
+                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                       {isSubmitting ? "Judging against hidden test cases..." : "Running..."}
                     </div>
                   ) : submitResult ? (
