@@ -489,6 +489,20 @@ const CodingProblemDetail = () => {
               <span className="hidden sm:inline">All Problems</span>
             </Link>
           </Button>
+          {/* Breadcrumb — collapses to current page on small screens */}
+          <nav
+            aria-label="Breadcrumb"
+            className="hidden md:flex items-center gap-1 text-xs text-muted-foreground min-w-0"
+          >
+            <Link to="/library/problems" className="hover:text-foreground transition-colors">
+              Library
+            </Link>
+            <ChevronRight className="h-3 w-3 opacity-60" />
+            <Link to="/library/problems" className="hover:text-foreground transition-colors">
+              Problems
+            </Link>
+            <ChevronRight className="h-3 w-3 opacity-60" />
+          </nav>
           <div className="min-w-0 flex items-center gap-2">
             <h1 className="font-semibold text-sm sm:text-base truncate">{problem.title}</h1>
             <Badge variant="outline" className={cn("font-medium hidden sm:inline-flex", difficultyClass(problem.difficulty))}>
@@ -503,6 +517,7 @@ const CodingProblemDetail = () => {
             variant="outline"
             size="sm"
             className="gap-1.5"
+            title="Run code (Ctrl/Cmd+Enter)"
           >
             {isRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">Run</span>
@@ -512,6 +527,7 @@ const CodingProblemDetail = () => {
             disabled={isRunning || isSubmitting}
             size="sm"
             className="gap-1.5"
+            title="Submit solution (Ctrl/Cmd+Shift+Enter)"
           >
             {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             Submit
