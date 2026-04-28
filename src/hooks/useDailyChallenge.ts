@@ -201,11 +201,26 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
           completedAt: (r.completed_at as string) ?? new Date().toISOString(),
         }));
 
-        // Merge: union of dates; remote wins on overlap
+        // Conflict-safe merge: dedupe by date; on overlap keep the EARLIEST
+        // completedAt so a later "mark done" on another device cannot
+        // retroactively change the streak day or duplicate it.
         setState((prev) => {
           const byDate = new Map<string, CompletionRecord>();
-          for (const c of prev.completions) byDate.set(c.date, c);
-          for (const c of remote) byDate.set(c.date, c);
+          const consider = (c: CompletionRecord) => {
+            const existing = byDate.get(c.date);
+            if (!existing) {
+              byDate.set(c.date, c);
+              return;
+            }
+            // Prefer the earliest timestamp; prefer one with a real slug if tied
+            const a = Date.parse(existing.completedAt) || 0;
+            const b = Date.parse(c.completedAt) || 0;
+            if (b < a || (b === a && !existing.problemSlug && c.problemSlug)) {
+              byDate.set(c.date, c);
+            }
+          };
+          for (const c of prev.completions) consider(c);
+          for (const c of remote) consider(c);
           const merged = Array.from(byDate.values()).sort((a, b) =>
             a.date < b.date ? 1 : -1,
           );
@@ -214,7 +229,10 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
           return next;
         });
 
-        // Push any local-only rows back to cloud
+        // Push any local-only rows back to cloud. The DB has a UNIQUE
+        // (user_id, challenge_date) constraint, so upsert with
+        // ignoreDuplicates ensures we never overwrite an earlier
+        // cloud completion timestamp from another device.
         const remoteDates = new Set(remote.map((r) => r.date));
         const local = readState().completions;
         const toUpload = local.filter((c) => !remoteDates.has(c.date));
@@ -228,7 +246,7 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
                 problem_slug: c.problemSlug || pickProblemForDate(c.date).slug,
                 completed_at: c.completedAt,
               })),
-              { onConflict: "user_id,challenge_date" },
+              { onConflict: "user_id,challenge_date", ignoreDuplicates: true },
             );
         }
       } finally {
@@ -254,7 +272,8 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
       };
       const next = { completions: [rec, ...prev.completions] };
       writeState(next);
-      // Push to cloud (best-effort)
+      // Push to cloud (best-effort). ignoreDuplicates protects an
+      // earlier cloud row written from another device.
       if (user) {
         void supabase.from("daily_challenge_completions").upsert(
           {
@@ -263,7 +282,7 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
             problem_slug: rec.problemSlug,
             completed_at: rec.completedAt,
           },
-          { onConflict: "user_id,challenge_date" },
+          { onConflict: "user_id,challenge_date", ignoreDuplicates: true },
         );
       }
       setJustCompleted(true);
@@ -301,6 +320,8 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     if (user) {
       try {
         setSyncing(true);
+        // ignoreDuplicates: if another device already marked this date,
+        // do not overwrite the earlier completion timestamp.
         await supabase.from("daily_challenge_completions").upsert(
           {
             user_id: user.id,
@@ -308,7 +329,7 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
             problem_slug: problem.slug,
             completed_at: new Date().toISOString(),
           },
-          { onConflict: "user_id,challenge_date" },
+          { onConflict: "user_id,challenge_date", ignoreDuplicates: true },
         );
       } finally {
         setSyncing(false);

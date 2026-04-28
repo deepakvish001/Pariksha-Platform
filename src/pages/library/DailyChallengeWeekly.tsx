@@ -4,13 +4,14 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
+  ArrowRight,
   Calendar,
   CheckCircle2,
   Circle,
   Flame,
   Trophy,
   Sparkles,
-  Loader2,
+  UserPlus,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,8 +79,18 @@ const DailyChallengeWeekly = () => {
   const { user } = useAuth();
   const { solved } = useCodingAttemptStats();
   const daily = useDailyChallenge(solved);
-  const { entries, loading: lbLoading } = useDailyLeaderboard(50);
-  const optin = useDailyLeaderboardOptIn();
+  const { entries, loading: lbLoading, reload: reloadLeaderboard } = useDailyLeaderboard(50);
+  const baseOptin = useDailyLeaderboardOptIn();
+  const optin = useMemo(
+    () => ({
+      ...baseOptin,
+      setOptIn: async (v: boolean, name?: string | null) => {
+        await baseOptin.setOptIn(v, name);
+        await reloadLeaderboard();
+      },
+    }),
+    [baseOptin, reloadLeaderboard],
+  );
 
   const [draftName, setDraftName] = useState<string>(optin.displayName ?? "");
 
@@ -91,6 +102,12 @@ const DailyChallengeWeekly = () => {
 
   const completedThisWeek = days.filter((d) => completedDateSet.has(d)).length;
   const myStreak = daily.streak;
+
+  const myRank = useMemo(() => {
+    if (!user) return null;
+    const idx = entries.findIndex((e) => e.user_id === user.id);
+    return idx >= 0 ? idx + 1 : null;
+  }, [entries, user]);
 
   return (
     <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 max-w-5xl">
@@ -173,9 +190,8 @@ const DailyChallengeWeekly = () => {
             const done = completedDateSet.has(key);
             const isToday = idx === 0;
             return (
-              <Link
+              <div
                 key={key}
-                to={`/library/problems/${problem.slug}`}
                 className="flex items-center gap-3 p-3 sm:p-4 hover:bg-muted/30 transition-colors"
               >
                 <div
@@ -199,18 +215,23 @@ const DailyChallengeWeekly = () => {
                       </Badge>
                     )}
                   </div>
-                  <div className="mt-0.5 truncate text-sm font-semibold">{problem.title}</div>
+                  <Link
+                    to={`/library/problems/${problem.slug}`}
+                    className="mt-0.5 block truncate text-sm font-semibold hover:text-primary hover:underline underline-offset-2"
+                  >
+                    {problem.title}
+                  </Link>
                 </div>
                 <Badge
                   variant="outline"
-                  className={cn("text-[10px]", difficultyClass(problem.difficulty))}
+                  className={cn("text-[10px] hidden sm:inline-flex", difficultyClass(problem.difficulty))}
                 >
                   {problem.difficulty}
                 </Badge>
                 <Badge
                   variant="outline"
                   className={cn(
-                    "text-[10px]",
+                    "text-[10px] hidden sm:inline-flex",
                     done
                       ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
                       : "text-muted-foreground",
@@ -218,7 +239,21 @@ const DailyChallengeWeekly = () => {
                 >
                   {done ? "Completed" : "Open"}
                 </Badge>
-              </Link>
+                <Button
+                  asChild
+                  size="sm"
+                  variant={done ? "outline" : "secondary"}
+                  className="h-8 gap-1 text-xs"
+                >
+                  <Link
+                    to={`/library/problems/${problem.slug}`}
+                    aria-label={`Go to problem ${problem.title}`}
+                  >
+                    Go to problem
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
             );
           })}
         </Card>
@@ -245,12 +280,26 @@ const DailyChallengeWeekly = () => {
           <Card className="p-4 mb-3">
             <div className="flex flex-wrap items-center gap-3 justify-between">
               <div className="min-w-0">
-                <div className="text-sm font-semibold">
+                <div className="text-sm font-semibold flex items-center gap-2">
                   {optin.optedIn ? "You're on the leaderboard" : "Join the leaderboard"}
+                  {optin.optedIn && myRank !== null && (
+                    <Badge
+                      variant="outline"
+                      className="h-5 px-1.5 text-[10px] border-amber-500/40 bg-amber-500/10 text-amber-500"
+                    >
+                      <Trophy className="h-3 w-3 mr-1" />
+                      Rank #{myRank}
+                    </Badge>
+                  )}
+                  {optin.optedIn && myRank === null && entries.length > 0 && (
+                    <Badge variant="outline" className="h-5 px-1.5 text-[10px] text-muted-foreground">
+                      Unranked
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {optin.optedIn
-                    ? "Other learners can see your display name and streak. Opt out anytime."
+                    ? "Other learners can see your display name and streak. Toggle off to leave anytime."
                     : "Show your daily streak and weekly progress to other learners."}
                 </p>
               </div>
@@ -262,12 +311,15 @@ const DailyChallengeWeekly = () => {
                   className="h-8 w-40 text-xs"
                   maxLength={40}
                 />
-                <Switch
-                  checked={optin.optedIn}
-                  disabled={optin.loading}
-                  onCheckedChange={(v) => optin.setOptIn(v, draftName.trim() || null)}
-                  aria-label="Toggle leaderboard opt-in"
-                />
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                  <span>{optin.optedIn ? "Enabled" : "Disabled"}</span>
+                  <Switch
+                    checked={optin.optedIn}
+                    disabled={optin.loading}
+                    onCheckedChange={(v) => optin.setOptIn(v, draftName.trim() || null)}
+                    aria-label="Toggle leaderboard opt-in"
+                  />
+                </label>
               </div>
             </div>
           </Card>
@@ -281,14 +333,31 @@ const DailyChallengeWeekly = () => {
               ))}
             </div>
           ) : entries.length === 0 ? (
-            <div className="p-6 text-center text-sm text-muted-foreground">
+            <div className="p-8 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
+                <Trophy className="h-6 w-6" />
+              </div>
+              <div className="text-sm font-semibold">No one has opted in yet</div>
+              <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">
+                The daily leaderboard is empty. Opt in to be the very first learner ranked here — your streak will appear instantly.
+              </p>
               {user ? (
-                <>
-                  <Loader2 className="inline h-4 w-4 mr-1 opacity-50" />
-                  No one has opted in yet — be the first!
-                </>
+                <Button
+                  size="sm"
+                  className="mt-4 h-8 gap-1.5 text-xs"
+                  disabled={optin.loading || optin.optedIn}
+                  onClick={() => optin.setOptIn(true, draftName.trim() || null)}
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  {optin.optedIn ? "You're opted in" : "Opt me in & be first"}
+                </Button>
               ) : (
-                "Sign in to view the leaderboard."
+                <Button asChild size="sm" className="mt-4 h-8 gap-1.5 text-xs">
+                  <Link to="/auth">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Sign in to opt in
+                  </Link>
+                </Button>
               )}
             </div>
           ) : (
