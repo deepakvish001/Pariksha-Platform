@@ -441,6 +441,35 @@ export const MySolutionPanel = ({
         </div>
       </div>
 
+      {/* Signed-out banner — explains local-only persistence */}
+      {!isCloudSynced && (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-3"
+        >
+          <CloudOff className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+              Your solution is saved locally on this device only
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Sign in to sync notes and code to your account so they follow you
+              across devices and survive cache clears.
+            </p>
+          </div>
+          {onSignInClick && (
+            <Button
+              size="sm"
+              variant="default"
+              className="h-7 text-xs shrink-0"
+              onClick={onSignInClick}
+            >
+              Sign in to sync
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Notes block */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
