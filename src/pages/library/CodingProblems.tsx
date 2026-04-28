@@ -289,16 +289,33 @@ const CodingProblems = () => {
     clearSelection();
   };
   const performBulkUnbookmark = () => {
-    let removed = 0;
+    const removedSlugs: string[] = [];
     selected.forEach((slug) => {
       if (isBookmarked(slug)) {
         toggleBookmark(slug);
-        removed += 1;
+        removedSlugs.push(slug);
       }
     });
-    toast.success(`Removed ${removed} ${removed === 1 ? "bookmark" : "bookmarks"}`);
+    const removed = removedSlugs.length;
     clearSelection();
     setConfirmUnbookmark(false);
+
+    toast.success(`Removed ${removed} ${removed === 1 ? "bookmark" : "bookmarks"}`, {
+      duration: 8000,
+      action: removed > 0
+        ? {
+            label: "Undo",
+            onClick: () => {
+              removedSlugs.forEach((slug) => {
+                if (!isBookmarked(slug)) toggleBookmark(slug);
+              });
+              toast.success(
+                `Restored ${removed} ${removed === 1 ? "bookmark" : "bookmarks"}`,
+              );
+            },
+          }
+        : undefined,
+    });
   };
   const bulkUnbookmark = () => {
     // Count how many are actually bookmarked to decide whether to confirm
