@@ -1101,7 +1101,7 @@ const CodingProblemDetail = () => {
                 )}
               >
                 {/* Editor toolbar */}
-                <div className="px-3 py-2 border-b bg-muted/30">
+                <div className="sticky top-0 z-20 px-3 py-2 border-b bg-muted/40 backdrop-blur supports-[backdrop-filter]:bg-muted/30">
                   <ChevronScroller>
                     <div className="flex items-center gap-2 w-max min-w-full flex-nowrap">
                       <div className="flex items-center gap-2 min-w-0 shrink-0">
