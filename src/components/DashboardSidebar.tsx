@@ -53,6 +53,7 @@ import {
   Route,
   Lock,
   Terminal,
+  History as HistoryIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
