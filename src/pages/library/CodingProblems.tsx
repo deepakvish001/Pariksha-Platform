@@ -568,21 +568,13 @@ const CodingProblems = () => {
 
       {/* Body */}
       {loading && filtered.length === 0 ? (
-        view === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-36 w-full rounded-lg" />
+        <Card>
+          <div className="p-3 space-y-2">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <Skeleton key={i} className="h-11 w-full" />
             ))}
           </div>
-        ) : (
-          <Card>
-            <div className="p-3 space-y-2">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          </Card>
-        )
+        </Card>
       ) : filtered.length === 0 ? (
         <Card className="p-12 text-center">
           <Filter className="h-10 w-10 mx-auto mb-3 opacity-40" />
@@ -594,99 +586,156 @@ const CodingProblems = () => {
             Reset filters
           </Button>
         </Card>
-      ) : view === "grid" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {pageSlice.map((p, idx) => (
-            <ProblemCard
-              key={p.slug}
-              problem={p}
-              isSolved={solved.has(p.slug)}
-              isAttempted={attempted.has(p.slug)}
-              isBookmarked={isBookmarked(p.slug)}
-              stats={perProblem.get(p.slug)}
-              onToggleBookmark={toggleBookmark}
-              index={idx}
-              selectionMode={selectionMode}
-              selected={selected.has(p.slug)}
-              onToggleSelected={toggleSelected}
-            />
-          ))}
-        </div>
       ) : (
-        <Card>
+        <Card className="overflow-hidden">
           <Table>
-            <TableHeader>
-              <TableRow>
-                {selectionMode && <TableHead className="w-[40px]"></TableHead>}
-                <TableHead className="w-[50px]">Status</TableHead>
+            <TableHeader className="bg-muted/40">
+              <TableRow className="hover:bg-transparent border-b">
+                {selectionMode && (
+                  <TableHead className="w-[44px]">
+                    <Checkbox
+                      checked={
+                        pageSlice.length > 0 &&
+                        pageSlice.every((p) => selected.has(p.slug))
+                      }
+                      onCheckedChange={(v) => {
+                        if (v) selectAllVisible();
+                        else
+                          pageSlice.forEach((p) => {
+                            if (selected.has(p.slug)) toggleSelected(p.slug);
+                          });
+                      }}
+                      aria-label="Select all on page"
+                    />
+                  </TableHead>
+                )}
+                <TableHead className="w-[60px] text-center">#</TableHead>
+                <TableHead className="w-[60px]">Status</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead className="hidden md:table-cell">Topics</TableHead>
                 <TableHead className="w-[110px]">Difficulty</TableHead>
-                <TableHead className="hidden sm:table-cell w-[100px] text-right">Attempts</TableHead>
-                <TableHead className="w-[40px]"></TableHead>
+                <TableHead className="hidden lg:table-cell w-[120px] text-right">
+                  Acceptance
+                </TableHead>
+                <TableHead className="hidden sm:table-cell w-[90px] text-right">
+                  Attempts
+                </TableHead>
+                <TableHead className="w-[48px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pageSlice.map((p) => {
+              {pageSlice.map((p, idx) => {
                 const isSolved = solved.has(p.slug);
                 const isAttempted = attempted.has(p.slug);
                 const stats = perProblem.get(p.slug);
                 const bm = isBookmarked(p.slug);
+                const isSel = selected.has(p.slug);
+                const acceptance =
+                  stats && stats.attempts > 0
+                    ? Math.round(((stats.accepted ?? 0) / stats.attempts) * 100)
+                    : null;
+                const rowNumber = (safePage - 1) * PAGE_SIZE + idx + 1;
                 return (
-                  <TableRow key={p.slug} className="group" data-selected={selected.has(p.slug)}>
+                  <TableRow
+                    key={p.slug}
+                    data-selected={isSel}
+                    className={cn(
+                      "group transition-colors",
+                      isSel && "bg-primary/5",
+                    )}
+                  >
                     {selectionMode && (
-                      <TableCell>
+                      <TableCell className="py-2.5">
                         <Checkbox
-                          checked={selected.has(p.slug)}
+                          checked={isSel}
                           onCheckedChange={() => toggleSelected(p.slug)}
                           aria-label="Select problem"
                         />
                       </TableCell>
                     )}
-                    <TableCell>
+                    <TableCell className="py-2.5 text-center text-xs text-muted-foreground tabular-nums">
+                      {rowNumber}
+                    </TableCell>
+                    <TableCell className="py-2.5">
                       {isSolved ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        <CheckCircle2
+                          className="h-4 w-4 text-emerald-500"
+                          aria-label="Solved"
+                        />
                       ) : isAttempted ? (
-                        <CircleDot className="h-4 w-4 text-amber-500" />
+                        <CircleDot
+                          className="h-4 w-4 text-amber-500"
+                          aria-label="Attempted"
+                        />
                       ) : (
-                        <Circle className="h-4 w-4 text-muted-foreground/40" />
+                        <Circle
+                          className="h-4 w-4 text-muted-foreground/40"
+                          aria-label="Not started"
+                        />
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2.5 min-w-0">
                       <Link
                         to={`/library/problems/${p.slug}`}
-                        className="font-medium hover:text-primary transition-colors"
+                        className="font-medium hover:text-primary transition-colors block truncate"
                       >
                         {p.title}
                       </Link>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {p.topics.slice(0, 3).map((t) => (
-                          <Badge key={t} variant="secondary" className="text-xs font-normal">
+                      {/* Mobile-only inline topics */}
+                      <div className="md:hidden mt-1 flex flex-wrap gap-1">
+                        {p.topics.slice(0, 2).map((t) => (
+                          <Badge
+                            key={t}
+                            variant="secondary"
+                            className="text-[10px] font-normal px-1.5 py-0"
+                          >
                             {t}
                           </Badge>
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn("font-medium", difficultyClass(p.difficulty))}>
+                    <TableCell className="hidden md:table-cell py-2.5">
+                      <div className="flex flex-wrap gap-1">
+                        {p.topics.slice(0, 3).map((t) => (
+                          <Badge
+                            key={t}
+                            variant="secondary"
+                            className="text-xs font-normal"
+                          >
+                            {t}
+                          </Badge>
+                        ))}
+                        {p.topics.length > 3 && (
+                          <Badge variant="outline" className="text-xs font-normal">
+                            +{p.topics.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-2.5">
+                      <Badge
+                        variant="outline"
+                        className={cn("font-medium", difficultyClass(p.difficulty))}
+                      >
                         {p.difficulty}
                       </Badge>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell text-right text-xs text-muted-foreground">
+                    <TableCell className="hidden lg:table-cell py-2.5 text-right text-xs tabular-nums text-muted-foreground">
+                      {acceptance !== null ? `${acceptance}%` : "—"}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell py-2.5 text-right text-xs text-muted-foreground tabular-nums">
                       {stats?.attempts ?? 0}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2.5">
                       <button
                         type="button"
                         onClick={() => toggleBookmark(p.slug)}
-                        className="p-1 rounded hover:bg-muted/50"
+                        className="p-1 rounded hover:bg-muted/50 transition-colors"
                         aria-label={bm ? "Remove bookmark" : "Bookmark"}
                       >
                         <Star
                           className={cn(
-                            "h-4 w-4",
+                            "h-4 w-4 transition-colors",
                             bm
                               ? "fill-amber-400 text-amber-400"
                               : "text-muted-foreground/40 hover:text-amber-400",
