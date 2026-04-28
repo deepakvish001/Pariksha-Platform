@@ -8,6 +8,7 @@ interface MonacoEditorProps {
   language: string;
   readOnly?: boolean;
   height?: string | number;
+  fontSize?: number;
 }
 
 export const MonacoEditor = ({
@@ -16,12 +17,12 @@ export const MonacoEditor = ({
   language,
   readOnly = false,
   height = "100%",
+  fontSize = 13,
 }: MonacoEditorProps) => {
   const { resolvedTheme } = useTheme();
 
   const handleMount: OnMount = useCallback((editor) => {
     editor.updateOptions({
-      fontSize: 13,
       fontLigatures: true,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
@@ -46,6 +47,7 @@ export const MonacoEditor = ({
         wordWrap: "on",
         smoothScrolling: true,
         cursorBlinking: "smooth",
+        fontSize,
       }}
       loading={
         <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
