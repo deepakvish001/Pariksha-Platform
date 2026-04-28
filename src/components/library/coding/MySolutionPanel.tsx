@@ -611,18 +611,30 @@ export const MySolutionPanel = ({
             <AlertDialogDescription>
               Your current edits to{" "}
               <span className="font-medium">{languageLabel}</span> haven't been
-              flushed yet. They'll autosave and overwrite the previously-saved{" "}
-              {languageLabel} solution. Continue switching to{" "}
+              flushed yet. Choose how to handle them before switching to{" "}
               <span className="font-medium">
                 {pendingLang ? getLanguageById(pendingLang).label : ""}
               </span>
-              ?
+              .
+              <span className="block mt-2 text-xs">
+                <strong>Save &amp; switch</strong> — flush edits (overwrites the
+                previously-saved {languageLabel} code).
+                <br />
+                <strong>Discard &amp; switch</strong> — revert {languageLabel} to
+                its last saved value, then switch.
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel>Stay on {languageLabel}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={discardAndSwitch}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Discard &amp; switch
+            </AlertDialogAction>
             <AlertDialogAction onClick={confirmLanguageChange}>
-              Save & switch
+              Save &amp; switch
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
