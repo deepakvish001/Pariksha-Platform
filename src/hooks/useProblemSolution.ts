@@ -63,6 +63,14 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     notes: boolean;
     code: Partial<Record<LangId, boolean>>;
   }>({ notes: false, code: {} });
+  /**
+   * One-step previous-code buffer per language. Updated whenever setCode
+   * changes that language's value, so a subsequent undoCodeChange restores
+   * the prior content for just that language.
+   */
+  const [undoBuffer, setUndoBuffer] = useState<Partial<Record<LangId, string>>>(
+    {},
+  );
 
   const debounceRef = useRef<number | null>(null);
   const pendingRef = useRef<SolutionEntry | null>(null);
@@ -74,6 +82,7 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
       setEntry(empty);
       setSavedAt(null);
       setDirty({ notes: false, code: {} });
+      setUndoBuffer({});
       dirtyMarksRef.current = new Set();
       return;
     }
@@ -89,6 +98,7 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     setEntry(normalised);
     setSavedAt(normalised.updatedAt || null);
     setDirty({ notes: false, code: {} });
+    setUndoBuffer({});
     dirtyMarksRef.current = new Set();
   }, [slug]);
 
@@ -147,6 +157,11 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
   const setCode = useCallback(
     (code: string) => {
       setEntry((prev) => {
+        const previousCode = prev.code[language] ?? "";
+        // Only push to undo buffer if the value actually changed.
+        if (previousCode !== code) {
+          setUndoBuffer((b) => ({ ...b, [language]: previousCode }));
+        }
         const next = { ...prev, code: { ...prev.code, [language]: code } };
         schedule(next, { code: language });
         return next;
@@ -154,6 +169,30 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
       setDirty((d) => ({ ...d, code: { ...d.code, [language]: true } }));
     },
     [schedule, language],
+  );
+
+  /**
+   * Revert the current language's code to its previous value (one-step undo).
+   * Notes and other languages are untouched. Returns true if anything was
+   * undone so callers can show a toast.
+   */
+  const undoCodeChange = useCallback(
+    (lang: LangId): boolean => {
+      const prevValue = undoBuffer[lang];
+      if (prevValue === undefined) return false;
+      setEntry((prev) => {
+        const currentValue = prev.code[lang] ?? "";
+        // Re-arm the undo buffer with the value we are reverting from so a
+        // second click acts like a redo.
+        setUndoBuffer((b) => ({ ...b, [lang]: currentValue }));
+        const next = { ...prev, code: { ...prev.code, [lang]: prevValue } };
+        schedule(next, { code: lang });
+        return next;
+      });
+      setDirty((d) => ({ ...d, code: { ...d.code, [lang]: true } }));
+      return true;
+    },
+    [schedule, undoBuffer],
   );
 
   // Flush on unmount / slug change
@@ -186,6 +225,7 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     setEntry({ ...empty });
     setSavedAt(null);
     setDirty({ notes: false, code: {} });
+    setUndoBuffer({});
     return previous;
   }, [slug]);
 
@@ -206,6 +246,7 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
       setEntry(restored);
       setSavedAt(restored.updatedAt);
       setDirty({ notes: false, code: {} });
+      setUndoBuffer({});
     },
     [slug],
   );
@@ -229,6 +270,9 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     setCode,
     clear,
     restore,
+    undoCodeChange,
+    /** True when there is a per-language code-undo available. */
+    canUndoCode: (lang: LangId) => undoBuffer[lang] !== undefined,
     /** True if the current language's editor has edits not yet flushed. */
     hasUnsavedCurrentCode,
     /** True if any field is dirty (used for switch confirmations). */

@@ -46,6 +46,7 @@ import { MonacoEditor } from "@/components/coding/MonacoEditor";
 import { useToast } from "@/hooks/use-toast";
 import { LANGUAGES, getLanguageById, type LangId } from "@/data/codingProblemsData";
 import type { SolutionEntry } from "@/hooks/useProblemSolution";
+import type { TimestampFormat } from "@/hooks/useEditorPrefs";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -67,31 +68,59 @@ interface Props {
   onClear: () => SolutionEntry | null;
   /** Restores a previously-cleared snapshot. */
   onRestore: (snapshot: SolutionEntry) => void;
+  /** Per-language one-step undo for code edits. */
+  onUndoCodeChange: (lang: LangId) => boolean;
+  canUndoCode: (lang: LangId) => boolean;
   /** True when the editor has unsaved changes for the current language. */
   hasUnsavedCurrentCode: boolean;
   savedAt: number | null;
   hasNotes: boolean;
   hasAnyCode: boolean;
   isComplete: boolean;
+  /** "relative" → "5m ago", "exact" → "14:32:11". */
+  timestampFormat: TimestampFormat;
+  onToggleTimestampFormat: () => void;
   fontSize?: number;
 }
 
-const formatSavedLabel = (savedAt: number | null) => {
-  if (!savedAt) return "Not saved yet";
-  const diff = Date.now() - savedAt;
-  if (diff < 3000) return "Saved";
-  if (diff < 60_000) return `Saved ${Math.floor(diff / 1000)}s ago`;
-  return `Saved ${Math.floor(diff / 60_000)}m ago`;
+const formatExact = (ts: number) => {
+  const d = new Date(ts);
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  return sameDay
+    ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : d.toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 };
 
-const formatRelative = (ts: number | undefined) => {
-  if (!ts) return "";
+const formatRelativeShort = (ts: number) => {
   const diff = Date.now() - ts;
   if (diff < 5000) return "just now";
   if (diff < 60_000) return `${Math.floor(diff / 1000)}s ago`;
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
   if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
   return `${Math.floor(diff / 86_400_000)}d ago`;
+};
+
+const formatTimestamp = (ts: number | undefined, fmt: TimestampFormat) => {
+  if (!ts) return "";
+  return fmt === "exact" ? formatExact(ts) : formatRelativeShort(ts);
+};
+
+const formatSavedLabel = (savedAt: number | null, fmt: TimestampFormat) => {
+  if (!savedAt) return "Not saved yet";
+  if (fmt === "exact") return `Saved ${formatExact(savedAt)}`;
+  const diff = Date.now() - savedAt;
+  if (diff < 3000) return "Saved";
+  if (diff < 60_000) return `Saved ${Math.floor(diff / 1000)}s ago`;
+  return `Saved ${Math.floor(diff / 60_000)}m ago`;
 };
 
 /**
@@ -111,11 +140,15 @@ export const MySolutionPanel = ({
   onUseCurrentDraft,
   onClear,
   onRestore,
+  onUndoCodeChange,
+  canUndoCode,
   hasUnsavedCurrentCode,
   savedAt,
   hasNotes,
   hasAnyCode,
   isComplete,
+  timestampFormat,
+  onToggleTimestampFormat,
   fontSize = 13,
 }: Props) => {
   const [mode, setMode] = useState<"edit" | "preview">("edit");
@@ -127,6 +160,7 @@ export const MySolutionPanel = ({
 
   const hasCode = code.trim().length > 0;
   const hasCurrentLangSaved = savedLanguages.includes(language);
+  const canUndoCurrent = canUndoCode(language);
 
   const handleCopy = async () => {
     if (!hasCode) return;
@@ -201,6 +235,30 @@ export const MySolutionPanel = ({
     }
   };
 
+  /** Discard unsaved edits in the current language (revert to last-saved value)
+   *  and switch. Implemented via a one-step undo so the autosave doesn't
+   *  overwrite the saved version. */
+  const discardAndSwitch = () => {
+    if (!pendingLang) return;
+    if (canUndoCode(language)) onUndoCodeChange(language);
+    onLanguageChange(pendingLang);
+    setPendingLang(null);
+    toast({
+      title: "Edits discarded",
+      description: `Reverted ${languageLabel} to the last saved version.`,
+    });
+  };
+
+  const handleUndoCurrentCode = () => {
+    const ok = onUndoCodeChange(language);
+    toast({
+      title: ok ? "Undid last edit" : "Nothing to undo",
+      description: ok
+        ? `Reverted the ${languageLabel} editor to its previous value.`
+        : `No previous edit recorded for ${languageLabel} this session.`,
+    });
+  };
+
   // Progress badge state
   const progressStep = (hasNotes ? 1 : 0) + (hasAnyCode ? 1 : 0);
   const progressLabel = isComplete
@@ -252,14 +310,30 @@ export const MySolutionPanel = ({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            {savedAt ? (
-              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <Loader2 className="h-3 w-3 opacity-50" />
-            )}
-            {formatSavedLabel(savedAt)}
-          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onToggleTimestampFormat}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors rounded px-1 py-0.5"
+                  aria-label="Toggle timestamp format"
+                >
+                  {savedAt ? (
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                  ) : (
+                    <Loader2 className="h-3 w-3 opacity-50" />
+                  )}
+                  <span>{formatSavedLabel(savedAt, timestampFormat)}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Showing {timestampFormat === "exact" ? "exact" : "relative"}{" "}
+                time. Click to switch to{" "}
+                {timestampFormat === "exact" ? "relative" : "exact"}.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -417,6 +491,27 @@ export const MySolutionPanel = ({
                 </Tooltip>
               </TooltipProvider>
             )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 gap-1.5 text-xs"
+                    onClick={handleUndoCurrentCode}
+                    disabled={!canUndoCurrent}
+                  >
+                    <Undo2 className="h-3 w-3" />
+                    Undo last edit
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {canUndoCurrent
+                    ? `Revert ${languageLabel} code to its previous value. Notes and other languages stay unchanged.`
+                    : `No prior ${languageLabel} edit recorded this session.`}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button
               size="sm"
               variant="ghost"
@@ -444,7 +539,7 @@ export const MySolutionPanel = ({
               const info = getLanguageById(id);
               const active = id === language;
               const ts = codeUpdatedAt[id];
-              const rel = formatRelative(ts);
+              const rel = formatTimestamp(ts, timestampFormat);
               return (
                 <TooltipProvider key={id}>
                   <Tooltip>
@@ -516,18 +611,30 @@ export const MySolutionPanel = ({
             <AlertDialogDescription>
               Your current edits to{" "}
               <span className="font-medium">{languageLabel}</span> haven't been
-              flushed yet. They'll autosave and overwrite the previously-saved{" "}
-              {languageLabel} solution. Continue switching to{" "}
+              flushed yet. Choose how to handle them before switching to{" "}
               <span className="font-medium">
                 {pendingLang ? getLanguageById(pendingLang).label : ""}
               </span>
-              ?
+              .
+              <span className="block mt-2 text-xs">
+                <strong>Save &amp; switch</strong> — flush edits (overwrites the
+                previously-saved {languageLabel} code).
+                <br />
+                <strong>Discard &amp; switch</strong> — revert {languageLabel} to
+                its last saved value, then switch.
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel>Stay on {languageLabel}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={discardAndSwitch}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Discard &amp; switch
+            </AlertDialogAction>
             <AlertDialogAction onClick={confirmLanguageChange}>
-              Save & switch
+              Save &amp; switch
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
