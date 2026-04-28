@@ -121,7 +121,7 @@ const CodingProblems = () => {
   const filterSig = `${search}|${difficulty}|${selectedTopics.join(",")}|${status}|${sort}|${bookmarked ? 1 : 0}|${page}`;
 
   // On first mount: validate URL params (strip invalid view/page) and hydrate
-  // last page + scroll from storage.
+  // last page + scroll + saved sort from storage.
   useEffect(() => {
     try {
       const next = new URLSearchParams(params);
@@ -149,6 +149,15 @@ const CodingProblems = () => {
         const n = saved ? parseInt(saved, 10) : NaN;
         if (Number.isFinite(n) && n > 1) {
           next.set("page", String(n));
+          dirty = true;
+        }
+      }
+
+      // If no ?sort=, hydrate from saved per-list sort (3-state)
+      if (!next.has("sort")) {
+        const savedSort = tablePrefsRef.current?.getSavedSort("__list__");
+        if (savedSort && savedSort !== "default") {
+          next.set("sort", savedSort);
           dirty = true;
         }
       }
