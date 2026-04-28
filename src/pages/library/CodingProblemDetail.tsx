@@ -53,6 +53,8 @@ import { useCodingProblemBookmarks } from "@/hooks/useCodingProblemBookmarks";
 import { LoginPromptDialog } from "@/components/LoginPromptDialog";
 import { ProblemDetailHeader } from "@/components/library/coding/ProblemDetailHeader";
 import { AttemptTimeline } from "@/components/library/coding/AttemptTimeline";
+import { SubmissionDetailsDrawer } from "@/components/library/coding/SubmissionDetailsDrawer";
+import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: string) =>
