@@ -124,5 +124,12 @@ export const useCodeDraft = (problemSlug: string, language: string) => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
   }, []);
 
-  return { draft, draftLoaded: loaded, saveDraft: save, flushDraft };
+  return {
+    draft,
+    draftLoaded: loaded,
+    saveDraft: save,
+    flushDraft,
+    saveStatus: status,
+    lastSavedAt,
+  };
 };
