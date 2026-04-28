@@ -1,22 +1,22 @@
-// Run user code against custom stdin (logs to code_runs when authenticated)
-// Used for the "Run" button in the editor
+// Run user code against custom stdin via Fermion Online Compiler (RapidAPI).
+// Translates Fermion's batch submit + poll API to the existing RunResult shape
+// so the frontend stays unchanged.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const FERMION_KEY = Deno.env.get("FERMION_RAPIDAPI_KEY") ?? "";
+
+const FERMION_HOST = "fermion-online-compiler.p.rapidapi.com";
+const FERMION_BASE = `https://${FERMION_HOST}/public`;
+const SUBMIT_URL = `${FERMION_BASE}/request-dsa-code-execution-batch`;
+const RESULT_URL = `${FERMION_BASE}/get-dsa-code-execution-result-batch`;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
-const JUDGE0_URL = Deno.env.get("JUDGE0_URL")?.replace(/\/$/, "") ?? "";
-const JUDGE0_AUTH_HEADER = Deno.env.get("JUDGE0_AUTH_HEADER") ?? "X-Auth-Token";
-const JUDGE0_AUTH_TOKEN = Deno.env.get("JUDGE0_AUTH_TOKEN") ?? "";
-const JUDGE0_EXTRA_HEADER_NAME = Deno.env.get("JUDGE0_EXTRA_HEADER_NAME") ?? "";
-const JUDGE0_EXTRA_HEADER_VALUE = Deno.env.get("JUDGE0_EXTRA_HEADER_VALUE") ?? "";
 
 interface RunResult {
   status: { id: number; description: string };
@@ -31,7 +31,7 @@ interface RunResult {
 interface Diagnostics {
   error_stage?: "config" | "validation" | "submit" | "poll" | "unknown";
   requested_url?: string;
-  judge0_status?: number;
+  judge0_status?: number; // kept for frontend compat
   judge0_body?: string;
 }
 
@@ -42,12 +42,10 @@ interface FunctionResponse<T> {
   diagnostics?: Diagnostics;
 }
 
-class Judge0RequestError extends Error {
+class FermionError extends Error {
   diagnostics: Diagnostics;
-
   constructor(message: string, diagnostics: Diagnostics) {
     super(message);
-    this.name = "Judge0RequestError";
     this.diagnostics = diagnostics;
   }
 }
@@ -59,114 +57,211 @@ function respond<T>(payload: FunctionResponse<T>) {
   });
 }
 
-function judge0Headers(): Record<string, string> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (JUDGE0_AUTH_TOKEN) headers[JUDGE0_AUTH_HEADER] = JUDGE0_AUTH_TOKEN;
-  if (JUDGE0_EXTRA_HEADER_NAME && JUDGE0_EXTRA_HEADER_VALUE) {
-    headers[JUDGE0_EXTRA_HEADER_NAME] = JUDGE0_EXTRA_HEADER_VALUE;
-  }
-  return headers;
+function fermionHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    "x-rapidapi-host": FERMION_HOST,
+    "x-rapidapi-key": FERMION_KEY,
+  };
 }
 
-function friendlyJudge0Error(status: number, body: string): string {
-  const isRapidApi = JUDGE0_URL.includes("rapidapi.com");
-  const provider = isRapidApi ? "RapidAPI Judge0" : "Judge0";
-  const where = isRapidApi
-    ? "Check your RapidAPI key & host header in Lovable Cloud → Backend → Secrets (JUDGE0_AUTH_TOKEN, JUDGE0_AUTH_HEADER, JUDGE0_EXTRA_HEADER_NAME, JUDGE0_EXTRA_HEADER_VALUE). Also confirm you are subscribed to the Judge0 CE API on RapidAPI."
-    : "Check JUDGE0_URL and JUDGE0_AUTH_TOKEN in Lovable Cloud → Backend → Secrets, and verify your Judge0 server is reachable.";
-
-  if (status === 401 || status === 403) {
-    return `${provider} rejected the request (${status} ${status === 401 ? "Unauthorized" : "Forbidden"}). Your API key/host headers are missing or invalid. ${where}`;
-  }
-  if (status === 429) {
-    return `${provider} rate limit hit (429). You've exceeded your RapidAPI quota — upgrade your plan or wait for the quota to reset.`;
-  }
-  if (status === 404) {
-    return `${provider} endpoint not found (404). Verify JUDGE0_URL is correct (should be the base URL, e.g. https://judge0-ce.p.rapidapi.com — no trailing path).`;
-  }
-  if (status >= 500) {
-    return `${provider} server error (${status}). The code execution service is temporarily unavailable. Try again in a moment.`;
-  }
-  return `${provider} request failed (${status})${body ? `: ${body.slice(0, 300)}` : ""}. ${where}`;
+// --- Base64URL helpers ---
+function bytesToB64Url(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  const std = btoa(bin);
+  return std.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
-
-const b64encode = (s: string) => btoa(unescape(encodeURIComponent(s ?? "")));
-const b64decode = (s: string | null | undefined) => {
+function b64UrlEncode(s: string): string {
+  return bytesToB64Url(new TextEncoder().encode(s ?? ""));
+}
+function b64UrlDecode(s: string | null | undefined): string {
   if (!s) return "";
   try {
-    return decodeURIComponent(escape(atob(s)));
+    const padded = s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4);
+    const bin = atob(padded);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
   } catch {
     return "";
   }
-};
+}
 
-async function runOnJudge0(payload: {
-  source_code: string;
-  language_id: number;
+// Map Judge0 language IDs (frontend) -> Fermion language enum
+function judge0ToFermion(id: number): string | null {
+  switch (id) {
+    case 71: return "Python";        // Python 3
+    case 70: return "Python";        // Python 2 fallback
+    case 54: return "Cpp";           // C++ (GCC 9.2)
+    case 76: return "Cpp";
+    case 62: return "Java";
+    case 63: return "NodeJs";        // JS (Node)
+    case 74: return "NodeJs";        // TS -> run as JS (Fermion has no TS)
+    case 50: return "C";             // C
+    case 60: return "Go";
+    default: return null;
+  }
+}
+
+// Map Fermion runStatus -> Judge0-like status object the frontend already understands
+function fermionStatusToJudge0(runStatus: string | undefined): { id: number; description: string } {
+  switch (runStatus) {
+    case "successful":            return { id: 3,  description: "Accepted" };
+    case "wrong-answer":          return { id: 4,  description: "Wrong Answer" };
+    case "time-limit-exceeded":   return { id: 5,  description: "Time Limit Exceeded" };
+    case "compilation-error":     return { id: 6,  description: "Compilation Error" };
+    case "non-zero-exit-code":    return { id: 7,  description: "Runtime Error (NZEC)" };
+    case "died-sigsev":           return { id: 11, description: "Runtime Error (SIGSEGV)" };
+    case "died-sigxfsz":          return { id: 9,  description: "Runtime Error (SIGXFSZ)" };
+    case "died-sigfpe":           return { id: 8,  description: "Runtime Error (SIGFPE)" };
+    case "died-sigabrt":          return { id: 10, description: "Runtime Error (SIGABRT)" };
+    case "internal-isolate-error":return { id: 13, description: "Internal Error" };
+    default:                      return { id: 14, description: "Exec Format Error" };
+  }
+}
+
+interface FermionExecOutcome {
+  runStatus: string;
+  stdout: string;
+  stderr: string;
+  timeMs: number | null;
+  memoryKb: number | null;
+}
+
+async function submitToFermion(payload: {
+  language: string;
+  source: string;
   stdin?: string;
-  expected_output?: string;
-  cpu_time_limit?: number;
-  memory_limit?: number;
-}): Promise<RunResult> {
-  const submitUrl = `${JUDGE0_URL}/submissions?base64_encoded=true&wait=false`;
-  // Submit
-  const submitRes = await fetch(submitUrl, {
-    method: "POST",
-    headers: judge0Headers(),
-    body: JSON.stringify({
-      source_code: b64encode(payload.source_code),
-      language_id: payload.language_id,
-      stdin: payload.stdin ? b64encode(payload.stdin) : undefined,
-      expected_output: payload.expected_output
-        ? b64encode(payload.expected_output)
-        : undefined,
-      cpu_time_limit: payload.cpu_time_limit ?? 5,
-      memory_limit: payload.memory_limit ?? 256000,
-    }),
-  });
-
-  if (!submitRes.ok) {
-    const errText = await submitRes.text();
-    throw new Judge0RequestError(
-      friendlyJudge0Error(submitRes.status, errText),
+  cpuMs: number;
+  wallMs: number;
+  memKb: number;
+}): Promise<string> {
+  const body = {
+    data: [
       {
-        error_stage: "submit",
-        requested_url: submitUrl,
-        judge0_status: submitRes.status,
-        judge0_body: errText || undefined,
+        data: {
+          language: payload.language,
+          sourceCodeAsBase64UrlEncoded: b64UrlEncode(payload.source),
+          stdinStringAsBase64UrlEncoded: payload.stdin ? b64UrlEncode(payload.stdin) : undefined,
+          runConfig: {
+            cpuTimeLimitInMilliseconds: payload.cpuMs,
+            wallTimeLimitInMilliseconds: payload.wallMs,
+            memoryLimitInKilobyte: payload.memKb,
+          },
+        },
       },
-    );
-  }
+    ],
+  };
 
-  const { token } = await submitRes.json();
-  if (!token) throw new Error("Judge0 returned no token");
-
-  // Poll
-  for (let i = 0; i < 25; i++) {
-    await new Promise((r) => setTimeout(r, 600));
-    const r = await fetch(
-      `${JUDGE0_URL}/submissions/${token}?base64_encoded=true&fields=status,stdout,stderr,compile_output,message,time,memory`,
-      { headers: judge0Headers() },
-    );
-    if (!r.ok) continue;
-    const data = await r.json();
-    // status.id 1=In Queue, 2=Processing, >2 done
-    if (data.status && data.status.id > 2) {
-      return {
-        status: data.status,
-        stdout: b64decode(data.stdout),
-        stderr: b64decode(data.stderr),
-        compile_output: b64decode(data.compile_output),
-        message: b64decode(data.message),
-        time: data.time ? parseFloat(data.time) : null,
-        memory: data.memory ?? null,
-      };
-    }
-  }
-  throw new Judge0RequestError("Judge0 polling timed out", {
-    error_stage: "poll",
-    requested_url: `${JUDGE0_URL}/submissions/${token}`,
+  const res = await fetch(SUBMIT_URL, {
+    method: "POST",
+    headers: fermionHeaders(),
+    body: JSON.stringify(body),
   });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new FermionError(`Fermion submit failed (${res.status}): ${text.slice(0, 300)}`, {
+      error_stage: "submit",
+      requested_url: SUBMIT_URL,
+      judge0_status: res.status,
+      judge0_body: text,
+    });
+  }
+  let json: any;
+  try { json = JSON.parse(text); } catch {
+    throw new FermionError("Fermion submit returned non-JSON", {
+      error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text,
+    });
+  }
+  // Response shape: { output: { data: [{ output: { taskUniqueId } }] } } — be permissive.
+  const taskId =
+    json?.output?.data?.[0]?.output?.taskUniqueId ??
+    json?.data?.[0]?.output?.taskUniqueId ??
+    json?.output?.taskUniqueId ??
+    json?.taskUniqueId;
+  if (!taskId || typeof taskId !== "string") {
+    throw new FermionError("Fermion submit: no taskUniqueId in response", {
+      error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500),
+    });
+  }
+  return taskId;
+}
+
+async function pollFermion(taskId: string): Promise<FermionExecOutcome> {
+  for (let i = 0; i < 40; i++) {
+    await new Promise((r) => setTimeout(r, 700));
+    const res = await fetch(RESULT_URL, {
+      method: "POST",
+      headers: fermionHeaders(),
+      body: JSON.stringify({ data: [{ data: { taskUniqueIds: [taskId] } }] }),
+    });
+    if (!res.ok) continue;
+    const text = await res.text();
+    let json: any;
+    try { json = JSON.parse(text); } catch { continue; }
+
+    // Walk the response for the first task entry.
+    const entries: any[] =
+      json?.output?.data?.[0]?.output?.results ??
+      json?.output?.data?.[0]?.output?.tasks ??
+      json?.data?.[0]?.output?.results ??
+      json?.output?.results ??
+      [];
+    const task = entries.find((e: any) =>
+      (e?.taskUniqueId ?? e?.id) === taskId
+    ) ?? entries[0];
+
+    if (!task) continue;
+    const taskStatus = task?.taskStatus ?? task?.status;
+    if (taskStatus !== "Finished") continue;
+
+    const result = task?.executionResult ?? task?.result ?? task;
+    return {
+      runStatus: result?.runStatus ?? result?.status ?? "unknown",
+      stdout: b64UrlDecode(result?.stdoutBase64UrlEncoded ?? result?.stdout),
+      stderr: b64UrlDecode(result?.stderrBase64UrlEncoded ?? result?.stderr),
+      timeMs:
+        typeof result?.timeTakenInMilliseconds === "number" ? result.timeTakenInMilliseconds :
+        typeof result?.cpuTimeInMilliseconds === "number" ? result.cpuTimeInMilliseconds : null,
+      memoryKb:
+        typeof result?.memoryUsedInKilobyte === "number" ? result.memoryUsedInKilobyte :
+        typeof result?.memoryInKilobyte === "number" ? result.memoryInKilobyte : null,
+    };
+  }
+  throw new FermionError("Fermion polling timed out", {
+    error_stage: "poll", requested_url: RESULT_URL,
+  });
+}
+
+async function runOnFermion(payload: {
+  source_code: string;
+  language: string;
+  stdin?: string;
+  cpu_ms: number;
+  wall_ms: number;
+  mem_kb: number;
+}): Promise<RunResult> {
+  const taskId = await submitToFermion({
+    language: payload.language,
+    source: payload.source_code,
+    stdin: payload.stdin,
+    cpuMs: payload.cpu_ms,
+    wallMs: payload.wall_ms,
+    memKb: payload.mem_kb,
+  });
+  const outcome = await pollFermion(taskId);
+  const status = fermionStatusToJudge0(outcome.runStatus);
+  const isCompileErr = outcome.runStatus === "compilation-error";
+  return {
+    status,
+    stdout: outcome.stdout,
+    stderr: outcome.stderr,
+    compile_output: isCompileErr ? (outcome.stderr || "Compilation failed") : "",
+    message: outcome.runStatus,
+    time: outcome.timeMs != null ? outcome.timeMs / 1000 : null,
+    memory: outcome.memoryKb,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -175,54 +270,45 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (!JUDGE0_URL) {
+    if (!FERMION_KEY) {
       return respond<RunResult>({
         ok: false,
-        error: "Code execution is not configured. Add JUDGE0_URL (and JUDGE0_AUTH_TOKEN / JUDGE0_AUTH_HEADER for RapidAPI) in Lovable Cloud → Backend → Secrets.",
-        diagnostics: { error_stage: "config" },
-      });
-    }
-    if (JUDGE0_URL.includes("rapidapi.com") && (!JUDGE0_AUTH_TOKEN || !JUDGE0_EXTRA_HEADER_VALUE)) {
-      return respond<RunResult>({
-        ok: false,
-        error: "RapidAPI Judge0 requires both an API key and host header. Set JUDGE0_AUTH_TOKEN (your x-rapidapi-key) and JUDGE0_EXTRA_HEADER_NAME=x-rapidapi-host + JUDGE0_EXTRA_HEADER_VALUE=judge0-ce.p.rapidapi.com in Lovable Cloud → Backend → Secrets.",
+        error: "Code execution is not configured. Add FERMION_RAPIDAPI_KEY in Lovable Cloud → Backend → Secrets.",
         diagnostics: { error_stage: "config" },
       });
     }
 
     const body = await req.json();
-    const { source_code, language_id, stdin, expected_output, problem_slug, language } = body ?? {};
+    const { source_code, language_id, stdin, problem_slug, language } = body ?? {};
 
     if (typeof source_code !== "string" || source_code.length === 0) {
-      return respond<RunResult>({
-        ok: false,
-        error: "source_code required",
-        diagnostics: { error_stage: "validation" },
-      });
+      return respond<RunResult>({ ok: false, error: "source_code required", diagnostics: { error_stage: "validation" } });
     }
     if (source_code.length > 50000) {
-      return respond<RunResult>({
-        ok: false,
-        error: "source_code too large (50KB max)",
-        diagnostics: { error_stage: "validation" },
-      });
+      return respond<RunResult>({ ok: false, error: "source_code too large (50KB max)", diagnostics: { error_stage: "validation" } });
     }
     if (typeof language_id !== "number") {
+      return respond<RunResult>({ ok: false, error: "language_id required", diagnostics: { error_stage: "validation" } });
+    }
+    const fermionLang = judge0ToFermion(language_id);
+    if (!fermionLang) {
       return respond<RunResult>({
         ok: false,
-        error: "language_id required",
+        error: `Language not supported by Fermion (language_id=${language_id})`,
         diagnostics: { error_stage: "validation" },
       });
     }
 
-    const result = await runOnJudge0({
+    const result = await runOnFermion({
       source_code,
-      language_id,
+      language: fermionLang,
       stdin: typeof stdin === "string" ? stdin : "",
-      expected_output: typeof expected_output === "string" ? expected_output : undefined,
+      cpu_ms: 5000,
+      wall_ms: 10000,
+      mem_kb: 262144,
     });
 
-    // Best-effort log to code_runs when the caller is authenticated and provided context
+    // Best-effort log to code_runs
     try {
       const authHeader = req.headers.get("Authorization");
       if (authHeader && typeof problem_slug === "string" && typeof language === "string") {
@@ -255,9 +341,7 @@ Deno.serve(async (req) => {
     return respond<RunResult>({ ok: true, data: result });
   } catch (err) {
     console.error("run-code error:", err);
-    const diagnostics = err instanceof Judge0RequestError
-      ? err.diagnostics
-      : { error_stage: "unknown" as const };
+    const diagnostics = err instanceof FermionError ? err.diagnostics : { error_stage: "unknown" as const };
     return respond<RunResult>({
       ok: false,
       error: (err as Error).message ?? "Unknown error",
