@@ -615,6 +615,10 @@ const CodingProblemDetail = () => {
                   fontSize={editorPrefs.fontSize}
                   syncStatus={mySolutionSyncStatus}
                   isCloudSynced={mySolutionIsCloudSynced}
+                  lastSyncedAt={mySolutionLastSyncedAt}
+                  onSignInClick={() =>
+                    navigate(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`)
+                  }
                 />
               </TabsContent>
 
