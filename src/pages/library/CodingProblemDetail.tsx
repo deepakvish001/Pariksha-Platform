@@ -10,6 +10,7 @@ import {
   Minus,
   Plus,
   Type,
+  ChevronRight,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -65,6 +66,7 @@ import { ProblemMetaStrip } from "@/components/library/coding/ProblemMetaStrip";
 import { NotesPanel } from "@/components/library/coding/NotesPanel";
 import { ProgressiveHints } from "@/components/library/coding/ProgressiveHints";
 import { MySolutionPanel } from "@/components/library/coding/MySolutionPanel";
+import { FloatingActionBar } from "@/components/library/coding/FloatingActionBar";
 import { useProblemNotes } from "@/hooks/useProblemNotes";
 import { useProblemSolution } from "@/hooks/useProblemSolution";
 import { useEditorPrefs } from "@/hooks/useEditorPrefs";
@@ -336,6 +338,46 @@ const CodingProblemDetail = () => {
     });
   }, [mySolutionLastConflictAt, toast]);
 
+  // Editor keyboard shortcuts. We use a ref-bag so we can read the latest
+  // handler closures without re-binding the listener on every render.
+  const shortcutBagRef = useRef<{
+    run: () => void;
+    submit: () => void;
+    reset: () => void;
+    busy: boolean;
+  }>({ run: () => {}, submit: () => {}, reset: () => {}, busy: false });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const target = e.target as HTMLElement | null;
+      // Skip when typing in plain inputs/textareas outside Monaco — Monaco
+      // surfaces its own command palette and doesn't bubble these by default.
+      const tag = target?.tagName?.toLowerCase();
+      const isPlainEditable =
+        tag === "input" ||
+        (tag === "textarea" && !target?.closest(".monaco-editor"));
+      if (isPlainEditable) return;
+
+      if (e.key === "Enter" && e.shiftKey) {
+        e.preventDefault();
+        if (!shortcutBagRef.current.busy) shortcutBagRef.current.submit();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (!shortcutBagRef.current.busy) shortcutBagRef.current.run();
+      } else if (e.key.toLowerCase() === "r" && e.shiftKey) {
+        // Ctrl/Cmd+Shift+R → reset starter (avoid clobbering browser hard reload
+        // which is Ctrl+Shift+R on most platforms — but here we're inside the
+        // app and users expect a guard; we still preventDefault for parity).
+        e.preventDefault();
+        if (!shortcutBagRef.current.busy) shortcutBagRef.current.reset();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   if (!problem) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
@@ -423,6 +465,14 @@ const CodingProblemDetail = () => {
 
   const acceptedExists = submissions.some((s) => s.verdict === "Accepted");
 
+  // Keep the shortcut bag pointing at the latest closures + busy state.
+  shortcutBagRef.current = {
+    run: handleRun,
+    submit: handleSubmit,
+    reset: handleReset,
+    busy: isRunning || isSubmitting,
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       <Helmet>
@@ -439,6 +489,20 @@ const CodingProblemDetail = () => {
               <span className="hidden sm:inline">All Problems</span>
             </Link>
           </Button>
+          {/* Breadcrumb — collapses to current page on small screens */}
+          <nav
+            aria-label="Breadcrumb"
+            className="hidden md:flex items-center gap-1 text-xs text-muted-foreground min-w-0"
+          >
+            <Link to="/library/problems" className="hover:text-foreground transition-colors">
+              Library
+            </Link>
+            <ChevronRight className="h-3 w-3 opacity-60" />
+            <Link to="/library/problems" className="hover:text-foreground transition-colors">
+              Problems
+            </Link>
+            <ChevronRight className="h-3 w-3 opacity-60" />
+          </nav>
           <div className="min-w-0 flex items-center gap-2">
             <h1 className="font-semibold text-sm sm:text-base truncate">{problem.title}</h1>
             <Badge variant="outline" className={cn("font-medium hidden sm:inline-flex", difficultyClass(problem.difficulty))}>
@@ -453,6 +517,7 @@ const CodingProblemDetail = () => {
             variant="outline"
             size="sm"
             className="gap-1.5"
+            title="Run code (Ctrl/Cmd+Enter)"
           >
             {isRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">Run</span>
@@ -462,6 +527,7 @@ const CodingProblemDetail = () => {
             disabled={isRunning || isSubmitting}
             size="sm"
             className="gap-1.5"
+            title="Submit solution (Ctrl/Cmd+Shift+Enter)"
           >
             {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             Submit
@@ -1022,6 +1088,14 @@ const CodingProblemDetail = () => {
         open={!!detailSubmission || (!!searchParams.get("sub") && submissionsLoading)}
         loading={submissionsLoading && !detailSubmission && !!searchParams.get("sub")}
         onOpenChange={(o) => !o && closeSubmission()}
+      />
+
+      <FloatingActionBar
+        onRun={handleRun}
+        onSubmit={handleSubmit}
+        onReset={handleReset}
+        isRunning={isRunning}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

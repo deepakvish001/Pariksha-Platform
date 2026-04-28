@@ -1,105 +1,169 @@
-# Better Coding Problems experience
+Coding Problems — Listing & Detail Page Upgrades
 
-Goal: add features that meaningfully change how you discover, plan, and solve problems — not just visual reshuffles. Each item earns its place by saving clicks, surfacing missing info, or unlocking a workflow you can't do today.
+The pages already have a strong foundation (filters, recommendations, mastery chips, My Solution sync, hints, submissions, runs). This plan adds the missing **discovery, focus, and workspace** features that take it from "complete" to "best-in-class".
 
-## A. Problems list (`/library/problems`)
+Nothing here requires schema changes — everything builds on existing tables (`code_submissions`, `code_runs`, `user_problem_solutions`, `coding_problems_meta`, bookmarks, attempt stats).
 
-1. **Smart "Recommended for you" strip** above the table
-   - Picks 3–5 problems based on: weakest topic (lowest acceptance), oldest unsolved bookmark, "almost there" (attempted ≥2× but never AC), and a stretch problem (next difficulty). Each card explains *why* it's recommended.
-   - Dismissable per session.
+---
 
-2. **Topic chips with mastery bars**
-   - Below the search row, render topic chips colored by your mastery (solved / total). Click to filter; long-press / kebab for "Show only weak topics".
+## A. Listing page (`/library/problems`) — Discovery & Focus
 
-3. **Quick row preview on hover (desktop)**
-   - Hovering a row shows a small popover: difficulty, top 3 topics, your best runtime/memory, last verdict, and a "Resume draft" link if you have unsubmitted code.
+### 1. Daily Challenge strip (above filters)
 
-4. **Inline row actions on hover**
-   - Bookmark, "Open in new tab", "Copy link", and "Mark for review" appear at the row end. Keyboard accessible.
+A single highlighted problem per UTC day, deterministically picked from problems the user hasn't solved. Shows:
 
-5. **Saved filter presets**
-   - Save the current filter+sort combo with a name ("Weekly grind", "Hard graphs"). Stored in localStorage. One-click apply, rename, delete.
+- Title + difficulty + topics
+- Acceptance %, est. time
+- "Solve today's challenge" CTA + a small "streak" counter (days in a row a daily was attempted) read from `code_submissions`.
 
-6. **Keyboard navigation**
-   - `j/k` move row focus, `Enter` opens, `b` bookmarks, `/` focuses search, `g g` jumps to top, `?` shows a shortcut cheat-sheet sheet.
+### 2. Compact "Focus Mode" toggle
 
-7. **Density toggle** (compact / comfortable) persisted with table prefs.
+Hides the stats header, recommendation strip, and topic-mastery chips. Persists in `localStorage`. Useful when users just want the table.
 
-8. **Better empty / error states**
-   - When a single filter is the only blocker, suggest "Remove [topic: Trees]" as a one-click fix.
+### 3. Smart filter chips row (under the search bar)
 
-## B. Problem detail (`/library/problems/:slug`)
+One-click presets that update the existing filter URL params:
 
-1. **Problem meta strip** under the title
-   - Acceptance %, your best runtime/memory percentile (mocked from local stats), companies tag list (from data), estimated solve time, and a "similar problems" peek (3 chips by topic+difficulty).
+- **For You** (uses existing recommendation logic)
+- **Due for revision** (problems solved >7d ago without a recent re-attempt)
+- **Almost there** (attempted but not yet Accepted)
+- **Quick wins** (Easy + low est. time, unsolved)
+- **By company** dropdown using existing `companies` field
 
-2. **Editor productivity**
-   - Format / beautify button (Prettier for JS/TS, simple indent for others).
-   - Font size +/- and Vim-mode toggle (Monaco built-in), persisted per user.
-   - Auto-save indicator ("Saved 2s ago") next to the language picker.
-   - "Restore from history" — keep last 5 draft snapshots locally; pick one to restore.
+Each chip shows a live count next to the label.
 
-3. **Run panel upgrades**
-   - Multiple custom test cases (tabs you can add/remove), each with its own stdin and last output cached.
-   - Diff view for failed sample cases (expected vs got, character-level highlight).
-   - Copy-as-cURL for the failing case (handy for debugging locally).
+### 4. Inline preview drawer (hover/click row → side peek)
 
-4. **Submissions tab improvements**
-   - Compare any two submissions side-by-side (diff of source).
-   - "Best submission" pin with a trophy badge.
-   - Filter chips: All / Accepted / Failed / Language.
+Right-side `Sheet` that previews the problem (statement first 80 lines, examples, hints count, your acceptance) without leaving the list. CTA: "Open full editor".
 
-5. **Notes panel** (new tab "Notes")
-   - Personal markdown notes per problem, autosaved locally. Searchable from the list page.
+### 5. Keyboard-first row navigation
 
-6. **Hints UX**
-   - Progressive disclosure with a "Reveal next hint" button instead of N independent toggles. Track how many hints used per problem.
+- `j` / `k` move row selection
+- `Enter` opens detail
+- `b` toggles bookmark, `r` marks for revision, `/` focuses search
+Add a small "?" floating help that opens the existing `ShortcutsCheatSheet`.
 
-7. **Keyboard shortcuts in editor**
-   - `Cmd/Ctrl + Enter` runs, `Cmd/Ctrl + Shift + Enter` submits, `Cmd/Ctrl + K` opens command palette (language switch, reset, format, toggle layout).
+### 6. Density + columns control
 
-8. **Layout presets**
-   - Buttons for "Focus" (editor-only), "Split" (current), "Reading" (description-wide). Persisted.
+A small toolbar button → popover lets users toggle:
 
-## C. Cross-cutting polish
+- Row density: **Compact / Comfortable**
+- Show/hide columns: Acceptance, Companies, Last attempt, Topics
+Persists with the existing `useCodingProblemsTablePrefs` hook.
 
-- Sticky-header offset is now 80px — verify and tune for the detail page toolbar height.
-- All toasts use sonner consistently; failure toasts include actionable retry where relevant.
-- Add a tiny "What's new on this page" popover that explains the new features once.
+### 7. Progress ring in stats header
 
-## Technical details
+Replace one of the numeric tiles with a small SVG ring showing **% problems solved across all difficulties**, with hover tooltip per-difficulty. Visually anchors the page.
 
-**New files**
-- `src/components/library/coding/RecommendationStrip.tsx` — picks problems via heuristics over `useCodingAttemptStats`.
-- `src/components/library/coding/TopicMasteryChips.tsx` — chip row driven by per-topic solved/total.
-- `src/components/library/coding/RowQuickPreview.tsx` — hover popover (Radix HoverCard).
-- `src/components/library/coding/SavedFiltersMenu.tsx` — preset save/apply/rename/delete UI.
-- `src/components/library/coding/ShortcutsCheatSheet.tsx` — Sheet listing keymap.
-- `src/components/library/coding/ProblemMetaStrip.tsx` — under-title metadata.
-- `src/components/library/coding/EditorToolbarExtras.tsx` — format / font-size / vim toggle / autosave indicator.
-- `src/components/library/coding/CustomTestcasesPanel.tsx` — multi-tab stdin manager.
-- `src/components/library/coding/SubmissionDiffView.tsx` — side-by-side diff (use a small line-diff util, no new heavy dep).
-- `src/components/library/coding/NotesPanel.tsx` — markdown notes (reuse existing markdown renderer).
-- `src/components/library/coding/CommandPalette.tsx` — Cmd-K (cmdk is already in shadcn).
-- `src/hooks/useSavedFilterPresets.ts`
-- `src/hooks/useProblemNotes.ts`
-- `src/hooks/useDraftHistory.ts`
-- `src/hooks/useEditorPrefs.ts` (font size, vim, layout preset)
-- `src/hooks/useKeyboardShortcuts.ts`
+---
 
-**Edited files**
-- `src/pages/library/CodingProblems.tsx` — mount Recommendation strip, mastery chips, hover preview wrapper around rows, density toggle, saved presets menu, shortcuts cheat-sheet trigger.
-- `src/pages/library/CodingProblemDetail.tsx` — add Notes tab, meta strip, layout presets, command palette, editor extras, custom testcases, diff view, hints disclosure, shortcut bindings.
-- `src/components/coding/MonacoEditor.tsx` — accept `fontSize`, `vim`, `onSave` props.
-- `src/hooks/useCodingProblemsTablePrefs.ts` — add `density` field.
+## B. Detail page (`/library/problems/:slug`) — Workspace Upgrades
 
-**Storage keys (all `byteskill:` prefixed)**
-- `coding-saved-filters:v1`, `coding-problem-notes:v1`, `coding-draft-history:<slug>:<lang>:v1`,
-  `coding-editor-prefs:v1`, `coding-recs-dismissed:v1`, `coding-layout-preset:v1`.
+### 8. Resizable 3-pane layout
 
-**No backend changes.** Everything is client-side and works for guests too.
+Use `react-resizable-panels` (already common in shadcn stacks; if not installed, add it). Layout:
 
-## Out of scope (call out so we agree)
-- Real "companies asked" data — we'll use whatever is already in `codingProblemsData.ts` and show nothing if absent.
-- Server-synced notes/presets — local-only this round.
-- Ranking against other users — not added.
+```text
+┌──────────────┬────────────────────────────┐
+│ Tabs (left)  │ Editor + Test/Output below │
+│ (resizable)  │ (resizable vertically)     │
+└──────────────┴────────────────────────────┘
+```
+
+Sizes persisted in `localStorage`. Adds a small "Reset layout" button.
+
+### 9. New tab: "Companies & Frequency"
+
+Surface tagged companies (existing `companies` field) as a heat-style list:
+
+- Each company → badge + last-asked tier (if available, else just the company chip)
+- "Practice this company's set" button → links to `/library/problems?company=Google`
+
+### 10. New tab: "Discussion (Solo notes)"
+
+A second markdown notepad scoped to the problem, separate from "My Solution" notes. Saves to existing `user_problem_solutions` table (we add a `discussion` JSONB key — see backend note). Use case: brainstorming / questions to revisit. *Optional — drop if scope feels heavy.*
+
+### 11. Smart timer + Pomodoro mode
+
+Top-right of the editor:
+
+- Lightweight stopwatch that starts on first edit, pauses on idle (>60s no input).
+- "Pomodoro" toggle → 25-min focus / 5-min break with subtle toast.
+- On Accepted submission: shows total time-on-problem in the success toast and stores it locally per-slug.
+
+### 12. Diff viewer between submissions
+
+On the **Submissions** tab: select two rows → "Compare" opens a Monaco diff side-by-side. Helps users see what they changed between WA and AC.
+
+### 13. Test case workbench
+
+Replace the single stdin box with:
+
+- Tabbed view of sample tests (already in data) — click to load into stdin
+- "+ Custom" tab for a user's own input, persisted per-slug in `localStorage`
+- Per-test "Run only this" button
+
+### 14. Difficulty-aware estimated time + actual time
+
+Show alongside est. time: **"Your avg: Xm"** computed from `code_runs` first-edit → first AC, when available. Builds on the existing `estimatedMinutes` system.
+
+### 15. Solution explorer (after AC)
+
+Once the user has any Accepted submission, the "Reference" tab also shows:
+
+- Their own latest AC code (collapsible)
+- Quick stats: runtime/memory percentile vs their other ACs
+- "Save as My Solution" button (one click → `MySolutionPanel.onUseCurrentDraft`)
+
+### 16. Floating action bar (mobile + desktop)
+
+Sticky bottom bar with: **Run · Submit · Reset starter · Toggle hints**. Replaces hunting for buttons across panels on smaller screens.
+
+### 17. Keyboard shortcuts in editor
+
+- `Ctrl/Cmd + Enter` → Run
+- `Ctrl/Cmd + Shift + Enter` → Submit
+- `Ctrl/Cmd + S` → Save draft (already auto, but confirms)
+- `Ctrl/Cmd + .` → Toggle hint reveal
+Surface them in the existing `ShortcutsCheatSheet`.
+
+### 18. Visual progress on hints
+
+Progressive hints already persist reveal state — add a thin progress bar at the top of that tab: `2 / 4 hints revealed`, with a "Show all" / "Hide all" pair.
+
+### 19. "Mark as revisit" + scheduled review
+
+A button next to bookmark → schedules the problem for revisit using a simple SM-2-lite cadence stored in `localStorage` (3d / 7d / 14d). Surfaces in the **Due for revision** smart chip on the listing page.
+
+### 20. Subtle visual polish
+
+- Breadcrumb: `Library / Problems / Two Sum`
+- Difficulty rendered as a color-coded gradient pill (existing tokens, no hex)
+- Glass card for the editor wrapper consistent with the deep-black theme
+- Animated count-up for acceptance % and attempt counters (framer-motion)
+- Empty/loading states for every tab using `Skeleton`
+
+---
+
+## Technical Notes
+
+- **No DB migration required** for items 1–9, 11–20. Item 10 (separate discussion notes) would either reuse `user_problem_solutions.notes` with a section delimiter or add a sibling JSONB column — confirm before building.
+- **New deps**: `react-resizable-panels` (item 8). Diff viewer (item 12) reuses the already-loaded Monaco via its `DiffEditor` export — no new dep.
+- **All localStorage keys** prefixed `byteskill:coding:*` to match existing convention.
+- **All colors** via semantic Tailwind tokens (`primary`, `muted`, `emerald-500/10`, etc.) — no raw hex.
+- **All icons** from lucide-react with the existing `MapIcon` aliasing rule respected.
+- **Design**: glassmorphism cards, deep-black surfaces, animated orbs preserved.
+
+---
+
+## Suggested Build Order
+
+If you want to ship in waves rather than one big PR, I'd group them as:
+
+1. **Wave 1 (focus)** — items 2, 6, 16, 17, 20
+2. **Wave 2 (discovery)** — items 1, 3, 4, 7
+3. **Wave 3 (workspace)** — items 8, 11, 13, 18
+4. **Wave 4 (mastery loop)** — items 9, 12, 14, 15, 19
+5. **Wave 5 (optional)** — item 10
+
+Reply with which wave (or specific item numbers) you want first, and I'll implement it.

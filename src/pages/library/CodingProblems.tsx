@@ -19,6 +19,7 @@ import {
   Keyboard,
   Rows3,
   Rows2,
+  Focus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -80,6 +81,7 @@ import { TopicMasteryChips } from "@/components/library/coding/TopicMasteryChips
 import { SavedFiltersMenu } from "@/components/library/coding/SavedFiltersMenu";
 import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
 import { useSavedFilterPresets } from "@/hooks/useSavedFilterPresets";
+import { useListingFocusMode } from "@/hooks/useListingFocusMode";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -267,6 +269,7 @@ const CodingProblems = () => {
   // Persisted column visibility & widths (responsive — survives refresh).
   const tablePrefs = useCodingProblemsTablePrefs();
   tablePrefsRef.current = tablePrefs;
+  const { focusMode, toggle: toggleFocusMode } = useListingFocusMode();
 
   // Tracks whether we've finished initial sort hydration so we don't fire
   // a "Sort changed" toast for the URL/localStorage restoration on mount.
@@ -736,6 +739,29 @@ const CodingProblems = () => {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={focusMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={toggleFocusMode}
+                  className="gap-1.5 h-9"
+                  aria-pressed={focusMode}
+                >
+                  <Focus className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">
+                    {focusMode ? "Focus on" : "Focus"}
+                  </span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {focusMode
+                  ? "Show recommendations, stats, and topic mastery again."
+                  : "Hide ancillary panels and concentrate on the table."}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button variant="outline" size="sm" onClick={handleShareFilters} className="gap-1.5 h-9">
             <Share2 className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Share filters</span>
@@ -765,6 +791,24 @@ const CodingProblems = () => {
                   {c.label}
                 </DropdownMenuCheckboxItem>
               ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Row density</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={tablePrefs.density === "comfortable"}
+                onCheckedChange={() => tablePrefs.setDensity("comfortable")}
+                onSelect={(e) => e.preventDefault()}
+              >
+                <Rows3 className="h-3.5 w-3.5 mr-2" />
+                Comfortable
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={tablePrefs.density === "compact"}
+                onCheckedChange={() => tablePrefs.setDensity("compact")}
+                onSelect={(e) => e.preventDefault()}
+              >
+                <Rows2 className="h-3.5 w-3.5 mr-2" />
+                Compact
+              </DropdownMenuCheckboxItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onSelect={(e) => {
@@ -851,21 +895,25 @@ const CodingProblems = () => {
       </motion.div>
 
       {/* Smart recommendations */}
-      <RecommendationStrip
-        stats={{ solved, attempted, perProblem, loading }}
-        bookmarks={bookmarks}
-        dismissedKey="library-problems"
-      />
+      {!focusMode && (
+        <RecommendationStrip
+          stats={{ solved, attempted, perProblem, loading }}
+          bookmarks={bookmarks}
+          dismissedKey="library-problems"
+        />
+      )}
 
       {/* Stats */}
-      <ProblemStatsHeader
-        counts={counts}
-        totalSolved={solved.size}
-        weekSolved={weekSolved}
-        prevWeekSolved={prevWeekSolved}
-        continueProblem={continueProblem}
-        loading={loading}
-      />
+      {!focusMode && (
+        <ProblemStatsHeader
+          counts={counts}
+          totalSolved={solved.size}
+          weekSolved={weekSolved}
+          prevWeekSolved={prevWeekSolved}
+          continueProblem={continueProblem}
+          loading={loading}
+        />
+      )}
 
       {/* Filters */}
       <Card className="p-4 mb-4 sticky top-2 z-10 backdrop-blur supports-[backdrop-filter]:bg-card/80">
@@ -904,15 +952,17 @@ const CodingProblems = () => {
           activeCount={activeFilterCount}
           onClearAll={clearAll}
         />
-        <div className="mt-3 pt-3 border-t border-border/60">
-          <TopicMasteryChips
-            topics={ALL_TOPICS}
-            selectedTopics={selectedTopics}
-            onToggle={toggleTopic}
-            onShowOnlyWeak={showOnlyWeakTopics}
-            stats={{ solved, attempted, perProblem, loading }}
-          />
-        </div>
+        {!focusMode && (
+          <div className="mt-3 pt-3 border-t border-border/60">
+            <TopicMasteryChips
+              topics={ALL_TOPICS}
+              selectedTopics={selectedTopics}
+              onToggle={toggleTopic}
+              onShowOnlyWeak={showOnlyWeakTopics}
+              stats={{ solved, attempted, perProblem, loading }}
+            />
+          </div>
+        )}
       </Card>
 
       {/* Bulk actions */}
