@@ -259,6 +259,44 @@ const CodingProblems = () => {
   const tablePrefs = useCodingProblemsTablePrefs();
   tablePrefsRef.current = tablePrefs;
 
+  // Tracks whether we've finished initial sort hydration so we don't fire
+  // a "Sort changed" toast for the URL/localStorage restoration on mount.
+  const sortHydratedRef = useRef(false);
+  useEffect(() => {
+    // Mark hydrated on the next tick after first render commits.
+    sortHydratedRef.current = true;
+  }, []);
+
+  const setSort = (v: SortKey) => {
+    const prev = sort;
+    updateParams({ sort: v, page: "1" });
+    if (!sortHydratedRef.current) return;
+    if (prev === v) return;
+    const labelOf = (k: SortKey): string => {
+      const map: Partial<Record<SortKey, string>> = {
+        default: "Default",
+        title: "Title (A→Z)",
+        recent: "Most recent",
+        "diff-asc": "Difficulty (Easy→Hard)",
+        "diff-desc": "Difficulty (Hard→Easy)",
+        "status-asc": "Status (Solved first)",
+        "status-desc": "Status (Todo first)",
+        "accept-asc": "Acceptance (Low→High)",
+        "accept-desc": "Acceptance (High→Low)",
+        "attempts-asc": "Attempts (Low→High)",
+        "attempts-desc": "Attempts (High→Low)",
+      };
+      return map[k] ?? k;
+    };
+    toast.success(`Sorted by ${labelOf(v)}`, {
+      duration: 6000,
+      action: {
+        label: "Undo",
+        onClick: () => updateParams({ sort: prev, page: "1" }),
+      },
+    });
+  };
+
   // Persist sort (3-state) per list slug whenever it changes.
   useEffect(() => {
     tablePrefs.setSavedSort("__list__", sort);
