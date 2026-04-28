@@ -607,7 +607,7 @@ const CodingProblemDetail = () => {
     }
     setRunResult(null);
     setSubmitResult(null);
-    setExecutionErrorDetails(null);
+    setExecutionErrorDetails(false);
     setActiveBottomTab("output");
     try {
       const result = await run({
@@ -621,7 +621,7 @@ const CodingProblemDetail = () => {
           : {}),
       });
       setRunResult(result);
-      setExecutionErrorDetails(null);
+      setExecutionErrorDetails(false);
       refetchRuns();
     } catch (err) {
       setExecutionErrorDetails(true);
@@ -640,7 +640,7 @@ const CodingProblemDetail = () => {
     }
     setSubmitResult(null);
     setRunResult(null);
-    setExecutionErrorDetails(null);
+    setExecutionErrorDetails(false);
     setActiveBottomTab("output");
     // Auto-format right before submit so submitted code has consistent style.
     // Honors the user's "Format on submit" preference. Failures are non-blocking.
@@ -697,7 +697,7 @@ const CodingProblemDetail = () => {
           : {}),
       });
       setSubmitResult(result);
-      setExecutionErrorDetails(null);
+      setExecutionErrorDetails(false);
       refetchSubmissions();
       const isAccepted = result.verdict === "Accepted";
       const elapsedMs = sessionTimerRef.current?.getElapsedMs() ?? 0;
