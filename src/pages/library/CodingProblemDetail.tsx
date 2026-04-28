@@ -239,6 +239,11 @@ const CodingProblemDetail = () => {
                   <span className="ml-1.5 text-xs text-muted-foreground">({submissions.length})</span>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="runs">
+                Runs {runs.length > 0 && (
+                  <span className="ml-1.5 text-xs text-muted-foreground">({runs.length})</span>
+                )}
+              </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
