@@ -134,6 +134,29 @@ interface ProblemRunHistoryProps {
 export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
   const [sort, setSort] = useState<SortMode>("newest");
 
+  // Aggregate counts and find the latest verdict (by created_at, regardless of sort)
+  const summary = useMemo(() => {
+    const counts: Record<Verdict, number> = {
+      accepted: 0,
+      wrong: 0,
+      error: 0,
+      pending: 0,
+      unknown: 0,
+    };
+    let latest: { run: CodeRunRow; meta: VerdictMeta } | null = null;
+    for (const r of runs) {
+      const meta = getVerdictMeta(r.status);
+      counts[meta.verdict] += 1;
+      if (
+        !latest ||
+        new Date(r.created_at).getTime() > new Date(latest.run.created_at).getTime()
+      ) {
+        latest = { run: r, meta };
+      }
+    }
+    return { counts, latest };
+  }, [runs]);
+
   const sorted = useMemo(() => {
     const list = [...runs];
     switch (sort) {
