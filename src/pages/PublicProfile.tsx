@@ -577,8 +577,9 @@ const PublicProfile = () => {
               </CardContent>
             </Card>
           </motion.div>
+          </section>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div id="skills" className="scroll-mt-24 grid gap-6 lg:grid-cols-2">
             {/* Skills & Interests */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
