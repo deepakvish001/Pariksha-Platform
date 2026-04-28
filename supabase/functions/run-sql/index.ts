@@ -49,14 +49,19 @@ function respond<T>(payload: FunctionResponse<T>) {
 }
 
 let SQL: Awaited<ReturnType<typeof initSqlJs>> | null = null;
+let WASM_BYTES: Uint8Array | null = null;
 async function getSQL() {
   if (SQL) return SQL;
-  // Locate the wasm file inside the published package on the npm CDN that
-  // npm: specifiers resolve to.
-  SQL = await initSqlJs({
-    locateFile: (file: string) =>
-      `https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/${file}`,
-  });
+  if (!WASM_BYTES) {
+    const res = await fetch(
+      "https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.wasm",
+    );
+    if (!res.ok) throw new Error(`Failed to fetch sql-wasm.wasm: ${res.status}`);
+    WASM_BYTES = new Uint8Array(await res.arrayBuffer());
+  }
+  // Pass wasm bytes directly — the edge runtime cannot resolve URL paths via
+  // the default `locateFile` (it tries to readFile the URL as a local path).
+  SQL = await initSqlJs({ wasmBinary: WASM_BYTES });
   return SQL!;
 }
 
