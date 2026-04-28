@@ -1374,18 +1374,6 @@ const CodingProblems = () => {
                             >
                               {p.title}
                             </Link>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setPreviewSlug(p.slug);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded hover:bg-muted/50 transition-opacity shrink-0"
-                              aria-label={`Preview ${p.title}`}
-                              title="Quick preview"
-                            >
-                              <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                            </button>
                           </div>
                           {/* Mobile-only inline topics */}
                           <div className="md:hidden mt-1 flex flex-wrap gap-1">
