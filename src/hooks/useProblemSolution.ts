@@ -63,6 +63,14 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     notes: boolean;
     code: Partial<Record<LangId, boolean>>;
   }>({ notes: false, code: {} });
+  /**
+   * One-step previous-code buffer per language. Updated whenever setCode
+   * changes that language's value, so a subsequent undoCodeChange restores
+   * the prior content for just that language.
+   */
+  const [undoBuffer, setUndoBuffer] = useState<Partial<Record<LangId, string>>>(
+    {},
+  );
 
   const debounceRef = useRef<number | null>(null);
   const pendingRef = useRef<SolutionEntry | null>(null);
