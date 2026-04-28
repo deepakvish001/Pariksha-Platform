@@ -463,10 +463,17 @@ const CodingProblemDetail = () => {
     return { attempts, isSolved, isAttempted, solvedAt };
   }, [submissions]);
 
+  // Resolve starter code with SQL-aware fallback
+  const getStarter = (lang: LangId): string => {
+    if (!problem) return "";
+    if (lang === "sql") return problem.sql?.starter ?? "-- Write your SQL query here\n";
+    return problem.starterCode[lang] ?? "";
+  };
+
   // Initialize code from draft or starter
   useEffect(() => {
     if (!problem || !draftLoaded) return;
-    setCode(draft && draft.length > 0 ? draft : problem.starterCode[language]);
+    setCode(draft && draft.length > 0 ? draft : getStarter(language));
   }, [problem, language, draft, draftLoaded]);
 
   // Initialize stdin to first sample test
