@@ -364,6 +364,13 @@ const CodingProblems = () => {
   } = useCodingSelection();
 
   const [confirmUnbookmark, setConfirmUnbookmark] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  // Saved filter presets (localStorage).
+  const { presets, save: savePreset, remove: removePreset, rename: renamePreset } =
+    useSavedFilterPresets();
+  // Active row index for keyboard navigation (j/k/enter). -1 = none.
+  const [activeRowIdx, setActiveRowIdx] = useState<number>(-1);
+  const tableRef = useRef<HTMLDivElement | null>(null);
 
   // Build a fully-encoded shareable URL from current params (not raw window URL)
   const buildShareUrl = () => {
