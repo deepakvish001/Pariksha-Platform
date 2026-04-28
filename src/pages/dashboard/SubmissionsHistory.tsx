@@ -262,7 +262,9 @@ export default function SubmissionsHistory() {
     } catch (e) {
       if (e instanceof RunCancelledError) {
         setLastCancelledId(r.id);
-        toast.info("Re-run cancelled", { description: r.problem_slug });
+        toast.info("Re-run cancelled", {
+          description: `${r.problem_slug} • run ${r.id.slice(0, 8)}`,
+        });
       } else {
         const msg = e instanceof Error ? e.message : "Unknown error";
         setLastRerunError({ id: r.id, message: msg });
@@ -277,6 +279,9 @@ export default function SubmissionsHistory() {
     setSearchInput("");
     setSearchParams(new URLSearchParams(), { replace: true });
     setDetailRunId(null);
+    toast.success("Filters cleared", {
+      description: "Search, verdict, language, tab, and pages reset to defaults.",
+    });
   };
 
   if (!user) {
@@ -448,8 +453,12 @@ export default function SubmissionsHistory() {
                             disabled={isRunning}
                             onClick={() => handleRerun(r)}
                           >
-                            <Play className="h-3.5 w-3.5 mr-1" />
-                            Retry
+                            {isRunning ? (
+                              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                            ) : (
+                              <Play className="h-3.5 w-3.5 mr-1" />
+                            )}
+                            {isRunning ? "Retrying…" : "Retry"}
                           </Button>
                         ) : (
                           <Button
@@ -472,7 +481,7 @@ export default function SubmissionsHistory() {
                     )}
                     {lastCancelledId === r.id && (
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Re-run was cancelled.
+                        Re-run cancelled • {r.problem_slug} • run {r.id.slice(0, 8)}
                       </p>
                     )}
                   </Card>
@@ -488,8 +497,30 @@ export default function SubmissionsHistory() {
         </TabsContent>
       </Tabs>
 
-      <Sheet open={!!detailRun} onOpenChange={(o) => !o && setDetailRunId(null)}>
+      <Sheet open={!!detailRunId} onOpenChange={(o) => !o && setDetailRunId(null)}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          {!detailRun && detailRunId && !runsLoading && (
+            <div className="py-12 text-center space-y-4">
+              <Eye className="h-10 w-10 mx-auto text-muted-foreground" />
+              <div>
+                <h2 className="text-lg font-semibold">Run not found</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This run (<span className="font-mono">{detailRunId.slice(0, 8)}</span>) is no
+                  longer available. It may have been deleted, or it isn't on the current page of
+                  your filtered results.
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => setDetailRunId(null)}>
+                <X className="h-4 w-4 mr-1" /> Close
+              </Button>
+            </div>
+          )}
+          {!detailRun && detailRunId && runsLoading && (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+              Loading run…
+            </div>
+          )}
           {detailRun && (
             <>
               <SheetHeader>
@@ -532,8 +563,12 @@ export default function SubmissionsHistory() {
                       onClick={() => handleRerun(detailRun)}
                       disabled={isRunning}
                     >
-                      <Play className="h-3.5 w-3.5 mr-1" />
-                      Retry re-run
+                      {isRunning ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                      ) : (
+                        <Play className="h-3.5 w-3.5 mr-1" />
+                      )}
+                      {isRunning ? "Retrying…" : "Retry re-run"}
                     </Button>
                   ) : (
                     <Button
@@ -558,7 +593,7 @@ export default function SubmissionsHistory() {
                 )}
                 {lastCancelledId === detailRun.id && !isRunning && (
                   <div className="rounded border border-border bg-muted/30 p-2 text-muted-foreground">
-                    Re-run was cancelled.
+                    Re-run cancelled • {detailRun.problem_slug} • run {detailRun.id.slice(0, 8)}
                   </div>
                 )}
 
