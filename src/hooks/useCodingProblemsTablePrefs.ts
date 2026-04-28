@@ -38,6 +38,8 @@ const KEY = `byteskill:coding-problems-table-prefs:v${VERSION}`;
 interface Persisted {
   visible: Partial<Record<ProblemColumnId, boolean>>;
   widths: Partial<Record<ProblemColumnId, number>>;
+  /** Per-slug saved sort key (3-state). Use "__list__" for the main list. */
+  sortBySlug?: Record<string, string>;
 }
 
 const defaultPrefs = (): Persisted => {
@@ -47,7 +49,7 @@ const defaultPrefs = (): Persisted => {
     visible[c.id] = c.defaultVisible;
     widths[c.id] = c.defaultWidth;
   }
-  return { visible, widths };
+  return { visible, widths, sortBySlug: {} };
 };
 
 const read = (): Persisted => {
