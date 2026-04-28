@@ -1409,9 +1409,40 @@ const CodingProblems = () => {
                               </Badge>
                             ))}
                             {p.topics.length > 3 && (
-                              <Badge variant="outline" className="text-xs font-normal">
-                                +{p.topics.length - 3}
-                              </Badge>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex"
+                                    aria-label={`Show ${p.topics.length - 3} more topics`}
+                                  >
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs font-normal cursor-pointer hover:bg-muted/60 transition-colors"
+                                    >
+                                      +{p.topics.length - 3}
+                                    </Badge>
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  align="start"
+                                  className="w-auto max-w-xs p-2"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div className="flex flex-wrap gap-1">
+                                    {p.topics.slice(3).map((t) => (
+                                      <Badge
+                                        key={t}
+                                        variant="secondary"
+                                        className="text-xs font-normal"
+                                      >
+                                        {t}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             )}
                           </div>
                         </TableCell>
