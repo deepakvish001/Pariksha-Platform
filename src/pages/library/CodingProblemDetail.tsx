@@ -400,6 +400,7 @@ const CodingProblemDetail = () => {
   const handleCodeChange = (v: string) => {
     setCode(v);
     saveDraft(v);
+    sessionTimerRef.current?.poke();
   };
 
   const handleReset = () => {
@@ -455,10 +456,16 @@ const CodingProblemDetail = () => {
       });
       setSubmitResult(result);
       refetchSubmissions();
+      const isAccepted = result.verdict === "Accepted";
+      const elapsedMs = sessionTimerRef.current?.getElapsedMs() ?? 0;
+      const baseDesc = `${result.passed} / ${result.total} test cases passed`;
       toast({
         title: result.verdict,
-        description: `${result.passed} / ${result.total} test cases passed`,
-        variant: result.verdict === "Accepted" ? "default" : "destructive",
+        description:
+          isAccepted && elapsedMs > 0
+            ? `${baseDesc} · Solved in ${formatSolveTime(elapsedMs)}`
+            : baseDesc,
+        variant: isAccepted ? "default" : "destructive",
       });
     } catch (err) {
       toast({
