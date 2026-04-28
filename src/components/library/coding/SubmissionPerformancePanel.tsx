@@ -166,10 +166,12 @@ export const SubmissionPerformancePanel = ({ submission }: Props) => {
                 </button>
               </TooltipTrigger>
               <TooltipContent
-                side="top"
+                side="bottom"
                 align="end"
-                collisionPadding={12}
-                className="w-[min(20rem,calc(100vw-2rem))] text-xs leading-relaxed"
+                sideOffset={6}
+                collisionPadding={16}
+                avoidCollisions
+                className="max-w-[min(18rem,calc(100vw-2rem))] w-max text-xs leading-relaxed break-words"
               >
                 We compare your accepted submission's runtime and memory
                 against everyone else who solved this problem in{" "}
@@ -277,8 +279,10 @@ export const SubmissionPerformancePanel = ({ submission }: Props) => {
                 <TooltipContent
                   side="top"
                   align="start"
-                  collisionPadding={12}
-                  className="w-[min(20rem,calc(100vw-2rem))] text-xs leading-relaxed"
+                  sideOffset={6}
+                  collisionPadding={16}
+                  avoidCollisions
+                  className="max-w-[min(18rem,calc(100vw-2rem))] w-max text-xs leading-relaxed break-words"
                 >
                   {data.runtime_beats != null && data.runtime_ms != null ? (
                     <>
@@ -336,8 +340,10 @@ export const SubmissionPerformancePanel = ({ submission }: Props) => {
                 <TooltipContent
                   side="top"
                   align="end"
-                  collisionPadding={12}
-                  className="w-[min(20rem,calc(100vw-2rem))] text-xs leading-relaxed"
+                  sideOffset={6}
+                  collisionPadding={16}
+                  avoidCollisions
+                  className="max-w-[min(18rem,calc(100vw-2rem))] w-max text-xs leading-relaxed break-words"
                 >
                   {data.memory_beats != null && data.memory_kb != null ? (
                     <>
