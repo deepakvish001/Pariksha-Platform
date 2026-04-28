@@ -19,6 +19,7 @@ import {
   Keyboard,
   Rows3,
   Rows2,
+  Focus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
