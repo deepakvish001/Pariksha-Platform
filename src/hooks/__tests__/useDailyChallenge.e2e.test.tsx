@@ -12,7 +12,18 @@
  *  - markCompleted writes locally and pushes to the cloud.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { Fragment, type ReactNode } from "react";
 import { renderHook, act } from "@testing-library/react";
+
+/**
+ * Wrapper that does NOT enable React.StrictMode. Default `renderHook`
+ * wraps with StrictMode which double-invokes effects + cleanup, causing
+ * our async pull effect to be cancelled (and `lastSyncedUserRef`-guarded
+ * on remount) before it can finish in tests.
+ */
+const NoStrictWrapper = ({ children }: { children: ReactNode }) => (
+  <Fragment>{children}</Fragment>
+);
 
 /** Minimal waitFor: polls `cb` until it doesn't throw or timeout elapses. */
 const waitFor = async (cb: () => void | Promise<void>, timeout = 2000) => {
