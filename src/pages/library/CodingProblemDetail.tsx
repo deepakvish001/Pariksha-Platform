@@ -932,28 +932,11 @@ const CodingProblemDetail = () => {
 
                 {/* SQL Schema panel — only for SQL problems */}
                 {problem.sql && (
-                  <details
-                    open
-                    className="rounded-md border bg-muted/40 overflow-hidden"
-                  >
-                    <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted/60">
-                      Schema &amp; sample data (SQLite)
-                    </summary>
-                    <div className="border-t">
-                      <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Tables
-                      </div>
-                      <pre className="text-xs px-3 pb-3 overflow-x-auto whitespace-pre font-mono">
-                        <code>{problem.sql.schema.trim()}</code>
-                      </pre>
-                      <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-t">
-                        Seed data
-                      </div>
-                      <pre className="text-xs px-3 pb-3 overflow-x-auto whitespace-pre font-mono">
-                        <code>{problem.sql.seed.trim()}</code>
-                      </pre>
-                    </div>
-                  </details>
+                  <SchemaSeedToggle
+                    schema={problem.sql.schema}
+                    seed={problem.sql.seed}
+                    defaultOpen
+                  />
                 )}
 
                 {/* Examples */}
