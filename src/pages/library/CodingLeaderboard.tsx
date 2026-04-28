@@ -351,11 +351,13 @@ export default function CodingLeaderboard() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: Math.min(i * 0.015, 0.3) }}
                   >
-                    <Link
-                      to={row.username ? `/u/${row.username}` : "#"}
+                    <button
+                      type="button"
+                      onClick={() => openBreakdown(row)}
+                      aria-label={`Open score breakdown for ${row.display_name}, rank ${row.rank}`}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border transition-all",
-                        "hover:bg-muted/30",
+                        "w-full text-left flex items-center gap-3 p-3 rounded-lg border transition-all",
+                        "hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                         getRankBg(row.rank),
                         user && row.user_id === user.id && "ring-2 ring-primary/40",
                       )}
