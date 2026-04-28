@@ -81,6 +81,10 @@ interface Props {
   timestampFormat: TimestampFormat;
   onToggleTimestampFormat: () => void;
   fontSize?: number;
+  /** Cloud sync status from the solution hook. */
+  syncStatus?: "idle" | "syncing" | "synced" | "error" | "offline";
+  /** True when persisting to the cloud (signed-in user). */
+  isCloudSynced?: boolean;
 }
 
 const formatExact = (ts: number) => {
