@@ -1480,6 +1480,9 @@ const CodingProblemDetail = () => {
                           {submitResult.stderr}
                         </pre>
                       )}
+                      {submitResult.raw_fermion && submitResult.verdict !== "Accepted" && (
+                        <RawFermionDetails value={submitResult.raw_fermion} />
+                      )}
                     </div>
                   ) : runResult ? (
                     <div className="space-y-3">
@@ -1514,6 +1517,14 @@ const CodingProblemDetail = () => {
                           </pre>
                         </div>
                       )}
+                      {runResult.raw_fermion && runResult.status.id !== 3 && (
+                        <RawFermionDetails value={runResult.raw_fermion} />
+                      )}
+                    </div>
+                  ) : executionErrorDetails ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-destructive">Execution failed before a result was produced.</p>
+                      <RawFermionDetails value={executionErrorDetails} />
                     </div>
                   ) : (
                     <div className="text-sm text-muted-foreground text-center py-8">
