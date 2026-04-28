@@ -1,19 +1,66 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Lightbulb, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
   hints: string[];
+  /** Optional slug — when provided, revealed-progress persists across reloads. */
+  slug?: string;
 }
+
+const KEY = "byteskill:coding-hints-revealed:v1";
+
+const readMap = (): Record<string, number> => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return {};
+    const v = JSON.parse(raw);
+    return v && typeof v === "object" ? v : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeMap = (map: Record<string, number>) => {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(map));
+  } catch {
+    /* ignore quota */
+  }
+};
 
 /**
  * Progressive hint disclosure — hints stay locked until the user explicitly
- * reveals them, one by one. Encourages independent problem-solving while still
- * making help available.
+ * reveals them, one by one. When `slug` is provided the revealed count is
+ * persisted to localStorage so it restores on reload.
  */
-export const ProgressiveHints = ({ hints }: Props) => {
-  const [revealed, setRevealed] = useState<number>(0);
+export const ProgressiveHints = ({ hints, slug }: Props) => {
+  const [revealed, setRevealed] = useState<number>(() => {
+    if (!slug) return 0;
+    const v = readMap()[slug] ?? 0;
+    return Math.min(hints.length, Math.max(0, v));
+  });
+
+  // Reload from storage when slug changes (navigation between problems).
+  useEffect(() => {
+    if (!slug) {
+      setRevealed(0);
+      return;
+    }
+    const v = readMap()[slug] ?? 0;
+    setRevealed(Math.min(hints.length, Math.max(0, v)));
+  }, [slug, hints.length]);
+
+  // Persist whenever revealed count changes.
+  useEffect(() => {
+    if (!slug) return;
+    const map = readMap();
+    if (revealed > 0) map[slug] = revealed;
+    else delete map[slug];
+    writeMap(map);
+  }, [slug, revealed]);
 
   if (hints.length === 0) return null;
 
