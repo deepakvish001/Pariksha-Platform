@@ -79,8 +79,18 @@ const DailyChallengeWeekly = () => {
   const { user } = useAuth();
   const { solved } = useCodingAttemptStats();
   const daily = useDailyChallenge(solved);
-  const { entries, loading: lbLoading } = useDailyLeaderboard(50);
-  const optin = useDailyLeaderboardOptIn();
+  const { entries, loading: lbLoading, reload: reloadLeaderboard } = useDailyLeaderboard(50);
+  const baseOptin = useDailyLeaderboardOptIn();
+  const optin = useMemo(
+    () => ({
+      ...baseOptin,
+      setOptIn: async (v: boolean, name?: string | null) => {
+        await baseOptin.setOptIn(v, name);
+        await reloadLeaderboard();
+      },
+    }),
+    [baseOptin, reloadLeaderboard],
+  );
 
   const [draftName, setDraftName] = useState<string>(optin.displayName ?? "");
 
