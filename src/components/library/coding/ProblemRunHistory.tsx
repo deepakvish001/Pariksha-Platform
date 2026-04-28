@@ -220,8 +220,14 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
                 )}
               </div>
               {summary.latest && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap justify-end">
                   <span>Latest:</span>
+                  <span
+                    className="font-mono text-[11px]"
+                    aria-label={`Attempt number ${runs.length}`}
+                  >
+                    #{runs.length}
+                  </span>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Badge
@@ -230,6 +236,7 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
                           "text-[10px] gap-1 inline-flex items-center cursor-help",
                           summary.latest.meta.className,
                         )}
+                        aria-label={`Latest verdict: ${summary.latest.meta.label}`}
                       >
                         {(() => {
                           const Icon = summary.latest.meta.icon;
@@ -239,12 +246,26 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
                       </Badge>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs">
-                      <VerdictTooltipBody meta={summary.latest.meta} />
+                      <VerdictTooltipBody
+                        meta={summary.latest.meta}
+                        rawStatus={summary.latest.run.status}
+                        attemptNumber={runs.length}
+                        timestamp={summary.latest.run.created_at}
+                      />
                     </TooltipContent>
                   </Tooltip>
-                  <span className="hidden sm:inline tabular-nums">
-                    {new Date(summary.latest.run.created_at).toLocaleString()}
-                  </span>
+                  <time
+                    dateTime={new Date(summary.latest.run.created_at).toISOString()}
+                    className="tabular-nums"
+                    title={new Date(summary.latest.run.created_at).toLocaleString()}
+                  >
+                    <span className="hidden sm:inline">
+                      {new Date(summary.latest.run.created_at).toLocaleString()}
+                    </span>
+                    <span className="sm:hidden">
+                      {new Date(summary.latest.run.created_at).toLocaleDateString()}
+                    </span>
+                  </time>
                 </div>
               )}
             </div>
@@ -429,13 +450,29 @@ function SummaryChip({ meta, count }: { meta: VerdictMeta; count: number }) {
 function VerdictTooltipBody({
   meta,
   rawStatus,
+  attemptNumber,
+  timestamp,
 }: {
   meta: VerdictMeta;
   rawStatus?: string | null;
+  attemptNumber?: number;
+  timestamp?: string;
 }) {
   return (
     <div className="space-y-1.5">
-      <p className="font-semibold text-xs">{meta.label}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-semibold text-xs">{meta.label}</p>
+        {attemptNumber !== undefined && (
+          <span className="text-[10px] font-mono text-muted-foreground">
+            Attempt #{attemptNumber}
+          </span>
+        )}
+      </div>
+      {timestamp && (
+        <p className="text-[10px] text-muted-foreground/80 tabular-nums">
+          {new Date(timestamp).toLocaleString()}
+        </p>
+      )}
       <p className="text-[11px] text-muted-foreground leading-snug">
         {meta.description}
       </p>
