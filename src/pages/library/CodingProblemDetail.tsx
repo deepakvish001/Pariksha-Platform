@@ -131,22 +131,32 @@ const CodingProblemDetail = () => {
         if (slug) writeLastOpened(slug, subId);
       }
     } else {
-      // Stale deep-link — strip it and offer a way back to the most recent attempt.
+      // Stale deep-link — strip it and offer the most relevant fallback.
       const next = new URLSearchParams(searchParams);
       next.delete("sub");
       setSearchParams(next, { replace: true });
-      const latest = submissions[0]; // submissions are ordered newest-first
+
+      // Prefer the most recent failing submission (most useful for debugging),
+      // then fall back to the latest attempt of any verdict.
+      const latestFailed = submissions.find(
+        (s) => s.verdict && s.verdict !== "Accepted",
+      );
+      const latest = submissions[0]; // newest-first
+      const target = latestFailed ?? latest;
+
       toast({
         title: "Submission link expired",
-        description: latest
-          ? "That submission isn't available — you can jump to your most recent attempt instead."
-          : "That submission isn't available for this problem anymore.",
-        action: latest ? (
+        description: latestFailed
+          ? "That submission isn't available — jump straight to your most recent failed attempt to see what went wrong."
+          : latest
+            ? "That submission isn't available — open your most recent attempt instead."
+            : "That submission isn't available for this problem anymore.",
+        action: target ? (
           <ToastAction
-            altText="Go to last attempt"
-            onClick={() => openSubmission(latest)}
+            altText={latestFailed ? "Go to failed cases" : "Go to last attempt"}
+            onClick={() => openSubmission(target)}
           >
-            Go to last attempt
+            {latestFailed ? "Go to failed cases" : "Go to last attempt"}
           </ToastAction>
         ) : undefined,
       });

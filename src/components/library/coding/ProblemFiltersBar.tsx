@@ -16,7 +16,18 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from "@/lib/utils";
 
 export type ViewMode = "grid" | "table";
-export type SortKey = "default" | "title" | "diff-asc" | "diff-desc" | "recent";
+export type SortKey =
+  | "default"
+  | "title"
+  | "diff-asc"
+  | "diff-desc"
+  | "recent"
+  | "status-asc"
+  | "status-desc"
+  | "accept-asc"
+  | "accept-desc"
+  | "attempts-asc"
+  | "attempts-desc";
 
 interface Props {
   search: string;

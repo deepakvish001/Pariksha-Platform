@@ -14,6 +14,8 @@ import {
   Share2,
   CheckSquare,
   Link2,
+  Columns3,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +54,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  PROBLEM_COLUMNS,
+  useCodingProblemsTablePrefs,
+  type ProblemColumnId,
+} from "@/hooks/useCodingProblemsTablePrefs";
+import {
+  SortableResizableHeader,
+  type SortDir,
+} from "@/components/library/coding/SortableResizableHeader";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: Difficulty) =>
@@ -222,6 +242,31 @@ const CodingProblems = () => {
   const setStatus = (v: string) => updateParams({ status: v, page: "1" });
   const setSort = (v: SortKey) => updateParams({ sort: v, page: "1" });
   const setView = (v: ViewMode) => updateParams({ view: v });
+
+  // Persisted column visibility & widths (responsive — survives refresh).
+  const tablePrefs = useCodingProblemsTablePrefs();
+
+  // Map a column id to its current sort direction (asc/desc/null) and a
+  // 3-state cycler that updates the existing `sort` URL param.
+  type ColumnSortable = "status" | "difficulty" | "acceptance" | "attempts";
+  const columnSortKeys: Record<ColumnSortable, [SortKey, SortKey]> = {
+    status: ["status-asc", "status-desc"],
+    difficulty: ["diff-asc", "diff-desc"],
+    acceptance: ["accept-asc", "accept-desc"],
+    attempts: ["attempts-asc", "attempts-desc"],
+  };
+  const dirOf = (col: ColumnSortable): SortDir => {
+    const [asc, desc] = columnSortKeys[col];
+    if (sort === asc) return "asc";
+    if (sort === desc) return "desc";
+    return null;
+  };
+  const cycleColumnSort = (col: ColumnSortable) => {
+    const [asc, desc] = columnSortKeys[col];
+    if (sort === asc) setSort(desc);
+    else if (sort === desc) setSort("default");
+    else setSort(asc);
+  };
   const setBookmarked = (v: boolean) => updateParams({ bm: v ? "1" : null, page: "1" });
   const setPage = (n: number) => updateParams({ page: String(n) });
 
@@ -301,6 +346,19 @@ const CodingProblems = () => {
     });
 
     // Sort
+    const acceptanceOf = (slug: string) => {
+      const s = perProblem.get(slug);
+      if (!s || s.attempts === 0) return -1; // unattempted sorts to bottom for asc
+      return Math.round(((s.accepted ?? 0) / s.attempts) * 100);
+    };
+    const statusRank = (slug: string) => {
+      // Solved (0) → Attempted (1) → Not started (2)
+      if (solved.has(slug)) return 0;
+      if (attempted.has(slug)) return 1;
+      return 2;
+    };
+    const attemptsOf = (slug: string) => perProblem.get(slug)?.attempts ?? 0;
+
     if (sort === "title") {
       list = [...list].sort((a, b) => a.title.localeCompare(b.title));
     } else if (sort === "diff-asc") {
@@ -313,6 +371,18 @@ const CodingProblems = () => {
         const lb = perProblem.get(b.slug)?.lastAttempt ?? "";
         return lb.localeCompare(la);
       });
+    } else if (sort === "status-asc") {
+      list = [...list].sort((a, b) => statusRank(a.slug) - statusRank(b.slug));
+    } else if (sort === "status-desc") {
+      list = [...list].sort((a, b) => statusRank(b.slug) - statusRank(a.slug));
+    } else if (sort === "accept-asc") {
+      list = [...list].sort((a, b) => acceptanceOf(a.slug) - acceptanceOf(b.slug));
+    } else if (sort === "accept-desc") {
+      list = [...list].sort((a, b) => acceptanceOf(b.slug) - acceptanceOf(a.slug));
+    } else if (sort === "attempts-asc") {
+      list = [...list].sort((a, b) => attemptsOf(a.slug) - attemptsOf(b.slug));
+    } else if (sort === "attempts-desc") {
+      list = [...list].sort((a, b) => attemptsOf(b.slug) - attemptsOf(a.slug));
     }
     return list;
   }, [
@@ -481,6 +551,46 @@ const CodingProblems = () => {
             <Share2 className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Share filters</span>
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-9"
+                title="Show or hide table columns"
+              >
+                <Columns3 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Columns</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {PROBLEM_COLUMNS.filter((c) => c.togglable).map((c) => (
+                <DropdownMenuCheckboxItem
+                  key={c.id}
+                  checked={tablePrefs.isVisible(c.id)}
+                  onCheckedChange={() => tablePrefs.toggleVisible(c.id)}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {c.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  tablePrefs.resetAll();
+                  toast.success("Columns reset", {
+                    description: "Visibility and widths restored to defaults.",
+                  });
+                }}
+              >
+                <RotateCcw className="h-3.5 w-3.5 mr-2" />
+                Reset columns & widths
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant={selectionMode ? "default" : "outline"}
             size="sm"
@@ -588,166 +698,255 @@ const CodingProblems = () => {
         </Card>
       ) : (
         <Card className="overflow-hidden">
-          <Table>
-            <TableHeader className="bg-muted/40">
-              <TableRow className="hover:bg-transparent border-b">
-                {selectionMode && (
-                  <TableHead className="w-[44px]">
-                    <Checkbox
-                      checked={
-                        pageSlice.length > 0 &&
-                        pageSlice.every((p) => selected.has(p.slug))
-                      }
-                      onCheckedChange={(v) => {
-                        if (v) selectAllVisible();
-                        else
-                          pageSlice.forEach((p) => {
-                            if (selected.has(p.slug)) toggleSelected(p.slug);
-                          });
-                      }}
-                      aria-label="Select all on page"
-                    />
-                  </TableHead>
+          <div className="overflow-x-auto">
+            <Table className="table-fixed w-full">
+              <colgroup>
+                {selectionMode && <col style={{ width: "44px" }} />}
+                {PROBLEM_COLUMNS.map((c) =>
+                  tablePrefs.isVisible(c.id) ? (
+                    <col key={c.id} style={{ width: `${tablePrefs.widthOf(c.id)}px` }} />
+                  ) : null,
                 )}
-                <TableHead className="w-[60px] text-center">#</TableHead>
-                <TableHead className="w-[60px]">Status</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead className="hidden md:table-cell">Topics</TableHead>
-                <TableHead className="w-[110px]">Difficulty</TableHead>
-                <TableHead className="hidden lg:table-cell w-[120px] text-right">
-                  Acceptance
-                </TableHead>
-                <TableHead className="hidden sm:table-cell w-[90px] text-right">
-                  Attempts
-                </TableHead>
-                <TableHead className="w-[48px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageSlice.map((p, idx) => {
-                const isSolved = solved.has(p.slug);
-                const isAttempted = attempted.has(p.slug);
-                const stats = perProblem.get(p.slug);
-                const bm = isBookmarked(p.slug);
-                const isSel = selected.has(p.slug);
-                const acceptance =
-                  stats && stats.attempts > 0
-                    ? Math.round(((stats.accepted ?? 0) / stats.attempts) * 100)
-                    : null;
-                const rowNumber = (safePage - 1) * PAGE_SIZE + idx + 1;
-                return (
-                  <TableRow
-                    key={p.slug}
-                    data-selected={isSel}
-                    className={cn(
-                      "group transition-colors",
-                      isSel && "bg-primary/5",
-                    )}
-                  >
-                    {selectionMode && (
-                      <TableCell className="py-2.5">
-                        <Checkbox
-                          checked={isSel}
-                          onCheckedChange={() => toggleSelected(p.slug)}
-                          aria-label="Select problem"
-                        />
-                      </TableCell>
-                    )}
-                    <TableCell className="py-2.5 text-center text-xs text-muted-foreground tabular-nums">
-                      {rowNumber}
-                    </TableCell>
-                    <TableCell className="py-2.5">
-                      {isSolved ? (
-                        <CheckCircle2
-                          className="h-4 w-4 text-emerald-500"
-                          aria-label="Solved"
-                        />
-                      ) : isAttempted ? (
-                        <CircleDot
-                          className="h-4 w-4 text-amber-500"
-                          aria-label="Attempted"
-                        />
-                      ) : (
-                        <Circle
-                          className="h-4 w-4 text-muted-foreground/40"
-                          aria-label="Not started"
-                        />
+              </colgroup>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="hover:bg-transparent border-b">
+                  {selectionMode && (
+                    <TableHead className="w-[44px]">
+                      <Checkbox
+                        checked={
+                          pageSlice.length > 0 &&
+                          pageSlice.every((p) => selected.has(p.slug))
+                        }
+                        onCheckedChange={(v) => {
+                          if (v) selectAllVisible();
+                          else
+                            pageSlice.forEach((p) => {
+                              if (selected.has(p.slug)) toggleSelected(p.slug);
+                            });
+                        }}
+                        aria-label="Select all on page"
+                      />
+                    </TableHead>
+                  )}
+                  {tablePrefs.isVisible("row") && (
+                    <SortableResizableHeader
+                      columnId="row"
+                      label="#"
+                      align="center"
+                      width={tablePrefs.widthOf("row")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("row", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("status") && (
+                    <SortableResizableHeader
+                      columnId="status"
+                      label="Status"
+                      width={tablePrefs.widthOf("status")}
+                      sortable
+                      sortDir={dirOf("status")}
+                      onSortClick={() => cycleColumnSort("status")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("status", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("title") && (
+                    <SortableResizableHeader
+                      columnId="title"
+                      label="Title"
+                      width={tablePrefs.widthOf("title")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("title", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("topics") && (
+                    <SortableResizableHeader
+                      columnId="topics"
+                      label="Topics"
+                      width={tablePrefs.widthOf("topics")}
+                      className="hidden md:table-cell"
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("topics", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("difficulty") && (
+                    <SortableResizableHeader
+                      columnId="difficulty"
+                      label="Difficulty"
+                      width={tablePrefs.widthOf("difficulty")}
+                      sortable
+                      sortDir={dirOf("difficulty")}
+                      onSortClick={() => cycleColumnSort("difficulty")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("difficulty", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("acceptance") && (
+                    <SortableResizableHeader
+                      columnId="acceptance"
+                      label="Acceptance"
+                      align="right"
+                      width={tablePrefs.widthOf("acceptance")}
+                      className="hidden lg:table-cell"
+                      sortable
+                      sortDir={dirOf("acceptance")}
+                      onSortClick={() => cycleColumnSort("acceptance")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("acceptance", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("attempts") && (
+                    <SortableResizableHeader
+                      columnId="attempts"
+                      label="Attempts"
+                      align="right"
+                      width={tablePrefs.widthOf("attempts")}
+                      className="hidden sm:table-cell"
+                      sortable
+                      sortDir={dirOf("attempts")}
+                      onSortClick={() => cycleColumnSort("attempts")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("attempts", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("bookmark") && (
+                    <SortableResizableHeader
+                      columnId="bookmark"
+                      label=""
+                      width={tablePrefs.widthOf("bookmark")}
+                    />
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pageSlice.map((p, idx) => {
+                  const isSolved = solved.has(p.slug);
+                  const isAttempted = attempted.has(p.slug);
+                  const stats = perProblem.get(p.slug);
+                  const bm = isBookmarked(p.slug);
+                  const isSel = selected.has(p.slug);
+                  const acceptance =
+                    stats && stats.attempts > 0
+                      ? Math.round(((stats.accepted ?? 0) / stats.attempts) * 100)
+                      : null;
+                  const rowNumber = (safePage - 1) * PAGE_SIZE + idx + 1;
+                  return (
+                    <TableRow
+                      key={p.slug}
+                      data-selected={isSel}
+                      className={cn(
+                        "group transition-colors",
+                        isSel && "bg-primary/5",
                       )}
-                    </TableCell>
-                    <TableCell className="py-2.5 min-w-0">
-                      <Link
-                        to={`/library/problems/${p.slug}`}
-                        className="font-medium hover:text-primary transition-colors block truncate"
-                      >
-                        {p.title}
-                      </Link>
-                      {/* Mobile-only inline topics */}
-                      <div className="md:hidden mt-1 flex flex-wrap gap-1">
-                        {p.topics.slice(0, 2).map((t) => (
-                          <Badge
-                            key={t}
-                            variant="secondary"
-                            className="text-[10px] font-normal px-1.5 py-0"
-                          >
-                            {t}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell py-2.5">
-                      <div className="flex flex-wrap gap-1">
-                        {p.topics.slice(0, 3).map((t) => (
-                          <Badge
-                            key={t}
-                            variant="secondary"
-                            className="text-xs font-normal"
-                          >
-                            {t}
-                          </Badge>
-                        ))}
-                        {p.topics.length > 3 && (
-                          <Badge variant="outline" className="text-xs font-normal">
-                            +{p.topics.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-2.5">
-                      <Badge
-                        variant="outline"
-                        className={cn("font-medium", difficultyClass(p.difficulty))}
-                      >
-                        {p.difficulty}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell py-2.5 text-right text-xs tabular-nums text-muted-foreground">
-                      {acceptance !== null ? `${acceptance}%` : "—"}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell py-2.5 text-right text-xs text-muted-foreground tabular-nums">
-                      {stats?.attempts ?? 0}
-                    </TableCell>
-                    <TableCell className="py-2.5">
-                      <button
-                        type="button"
-                        onClick={() => toggleBookmark(p.slug)}
-                        className="p-1 rounded hover:bg-muted/50 transition-colors"
-                        aria-label={bm ? "Remove bookmark" : "Bookmark"}
-                      >
-                        <Star
-                          className={cn(
-                            "h-4 w-4 transition-colors",
-                            bm
-                              ? "fill-amber-400 text-amber-400"
-                              : "text-muted-foreground/40 hover:text-amber-400",
+                    >
+                      {selectionMode && (
+                        <TableCell className="py-2.5">
+                          <Checkbox
+                            checked={isSel}
+                            onCheckedChange={() => toggleSelected(p.slug)}
+                            aria-label="Select problem"
+                          />
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("row") && (
+                        <TableCell className="py-2.5 text-center text-xs text-muted-foreground tabular-nums">
+                          {rowNumber}
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("status") && (
+                        <TableCell className="py-2.5">
+                          {isSolved ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-label="Solved" />
+                          ) : isAttempted ? (
+                            <CircleDot className="h-4 w-4 text-amber-500" aria-label="Attempted" />
+                          ) : (
+                            <Circle className="h-4 w-4 text-muted-foreground/40" aria-label="Not started" />
                           )}
-                        />
-                      </button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("title") && (
+                        <TableCell className="py-2.5 min-w-0">
+                          <Link
+                            to={`/library/problems/${p.slug}`}
+                            className="font-medium hover:text-primary transition-colors block truncate"
+                          >
+                            {p.title}
+                          </Link>
+                          {/* Mobile-only inline topics */}
+                          <div className="md:hidden mt-1 flex flex-wrap gap-1">
+                            {p.topics.slice(0, 2).map((t) => (
+                              <Badge
+                                key={t}
+                                variant="secondary"
+                                className="text-[10px] font-normal px-1.5 py-0"
+                              >
+                                {t}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("topics") && (
+                        <TableCell className="hidden md:table-cell py-2.5">
+                          <div className="flex flex-wrap gap-1">
+                            {p.topics.slice(0, 3).map((t) => (
+                              <Badge key={t} variant="secondary" className="text-xs font-normal">
+                                {t}
+                              </Badge>
+                            ))}
+                            {p.topics.length > 3 && (
+                              <Badge variant="outline" className="text-xs font-normal">
+                                +{p.topics.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("difficulty") && (
+                        <TableCell className="py-2.5">
+                          <Badge
+                            variant="outline"
+                            className={cn("font-medium", difficultyClass(p.difficulty))}
+                          >
+                            {p.difficulty}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("acceptance") && (
+                        <TableCell className="hidden lg:table-cell py-2.5 text-right text-xs tabular-nums text-muted-foreground">
+                          {acceptance !== null ? `${acceptance}%` : "—"}
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("attempts") && (
+                        <TableCell className="hidden sm:table-cell py-2.5 text-right text-xs text-muted-foreground tabular-nums">
+                          {stats?.attempts ?? 0}
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("bookmark") && (
+                        <TableCell className="py-2.5">
+                          <button
+                            type="button"
+                            onClick={() => toggleBookmark(p.slug)}
+                            className="p-1 rounded hover:bg-muted/50 transition-colors"
+                            aria-label={bm ? "Remove bookmark" : "Bookmark"}
+                          >
+                            <Star
+                              className={cn(
+                                "h-4 w-4 transition-colors",
+                                bm
+                                  ? "fill-amber-400 text-amber-400"
+                                  : "text-muted-foreground/40 hover:text-amber-400",
+                              )}
+                            />
+                          </button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       )}
 
