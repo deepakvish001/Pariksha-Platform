@@ -294,9 +294,8 @@ Deno.serve(async (req) => {
     if (!fermionLang)
       return respond<SubmitResult>({ ok: false, error: `Language not supported by Fermion (language_id=${language_id})`, diagnostics: { error_stage: "validation" } });
 
-    const cpuMs = Math.min(typeof cpu_time_limit === "number" ? cpu_time_limit * 1000 : 3000, 5000);
-    const wallMs = Math.min(cpuMs * 2, 6500);
-    const memKb = Math.min(typeof memory_limit === "number" ? memory_limit : 262144, 524288);
+    const limits = runConfigFor(fermionLang, { cpuSec: cpu_time_limit, memKb: memory_limit });
+    const { cpuMs, wallMs, memKb } = limits;
 
     // Submit all cases as a single batch, then poll.
     const taskIds = await submitBatch(fermionLang, source_code, tests as TestCase[], cpuMs, wallMs, memKb);
@@ -308,6 +307,7 @@ Deno.serve(async (req) => {
     let totalTimeMs = 0;
     let maxMemory = 0;
     let stderrCombined = "";
+    let rawFermion: FermionRawDebug | null = null;
 
     for (let i = 0; i < tests.length; i++) {
       const t = tests[i] as TestCase;
@@ -325,10 +325,12 @@ Deno.serve(async (req) => {
           verdict = "Compile Error";
           stderrCombined = r.stderr || "Compilation failed";
           failingCase = { index: i, input: t.input, expected: t.expected, output: "", error: stderrCombined };
+          rawFermion = r.raw;
           break;
         case "time-limit-exceeded":
           verdict = "Time Limit Exceeded";
           failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
+          rawFermion = r.raw;
           break;
         case "non-zero-exit-code":
         case "died-sigsev":
@@ -338,11 +340,13 @@ Deno.serve(async (req) => {
           verdict = "Runtime Error";
           stderrCombined = r.stderr || r.runStatus;
           failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout, error: stderrCombined };
+          rawFermion = r.raw;
           break;
         case "internal-isolate-error":
         case "unknown":
           verdict = "Internal Error";
           stderrCombined = r.stderr || "Judge internal error";
+          rawFermion = r.raw;
           break;
         case "wrong-answer": {
           // Re-check ourselves with normalization (Fermion ExactMatch may be strict on trailing newlines)
@@ -351,6 +355,7 @@ Deno.serve(async (req) => {
           if (got === want) { passed++; continue; }
           verdict = "Wrong Answer";
           failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
+          rawFermion = r.raw;
           break;
         }
         case "successful":
@@ -360,6 +365,7 @@ Deno.serve(async (req) => {
           if (got !== want) {
             verdict = "Wrong Answer";
             failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
+            rawFermion = r.raw;
             break;
           }
           passed++;
