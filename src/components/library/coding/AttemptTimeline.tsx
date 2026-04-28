@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
@@ -10,6 +11,11 @@ interface Props {
   limit?: number;
   onSelect?: (submission: CodeSubmissionRow) => void;
   highlightedId?: string | null;
+  /**
+   * When this value changes, auto-scroll the highlighted entry into view.
+   * Useful for "Go to failed cases" so the relevant timeline entry pops into focus.
+   */
+  scrollToHighlightKey?: string | number | null;
   /** Show a skeleton list while submissions are still being fetched. */
   loading?: boolean;
 }
