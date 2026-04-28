@@ -242,6 +242,31 @@ const CodingProblems = () => {
   const setStatus = (v: string) => updateParams({ status: v, page: "1" });
   const setSort = (v: SortKey) => updateParams({ sort: v, page: "1" });
   const setView = (v: ViewMode) => updateParams({ view: v });
+
+  // Persisted column visibility & widths (responsive — survives refresh).
+  const tablePrefs = useCodingProblemsTablePrefs();
+
+  // Map a column id to its current sort direction (asc/desc/null) and a
+  // 3-state cycler that updates the existing `sort` URL param.
+  type ColumnSortable = "status" | "difficulty" | "acceptance" | "attempts";
+  const columnSortKeys: Record<ColumnSortable, [SortKey, SortKey]> = {
+    status: ["status-asc", "status-desc"],
+    difficulty: ["diff-asc", "diff-desc"],
+    acceptance: ["accept-asc", "accept-desc"],
+    attempts: ["attempts-asc", "attempts-desc"],
+  };
+  const dirOf = (col: ColumnSortable): SortDir => {
+    const [asc, desc] = columnSortKeys[col];
+    if (sort === asc) return "asc";
+    if (sort === desc) return "desc";
+    return null;
+  };
+  const cycleColumnSort = (col: ColumnSortable) => {
+    const [asc, desc] = columnSortKeys[col];
+    if (sort === asc) setSort(desc);
+    else if (sort === desc) setSort("default");
+    else setSort(asc);
+  };
   const setBookmarked = (v: boolean) => updateParams({ bm: v ? "1" : null, page: "1" });
   const setPage = (n: number) => updateParams({ page: String(n) });
 
