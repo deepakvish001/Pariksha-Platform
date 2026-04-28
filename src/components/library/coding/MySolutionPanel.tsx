@@ -310,14 +310,30 @@ export const MySolutionPanel = ({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            {savedAt ? (
-              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <Loader2 className="h-3 w-3 opacity-50" />
-            )}
-            {formatSavedLabel(savedAt)}
-          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onToggleTimestampFormat}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors rounded px-1 py-0.5"
+                  aria-label="Toggle timestamp format"
+                >
+                  {savedAt ? (
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                  ) : (
+                    <Loader2 className="h-3 w-3 opacity-50" />
+                  )}
+                  <span>{formatSavedLabel(savedAt, timestampFormat)}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Showing {timestampFormat === "exact" ? "exact" : "relative"}{" "}
+                time. Click to switch to{" "}
+                {timestampFormat === "exact" ? "relative" : "exact"}.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
