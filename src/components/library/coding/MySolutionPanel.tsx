@@ -235,6 +235,30 @@ export const MySolutionPanel = ({
     }
   };
 
+  /** Discard unsaved edits in the current language (revert to last-saved value)
+   *  and switch. Implemented via a one-step undo so the autosave doesn't
+   *  overwrite the saved version. */
+  const discardAndSwitch = () => {
+    if (!pendingLang) return;
+    if (canUndoCode(language)) onUndoCodeChange(language);
+    onLanguageChange(pendingLang);
+    setPendingLang(null);
+    toast({
+      title: "Edits discarded",
+      description: `Reverted ${languageLabel} to the last saved version.`,
+    });
+  };
+
+  const handleUndoCurrentCode = () => {
+    const ok = onUndoCodeChange(language);
+    toast({
+      title: ok ? "Undid last edit" : "Nothing to undo",
+      description: ok
+        ? `Reverted the ${languageLabel} editor to its previous value.`
+        : `No previous edit recorded for ${languageLabel} this session.`,
+    });
+  };
+
   // Progress badge state
   const progressStep = (hasNotes ? 1 : 0) + (hasAnyCode ? 1 : 0);
   const progressLabel = isComplete
