@@ -788,7 +788,8 @@ const CodingProblemDetail = () => {
 
       <SubmissionDetailsDrawer
         submission={detailSubmission}
-        open={!!detailSubmission}
+        open={!!detailSubmission || (!!searchParams.get("sub") && submissionsLoading)}
+        loading={submissionsLoading && !detailSubmission && !!searchParams.get("sub")}
         onOpenChange={(o) => !o && closeSubmission()}
       />
     </div>
