@@ -122,28 +122,42 @@ const CodingProblems = () => {
   const { solved, attempted, perProblem, loading } = useCodingAttemptStats();
   const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
 
-  // Selection (bulk actions)
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const toggleSelected = (slug: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
-      return next;
-    });
-  };
-  const clearSelection = () => setSelected(new Set());
-  const exitSelection = () => {
-    setSelectionMode(false);
-    clearSelection();
+  // Persisted selection (bulk actions) — survives refresh and pagination
+  const {
+    selectionMode,
+    setSelectionMode,
+    selected,
+    toggleSelected,
+    addMany,
+    clearSelection,
+    exitSelection,
+  } = useCodingSelection();
+
+  const [confirmUnbookmark, setConfirmUnbookmark] = useState(false);
+
+  // Build a fully-encoded shareable URL from current params (not raw window URL)
+  const buildShareUrl = () => {
+    const next = new URLSearchParams();
+    if (search.trim()) next.set("q", search.trim());
+    if (difficulty !== "all") next.set("diff", difficulty);
+    if (selectedTopics.length > 0) next.set("topics", selectedTopics.join(","));
+    if (status !== "all") next.set("status", status);
+    if (sort !== "default") next.set("sort", sort);
+    if (view !== "grid") next.set("view", view);
+    if (bookmarked) next.set("bm", "1");
+    if (page > 1) next.set("page", String(page));
+    const qs = next.toString();
+    const { origin, pathname } = window.location;
+    return qs ? `${origin}${pathname}?${qs}` : `${origin}${pathname}`;
   };
 
   const handleShareFilters = async () => {
-    const url = window.location.href;
+    const url = buildShareUrl();
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied", { description: "Shareable URL with current filters copied to clipboard." });
+      toast.success("Link copied", {
+        description: "Shareable URL with current filters copied to clipboard.",
+      });
     } catch {
       toast.error("Couldn't copy link", { description: url });
     }
