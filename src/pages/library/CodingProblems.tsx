@@ -939,6 +939,23 @@ const CodingProblems = () => {
       {/* Daily Challenge */}
       {!focusMode && <DailyChallengeCard daily={daily} />}
 
+      {/* Weekly summary + topic progress ring */}
+      {!focusMode && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+          <WeeklyReviewInline
+            completedDates={new Set(daily.recentCompletions.map((c) => c.date))}
+            className="mb-0"
+          />
+          <TopicProgressRing
+            topics={ALL_TOPICS}
+            totalsByTopic={topicStats.totals}
+            solvedByTopic={topicStats.solvedMap}
+            attemptedByTopic={topicStats.attemptedMap}
+            streak={daily.streak}
+          />
+        </div>
+      )}
+
       {/* Smart recommendations */}
       {!focusMode && (
         <RecommendationStrip
