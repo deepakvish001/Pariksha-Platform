@@ -79,6 +79,7 @@ import { SessionTimer, formatSolveTime, type SessionTimerHandle } from "@/compon
 import { TestCaseWorkbench } from "@/components/library/coding/TestCaseWorkbench";
 import { SchemaSeedToggle } from "@/components/library/coding/SchemaSeedToggle";
 import { SqlResultDiff, SqlResultTable } from "@/components/library/coding/SqlResultDiff";
+import { ProblemRunHistory } from "@/components/library/coding/ProblemRunHistory";
 import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
 import { useProblemNotes } from "@/hooks/useProblemNotes";
 import { useProblemSolution } from "@/hooks/useProblemSolution";
