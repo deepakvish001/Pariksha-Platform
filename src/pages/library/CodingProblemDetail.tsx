@@ -93,6 +93,7 @@ import {
 import { CodeDiffPreview } from "@/components/library/coding/CodeDiffPreview";
 import { DraftSaveIndicator } from "@/components/library/coding/DraftSaveIndicator";
 import { EditorSettingsPopover } from "@/components/library/coding/EditorSettingsPopover";
+import { useFormatOnSubmitOverride } from "@/hooks/useFormatOnSubmitOverride";
 
 const difficultyClass = (d: string) =>
   d === "Easy"
