@@ -71,7 +71,15 @@ function formatRuntime(ms: number | null): string {
   return `${(ms / 1000).toFixed(2)} s`;
 }
 
-function PodiumCard({ row, rank }: { row: CodingLeaderboardRow; rank: 1 | 2 | 3 }) {
+function PodiumCard({
+  row,
+  rank,
+  onSelect,
+}: {
+  row: CodingLeaderboardRow;
+  rank: 1 | 2 | 3;
+  onSelect: (row: CodingLeaderboardRow) => void;
+}) {
   const heights = { 1: "md:translate-y-0", 2: "md:translate-y-4", 3: "md:translate-y-8" };
   const orders = { 1: "md:order-2", 2: "md:order-1", 3: "md:order-3" };
   return (
@@ -81,10 +89,12 @@ function PodiumCard({ row, rank }: { row: CodingLeaderboardRow; rank: 1 | 2 | 3 
       transition={{ delay: rank * 0.08, type: "spring", stiffness: 100 }}
       className={cn("flex-1", heights[rank], orders[rank])}
     >
-      <Link
-        to={row.username ? `/u/${row.username}` : "#"}
+      <button
+        type="button"
+        onClick={() => onSelect(row)}
+        aria-label={`View score breakdown for ${row.display_name}, rank ${rank}`}
         className={cn(
-          "block rounded-xl border-2 p-5 text-center transition-all hover:scale-[1.02] hover:shadow-lg",
+          "w-full block rounded-xl border-2 p-5 text-center transition-all hover:scale-[1.02] hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
           getRankBg(rank),
         )}
       >
@@ -117,7 +127,7 @@ function PodiumCard({ row, rank }: { row: CodingLeaderboardRow; rank: 1 | 2 | 3 
             </span>
           </div>
         </div>
-      </Link>
+      </button>
     </motion.div>
   );
 }
