@@ -166,6 +166,8 @@ const CodingProblemDetail = () => {
     hasNotes: mySolutionHasNotes,
     hasAnyCode: mySolutionHasAnyCode,
     isComplete: mySolutionIsComplete,
+    syncStatus: mySolutionSyncStatus,
+    isCloudSynced: mySolutionIsCloudSynced,
   } = useProblemSolution(slug, mySolutionLanguage);
   const {
     prefs: editorPrefs,
@@ -609,6 +611,8 @@ const CodingProblemDetail = () => {
                   timestampFormat={editorPrefs.timestampFormat}
                   onToggleTimestampFormat={toggleTimestampFormat}
                   fontSize={editorPrefs.fontSize}
+                  syncStatus={mySolutionSyncStatus}
+                  isCloudSynced={mySolutionIsCloudSynced}
                 />
               </TabsContent>
 
