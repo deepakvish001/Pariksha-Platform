@@ -50,6 +50,7 @@ import QuizHistory from "./pages/library/QuizHistory";
 import CodingProblems from "./pages/library/CodingProblems";
 import CodingProblemDetail from "./pages/library/CodingProblemDetail";
 import DailyChallengeWeekly from "./pages/library/DailyChallengeWeekly";
+import CodingLeaderboard from "./pages/library/CodingLeaderboard";
 
 // Fundamentals Pages
 import Language from "./pages/fundamentals/Language";
@@ -181,6 +182,7 @@ const App = () => (
                   <Route path="quiz-history" element={<QuizHistory />} />
                   <Route path="problems" element={<CodingProblems />} />
                   <Route path="problems/weekly" element={<DailyChallengeWeekly />} />
+                  <Route path="problems/leaderboard" element={<CodingLeaderboard />} />
                   <Route path="problems/:slug" element={<CodingProblemDetail />} />
                 </Route>
 
