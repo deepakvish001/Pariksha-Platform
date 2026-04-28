@@ -1430,16 +1430,18 @@ const CodingProblems = () => {
                                   className="w-auto max-w-xs p-2"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  <div className="flex flex-wrap gap-1">
-                                    {p.topics.slice(3).map((t) => (
-                                      <Badge
-                                        key={t}
-                                        variant="secondary"
-                                        className="text-xs font-normal"
-                                      >
-                                        {t}
-                                      </Badge>
-                                    ))}
+                                  <div className="max-h-48 overflow-y-auto pr-1">
+                                    <div className="flex flex-wrap gap-1">
+                                      {p.topics.slice(3).map((t) => (
+                                        <Badge
+                                          key={t}
+                                          variant="secondary"
+                                          className="text-xs font-normal"
+                                        >
+                                          {t}
+                                        </Badge>
+                                      ))}
+                                    </div>
                                   </div>
                                 </PopoverContent>
                               </Popover>
