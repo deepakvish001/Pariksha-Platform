@@ -1234,10 +1234,12 @@ const CodingProblemDetail = () => {
                 onValueChange={(v) => setActiveBottomTab(v as "testcase" | "output")}
                 className="h-full flex flex-col"
               >
-                <TabsList className="rounded-none justify-start bg-transparent border-b h-10 px-2">
-                  <TabsTrigger value="testcase">Test Case</TabsTrigger>
-                  <TabsTrigger value="output">Output</TabsTrigger>
-                </TabsList>
+                <div className="border-b overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <TabsList className="rounded-none justify-start bg-transparent border-0 h-10 px-2 w-max min-w-full flex-nowrap">
+                    <TabsTrigger value="testcase" className="shrink-0 whitespace-nowrap">Test Case</TabsTrigger>
+                    <TabsTrigger value="output" className="shrink-0 whitespace-nowrap">Output</TabsTrigger>
+                  </TabsList>
+                </div>
 
                 <TabsContent value="testcase" className="flex-1 m-0 p-3 overflow-y-auto">
                   <TestCaseWorkbench
