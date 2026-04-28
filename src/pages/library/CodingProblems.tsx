@@ -364,6 +364,39 @@ const CodingProblems = () => {
   const daily = useDailyChallenge(solved);
   const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
 
+  // Inline preview drawer state
+  const [previewSlug, setPreviewSlug] = useState<string | null>(null);
+  const previewProblem = useMemo(
+    () => CODING_PROBLEMS.find((p) => p.slug === previewSlug) ?? null,
+    [previewSlug],
+  );
+
+  // Per-topic stats for the progress ring
+  const topicStats = useMemo(() => {
+    const totals = new Map<string, number>();
+    const solvedMap = new Map<string, number>();
+    const attemptedMap = new Map<string, number>();
+    for (const p of CODING_PROBLEMS) {
+      for (const t of p.topics) {
+        totals.set(t, (totals.get(t) ?? 0) + 1);
+        if (solved.has(p.slug)) solvedMap.set(t, (solvedMap.get(t) ?? 0) + 1);
+        else if (attempted.has(p.slug)) attemptedMap.set(t, (attemptedMap.get(t) ?? 0) + 1);
+      }
+    }
+    return { totals, solvedMap, attemptedMap };
+  }, [solved, attempted]);
+
+  // Identify weak topics: solved < 30% (and at least 1 attempt or unsolved problems)
+  const weakTopics = useMemo(() => {
+    const out: string[] = [];
+    for (const [topic, total] of topicStats.totals) {
+      const s = topicStats.solvedMap.get(topic) ?? 0;
+      if (total >= 3 && s / total < 0.3) out.push(topic);
+    }
+    return out;
+  }, [topicStats]);
+
+
   // Persisted selection (bulk actions) — survives refresh and pagination
   const {
     selectionMode,
