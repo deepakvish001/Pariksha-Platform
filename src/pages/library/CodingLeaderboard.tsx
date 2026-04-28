@@ -908,6 +908,7 @@ export default function CodingLeaderboard() {
         onOpenChange={(o) => !o && setDrawerUser(null)}
         userId={drawerUser?.id ?? null}
         rank={drawerUser?.rank ?? null}
+        isAuthenticated={!!user}
       />
     </TooltipProvider>
   );
