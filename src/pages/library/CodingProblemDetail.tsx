@@ -586,7 +586,7 @@ const CodingProblemDetail = () => {
     setActiveBottomTab("output");
     // Auto-format right before submit so submitted code has consistent style.
     // Honors the user's "Format on submit" preference. Failures are non-blocking.
-    if (editorPrefs.formatOnSubmit !== "off") {
+    if (effectiveFormatOnSubmit !== "off") {
       try {
         await editorRef.current?.format();
       } catch {
@@ -596,7 +596,7 @@ const CodingProblemDetail = () => {
     // Optional lightweight lint pass: trim trailing whitespace, collapse 3+
     // blank lines into one, and ensure exactly one trailing newline.
     let lintCleaned: string | null = null;
-    if (editorPrefs.formatOnSubmit === "format+lint") {
+    if (effectiveFormatOnSubmit === "format+lint") {
       const current = editorRef.current?.getValue() ?? code;
       const cleaned = current
         .split("\n")
@@ -1195,8 +1195,11 @@ const CodingProblemDetail = () => {
                       </Tooltip>
                     </TooltipProvider>
                     <EditorSettingsPopover
-                      formatOnSubmit={editorPrefs.formatOnSubmit}
+                      formatOnSubmit={effectiveFormatOnSubmit}
                       onFormatOnSubmitChange={setFormatOnSubmit}
+                      perTaskOverride={formatOnSubmitOverride}
+                      perTaskLabel={`${problem.title} · ${langInfo.label}`}
+                      onPerTaskOverrideChange={setFormatOnSubmitOverride}
                     />
                   </div>
                 </div>
