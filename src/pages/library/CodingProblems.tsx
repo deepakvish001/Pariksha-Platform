@@ -370,12 +370,6 @@ const CodingProblems = () => {
   const daily = useDailyChallenge(solved);
   const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
 
-  // Inline preview drawer state
-  const [previewSlug, setPreviewSlug] = useState<string | null>(null);
-  const previewProblem = useMemo(
-    () => CODING_PROBLEMS.find((p) => p.slug === previewSlug) ?? null,
-    [previewSlug],
-  );
 
   // Per-topic stats for the progress ring
   const topicStats = useMemo(() => {
