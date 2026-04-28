@@ -48,3 +48,51 @@ export const useCodeRuns = (problemSlug?: string) => {
 
   return { runs, loading, refetch: fetchRuns };
 };
+
+export interface PagedRunsParams {
+  page: number;
+  pageSize: number;
+  search?: string;
+  language?: string;
+}
+
+export const usePagedCodeRuns = ({ page, pageSize, search, language }: PagedRunsParams) => {
+  const { user } = useAuth();
+  const [runs, setRuns] = useState<CodeRunRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const fetchPage = useCallback(async () => {
+    if (!user) {
+      setRuns([]);
+      setTotal(0);
+      return;
+    }
+    setLoading(true);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    let q = supabase
+      .from("code_runs")
+      .select("*", { count: "exact" })
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .range(from, to);
+    if (language && language !== "all") q = q.eq("language", language);
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      q = q.or(`problem_slug.ilike.${term},source_code.ilike.${term}`);
+    }
+    const { data, error, count } = await q;
+    if (!error && data) {
+      setRuns(data as CodeRunRow[]);
+      setTotal(count ?? 0);
+    }
+    setLoading(false);
+  }, [user, page, pageSize, search, language]);
+
+  useEffect(() => {
+    fetchPage();
+  }, [fetchPage]);
+
+  return { runs, total, loading, refetch: fetchPage };
+};
