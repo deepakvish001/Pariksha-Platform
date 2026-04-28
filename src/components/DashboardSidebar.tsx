@@ -104,6 +104,7 @@ const homeNavItems = [
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
   { title: "Roadmap", url: "/dashboard/roadmaps", icon: Route },
   { title: "Coding Problems", url: "/library/problems", icon: Terminal },
+  { title: "Submissions", url: "/dashboard/submissions", icon: History },
   { title: "Profile", url: "/dashboard/profile", icon: User },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
@@ -115,6 +116,7 @@ const ACTIVE_ROUTES = new Set([
   "/dashboard/roadmaps",
   "/dashboard/roadmap/fullstack",
   "/dashboard/profile",
+  "/dashboard/submissions",
   "/settings",
   "/library/problems",
 ]);
