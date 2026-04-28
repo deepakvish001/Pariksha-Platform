@@ -170,6 +170,9 @@ const CodingProblemDetail = () => {
     setDetailSubmission(s);
     setLastOpenedId(s.id);
     if (slug) writeLastOpened(slug, s.id);
+    // Trigger an auto-scroll inside the AttemptTimeline so the highlighted
+    // entry becomes visible immediately (especially for "Go to failed cases").
+    setTimelineScrollKey((k) => k + 1);
     const next = new URLSearchParams(searchParams);
     next.set("sub", s.id);
     setSearchParams(next, { replace: true });
