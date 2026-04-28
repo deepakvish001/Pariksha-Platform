@@ -98,7 +98,13 @@ export const AttemptTimeline = ({
             const clickable = !!onSelect;
             const isHighlighted = highlightedId === s.id;
             return (
-              <li key={s.id} className="ml-4">
+              <li
+                key={s.id}
+                ref={(el) => {
+                  itemRefs.current[s.id] = el;
+                }}
+                className="ml-4"
+              >
                 <span
                   className={cn(
                     "absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full border-2 border-background",
