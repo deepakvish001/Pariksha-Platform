@@ -420,9 +420,23 @@ const PublicProfile = () => {
       
       <Navbar />
 
-      <main className="section-container py-12">
-        <div className="max-w-4xl mx-auto space-y-8">
+      <main className="section-container py-8 md:py-12">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6 lg:gap-8">
+          {/* Left sidebar nav */}
+          <ProfileSideNav
+            sections={[
+              { id: "overview", label: "Overview", icon: UserIcon },
+              { id: "skills", label: "Skills & Interests", icon: Sparkles },
+              { id: "goals", label: "Goals", icon: Target },
+              ...(hasSocialLinks ? [{ id: "social", label: "Social", icon: Globe }] : []),
+              ...(hasCodingProfiles ? [{ id: "coding", label: "Coding Profiles", icon: Code }] : []),
+              { id: "achievements", label: "Achievements", icon: Trophy },
+            ]}
+          />
+
+          <div className="space-y-8 min-w-0">
           {/* Profile Header */}
+          <section id="overview" className="scroll-mt-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
