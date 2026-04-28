@@ -1487,14 +1487,36 @@ const CodingProblemDetail = () => {
                 </div>
 
                 <TabsContent value="testcase" className="flex-1 m-0 p-3 overflow-y-auto">
-                  <TestCaseWorkbench
-                    slug={problem.slug}
-                    sampleTests={problem.sampleTests}
-                    stdin={stdin}
-                    onStdinChange={setStdin}
-                    onRun={handleRun}
-                    isRunning={isRunning}
-                  />
+                  {isSQLProblem ? (
+                    <div className="space-y-3">
+                      <div className="rounded-md border bg-muted/30 p-3 text-sm">
+                        <p className="font-medium mb-1">Seeded dataset</p>
+                        <p className="text-muted-foreground text-xs">
+                          Your query runs against the schema and seed data shown in the problem
+                          description. Click <span className="font-mono">Run</span> to execute and{" "}
+                          <span className="font-mono">Submit</span> to compare results with the
+                          reference query.
+                        </p>
+                      </div>
+                      <Button onClick={handleRun} disabled={isRunning} size="sm" className="gap-1.5">
+                        {isRunning ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Play className="h-3.5 w-3.5" />
+                        )}
+                        Run query
+                      </Button>
+                    </div>
+                  ) : (
+                    <TestCaseWorkbench
+                      slug={problem.slug}
+                      sampleTests={problem.sampleTests}
+                      stdin={stdin}
+                      onStdinChange={setStdin}
+                      onRun={handleRun}
+                      isRunning={isRunning}
+                    />
+                  )}
                 </TabsContent>
 
                 <TabsContent value="output" className="flex-1 m-0 p-3 overflow-y-auto">
