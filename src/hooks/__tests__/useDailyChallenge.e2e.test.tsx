@@ -123,11 +123,19 @@ describe("useDailyChallenge — cloud pull/push end-to-end (post sync-field remo
       }),
     );
 
+    // Sanity: verify our mock chain actually resolves like the hook expects.
+    const sanity = await supabaseClient.supabase
+      .from("daily_challenge_completions")
+      .select("challenge_date")
+      .eq("user_id", "x")
+      .gte("challenge_date", "2020-01-01")
+      .order("challenge_date", { ascending: false });
+    console.log("DEBUG sanity:", JSON.stringify(sanity));
+
     const { result } = renderHook(() => useDailyChallenge());
     await act(async () => {
       await new Promise((r) => setTimeout(r, 200));
     });
-    console.log("DEBUG eq:", selectChain.eq.mock.calls.length, "gte:", selectChain.gte.mock.calls.length, "order:", selectChain.order.mock.calls.length);
     console.log("DEBUG state:", JSON.stringify(result.current.recentCompletions));
     console.log("DEBUG after 100ms select:", selectChain.select.mock.calls.length, "rpc:", rpcMock.mock.calls.length, "upsert:", upsertMock.mock.calls.length);
 
