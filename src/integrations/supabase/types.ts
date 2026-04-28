@@ -182,6 +182,60 @@ export type Database = {
         }
         Relationships: []
       }
+      code_runs: {
+        Row: {
+          compile_output: string | null
+          created_at: string
+          id: string
+          language: string
+          language_id: number
+          memory_kb: number | null
+          problem_slug: string
+          source_code: string
+          status: string | null
+          status_id: number | null
+          stderr: string | null
+          stdin: string
+          stdout: string | null
+          time_ms: number | null
+          user_id: string
+        }
+        Insert: {
+          compile_output?: string | null
+          created_at?: string
+          id?: string
+          language: string
+          language_id: number
+          memory_kb?: number | null
+          problem_slug: string
+          source_code?: string
+          status?: string | null
+          status_id?: number | null
+          stderr?: string | null
+          stdin?: string
+          stdout?: string | null
+          time_ms?: number | null
+          user_id: string
+        }
+        Update: {
+          compile_output?: string | null
+          created_at?: string
+          id?: string
+          language?: string
+          language_id?: number
+          memory_kb?: number | null
+          problem_slug?: string
+          source_code?: string
+          status?: string | null
+          status_id?: number | null
+          stderr?: string | null
+          stdin?: string
+          stdout?: string | null
+          time_ms?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       code_submissions: {
         Row: {
           created_at: string
