@@ -129,7 +129,7 @@ async function runSingleCase(
   if (!submitRes.ok) {
     const errText = await submitRes.text();
     throw new Judge0RequestError(
-      `Judge0 submit failed (${submitRes.status})${errText ? `: ${errText}` : ""}`,
+      friendlyJudge0Error(submitRes.status, errText),
       {
         error_stage: "submit",
         requested_url: submitUrl,
