@@ -161,32 +161,96 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
       const local = readMap()[slug];
       const remote = data ? rowToEntry(data) : null;
 
-      // Merge: take the freshest version for notes and per language.
-      const localTs = local?.updatedAt ?? 0;
-      const remoteTs = remote?.updatedAt ?? 0;
-
       // No remote -> push local up if local has content.
       if (!remote) {
         if (local && (local.notes.trim() || Object.values(local.code).some((c) => c?.trim()))) {
           await pushToDb(userId, slug, local);
         }
+        setLastSyncedAt(Date.now());
         setSyncStatus("synced");
         return;
       }
 
-      // No local or remote is newer overall -> adopt remote.
-      if (!local || remoteTs >= localTs) {
+      // No local -> adopt remote.
+      if (!local) {
         const map = readMap();
         map[slug] = remote;
         writeMap(map);
         setEntry(remote);
         setSavedAt(remote.updatedAt);
+        setLastSyncedAt(Date.now());
         setSyncStatus("synced");
         return;
       }
 
-      // Local is newer -> push to DB.
-      await pushToDb(userId, slug, local);
+      // Field-level merge: pick the freshest version per field (notes + each
+      // language) using per-field timestamps with the overall updatedAt as a
+      // fallback. This avoids losing changes when both sides edited different
+      // languages, or when one side touched notes while the other touched code.
+      const localNotesTs = local.notesUpdatedAt ?? local.updatedAt ?? 0;
+      const remoteNotesTs = remote.notesUpdatedAt ?? remote.updatedAt ?? 0;
+      const notesWinner = remoteNotesTs > localNotesTs ? remote : local;
+
+      const langs = new Set<LangId>([
+        ...(Object.keys(local.code) as LangId[]),
+        ...(Object.keys(remote.code) as LangId[]),
+      ]);
+      const mergedCode: Partial<Record<LangId, string>> = {};
+      const mergedCodeTs: Partial<Record<LangId, number>> = {};
+      let conflictDetected = false;
+
+      langs.forEach((lang) => {
+        const lTs = local.codeUpdatedAt?.[lang] ?? local.updatedAt ?? 0;
+        const rTs = remote.codeUpdatedAt?.[lang] ?? remote.updatedAt ?? 0;
+        const lVal = local.code[lang];
+        const rVal = remote.code[lang];
+        const useRemote = rTs > lTs;
+        const winner = useRemote ? rVal : lVal;
+        if (winner !== undefined) mergedCode[lang] = winner;
+        const winnerTs = useRemote ? rTs : lTs;
+        if (winnerTs) mergedCodeTs[lang] = winnerTs;
+        if (
+          lVal !== undefined &&
+          rVal !== undefined &&
+          lVal !== rVal &&
+          Math.min(lTs, rTs) > 0
+        ) {
+          conflictDetected = true;
+        }
+      });
+
+      if (
+        local.notes !== remote.notes &&
+        localNotesTs > 0 &&
+        remoteNotesTs > 0
+      ) {
+        conflictDetected = true;
+      }
+
+      const merged: SolutionEntry = {
+        notes: notesWinner.notes,
+        code: mergedCode,
+        codeUpdatedAt: mergedCodeTs,
+        notesUpdatedAt:
+          remoteNotesTs > localNotesTs ? remote.notesUpdatedAt : local.notesUpdatedAt,
+        updatedAt: Math.max(local.updatedAt ?? 0, remote.updatedAt ?? 0),
+      };
+
+      const map = readMap();
+      map[slug] = merged;
+      writeMap(map);
+      setEntry(merged);
+      setSavedAt(merged.updatedAt);
+
+      // Push the merged result back so both sides converge.
+      const remoteMatchesMerged =
+        remote.notes === merged.notes &&
+        JSON.stringify(remote.code) === JSON.stringify(merged.code);
+      if (!remoteMatchesMerged) {
+        await pushToDb(userId, slug, merged);
+      }
+      if (conflictDetected) setLastConflictResolvedAt(Date.now());
+      setLastSyncedAt(Date.now());
       setSyncStatus("synced");
     })();
     return () => {
