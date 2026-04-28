@@ -1238,9 +1238,11 @@ const CodingProblemDetail = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {LANGUAGES.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
-                        ))}
+                        {LANGUAGES
+                          .filter((l) => (isSQLProblem ? l.id === "sql" : l.id !== "sql"))
+                          .map((l) => (
+                            <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                     <DraftSaveIndicator
