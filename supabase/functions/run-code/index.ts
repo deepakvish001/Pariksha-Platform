@@ -141,14 +141,20 @@ async function submitToFermion(payload: {
     data: [
       {
         data: {
-          language: payload.language,
-          sourceCodeAsBase64UrlEncoded: b64UrlEncode(payload.source),
-          stdinStringAsBase64UrlEncoded: payload.stdin ? b64UrlEncode(payload.stdin) : undefined,
-          runConfig: {
-            cpuTimeLimitInMilliseconds: payload.cpuMs,
-            wallTimeLimitInMilliseconds: payload.wallMs,
-            memoryLimitInKilobyte: payload.memKb,
-          },
+          entries: [
+            {
+              language: payload.language,
+              sourceCodeAsBase64UrlEncoded: b64UrlEncode(payload.source),
+              runConfig: {
+                customMatcherToUseForExpectedOutput: "ExactMatch",
+                expectedOutputAsBase64UrlEncoded: "",
+                stdinStringAsBase64UrlEncoded: payload.stdin ? b64UrlEncode(payload.stdin) : "",
+                cpuTimeLimitInMilliseconds: payload.cpuMs,
+                wallTimeLimitInMilliseconds: payload.wallMs,
+                memoryLimitInKilobyte: payload.memKb,
+              },
+            },
+          ],
         },
       },
     ],
@@ -174,16 +180,19 @@ async function submitToFermion(payload: {
       error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text,
     });
   }
-  // Response shape: { output: { data: [{ output: { taskUniqueId } }] } } — be permissive.
-  const taskId =
-    json?.output?.data?.[0]?.output?.taskUniqueId ??
-    json?.data?.[0]?.output?.taskUniqueId ??
-    json?.output?.taskUniqueId ??
-    json?.taskUniqueId;
+  // Response: { output: { status, data: { taskIds: [...] } } } per item; root is array
+  const root = Array.isArray(json) ? json[0] : json;
+  const taskIds: unknown =
+    root?.output?.data?.taskIds ??
+    root?.data?.taskIds ??
+    root?.output?.taskIds;
+  const taskId = Array.isArray(taskIds) ? taskIds[0] : undefined;
   if (!taskId || typeof taskId !== "string") {
-    throw new FermionError("Fermion submit: no taskUniqueId in response", {
-      error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500),
-    });
+    const errMsg = root?.output?.errorMessage || root?.errorMessage;
+    throw new FermionError(
+      `Fermion submit: no taskId in response${errMsg ? ` — ${errMsg}` : ""}`,
+      { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500) },
+    );
   }
   return taskId;
 }
