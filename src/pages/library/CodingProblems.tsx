@@ -1146,7 +1146,7 @@ const CodingProblems = () => {
                       )}
                     >
                       {selectionMode && (
-                        <TableCell className="py-2.5">
+                        <TableCell className={`${cellPadY}`}>
                           <Checkbox
                             checked={isSel}
                             onCheckedChange={() => toggleSelected(p.slug)}
@@ -1155,12 +1155,12 @@ const CodingProblems = () => {
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("row") && (
-                        <TableCell className="py-2.5 text-center text-xs text-muted-foreground tabular-nums">
+                        <TableCell className={`${cellPadY} text-center text-xs text-muted-foreground tabular-nums`}>
                           {rowNumber}
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("status") && (
-                        <TableCell className="py-2.5">
+                        <TableCell className={`${cellPadY}`}>
                           {isSolved ? (
                             <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-label="Solved" />
                           ) : isAttempted ? (
@@ -1171,7 +1171,7 @@ const CodingProblems = () => {
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("title") && (
-                        <TableCell className="py-2.5 min-w-0">
+                        <TableCell className={`${cellPadY} min-w-0`}>
                           <Link
                             to={`/library/problems/${p.slug}`}
                             className="font-medium hover:text-primary transition-colors block truncate"
@@ -1193,7 +1193,7 @@ const CodingProblems = () => {
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("topics") && (
-                        <TableCell className="hidden md:table-cell py-2.5">
+                        <TableCell className={`hidden md:table-cell ${cellPadY}`}>
                           <div className="flex flex-wrap gap-1">
                             {p.topics.slice(0, 3).map((t) => (
                               <Badge key={t} variant="secondary" className="text-xs font-normal">
@@ -1209,7 +1209,7 @@ const CodingProblems = () => {
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("difficulty") && (
-                        <TableCell className="py-2.5">
+                        <TableCell className={`${cellPadY}`}>
                           <Badge
                             variant="outline"
                             className={cn("font-medium", difficultyClass(p.difficulty))}
@@ -1219,17 +1219,17 @@ const CodingProblems = () => {
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("acceptance") && (
-                        <TableCell className="hidden lg:table-cell py-2.5 text-right text-xs tabular-nums text-muted-foreground">
+                        <TableCell className={`hidden lg:table-cell ${cellPadY} text-right text-xs tabular-nums text-muted-foreground`}>
                           {acceptance !== null ? `${acceptance}%` : "—"}
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("attempts") && (
-                        <TableCell className="hidden sm:table-cell py-2.5 text-right text-xs text-muted-foreground tabular-nums">
+                        <TableCell className={`hidden sm:table-cell ${cellPadY} text-right text-xs text-muted-foreground tabular-nums`}>
                           {stats?.attempts ?? 0}
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("bookmark") && (
-                        <TableCell className="py-2.5">
+                        <TableCell className={`${cellPadY}`}>
                           <button
                             type="button"
                             onClick={() => toggleBookmark(p.slug)}
