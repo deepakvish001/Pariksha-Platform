@@ -164,6 +164,8 @@ export const MySolutionPanel = ({
   fontSize = 13,
   syncStatus = "idle",
   isCloudSynced = false,
+  lastSyncedAt = null,
+  onSignInClick,
 }: Props) => {
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [copied, setCopied] = useState(false);
