@@ -5,6 +5,7 @@ import { usePagedCodeRuns, type CodeRunRow } from "@/hooks/useCodeRuns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCodeRunner, RunCancelledError } from "@/hooks/useCodeRunner";
 import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -125,17 +126,29 @@ const RowSkeleton = () => (
   </Card>
 );
 
+const LARGE_COPY_THRESHOLD = 20_000; // ~20KB triggers loading state
+
 const CopyButton = ({ text, label }: { text: string; label?: string }) => {
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<"idle" | "copying" | "copied" | "error">("idle");
   const onCopy = async () => {
+    if (!text) return;
+    const isLarge = text.length > LARGE_COPY_THRESHOLD;
+    if (isLarge) setState("copying");
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setState("copied");
+      toast.success(`${label ?? "Content"} copied`, {
+        description: `${text.length.toLocaleString()} characters`,
+      });
+      setTimeout(() => setState("idle"), 1800);
     } catch {
-      /* noop */
+      setState("error");
+      toast.error("Copy failed");
+      setTimeout(() => setState("idle"), 1800);
     }
   };
+  const Icon =
+    state === "copying" ? Loader2 : state === "copied" ? Check : Copy;
   return (
     <Button
       type="button"
@@ -143,10 +156,19 @@ const CopyButton = ({ text, label }: { text: string; label?: string }) => {
       variant="ghost"
       className="h-6 px-2 text-xs"
       onClick={onCopy}
-      disabled={!text}
+      disabled={!text || state === "copying"}
     >
-      {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-      {copied ? "Copied" : label ?? "Copy"}
+      <Icon className={`h-3 w-3 mr-1 ${state === "copying" ? "animate-spin" : ""}`} />
+      {state === "copying"
+        ? "Copying…"
+        : state === "copied"
+        ? "Copied"
+        : state === "error"
+        ? "Failed"
+        : label ?? "Copy"}
+      {text && text.length > LARGE_COPY_THRESHOLD && state === "idle" && (
+        <span className="ml-1 text-muted-foreground">({Math.round(text.length / 1024)}KB)</span>
+      )}
     </Button>
   );
 };
@@ -194,15 +216,36 @@ export default function SubmissionsHistory() {
     usePagedCodeRuns({ page: runPage, pageSize: PAGE_SIZE, search, language });
 
   const { run, isRunning, cancelRun } = useCodeRunner();
-  const { toast } = useToast();
-  const [detailRun, setDetailRun] = useState<CodeRunRow | null>(null);
+  const { toast: legacyToast } = useToast();
+  const [detailRunId, setDetailRunId] = useState<string | null>(searchParams.get("drawer"));
   const [rerunningId, setRerunningId] = useState<string | null>(null);
+  const [lastRerunError, setLastRerunError] = useState<{ id: string; message: string } | null>(null);
+  const [lastCancelledId, setLastCancelledId] = useState<string | null>(null);
+
+  // Persist open drawer id to URL so it survives refresh / pagination
+  useEffect(() => {
+    const cur = searchParams.get("drawer");
+    if (detailRunId && cur !== detailRunId) {
+      updateParams({ drawer: detailRunId });
+    } else if (!detailRunId && cur) {
+      updateParams({ drawer: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailRunId]);
+
+  // Resolve the run object for the persisted drawer id from currently-loaded runs
+  const detailRun = useMemo(
+    () => (detailRunId ? runs.find((r) => r.id === detailRunId) ?? null : null),
+    [detailRunId, runs],
+  );
 
   const subTotalPages = useMemo(() => Math.max(1, Math.ceil(subTotal / PAGE_SIZE)), [subTotal]);
   const runTotalPages = useMemo(() => Math.max(1, Math.ceil(runTotal / PAGE_SIZE)), [runTotal]);
 
   const handleRerun = async (r: CodeRunRow) => {
     setRerunningId(r.id);
+    setLastRerunError(null);
+    setLastCancelledId(null);
     try {
       const result = await run({
         source_code: r.source_code,
@@ -211,24 +254,29 @@ export default function SubmissionsHistory() {
         stdin: r.stdin,
         problem_slug: r.problem_slug,
       });
-      toast({
+      legacyToast({
         title: `Re-run: ${result.status?.description ?? "Done"}`,
         description: `${r.problem_slug} • ${result.time ? `${Math.round(result.time * 1000)} ms` : "—"}`,
       });
       await refetchRuns();
     } catch (e) {
       if (e instanceof RunCancelledError) {
-        toast({ title: "Re-run cancelled", description: r.problem_slug });
+        setLastCancelledId(r.id);
+        toast.info("Re-run cancelled", { description: r.problem_slug });
       } else {
-        toast({
-          title: "Re-run failed",
-          description: e instanceof Error ? e.message : "Unknown error",
-          variant: "destructive",
-        });
+        const msg = e instanceof Error ? e.message : "Unknown error";
+        setLastRerunError({ id: r.id, message: msg });
+        legacyToast({ title: "Re-run failed", description: msg, variant: "destructive" });
       }
     } finally {
       setRerunningId(null);
     }
+  };
+
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setSearchParams(new URLSearchParams(), { replace: true });
+    setDetailRunId(null);
   };
 
   if (!user) {
@@ -284,16 +332,15 @@ export default function SubmissionsHistory() {
             {LANGUAGE_OPTIONS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
           </SelectContent>
         </Select>
-        {(search || verdict !== "all" || language !== "all") && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setSearchInput("");
-              setSearchParams(new URLSearchParams(tab === "runs" ? { tab } : {}), { replace: true });
-            }}
-          >
-            <X className="h-4 w-4 mr-1" /> Clear
+        {(search ||
+          verdict !== "all" ||
+          language !== "all" ||
+          tab !== "submissions" ||
+          subPage !== 1 ||
+          runPage !== 1 ||
+          detailRunId) && (
+          <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+            <X className="h-4 w-4 mr-1" /> Clear all filters
           </Button>
         )}
       </div>
@@ -380,7 +427,7 @@ export default function SubmissionsHistory() {
                           size="sm"
                           variant="outline"
                           className="h-7 px-2"
-                          onClick={() => setDetailRun(r)}
+                          onClick={() => setDetailRunId(r.id)}
                         >
                           <Eye className="h-3.5 w-3.5 mr-1" /> Details
                         </Button>
@@ -392,6 +439,17 @@ export default function SubmissionsHistory() {
                             onClick={cancelRun}
                           >
                             <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                          </Button>
+                        ) : lastRerunError?.id === r.id ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 border-destructive/40 text-destructive hover:text-destructive"
+                            disabled={isRunning}
+                            onClick={() => handleRerun(r)}
+                          >
+                            <Play className="h-3.5 w-3.5 mr-1" />
+                            Retry
                           </Button>
                         ) : (
                           <Button
@@ -407,6 +465,16 @@ export default function SubmissionsHistory() {
                         )}
                       </div>
                     </div>
+                    {lastRerunError?.id === r.id && (
+                      <p className="mt-2 text-xs text-destructive truncate">
+                        Re-run failed: {lastRerunError.message}
+                      </p>
+                    )}
+                    {lastCancelledId === r.id && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Re-run was cancelled.
+                      </p>
+                    )}
                   </Card>
                 );
               })}
@@ -420,7 +488,7 @@ export default function SubmissionsHistory() {
         </TabsContent>
       </Tabs>
 
-      <Sheet open={!!detailRun} onOpenChange={(o) => !o && setDetailRun(null)}>
+      <Sheet open={!!detailRun} onOpenChange={(o) => !o && setDetailRunId(null)}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           {detailRun && (
             <>
@@ -452,10 +520,20 @@ export default function SubmissionsHistory() {
                   </Card>
                 </div>
 
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap items-center">
                   {isRunning && rerunningId === detailRun.id ? (
                     <Button size="sm" variant="destructive" onClick={cancelRun}>
                       <X className="h-3.5 w-3.5 mr-1" /> Cancel re-run
+                    </Button>
+                  ) : lastRerunError?.id === detailRun.id ? (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleRerun(detailRun)}
+                      disabled={isRunning}
+                    >
+                      <Play className="h-3.5 w-3.5 mr-1" />
+                      Retry re-run
                     </Button>
                   ) : (
                     <Button
@@ -473,6 +551,16 @@ export default function SubmissionsHistory() {
                     </Link>
                   </Button>
                 </div>
+                {lastRerunError?.id === detailRun.id && (
+                  <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-destructive">
+                    Re-run failed: {lastRerunError.message}
+                  </div>
+                )}
+                {lastCancelledId === detailRun.id && !isRunning && (
+                  <div className="rounded border border-border bg-muted/30 p-2 text-muted-foreground">
+                    Re-run was cancelled.
+                  </div>
+                )}
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
