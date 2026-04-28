@@ -444,7 +444,12 @@ const CodingProblemDetail = () => {
           <Tabs defaultValue="description" className="h-full flex flex-col">
             <TabsList className="rounded-none justify-start bg-transparent border-b h-10 px-2">
               <TabsTrigger value="description">Description</TabsTrigger>
-              <TabsTrigger value="solution">Solution</TabsTrigger>
+              <TabsTrigger value="my-solution">
+                My Solution {hasMySolution && (
+                  <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="solution">Reference</TabsTrigger>
               <TabsTrigger value="notes">
                 Notes {notesValue.trim().length > 0 && (
                   <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-primary inline-block" />
