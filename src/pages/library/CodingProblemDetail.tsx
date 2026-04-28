@@ -11,6 +11,7 @@ import {
   Plus,
   Type,
   ChevronRight,
+  Keyboard,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -18,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+
 import {
   Select,
   SelectContent,
@@ -67,6 +68,9 @@ import { NotesPanel } from "@/components/library/coding/NotesPanel";
 import { ProgressiveHints } from "@/components/library/coding/ProgressiveHints";
 import { MySolutionPanel } from "@/components/library/coding/MySolutionPanel";
 import { FloatingActionBar } from "@/components/library/coding/FloatingActionBar";
+import { SessionTimer, formatSolveTime, type SessionTimerHandle } from "@/components/library/coding/SessionTimer";
+import { TestCaseWorkbench } from "@/components/library/coding/TestCaseWorkbench";
+import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
 import { useProblemNotes } from "@/hooks/useProblemNotes";
 import { useProblemSolution } from "@/hooks/useProblemSolution";
 import { useEditorPrefs } from "@/hooks/useEditorPrefs";
@@ -129,6 +133,8 @@ const CodingProblemDetail = () => {
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const sessionTimerRef = useRef<SessionTimerHandle>(null);
   
   const [detailSubmission, setDetailSubmission] = useState<CodeSubmissionRow | null>(null);
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(() =>
@@ -394,6 +400,7 @@ const CodingProblemDetail = () => {
   const handleCodeChange = (v: string) => {
     setCode(v);
     saveDraft(v);
+    sessionTimerRef.current?.poke();
   };
 
   const handleReset = () => {
@@ -449,10 +456,16 @@ const CodingProblemDetail = () => {
       });
       setSubmitResult(result);
       refetchSubmissions();
+      const isAccepted = result.verdict === "Accepted";
+      const elapsedMs = sessionTimerRef.current?.getElapsedMs() ?? 0;
+      const baseDesc = `${result.passed} / ${result.total} test cases passed`;
       toast({
         title: result.verdict,
-        description: `${result.passed} / ${result.total} test cases passed`,
-        variant: result.verdict === "Accepted" ? "default" : "destructive",
+        description:
+          isAccepted && elapsedMs > 0
+            ? `${baseDesc} · Solved in ${formatSolveTime(elapsedMs)}`
+            : baseDesc,
+        variant: isAccepted ? "default" : "destructive",
       });
     } catch (err) {
       toast({
@@ -921,6 +934,24 @@ const CodingProblemDetail = () => {
                       <RotateCcw className="h-3 w-3" />
                       Reset
                     </Button>
+                    <div className="w-px h-5 bg-border mx-1" />
+                    {slug && <SessionTimer ref={sessionTimerRef} slug={slug} />}
+                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowShortcuts(true)}
+                            className="h-8 w-8"
+                            aria-label="Keyboard shortcuts"
+                          >
+                            <Keyboard className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Keyboard shortcuts</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
                 <div className="flex-1 min-h-0">
@@ -948,28 +979,14 @@ const CodingProblemDetail = () => {
                 </TabsList>
 
                 <TabsContent value="testcase" className="flex-1 m-0 p-3 overflow-y-auto">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {problem.sampleTests.map((t, i) => (
-                        <Button
-                          key={i}
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => setStdin(t.input)}
-                        >
-                          Case {i + 1}
-                        </Button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">stdin (input passed to your program)</p>
-                    <Textarea
-                      value={stdin}
-                      onChange={(e) => setStdin(e.target.value)}
-                      className="font-mono text-xs min-h-[120px] resize-none"
-                      placeholder="Enter your test input..."
-                    />
-                  </div>
+                  <TestCaseWorkbench
+                    slug={problem.slug}
+                    sampleTests={problem.sampleTests}
+                    stdin={stdin}
+                    onStdinChange={setStdin}
+                    onRun={handleRun}
+                    isRunning={isRunning}
+                  />
                 </TabsContent>
 
                 <TabsContent value="output" className="flex-1 m-0 p-3 overflow-y-auto">
@@ -1096,6 +1113,18 @@ const CodingProblemDetail = () => {
         onReset={handleReset}
         isRunning={isRunning}
         isSubmitting={isSubmitting}
+      />
+
+      <ShortcutsCheatSheet
+        open={showShortcuts}
+        onOpenChange={setShowShortcuts}
+        title="Editor shortcuts"
+        shortcuts={[
+          { keys: ["Ctrl/Cmd", "Enter"], description: "Run code with current test" },
+          { keys: ["Ctrl/Cmd", "Shift", "Enter"], description: "Submit solution" },
+          { keys: ["Ctrl/Cmd", "Shift", "R"], description: "Reset to starter code" },
+          { keys: ["Esc"], description: "Close drawers and dialogs" },
+        ]}
       />
     </div>
   );
