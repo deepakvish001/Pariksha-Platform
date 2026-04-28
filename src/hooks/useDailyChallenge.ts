@@ -190,6 +190,7 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
           )
           .order("challenge_date", { ascending: false });
 
+        console.log("[hook] after order, cancelled=", cancelled, "data=", data, "err=", pullErr);
         if (cancelled) return;
         if (pullErr) throw pullErr;
 
