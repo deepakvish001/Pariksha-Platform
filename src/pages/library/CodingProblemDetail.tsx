@@ -511,6 +511,12 @@ const CodingProblemDetail = () => {
                         ? 30
                         : 50
                   }
+                  mySolution={{
+                    hasNotes: mySolutionHasNotes,
+                    hasAnyCode: mySolutionHasAnyCode,
+                    isComplete: mySolutionIsComplete,
+                    languageCount: mySolutionSavedLanguages.length,
+                  }}
                   loading={submissionsLoading && submissions.length === 0}
                 />
 
@@ -580,8 +586,11 @@ const CodingProblemDetail = () => {
                   language={mySolutionLanguage}
                   onLanguageChange={setMySolutionLanguage}
                   savedLanguages={mySolutionSavedLanguages}
+                  codeUpdatedAt={mySolutionCodeUpdatedAt}
                   onUseCurrentDraft={() => code}
                   onClear={clearMySolution}
+                  onRestore={restoreMySolution}
+                  hasUnsavedCurrentCode={mySolutionHasUnsavedCurrentCode}
                   savedAt={mySolutionSavedAt}
                   hasNotes={mySolutionHasNotes}
                   hasAnyCode={mySolutionHasAnyCode}
