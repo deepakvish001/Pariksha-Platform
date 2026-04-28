@@ -97,12 +97,6 @@ export interface DailyChallenge {
   recentCompletions: CompletionRecord[];
   /** True while a cloud pull/push is in flight */
   syncing: boolean;
-  /** Most recent sync lifecycle: idle | syncing | synced | error | offline */
-  syncStatus: "idle" | "syncing" | "synced" | "error" | "offline";
-  /** Last sync error message, if any */
-  syncError: string | null;
-  /** Last successful cloud sync time */
-  lastSyncedAt: Date | null;
   /** True when a successful mark-completed event just happened (for celebration) */
   justCompleted: boolean;
   acknowledgeCelebration: () => void;
