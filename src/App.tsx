@@ -49,6 +49,7 @@ import Quiz from "./pages/library/Quiz";
 import QuizHistory from "./pages/library/QuizHistory";
 import CodingProblems from "./pages/library/CodingProblems";
 import CodingProblemDetail from "./pages/library/CodingProblemDetail";
+import DailyChallengeWeekly from "./pages/library/DailyChallengeWeekly";
 
 // Fundamentals Pages
 import Language from "./pages/fundamentals/Language";
@@ -179,6 +180,7 @@ const App = () => (
                   <Route path="quiz" element={<Quiz />} />
                   <Route path="quiz-history" element={<QuizHistory />} />
                   <Route path="problems" element={<CodingProblems />} />
+                  <Route path="problems/weekly" element={<DailyChallengeWeekly />} />
                   <Route path="problems/:slug" element={<CodingProblemDetail />} />
                 </Route>
 
