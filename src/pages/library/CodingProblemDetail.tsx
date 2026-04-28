@@ -1262,20 +1262,21 @@ const CodingProblemDetail = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => {
-                              const wasCustom = isLayoutCustomized;
+                              const wasCustom = isLayoutCustomized || isPresetCustomized;
                               resetTabsLayout();
+                              resetLayoutPreset();
                               toast({
                                 title: wasCustom
                                   ? "Editor layout reset"
                                   : "Editor layout already default",
                                 description: wasCustom
-                                  ? "Tab order and active tab restored to defaults."
+                                  ? "Tabs, splits, and preset restored to defaults."
                                   : undefined,
                               });
                             }}
                             className={cn(
                               "h-8 w-8",
-                              isLayoutCustomized && "text-primary",
+                              (isLayoutCustomized || isPresetCustomized) && "text-primary",
                             )}
                             aria-label="Reset editor layout"
                           >
@@ -1283,12 +1284,23 @@ const CodingProblemDetail = () => {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {isLayoutCustomized
+                          {isLayoutCustomized || isPresetCustomized
                             ? "Reset editor layout (customized)"
                             : "Reset editor layout"}
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    <LayoutPresetPopover
+                      current={layoutPresetId}
+                      onSelect={(id) => {
+                        setLayoutPreset(id);
+                        toast({
+                          title: `Layout: ${
+                            id.charAt(0).toUpperCase() + id.slice(1).replace("-", " ")
+                          }`,
+                        });
+                      }}
+                    />
                     <EditorSettingsPopover
                       formatOnSubmit={effectiveFormatOnSubmit}
                       onFormatOnSubmitChange={setFormatOnSubmit}
