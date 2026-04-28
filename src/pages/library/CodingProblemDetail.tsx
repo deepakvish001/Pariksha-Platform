@@ -624,7 +624,7 @@ const CodingProblemDetail = () => {
       setExecutionErrorDetails(null);
       refetchRuns();
     } catch (err) {
-      setExecutionErrorDetails(extractRawFermionFromError(err));
+      setExecutionErrorDetails(true);
       toast({
         title: "Run failed",
         description: (err as Error).message,
@@ -711,7 +711,7 @@ const CodingProblemDetail = () => {
         variant: isAccepted ? "default" : "destructive",
       });
     } catch (err) {
-      setExecutionErrorDetails(extractRawFermionFromError(err));
+      setExecutionErrorDetails(true);
       toast({
         title: "Submit failed",
         description: (err as Error).message,
