@@ -155,6 +155,59 @@ export const SubmissionDetailsDrawer = ({ submission, open, onOpenChange, loadin
               </div>
             </div>
 
+            {submission.verdict === "Accepted" && (
+              <div className="rounded-lg border bg-card/40 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Performance vs. others
+                  </p>
+                </div>
+                {pctLoading ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Skeleton className="h-14 w-full rounded-md" />
+                    <Skeleton className="h-14 w-full rounded-md" />
+                  </div>
+                ) : !percentiles || percentiles.total_users === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No other accepted {submission.language} submissions yet — you're the first to solve this!
+                  </p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className={cn("rounded-md border p-2 text-xs", beatsTone(percentiles.runtime_beats))}>
+                        <div className="flex items-center gap-1.5 mb-0.5 opacity-80">
+                          <Zap className="h-3 w-3" />
+                          <span>Runtime</span>
+                        </div>
+                        <p className="font-semibold text-sm">
+                          {percentiles.runtime_beats != null
+                            ? `Beats ${percentiles.runtime_beats}%`
+                            : "—"}
+                        </p>
+                      </div>
+                      <div className={cn("rounded-md border p-2 text-xs", beatsTone(percentiles.memory_beats))}>
+                        <div className="flex items-center gap-1.5 mb-0.5 opacity-80">
+                          <MemoryStick className="h-3 w-3" />
+                          <span>Memory</span>
+                        </div>
+                        <p className="font-semibold text-sm">
+                          {percentiles.memory_beats != null
+                            ? `Beats ${percentiles.memory_beats}%`
+                            : "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-2">
+                      Compared against {percentiles.total_users}{" "}
+                      {percentiles.total_users === 1 ? "other user" : "other users"}
+                      {" "}who solved this in {submission.language}.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
