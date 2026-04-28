@@ -496,6 +496,13 @@ export default function CodingLeaderboard() {
           </CardContent>
         </Card>
       </div>
+
+      <LeaderboardUserDrawer
+        open={drawerUser !== null}
+        onOpenChange={(o) => !o && setDrawerUser(null)}
+        userId={drawerUser?.id ?? null}
+        rank={drawerUser?.rank ?? null}
+      />
     </TooltipProvider>
   );
 }
