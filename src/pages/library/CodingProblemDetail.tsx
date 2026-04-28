@@ -48,6 +48,7 @@ import { VerdictBadge } from "@/components/coding/VerdictBadge";
 import { useCodeRunner, type RunResult, type SubmitResult } from "@/hooks/useCodeRunner";
 import { useCodeDraft } from "@/hooks/useCodeDraft";
 import { useCodingSubmissions } from "@/hooks/useCodingSubmissions";
+import { useCodeRuns } from "@/hooks/useCodeRuns";
 import { LoginPromptDialog } from "@/components/LoginPromptDialog";
 import { cn } from "@/lib/utils";
 
