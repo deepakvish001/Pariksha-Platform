@@ -488,7 +488,7 @@ export default function SubmissionsHistory() {
         </TabsContent>
       </Tabs>
 
-      <Sheet open={!!detailRun} onOpenChange={(o) => !o && setDetailRun(null)}>
+      <Sheet open={!!detailRun} onOpenChange={(o) => !o && setDetailRunId(null)}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           {detailRun && (
             <>
