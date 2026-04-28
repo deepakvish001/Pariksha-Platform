@@ -15,6 +15,7 @@ interface MonacoEditorProps {
 export interface MonacoEditorHandle {
   format: () => Promise<void>;
   focus: () => void;
+  getValue: () => string;
 }
 
 export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
