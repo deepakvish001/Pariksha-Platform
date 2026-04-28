@@ -349,6 +349,17 @@ const CodingProblems = () => {
         />
       </Card>
 
+      {/* Bulk actions */}
+      {selectionMode && (
+        <BulkActionsBar
+          selectedCount={selected.size}
+          onSelectAllVisible={selectAllVisible}
+          onBookmarkSelected={bulkBookmark}
+          onUnbookmarkSelected={bulkUnbookmark}
+          onClearSelection={clearSelection}
+        />
+      )}
+
       {/* Result meta */}
       <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground">
         <span>
