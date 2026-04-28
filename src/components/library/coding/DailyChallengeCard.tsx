@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { DailyChallenge } from "@/hooks/useDailyChallenge";
-import { DailyChallengeSyncStatus } from "@/components/library/coding/DailyChallengeSyncStatus";
+
 
 interface Props {
   daily: DailyChallenge;
