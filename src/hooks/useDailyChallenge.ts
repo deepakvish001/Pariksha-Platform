@@ -182,6 +182,8 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
   useEffect(() => {
     if (!user) {
       lastSyncedUserRef.current = null;
+      setSyncStatus("idle");
+      setSyncError(null);
       return;
     }
     if (lastSyncedUserRef.current === user.id) return;
@@ -190,9 +192,11 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     let cancelled = false;
     (async () => {
       setSyncing(true);
+      setSyncStatus("syncing");
+      setSyncError(null);
       try {
         // Pull last ~365 days
-        const { data } = await supabase
+        const { data, error: pullErr } = await supabase
           .from("daily_challenge_completions")
           .select("challenge_date, problem_slug, completed_at")
           .eq("user_id", user.id)
@@ -203,6 +207,7 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
           .order("challenge_date", { ascending: false });
 
         if (cancelled) return;
+        if (pullErr) throw pullErr;
 
         const remote: CompletionRecord[] = (data ?? []).map((r) => ({
           date: r.challenge_date as string,
@@ -210,29 +215,9 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
           completedAt: (r.completed_at as string) ?? new Date().toISOString(),
         }));
 
-        // Conflict-safe merge: dedupe by date; on overlap keep the EARLIEST
-        // completedAt so a later "mark done" on another device cannot
-        // retroactively change the streak day or duplicate it.
+        // Conflict-safe merge using shared pure helper.
         setState((prev) => {
-          const byDate = new Map<string, CompletionRecord>();
-          const consider = (c: CompletionRecord) => {
-            const existing = byDate.get(c.date);
-            if (!existing) {
-              byDate.set(c.date, c);
-              return;
-            }
-            // Prefer the earliest timestamp; prefer one with a real slug if tied
-            const a = Date.parse(existing.completedAt) || 0;
-            const b = Date.parse(c.completedAt) || 0;
-            if (b < a || (b === a && !existing.problemSlug && c.problemSlug)) {
-              byDate.set(c.date, c);
-            }
-          };
-          for (const c of prev.completions) consider(c);
-          for (const c of remote) consider(c);
-          const merged = Array.from(byDate.values()).sort((a, b) =>
-            a.date < b.date ? 1 : -1,
-          );
+          const merged = mergeCompletions(prev.completions, remote);
           const next = { completions: merged };
           writeState(next);
           return next;
@@ -246,7 +231,7 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
         const local = readState().completions;
         const toUpload = local.filter((c) => !remoteDates.has(c.date));
         if (toUpload.length > 0) {
-          await supabase
+          const { error: pushErr } = await supabase
             .from("daily_challenge_completions")
             .upsert(
               toUpload.map((c) => ({
@@ -257,7 +242,28 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
               })),
               { onConflict: "user_id,challenge_date", ignoreDuplicates: true },
             );
+          if (pushErr) throw pushErr;
         }
+
+        // Client-side self-heal audit: removes any leftover duplicates that
+        // bypassed the unique constraint historically. Best-effort, never
+        // fabricates completions.
+        try {
+          await supabase.rpc("audit_daily_completions" as never);
+        } catch {
+          /* non-fatal */
+        }
+
+        if (!cancelled) {
+          setSyncStatus("synced");
+          setLastSyncedAt(new Date());
+        }
+      } catch (err) {
+        if (cancelled) return;
+        const msg =
+          err instanceof Error ? err.message : "Failed to sync daily challenge";
+        setSyncError(msg);
+        setSyncStatus(navigator?.onLine === false ? "offline" : "error");
       } finally {
         if (!cancelled) setSyncing(false);
       }
