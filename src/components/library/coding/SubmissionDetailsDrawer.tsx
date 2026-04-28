@@ -1,11 +1,57 @@
+import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
-import { Copy, Link2 } from "lucide-react";
+import { Copy, Link2, Trophy, Zap, MemoryStick } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
+
+interface PercentileRow {
+  total_users: number;
+  runtime_beats: number | null;
+  memory_beats: number | null;
+  runtime_ms: number | null;
+  memory_kb: number | null;
+}
+
+const usePercentiles = (submission: CodeSubmissionRow | null) => {
+  const [data, setData] = useState<PercentileRow | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setData(null);
+    if (!submission || submission.verdict !== "Accepted") return;
+    setLoading(true);
+    (async () => {
+      const { data: rows, error } = await supabase.rpc(
+        "get_submission_percentiles",
+        { _submission_id: submission.id },
+      );
+      if (cancelled) return;
+      setLoading(false);
+      if (error) return;
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      if (row) setData(row as PercentileRow);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [submission?.id, submission?.verdict]);
+
+  return { data, loading };
+};
+
+const beatsTone = (pct: number | null | undefined) => {
+  if (pct == null) return "text-muted-foreground border-border bg-muted/30";
+  if (pct >= 80) return "text-emerald-500 border-emerald-500/30 bg-emerald-500/10";
+  if (pct >= 50) return "text-amber-500 border-amber-500/30 bg-amber-500/10";
+  return "text-foreground/80 border-border bg-muted/40";
+};
 
 interface Props {
   submission: CodeSubmissionRow | null;
