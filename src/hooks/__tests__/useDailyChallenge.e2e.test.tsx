@@ -31,46 +31,65 @@ const waitFor = async (cb: () => void | Promise<void>, timeout = 2000) => {
 };
 
 // ---- Mocks ---------------------------------------------------------------
+// vi.mock is hoisted, so the factory must define its own state and expose it
+// for tests to inspect.
 
-const upsertMock = vi.fn().mockResolvedValue({ error: null });
-const rpcMock = vi.fn().mockResolvedValue({ data: { duplicates_removed: 0 }, error: null });
-
-const remoteRows = [
-  {
-    challenge_date: "2026-04-26",
-    problem_slug: "two-sum",
-    completed_at: "2026-04-26T08:00:00.000Z",
-  },
-  {
-    challenge_date: "2026-04-27",
-    problem_slug: "valid-parens",
-    completed_at: "2026-04-27T09:30:00.000Z",
-  },
-];
-
-const selectChain = {
-  select: vi.fn().mockReturnThis(),
-  eq: vi.fn().mockReturnThis(),
-  gte: vi.fn().mockReturnThis(),
-  order: vi.fn().mockResolvedValue({ data: remoteRows, error: null }),
-  upsert: upsertMock,
-};
-
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    from: vi.fn(() => selectChain),
-    rpc: rpcMock,
-  },
-}));
+vi.mock("@/integrations/supabase/client", () => {
+  const remoteRows = [
+    {
+      challenge_date: "2026-04-26",
+      problem_slug: "two-sum",
+      completed_at: "2026-04-26T08:00:00.000Z",
+    },
+    {
+      challenge_date: "2026-04-27",
+      problem_slug: "valid-parens",
+      completed_at: "2026-04-27T09:30:00.000Z",
+    },
+  ];
+  const upsertMock = vi.fn().mockResolvedValue({ error: null });
+  const rpcMock = vi
+    .fn()
+    .mockResolvedValue({ data: { duplicates_removed: 0 }, error: null });
+  const selectChain = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
+    order: vi.fn().mockResolvedValue({ data: remoteRows, error: null }),
+    upsert: upsertMock,
+  };
+  return {
+    supabase: {
+      from: vi.fn(() => selectChain),
+      rpc: rpcMock,
+    },
+    __mocks: { upsertMock, rpcMock, selectChain, remoteRows },
+  };
+});
 
 vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({
-    user: { id: "user-abc-123" },
-  }),
+  useAuth: () => ({ user: { id: "user-abc-123" } }),
 }));
 
 // Imported AFTER mocks so the hook picks up the mocked modules.
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
+import * as supabaseClient from "@/integrations/supabase/client";
+
+const { upsertMock, rpcMock, selectChain } = (
+  supabaseClient as unknown as {
+    __mocks: {
+      upsertMock: ReturnType<typeof vi.fn>;
+      rpcMock: ReturnType<typeof vi.fn>;
+      selectChain: {
+        select: ReturnType<typeof vi.fn>;
+        eq: ReturnType<typeof vi.fn>;
+        gte: ReturnType<typeof vi.fn>;
+        order: ReturnType<typeof vi.fn>;
+      };
+    };
+  }
+).__mocks;
+
 
 const STORAGE_KEY = "byteskill:coding:dailyChallenge:v2";
 
