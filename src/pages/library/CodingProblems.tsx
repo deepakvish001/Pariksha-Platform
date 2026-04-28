@@ -723,11 +723,54 @@ const CodingProblems = () => {
 
       {/* Body */}
       {loading && filtered.length === 0 ? (
-        <Card>
-          <div className="p-3 space-y-2">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <Skeleton key={i} className="h-11 w-full" />
-            ))}
+        // Table-shaped skeleton — preserves the exact final colgroup widths so
+        // the sortable/resizable header doesn't jump when data arrives.
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table className="table-fixed w-full">
+              <colgroup>
+                {selectionMode && <col style={{ width: "44px" }} />}
+                {PROBLEM_COLUMNS.map((c) =>
+                  tablePrefs.isVisible(c.id) ? (
+                    <col key={c.id} style={{ width: `${tablePrefs.widthOf(c.id)}px` }} />
+                  ) : null,
+                )}
+              </colgroup>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="hover:bg-transparent border-b">
+                  {selectionMode && <TableHead className="w-[44px]" />}
+                  {PROBLEM_COLUMNS.filter((c) => tablePrefs.isVisible(c.id)).map((c) => (
+                    <TableHead key={c.id} className="text-xs font-medium text-muted-foreground">
+                      {c.label}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <TableRow key={i} className="hover:bg-transparent">
+                    {selectionMode && (
+                      <TableCell className="py-2.5">
+                        <Skeleton className="h-4 w-4 rounded" />
+                      </TableCell>
+                    )}
+                    {PROBLEM_COLUMNS.filter((c) => tablePrefs.isVisible(c.id)).map((c) => (
+                      <TableCell key={c.id} className="py-2.5">
+                        <Skeleton
+                          className={cn(
+                            "h-4",
+                            c.id === "title" ? "w-3/4" :
+                            c.id === "topics" ? "w-2/3" :
+                            c.id === "row" || c.id === "status" || c.id === "bookmark" ? "w-4" :
+                            "w-12",
+                          )}
+                        />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </Card>
       ) : filtered.length === 0 ? (
