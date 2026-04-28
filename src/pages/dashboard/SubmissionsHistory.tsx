@@ -216,15 +216,36 @@ export default function SubmissionsHistory() {
     usePagedCodeRuns({ page: runPage, pageSize: PAGE_SIZE, search, language });
 
   const { run, isRunning, cancelRun } = useCodeRunner();
-  const { toast } = useToast();
-  const [detailRun, setDetailRun] = useState<CodeRunRow | null>(null);
+  const { toast: legacyToast } = useToast();
+  const [detailRunId, setDetailRunId] = useState<string | null>(searchParams.get("drawer"));
   const [rerunningId, setRerunningId] = useState<string | null>(null);
+  const [lastRerunError, setLastRerunError] = useState<{ id: string; message: string } | null>(null);
+  const [lastCancelledId, setLastCancelledId] = useState<string | null>(null);
+
+  // Persist open drawer id to URL so it survives refresh / pagination
+  useEffect(() => {
+    const cur = searchParams.get("drawer");
+    if (detailRunId && cur !== detailRunId) {
+      updateParams({ drawer: detailRunId });
+    } else if (!detailRunId && cur) {
+      updateParams({ drawer: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailRunId]);
+
+  // Resolve the run object for the persisted drawer id from currently-loaded runs
+  const detailRun = useMemo(
+    () => (detailRunId ? runs.find((r) => r.id === detailRunId) ?? null : null),
+    [detailRunId, runs],
+  );
 
   const subTotalPages = useMemo(() => Math.max(1, Math.ceil(subTotal / PAGE_SIZE)), [subTotal]);
   const runTotalPages = useMemo(() => Math.max(1, Math.ceil(runTotal / PAGE_SIZE)), [runTotal]);
 
   const handleRerun = async (r: CodeRunRow) => {
     setRerunningId(r.id);
+    setLastRerunError(null);
+    setLastCancelledId(null);
     try {
       const result = await run({
         source_code: r.source_code,
@@ -233,24 +254,29 @@ export default function SubmissionsHistory() {
         stdin: r.stdin,
         problem_slug: r.problem_slug,
       });
-      toast({
+      legacyToast({
         title: `Re-run: ${result.status?.description ?? "Done"}`,
         description: `${r.problem_slug} • ${result.time ? `${Math.round(result.time * 1000)} ms` : "—"}`,
       });
       await refetchRuns();
     } catch (e) {
       if (e instanceof RunCancelledError) {
-        toast({ title: "Re-run cancelled", description: r.problem_slug });
+        setLastCancelledId(r.id);
+        toast.info("Re-run cancelled", { description: r.problem_slug });
       } else {
-        toast({
-          title: "Re-run failed",
-          description: e instanceof Error ? e.message : "Unknown error",
-          variant: "destructive",
-        });
+        const msg = e instanceof Error ? e.message : "Unknown error";
+        setLastRerunError({ id: r.id, message: msg });
+        legacyToast({ title: "Re-run failed", description: msg, variant: "destructive" });
       }
     } finally {
       setRerunningId(null);
     }
+  };
+
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setSearchParams(new URLSearchParams(), { replace: true });
+    setDetailRunId(null);
   };
 
   if (!user) {
