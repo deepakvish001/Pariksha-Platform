@@ -5,6 +5,7 @@ import { usePagedCodeRuns, type CodeRunRow } from "@/hooks/useCodeRuns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCodeRunner, RunCancelledError } from "@/hooks/useCodeRunner";
 import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
