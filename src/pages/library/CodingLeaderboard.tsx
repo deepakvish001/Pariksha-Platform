@@ -40,6 +40,7 @@ import {
   type CodingLeaderboardRow,
   type LeaderboardWindow,
 } from "@/hooks/useCodingLeaderboard";
+import { LeaderboardUserDrawer } from "@/components/library/coding/LeaderboardUserDrawer";
 
 const PAGE_SIZE = 50;
 
