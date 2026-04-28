@@ -1015,7 +1015,84 @@ const CodingProblems = () => {
           onClearAll={clearAll}
         />
         {!focusMode && (
-          <div className="mt-3 pt-3 border-t border-border/60">
+          <div className="mt-3 pt-3 border-t border-border/60 space-y-3">
+            {(() => {
+              const chips: SmartChip[] = [
+                {
+                  key: "todo",
+                  label: "Not started",
+                  active: status === "todo",
+                  tone: "default",
+                  onClick: () => setStatus(status === "todo" ? "all" : "todo"),
+                },
+                {
+                  key: "attempted",
+                  label: "Attempted",
+                  active: status === "attempted",
+                  tone: "amber",
+                  onClick: () => setStatus(status === "attempted" ? "all" : "attempted"),
+                },
+                {
+                  key: "solved",
+                  label: "Solved",
+                  active: status === "solved",
+                  tone: "emerald",
+                  onClick: () => setStatus(status === "solved" ? "all" : "solved"),
+                },
+                {
+                  key: "easy",
+                  label: "Easy",
+                  active: difficulty === "Easy",
+                  tone: "emerald",
+                  onClick: () => setDifficulty(difficulty === "Easy" ? "all" : "Easy"),
+                },
+                {
+                  key: "medium",
+                  label: "Medium",
+                  active: difficulty === "Medium",
+                  tone: "amber",
+                  onClick: () => setDifficulty(difficulty === "Medium" ? "all" : "Medium"),
+                },
+                {
+                  key: "hard",
+                  label: "Hard",
+                  active: difficulty === "Hard",
+                  tone: "rose",
+                  onClick: () => setDifficulty(difficulty === "Hard" ? "all" : "Hard"),
+                },
+                {
+                  key: "weak",
+                  label: "Weak topics",
+                  count: weakTopics.length,
+                  active:
+                    weakTopics.length > 0 &&
+                    selectedTopics.length > 0 &&
+                    selectedTopics.every((t) => weakTopics.includes(t)),
+                  tone: "rose",
+                  onClick: showOnlyWeakTopics,
+                },
+                {
+                  key: "bookmarked",
+                  label: "Bookmarked",
+                  count: bookmarks.size,
+                  active: bookmarked,
+                  tone: "primary",
+                  onClick: () => setBookmarked(!bookmarked),
+                },
+              ];
+              const activeChips = chips.filter((c) => c.active).length;
+              return (
+                <SmartFilterChips
+                  chips={chips}
+                  activeCount={activeChips}
+                  onClearAll={() => {
+                    if (status !== "all") setStatus("all");
+                    if (difficulty !== "all") setDifficulty("all");
+                    if (bookmarked) setBookmarked(false);
+                  }}
+                />
+              );
+            })()}
             <TopicMasteryChips
               topics={ALL_TOPICS}
               selectedTopics={selectedTopics}
