@@ -551,6 +551,46 @@ const CodingProblems = () => {
             <Share2 className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Share filters</span>
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-9"
+                title="Show or hide table columns"
+              >
+                <Columns3 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Columns</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {PROBLEM_COLUMNS.filter((c) => c.togglable).map((c) => (
+                <DropdownMenuCheckboxItem
+                  key={c.id}
+                  checked={tablePrefs.isVisible(c.id)}
+                  onCheckedChange={() => tablePrefs.toggleVisible(c.id)}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {c.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  tablePrefs.resetAll();
+                  toast.success("Columns reset", {
+                    description: "Visibility and widths restored to defaults.",
+                  });
+                }}
+              >
+                <RotateCcw className="h-3.5 w-3.5 mr-2" />
+                Reset columns & widths
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant={selectionMode ? "default" : "outline"}
             size="sm"
