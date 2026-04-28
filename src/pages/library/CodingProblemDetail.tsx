@@ -729,35 +729,37 @@ const CodingProblemDetail = () => {
         {/* LEFT: tabs */}
         <ResizablePanel defaultSize={45} minSize={25}>
           <Tabs defaultValue="description" className="h-full flex flex-col">
-            <TabsList className="rounded-none justify-start bg-transparent border-b h-10 px-2">
-              <TabsTrigger value="description">Description</TabsTrigger>
-              <TabsTrigger value="my-solution">
-                My Solution {hasMySolution && (
-                  <span
-                    className={cn(
-                      "ml-1.5 h-1.5 w-1.5 rounded-full inline-block",
-                      mySolutionIsComplete ? "bg-emerald-500" : "bg-amber-500",
-                    )}
-                  />
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="solution">Reference</TabsTrigger>
-              <TabsTrigger value="notes">
-                Notes {notesValue.trim().length > 0 && (
-                  <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-primary inline-block" />
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="submissions">
-                Submissions {submissions.length > 0 && (
-                  <span className="ml-1.5 text-xs text-muted-foreground">({submissions.length})</span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="runs">
-                Runs {runs.length > 0 && (
-                  <span className="ml-1.5 text-xs text-muted-foreground">({runs.length})</span>
-                )}
-              </TabsTrigger>
-            </TabsList>
+            <div className="border-b overflow-x-auto overflow-y-hidden scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <TabsList className="rounded-none justify-start bg-transparent border-0 h-10 px-2 w-max min-w-full flex-nowrap">
+                <TabsTrigger value="description" className="shrink-0 whitespace-nowrap">Description</TabsTrigger>
+                <TabsTrigger value="my-solution" className="shrink-0 whitespace-nowrap">
+                  My Solution {hasMySolution && (
+                    <span
+                      className={cn(
+                        "ml-1.5 h-1.5 w-1.5 rounded-full inline-block",
+                        mySolutionIsComplete ? "bg-emerald-500" : "bg-amber-500",
+                      )}
+                    />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="solution" className="shrink-0 whitespace-nowrap">Reference</TabsTrigger>
+                <TabsTrigger value="notes" className="shrink-0 whitespace-nowrap">
+                  Notes {notesValue.trim().length > 0 && (
+                    <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-primary inline-block" />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="submissions" className="shrink-0 whitespace-nowrap">
+                  Submissions {submissions.length > 0 && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">({submissions.length})</span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="runs" className="shrink-0 whitespace-nowrap">
+                  Runs {runs.length > 0 && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">({runs.length})</span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <TabsContent value="description" className="mt-0 space-y-6">
