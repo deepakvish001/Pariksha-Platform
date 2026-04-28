@@ -210,11 +210,14 @@ async function pollFermion(taskId: string): Promise<FermionExecOutcome> {
     let json: any;
     try { json = JSON.parse(text); } catch { continue; }
 
-    // Response: array of { output: { data: { results: [{ taskUniqueId, codingTaskStatus, runResult }] } } }
+    // Response: array of { output: { data: { tasks: [{ taskUniqueId, codingTaskStatus, runResult }] } } }
     const root = Array.isArray(json) ? json[0] : json;
     const entries: any[] =
+      root?.output?.data?.tasks ??
       root?.output?.data?.results ??
+      root?.output?.tasks ??
       root?.output?.results ??
+      root?.data?.tasks ??
       root?.data?.results ??
       [];
     const task = entries.find((e: any) => e?.taskUniqueId === taskId) ?? entries[0];
