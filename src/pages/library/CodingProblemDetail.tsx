@@ -252,6 +252,21 @@ const CodingProblemDetail = () => {
     reset: resetTabsLayout,
     isCustomized: isLayoutCustomized,
   } = useEditorTabsLayout(slug, language);
+  const {
+    presetId: layoutPresetId,
+    preset: layoutPreset,
+    setPreset: setLayoutPreset,
+    reset: resetLayoutPreset,
+    isCustomized: isPresetCustomized,
+  } = useEditorLayoutPreset(slug, language);
+  const horizontalGroupRef = useRef<ImperativePanelGroupHandle>(null);
+  const verticalGroupRef = useRef<ImperativePanelGroupHandle>(null);
+
+  // Apply the chosen preset's split sizes whenever the preset changes.
+  useEffect(() => {
+    horizontalGroupRef.current?.setLayout(layoutPreset.horizontal);
+    verticalGroupRef.current?.setLayout(layoutPreset.vertical);
+  }, [layoutPreset]);
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
   // If the submission ID doesn't exist for this problem, clear the param so
