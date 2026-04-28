@@ -210,32 +210,30 @@ async function pollFermion(taskId: string): Promise<FermionExecOutcome> {
     let json: any;
     try { json = JSON.parse(text); } catch { continue; }
 
-    // Walk the response for the first task entry.
+    // Response: array of { output: { data: { results: [{ taskUniqueId, codingTaskStatus, runResult }] } } }
+    const root = Array.isArray(json) ? json[0] : json;
     const entries: any[] =
-      json?.output?.data?.[0]?.output?.results ??
-      json?.output?.data?.[0]?.output?.tasks ??
-      json?.data?.[0]?.output?.results ??
-      json?.output?.results ??
+      root?.output?.data?.results ??
+      root?.output?.results ??
+      root?.data?.results ??
       [];
-    const task = entries.find((e: any) =>
-      (e?.taskUniqueId ?? e?.id) === taskId
-    ) ?? entries[0];
-
+    const task = entries.find((e: any) => e?.taskUniqueId === taskId) ?? entries[0];
     if (!task) continue;
-    const taskStatus = task?.taskStatus ?? task?.status;
+    const taskStatus = task?.codingTaskStatus ?? task?.taskStatus ?? task?.status;
     if (taskStatus !== "Finished") continue;
 
-    const result = task?.executionResult ?? task?.result ?? task;
+    const runResult = task?.runResult ?? task?.executionResult ?? task?.result ?? {};
+    const prd = runResult?.programRunData ?? {};
     return {
-      runStatus: result?.runStatus ?? result?.status ?? "unknown",
-      stdout: b64UrlDecode(result?.stdoutBase64UrlEncoded ?? result?.stdout),
-      stderr: b64UrlDecode(result?.stderrBase64UrlEncoded ?? result?.stderr),
+      runStatus: runResult?.runStatus ?? "unknown",
+      stdout: b64UrlDecode(prd?.stdoutBase64UrlEncoded),
+      stderr:
+        b64UrlDecode(prd?.stderrBase64UrlEncoded) ||
+        b64UrlDecode(runResult?.compilerOutputAfterCompilationBase64UrlEncoded),
       timeMs:
-        typeof result?.timeTakenInMilliseconds === "number" ? result.timeTakenInMilliseconds :
-        typeof result?.cpuTimeInMilliseconds === "number" ? result.cpuTimeInMilliseconds : null,
-      memoryKb:
-        typeof result?.memoryUsedInKilobyte === "number" ? result.memoryUsedInKilobyte :
-        typeof result?.memoryInKilobyte === "number" ? result.memoryInKilobyte : null,
+        typeof prd?.cpuTimeUsedInMilliseconds === "number" ? prd.cpuTimeUsedInMilliseconds :
+        typeof prd?.wallTimeUsedInMilliseconds === "number" ? prd.wallTimeUsedInMilliseconds : null,
+      memoryKb: typeof prd?.memoryUsedInKilobyte === "number" ? prd.memoryUsedInKilobyte : null,
     };
   }
   throw new FermionError("Fermion polling timed out", {
