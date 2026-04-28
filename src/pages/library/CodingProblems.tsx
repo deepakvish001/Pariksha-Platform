@@ -16,6 +16,9 @@ import {
   Link2,
   Columns3,
   RotateCcw,
+  Keyboard,
+  Rows3,
+  Rows2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +75,12 @@ import {
   SortableResizableHeader,
   type SortDir,
 } from "@/components/library/coding/SortableResizableHeader";
+import { RecommendationStrip } from "@/components/library/coding/RecommendationStrip";
+import { TopicMasteryChips } from "@/components/library/coding/TopicMasteryChips";
+import { SavedFiltersMenu } from "@/components/library/coding/SavedFiltersMenu";
+import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
+import { useSavedFilterPresets } from "@/hooks/useSavedFilterPresets";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: Difficulty) =>
@@ -355,6 +364,13 @@ const CodingProblems = () => {
   } = useCodingSelection();
 
   const [confirmUnbookmark, setConfirmUnbookmark] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  // Saved filter presets (localStorage).
+  const { presets, save: savePreset, remove: removePreset, rename: renamePreset } =
+    useSavedFilterPresets();
+  // Active row index for keyboard navigation (j/k/enter). -1 = none.
+  const [activeRowIdx, setActiveRowIdx] = useState<number>(-1);
+  const tableRef = useRef<HTMLDivElement | null>(null);
 
   // Build a fully-encoded shareable URL from current params (not raw window URL)
   const buildShareUrl = () => {
@@ -382,6 +398,40 @@ const CodingProblems = () => {
     } catch {
       toast.error("Couldn't copy link", { description: url });
     }
+  };
+
+  // Build only the query string (no origin) for saved presets.
+  const buildCurrentQuery = (): string => {
+    const next = new URLSearchParams();
+    if (search.trim()) next.set("q", search.trim());
+    if (difficulty !== "all") next.set("diff", difficulty);
+    if (selectedTopics.length > 0) next.set("topics", selectedTopics.join(","));
+    if (status !== "all") next.set("status", status);
+    if (sort !== "default") next.set("sort", sort);
+    if (bookmarked) next.set("bm", "1");
+    if (page > 1) next.set("page", String(page));
+    return next.toString();
+  };
+
+  // Apply a saved preset's query string by replacing current params.
+  const applyPresetQuery = (qs: string) => {
+    setParams(new URLSearchParams(qs), { replace: true });
+  };
+
+  // Show only weak topics: replace selection with the provided list.
+  const showOnlyWeakTopics = (weak: string[]) => {
+    if (weak.length === 0) return;
+    updateParams({ topics: weak.join(","), page: "1" });
+    toast.success(`Filtered to ${weak.length} weak topic${weak.length === 1 ? "" : "s"}`, {
+      description: "Showing topics where your solve rate is below 50%.",
+    });
+  };
+
+  // Density toggle (compact ↔ comfortable)
+  const toggleDensity = () => {
+    const next = tablePrefs.density === "compact" ? "comfortable" : "compact";
+    tablePrefs.setDensity(next);
+    toast.success(`Density: ${next}`);
   };
 
   // Filter
@@ -660,6 +710,50 @@ const CodingProblems = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <SavedFiltersMenu
+            presets={presets}
+            buildCurrentQuery={buildCurrentQuery}
+            onApply={applyPresetQuery}
+            onSave={savePreset}
+            onRemove={removePreset}
+            onRename={renamePreset}
+          />
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleDensity}
+                  className="gap-1.5 h-9"
+                  aria-label="Toggle row density"
+                >
+                  {tablePrefs.density === "compact" ? (
+                    <Rows3 className="h-3.5 w-3.5" />
+                  ) : (
+                    <Rows2 className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {tablePrefs.density === "compact" ? "Comfortable rows" : "Compact rows"}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShortcutsOpen(true)}
+                  className="gap-1.5 h-9"
+                  aria-label="Keyboard shortcuts"
+                >
+                  <Keyboard className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Keyboard shortcuts (?)</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button
             variant={selectionMode ? "default" : "outline"}
             size="sm"
@@ -672,6 +766,13 @@ const CodingProblems = () => {
           <RandomMenu filtered={filtered} />
         </div>
       </motion.div>
+
+      {/* Smart recommendations */}
+      <RecommendationStrip
+        stats={{ solved, attempted, perProblem, loading }}
+        bookmarks={bookmarks}
+        dismissedKey="library-problems"
+      />
 
       {/* Stats */}
       <ProblemStatsHeader
@@ -720,6 +821,15 @@ const CodingProblems = () => {
           activeCount={activeFilterCount}
           onClearAll={clearAll}
         />
+        <div className="mt-3 pt-3 border-t border-border/60">
+          <TopicMasteryChips
+            topics={ALL_TOPICS}
+            selectedTopics={selectedTopics}
+            onToggle={toggleTopic}
+            onShowOnlyWeak={showOnlyWeakTopics}
+            stats={{ solved, attempted, perProblem, loading }}
+          />
+        </div>
       </Card>
 
       {/* Bulk actions */}
@@ -1112,6 +1222,21 @@ const CodingProblems = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ShortcutsCheatSheet
+        open={shortcutsOpen}
+        onOpenChange={setShortcutsOpen}
+        shortcuts={[
+          { keys: ["?"], description: "Show keyboard shortcuts" },
+          { keys: ["/"], description: "Focus search" },
+          { keys: ["b"], description: "Toggle bookmarked-only filter" },
+          { keys: ["d"], description: "Toggle row density" },
+          { keys: ["s"], description: "Toggle selection mode" },
+          { keys: ["Esc"], description: "Clear selection / close" },
+          { keys: ["←"], description: "Previous page" },
+          { keys: ["→"], description: "Next page" },
+        ]}
+      />
     </div>
   );
 };
