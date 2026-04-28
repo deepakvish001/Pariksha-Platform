@@ -465,6 +465,29 @@ const CodingProblemDetail = () => {
                   isBookmarked={isBookmarked(problem.slug)}
                   onToggleBookmark={() => toggleBookmark(problem.slug)}
                 />
+
+                {/* Personal acceptance + estimated solve time + companies */}
+                <ProblemMetaStrip
+                  acceptance={
+                    problemStats.attempts > 0
+                      ? Math.round(
+                          (submissions.filter((s) => s.verdict === "Accepted").length /
+                            problemStats.attempts) *
+                            100,
+                        )
+                      : null
+                  }
+                  attempts={problemStats.attempts}
+                  estimatedMinutes={
+                    problem.difficulty === "Easy"
+                      ? 15
+                      : problem.difficulty === "Medium"
+                        ? 30
+                        : 50
+                  }
+                  loading={submissionsLoading && submissions.length === 0}
+                />
+
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className={cn("font-medium sm:hidden", difficultyClass(problem.difficulty))}>
                     {problem.difficulty}
@@ -510,32 +533,16 @@ const CodingProblemDetail = () => {
                   </div>
                 )}
 
-                {/* Hints */}
-                {problem.hints.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-sm">Hints</h3>
-                    {problem.hints.map((h, i) => (
-                      <Collapsible
-                        key={i}
-                        open={openHints[i]}
-                        onOpenChange={(o) => setOpenHints((s) => ({ ...s, [i]: o }))}
-                      >
-                        <CollapsibleTrigger className="flex items-center gap-2 w-full text-left p-2.5 rounded-md hover:bg-muted/50 border text-sm">
-                          {openHints[i] ? (
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          ) : (
-                            <ChevronRight className="h-3.5 w-3.5" />
-                          )}
-                          <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
-                          <span className="font-medium">Hint {i + 1}</span>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="px-3 py-2 text-sm text-muted-foreground">
-                          {h}
-                        </CollapsibleContent>
-                      </Collapsible>
-                    ))}
-                  </div>
-                )}
+                {/* Hints — progressive disclosure */}
+                <ProgressiveHints hints={problem.hints} />
+              </TabsContent>
+
+              <TabsContent value="notes" className="mt-0">
+                <NotesPanel
+                  value={notesValue}
+                  onChange={setNotesValue}
+                  savedAt={notesSavedAt}
+                />
               </TabsContent>
 
               <TabsContent value="solution" className="mt-0">
