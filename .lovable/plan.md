@@ -1,77 +1,105 @@
-## Goal
-Make `/library/problems` more informative, faster to navigate, and more visually polished — while keeping the existing table flow intact.
+# Better Coding Problems experience
 
-## What changes for the user
+Goal: add features that meaningfully change how you discover, plan, and solve problems — not just visual reshuffles. Each item earns its place by saving clicks, surfacing missing info, or unlocking a workflow you can't do today.
 
-### 1. Better discovery & filtering
-- **URL-persisted filters**: search, difficulty, topic, status, sort, view, page all sync to query params (survive refresh & shareable links).
-- **Multi-select topics** via a popover with checkboxes + chips (currently single topic only).
-- **New "Companies" filter** derived from problem `topics`/tags so users can drill into FAANG-style sets.
-- **Sort control**: Default, Title A→Z, Difficulty (Easy→Hard / Hard→Easy), Most Solved by you, Recently Attempted.
-- **Active filters bar** with removable chips and a single "Clear all" button (with toast confirmation, matching submissions history pattern).
-- **Search upgrade**: matches title + topics + slug with 200ms debounce.
+## A. Problems list (`/library/problems`)
 
-### 2. New views
-- **View switcher (Grid / Table)** stored in URL.
-  - **Grid view**: card per problem with difficulty stripe, topic chips, status icon, attempts count, and a quick "Solve" CTA.
-  - **Table view**: existing layout, plus columns for Acceptance (your pass rate) and Last Attempt date.
-- **Compact density toggle** for the table.
+1. **Smart "Recommended for you" strip** above the table
+   - Picks 3–5 problems based on: weakest topic (lowest acceptance), oldest unsolved bookmark, "almost there" (attempted ≥2× but never AC), and a stretch problem (next difficulty). Each card explains *why* it's recommended.
+   - Dismissable per session.
 
-### 3. Richer stats header
-- Keep the 4 summary cards but add:
-  - **Streak / momentum mini-strip**: solved this week vs last week.
-  - **Progress ring** for total completion %.
-  - **"Continue solving" card**: surfaces the most recent unsolved attempted problem with a one-click resume.
-- **Random** button gets a dropdown: Random, Random Easy, Random from current filters, Daily Challenge (deterministic by date).
+2. **Topic chips with mastery bars**
+   - Below the search row, render topic chips colored by your mastery (solved / total). Click to filter; long-press / kebab for "Show only weak topics".
 
-### 4. Pagination & performance
-- Client-side pagination (24/page grid, 50/page table) since `CODING_PROBLEMS` is static — no backend cost.
-- Skeleton rows while `useUserSolvedSlugs` resolves to avoid flash of empty status icons.
+3. **Quick row preview on hover (desktop)**
+   - Hovering a row shows a small popover: difficulty, top 3 topics, your best runtime/memory, last verdict, and a "Resume draft" link if you have unsubmitted code.
 
-### 5. Per-problem polish
-- Hover preview popover on title showing first 2 lines of description + example count.
-- Status icon tooltips ("Solved on …", "Attempted N times", "Not started").
-- Right-click / kebab menu per row: Open, Open in new tab, Copy link, Mark for later (local-storage bookmark).
+4. **Inline row actions on hover**
+   - Bookmark, "Open in new tab", "Copy link", and "Mark for review" appear at the row end. Keyboard accessible.
 
-### 6. Bookmarks / "For later"
-- Local-storage backed bookmark star on each row/card. New filter chip "Bookmarked".
-- (No DB migration — keeps scope tight; can be promoted to Supabase later.)
+5. **Saved filter presets**
+   - Save the current filter+sort combo with a name ("Weekly grind", "Hard graphs"). Stored in localStorage. One-click apply, rename, delete.
 
-### 7. Empty & loading states
-- Friendly empty state illustration + "Reset filters" button.
-- Skeleton grid/table while attempts data loads.
+6. **Keyboard navigation**
+   - `j/k` move row focus, `Enter` opens, `b` bookmarks, `/` focuses search, `g g` jumps to top, `?` shows a shortcut cheat-sheet sheet.
 
-### 8. Design refresh (matches global aesthetic)
-- Glassmorphism cards with subtle gradient on the header block.
-- Difficulty pill colors unchanged (keeps existing semantic palette).
-- Framer-motion staggered entrance for grid items, spring physics consistent with site standards.
-- Sticky filter bar on scroll for fast re-filtering on long lists.
-- Mobile: filters collapse into a sheet triggered by a "Filters" button with active count badge.
+7. **Density toggle** (compact / comfortable) persisted with table prefs.
 
-## Technical implementation
+8. **Better empty / error states**
+   - When a single filter is the only blocker, suggest "Remove [topic: Trees]" as a one-click fix.
 
-### Files to edit
-- `src/pages/library/CodingProblems.tsx` — main rewrite of state, filters, views, layout.
+## B. Problem detail (`/library/problems/:slug`)
 
-### New files
-- `src/components/library/coding/ProblemCard.tsx` — grid card.
-- `src/components/library/coding/ProblemFiltersBar.tsx` — search + multi-topic popover + sort + view toggle + active chips.
-- `src/components/library/coding/ProblemStatsHeader.tsx` — stats + progress ring + continue card.
-- `src/components/library/coding/RandomMenu.tsx` — dropdown for random/daily.
-- `src/hooks/useCodingProblemBookmarks.ts` — localStorage bookmark set with subscribe API.
-- `src/hooks/useCodingAttemptStats.ts` — derives per-slug attempts, last attempt date, pass rate from existing `code_submissions` (extends `useUserSolvedSlugs` with one extra query, single round-trip).
+1. **Problem meta strip** under the title
+   - Acceptance %, your best runtime/memory percentile (mocked from local stats), companies tag list (from data), estimated solve time, and a "similar problems" peek (3 chips by topic+difficulty).
 
-### State model
-- All filters in `useSearchParams`: `q`, `diff`, `topics` (csv), `status`, `sort`, `view`, `page`, `bookmarked`.
-- Derived `filteredProblems` via `useMemo`; pagination slice via `useMemo`.
+2. **Editor productivity**
+   - Format / beautify button (Prettier for JS/TS, simple indent for others).
+   - Font size +/- and Vim-mode toggle (Monaco built-in), persisted per user.
+   - Auto-save indicator ("Saved 2s ago") next to the language picker.
+   - "Restore from history" — keep last 5 draft snapshots locally; pick one to restore.
 
-### Data
-- No schema changes. `useCodingAttemptStats` runs one `select problem_slug, verdict, created_at` query (already done by `useUserSolvedSlugs` — merge into a single hook to avoid duplicate fetches).
+3. **Run panel upgrades**
+   - Multiple custom test cases (tabs you can add/remove), each with its own stdin and last output cached.
+   - Diff view for failed sample cases (expected vs got, character-level highlight).
+   - Copy-as-cURL for the failing case (handy for debugging locally).
 
-### Accessibility
-- All interactive controls keyboard-reachable; tooltips via existing `Tooltip` primitive; aria-labels on icon-only buttons.
+4. **Submissions tab improvements**
+   - Compare any two submissions side-by-side (diff of source).
+   - "Best submission" pin with a trophy badge.
+   - Filter chips: All / Accepted / Failed / Language.
 
-## Out of scope
-- No backend migrations.
-- No changes to `CodingProblemDetail` page or submissions history.
-- Bookmarks stay local-only this round.
+5. **Notes panel** (new tab "Notes")
+   - Personal markdown notes per problem, autosaved locally. Searchable from the list page.
+
+6. **Hints UX**
+   - Progressive disclosure with a "Reveal next hint" button instead of N independent toggles. Track how many hints used per problem.
+
+7. **Keyboard shortcuts in editor**
+   - `Cmd/Ctrl + Enter` runs, `Cmd/Ctrl + Shift + Enter` submits, `Cmd/Ctrl + K` opens command palette (language switch, reset, format, toggle layout).
+
+8. **Layout presets**
+   - Buttons for "Focus" (editor-only), "Split" (current), "Reading" (description-wide). Persisted.
+
+## C. Cross-cutting polish
+
+- Sticky-header offset is now 80px — verify and tune for the detail page toolbar height.
+- All toasts use sonner consistently; failure toasts include actionable retry where relevant.
+- Add a tiny "What's new on this page" popover that explains the new features once.
+
+## Technical details
+
+**New files**
+- `src/components/library/coding/RecommendationStrip.tsx` — picks problems via heuristics over `useCodingAttemptStats`.
+- `src/components/library/coding/TopicMasteryChips.tsx` — chip row driven by per-topic solved/total.
+- `src/components/library/coding/RowQuickPreview.tsx` — hover popover (Radix HoverCard).
+- `src/components/library/coding/SavedFiltersMenu.tsx` — preset save/apply/rename/delete UI.
+- `src/components/library/coding/ShortcutsCheatSheet.tsx` — Sheet listing keymap.
+- `src/components/library/coding/ProblemMetaStrip.tsx` — under-title metadata.
+- `src/components/library/coding/EditorToolbarExtras.tsx` — format / font-size / vim toggle / autosave indicator.
+- `src/components/library/coding/CustomTestcasesPanel.tsx` — multi-tab stdin manager.
+- `src/components/library/coding/SubmissionDiffView.tsx` — side-by-side diff (use a small line-diff util, no new heavy dep).
+- `src/components/library/coding/NotesPanel.tsx` — markdown notes (reuse existing markdown renderer).
+- `src/components/library/coding/CommandPalette.tsx` — Cmd-K (cmdk is already in shadcn).
+- `src/hooks/useSavedFilterPresets.ts`
+- `src/hooks/useProblemNotes.ts`
+- `src/hooks/useDraftHistory.ts`
+- `src/hooks/useEditorPrefs.ts` (font size, vim, layout preset)
+- `src/hooks/useKeyboardShortcuts.ts`
+
+**Edited files**
+- `src/pages/library/CodingProblems.tsx` — mount Recommendation strip, mastery chips, hover preview wrapper around rows, density toggle, saved presets menu, shortcuts cheat-sheet trigger.
+- `src/pages/library/CodingProblemDetail.tsx` — add Notes tab, meta strip, layout presets, command palette, editor extras, custom testcases, diff view, hints disclosure, shortcut bindings.
+- `src/components/coding/MonacoEditor.tsx` — accept `fontSize`, `vim`, `onSave` props.
+- `src/hooks/useCodingProblemsTablePrefs.ts` — add `density` field.
+
+**Storage keys (all `byteskill:` prefixed)**
+- `coding-saved-filters:v1`, `coding-problem-notes:v1`, `coding-draft-history:<slug>:<lang>:v1`,
+  `coding-editor-prefs:v1`, `coding-recs-dismissed:v1`, `coding-layout-preset:v1`.
+
+**No backend changes.** Everything is client-side and works for guests too.
+
+## Out of scope (call out so we agree)
+- Real "companies asked" data — we'll use whatever is already in `codingProblemsData.ts` and show nothing if absent.
+- Server-synced notes/presets — local-only this round.
+- Ranking against other users — not added.
