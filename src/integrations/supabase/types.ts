@@ -1609,6 +1609,8 @@ export type Database = {
       }
     }
     Functions: {
+      audit_daily_completions: { Args: never; Returns: Json }
+      audit_daily_completions_all: { Args: never; Returns: Json }
       award_xp: {
         Args: {
           _amount: number
@@ -1633,6 +1635,7 @@ export type Database = {
           last_completed_at: string
           total_completions: number
           user_id: string
+          username: string
           weekly_completions: number
         }[]
       }
