@@ -170,6 +170,7 @@ export default function CodingLeaderboard() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [drawerUser, setDrawerUser] = useState<{ id: string; rank: number } | null>(null);
 
   const { rows, loading } = useCodingLeaderboard({
     window,
@@ -187,6 +188,9 @@ export default function CodingLeaderboard() {
     () => (page === 1 && !search ? rows.slice(3) : rows),
     [rows, page, search],
   );
+
+  const openBreakdown = (row: CodingLeaderboardRow) =>
+    setDrawerUser({ id: row.user_id, rank: row.rank });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
