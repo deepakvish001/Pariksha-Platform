@@ -179,8 +179,11 @@ async function pollBatch(taskIds: string[]): Promise<Map<string, CaseOutcome>> {
 
     const root = Array.isArray(json) ? json[0] : json;
     const entries: any[] =
+      root?.output?.data?.tasks ??
       root?.output?.data?.results ??
+      root?.output?.tasks ??
       root?.output?.results ??
+      root?.data?.tasks ??
       root?.data?.results ??
       [];
 

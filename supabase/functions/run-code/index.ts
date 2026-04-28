@@ -210,11 +210,14 @@ async function pollFermion(taskId: string): Promise<FermionExecOutcome> {
     let json: any;
     try { json = JSON.parse(text); } catch { continue; }
 
-    // Response: array of { output: { data: { results: [{ taskUniqueId, codingTaskStatus, runResult }] } } }
+    // Response: array of { output: { data: { tasks: [{ taskUniqueId, codingTaskStatus, runResult }] } } }
     const root = Array.isArray(json) ? json[0] : json;
     const entries: any[] =
+      root?.output?.data?.tasks ??
       root?.output?.data?.results ??
+      root?.output?.tasks ??
       root?.output?.results ??
+      root?.data?.tasks ??
       root?.data?.results ??
       [];
     const task = entries.find((e: any) => e?.taskUniqueId === taskId) ?? entries[0];
@@ -258,14 +261,17 @@ async function runOnFermion(payload: {
     memKb: payload.mem_kb,
   });
   const outcome = await pollFermion(taskId);
-  const status = fermionStatusToJudge0(outcome.runStatus);
-  const isCompileErr = outcome.runStatus === "compilation-error";
+  // For free-form Run, we do not have an expected output. Fermion may label
+  // a successful execution as "wrong-answer" because expected output is empty.
+  const runStatus = outcome.runStatus === "wrong-answer" ? "successful" : outcome.runStatus;
+  const status = fermionStatusToJudge0(runStatus);
+  const isCompileErr = runStatus === "compilation-error";
   return {
     status,
     stdout: outcome.stdout,
     stderr: outcome.stderr,
     compile_output: isCompileErr ? (outcome.stderr || "Compilation failed") : "",
-    message: outcome.runStatus,
+    message: runStatus,
     time: outcome.timeMs != null ? outcome.timeMs / 1000 : null,
     memory: outcome.memoryKb,
   };
