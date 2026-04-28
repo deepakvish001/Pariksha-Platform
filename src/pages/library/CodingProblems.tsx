@@ -93,9 +93,7 @@ import { DailyChallengeCard } from "@/components/library/coding/DailyChallengeCa
 import { DailyChallengeCelebration } from "@/components/library/coding/DailyChallengeCelebration";
 import { WeeklyReviewInline } from "@/components/library/coding/WeeklyReviewInline";
 import { SmartFilterChips, type SmartChip } from "@/components/library/coding/SmartFilterChips";
-import { ProblemPreviewDrawer } from "@/components/library/coding/ProblemPreviewDrawer";
 import { TopicProgressRing } from "@/components/library/coding/TopicProgressRing";
-import { Eye } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -370,12 +368,6 @@ const CodingProblems = () => {
   const daily = useDailyChallenge(solved);
   const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
 
-  // Inline preview drawer state
-  const [previewSlug, setPreviewSlug] = useState<string | null>(null);
-  const previewProblem = useMemo(
-    () => CODING_PROBLEMS.find((p) => p.slug === previewSlug) ?? null,
-    [previewSlug],
-  );
 
   // Per-topic stats for the progress ring
   const topicStats = useMemo(() => {
@@ -1374,18 +1366,6 @@ const CodingProblems = () => {
                             >
                               {p.title}
                             </Link>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setPreviewSlug(p.slug);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded hover:bg-muted/50 transition-opacity shrink-0"
-                              aria-label={`Preview ${p.title}`}
-                              title="Quick preview"
-                            >
-                              <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                            </button>
                           </div>
                           {/* Mobile-only inline topics */}
                           <div className="md:hidden mt-1 flex flex-wrap gap-1">
@@ -1481,32 +1461,6 @@ const CodingProblems = () => {
         </div>
       )}
 
-      <ProblemPreviewDrawer
-        open={!!previewSlug}
-        onClose={() => setPreviewSlug(null)}
-        problem={previewProblem}
-        status={
-          previewProblem
-            ? solved.has(previewProblem.slug)
-              ? "solved"
-              : attempted.has(previewProblem.slug)
-                ? "attempted"
-                : "todo"
-            : "todo"
-        }
-        bookmarked={previewProblem ? isBookmarked(previewProblem.slug) : false}
-        onToggleBookmark={toggleBookmark}
-        acceptance={(() => {
-          if (!previewProblem) return null;
-          const s = perProblem.get(previewProblem.slug);
-          return s && s.attempts > 0
-            ? Math.round(((s.accepted ?? 0) / s.attempts) * 100)
-            : null;
-        })()}
-        attempts={previewProblem ? perProblem.get(previewProblem.slug)?.attempts ?? 0 : 0}
-        starterLanguage={previewProblem ? "python" : undefined}
-        starterSnippet={previewProblem?.starterCode?.python}
-      />
 
       <DailyChallengeCelebration
         open={daily.justCompleted}
