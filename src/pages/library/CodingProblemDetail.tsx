@@ -557,6 +557,20 @@ const CodingProblemDetail = () => {
                 />
               </TabsContent>
 
+              <TabsContent value="my-solution" className="mt-0">
+                <MySolutionPanel
+                  notes={mySolutionNotes}
+                  onNotesChange={setMySolutionNotes}
+                  code={mySolutionCode}
+                  onCodeChange={setMySolutionCode}
+                  monacoLanguage={langInfo.monaco}
+                  languageLabel={langInfo.label}
+                  onUseCurrentDraft={() => code}
+                  savedAt={mySolutionSavedAt}
+                  fontSize={editorPrefs.fontSize}
+                />
+              </TabsContent>
+
               <TabsContent value="solution" className="mt-0">
                 {!acceptedExists ? (
                   <Card className="p-8 text-center">
