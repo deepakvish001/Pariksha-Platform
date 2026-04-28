@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type LeaderboardWindow = "all" | "week" | "today";
+export type LeaderboardDifficulty = "easy" | "medium" | "hard" | null;
 
 export interface CodingLeaderboardRow {
   rank: number;
@@ -33,6 +34,8 @@ interface UseLeaderboardParams {
   page: number;
   pageSize: number;
   search?: string;
+  difficulty?: LeaderboardDifficulty;
+  acceptedOnly?: boolean;
 }
 
 export function useCodingLeaderboard({
@@ -40,6 +43,8 @@ export function useCodingLeaderboard({
   page,
   pageSize,
   search,
+  difficulty = null,
+  acceptedOnly = true,
 }: UseLeaderboardParams) {
   const [rows, setRows] = useState<CodingLeaderboardRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,12 +53,17 @@ export function useCodingLeaderboard({
   const fetchRows = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase.rpc("get_coding_leaderboard", {
-      _window: w,
-      _limit: pageSize,
-      _offset: (page - 1) * pageSize,
-      _search: search?.trim() || null,
-    });
+    const { data, error } = await supabase.rpc(
+      "get_coding_leaderboard" as never,
+      {
+        _window: w,
+        _limit: pageSize,
+        _offset: (page - 1) * pageSize,
+        _search: search?.trim() || null,
+        _difficulty: difficulty,
+        _accepted_only: acceptedOnly,
+      } as never,
+    );
     if (error) {
       setError(error.message);
       setRows([]);
@@ -61,7 +71,7 @@ export function useCodingLeaderboard({
       setRows((data ?? []) as CodingLeaderboardRow[]);
     }
     setLoading(false);
-  }, [w, page, pageSize, search]);
+  }, [w, page, pageSize, search, difficulty, acceptedOnly]);
 
   useEffect(() => {
     fetchRows();
@@ -131,6 +141,62 @@ export function useCodingLeaderboardUserRank(
       if (cancelled) return;
       if (!error && rows && (rows as CodingLeaderboardUserRank[]).length > 0) {
         setData((rows as CodingLeaderboardUserRank[])[0]);
+      } else {
+        setData(null);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, w]);
+
+  return { data, loading };
+}
+
+// ─── Rank delta tracking ───────────────────────────────────────────────
+export interface CodingLeaderboardRankDelta {
+  current_rank: number | null;
+  yesterday_rank: number | null;
+  week_ago_rank: number | null;
+  delta_day: number | null;
+  delta_week: number | null;
+}
+
+/**
+ * Snapshot the caller's current rank for today (idempotent server-side).
+ * Fire-and-forget on page mount so deltas have a baseline tomorrow.
+ */
+export async function snapshotMyCodingLeaderboardRank(): Promise<void> {
+  try {
+    await supabase.rpc("snapshot_my_coding_leaderboard_rank" as never);
+  } catch {
+    // Non-critical: ignore failures (anonymous users, hidden profiles, etc.)
+  }
+}
+
+export function useCodingLeaderboardRankDelta(
+  userId: string | null | undefined,
+  w: LeaderboardWindow,
+) {
+  const [data, setData] = useState<CodingLeaderboardRankDelta | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!userId) {
+      setData(null);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      const { data: rows, error } = await supabase.rpc(
+        "get_coding_leaderboard_rank_delta" as never,
+        { _user_id: userId, _window: w } as never,
+      );
+      if (cancelled) return;
+      if (!error && rows && (rows as CodingLeaderboardRankDelta[]).length > 0) {
+        setData((rows as CodingLeaderboardRankDelta[])[0]);
       } else {
         setData(null);
       }
