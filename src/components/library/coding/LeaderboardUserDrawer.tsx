@@ -1,8 +1,9 @@
 // Drawer surfacing a per-user breakdown of leaderboard score:
 // difficulty mix, score components, runtime stats, fastest solves.
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import {
   Trophy,
   Target,
@@ -13,6 +14,10 @@ import {
   ExternalLink,
   Sparkles,
   Calendar,
+  Lock,
+  LogIn,
+  ArrowUpDown,
+  BarChart3,
 } from "lucide-react";
 import {
   Sheet,
@@ -28,6 +33,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
@@ -67,6 +78,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   userId: string | null;
   rank: number | null;
+  isAuthenticated?: boolean;
 }
 
 function formatRuntime(ms: number | null | undefined): string {
@@ -76,20 +88,123 @@ function formatRuntime(ms: number | null | undefined): string {
 }
 
 const DIFF_META = {
-  easy: { label: "Easy", color: "text-emerald-500", bg: "bg-emerald-500", weight: 1 },
-  medium: { label: "Medium", color: "text-amber-500", bg: "bg-amber-500", weight: 3 },
-  hard: { label: "Hard", color: "text-rose-500", bg: "bg-rose-500", weight: 5 },
+  easy: { label: "Easy", color: "text-emerald-500", bg: "bg-emerald-500", border: "border-emerald-500/40", chip: "bg-emerald-500/10", weight: 1 },
+  medium: { label: "Medium", color: "text-amber-500", bg: "bg-amber-500", border: "border-amber-500/40", chip: "bg-amber-500/10", weight: 3 },
+  hard: { label: "Hard", color: "text-rose-500", bg: "bg-rose-500", border: "border-rose-500/40", chip: "bg-rose-500/10", weight: 5 },
 } as const;
 
 type DiffKey = keyof typeof DIFF_META;
+type SortKey = "runtime" | "difficulty" | "title";
+type SortDir = "asc" | "desc";
 
-export function LeaderboardUserDrawer({ open, onOpenChange, userId, rank }: Props) {
+function DrawerSkeleton() {
+  return (
+    <div className="space-y-5" aria-busy="true" aria-label="Loading breakdown">
+      <div className="flex items-center gap-3 p-4 rounded-xl border border-border/60">
+        <Skeleton className="h-12 w-12 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <Skeleton className="h-8 w-20 rounded-md" />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-20 rounded-lg" />
+        ))}
+      </div>
+      <div className="rounded-xl border border-border/60 p-4 space-y-3">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-3 w-56" />
+        <Separator className="bg-border/40" />
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="space-y-1.5">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-2 w-full" />
+          </div>
+        ))}
+      </div>
+      <div className="rounded-xl border border-border/60 p-4 space-y-3">
+        <Skeleton className="h-4 w-32" />
+        <div className="grid grid-cols-3 gap-2">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-14 rounded-lg" />
+          ))}
+        </div>
+        <Skeleton className="h-20 w-full rounded-lg" />
+      </div>
+      <div className="rounded-xl border border-border/60 p-4 space-y-2">
+        <Skeleton className="h-4 w-40" />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-9 w-full rounded-lg" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnonymousGate({ rank }: { rank: number | null }) {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-border/60 bg-card/40 p-6 text-center space-y-3">
+        <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <Lock className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-base font-semibold">Sign in to see full breakdown</h3>
+          <p className="text-xs text-muted-foreground mt-1.5">
+            Detailed score components, runtime stats, and top fastest solves are
+            available for signed-in members.
+          </p>
+        </div>
+        {rank !== null && (
+          <Badge variant="secondary" className="font-mono text-[10px]">
+            Currently ranked #{rank}
+          </Badge>
+        )}
+        <div className="flex flex-col gap-2 pt-2">
+          <Button asChild size="sm" className="w-full">
+            <Link to="/auth">
+              <LogIn className="h-3.5 w-3.5 mr-1.5" />
+              Sign in to view breakdown
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="ghost" className="w-full">
+            <Link to="/library/problems/leaderboard">
+              Continue browsing leaderboard
+            </Link>
+          </Button>
+        </div>
+      </div>
+      <p className="text-[11px] text-center text-muted-foreground">
+        Join Byteskill to track your own weighted score, speed bonus, and rank.
+      </p>
+    </div>
+  );
+}
+
+export function LeaderboardUserDrawer({
+  open,
+  onOpenChange,
+  userId,
+  rank,
+  isAuthenticated = true,
+}: Props) {
   const [data, setData] = useState<Breakdown | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("runtime");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   useEffect(() => {
     if (!open || !userId) return;
+    if (!isAuthenticated) {
+      // Anonymous users: skip RPC entirely, show gate.
+      setLoading(false);
+      setError(null);
+      setData(null);
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -102,6 +217,9 @@ export function LeaderboardUserDrawer({ open, onOpenChange, userId, rank }: Prop
       if (cancelled) return;
       if (error) {
         setError(error.message);
+        toast.error("Couldn't load breakdown", {
+          description: error.message,
+        });
       } else if (rows && (rows as Breakdown[]).length > 0) {
         setData((rows as Breakdown[])[0]);
       } else {
@@ -112,7 +230,31 @@ export function LeaderboardUserDrawer({ open, onOpenChange, userId, rank }: Prop
     return () => {
       cancelled = true;
     };
-  }, [open, userId]);
+  }, [open, userId, isAuthenticated]);
+
+  const sortedFastest = useMemo(() => {
+    if (!data?.fastest_problems) return [];
+    const arr = [...data.fastest_problems];
+    const diffOrder: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
+    arr.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "runtime") cmp = (a.runtime_ms ?? 0) - (b.runtime_ms ?? 0);
+      else if (sortKey === "difficulty")
+        cmp = (diffOrder[a.difficulty] ?? 1) - (diffOrder[b.difficulty] ?? 1);
+      else cmp = a.problem_slug.localeCompare(b.problem_slug);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return arr;
+  }, [data?.fastest_problems, sortKey, sortDir]);
+
+  const toggleSort = (k: SortKey) => {
+    if (sortKey === k) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(k);
+      setSortDir(k === "runtime" ? "asc" : "asc");
+    }
+  };
 
   const renderDifficultyBar = (key: DiffKey, count: number, total: number) => {
     const meta = DIFF_META[key];
@@ -155,15 +297,51 @@ export function LeaderboardUserDrawer({ open, onOpenChange, userId, rank }: Prop
 
         <ScrollArea className="flex-1">
           <div className="p-5 space-y-5">
-            {loading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-20 rounded-xl" />
-                <Skeleton className="h-32 rounded-xl" />
-                <Skeleton className="h-40 rounded-xl" />
-              </div>
+            {!isAuthenticated ? (
+              <AnonymousGate rank={rank} />
+            ) : loading ? (
+              <DrawerSkeleton />
             ) : error ? (
-              <div className="text-center py-12 text-sm text-muted-foreground">
-                {error}
+              <div className="space-y-3 py-8">
+                <p className="text-center text-sm text-muted-foreground">
+                  {error}
+                </p>
+                <div className="flex justify-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      // Trigger refetch by toggling open via parent isn't trivial;
+                      // re-run effect by clearing state then setting.
+                      if (userId) {
+                        setError(null);
+                        setLoading(true);
+                        supabase
+                          .rpc(
+                            "get_coding_leaderboard_user_breakdown" as never,
+                            { _user_id: userId } as never,
+                          )
+                          .then(({ data: rows, error }) => {
+                            if (error) {
+                              setError(error.message);
+                              toast.error("Retry failed", {
+                                description: error.message,
+                              });
+                            } else if (rows && (rows as Breakdown[]).length > 0) {
+                              setData((rows as Breakdown[])[0]);
+                            } else {
+                              setError(
+                                "This user has hidden their leaderboard details.",
+                              );
+                            }
+                            setLoading(false);
+                          });
+                      }
+                    }}
+                  >
+                    Try again
+                  </Button>
+                </div>
               </div>
             ) : data ? (
               <>
@@ -220,6 +398,45 @@ export function LeaderboardUserDrawer({ open, onOpenChange, userId, rank }: Prop
                   />
                 </div>
 
+                {/* Difficulty breakdown pills */}
+                <div className="grid grid-cols-3 gap-2">
+                  {(["easy", "medium", "hard"] as DiffKey[]).map((k) => {
+                    const meta = DIFF_META[k];
+                    const count =
+                      k === "easy"
+                        ? data.easy_solved
+                        : k === "medium"
+                          ? data.medium_solved
+                          : data.hard_solved;
+                    const score =
+                      k === "easy"
+                        ? data.easy_score
+                        : k === "medium"
+                          ? data.medium_score
+                          : data.hard_score;
+                    return (
+                      <div
+                        key={k}
+                        className={cn(
+                          "rounded-xl border p-3 text-center space-y-0.5",
+                          meta.border,
+                          meta.chip,
+                        )}
+                      >
+                        <p className={cn("text-[10px] uppercase tracking-wider font-semibold", meta.color)}>
+                          {meta.label}
+                        </p>
+                        <p className="text-lg font-bold tabular-nums leading-tight">
+                          {count}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground tabular-nums">
+                          +{Number(score).toFixed(0)} pts
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
                 {/* Score breakdown */}
                 <section className="rounded-xl border border-border/60 bg-card/40 p-4 space-y-3">
                   <div className="flex items-center gap-2">
@@ -266,7 +483,7 @@ export function LeaderboardUserDrawer({ open, onOpenChange, userId, rank }: Prop
                   </div>
                 </section>
 
-                {/* Runtime stats */}
+                {/* Runtime stats with mini bar chart */}
                 <section className="rounded-xl border border-border/60 bg-card/40 p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-sky-500" />
@@ -293,6 +510,18 @@ export function LeaderboardUserDrawer({ open, onOpenChange, userId, rank }: Prop
                       tone="text-amber-500"
                     />
                   </div>
+
+                  {/* Mini bar chart */}
+                  <RuntimeBarChart
+                    fastest={data.fastest_runtime_ms}
+                    average={
+                      data.avg_runtime_ms !== null
+                        ? Number(data.avg_runtime_ms)
+                        : null
+                    }
+                    slowest={data.slowest_runtime_ms}
+                  />
+
                   {data.avg_runtime_ms !== null && data.slowest_runtime_ms ? (
                     <div className="space-y-1">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -312,31 +541,58 @@ export function LeaderboardUserDrawer({ open, onOpenChange, userId, rank }: Prop
                   ) : null}
                 </section>
 
-                {/* Top fastest solves */}
+                {/* Top fastest solves — sortable */}
                 {data.fastest_problems && data.fastest_problems.length > 0 && (
                   <section className="rounded-xl border border-border/60 bg-card/40 p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-primary" />
-                      <h3 className="text-sm font-semibold">Top 5 fastest solves</h3>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-primary" />
+                        <h3 className="text-sm font-semibold">Top 5 fastest solves</h3>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                            <ArrowUpDown className="h-3 w-3 mr-1" />
+                            Sort
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => toggleSort("runtime")}>
+                            Runtime {sortKey === "runtime" && (sortDir === "asc" ? "↑" : "↓")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleSort("difficulty")}>
+                            Difficulty {sortKey === "difficulty" && (sortDir === "asc" ? "↑" : "↓")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleSort("title")}>
+                            Title {sortKey === "title" && (sortDir === "asc" ? "↑" : "↓")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-2 px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <span>#</span>
+                      <span>Problem</span>
+                      <span>Difficulty</span>
+                      <span className="text-right">Runtime</span>
                     </div>
                     <ol className="space-y-1.5 list-none p-0 m-0">
-                      {data.fastest_problems.map((p, i) => {
+                      {sortedFastest.map((p, i) => {
                         const meta = DIFF_META[(p.difficulty as DiffKey)] ?? DIFF_META.medium;
                         return (
                           <li key={`${p.problem_slug}-${i}`}>
                             <Link
                               to={`/library/problems/${p.problem_slug}`}
-                              className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/40 transition-colors group"
+                              className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 p-2 rounded-lg hover:bg-muted/40 transition-colors group"
                             >
                               <span className="w-5 text-center text-xs font-mono text-muted-foreground">
                                 {i + 1}
                               </span>
-                              <span className="text-sm flex-1 truncate group-hover:text-primary transition-colors">
+                              <span className="text-sm truncate group-hover:text-primary transition-colors">
                                 {p.problem_slug}
                               </span>
                               <Badge
                                 variant="outline"
-                                className={cn("text-[10px] h-5", meta.color, "border-current/30")}
+                                className={cn("text-[10px] h-5", meta.color, meta.border)}
                               >
                                 {meta.label}
                               </Badge>
@@ -447,6 +703,65 @@ function RuntimeTile({
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
         {label}
       </p>
+    </div>
+  );
+}
+
+function RuntimeBarChart({
+  fastest,
+  average,
+  slowest,
+}: {
+  fastest: number | null;
+  average: number | null;
+  slowest: number | null;
+}) {
+  const values = [
+    { key: "fastest", label: "Fastest", value: fastest, color: "bg-emerald-500" },
+    { key: "average", label: "Average", value: average, color: "bg-sky-500" },
+    { key: "slowest", label: "Slowest", value: slowest, color: "bg-amber-500" },
+  ];
+  const max = Math.max(
+    ...values.map((v) => (typeof v.value === "number" ? v.value : 0)),
+    1,
+  );
+  const hasAny = values.some((v) => typeof v.value === "number" && v.value > 0);
+  if (!hasAny) return null;
+
+  return (
+    <div className="rounded-lg border border-border/40 bg-background/40 p-3 space-y-2">
+      <div className="flex items-center gap-1.5">
+        <BarChart3 className="h-3 w-3 text-muted-foreground" />
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+          Runtime distribution
+        </p>
+      </div>
+      <div className="space-y-1.5">
+        {values.map((v) => {
+          const pct =
+            typeof v.value === "number" && v.value > 0
+              ? Math.max(4, (v.value / max) * 100)
+              : 0;
+          return (
+            <div key={v.key} className="flex items-center gap-2">
+              <span className="w-14 text-[10px] text-muted-foreground">
+                {v.label}
+              </span>
+              <div className="flex-1 h-3 rounded-sm bg-muted/50 overflow-hidden relative">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className={cn("h-full rounded-sm", v.color)}
+                />
+              </div>
+              <span className="w-14 text-right text-[10px] font-mono tabular-nums text-muted-foreground">
+                {formatRuntime(v.value)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
