@@ -79,6 +79,7 @@ const CodingProblemDetail = () => {
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [openHints, setOpenHints] = useState<Record<number, boolean>>({});
+  const [detailSubmission, setDetailSubmission] = useState<CodeSubmissionRow | null>(null);
 
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
