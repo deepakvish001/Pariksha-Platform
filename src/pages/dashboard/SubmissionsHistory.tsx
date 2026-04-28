@@ -193,13 +193,63 @@ export default function SubmissionsHistory() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // localStorage key for "last-used filters" (per-user). Reapplied only when the
+  // current URL has none of the filter params present (so a fresh deep-link or
+  // a "Clear all" reset still wins).
+  const PREFS_KEY = user ? `byteskill:submissions-history:prefs:${user.id}` : null;
+  const FILTER_KEYS = ["q", "verdict", "lang", "from", "to", "tab"] as const;
+
+  // ---- Hydrate persisted filter prefs into the URL on first mount ---------
+  // This runs only when no filter param is in the URL — so a shared link or a
+  // post-"Clear all" navigation always wins over saved prefs.
+  const hydratedPrefsRef = useRef(false);
+  useEffect(() => {
+    if (hydratedPrefsRef.current || !PREFS_KEY) return;
+    hydratedPrefsRef.current = true;
+    const hasAnyFilterParam = FILTER_KEYS.some((k) => searchParams.has(k));
+    if (hasAnyFilterParam) return;
+    try {
+      const raw = localStorage.getItem(PREFS_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Record<string, string | null>;
+      const next = new URLSearchParams(searchParams);
+      let dirty = false;
+      for (const k of FILTER_KEYS) {
+        const v = saved[k];
+        if (v && typeof v === "string" && v !== "all") {
+          next.set(k, v);
+          dirty = true;
+        }
+      }
+      if (dirty) setSearchParams(next, { replace: true });
+    } catch {
+      /* ignore corrupt prefs */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [PREFS_KEY]);
+
   // URL-backed state
   const search = searchParams.get("q") ?? "";
   const verdict = searchParams.get("verdict") ?? "all";
   const language = searchParams.get("lang") ?? "all";
+  const dateFrom = searchParams.get("from") ?? "";
+  const dateTo = searchParams.get("to") ?? "";
   const tab = searchParams.get("tab") ?? "submissions";
   const subPage = Math.max(1, parseInt(searchParams.get("subPage") ?? "1", 10) || 1);
   const runPage = Math.max(1, parseInt(searchParams.get("runPage") ?? "1", 10) || 1);
+
+  // Validate persisted dates so a stale/corrupt URL value doesn't break the
+  // calendar component.
+  const fromDate = useMemo(() => {
+    if (!dateFrom) return undefined;
+    const d = parseISO(dateFrom);
+    return isValid(d) ? d : undefined;
+  }, [dateFrom]);
+  const toDate = useMemo(() => {
+    if (!dateTo) return undefined;
+    const d = parseISO(dateTo);
+    return isValid(d) ? d : undefined;
+  }, [dateTo]);
 
   // Debounce search input for snappier typing
   const [searchInput, setSearchInput] = useState(search);
@@ -226,10 +276,46 @@ export default function SubmissionsHistory() {
     setSearchParams(next, { replace: true });
   };
 
+  // Persist filter prefs whenever they change (after hydration). We snapshot
+  // only the filter-shaped keys — pagination, the open drawer, etc. don't
+  // belong in saved prefs.
+  useEffect(() => {
+    if (!hydratedPrefsRef.current || !PREFS_KEY) return;
+    try {
+      const snapshot: Record<string, string> = {};
+      for (const k of FILTER_KEYS) {
+        const v = searchParams.get(k);
+        if (v && v !== "all") snapshot[k] = v;
+      }
+      if (Object.keys(snapshot).length === 0) {
+        localStorage.removeItem(PREFS_KEY);
+      } else {
+        localStorage.setItem(PREFS_KEY, JSON.stringify(snapshot));
+      }
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [search, verdict, language, dateFrom, dateTo, tab, PREFS_KEY, searchParams]);
+
   const { submissions, total: subTotal, loading: subsLoading, refetch: refetchSubs } =
-    usePagedCodingSubmissions({ page: subPage, pageSize: PAGE_SIZE, search, verdict, language });
+    usePagedCodingSubmissions({
+      page: subPage,
+      pageSize: PAGE_SIZE,
+      search,
+      verdict,
+      language,
+      dateFrom,
+      dateTo,
+    });
   const { runs, total: runTotal, loading: runsLoading, refetch: refetchRuns } =
-    usePagedCodeRuns({ page: runPage, pageSize: PAGE_SIZE, search, language });
+    usePagedCodeRuns({
+      page: runPage,
+      pageSize: PAGE_SIZE,
+      search,
+      language,
+      dateFrom,
+      dateTo,
+    });
 
   const { run, isRunning, cancelRun } = useCodeRunner();
   const { toast: legacyToast } = useToast();
