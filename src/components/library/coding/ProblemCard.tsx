@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { CodingProblem, Difficulty } from "@/data/codingProblemsData";
 import type { PerProblemStats } from "@/hooks/useCodingAttemptStats";
+import { TopicBadgesWithOverflow } from "@/components/library/coding/TopicBadgesWithOverflow";
 
 const difficultyClass = (d: Difficulty) =>
   d === "Easy"
