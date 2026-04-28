@@ -332,16 +332,15 @@ export default function SubmissionsHistory() {
             {LANGUAGE_OPTIONS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
           </SelectContent>
         </Select>
-        {(search || verdict !== "all" || language !== "all") && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setSearchInput("");
-              setSearchParams(new URLSearchParams(tab === "runs" ? { tab } : {}), { replace: true });
-            }}
-          >
-            <X className="h-4 w-4 mr-1" /> Clear
+        {(search ||
+          verdict !== "all" ||
+          language !== "all" ||
+          tab !== "submissions" ||
+          subPage !== 1 ||
+          runPage !== 1 ||
+          detailRunId) && (
+          <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+            <X className="h-4 w-4 mr-1" /> Clear all filters
           </Button>
         )}
       </div>
