@@ -448,7 +448,8 @@ const CodingProblemDetail = () => {
                     <AttemptTimeline
                       submissions={submissions}
                       limit={10}
-                      onSelect={(s) => setDetailSubmission(s)}
+                      onSelect={openSubmission}
+                      highlightedId={lastOpenedId}
                     />
                     {submissions.length > 0 && (
                       <div className="space-y-2">
@@ -457,14 +458,17 @@ const CodingProblemDetail = () => {
                             key={s.id}
                             role="button"
                             tabIndex={0}
-                            onClick={() => setDetailSubmission(s)}
+                            onClick={() => openSubmission(s)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" || e.key === " ") {
                                 e.preventDefault();
-                                setDetailSubmission(s);
+                                openSubmission(s);
                               }
                             }}
-                            className="p-3 hover:bg-muted/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                            className={cn(
+                              "p-3 hover:bg-muted/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                              lastOpenedId === s.id && "ring-1 ring-primary/40 bg-primary/5",
+                            )}
                           >
                             <div className="flex items-center justify-between gap-3 flex-wrap">
                               <div className="flex items-center gap-3">
