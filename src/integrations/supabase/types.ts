@@ -1662,6 +1662,32 @@ export type Database = {
           total_problems_solved: number
         }[]
       }
+      get_coding_leaderboard_user_breakdown: {
+        Args: { _user_id: string }
+        Returns: {
+          acceptance_rate: number
+          avatar_url: string
+          avg_runtime_ms: number
+          display_name: string
+          easy_score: number
+          easy_solved: number
+          fastest_problems: Json
+          fastest_runtime_ms: number
+          hard_score: number
+          hard_solved: number
+          last_accepted_at: string
+          medium_score: number
+          medium_solved: number
+          problems_solved: number
+          slowest_runtime_ms: number
+          speed_bonus: number
+          total_accepted: number
+          total_submissions: number
+          user_id: string
+          username: string
+          weighted_score: number
+        }[]
+      }
       get_daily_challenge_leaderboard: {
         Args: { _limit?: number }
         Returns: {
