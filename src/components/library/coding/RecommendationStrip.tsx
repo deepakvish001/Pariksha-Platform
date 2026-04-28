@@ -288,12 +288,9 @@ export const RecommendationStrip = ({ stats, bookmarks, onOpen, dismissedKey }: 
         </div>
         <button
           type="button"
-          onClick={() => {
-            setDismissed(dismissedKey);
-            setHidden(true);
-          }}
+          onClick={() => setHidden(true)}
           className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-          aria-label="Hide recommendations for this session"
+          aria-label="Hide recommendations"
         >
           <X className="h-3 w-3" />
           Hide
