@@ -415,6 +415,34 @@ const CodingProblemDetail = () => {
     toast({ title: "Code reset", description: "Editor restored to starter template." });
   };
 
+  const handleFormat = async () => {
+    try {
+      await editorRef.current?.format();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleRestoreLastSubmitted = () => {
+    const lastForLang = submissions.find((s) => s.language === language);
+    if (!lastForLang) {
+      toast({
+        title: "No previous submission",
+        description: `No ${langInfo.label} submission found for this problem yet.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setCode(lastForLang.source_code);
+    saveDraft(lastForLang.source_code);
+    toast({
+      title: "Restored last submitted code",
+      description: `${langInfo.label} · ${lastForLang.verdict ?? "Pending"} · ${new Date(lastForLang.created_at).toLocaleString()}`,
+    });
+  };
+
+  const toggleEditorFullscreen = () => setIsEditorFullscreen((v) => !v);
+
   const handleRun = async () => {
     if (!user) {
       setShowLogin(true);
