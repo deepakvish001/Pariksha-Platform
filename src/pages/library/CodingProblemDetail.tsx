@@ -115,17 +115,31 @@ const CodingProblemDetail = () => {
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
 
-  // Open drawer when ?sub=<id> is in URL and submissions have loaded
+  // Open drawer when ?sub=<id> is in URL and submissions have loaded.
+  // If the submission ID doesn't exist for this problem, clear the param so
+  // the drawer doesn't open to nothing.
   useEffect(() => {
     const subId = searchParams.get("sub");
-    if (!subId || submissions.length === 0) return;
+    if (!subId) return;
+    if (submissions.length === 0) return; // wait for load
     const found = submissions.find((s) => s.id === subId);
-    if (found && (!detailSubmission || detailSubmission.id !== subId)) {
-      setDetailSubmission(found);
-      setLastOpenedId(subId);
-      if (slug) writeLastOpened(slug, subId);
+    if (found) {
+      if (!detailSubmission || detailSubmission.id !== subId) {
+        setDetailSubmission(found);
+        setLastOpenedId(subId);
+        if (slug) writeLastOpened(slug, subId);
+      }
+    } else {
+      // Stale deep-link — strip it silently
+      const next = new URLSearchParams(searchParams);
+      next.delete("sub");
+      setSearchParams(next, { replace: true });
+      toast({
+        title: "Submission not found",
+        description: "That submission link is no longer available for this problem.",
+      });
     }
-  }, [searchParams, submissions, slug, detailSubmission]);
+  }, [searchParams, submissions, slug, detailSubmission, setSearchParams, toast]);
 
   const openSubmission = (s: CodeSubmissionRow) => {
     setDetailSubmission(s);

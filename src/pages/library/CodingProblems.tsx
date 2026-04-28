@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Share2,
   CheckSquare,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +85,73 @@ const CodingProblems = () => {
     const t = setTimeout(() => setDebouncedSearch(search), 200);
     return () => clearTimeout(t);
   }, [search]);
+
+  // Persist & restore scroll position + page for /library/problems so refresh
+  // returns the user to the same spot.
+  const SCROLL_KEY = "byteskill:coding-problems-scroll";
+  const PAGE_KEY = "byteskill:coding-problems-last-page";
+
+  // On first mount: if URL has no ?page=, hydrate from last-page memory.
+  useEffect(() => {
+    try {
+      if (!params.get("page")) {
+        const saved = localStorage.getItem(PAGE_KEY);
+        const n = saved ? parseInt(saved, 10) : NaN;
+        if (Number.isFinite(n) && n > 1) {
+          const next = new URLSearchParams(params);
+          next.set("page", String(n));
+          setParams(next, { replace: true });
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    // Restore scroll on next frame so layout has settled.
+    try {
+      const y = parseInt(sessionStorage.getItem(SCROLL_KEY) ?? "", 10);
+      if (Number.isFinite(y) && y > 0) {
+        requestAnimationFrame(() => window.scrollTo({ top: y, behavior: "auto" }));
+      }
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save current page whenever it changes.
+  useEffect(() => {
+    try {
+      localStorage.setItem(PAGE_KEY, String(page));
+    } catch {
+      /* ignore */
+    }
+  }, [page]);
+
+  // Save scroll position (throttled via rAF) and on unload.
+  useEffect(() => {
+    let ticking = false;
+    const save = () => {
+      try {
+        sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+      } catch {
+        /* ignore */
+      }
+      ticking = false;
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(save);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("beforeunload", save);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("beforeunload", save);
+      save();
+    };
+  }, []);
 
   const updateParams = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -393,6 +461,21 @@ const CodingProblems = () => {
 
       {/* Filters */}
       <Card className="p-4 mb-4 sticky top-2 z-10 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Filters
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleShareFilters}
+            className="gap-1.5 h-7 px-2 text-xs"
+            title="Copy a shareable link with the current search, topics, status, sort, view, and page"
+          >
+            <Link2 className="h-3.5 w-3.5" />
+            Copy shareable link
+          </Button>
+        </div>
         <ProblemFiltersBar
           search={search}
           onSearch={setSearch}
