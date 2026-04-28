@@ -446,7 +446,7 @@ export default function CodingLeaderboard() {
                           hard 5) + small speed bonus.
                         </TooltipContent>
                       </Tooltip>
-                    </Link>
+                    </button>
                   </motion.li>
                 ))}
               </ol>
