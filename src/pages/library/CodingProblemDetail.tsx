@@ -326,6 +326,16 @@ const CodingProblemDetail = () => {
     }
   }, [problem]);
 
+  // Notify when the My Solution sync resolved a real local↔cloud conflict.
+  useEffect(() => {
+    if (!mySolutionLastConflictAt) return;
+    toast({
+      title: "My Solution merged across devices",
+      description:
+        "We kept the most recently edited version of each part (notes and per language). Nothing was lost.",
+    });
+  }, [mySolutionLastConflictAt, toast]);
+
   if (!problem) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
