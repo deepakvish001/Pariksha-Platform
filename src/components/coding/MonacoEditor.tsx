@@ -1,7 +1,7 @@
 import Editor, { OnMount } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
-import type { editor } from "monaco-editor";
+type IStandaloneCodeEditor = Parameters<OnMount>[0];
 
 interface MonacoEditorProps {
   value: string;
@@ -23,7 +23,7 @@ export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
     ref,
   ) => {
     const { resolvedTheme } = useTheme();
-    const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+    const editorRef = useRef<IStandaloneCodeEditor | null>(null);
 
     const handleMount: OnMount = useCallback((ed) => {
       editorRef.current = ed;
