@@ -107,21 +107,27 @@ interface CaseOutcome {
 }
 
 async function submitBatch(language: string, source: string, tests: TestCase[], cpuMs: number, wallMs: number, memKb: number): Promise<string[]> {
+  // All N test cases go inside ONE outer item, as `entries: [...]`. Response returns
+  // taskIds in the same order as entries.
   const body = {
-    data: tests.map((t) => ({
-      data: {
-        language,
-        sourceCodeAsBase64UrlEncoded: b64UrlEncode(source),
-        runConfig: {
-          stdinStringAsBase64UrlEncoded: b64UrlEncode(t.input ?? ""),
-          customMatcherToUseForExpectedOutput: "ExactMatch",
-          expectedOutputAsBase64UrlEncoded: b64UrlEncode(t.expected ?? ""),
-          cpuTimeLimitInMilliseconds: cpuMs,
-          wallTimeLimitInMilliseconds: wallMs,
-          memoryLimitInKilobyte: memKb,
+    data: [
+      {
+        data: {
+          entries: tests.map((t) => ({
+            language,
+            sourceCodeAsBase64UrlEncoded: b64UrlEncode(source),
+            runConfig: {
+              customMatcherToUseForExpectedOutput: "ExactMatch",
+              expectedOutputAsBase64UrlEncoded: b64UrlEncode(t.expected ?? ""),
+              stdinStringAsBase64UrlEncoded: b64UrlEncode(t.input ?? ""),
+              cpuTimeLimitInMilliseconds: cpuMs,
+              wallTimeLimitInMilliseconds: wallMs,
+              memoryLimitInKilobyte: memKb,
+            },
+          })),
         },
       },
-    })),
+    ],
   };
 
   const res = await fetch(SUBMIT_URL, {
@@ -139,14 +145,20 @@ async function submitBatch(language: string, source: string, tests: TestCase[], 
   try { json = JSON.parse(text); } catch {
     throw new FermionError("Fermion submit returned non-JSON", { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text });
   }
-  const arr: any[] = json?.output?.data ?? json?.data ?? [];
-  const ids = arr.map((row: any) => row?.output?.taskUniqueId ?? row?.taskUniqueId).filter((x: unknown) => typeof x === "string");
-  if (ids.length !== tests.length) {
-    throw new FermionError(`Fermion submit: expected ${tests.length} task IDs, got ${ids.length}`, {
-      error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500),
-    });
+  const root = Array.isArray(json) ? json[0] : json;
+  const ids: unknown =
+    root?.output?.data?.taskIds ??
+    root?.data?.taskIds ??
+    root?.output?.taskIds;
+  const taskIds = Array.isArray(ids) ? ids.filter((x): x is string => typeof x === "string") : [];
+  if (taskIds.length !== tests.length) {
+    const errMsg = root?.output?.errorMessage || root?.errorMessage;
+    throw new FermionError(
+      `Fermion submit: expected ${tests.length} task IDs, got ${taskIds.length}${errMsg ? ` — ${errMsg}` : ""}`,
+      { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500) },
+    );
   }
-  return ids;
+  return taskIds;
 }
 
 async function pollBatch(taskIds: string[]): Promise<Map<string, CaseOutcome>> {
@@ -165,29 +177,30 @@ async function pollBatch(taskIds: string[]): Promise<Map<string, CaseOutcome>> {
     let json: any;
     try { json = JSON.parse(text); } catch { continue; }
 
+    const root = Array.isArray(json) ? json[0] : json;
     const entries: any[] =
-      json?.output?.data?.[0]?.output?.results ??
-      json?.output?.data?.[0]?.output?.tasks ??
-      json?.data?.[0]?.output?.results ??
-      json?.output?.results ??
+      root?.output?.data?.results ??
+      root?.output?.results ??
+      root?.data?.results ??
       [];
 
     for (const task of entries) {
-      const taskId = task?.taskUniqueId ?? task?.id;
+      const taskId = task?.taskUniqueId;
       if (!taskId || !remaining.has(taskId)) continue;
-      const taskStatus = task?.taskStatus ?? task?.status;
+      const taskStatus = task?.codingTaskStatus ?? task?.taskStatus ?? task?.status;
       if (taskStatus !== "Finished") continue;
-      const result = task?.executionResult ?? task?.result ?? task;
+      const runResult = task?.runResult ?? task?.executionResult ?? task?.result ?? {};
+      const prd = runResult?.programRunData ?? {};
       out.set(taskId, {
-        runStatus: result?.runStatus ?? result?.status ?? "unknown",
-        stdout: b64UrlDecode(result?.stdoutBase64UrlEncoded ?? result?.stdout),
-        stderr: b64UrlDecode(result?.stderrBase64UrlEncoded ?? result?.stderr),
+        runStatus: runResult?.runStatus ?? "unknown",
+        stdout: b64UrlDecode(prd?.stdoutBase64UrlEncoded),
+        stderr:
+          b64UrlDecode(prd?.stderrBase64UrlEncoded) ||
+          b64UrlDecode(runResult?.compilerOutputAfterCompilationBase64UrlEncoded),
         timeMs:
-          typeof result?.timeTakenInMilliseconds === "number" ? result.timeTakenInMilliseconds :
-          typeof result?.cpuTimeInMilliseconds === "number" ? result.cpuTimeInMilliseconds : 0,
-        memoryKb:
-          typeof result?.memoryUsedInKilobyte === "number" ? result.memoryUsedInKilobyte :
-          typeof result?.memoryInKilobyte === "number" ? result.memoryInKilobyte : 0,
+          typeof prd?.cpuTimeUsedInMilliseconds === "number" ? prd.cpuTimeUsedInMilliseconds :
+          typeof prd?.wallTimeUsedInMilliseconds === "number" ? prd.wallTimeUsedInMilliseconds : 0,
+        memoryKb: typeof prd?.memoryUsedInKilobyte === "number" ? prd.memoryUsedInKilobyte : 0,
       });
       remaining.delete(taskId);
     }
