@@ -1617,10 +1617,19 @@ const CodingProblemDetail = () => {
                       </div>
                       {runResult.stdout && (
                         <div>
-                          <p className="text-xs text-muted-foreground mb-1">stdout</p>
-                          <pre className="text-xs bg-muted/50 p-3 rounded border overflow-x-auto whitespace-pre-wrap">
-                            {runResult.stdout}
-                          </pre>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            {isSQLProblem ? "Query result" : "stdout"}
+                          </p>
+                          {isSQLProblem ? (
+                            <SqlResultDiff
+                              expected={runResult.stdout}
+                              actual={runResult.stdout}
+                            />
+                          ) : (
+                            <pre className="text-xs bg-muted/50 p-3 rounded border overflow-x-auto whitespace-pre-wrap">
+                              {runResult.stdout}
+                            </pre>
+                          )}
                         </div>
                       )}
                       {runResult.stderr && (
