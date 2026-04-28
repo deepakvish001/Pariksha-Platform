@@ -125,5 +125,5 @@ export const useCodeRunner = () => {
     }
   };
 
-  return { run, submit, isRunning, isSubmitting };
+  return { run, submit, isRunning, isSubmitting, cancelRun };
 };
