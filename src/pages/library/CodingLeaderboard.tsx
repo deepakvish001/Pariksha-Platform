@@ -317,9 +317,9 @@ export default function CodingLeaderboard() {
           </div>
         ) : podium.length >= 3 ? (
           <div className="flex flex-col md:flex-row gap-4 items-stretch">
-            <PodiumCard row={podium[1]} rank={2} />
-            <PodiumCard row={podium[0]} rank={1} />
-            <PodiumCard row={podium[2]} rank={3} />
+            <PodiumCard row={podium[1]} rank={2} onSelect={openBreakdown} />
+            <PodiumCard row={podium[0]} rank={1} onSelect={openBreakdown} />
+            <PodiumCard row={podium[2]} rank={3} onSelect={openBreakdown} />
           </div>
         ) : null}
 
