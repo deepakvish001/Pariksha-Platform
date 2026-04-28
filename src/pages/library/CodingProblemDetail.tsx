@@ -959,6 +959,37 @@ const CodingProblemDetail = () => {
                       </Tooltip>
                     </TooltipProvider>
                     <div className="w-px h-5 bg-border mx-1" />
+                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleFormat}
+                            className="h-8 gap-1.5 text-xs"
+                          >
+                            <Wand2 className="h-3 w-3" />
+                            Format
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Format code (Monaco built-in)</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRestoreLastSubmitted}
+                            disabled={submissionsLoading}
+                            className="h-8 gap-1.5 text-xs"
+                          >
+                            <History className="h-3 w-3" />
+                            Last submitted
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Load your most recent {langInfo.label} submission</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -971,6 +1002,26 @@ const CodingProblemDetail = () => {
                     <div className="w-px h-5 bg-border mx-1" />
                     {slug && <SessionTimer ref={sessionTimerRef} slug={slug} />}
                     <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={toggleEditorFullscreen}
+                            className="h-8 w-8"
+                            aria-label={isEditorFullscreen ? "Exit fullscreen" : "Fullscreen editor"}
+                          >
+                            {isEditorFullscreen ? (
+                              <Minimize2 className="h-3.5 w-3.5" />
+                            ) : (
+                              <Maximize2 className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {isEditorFullscreen ? "Exit fullscreen (Esc)" : "Fullscreen editor"}
+                        </TooltipContent>
+                      </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -990,6 +1041,7 @@ const CodingProblemDetail = () => {
                 </div>
                 <div className="flex-1 min-h-0">
                   <MonacoEditor
+                    ref={editorRef}
                     value={code}
                     onChange={handleCodeChange}
                     language={langInfo.monaco}
