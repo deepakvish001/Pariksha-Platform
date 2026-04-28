@@ -408,6 +408,7 @@ const CodingProblemDetail = () => {
                         </div>
                       </Card>
                     ))}
+                    </div>
                   </div>
                 )}
               </TabsContent>
