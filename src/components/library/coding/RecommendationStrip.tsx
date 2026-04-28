@@ -144,7 +144,7 @@ const toneClasses: Record<Recommendation["tone"], string> = {
 };
 
 export const RecommendationStrip = ({ stats, bookmarks, onOpen, dismissedKey }: Props) => {
-  const [hidden, setHidden] = useState<boolean>(() => isDismissed(dismissedKey));
+  const { dismissed: hidden, setDismissed: setHidden } = useRecommendationsDismissed(dismissedKey);
 
   const recs = useMemo<Recommendation[]>(() => {
     const out: Recommendation[] = [];
