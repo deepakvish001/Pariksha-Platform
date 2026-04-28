@@ -390,6 +390,16 @@ const CodingProblemDetail = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Esc exits editor fullscreen.
+  useEffect(() => {
+    if (!isEditorFullscreen) return;
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsEditorFullscreen(false);
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [isEditorFullscreen]);
+
   if (!problem) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
