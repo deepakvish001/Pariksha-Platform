@@ -559,6 +559,7 @@ const CodingProblemDetail = () => {
     }
     // Optional lightweight lint pass: trim trailing whitespace, collapse 3+
     // blank lines into one, and ensure exactly one trailing newline.
+    let lintCleaned: string | null = null;
     if (editorPrefs.formatOnSubmit === "format+lint") {
       const current = editorRef.current?.getValue() ?? code;
       const cleaned = current
@@ -568,6 +569,7 @@ const CodingProblemDetail = () => {
         .replace(/\n{3,}/g, "\n\n")
         .replace(/\s+$/g, "") + "\n";
       if (cleaned !== current) {
+        lintCleaned = cleaned;
         setCode(cleaned);
         saveDraft(cleaned);
       }
@@ -578,9 +580,10 @@ const CodingProblemDetail = () => {
     } catch {
       /* ignore */
     }
-    // Read directly from the editor so we capture the freshly-formatted code
-    // (React state hasn't necessarily flushed by the time we get here).
-    const sourceToSubmit = editorRef.current?.getValue() ?? code;
+    // Prefer the lint-cleaned source if we computed one; otherwise read
+    // directly from the editor so we capture freshly-formatted code (React
+    // state may not have flushed yet).
+    const sourceToSubmit = lintCleaned ?? editorRef.current?.getValue() ?? code;
     try {
       const result = await submit({
         source_code: sourceToSubmit,
