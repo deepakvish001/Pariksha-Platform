@@ -111,6 +111,33 @@ const CodingProblems = () => {
   const { solved, attempted, perProblem, loading } = useCodingAttemptStats();
   const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
 
+  // Selection (bulk actions)
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleSelected = (slug: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelected(new Set());
+  const exitSelection = () => {
+    setSelectionMode(false);
+    clearSelection();
+  };
+
+  const handleShareFilters = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied", { description: "Shareable URL with current filters copied to clipboard." });
+    } catch {
+      toast.error("Couldn't copy link", { description: url });
+    }
+  };
+
   // Filter
   const filtered = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
