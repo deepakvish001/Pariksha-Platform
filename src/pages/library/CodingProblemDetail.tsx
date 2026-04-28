@@ -95,6 +95,12 @@ import { DraftSaveIndicator } from "@/components/library/coding/DraftSaveIndicat
 import { EditorSettingsPopover } from "@/components/library/coding/EditorSettingsPopover";
 import { useFormatOnSubmitOverride } from "@/hooks/useFormatOnSubmitOverride";
 import { ChevronScroller } from "@/components/library/coding/ChevronScroller";
+import {
+  useEditorTabsLayout,
+  type EditorTabId,
+} from "@/hooks/useEditorTabsLayout";
+import { SortableEditorTabs } from "@/components/library/coding/SortableEditorTabs";
+import { LayoutGrid } from "lucide-react";
 
 const difficultyClass = (d: string) =>
   d === "Easy"
