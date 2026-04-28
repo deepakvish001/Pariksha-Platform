@@ -148,6 +148,14 @@ const CodingProblemDetail = () => {
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
   const { note: notesValue, setNote: setNotesValue, savedAt: notesSavedAt } = useProblemNotes(slug);
+  const {
+    notes: mySolutionNotes,
+    code: mySolutionCode,
+    savedAt: mySolutionSavedAt,
+    setNotes: setMySolutionNotes,
+    setCode: setMySolutionCode,
+    hasContent: hasMySolution,
+  } = useProblemSolution(slug, language);
   const { prefs: editorPrefs, incFontSize, decFontSize, MIN: FS_MIN, MAX: FS_MAX } = useEditorPrefs();
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
