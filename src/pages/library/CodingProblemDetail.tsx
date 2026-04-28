@@ -687,6 +687,12 @@ const CodingProblemDetail = () => {
         onOpenChange={setShowLogin}
         message="Sign in to run and submit code, and to save your progress."
       />
+
+      <SubmissionDetailsDrawer
+        submission={detailSubmission}
+        open={!!detailSubmission}
+        onOpenChange={(o) => !o && setDetailSubmission(null)}
+      />
     </div>
   );
 };
