@@ -12,6 +12,10 @@ import {
   Type,
   ChevronRight,
   Keyboard,
+  Wand2,
+  History,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -52,7 +56,7 @@ import {
   getLanguageById,
   type LangId,
 } from "@/data/codingProblemsData";
-import { MonacoEditor } from "@/components/coding/MonacoEditor";
+import { MonacoEditor, type MonacoEditorHandle } from "@/components/coding/MonacoEditor";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
 import { useCodeRunner, type RunResult, type SubmitResult } from "@/hooks/useCodeRunner";
 import { useCodeDraft } from "@/hooks/useCodeDraft";
@@ -135,6 +139,8 @@ const CodingProblemDetail = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
+  const editorRef = useRef<MonacoEditorHandle>(null);
+  const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
   
   const [detailSubmission, setDetailSubmission] = useState<CodeSubmissionRow | null>(null);
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(() =>
@@ -384,6 +390,16 @@ const CodingProblemDetail = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Esc exits editor fullscreen.
+  useEffect(() => {
+    if (!isEditorFullscreen) return;
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsEditorFullscreen(false);
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [isEditorFullscreen]);
+
   if (!problem) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
@@ -408,6 +424,34 @@ const CodingProblemDetail = () => {
     saveDraft(problem.starterCode[language]);
     toast({ title: "Code reset", description: "Editor restored to starter template." });
   };
+
+  const handleFormat = async () => {
+    try {
+      await editorRef.current?.format();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleRestoreLastSubmitted = () => {
+    const lastForLang = submissions.find((s) => s.language === language);
+    if (!lastForLang) {
+      toast({
+        title: "No previous submission",
+        description: `No ${langInfo.label} submission found for this problem yet.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setCode(lastForLang.source_code);
+    saveDraft(lastForLang.source_code);
+    toast({
+      title: "Restored last submitted code",
+      description: `${langInfo.label} · ${lastForLang.verdict ?? "Pending"} · ${new Date(lastForLang.created_at).toLocaleString()}`,
+    });
+  };
+
+  const toggleEditorFullscreen = () => setIsEditorFullscreen((v) => !v);
 
   const handleRun = async () => {
     if (!user) {
@@ -874,7 +918,13 @@ const CodingProblemDetail = () => {
         <ResizablePanel defaultSize={55} minSize={30}>
           <ResizablePanelGroup direction="vertical">
             <ResizablePanel defaultSize={65} minSize={25}>
-              <div className="h-full flex flex-col">
+              <div
+                className={cn(
+                  "h-full flex flex-col bg-background",
+                  isEditorFullscreen &&
+                    "fixed inset-0 z-50 h-screen w-screen border-0",
+                )}
+              >
                 {/* Editor toolbar */}
                 <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-muted/30">
                   <Select value={language} onValueChange={(v) => setLanguage(v as LangId)}>
@@ -925,6 +975,37 @@ const CodingProblemDetail = () => {
                       </Tooltip>
                     </TooltipProvider>
                     <div className="w-px h-5 bg-border mx-1" />
+                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleFormat}
+                            className="h-8 gap-1.5 text-xs"
+                          >
+                            <Wand2 className="h-3 w-3" />
+                            Format
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Format code (Monaco built-in)</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRestoreLastSubmitted}
+                            disabled={submissionsLoading}
+                            className="h-8 gap-1.5 text-xs"
+                          >
+                            <History className="h-3 w-3" />
+                            Last submitted
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Load your most recent {langInfo.label} submission</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -937,6 +1018,26 @@ const CodingProblemDetail = () => {
                     <div className="w-px h-5 bg-border mx-1" />
                     {slug && <SessionTimer ref={sessionTimerRef} slug={slug} />}
                     <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={toggleEditorFullscreen}
+                            className="h-8 w-8"
+                            aria-label={isEditorFullscreen ? "Exit fullscreen" : "Fullscreen editor"}
+                          >
+                            {isEditorFullscreen ? (
+                              <Minimize2 className="h-3.5 w-3.5" />
+                            ) : (
+                              <Maximize2 className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {isEditorFullscreen ? "Exit fullscreen (Esc)" : "Fullscreen editor"}
+                        </TooltipContent>
+                      </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -956,6 +1057,7 @@ const CodingProblemDetail = () => {
                 </div>
                 <div className="flex-1 min-h-0">
                   <MonacoEditor
+                    ref={editorRef}
                     value={code}
                     onChange={handleCodeChange}
                     language={langInfo.monaco}
