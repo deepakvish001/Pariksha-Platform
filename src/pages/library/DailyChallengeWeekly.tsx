@@ -4,13 +4,14 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
+  ArrowRight,
   Calendar,
   CheckCircle2,
   Circle,
   Flame,
   Trophy,
   Sparkles,
-  Loader2,
+  UserPlus,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,6 +92,12 @@ const DailyChallengeWeekly = () => {
 
   const completedThisWeek = days.filter((d) => completedDateSet.has(d)).length;
   const myStreak = daily.streak;
+
+  const myRank = useMemo(() => {
+    if (!user) return null;
+    const idx = entries.findIndex((e) => e.user_id === user.id);
+    return idx >= 0 ? idx + 1 : null;
+  }, [entries, user]);
 
   return (
     <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 max-w-5xl">
