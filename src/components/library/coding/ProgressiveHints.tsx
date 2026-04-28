@@ -64,13 +64,51 @@ export const ProgressiveHints = ({ hints, slug }: Props) => {
 
   if (hints.length === 0) return null;
 
+  const pct = Math.round((revealed / hints.length) * 100);
+
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h3 className="font-semibold text-sm">Hints</h3>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {revealed} / {hints.length} revealed
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {revealed} / {hints.length} revealed
+          </span>
+          {revealed < hints.length && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRevealed(hints.length)}
+              className="h-6 px-2 text-xs"
+            >
+              Reveal all
+            </Button>
+          )}
+          {revealed > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRevealed(0)}
+              className="h-6 px-2 text-xs text-muted-foreground"
+            >
+              Hide all
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div
+        className="h-1 w-full rounded-full bg-muted overflow-hidden"
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Hints revealed"
+      >
+        <div
+          className="h-full bg-amber-500/70 transition-all duration-500 ease-out"
+          style={{ width: `${pct}%` }}
+        />
       </div>
 
       <div className="space-y-2">
