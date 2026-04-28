@@ -40,6 +40,17 @@ import { ProblemFiltersBar, type SortKey, type ViewMode } from "@/components/lib
 import { ProblemCard } from "@/components/library/coding/ProblemCard";
 import { RandomMenu } from "@/components/library/coding/RandomMenu";
 import { BulkActionsBar } from "@/components/library/coding/BulkActionsBar";
+import { useCodingSelection } from "@/hooks/useCodingSelection";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: Difficulty) =>
@@ -111,28 +122,42 @@ const CodingProblems = () => {
   const { solved, attempted, perProblem, loading } = useCodingAttemptStats();
   const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
 
-  // Selection (bulk actions)
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const toggleSelected = (slug: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
-      return next;
-    });
-  };
-  const clearSelection = () => setSelected(new Set());
-  const exitSelection = () => {
-    setSelectionMode(false);
-    clearSelection();
+  // Persisted selection (bulk actions) — survives refresh and pagination
+  const {
+    selectionMode,
+    setSelectionMode,
+    selected,
+    toggleSelected,
+    addMany,
+    clearSelection,
+    exitSelection,
+  } = useCodingSelection();
+
+  const [confirmUnbookmark, setConfirmUnbookmark] = useState(false);
+
+  // Build a fully-encoded shareable URL from current params (not raw window URL)
+  const buildShareUrl = () => {
+    const next = new URLSearchParams();
+    if (search.trim()) next.set("q", search.trim());
+    if (difficulty !== "all") next.set("diff", difficulty);
+    if (selectedTopics.length > 0) next.set("topics", selectedTopics.join(","));
+    if (status !== "all") next.set("status", status);
+    if (sort !== "default") next.set("sort", sort);
+    if (view !== "grid") next.set("view", view);
+    if (bookmarked) next.set("bm", "1");
+    if (page > 1) next.set("page", String(page));
+    const qs = next.toString();
+    const { origin, pathname } = window.location;
+    return qs ? `${origin}${pathname}?${qs}` : `${origin}${pathname}`;
   };
 
   const handleShareFilters = async () => {
-    const url = window.location.href;
+    const url = buildShareUrl();
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied", { description: "Shareable URL with current filters copied to clipboard." });
+      toast.success("Link copied", {
+        description: "Shareable URL with current filters copied to clipboard.",
+      });
     } catch {
       toast.error("Couldn't copy link", { description: url });
     }
@@ -242,11 +267,7 @@ const CodingProblems = () => {
 
   // Bulk action handlers
   const selectAllVisible = () => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      pageSlice.forEach((p) => next.add(p.slug));
-      return next;
-    });
+    addMany(pageSlice.map((p) => p.slug));
   };
   const bulkBookmark = () => {
     let added = 0;
@@ -259,7 +280,7 @@ const CodingProblems = () => {
     toast.success(`Bookmarked ${added} ${added === 1 ? "problem" : "problems"}`);
     clearSelection();
   };
-  const bulkUnbookmark = () => {
+  const performBulkUnbookmark = () => {
     let removed = 0;
     selected.forEach((slug) => {
       if (isBookmarked(slug)) {
@@ -269,7 +290,27 @@ const CodingProblems = () => {
     });
     toast.success(`Removed ${removed} ${removed === 1 ? "bookmark" : "bookmarks"}`);
     clearSelection();
+    setConfirmUnbookmark(false);
   };
+  const bulkUnbookmark = () => {
+    // Count how many are actually bookmarked to decide whether to confirm
+    let count = 0;
+    selected.forEach((slug) => {
+      if (isBookmarked(slug)) count += 1;
+    });
+    if (count === 0) {
+      toast.info("None of the selected problems are bookmarked.");
+      return;
+    }
+    setConfirmUnbookmark(true);
+  };
+  const unbookmarkCount = (() => {
+    let c = 0;
+    selected.forEach((slug) => {
+      if (isBookmarked(slug)) c += 1;
+    });
+    return c;
+  })();
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
@@ -535,6 +576,29 @@ const CodingProblems = () => {
           </Button>
         </div>
       )}
+
+      <AlertDialog open={confirmUnbookmark} onOpenChange={setConfirmUnbookmark}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove bookmarks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove bookmarks from{" "}
+              <span className="font-semibold text-foreground">{unbookmarkCount}</span>{" "}
+              {unbookmarkCount === 1 ? "problem" : "problems"}. You can re-bookmark them
+              individually later, but this can't be undone in bulk.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={performBulkUnbookmark}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove {unbookmarkCount}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

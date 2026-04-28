@@ -53,6 +53,8 @@ import { useCodingProblemBookmarks } from "@/hooks/useCodingProblemBookmarks";
 import { LoginPromptDialog } from "@/components/LoginPromptDialog";
 import { ProblemDetailHeader } from "@/components/library/coding/ProblemDetailHeader";
 import { AttemptTimeline } from "@/components/library/coding/AttemptTimeline";
+import { SubmissionDetailsDrawer } from "@/components/library/coding/SubmissionDetailsDrawer";
+import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: string) =>
@@ -77,6 +79,7 @@ const CodingProblemDetail = () => {
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [openHints, setOpenHints] = useState<Record<number, boolean>>({});
+  const [detailSubmission, setDetailSubmission] = useState<CodeSubmissionRow | null>(null);
 
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
@@ -381,34 +384,48 @@ const CodingProblemDetail = () => {
                     <Button onClick={() => setShowLogin(true)}>Sign in</Button>
                   </Card>
                 ) : submissions.length === 0 ? (
-                  <Card className="p-8 text-center">
-                    <p className="text-muted-foreground">
-                      No submissions yet. Hit <strong>Submit</strong> to record one.
-                    </p>
-                  </Card>
+                  <AttemptTimeline submissions={[]} limit={10} />
                 ) : (
                   <div className="space-y-3">
-                    <AttemptTimeline submissions={submissions} limit={10} />
-                    <div className="space-y-2">
-                    {submissions.map((s) => (
-                      <Card key={s.id} className="p-3 hover:bg-muted/30 transition-colors">
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                          <div className="flex items-center gap-3">
-                            <VerdictBadge verdict={s.verdict} />
-                            <span className="text-sm text-muted-foreground">{s.language}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {s.passed_tests}/{s.total_tests} tests
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            {s.runtime_ms !== null && <span>{s.runtime_ms} ms</span>}
-                            {s.memory_kb !== null && <span>{(s.memory_kb / 1024).toFixed(1)} MB</span>}
-                            <span>{new Date(s.created_at).toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                    </div>
+                    <AttemptTimeline
+                      submissions={submissions}
+                      limit={10}
+                      onSelect={(s) => setDetailSubmission(s)}
+                    />
+                    {submissions.length > 0 && (
+                      <div className="space-y-2">
+                        {submissions.map((s) => (
+                          <Card
+                            key={s.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setDetailSubmission(s)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setDetailSubmission(s);
+                              }
+                            }}
+                            className="p-3 hover:bg-muted/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                          >
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                              <div className="flex items-center gap-3">
+                                <VerdictBadge verdict={s.verdict} />
+                                <span className="text-sm text-muted-foreground">{s.language}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {s.passed_tests}/{s.total_tests} tests
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                {s.runtime_ms !== null && <span>{s.runtime_ms} ms</span>}
+                                {s.memory_kb !== null && <span>{(s.memory_kb / 1024).toFixed(1)} MB</span>}
+                                <span>{new Date(s.created_at).toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </TabsContent>
@@ -669,6 +686,12 @@ const CodingProblemDetail = () => {
         open={showLogin}
         onOpenChange={setShowLogin}
         message="Sign in to run and submit code, and to save your progress."
+      />
+
+      <SubmissionDetailsDrawer
+        submission={detailSubmission}
+        open={!!detailSubmission}
+        onOpenChange={(o) => !o && setDetailSubmission(null)}
       />
     </div>
   );
