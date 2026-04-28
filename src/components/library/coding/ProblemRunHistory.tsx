@@ -450,13 +450,29 @@ function SummaryChip({ meta, count }: { meta: VerdictMeta; count: number }) {
 function VerdictTooltipBody({
   meta,
   rawStatus,
+  attemptNumber,
+  timestamp,
 }: {
   meta: VerdictMeta;
   rawStatus?: string | null;
+  attemptNumber?: number;
+  timestamp?: string;
 }) {
   return (
     <div className="space-y-1.5">
-      <p className="font-semibold text-xs">{meta.label}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-semibold text-xs">{meta.label}</p>
+        {attemptNumber !== undefined && (
+          <span className="text-[10px] font-mono text-muted-foreground">
+            Attempt #{attemptNumber}
+          </span>
+        )}
+      </div>
+      {timestamp && (
+        <p className="text-[10px] text-muted-foreground/80 tabular-nums">
+          {new Date(timestamp).toLocaleString()}
+        </p>
+      )}
       <p className="text-[11px] text-muted-foreground leading-snug">
         {meta.description}
       </p>
