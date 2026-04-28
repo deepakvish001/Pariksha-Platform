@@ -240,6 +240,37 @@ const CodingProblems = () => {
     (bookmarked ? 1 : 0) +
     selectedTopics.length;
 
+  // Bulk action handlers
+  const selectAllVisible = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      pageSlice.forEach((p) => next.add(p.slug));
+      return next;
+    });
+  };
+  const bulkBookmark = () => {
+    let added = 0;
+    selected.forEach((slug) => {
+      if (!isBookmarked(slug)) {
+        toggleBookmark(slug);
+        added += 1;
+      }
+    });
+    toast.success(`Bookmarked ${added} ${added === 1 ? "problem" : "problems"}`);
+    clearSelection();
+  };
+  const bulkUnbookmark = () => {
+    let removed = 0;
+    selected.forEach((slug) => {
+      if (isBookmarked(slug)) {
+        toggleBookmark(slug);
+        removed += 1;
+      }
+    });
+    toast.success(`Removed ${removed} ${removed === 1 ? "bookmark" : "bookmarks"}`);
+    clearSelection();
+  };
+
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
       <Helmet>
