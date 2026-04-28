@@ -84,6 +84,12 @@ import { useSavedFilterPresets } from "@/hooks/useSavedFilterPresets";
 import { useListingFocusMode } from "@/hooks/useListingFocusMode";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { DailyChallengeCard } from "@/components/library/coding/DailyChallengeCard";
+import { DailyChallengeCelebration } from "@/components/library/coding/DailyChallengeCelebration";
+import { WeeklyReviewInline } from "@/components/library/coding/WeeklyReviewInline";
+import { SmartFilterChips, type SmartChip } from "@/components/library/coding/SmartFilterChips";
+import { ProblemPreviewDrawer } from "@/components/library/coding/ProblemPreviewDrawer";
+import { TopicProgressRing } from "@/components/library/coding/TopicProgressRing";
+import { Eye } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -357,6 +363,39 @@ const CodingProblems = () => {
   const { solved, attempted, perProblem, loading } = useCodingAttemptStats();
   const daily = useDailyChallenge(solved);
   const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
+
+  // Inline preview drawer state
+  const [previewSlug, setPreviewSlug] = useState<string | null>(null);
+  const previewProblem = useMemo(
+    () => CODING_PROBLEMS.find((p) => p.slug === previewSlug) ?? null,
+    [previewSlug],
+  );
+
+  // Per-topic stats for the progress ring
+  const topicStats = useMemo(() => {
+    const totals = new Map<string, number>();
+    const solvedMap = new Map<string, number>();
+    const attemptedMap = new Map<string, number>();
+    for (const p of CODING_PROBLEMS) {
+      for (const t of p.topics) {
+        totals.set(t, (totals.get(t) ?? 0) + 1);
+        if (solved.has(p.slug)) solvedMap.set(t, (solvedMap.get(t) ?? 0) + 1);
+        else if (attempted.has(p.slug)) attemptedMap.set(t, (attemptedMap.get(t) ?? 0) + 1);
+      }
+    }
+    return { totals, solvedMap, attemptedMap };
+  }, [solved, attempted]);
+
+  // Identify weak topics: solved < 30% (and at least 1 attempt or unsolved problems)
+  const weakTopics = useMemo(() => {
+    const out: string[] = [];
+    for (const [topic, total] of topicStats.totals) {
+      const s = topicStats.solvedMap.get(topic) ?? 0;
+      if (total >= 3 && s / total < 0.3) out.push(topic);
+    }
+    return out;
+  }, [topicStats]);
+
 
   // Persisted selection (bulk actions) — survives refresh and pagination
   const {
@@ -900,6 +939,23 @@ const CodingProblems = () => {
       {/* Daily Challenge */}
       {!focusMode && <DailyChallengeCard daily={daily} />}
 
+      {/* Weekly summary + topic progress ring */}
+      {!focusMode && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+          <WeeklyReviewInline
+            completedDates={new Set(daily.recentCompletions.map((c) => c.date))}
+            className="mb-0"
+          />
+          <TopicProgressRing
+            topics={ALL_TOPICS}
+            totalsByTopic={topicStats.totals}
+            solvedByTopic={topicStats.solvedMap}
+            attemptedByTopic={topicStats.attemptedMap}
+            streak={daily.streak}
+          />
+        </div>
+      )}
+
       {/* Smart recommendations */}
       {!focusMode && (
         <RecommendationStrip
@@ -959,7 +1015,84 @@ const CodingProblems = () => {
           onClearAll={clearAll}
         />
         {!focusMode && (
-          <div className="mt-3 pt-3 border-t border-border/60">
+          <div className="mt-3 pt-3 border-t border-border/60 space-y-3">
+            {(() => {
+              const chips: SmartChip[] = [
+                {
+                  key: "todo",
+                  label: "Not started",
+                  active: status === "todo",
+                  tone: "default",
+                  onClick: () => setStatus(status === "todo" ? "all" : "todo"),
+                },
+                {
+                  key: "attempted",
+                  label: "Attempted",
+                  active: status === "attempted",
+                  tone: "amber",
+                  onClick: () => setStatus(status === "attempted" ? "all" : "attempted"),
+                },
+                {
+                  key: "solved",
+                  label: "Solved",
+                  active: status === "solved",
+                  tone: "emerald",
+                  onClick: () => setStatus(status === "solved" ? "all" : "solved"),
+                },
+                {
+                  key: "easy",
+                  label: "Easy",
+                  active: difficulty === "Easy",
+                  tone: "emerald",
+                  onClick: () => setDifficulty(difficulty === "Easy" ? "all" : "Easy"),
+                },
+                {
+                  key: "medium",
+                  label: "Medium",
+                  active: difficulty === "Medium",
+                  tone: "amber",
+                  onClick: () => setDifficulty(difficulty === "Medium" ? "all" : "Medium"),
+                },
+                {
+                  key: "hard",
+                  label: "Hard",
+                  active: difficulty === "Hard",
+                  tone: "rose",
+                  onClick: () => setDifficulty(difficulty === "Hard" ? "all" : "Hard"),
+                },
+                {
+                  key: "weak",
+                  label: "Weak topics",
+                  count: weakTopics.length,
+                  active:
+                    weakTopics.length > 0 &&
+                    selectedTopics.length > 0 &&
+                    selectedTopics.every((t) => weakTopics.includes(t)),
+                  tone: "rose",
+                  onClick: () => showOnlyWeakTopics(weakTopics),
+                },
+                {
+                  key: "bookmarked",
+                  label: "Bookmarked",
+                  count: bookmarks.size,
+                  active: bookmarked,
+                  tone: "primary",
+                  onClick: () => setBookmarked(!bookmarked),
+                },
+              ];
+              const activeChips = chips.filter((c) => c.active).length;
+              return (
+                <SmartFilterChips
+                  chips={chips}
+                  activeCount={activeChips}
+                  onClearAll={() => {
+                    if (status !== "all") setStatus("all");
+                    if (difficulty !== "all") setDifficulty("all");
+                    if (bookmarked) setBookmarked(false);
+                  }}
+                />
+              );
+            })()}
             <TopicMasteryChips
               topics={ALL_TOPICS}
               selectedTopics={selectedTopics}
@@ -1228,12 +1361,26 @@ const CodingProblems = () => {
                       )}
                       {tablePrefs.isVisible("title") && (
                         <TableCell className={`${cellPadY} min-w-0`}>
-                          <Link
-                            to={`/library/problems/${p.slug}`}
-                            className="font-medium hover:text-primary transition-colors block truncate"
-                          >
-                            {p.title}
-                          </Link>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <Link
+                              to={`/library/problems/${p.slug}`}
+                              className="font-medium hover:text-primary transition-colors block truncate"
+                            >
+                              {p.title}
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setPreviewSlug(p.slug);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded hover:bg-muted/50 transition-opacity shrink-0"
+                              aria-label={`Preview ${p.title}`}
+                              title="Quick preview"
+                            >
+                              <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                            </button>
+                          </div>
                           {/* Mobile-only inline topics */}
                           <div className="md:hidden mt-1 flex flex-wrap gap-1">
                             {p.topics.slice(0, 2).map((t) => (
@@ -1338,6 +1485,45 @@ const CodingProblems = () => {
           </Button>
         </div>
       )}
+
+      <ProblemPreviewDrawer
+        open={!!previewSlug}
+        onClose={() => setPreviewSlug(null)}
+        problem={previewProblem}
+        status={
+          previewProblem
+            ? solved.has(previewProblem.slug)
+              ? "solved"
+              : attempted.has(previewProblem.slug)
+                ? "attempted"
+                : "todo"
+            : "todo"
+        }
+        bookmarked={previewProblem ? isBookmarked(previewProblem.slug) : false}
+        onToggleBookmark={toggleBookmark}
+        acceptance={(() => {
+          if (!previewProblem) return null;
+          const s = perProblem.get(previewProblem.slug);
+          return s && s.attempts > 0
+            ? Math.round(((s.accepted ?? 0) / s.attempts) * 100)
+            : null;
+        })()}
+        attempts={previewProblem ? perProblem.get(previewProblem.slug)?.attempts ?? 0 : 0}
+        starterLanguage={previewProblem ? "python" : undefined}
+        starterSnippet={previewProblem?.starterCode?.python}
+      />
+
+      <DailyChallengeCelebration
+        open={daily.justCompleted}
+        onClose={daily.acknowledgeCelebration}
+        problem={daily.problem}
+        streak={daily.streak}
+        weeklyDone={Math.min(
+          7,
+          new Set(daily.recentCompletions.map((c) => c.date)).size,
+        )}
+        weeklyTarget={7}
+      />
 
       <AlertDialog open={confirmUnbookmark} onOpenChange={setConfirmUnbookmark}>
         <AlertDialogContent>

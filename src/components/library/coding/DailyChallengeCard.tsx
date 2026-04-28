@@ -159,6 +159,18 @@ export const DailyChallengeCard = ({ daily, className }: Props) => {
 
           {/* Right: CTA */}
           <div className="flex shrink-0 items-center gap-2">
+            {!isCompletedToday && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => void daily.markCompleted()}
+                disabled={daily.syncing}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Mark done
+              </Button>
+            )}
             <Button asChild size="sm" className="gap-1.5">
               <Link to={`/library/problems/${problem.slug}`}>
                 {isCompletedToday ? "Review" : "Start today"}

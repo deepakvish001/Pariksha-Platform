@@ -338,6 +338,57 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_challenge_completions: {
+        Row: {
+          challenge_date: string
+          completed_at: string
+          created_at: string
+          id: string
+          problem_slug: string
+          user_id: string
+        }
+        Insert: {
+          challenge_date: string
+          completed_at?: string
+          created_at?: string
+          id?: string
+          problem_slug: string
+          user_id: string
+        }
+        Update: {
+          challenge_date?: string
+          completed_at?: string
+          created_at?: string
+          id?: string
+          problem_slug?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_challenge_leaderboard_optin: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          opted_in: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          opted_in?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          opted_in?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1572,6 +1623,18 @@ export type Database = {
           profile_row: Database["public"]["Tables"]["user_profiles_extended"]["Row"]
         }
         Returns: number
+      }
+      get_daily_challenge_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          avatar_url: string
+          current_streak: number
+          display_name: string
+          last_completed_at: string
+          total_completions: number
+          user_id: string
+          weekly_completions: number
+        }[]
       }
     }
     Enums: {
