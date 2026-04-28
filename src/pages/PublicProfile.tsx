@@ -137,6 +137,71 @@ const CodingProfileCard = ({
   );
 };
 
+interface SideNavSection {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+const ProfileSideNav = ({ sections }: { sections: SideNavSection[] }) => {
+  const [active, setActive] = useState<string>(sections[0]?.id ?? "");
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]?.target?.id) setActive(visible[0].target.id);
+      },
+      { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    sections.forEach((s) => {
+      const el = document.getElementById(s.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [sections]);
+
+  const handleClick = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <aside className="hidden lg:block">
+      <nav
+        aria-label="Profile sections"
+        className="sticky top-24 space-y-1 rounded-xl border border-border/50 bg-card/40 backdrop-blur p-2"
+      >
+        <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          On this profile
+        </p>
+        {sections.map((s) => {
+          const Icon = s.icon;
+          const isActive = active === s.id;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => handleClick(s.id)}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left",
+                isActive
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+              )}
+              aria-current={isActive ? "true" : undefined}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{s.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+    </aside>
+  );
+};
+
 const PublicProfile = () => {
   const { username } = useParams<{ username: string }>();
   const [profile, setProfile] = useState<PublicProfileData | null>(null);
