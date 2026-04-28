@@ -576,6 +576,29 @@ const CodingProblems = () => {
           </Button>
         </div>
       )}
+
+      <AlertDialog open={confirmUnbookmark} onOpenChange={setConfirmUnbookmark}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove bookmarks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove bookmarks from{" "}
+              <span className="font-semibold text-foreground">{unbookmarkCount}</span>{" "}
+              {unbookmarkCount === 1 ? "problem" : "problems"}. You can re-bookmark them
+              individually later, but this can't be undone in bulk.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={performBulkUnbookmark}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove {unbookmarkCount}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
