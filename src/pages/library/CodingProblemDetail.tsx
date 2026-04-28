@@ -64,7 +64,9 @@ import { SubmissionDetailsDrawer } from "@/components/library/coding/SubmissionD
 import { ProblemMetaStrip } from "@/components/library/coding/ProblemMetaStrip";
 import { NotesPanel } from "@/components/library/coding/NotesPanel";
 import { ProgressiveHints } from "@/components/library/coding/ProgressiveHints";
+import { MySolutionPanel } from "@/components/library/coding/MySolutionPanel";
 import { useProblemNotes } from "@/hooks/useProblemNotes";
+import { useProblemSolution } from "@/hooks/useProblemSolution";
 import { useEditorPrefs } from "@/hooks/useEditorPrefs";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
