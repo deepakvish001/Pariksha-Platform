@@ -170,8 +170,6 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
   useEffect(() => {
     if (!user) {
       lastSyncedUserRef.current = null;
-      setSyncStatus("idle");
-      setSyncError(null);
       return;
     }
     if (lastSyncedUserRef.current === user.id) return;
@@ -180,8 +178,6 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     let cancelled = false;
     (async () => {
       setSyncing(true);
-      setSyncStatus("syncing");
-      setSyncError(null);
       try {
         // Pull last ~365 days
         const { data, error: pullErr } = await supabase
