@@ -27,7 +27,7 @@ const formatRelative = (iso: string) => {
   return new Date(iso).toLocaleDateString();
 };
 
-export const AttemptTimeline = ({ submissions, limit = 10, onSelect, highlightedId }: Props) => {
+export const AttemptTimeline = ({ submissions, limit = 10, onSelect, highlightedId, loading }: Props) => {
   return (
     <Card className="p-3">
       <div className="flex items-center gap-2 mb-3">
