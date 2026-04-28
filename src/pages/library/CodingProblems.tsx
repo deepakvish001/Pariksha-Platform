@@ -86,6 +86,73 @@ const CodingProblems = () => {
     return () => clearTimeout(t);
   }, [search]);
 
+  // Persist & restore scroll position + page for /library/problems so refresh
+  // returns the user to the same spot.
+  const SCROLL_KEY = "byteskill:coding-problems-scroll";
+  const PAGE_KEY = "byteskill:coding-problems-last-page";
+
+  // On first mount: if URL has no ?page=, hydrate from last-page memory.
+  useEffect(() => {
+    try {
+      if (!params.get("page")) {
+        const saved = localStorage.getItem(PAGE_KEY);
+        const n = saved ? parseInt(saved, 10) : NaN;
+        if (Number.isFinite(n) && n > 1) {
+          const next = new URLSearchParams(params);
+          next.set("page", String(n));
+          setParams(next, { replace: true });
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    // Restore scroll on next frame so layout has settled.
+    try {
+      const y = parseInt(sessionStorage.getItem(SCROLL_KEY) ?? "", 10);
+      if (Number.isFinite(y) && y > 0) {
+        requestAnimationFrame(() => window.scrollTo({ top: y, behavior: "auto" }));
+      }
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save current page whenever it changes.
+  useEffect(() => {
+    try {
+      localStorage.setItem(PAGE_KEY, String(page));
+    } catch {
+      /* ignore */
+    }
+  }, [page]);
+
+  // Save scroll position (throttled via rAF) and on unload.
+  useEffect(() => {
+    let ticking = false;
+    const save = () => {
+      try {
+        sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+      } catch {
+        /* ignore */
+      }
+      ticking = false;
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(save);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("beforeunload", save);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("beforeunload", save);
+      save();
+    };
+  }, []);
+
   const updateParams = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
     for (const [k, v] of Object.entries(patch)) {
