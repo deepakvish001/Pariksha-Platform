@@ -392,7 +392,65 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
             </li>
           );
         })}
-      </ol>
-    </div>
+        </ol>
+      </div>
+    </TooltipProvider>
   );
 };
+
+// Compact summary chip used in the aggregate row above run history.
+function SummaryChip({ meta, count }: { meta: VerdictMeta; count: number }) {
+  const Icon = meta.icon;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-[10px] gap-1 inline-flex items-center cursor-help tabular-nums",
+            meta.className,
+            count === 0 && "opacity-50",
+          )}
+          aria-label={`${count} ${meta.label}`}
+        >
+          <Icon className="h-3 w-3" aria-hidden="true" />
+          <span className="font-mono">{count}</span>
+          <span>{meta.label}</span>
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs">
+        <VerdictTooltipBody meta={meta} />
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+// Tooltip body explaining a verdict and offering troubleshooting hints.
+function VerdictTooltipBody({
+  meta,
+  rawStatus,
+}: {
+  meta: VerdictMeta;
+  rawStatus?: string | null;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="font-semibold text-xs">{meta.label}</p>
+      <p className="text-[11px] text-muted-foreground leading-snug">
+        {meta.description}
+      </p>
+      <div className="pt-1 border-t border-border/50">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground/80 mb-0.5">
+          Troubleshooting
+        </p>
+        <p className="text-[11px] leading-snug">{meta.hint}</p>
+      </div>
+      {rawStatus &&
+        rawStatus.toLowerCase() !== meta.label.toLowerCase() && (
+          <p className="text-[10px] text-muted-foreground/70 pt-1 border-t border-border/50">
+            Raw status: <span className="font-mono">{rawStatus}</span>
+          </p>
+        )}
+    </div>
+  );
+}
