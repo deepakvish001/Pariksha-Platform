@@ -753,7 +753,7 @@ const CodingProblemDetail = () => {
       <SubmissionDetailsDrawer
         submission={detailSubmission}
         open={!!detailSubmission}
-        onOpenChange={(o) => !o && setDetailSubmission(null)}
+        onOpenChange={(o) => !o && closeSubmission()}
       />
     </div>
   );
