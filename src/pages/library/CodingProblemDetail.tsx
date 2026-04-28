@@ -101,6 +101,9 @@ import {
 } from "@/hooks/useEditorTabsLayout";
 import { SortableEditorTabs } from "@/components/library/coding/SortableEditorTabs";
 import { LayoutGrid } from "lucide-react";
+import { useEditorLayoutPreset } from "@/hooks/useEditorLayoutPreset";
+import { LayoutPresetPopover } from "@/components/library/coding/LayoutPresetPopover";
+import type { ImperativePanelGroupHandle } from "react-resizable-panels";
 
 const difficultyClass = (d: string) =>
   d === "Easy"
