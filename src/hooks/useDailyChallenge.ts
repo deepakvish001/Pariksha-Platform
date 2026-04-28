@@ -239,15 +239,12 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
         }
 
         if (!cancelled) {
-          setSyncStatus("synced");
-          setLastSyncedAt(new Date());
+          /* synced silently */
         }
       } catch (err) {
         if (cancelled) return;
-        const msg =
-          err instanceof Error ? err.message : "Failed to sync daily challenge";
-        setSyncError(msg);
-        setSyncStatus(navigator?.onLine === false ? "offline" : "error");
+        // Swallow — UI loads from local state; next session will retry.
+        console.warn("Daily challenge sync failed:", err);
       } finally {
         if (!cancelled) setSyncing(false);
       }
