@@ -8,7 +8,6 @@ import {
   RotateCcw,
   Loader2,
   Minus,
-  Minus,
   Plus,
   Type,
 } from "lucide-react";
