@@ -101,6 +101,9 @@ import {
 } from "@/hooks/useEditorTabsLayout";
 import { SortableEditorTabs } from "@/components/library/coding/SortableEditorTabs";
 import { LayoutGrid } from "lucide-react";
+import { useEditorLayoutPreset } from "@/hooks/useEditorLayoutPreset";
+import { LayoutPresetPopover } from "@/components/library/coding/LayoutPresetPopover";
+import type { ImperativePanelGroupHandle } from "react-resizable-panels";
 
 const difficultyClass = (d: string) =>
   d === "Easy"
@@ -249,6 +252,21 @@ const CodingProblemDetail = () => {
     reset: resetTabsLayout,
     isCustomized: isLayoutCustomized,
   } = useEditorTabsLayout(slug, language);
+  const {
+    presetId: layoutPresetId,
+    preset: layoutPreset,
+    setPreset: setLayoutPreset,
+    reset: resetLayoutPreset,
+    isCustomized: isPresetCustomized,
+  } = useEditorLayoutPreset(slug, language);
+  const horizontalGroupRef = useRef<ImperativePanelGroupHandle>(null);
+  const verticalGroupRef = useRef<ImperativePanelGroupHandle>(null);
+
+  // Apply the chosen preset's split sizes whenever the preset changes.
+  useEffect(() => {
+    horizontalGroupRef.current?.setLayout(layoutPreset.horizontal);
+    verticalGroupRef.current?.setLayout(layoutPreset.vertical);
+  }, [layoutPreset]);
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
   // If the submission ID doesn't exist for this problem, clear the param so
@@ -740,9 +758,9 @@ const CodingProblemDetail = () => {
       </div>
 
       {/* Resizable split */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
+      <ResizablePanelGroup ref={horizontalGroupRef} direction="horizontal" className="flex-1">
         {/* LEFT: tabs */}
-        <ResizablePanel defaultSize={45} minSize={25}>
+        <ResizablePanel defaultSize={layoutPreset.horizontal[0]} minSize={20}>
           <Tabs
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as EditorTabId)}
@@ -1090,9 +1108,9 @@ const CodingProblemDetail = () => {
         <ResizableHandle withHandle />
 
         {/* RIGHT: editor + bottom panel */}
-        <ResizablePanel defaultSize={55} minSize={30}>
-          <ResizablePanelGroup direction="vertical">
-            <ResizablePanel defaultSize={65} minSize={25}>
+        <ResizablePanel defaultSize={layoutPreset.horizontal[1]} minSize={25}>
+          <ResizablePanelGroup ref={verticalGroupRef} direction="vertical">
+            <ResizablePanel defaultSize={layoutPreset.vertical[0]} minSize={20}>
               <div
                 className={cn(
                   "h-full flex flex-col bg-background",
@@ -1244,20 +1262,21 @@ const CodingProblemDetail = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => {
-                              const wasCustom = isLayoutCustomized;
+                              const wasCustom = isLayoutCustomized || isPresetCustomized;
                               resetTabsLayout();
+                              resetLayoutPreset();
                               toast({
                                 title: wasCustom
                                   ? "Editor layout reset"
                                   : "Editor layout already default",
                                 description: wasCustom
-                                  ? "Tab order and active tab restored to defaults."
+                                  ? "Tabs, splits, and preset restored to defaults."
                                   : undefined,
                               });
                             }}
                             className={cn(
                               "h-8 w-8",
-                              isLayoutCustomized && "text-primary",
+                              (isLayoutCustomized || isPresetCustomized) && "text-primary",
                             )}
                             aria-label="Reset editor layout"
                           >
@@ -1265,12 +1284,23 @@ const CodingProblemDetail = () => {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {isLayoutCustomized
+                          {isLayoutCustomized || isPresetCustomized
                             ? "Reset editor layout (customized)"
                             : "Reset editor layout"}
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    <LayoutPresetPopover
+                      current={layoutPresetId}
+                      onSelect={(id) => {
+                        setLayoutPreset(id);
+                        toast({
+                          title: `Layout: ${
+                            id.charAt(0).toUpperCase() + id.slice(1).replace("-", " ")
+                          }`,
+                        });
+                      }}
+                    />
                     <EditorSettingsPopover
                       formatOnSubmit={effectiveFormatOnSubmit}
                       onFormatOnSubmitChange={setFormatOnSubmit}
@@ -1305,7 +1335,7 @@ const CodingProblemDetail = () => {
 
             <ResizableHandle withHandle />
 
-            <ResizablePanel defaultSize={35} minSize={15}>
+            <ResizablePanel defaultSize={layoutPreset.vertical[1]} minSize={15}>
               <Tabs
                 value={activeBottomTab}
                 onValueChange={(v) => setActiveBottomTab(v as "testcase" | "output")}
