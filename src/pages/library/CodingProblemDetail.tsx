@@ -611,6 +611,8 @@ const CodingProblemDetail = () => {
                   timestampFormat={editorPrefs.timestampFormat}
                   onToggleTimestampFormat={toggleTimestampFormat}
                   fontSize={editorPrefs.fontSize}
+                  syncStatus={mySolutionSyncStatus}
+                  isCloudSynced={mySolutionIsCloudSynced}
                 />
               </TabsContent>
 
