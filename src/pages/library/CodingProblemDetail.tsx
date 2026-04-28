@@ -418,6 +418,17 @@ const CodingProblemDetail = () => {
     return () => window.removeEventListener("keydown", onEsc);
   }, [isEditorFullscreen]);
 
+  // Briefly show "Press Esc to exit fullscreen" hint when entering fullscreen.
+  useEffect(() => {
+    if (!isEditorFullscreen) {
+      setShowFullscreenHint(false);
+      return;
+    }
+    setShowFullscreenHint(true);
+    const t = window.setTimeout(() => setShowFullscreenHint(false), 3500);
+    return () => window.clearTimeout(t);
+  }, [isEditorFullscreen]);
+
   if (!problem) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
