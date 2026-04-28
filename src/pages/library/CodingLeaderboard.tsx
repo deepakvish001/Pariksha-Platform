@@ -353,11 +353,24 @@ export default function CodingLeaderboard() {
           </form>
         </div>
 
+        {/* Your current rank card */}
+        {user && (
+          <YourRankCard
+            loading={youLoading}
+            rank={youRank}
+            window={window}
+            onJump={handleJumpToMe}
+            onOpenBreakdown={() =>
+              youRank && setDrawerUser({ id: youRank.user_id, rank: youRank.rank })
+            }
+          />
+        )}
+
         {/* Podium */}
         {loading && page === 1 && !search ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-48 rounded-xl" />
+          <div className="flex flex-col md:flex-row gap-4">
+            {[2, 1, 3].map((r) => (
+              <PodiumSkeleton key={r} rank={r as 1 | 2 | 3} />
             ))}
           </div>
         ) : podium.length >= 3 ? (
@@ -372,128 +385,153 @@ export default function CodingLeaderboard() {
         <Card className="bg-card/40 backdrop-blur border-border/50">
           <CardContent className="p-2 md:p-4">
             {loading ? (
-              <div className="space-y-2">
+              <ol className="space-y-1.5 list-none p-0 m-0" aria-label="Loading leaderboard">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <Skeleton key={i} className="h-14 rounded-lg" />
+                  <li key={i}>
+                    <RowSkeleton />
+                  </li>
                 ))}
-              </div>
+              </ol>
             ) : rest.length === 0 && podium.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Trophy className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No ranked solvers yet for this window.</p>
-                {user && (
-                  <p className="text-xs mt-1">
-                    Solve a problem to claim the top spot!
-                  </p>
-                )}
-              </div>
+              <EmptyState
+                window={window}
+                search={search}
+                isAuthed={!!user}
+                onClearSearch={
+                  search
+                    ? () => {
+                        setSearch("");
+                        setSearchInput("");
+                        setPage(1);
+                      }
+                    : undefined
+                }
+              />
             ) : (
-              <ol className="space-y-1.5 list-none p-0 m-0">
-                {rest.map((row, i) => (
-                  <motion.li
-                    key={row.user_id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: Math.min(i * 0.015, 0.3) }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => openBreakdown(row)}
-                      aria-label={`Open score breakdown for ${row.display_name}, rank ${row.rank}`}
-                      className={cn(
-                        "w-full text-left flex items-center gap-3 p-3 rounded-lg border transition-all",
-                        "hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                        getRankBg(row.rank),
-                        user && row.user_id === user.id && "ring-2 ring-primary/40",
-                      )}
+              <ol
+                ref={listRef}
+                className="space-y-1.5 list-none p-0 m-0"
+                aria-label={`Leaderboard ${windowLabel}, page ${page}`}
+              >
+                {rest.map((row, i) => {
+                  const isYou = !!user && row.user_id === user.id;
+                  return (
+                    <motion.li
+                      key={row.user_id}
+                      ref={isYou ? youRowRef : undefined}
+                      tabIndex={-1}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: Math.min(i * 0.015, 0.3) }}
+                      className="scroll-mt-24"
                     >
-                      <div className="w-8 flex items-center justify-center shrink-0">
-                        {getRankIcon(row.rank)}
-                      </div>
-                      <Avatar className="h-9 w-9 shrink-0">
-                        <AvatarImage
-                          src={row.avatar_url ?? undefined}
-                          alt={row.display_name}
-                        />
-                        <AvatarFallback className="text-xs">
-                          {row.display_name.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium truncate text-sm">
-                            {row.display_name}
-                          </p>
-                          {user && row.user_id === user.id && (
-                            <Badge variant="outline" className="text-[9px] h-4">
-                              You
-                            </Badge>
-                          )}
-                        </div>
-                        {row.username && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            @{row.username}
-                          </p>
+                      <div
+                        className={cn(
+                          "flex items-stretch gap-2 rounded-lg border transition-all",
+                          getRankBg(row.rank),
+                          isYou && "ring-2 ring-primary/40",
                         )}
-                      </div>
+                      >
+                        <button
+                          type="button"
+                          onClick={() => openBreakdown(row)}
+                          aria-label={`Open score breakdown for ${row.display_name}, rank ${row.rank}`}
+                          className={cn(
+                            "flex-1 min-w-0 text-left flex items-center gap-3 p-3 rounded-l-lg",
+                            "hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                          )}
+                        >
+                          <div className="w-8 flex items-center justify-center shrink-0">
+                            {getRankIcon(row.rank)}
+                          </div>
+                          <Avatar className="h-9 w-9 shrink-0">
+                            <AvatarImage
+                              src={row.avatar_url ?? undefined}
+                              alt={row.display_name}
+                            />
+                            <AvatarFallback className="text-xs">
+                              {row.display_name.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium truncate text-sm">
+                                {row.display_name}
+                              </p>
+                              {isYou && (
+                                <Badge variant="outline" className="text-[9px] h-4">
+                                  You
+                                </Badge>
+                              )}
+                            </div>
+                            {row.username && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                @{row.username}
+                              </p>
+                            )}
+                          </div>
 
-                      <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground tabular-nums">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="text-center">
-                              <p className="font-bold text-foreground text-sm">
-                                {row.problems_solved}
-                              </p>
-                              <p className="text-[9px] uppercase">Solved</p>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Unique problems with at least one Accepted submission
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="text-center">
-                              <p className="font-medium">
-                                {row.acceptance_rate.toFixed(0)}%
-                              </p>
-                              <p className="text-[9px] uppercase">Acc.</p>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>Acceptance rate</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="text-center">
-                              <p className="font-medium">
-                                {formatRuntime(row.fastest_avg_runtime)}
-                              </p>
-                              <p className="text-[9px] uppercase">Speed</p>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Average best runtime across solved problems
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
+                          <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground tabular-nums">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="text-center">
+                                  <p className="font-bold text-foreground text-sm">
+                                    {row.problems_solved}
+                                  </p>
+                                  <p className="text-[9px] uppercase">Solved</p>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Unique problems with at least one Accepted submission
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="text-center">
+                                  <p className="font-medium">
+                                    {row.acceptance_rate.toFixed(0)}%
+                                  </p>
+                                  <p className="text-[9px] uppercase">Acc.</p>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>Acceptance rate</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="text-center">
+                                  <p className="font-medium">
+                                    {formatRuntime(row.fastest_avg_runtime)}
+                                  </p>
+                                  <p className="text-[9px] uppercase">Speed</p>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Average best runtime across solved problems
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge
-                            variant="outline"
-                            className="ml-auto sm:ml-0 font-mono tabular-nums"
-                          >
-                            {Math.round(row.weighted_score)}
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          Weighted score: solved × difficulty (easy 1, medium 3,
-                          hard 5) + small speed bonus.
-                        </TooltipContent>
-                      </Tooltip>
-                    </button>
-                  </motion.li>
-                ))}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge
+                                variant="outline"
+                                className="ml-auto sm:ml-0 font-mono tabular-nums"
+                              >
+                                {Math.round(row.weighted_score)}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              Weighted score: solved × difficulty (easy 1, medium 3,
+                              hard 5) + small speed bonus.
+                            </TooltipContent>
+                          </Tooltip>
+                        </button>
+
+                        <RowQuickLinks row={row} isYou={isYou} />
+                      </div>
+                    </motion.li>
+                  );
+                })}
               </ol>
             )}
           </CardContent>
