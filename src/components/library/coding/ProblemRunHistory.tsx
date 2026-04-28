@@ -36,6 +36,7 @@ interface VerdictMeta {
   icon: LucideIcon;
   className: string;
   description: string;
+  hint: string;
 }
 
 // Maps a raw status string from the runner into a normalized verdict bucket
@@ -52,6 +53,7 @@ function getVerdictMeta(status: string | null): VerdictMeta {
       className:
         "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
       description: "Accepted — output matched expected results",
+      hint: "Your solution passed all test cases. Try to optimize time or memory next.",
     };
   }
 
@@ -64,6 +66,7 @@ function getVerdictMeta(status: string | null): VerdictMeta {
       className:
         "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
       description: "Wrong answer — output did not match expected",
+      hint: "Compare your output with the expected output in the diff view. Check edge cases (empty input, duplicates, ordering, off-by-one).",
     };
   }
 
@@ -76,6 +79,7 @@ function getVerdictMeta(status: string | null): VerdictMeta {
       className:
         "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
       description: "Run is still in progress",
+      hint: "The runner is still processing this attempt. Refresh in a moment to see the verdict.",
     };
   }
 
@@ -83,21 +87,33 @@ function getVerdictMeta(status: string | null): VerdictMeta {
   if (
     /(error|compil|runtime|timeout|^tle$|\btle\b|^mle$|\bmle$|exceeded|abort|crash|failed)/.test(s)
   ) {
+    const isTimeout = /timeout|tle/.test(s);
+    const isCompile = /compil/.test(s);
+    const isRuntime = /runtime/.test(s);
+    const isMemory = /mle|memory/.test(s);
     return {
       verdict: "error",
-      label:
-        /timeout|tle/.test(s)
-          ? "Time Limit Exceeded"
-          : /compil/.test(s)
-            ? "Compile Error"
-            : /runtime/.test(s)
-              ? "Runtime Error"
-              : /mle|memory/.test(s)
-                ? "Memory Limit Exceeded"
-                : "Error",
+      label: isTimeout
+        ? "Time Limit Exceeded"
+        : isCompile
+          ? "Compile Error"
+          : isRuntime
+            ? "Runtime Error"
+            : isMemory
+              ? "Memory Limit Exceeded"
+              : "Error",
       icon: AlertTriangle,
       className: "border-destructive/40 bg-destructive/10 text-destructive",
       description: "Execution error",
+      hint: isTimeout
+        ? "Your code took too long. Look for nested loops, unnecessary recomputation, or a more efficient algorithm."
+        : isCompile
+          ? "The code didn't compile. Check syntax errors, missing semicolons, imports, or type mismatches in the compile output."
+          : isRuntime
+            ? "Crashed during execution. Common causes: null/undefined access, division by zero, index out of bounds, stack overflow."
+            : isMemory
+              ? "Used too much memory. Avoid storing redundant data, free large structures, or use streaming over buffering."
+              : "Execution failed. Inspect stderr and compile output for details.",
     };
   }
 
@@ -107,6 +123,7 @@ function getVerdictMeta(status: string | null): VerdictMeta {
     icon: HelpCircle,
     className: "border-muted-foreground/30 bg-muted/40 text-muted-foreground",
     description: "Unknown verdict",
+    hint: "We couldn't classify this verdict. Open the run details to inspect the raw output.",
   };
 }
 
