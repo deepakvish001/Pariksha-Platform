@@ -80,6 +80,16 @@ import { useProblemSolution } from "@/hooks/useProblemSolution";
 import { useEditorPrefs } from "@/hooks/useEditorPrefs";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const difficultyClass = (d: string) =>
   d === "Easy"
@@ -158,7 +168,15 @@ const CodingProblemDetail = () => {
   const restoredFailedRef = useRef(false);
 
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
-  const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
+  const { draft, draftLoaded, saveDraft, flushDraft } = useCodeDraft(slug ?? "", language);
+  // Pending candidate code for the "Last submitted" confirm dialog. When set,
+  // the dialog is open and applying it replaces the editor contents.
+  const [pendingRestoreCode, setPendingRestoreCode] = useState<{
+    code: string;
+    label: string;
+  } | null>(null);
+  // Transient hint shown briefly when entering fullscreen.
+  const [showFullscreenHint, setShowFullscreenHint] = useState(false);
   const { submissions, loading: submissionsLoading, refetch: refetchSubmissions } = useCodingSubmissions(slug);
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
@@ -400,6 +418,17 @@ const CodingProblemDetail = () => {
     return () => window.removeEventListener("keydown", onEsc);
   }, [isEditorFullscreen]);
 
+  // Briefly show "Press Esc to exit fullscreen" hint when entering fullscreen.
+  useEffect(() => {
+    if (!isEditorFullscreen) {
+      setShowFullscreenHint(false);
+      return;
+    }
+    setShowFullscreenHint(true);
+    const t = window.setTimeout(() => setShowFullscreenHint(false), 3500);
+    return () => window.clearTimeout(t);
+  }, [isEditorFullscreen]);
+
   if (!problem) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
@@ -443,12 +472,32 @@ const CodingProblemDetail = () => {
       });
       return;
     }
+    const label = `${langInfo.label} · ${lastForLang.verdict ?? "Pending"} · ${new Date(lastForLang.created_at).toLocaleString()}`;
+    // Compare against current draft baseline. If the editor differs from both
+    // the saved draft AND the candidate restore, confirm before clobbering.
+    const baseline = draft ?? problem.starterCode[language];
+    const hasUnsavedChanges = code !== baseline && code !== lastForLang.source_code;
+    if (hasUnsavedChanges) {
+      setPendingRestoreCode({ code: lastForLang.source_code, label });
+      return;
+    }
     setCode(lastForLang.source_code);
     saveDraft(lastForLang.source_code);
     toast({
       title: "Restored last submitted code",
-      description: `${langInfo.label} · ${lastForLang.verdict ?? "Pending"} · ${new Date(lastForLang.created_at).toLocaleString()}`,
+      description: label,
     });
+  };
+
+  const confirmRestoreLastSubmitted = () => {
+    if (!pendingRestoreCode) return;
+    setCode(pendingRestoreCode.code);
+    saveDraft(pendingRestoreCode.code);
+    toast({
+      title: "Restored last submitted code",
+      description: pendingRestoreCode.label,
+    });
+    setPendingRestoreCode(null);
   };
 
   const toggleEditorFullscreen = () => setIsEditorFullscreen((v) => !v);
@@ -488,9 +537,25 @@ const CodingProblemDetail = () => {
     setSubmitResult(null);
     setRunResult(null);
     setActiveBottomTab("output");
+    // Auto-format right before submit so submitted code has consistent style.
+    // Failures are non-blocking — we still submit whatever the editor has.
+    try {
+      await editorRef.current?.format();
+    } catch {
+      /* ignore formatter errors */
+    }
+    // Make sure the latest draft is persisted before we ship the submission.
+    try {
+      await flushDraft?.();
+    } catch {
+      /* ignore */
+    }
+    // Read directly from the editor so we capture the freshly-formatted code
+    // (React state hasn't necessarily flushed by the time we get here).
+    const sourceToSubmit = editorRef.current?.getValue() ?? code;
     try {
       const result = await submit({
-        source_code: code,
+        source_code: sourceToSubmit,
         language,
         language_id: langInfo.judge0Id,
         problem_slug: problem.slug,
@@ -1055,7 +1120,7 @@ const CodingProblemDetail = () => {
                     </TooltipProvider>
                   </div>
                 </div>
-                <div className="flex-1 min-h-0">
+                <div className="flex-1 min-h-0 relative">
                   <MonacoEditor
                     ref={editorRef}
                     value={code}
@@ -1063,6 +1128,15 @@ const CodingProblemDetail = () => {
                     language={langInfo.monaco}
                     fontSize={editorPrefs.fontSize}
                   />
+                  {isEditorFullscreen && showFullscreenHint && (
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-50 rounded-full border bg-background/90 backdrop-blur px-3 py-1.5 text-xs font-medium shadow-md animate-in fade-in slide-in-from-top-2 duration-200"
+                    >
+                      Press <kbd className="mx-1 rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">Esc</kbd> to exit fullscreen
+                    </div>
+                  )}
                 </div>
               </div>
             </ResizablePanel>
@@ -1228,6 +1302,32 @@ const CodingProblemDetail = () => {
           { keys: ["Esc"], description: "Close drawers and dialogs" },
         ]}
       />
+
+      <AlertDialog
+        open={!!pendingRestoreCode}
+        onOpenChange={(o) => !o && setPendingRestoreCode(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace your current code?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your editor has unsaved changes that differ from your last saved
+              draft. Loading{" "}
+              <span className="font-medium text-foreground">
+                {pendingRestoreCode?.label}
+              </span>{" "}
+              will overwrite the code currently in the editor. This can't be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep my code</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRestoreLastSubmitted}>
+              Replace with last submission
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
