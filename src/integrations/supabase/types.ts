@@ -1061,6 +1061,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_problem_solutions: {
+        Row: {
+          code: Json
+          code_updated_at: Json
+          created_at: string
+          id: string
+          notes: string
+          notes_updated_at: string | null
+          problem_slug: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code?: Json
+          code_updated_at?: Json
+          created_at?: string
+          id?: string
+          notes?: string
+          notes_updated_at?: string | null
+          problem_slug: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: Json
+          code_updated_at?: Json
+          created_at?: string
+          id?: string
+          notes?: string
+          notes_updated_at?: string | null
+          problem_slug?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles_extended: {
         Row: {
           aspirations: string[] | null
