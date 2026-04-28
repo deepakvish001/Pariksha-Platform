@@ -218,6 +218,7 @@ const CodingProblemDetail = () => {
     incFontSize,
     decFontSize,
     toggleTimestampFormat,
+    setFormatOnSubmit,
     MIN: FS_MIN,
     MAX: FS_MAX,
   } = useEditorPrefs();
