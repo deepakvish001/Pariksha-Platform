@@ -166,6 +166,10 @@ export default function SubmissionsHistory() {
   // Debounce search input for snappier typing
   const [searchInput, setSearchInput] = useState(search);
   useEffect(() => {
+    // Sync external URL changes (e.g., Clear button) into the input
+    setSearchInput(search);
+  }, [search]);
+  useEffect(() => {
     const t = setTimeout(() => {
       if (searchInput !== search) {
         updateParams({ q: searchInput || null, subPage: null, runPage: null });
