@@ -298,18 +298,25 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
                         <span className="text-xs font-mono text-muted-foreground">
                           #{runs.length - idx}
                         </span>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-[10px] gap-1 inline-flex items-center",
-                            meta.className,
-                          )}
-                          title={r.status ?? undefined}
-                          data-verdict={meta.verdict}
-                        >
-                          <VerdictIcon className="h-3 w-3" aria-hidden="true" />
-                          <span>{meta.label}</span>
-                        </Badge>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] gap-1 inline-flex items-center cursor-help",
+                                meta.className,
+                              )}
+                              data-verdict={meta.verdict}
+                              aria-label={`${meta.label} — ${meta.description}`}
+                            >
+                              <VerdictIcon className="h-3 w-3" aria-hidden="true" />
+                              <span>{meta.label}</span>
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <VerdictTooltipBody meta={meta} rawStatus={r.status} />
+                          </TooltipContent>
+                        </Tooltip>
                         <span className="text-xs text-muted-foreground truncate">
                           {r.language}
                         </span>
