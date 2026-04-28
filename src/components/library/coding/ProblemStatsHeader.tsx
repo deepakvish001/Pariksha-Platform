@@ -75,39 +75,7 @@ export const ProblemStatsHeader = ({
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
-      {/* Progress card */}
-      <Card className="p-5 relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
-        <div className="flex items-center gap-4">
-          <div className="relative h-20 w-20 shrink-0">
-            <svg viewBox="0 0 36 36" className="h-20 w-20 -rotate-90">
-              <circle cx="18" cy="18" r="15.9155" fill="none" className="stroke-muted" strokeWidth="3" />
-              <circle
-                cx="18"
-                cy="18"
-                r="15.9155"
-                fill="none"
-                className="stroke-primary transition-all duration-700"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeDasharray={`${pct}, 100`}
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-lg font-bold">{pct}%</span>
-            </div>
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Your Progress</p>
-            <p className="text-2xl font-bold mt-1">
-              {totalSolved}
-              <span className="text-base text-muted-foreground">/{counts.total}</span>
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">problems solved</p>
-          </div>
-        </div>
-      </Card>
-
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
       {/* Difficulty breakdown */}
       <Card className="p-5">
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">By Difficulty</p>
