@@ -216,6 +216,7 @@ const CodingProblemDetail = () => {
   const [activeBottomTab, setActiveBottomTab] = useState<"testcase" | "output">("testcase");
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
+  const [executionErrorDetails, setExecutionErrorDetails] = useState<unknown | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
@@ -645,6 +646,7 @@ const CodingProblemDetail = () => {
     }
     setRunResult(null);
     setSubmitResult(null);
+    setExecutionErrorDetails(null);
     setActiveBottomTab("output");
     try {
       const result = await run({
@@ -655,8 +657,10 @@ const CodingProblemDetail = () => {
         language,
       });
       setRunResult(result);
+      setExecutionErrorDetails(null);
       refetchRuns();
     } catch (err) {
+      setExecutionErrorDetails(extractRawFermionFromError(err));
       toast({
         title: "Run failed",
         description: (err as Error).message,
@@ -672,6 +676,7 @@ const CodingProblemDetail = () => {
     }
     setSubmitResult(null);
     setRunResult(null);
+    setExecutionErrorDetails(null);
     setActiveBottomTab("output");
     // Auto-format right before submit so submitted code has consistent style.
     // Honors the user's "Format on submit" preference. Failures are non-blocking.
@@ -720,6 +725,7 @@ const CodingProblemDetail = () => {
         memory_limit: problem.memoryLimitKb,
       });
       setSubmitResult(result);
+      setExecutionErrorDetails(null);
       refetchSubmissions();
       const isAccepted = result.verdict === "Accepted";
       const elapsedMs = sessionTimerRef.current?.getElapsedMs() ?? 0;
@@ -733,6 +739,7 @@ const CodingProblemDetail = () => {
         variant: isAccepted ? "default" : "destructive",
       });
     } catch (err) {
+      setExecutionErrorDetails(extractRawFermionFromError(err));
       toast({
         title: "Submit failed",
         description: (err as Error).message,
