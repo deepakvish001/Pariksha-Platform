@@ -440,7 +440,16 @@ const CodingProblems = () => {
                 const stats = perProblem.get(p.slug);
                 const bm = isBookmarked(p.slug);
                 return (
-                  <TableRow key={p.slug} className="group">
+                  <TableRow key={p.slug} className="group" data-selected={selected.has(p.slug)}>
+                    {selectionMode && (
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.has(p.slug)}
+                          onCheckedChange={() => toggleSelected(p.slug)}
+                          aria-label="Select problem"
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       {isSolved ? (
                         <CheckCircle2 className="h-4 w-4 text-emerald-500" />
