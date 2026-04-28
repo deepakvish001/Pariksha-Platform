@@ -1,6 +1,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
 import { Copy, Link2 } from "lucide-react";
 import { toast } from "sonner";
@@ -10,6 +11,8 @@ interface Props {
   submission: CodeSubmissionRow | null;
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  /** Show a skeleton while submissions are still being fetched (e.g. deep-link). */
+  loading?: boolean;
 }
 
 const copy = async (label: string, text: string) => {
@@ -21,7 +24,7 @@ const copy = async (label: string, text: string) => {
   }
 };
 
-export const SubmissionDetailsDrawer = ({ submission, open, onOpenChange }: Props) => {
+export const SubmissionDetailsDrawer = ({ submission, open, onOpenChange, loading }: Props) => {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
@@ -29,7 +32,24 @@ export const SubmissionDetailsDrawer = ({ submission, open, onOpenChange }: Prop
           <SheetTitle>Submission details</SheetTitle>
         </SheetHeader>
 
-        {!submission ? (
+        {loading && !submission ? (
+          <div className="mt-4 space-y-4" aria-busy="true" aria-live="polite">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Skeleton className="h-14 w-full rounded-md" />
+              <Skeleton className="h-14 w-full rounded-md" />
+              <Skeleton className="h-14 w-full rounded-md col-span-2" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-40 w-full rounded-md" />
+            </div>
+          </div>
+        ) : !submission ? (
           <div className="py-12 text-center space-y-4">
             <p className="text-sm text-muted-foreground">Submission not found.</p>
             <Button onClick={() => onOpenChange(false)}>Close</Button>
