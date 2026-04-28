@@ -452,7 +452,12 @@ const CodingProblemDetail = () => {
               <TabsTrigger value="description">Description</TabsTrigger>
               <TabsTrigger value="my-solution">
                 My Solution {hasMySolution && (
-                  <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                  <span
+                    className={cn(
+                      "ml-1.5 h-1.5 w-1.5 rounded-full inline-block",
+                      mySolutionIsComplete ? "bg-emerald-500" : "bg-amber-500",
+                    )}
+                  />
                 )}
               </TabsTrigger>
               <TabsTrigger value="solution">Reference</TabsTrigger>
