@@ -11,7 +11,8 @@ export type LangId =
   | "javascript"
   | "typescript"
   | "c"
-  | "go";
+  | "go"
+  | "sql";
 
 export interface LanguageInfo {
   id: LangId;
@@ -20,6 +21,10 @@ export interface LanguageInfo {
   judge0Id: number;
 }
 
+// SQL is executed via the dedicated `run-sql` / `submit-sql` edge functions
+// (in-memory SQLite). The judge0Id is unused for SQL; we keep a stable
+// sentinel (82 = SQLite/SQL in Judge0) for backwards compatibility with
+// code that records `language_id`.
 export const LANGUAGES: LanguageInfo[] = [
   { id: "python", label: "Python 3", monaco: "python", judge0Id: 71 },
   { id: "cpp", label: "C++ (GCC 9.2)", monaco: "cpp", judge0Id: 54 },
@@ -28,7 +33,10 @@ export const LANGUAGES: LanguageInfo[] = [
   { id: "typescript", label: "TypeScript", monaco: "typescript", judge0Id: 74 },
   { id: "c", label: "C (GCC 9.2)", monaco: "c", judge0Id: 50 },
   { id: "go", label: "Go", monaco: "go", judge0Id: 60 },
+  { id: "sql", label: "SQL (SQLite)", monaco: "sql", judge0Id: 82 },
 ];
+
+export const isSQLLang = (id: LangId): boolean => id === "sql";
 
 export const getLanguageById = (id: LangId) =>
   LANGUAGES.find((l) => l.id === id)!;
