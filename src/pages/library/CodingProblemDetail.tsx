@@ -124,7 +124,7 @@ const CodingProblemDetail = () => {
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [showLogin, setShowLogin] = useState(false);
-  const [openHints, setOpenHints] = useState<Record<number, boolean>>({});
+  
   const [detailSubmission, setDetailSubmission] = useState<CodeSubmissionRow | null>(null);
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(() =>
     slug ? readLastOpenedMap()[slug] ?? null : null,
