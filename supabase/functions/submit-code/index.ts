@@ -67,6 +67,28 @@ function judge0Headers(): Record<string, string> {
   return headers;
 }
 
+function friendlyJudge0Error(status: number, body: string): string {
+  const isRapidApi = JUDGE0_URL.includes("rapidapi.com");
+  const provider = isRapidApi ? "RapidAPI Judge0" : "Judge0";
+  const where = isRapidApi
+    ? "Check your RapidAPI key & host header in Lovable Cloud → Backend → Secrets (JUDGE0_AUTH_TOKEN, JUDGE0_AUTH_HEADER, JUDGE0_EXTRA_HEADER_NAME, JUDGE0_EXTRA_HEADER_VALUE). Also confirm you are subscribed to the Judge0 CE API on RapidAPI."
+    : "Check JUDGE0_URL and JUDGE0_AUTH_TOKEN in Lovable Cloud → Backend → Secrets, and verify your Judge0 server is reachable.";
+
+  if (status === 401 || status === 403) {
+    return `${provider} rejected the request (${status} ${status === 401 ? "Unauthorized" : "Forbidden"}). Your API key/host headers are missing or invalid. ${where}`;
+  }
+  if (status === 429) {
+    return `${provider} rate limit hit (429). You've exceeded your RapidAPI quota — upgrade your plan or wait for the quota to reset.`;
+  }
+  if (status === 404) {
+    return `${provider} endpoint not found (404). Verify JUDGE0_URL is correct (e.g. https://judge0-ce.p.rapidapi.com — base URL only).`;
+  }
+  if (status >= 500) {
+    return `${provider} server error (${status}). The code execution service is temporarily unavailable. Try again in a moment.`;
+  }
+  return `${provider} request failed (${status})${body ? `: ${body.slice(0, 300)}` : ""}. ${where}`;
+}
+
 const b64encode = (s: string) => btoa(unescape(encodeURIComponent(s ?? "")));
 const b64decode = (s: string | null | undefined) => {
   if (!s) return "";
@@ -107,7 +129,7 @@ async function runSingleCase(
   if (!submitRes.ok) {
     const errText = await submitRes.text();
     throw new Judge0RequestError(
-      `Judge0 submit failed (${submitRes.status})${errText ? `: ${errText}` : ""}`,
+      friendlyJudge0Error(submitRes.status, errText),
       {
         error_stage: "submit",
         requested_url: submitUrl,
@@ -154,7 +176,14 @@ Deno.serve(async (req) => {
     if (!JUDGE0_URL) {
       return respond<SubmitResult>({
         ok: false,
-        error: "JUDGE0_URL not configured",
+        error: "Code execution is not configured. Add JUDGE0_URL (and JUDGE0_AUTH_TOKEN / JUDGE0_AUTH_HEADER for RapidAPI) in Lovable Cloud → Backend → Secrets.",
+        diagnostics: { error_stage: "config" },
+      });
+    }
+    if (JUDGE0_URL.includes("rapidapi.com") && (!JUDGE0_AUTH_TOKEN || !JUDGE0_EXTRA_HEADER_VALUE)) {
+      return respond<SubmitResult>({
+        ok: false,
+        error: "RapidAPI Judge0 requires both an API key and host header. Set JUDGE0_AUTH_TOKEN (your x-rapidapi-key) and JUDGE0_EXTRA_HEADER_NAME=x-rapidapi-host + JUDGE0_EXTRA_HEADER_VALUE=judge0-ce.p.rapidapi.com.",
         diagnostics: { error_stage: "config" },
       });
     }
