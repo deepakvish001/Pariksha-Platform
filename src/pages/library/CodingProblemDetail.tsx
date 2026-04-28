@@ -721,21 +721,61 @@ const CodingProblemDetail = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleReset}
-                    className="h-8 gap-1.5 text-xs"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    Reset
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={decFontSize}
+                            disabled={editorPrefs.fontSize <= FS_MIN}
+                            className="h-8 w-8"
+                            aria-label="Decrease font size"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Smaller font</TooltipContent>
+                      </Tooltip>
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums px-1">
+                        <Type className="h-3 w-3" />
+                        {editorPrefs.fontSize}
+                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={incFontSize}
+                            disabled={editorPrefs.fontSize >= FS_MAX}
+                            className="h-8 w-8"
+                            aria-label="Increase font size"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Larger font</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <div className="w-px h-5 bg-border mx-1" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleReset}
+                      className="h-8 gap-1.5 text-xs"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Reset
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex-1 min-h-0">
                   <MonacoEditor
                     value={code}
                     onChange={handleCodeChange}
                     language={langInfo.monaco}
+                    fontSize={editorPrefs.fontSize}
                   />
                 </div>
               </div>
