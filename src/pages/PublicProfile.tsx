@@ -765,8 +765,11 @@ const PublicProfile = () => {
 
              {/* Achievements */}
              {profile?.user_id && (
-               <PublicProfileAchievements userId={profile.user_id} />
+               <div id="achievements" className="scroll-mt-24">
+                 <PublicProfileAchievements userId={profile.user_id} />
+               </div>
              )}
+          </div>
           </div>
         </div>
       </main>
