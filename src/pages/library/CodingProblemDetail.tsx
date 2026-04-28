@@ -80,6 +80,16 @@ import { useProblemSolution } from "@/hooks/useProblemSolution";
 import { useEditorPrefs } from "@/hooks/useEditorPrefs";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const difficultyClass = (d: string) =>
   d === "Easy"
