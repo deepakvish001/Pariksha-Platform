@@ -118,9 +118,16 @@ const CodingProblemDetail = () => {
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(() =>
     slug ? readLastOpenedMap()[slug] ?? null : null,
   );
+  const [lastFailedId, setLastFailedId] = useState<string | null>(() =>
+    slug ? readLastFailedMap()[slug] ?? null : null,
+  );
   // Bumped whenever we want the AttemptTimeline to auto-scroll the highlighted
-  // entry into view (e.g. after "Go to failed cases" toast action).
+  // entry into view (e.g. after "Go to failed cases" toast action, or when a
+  // previously-highlighted failed attempt is restored on remount).
   const [timelineScrollKey, setTimelineScrollKey] = useState(0);
+  // Tracks whether we've already auto-restored the persisted "last failed"
+  // highlight for this mount, so we don't keep re-triggering it.
+  const restoredFailedRef = useRef(false);
 
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
