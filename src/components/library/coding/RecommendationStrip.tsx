@@ -41,22 +41,99 @@ interface Props {
   dismissedKey: string;
 }
 
-const SESSION_KEY_PREFIX = "byteskill:coding-recs-dismissed:";
+const STORAGE_KEY_PREFIX = "byteskill:coding-recs-dismissed:";
+const EVENT_NAME = "byteskill:coding-recs-dismissed-change";
 
-const isDismissed = (key: string) => {
+const storageKey = (key: string) => STORAGE_KEY_PREFIX + key;
+
+const readDismissed = (key: string): boolean => {
+  if (typeof window === "undefined") return false;
   try {
-    return sessionStorage.getItem(SESSION_KEY_PREFIX + key) === "1";
+    return localStorage.getItem(storageKey(key)) === "1";
   } catch {
     return false;
   }
 };
 
-const setDismissed = (key: string) => {
+const writeDismissed = (key: string, value: boolean) => {
   try {
-    sessionStorage.setItem(SESSION_KEY_PREFIX + key, "1");
+    if (value) localStorage.setItem(storageKey(key), "1");
+    else localStorage.removeItem(storageKey(key));
+  } catch {
+    /* ignore quota */
+  }
+  try {
+    window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { key } }));
   } catch {
     /* ignore */
   }
+};
+
+/**
+ * Hook returning the dismissed state for a recommendation strip key plus a
+ * setter that persists to localStorage and notifies other listeners (so the
+ * "Show recommendations" chip can react in the same tab).
+ */
+export const useRecommendationsDismissed = (key: string) => {
+  const [dismissed, setDismissedState] = useState<boolean>(() => readDismissed(key));
+
+  useEffect(() => {
+    const sync = () => setDismissedState(readDismissed(key));
+    const onCustom = (e: Event) => {
+      const detail = (e as CustomEvent<{ key: string }>).detail;
+      if (!detail || detail.key === key) sync();
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === storageKey(key)) sync();
+    };
+    window.addEventListener(EVENT_NAME, onCustom as EventListener);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(EVENT_NAME, onCustom as EventListener);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [key]);
+
+  const setDismissed = useCallback(
+    (value: boolean) => {
+      writeDismissed(key, value);
+      setDismissedState(value);
+    },
+    [key],
+  );
+
+  return { dismissed, setDismissed };
+};
+
+interface ShowRecommendationsChipProps {
+  dismissedKey: string;
+  className?: string;
+}
+
+/**
+ * Small chip rendered when the recommendation strip is hidden so users can
+ * bring it back without using Focus mode.
+ */
+export const ShowRecommendationsChip = ({
+  dismissedKey,
+  className,
+}: ShowRecommendationsChipProps) => {
+  const { dismissed, setDismissed } = useRecommendationsDismissed(dismissedKey);
+  if (!dismissed) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => setDismissed(false)}
+      className={cn(
+        "mb-3 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20 transition-colors",
+        className,
+      )}
+      aria-label="Show recommendations"
+    >
+      <Sparkles className="h-3 w-3" />
+      Show recommendations
+    </button>
+  );
 };
 
 const toneClasses: Record<Recommendation["tone"], string> = {
