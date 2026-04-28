@@ -739,6 +739,14 @@ const CodingProblemDetail = () => {
         tests: problem.hiddenTests,
         cpu_time_limit: problem.cpuTimeLimitSec,
         memory_limit: problem.memoryLimitKb,
+        ...(problem.sql
+          ? {
+              schema: problem.sql.schema,
+              seed: problem.sql.seed,
+              reference_query: problem.sql.referenceQuery,
+              order_matters: !!problem.sql.orderMatters,
+            }
+          : {}),
       });
       setSubmitResult(result);
       setExecutionErrorDetails(null);
