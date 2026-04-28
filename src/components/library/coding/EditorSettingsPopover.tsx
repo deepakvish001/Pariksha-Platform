@@ -13,16 +13,40 @@ import {
 } from "@/components/ui/tooltip";
 
 interface EditorSettingsPopoverProps {
+  /** Effective format-on-submit currently in use (override or global). */
   formatOnSubmit: FormatOnSubmit;
+  /** Updates the global default. */
   onFormatOnSubmitChange: (mode: FormatOnSubmit) => void;
+  /** Per-(problem, language) override info. Optional. */
+  perTaskOverride?: FormatOnSubmit | null;
+  perTaskLabel?: string;
+  onPerTaskOverrideChange?: (mode: FormatOnSubmit | null) => void;
 }
 
 export const EditorSettingsPopover = ({
   formatOnSubmit,
   onFormatOnSubmitChange,
+  perTaskOverride = null,
+  perTaskLabel,
+  onPerTaskOverrideChange,
 }: EditorSettingsPopoverProps) => {
   const enabled = formatOnSubmit !== "off";
   const mode = formatOnSubmit === "off" ? "format" : formatOnSubmit;
+  const hasPerTask = !!onPerTaskOverrideChange;
+  const usingOverride = perTaskOverride !== null;
+
+  const handleModeChange = (next: FormatOnSubmit) => {
+    if (hasPerTask && usingOverride) {
+      onPerTaskOverrideChange!(next);
+    } else {
+      onFormatOnSubmitChange(next);
+    }
+  };
+
+  const handleEnableToggle = (checked: boolean) => {
+    const next: FormatOnSubmit = checked ? mode : "off";
+    handleModeChange(next);
+  };
 
   return (
     <Popover>
@@ -43,7 +67,7 @@ export const EditorSettingsPopover = ({
           <TooltipContent>Editor settings</TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <PopoverContent align="end" className="w-72 space-y-4">
+      <PopoverContent align="end" className="w-80 space-y-4">
         <div>
           <h4 className="text-sm font-semibold mb-1">Format on submit</h4>
           <p className="text-xs text-muted-foreground">
@@ -59,16 +83,14 @@ export const EditorSettingsPopover = ({
           <Switch
             id="format-on-submit-toggle"
             checked={enabled}
-            onCheckedChange={(checked) =>
-              onFormatOnSubmitChange(checked ? mode : "off")
-            }
+            onCheckedChange={handleEnableToggle}
           />
         </div>
 
         <div className={enabled ? "" : "opacity-50 pointer-events-none"}>
           <RadioGroup
             value={mode}
-            onValueChange={(v) => onFormatOnSubmitChange(v as FormatOnSubmit)}
+            onValueChange={(v) => handleModeChange(v as FormatOnSubmit)}
             className="space-y-2"
           >
             <div className="flex items-start gap-2">
@@ -96,6 +118,40 @@ export const EditorSettingsPopover = ({
             </div>
           </RadioGroup>
         </div>
+
+        {hasPerTask && (
+          <div className="border-t pt-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <Label htmlFor="per-task-toggle" className="text-sm">
+                  Remember for this task
+                </Label>
+                {perTaskLabel && (
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {perTaskLabel}
+                  </p>
+                )}
+              </div>
+              <Switch
+                id="per-task-toggle"
+                checked={usingOverride}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    // Lock the current effective mode in for this problem+language.
+                    onPerTaskOverrideChange!(formatOnSubmit);
+                  } else {
+                    onPerTaskOverrideChange!(null);
+                  }
+                }}
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {usingOverride
+                ? "Changes here only affect this problem in this language. Your global default stays the same."
+                : "Turn this on to keep a different format-on-submit setting for this problem and language."}
+            </p>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
