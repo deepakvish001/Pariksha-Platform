@@ -66,6 +66,7 @@ import { ProblemMetaStrip } from "@/components/library/coding/ProblemMetaStrip";
 import { NotesPanel } from "@/components/library/coding/NotesPanel";
 import { ProgressiveHints } from "@/components/library/coding/ProgressiveHints";
 import { MySolutionPanel } from "@/components/library/coding/MySolutionPanel";
+import { FloatingActionBar } from "@/components/library/coding/FloatingActionBar";
 import { useProblemNotes } from "@/hooks/useProblemNotes";
 import { useProblemSolution } from "@/hooks/useProblemSolution";
 import { useEditorPrefs } from "@/hooks/useEditorPrefs";
