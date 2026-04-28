@@ -293,6 +293,7 @@ export type Database = {
       coding_problems_meta: {
         Row: {
           acceptance_rate: number
+          difficulty: string
           problem_slug: string
           total_accepted: number
           total_submissions: number
@@ -300,6 +301,7 @@ export type Database = {
         }
         Insert: {
           acceptance_rate?: number
+          difficulty?: string
           problem_slug: string
           total_accepted?: number
           total_submissions?: number
@@ -307,6 +309,7 @@ export type Database = {
         }
         Update: {
           acceptance_rate?: number
+          difficulty?: string
           problem_slug?: string
           total_accepted?: number
           total_submissions?: number
@@ -1155,6 +1158,7 @@ export type Database = {
           branch: string | null
           codechef_url: string | null
           codeforces_url: string | null
+          coding_leaderboard_hidden: boolean
           college_name: string | null
           company_name: string | null
           course_name: string | null
@@ -1214,6 +1218,7 @@ export type Database = {
           branch?: string | null
           codechef_url?: string | null
           codeforces_url?: string | null
+          coding_leaderboard_hidden?: boolean
           college_name?: string | null
           company_name?: string | null
           course_name?: string | null
@@ -1273,6 +1278,7 @@ export type Database = {
           branch?: string | null
           codechef_url?: string | null
           codeforces_url?: string | null
+          coding_leaderboard_hidden?: boolean
           college_name?: string | null
           company_name?: string | null
           course_name?: string | null
@@ -1625,6 +1631,36 @@ export type Database = {
           profile_row: Database["public"]["Tables"]["user_profiles_extended"]["Row"]
         }
         Returns: number
+      }
+      get_coding_leaderboard: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _window?: string
+        }
+        Returns: {
+          acceptance_rate: number
+          avatar_url: string
+          display_name: string
+          fastest_avg_runtime: number
+          last_accepted_at: string
+          problems_solved: number
+          rank: number
+          total_accepted: number
+          user_id: string
+          username: string
+          weighted_score: number
+        }[]
+      }
+      get_coding_leaderboard_stats: {
+        Args: never
+        Returns: {
+          total_accepted_today: number
+          total_accepted_week: number
+          total_participants: number
+          total_problems_solved: number
+        }[]
       }
       get_daily_challenge_leaderboard: {
         Args: { _limit?: number }
