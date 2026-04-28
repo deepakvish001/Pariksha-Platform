@@ -54,6 +54,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  PROBLEM_COLUMNS,
+  useCodingProblemsTablePrefs,
+  type ProblemColumnId,
+} from "@/hooks/useCodingProblemsTablePrefs";
+import {
+  SortableResizableHeader,
+  type SortDir,
+} from "@/components/library/coding/SortableResizableHeader";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: Difficulty) =>
