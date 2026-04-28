@@ -636,36 +636,22 @@ const CodingProblems = () => {
               <DropdownMenuItem
                 onSelect={(e) => {
                   e.preventDefault();
-                  // Snapshot current prefs so we can offer Undo
-                  let snapshot: string | null = null;
-                  try {
-                    snapshot = localStorage.getItem(
-                      "byteskill:coding-problems-table-prefs:v1",
-                    );
-                  } catch {
-                    /* ignore */
-                  }
+                  // Snapshot in-memory prefs so Undo can restore directly into
+                  // table state — no page reload needed.
+                  const snap = tablePrefs.snapshot();
                   tablePrefs.resetAll();
                   toast.success("Columns reset", {
                     description: "Visibility and widths restored to defaults.",
                     duration: 8000,
-                    action: snapshot
-                      ? {
-                          label: "Undo",
-                          onClick: () => {
-                            try {
-                              localStorage.setItem(
-                                "byteskill:coding-problems-table-prefs:v1",
-                                snapshot!,
-                              );
-                              // Reload so the hook re-reads the restored prefs.
-                              window.location.reload();
-                            } catch {
-                              toast.error("Couldn't restore previous columns");
-                            }
-                          },
-                        }
-                      : undefined,
+                    action: {
+                      label: "Undo",
+                      onClick: () => {
+                        tablePrefs.restoreSnapshot(snap);
+                        toast.success("Columns restored", {
+                          description: "Your previous visibility and widths are back.",
+                        });
+                      },
+                    },
                   });
                 }}
               >
