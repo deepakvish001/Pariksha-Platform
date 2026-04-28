@@ -391,27 +391,45 @@ const CodingProblemDetail = () => {
                   </Card>
                 ) : (
                   <div className="space-y-3">
-                    <AttemptTimeline submissions={submissions} limit={10} />
-                    <div className="space-y-2">
-                    {submissions.map((s) => (
-                      <Card key={s.id} className="p-3 hover:bg-muted/30 transition-colors">
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                          <div className="flex items-center gap-3">
-                            <VerdictBadge verdict={s.verdict} />
-                            <span className="text-sm text-muted-foreground">{s.language}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {s.passed_tests}/{s.total_tests} tests
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            {s.runtime_ms !== null && <span>{s.runtime_ms} ms</span>}
-                            {s.memory_kb !== null && <span>{(s.memory_kb / 1024).toFixed(1)} MB</span>}
-                            <span>{new Date(s.created_at).toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                    </div>
+                    <AttemptTimeline
+                      submissions={submissions}
+                      limit={10}
+                      onSelect={(s) => setDetailSubmission(s)}
+                    />
+                    {submissions.length > 0 && (
+                      <div className="space-y-2">
+                        {submissions.map((s) => (
+                          <Card
+                            key={s.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setDetailSubmission(s)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setDetailSubmission(s);
+                              }
+                            }}
+                            className="p-3 hover:bg-muted/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                          >
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                              <div className="flex items-center gap-3">
+                                <VerdictBadge verdict={s.verdict} />
+                                <span className="text-sm text-muted-foreground">{s.language}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {s.passed_tests}/{s.total_tests} tests
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                {s.runtime_ms !== null && <span>{s.runtime_ms} ms</span>}
+                                {s.memory_kb !== null && <span>{(s.memory_kb / 1024).toFixed(1)} MB</span>}
+                                <span>{new Date(s.created_at).toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </TabsContent>
