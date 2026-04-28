@@ -1639,6 +1639,16 @@ export type Database = {
           weekly_completions: number
         }[]
       }
+      get_submission_percentiles: {
+        Args: { _submission_id: string }
+        Returns: {
+          memory_beats: number
+          memory_kb: number
+          runtime_beats: number
+          runtime_ms: number
+          total_users: number
+        }[]
+      }
     }
     Enums: {
       study_year:
