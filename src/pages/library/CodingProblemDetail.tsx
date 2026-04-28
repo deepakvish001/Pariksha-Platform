@@ -758,9 +758,9 @@ const CodingProblemDetail = () => {
       </div>
 
       {/* Resizable split */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
+      <ResizablePanelGroup ref={horizontalGroupRef} direction="horizontal" className="flex-1">
         {/* LEFT: tabs */}
-        <ResizablePanel defaultSize={45} minSize={25}>
+        <ResizablePanel defaultSize={layoutPreset.horizontal[0]} minSize={20}>
           <Tabs
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as EditorTabId)}
