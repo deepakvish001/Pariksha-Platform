@@ -200,11 +200,48 @@ export default function CodingLeaderboard() {
   const openBreakdown = (row: CodingLeaderboardRow) =>
     setDrawerUser({ id: row.user_id, rank: row.rank });
 
+  // Look up the logged-in user's rank for the active window — even if off-page.
+  const { data: youRank, loading: youLoading } = useCodingLeaderboardUserRank(
+    user?.id,
+    window,
+  );
+
+  // Refs to scroll-to a specific row when the user hits "Jump to me".
+  const listRef = useRef<HTMLOListElement | null>(null);
+  const youRowRef = useRef<HTMLLIElement | null>(null);
+
+  const youOnPage = useMemo(
+    () => (user ? rows.some((r) => r.user_id === user.id) : false),
+    [rows, user],
+  );
+
+  const handleJumpToMe = () => {
+    if (!user || !youRank) return;
+    if (!youOnPage) {
+      // Jump to the page that contains the user.
+      const targetPage = Math.max(1, Math.ceil(youRank.rank / PAGE_SIZE));
+      if (targetPage !== page) {
+        setSearch("");
+        setSearchInput("");
+        setPage(targetPage);
+        return;
+      }
+    }
+    // Already on the right page — scroll to row.
+    requestAnimationFrame(() => {
+      youRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      youRowRef.current?.focus({ preventScroll: true });
+    });
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearch(searchInput);
     setPage(1);
   };
+
+  const windowLabel =
+    window === "today" ? "today" : window === "week" ? "this week" : "of all time";
 
   return (
     <TooltipProvider delayDuration={150}>
