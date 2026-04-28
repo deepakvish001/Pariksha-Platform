@@ -587,6 +587,12 @@ const CodingProblems = () => {
   const safePage = Math.min(page, totalPages);
   const pageSlice = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
+  // Keep refs in sync for the keyboard ←/→ pagination shortcut.
+  useEffect(() => {
+    safePageRef.current = safePage;
+    totalPagesRef.current = totalPages;
+  }, [safePage, totalPages]);
+
   // Stats
   const counts = useMemo(() => {
     const total = CODING_PROBLEMS.length;
