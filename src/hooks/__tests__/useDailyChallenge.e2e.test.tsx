@@ -124,9 +124,9 @@ describe("useDailyChallenge — cloud pull/push end-to-end (post sync-field remo
     );
 
     const { result } = renderHook(() => useDailyChallenge());
-    console.log("DEBUG selectChain.select called:", selectChain.select.mock.calls.length);
-    console.log("DEBUG from called:", (supabaseClient.supabase.from as ReturnType<typeof vi.fn>).mock.calls.length);
-    await new Promise((r) => setTimeout(r, 200));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 200));
+    });
     console.log("DEBUG eq:", selectChain.eq.mock.calls.length, "gte:", selectChain.gte.mock.calls.length, "order:", selectChain.order.mock.calls.length);
     console.log("DEBUG state:", JSON.stringify(result.current.recentCompletions));
     console.log("DEBUG after 100ms select:", selectChain.select.mock.calls.length, "rpc:", rpcMock.mock.calls.length, "upsert:", upsertMock.mock.calls.length);
