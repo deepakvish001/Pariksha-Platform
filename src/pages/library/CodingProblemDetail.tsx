@@ -58,7 +58,10 @@ import {
 } from "@/data/codingProblemsData";
 import { MonacoEditor, type MonacoEditorHandle } from "@/components/coding/MonacoEditor";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
-import { CodeExecutionError, useCodeRunner, type RunResult, type SubmitResult } from "@/hooks/useCodeRunner";
+import { CodeExecutionError, useCodeRunner, type RunResult, type SubmitResult, type CaseResult } from "@/hooks/useCodeRunner";
+import { getExecLimitsForLang, formatLimits } from "@/lib/coding/executionLimits";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Cpu } from "lucide-react";
 import { useCodeDraft } from "@/hooks/useCodeDraft";
 import { useCodingSubmissions } from "@/hooks/useCodingSubmissions";
 import { useCodeRuns } from "@/hooks/useCodeRuns";
