@@ -1365,11 +1365,27 @@ const CodingProblemDetail = () => {
                 value={activeBottomTab}
                 onValueChange={(v) => setActiveBottomTab(v as "testcase" | "output")}
                 className="h-full flex flex-col"
+                aria-label="Test case and output"
               >
                 <div className="border-b overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <TabsList className="rounded-none justify-start bg-transparent border-0 h-10 px-2 w-max min-w-full flex-nowrap">
-                    <TabsTrigger value="testcase" className="shrink-0 whitespace-nowrap">Test Case</TabsTrigger>
-                    <TabsTrigger value="output" className="shrink-0 whitespace-nowrap">Output</TabsTrigger>
+                  <TabsList
+                    className="rounded-none justify-start bg-transparent border-0 h-10 px-2 w-max min-w-full flex-nowrap"
+                    aria-label="Bottom panel tabs"
+                  >
+                    <TabsTrigger
+                      value="testcase"
+                      className="shrink-0 whitespace-nowrap"
+                      aria-label="Test case input"
+                    >
+                      Test Case
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="output"
+                      className="shrink-0 whitespace-nowrap"
+                      aria-label="Run and submit output"
+                    >
+                      Output
+                    </TabsTrigger>
                   </TabsList>
                 </div>
 
