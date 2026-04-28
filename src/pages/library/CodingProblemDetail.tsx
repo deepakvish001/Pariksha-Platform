@@ -10,6 +10,7 @@ import {
   Minus,
   Plus,
   Type,
+  ChevronRight,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
