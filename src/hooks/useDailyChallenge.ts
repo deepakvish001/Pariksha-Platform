@@ -335,17 +335,29 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     if (user) {
       try {
         setSyncing(true);
+        setSyncStatus("syncing");
+        setSyncError(null);
         // ignoreDuplicates: if another device already marked this date,
         // do not overwrite the earlier completion timestamp.
-        await supabase.from("daily_challenge_completions").upsert(
-          {
-            user_id: user.id,
-            challenge_date: dateKey,
-            problem_slug: problem.slug,
-            completed_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id,challenge_date", ignoreDuplicates: true },
-        );
+        const { error: upErr } = await supabase
+          .from("daily_challenge_completions")
+          .upsert(
+            {
+              user_id: user.id,
+              challenge_date: dateKey,
+              problem_slug: problem.slug,
+              completed_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id,challenge_date", ignoreDuplicates: true },
+          );
+        if (upErr) throw upErr;
+        setSyncStatus("synced");
+        setLastSyncedAt(new Date());
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Failed to record completion";
+        setSyncError(msg);
+        setSyncStatus(navigator?.onLine === false ? "offline" : "error");
       } finally {
         setSyncing(false);
       }
@@ -362,6 +374,9 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     completedTotal: state.completions.length,
     recentCompletions,
     syncing,
+    syncStatus,
+    syncError,
+    lastSyncedAt,
     justCompleted,
     acknowledgeCelebration,
     markCompleted,
