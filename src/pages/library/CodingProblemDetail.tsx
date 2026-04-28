@@ -109,6 +109,9 @@ const CodingProblemDetail = () => {
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(() =>
     slug ? readLastOpenedMap()[slug] ?? null : null,
   );
+  // Bumped whenever we want the AttemptTimeline to auto-scroll the highlighted
+  // entry into view (e.g. after "Go to failed cases" toast action).
+  const [timelineScrollKey, setTimelineScrollKey] = useState(0);
 
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
