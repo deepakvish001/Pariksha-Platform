@@ -1,14 +1,15 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { useCodingSubmissions } from "@/hooks/useCodingSubmissions";
-import { useCodeRuns } from "@/hooks/useCodeRuns";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { usePagedCodingSubmissions } from "@/hooks/useCodingSubmissions";
+import { usePagedCodeRuns, type CodeRunRow } from "@/hooks/useCodeRuns";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCodeRunner } from "@/hooks/useCodeRunner";
+import { useCodeRunner, RunCancelledError } from "@/hooks/useCodeRunner";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -32,10 +33,17 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Code2, ExternalLink, Eye, Play, Loader2 } from "lucide-react";
-import type { CodeRunRow } from "@/hooks/useCodeRuns";
+import { Code2, ExternalLink, Eye, Play, Loader2, X, Copy, Check } from "lucide-react";
 
 const PAGE_SIZE = 20;
+const VERDICT_OPTIONS = [
+  "Accepted",
+  "Wrong Answer",
+  "Time Limit Exceeded",
+  "Compile Error",
+  "Runtime Error",
+];
+const LANGUAGE_OPTIONS = ["python", "javascript", "typescript", "java", "cpp", "c"];
 
 const verdictClass = (v: string) => {
   if (v === "Accepted") return "bg-emerald-500/15 text-emerald-500 border-emerald-500/30";
@@ -101,62 +109,93 @@ const Pager = ({
   );
 };
 
+const RowSkeleton = () => (
+  <Card className="p-3">
+    <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <Skeleton className="h-5 w-20" />
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-3 w-12" />
+        <Skeleton className="h-3 w-24" />
+      </div>
+    </div>
+  </Card>
+);
+
+const CopyButton = ({ text, label }: { text: string; label?: string }) => {
+  const [copied, setCopied] = useState(false);
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* noop */
+    }
+  };
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      className="h-6 px-2 text-xs"
+      onClick={onCopy}
+      disabled={!text}
+    >
+      {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+      {copied ? "Copied" : label ?? "Copy"}
+    </Button>
+  );
+};
+
 export default function SubmissionsHistory() {
   const { user } = useAuth();
-  const { submissions, loading: subsLoading } = useCodingSubmissions();
-  const { runs, loading: runsLoading, refetch: refetchRuns } = useCodeRuns();
-  const { run, isRunning } = useCodeRunner();
-  const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [search, setSearch] = useState("");
-  const [verdict, setVerdict] = useState<string>("all");
-  const [language, setLanguage] = useState<string>("all");
-  const [subPage, setSubPage] = useState(1);
-  const [runPage, setRunPage] = useState(1);
+  // URL-backed state
+  const search = searchParams.get("q") ?? "";
+  const verdict = searchParams.get("verdict") ?? "all";
+  const language = searchParams.get("lang") ?? "all";
+  const tab = searchParams.get("tab") ?? "submissions";
+  const subPage = Math.max(1, parseInt(searchParams.get("subPage") ?? "1", 10) || 1);
+  const runPage = Math.max(1, parseInt(searchParams.get("runPage") ?? "1", 10) || 1);
+
+  // Debounce search input for snappier typing
+  const [searchInput, setSearchInput] = useState(search);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (searchInput !== search) {
+        updateParams({ q: searchInput || null, subPage: null, runPage: null });
+      }
+    }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
+  const updateParams = (updates: Record<string, string | null>) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([k, v]) => {
+      if (v === null || v === "" || v === "all") next.delete(k);
+      else next.set(k, v);
+    });
+    setSearchParams(next, { replace: true });
+  };
+
+  const { submissions, total: subTotal, loading: subsLoading, refetch: refetchSubs } =
+    usePagedCodingSubmissions({ page: subPage, pageSize: PAGE_SIZE, search, verdict, language });
+  const { runs, total: runTotal, loading: runsLoading, refetch: refetchRuns } =
+    usePagedCodeRuns({ page: runPage, pageSize: PAGE_SIZE, search, language });
+
+  const { run, isRunning, cancelRun } = useCodeRunner();
+  const { toast } = useToast();
   const [detailRun, setDetailRun] = useState<CodeRunRow | null>(null);
   const [rerunningId, setRerunningId] = useState<string | null>(null);
 
-  const verdicts = useMemo(
-    () => Array.from(new Set(submissions.map((s) => s.verdict))).sort(),
-    [submissions],
-  );
-  const languages = useMemo(
-    () => Array.from(new Set([...submissions.map((s) => s.language), ...runs.map((r) => r.language)])).sort(),
-    [submissions, runs],
-  );
-
-  const q = search.toLowerCase().trim();
-
-  const filteredSubs = useMemo(
-    () =>
-      submissions.filter(
-        (s) =>
-          (verdict === "all" || s.verdict === verdict) &&
-          (language === "all" || s.language === language) &&
-          (q === "" ||
-            s.problem_slug.toLowerCase().includes(q) ||
-            (s.source_code ?? "").toLowerCase().includes(q)),
-      ),
-    [submissions, verdict, language, q],
-  );
-  const filteredRuns = useMemo(
-    () =>
-      runs.filter(
-        (r) =>
-          (language === "all" || r.language === language) &&
-          (q === "" ||
-            r.problem_slug.toLowerCase().includes(q) ||
-            (r.source_code ?? "").toLowerCase().includes(q)),
-      ),
-    [runs, language, q],
-  );
-
-  const subTotalPages = Math.max(1, Math.ceil(filteredSubs.length / PAGE_SIZE));
-  const runTotalPages = Math.max(1, Math.ceil(filteredRuns.length / PAGE_SIZE));
-  const safeSubPage = Math.min(subPage, subTotalPages);
-  const safeRunPage = Math.min(runPage, runTotalPages);
-  const pagedSubs = filteredSubs.slice((safeSubPage - 1) * PAGE_SIZE, safeSubPage * PAGE_SIZE);
-  const pagedRuns = filteredRuns.slice((safeRunPage - 1) * PAGE_SIZE, safeRunPage * PAGE_SIZE);
+  const subTotalPages = useMemo(() => Math.max(1, Math.ceil(subTotal / PAGE_SIZE)), [subTotal]);
+  const runTotalPages = useMemo(() => Math.max(1, Math.ceil(runTotal / PAGE_SIZE)), [runTotal]);
 
   const handleRerun = async (r: CodeRunRow) => {
     setRerunningId(r.id);
@@ -174,11 +213,15 @@ export default function SubmissionsHistory() {
       });
       await refetchRuns();
     } catch (e) {
-      toast({
-        title: "Re-run failed",
-        description: e instanceof Error ? e.message : "Unknown error",
-        variant: "destructive",
-      });
+      if (e instanceof RunCancelledError) {
+        toast({ title: "Re-run cancelled", description: r.problem_slug });
+      } else {
+        toast({
+          title: "Re-run failed",
+          description: e instanceof Error ? e.message : "Unknown error",
+          variant: "destructive",
+        });
+      }
     } finally {
       setRerunningId(null);
     }
@@ -213,61 +256,62 @@ export default function SubmissionsHistory() {
       <div className="flex flex-wrap gap-2">
         <Input
           placeholder="Search problem slug or source code…"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setSubPage(1);
-            setRunPage(1);
-          }}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           className="max-w-sm"
         />
         <Select
           value={verdict}
-          onValueChange={(v) => {
-            setVerdict(v);
-            setSubPage(1);
-          }}
+          onValueChange={(v) => updateParams({ verdict: v, subPage: null })}
         >
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Verdict" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All verdicts</SelectItem>
-            {verdicts.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+            {VERDICT_OPTIONS.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select
           value={language}
-          onValueChange={(v) => {
-            setLanguage(v);
-            setSubPage(1);
-            setRunPage(1);
-          }}
+          onValueChange={(v) => updateParams({ lang: v, subPage: null, runPage: null })}
         >
           <SelectTrigger className="w-[160px]"><SelectValue placeholder="Language" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All languages</SelectItem>
-            {languages.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+            {LANGUAGE_OPTIONS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
           </SelectContent>
         </Select>
+        {(search || verdict !== "all" || language !== "all") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSearchInput("");
+              setSearchParams(new URLSearchParams(tab === "runs" ? { tab } : {}), { replace: true });
+            }}
+          >
+            <X className="h-4 w-4 mr-1" /> Clear
+          </Button>
+        )}
       </div>
 
-      <Tabs defaultValue="submissions">
+      <Tabs value={tab} onValueChange={(v) => updateParams({ tab: v === "submissions" ? null : v })}>
         <TabsList>
           <TabsTrigger value="submissions">
-            Submissions ({filteredSubs.length})
+            Submissions ({subTotal})
           </TabsTrigger>
           <TabsTrigger value="runs">
-            Runs ({filteredRuns.length})
+            Runs ({runTotal})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="submissions" className="mt-4 space-y-2">
           {subsLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : filteredSubs.length === 0 ? (
+            <>{Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)}</>
+          ) : submissions.length === 0 ? (
             <Card className="p-8 text-center text-muted-foreground">No submissions match your filters.</Card>
           ) : (
             <>
-              {pagedSubs.map((s) => (
+              {submissions.map((s) => (
                 <Card key={s.id} className="p-3">
                   <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3 min-w-0">
@@ -293,62 +337,80 @@ export default function SubmissionsHistory() {
                   </div>
                 </Card>
               ))}
-              <Pager page={safeSubPage} totalPages={subTotalPages} onPage={setSubPage} />
+              <Pager
+                page={subPage}
+                totalPages={subTotalPages}
+                onPage={(p) => updateParams({ subPage: p === 1 ? null : String(p) })}
+              />
             </>
           )}
         </TabsContent>
 
         <TabsContent value="runs" className="mt-4 space-y-2">
           {runsLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : filteredRuns.length === 0 ? (
+            <>{Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)}</>
+          ) : runs.length === 0 ? (
             <Card className="p-8 text-center text-muted-foreground">No runs match your filters.</Card>
           ) : (
             <>
-              {pagedRuns.map((r) => (
-                <Card key={r.id} className="p-3">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Badge variant="outline" className="text-xs">{r.status ?? "Unknown"}</Badge>
-                      <Link
-                        to={`/library/problems/${r.problem_slug}`}
-                        className="text-sm font-medium hover:underline truncate flex items-center gap-1"
-                      >
-                        {r.problem_slug} <ExternalLink className="h-3 w-3" />
-                      </Link>
-                      <span className="text-xs text-muted-foreground">{r.language}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      {r.time_ms !== null && <span>{r.time_ms} ms</span>}
-                      {r.memory_kb !== null && <span>{(r.memory_kb / 1024).toFixed(1)} MB</span>}
-                      <span>{new Date(r.created_at).toLocaleString()}</span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2"
-                        onClick={() => setDetailRun(r)}
-                      >
-                        <Eye className="h-3.5 w-3.5 mr-1" /> Details
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2"
-                        disabled={isRunning && rerunningId === r.id}
-                        onClick={() => handleRerun(r)}
-                      >
-                        {isRunning && rerunningId === r.id ? (
-                          <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              {runs.map((r) => {
+                const isThisRunning = isRunning && rerunningId === r.id;
+                return (
+                  <Card key={r.id} className="p-3">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Badge variant="outline" className="text-xs">{r.status ?? "Unknown"}</Badge>
+                        <Link
+                          to={`/library/problems/${r.problem_slug}`}
+                          className="text-sm font-medium hover:underline truncate flex items-center gap-1"
+                        >
+                          {r.problem_slug} <ExternalLink className="h-3 w-3" />
+                        </Link>
+                        <span className="text-xs text-muted-foreground">{r.language}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        {r.time_ms !== null && <span>{r.time_ms} ms</span>}
+                        {r.memory_kb !== null && <span>{(r.memory_kb / 1024).toFixed(1)} MB</span>}
+                        <span>{new Date(r.created_at).toLocaleString()}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2"
+                          onClick={() => setDetailRun(r)}
+                        >
+                          <Eye className="h-3.5 w-3.5 mr-1" /> Details
+                        </Button>
+                        {isThisRunning ? (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-7 px-2"
+                            onClick={cancelRun}
+                          >
+                            <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                          </Button>
                         ) : (
-                          <Play className="h-3.5 w-3.5 mr-1" />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2"
+                            disabled={isRunning}
+                            onClick={() => handleRerun(r)}
+                          >
+                            <Play className="h-3.5 w-3.5 mr-1" />
+                            Re-run
+                          </Button>
                         )}
-                        Re-run
-                      </Button>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
-              <Pager page={safeRunPage} totalPages={runTotalPages} onPage={setRunPage} />
+                  </Card>
+                );
+              })}
+              <Pager
+                page={runPage}
+                totalPages={runTotalPages}
+                onPage={(p) => updateParams({ runPage: p === 1 ? null : String(p) })}
+              />
             </>
           )}
         </TabsContent>
@@ -386,19 +448,21 @@ export default function SubmissionsHistory() {
                   </Card>
                 </div>
 
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => handleRerun(detailRun)}
-                    disabled={isRunning && rerunningId === detailRun.id}
-                  >
-                    {isRunning && rerunningId === detailRun.id ? (
-                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                    ) : (
+                <div className="flex gap-2 flex-wrap">
+                  {isRunning && rerunningId === detailRun.id ? (
+                    <Button size="sm" variant="destructive" onClick={cancelRun}>
+                      <X className="h-3.5 w-3.5 mr-1" /> Cancel re-run
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => handleRerun(detailRun)}
+                      disabled={isRunning}
+                    >
                       <Play className="h-3.5 w-3.5 mr-1" />
-                    )}
-                    Re-run with same stdin
-                  </Button>
+                      Re-run with same stdin
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" asChild>
                     <Link to={`/library/problems/${detailRun.problem_slug}`}>
                       Open problem <ExternalLink className="h-3.5 w-3.5 ml-1" />
@@ -407,26 +471,38 @@ export default function SubmissionsHistory() {
                 </div>
 
                 <div>
-                  <p className="font-semibold text-muted-foreground mb-1">Source code</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-semibold text-muted-foreground">Source code</p>
+                    <CopyButton text={detailRun.source_code || ""} />
+                  </div>
                   <pre className="bg-muted/50 p-2 rounded border overflow-x-auto max-h-72">
                     {detailRun.source_code || "(empty)"}
                   </pre>
                 </div>
                 <div>
-                  <p className="font-semibold text-muted-foreground mb-1">Stdin</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-semibold text-muted-foreground">Stdin</p>
+                    <CopyButton text={detailRun.stdin || ""} />
+                  </div>
                   <pre className="bg-muted/50 p-2 rounded border overflow-x-auto">
                     {detailRun.stdin || "(empty)"}
                   </pre>
                 </div>
                 {detailRun.stdout && (
                   <div>
-                    <p className="font-semibold text-muted-foreground mb-1">Stdout</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-semibold text-muted-foreground">Stdout</p>
+                      <CopyButton text={detailRun.stdout} />
+                    </div>
                     <pre className="bg-muted/50 p-2 rounded border overflow-x-auto">{detailRun.stdout}</pre>
                   </div>
                 )}
                 {detailRun.stderr && (
                   <div>
-                    <p className="font-semibold text-destructive mb-1">Stderr</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-semibold text-destructive">Stderr</p>
+                      <CopyButton text={detailRun.stderr} />
+                    </div>
                     <pre className="bg-destructive/10 p-2 rounded border border-destructive/30 overflow-x-auto">
                       {detailRun.stderr}
                     </pre>
@@ -434,7 +510,10 @@ export default function SubmissionsHistory() {
                 )}
                 {detailRun.compile_output && (
                   <div>
-                    <p className="font-semibold text-amber-500 mb-1">Compile output</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-semibold text-amber-500">Compile output</p>
+                      <CopyButton text={detailRun.compile_output} />
+                    </div>
                     <pre className="bg-muted/50 p-2 rounded border overflow-x-auto">
                       {detailRun.compile_output}
                     </pre>
