@@ -2,15 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CODING_PROBLEMS, type CodingProblem } from "@/data/codingProblemsData";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  mergeCompletions,
+  type CompletionRecord,
+} from "@/lib/dailyChallengeMerge";
 
 const STORAGE_KEY = "byteskill:coding:dailyChallenge:v2";
-
-interface CompletionRecord {
-  // YYYY-MM-DD in local time
-  date: string;
-  problemSlug: string;
-  completedAt: string; // ISO
-}
 
 interface DailyState {
   completions: CompletionRecord[];
