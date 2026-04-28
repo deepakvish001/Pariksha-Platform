@@ -115,14 +115,39 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     [flush],
   );
 
+  const clear = useCallback(() => {
+    if (!slug) return;
+    if (debounceRef.current) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    pendingRef.current = null;
+    const map = readMap();
+    delete map[slug];
+    writeMap(map);
+    setEntry({ notes: "", code: {}, updatedAt: 0 });
+    setSavedAt(null);
+  }, [slug]);
+
+  const savedLanguages = (Object.keys(entry.code) as LangId[]).filter(
+    (k) => (entry.code[k] ?? "").trim().length > 0,
+  );
+  const hasNotes = entry.notes.trim().length > 0;
+  const hasAnyCode = savedLanguages.length > 0;
+
   return {
     notes: entry.notes,
     code: entry.code[language] ?? "",
+    allCode: entry.code,
+    savedLanguages,
     savedAt,
     setNotes,
     setCode,
-    hasContent:
-      entry.notes.trim().length > 0 ||
-      Object.values(entry.code).some((c) => c && c.trim().length > 0),
+    clear,
+    hasContent: hasNotes || hasAnyCode,
+    hasNotes,
+    hasAnyCode,
+    /** True when both a notes writeup and at least one code solution are saved. */
+    isComplete: hasNotes && hasAnyCode,
   };
 };
