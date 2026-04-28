@@ -298,7 +298,22 @@ const CodingProblems = () => {
             </p>
           </div>
         </div>
-        <RandomMenu filtered={filtered} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={handleShareFilters} className="gap-1.5 h-9">
+            <Share2 className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Share filters</span>
+          </Button>
+          <Button
+            variant={selectionMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
+            className="gap-1.5 h-9"
+          >
+            <CheckSquare className="h-3.5 w-3.5" />
+            {selectionMode ? "Done" : "Select"}
+          </Button>
+          <RandomMenu filtered={filtered} />
+        </div>
       </motion.div>
 
       {/* Stats */}
