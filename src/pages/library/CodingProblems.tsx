@@ -1486,6 +1486,45 @@ const CodingProblems = () => {
         </div>
       )}
 
+      <ProblemPreviewDrawer
+        open={!!previewSlug}
+        onClose={() => setPreviewSlug(null)}
+        problem={previewProblem}
+        status={
+          previewProblem
+            ? solved.has(previewProblem.slug)
+              ? "solved"
+              : attempted.has(previewProblem.slug)
+                ? "attempted"
+                : "todo"
+            : "todo"
+        }
+        bookmarked={previewProblem ? isBookmarked(previewProblem.slug) : false}
+        onToggleBookmark={toggleBookmark}
+        acceptance={(() => {
+          if (!previewProblem) return null;
+          const s = perProblem.get(previewProblem.slug);
+          return s && s.attempts > 0
+            ? Math.round(((s.accepted ?? 0) / s.attempts) * 100)
+            : null;
+        })()}
+        attempts={previewProblem ? perProblem.get(previewProblem.slug)?.attempts ?? 0 : 0}
+        starterLanguage={previewProblem?.languages?.[0]?.id}
+        starterSnippet={previewProblem?.languages?.[0]?.starterCode}
+      />
+
+      <DailyChallengeCelebration
+        open={daily.justCompleted}
+        onClose={daily.acknowledgeCelebration}
+        problem={daily.problem}
+        streak={daily.streak}
+        weeklyDone={Math.min(
+          7,
+          new Set(daily.recentCompletions.map((c) => c.date)).size,
+        )}
+        weeklyTarget={7}
+      />
+
       <AlertDialog open={confirmUnbookmark} onOpenChange={setConfirmUnbookmark}>
         <AlertDialogContent>
           <AlertDialogHeader>
