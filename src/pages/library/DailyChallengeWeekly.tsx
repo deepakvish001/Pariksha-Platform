@@ -143,6 +143,14 @@ const DailyChallengeWeekly = () => {
         <p className="text-sm text-muted-foreground">
           Your last 7 daily challenges, your current streak, and the opt-in leaderboard.
         </p>
+        <div className="mt-3">
+          <DailyChallengeSyncStatus
+            status={daily.syncStatus}
+            error={daily.syncError}
+            lastSyncedAt={daily.lastSyncedAt}
+            signedIn={!!user}
+          />
+        </div>
       </motion.header>
 
       {/* Summary tiles */}
