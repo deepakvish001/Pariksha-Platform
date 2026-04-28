@@ -122,9 +122,6 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
   const [syncing, setSyncing] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const lastSyncedUserRef = useRef<string | null>(null);
-  const [justCompleted, setJustCompleted] = useState(false);
-  const lastSyncedUserRef = useRef<string | null>(null);
-
   // ---- Midnight + timezone refresh ------------------------------------------
   useEffect(() => {
     let timer: number | undefined;
