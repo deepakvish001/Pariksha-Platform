@@ -35,11 +35,15 @@ export const PROBLEM_COLUMNS: ProblemColumnDef[] = [
 const VERSION = 1;
 const KEY = `byteskill:coding-problems-table-prefs:v${VERSION}`;
 
+export type TableDensity = "comfortable" | "compact";
+
 interface Persisted {
   visible: Partial<Record<ProblemColumnId, boolean>>;
   widths: Partial<Record<ProblemColumnId, number>>;
   /** Per-slug saved sort key (3-state). Use "__list__" for the main list. */
   sortBySlug?: Record<string, string>;
+  /** Row density for the problems table. */
+  density?: TableDensity;
 }
 
 const defaultPrefs = (): Persisted => {
@@ -49,7 +53,7 @@ const defaultPrefs = (): Persisted => {
     visible[c.id] = c.defaultVisible;
     widths[c.id] = c.defaultWidth;
   }
-  return { visible, widths, sortBySlug: {} };
+  return { visible, widths, sortBySlug: {}, density: "comfortable" };
 };
 
 const read = (): Persisted => {
