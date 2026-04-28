@@ -320,9 +320,12 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     // Push to DB if signed in.
     if (userId) {
       setSyncStatus("syncing");
-      pushToDb(userId, slug, next).then(() => setSyncStatus("synced")).catch(() =>
-        setSyncStatus("error"),
-      );
+      pushToDb(userId, slug, next)
+        .then(() => {
+          setLastSyncedAt(Date.now());
+          setSyncStatus("synced");
+        })
+        .catch(() => setSyncStatus("error"));
     }
   }, [slug, userId]);
 
