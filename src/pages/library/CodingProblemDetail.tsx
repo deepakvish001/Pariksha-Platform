@@ -550,9 +550,12 @@ const CodingProblemDetail = () => {
     } catch {
       /* ignore */
     }
+    // Read directly from the editor so we capture the freshly-formatted code
+    // (React state hasn't necessarily flushed by the time we get here).
+    const sourceToSubmit = editorRef.current?.getValue() ?? code;
     try {
       const result = await submit({
-        source_code: code,
+        source_code: sourceToSubmit,
         language,
         language_id: langInfo.judge0Id,
         problem_slug: problem.slug,
