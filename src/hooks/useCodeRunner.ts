@@ -155,10 +155,16 @@ export const useCodeRunner = () => {
     tests: { input: string; expected: string }[];
     cpu_time_limit?: number;
     memory_limit?: number;
+    // SQL-mode extensions
+    schema?: string;
+    seed?: string;
+    reference_query?: string;
+    order_matters?: boolean;
   }): Promise<SubmitResult> => {
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("submit-code", {
+      const fnName = params.language === "sql" ? "submit-sql" : "submit-code";
+      const { data, error } = await supabase.functions.invoke(fnName, {
         body: params,
       });
       const payload = data as FunctionEnvelope<SubmitResult> | undefined;
