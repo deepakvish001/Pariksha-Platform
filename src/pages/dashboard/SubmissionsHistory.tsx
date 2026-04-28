@@ -381,10 +381,41 @@ export default function SubmissionsHistory() {
     setSearchInput("");
     setSearchParams(new URLSearchParams(), { replace: true });
     setDetailRunId(null);
+    if (PREFS_KEY) {
+      try {
+        localStorage.removeItem(PREFS_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
     toast.success("Filters cleared", {
-      description: "Search, verdict, language, tab, and pages reset to defaults.",
+      description: "Search, verdict, language, dates, tab, and pages reset to defaults.",
     });
   };
+
+  const setDateRange = (next: { from?: Date; to?: Date }) => {
+    const fromStr = next.from ? format(next.from, "yyyy-MM-dd") : null;
+    const toStr = next.to ? format(next.to, "yyyy-MM-dd") : null;
+    updateParams({ from: fromStr, to: toStr, subPage: null, runPage: null });
+  };
+
+  const dateRangeLabel = (() => {
+    if (fromDate && toDate) return `${format(fromDate, "MMM d")} – ${format(toDate, "MMM d, yyyy")}`;
+    if (fromDate) return `From ${format(fromDate, "MMM d, yyyy")}`;
+    if (toDate) return `Until ${format(toDate, "MMM d, yyyy")}`;
+    return "Any date";
+  })();
+
+  const hasActiveFilters =
+    !!search ||
+    verdict !== "all" ||
+    language !== "all" ||
+    !!dateFrom ||
+    !!dateTo ||
+    tab !== "submissions" ||
+    subPage !== 1 ||
+    runPage !== 1 ||
+    !!detailRunId;
 
   if (!user) {
     return (
@@ -439,13 +470,58 @@ export default function SubmissionsHistory() {
             {LANGUAGE_OPTIONS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
           </SelectContent>
         </Select>
-        {(search ||
-          verdict !== "all" ||
-          language !== "all" ||
-          tab !== "submissions" ||
-          subPage !== 1 ||
-          runPage !== 1 ||
-          detailRunId) && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="default"
+              className={cn(
+                "h-10 justify-start font-normal",
+                !fromDate && !toDate && "text-muted-foreground",
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateRangeLabel}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <div className="flex flex-col sm:flex-row">
+              <div className="border-b sm:border-b-0 sm:border-r">
+                <p className="px-3 pt-3 pb-1 text-xs font-semibold text-muted-foreground">From</p>
+                <Calendar
+                  mode="single"
+                  selected={fromDate}
+                  onSelect={(d) => setDateRange({ from: d ?? undefined, to: toDate })}
+                  disabled={(d) => (toDate ? d > toDate : false) || d > new Date()}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </div>
+              <div>
+                <p className="px-3 pt-3 pb-1 text-xs font-semibold text-muted-foreground">To</p>
+                <Calendar
+                  mode="single"
+                  selected={toDate}
+                  onSelect={(d) => setDateRange({ from: fromDate, to: d ?? undefined })}
+                  disabled={(d) => (fromDate ? d < fromDate : false) || d > new Date()}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </div>
+            </div>
+            {(fromDate || toDate) && (
+              <div className="flex justify-end p-2 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDateRange({ from: undefined, to: undefined })}
+                >
+                  <FilterX className="h-3.5 w-3.5 mr-1" /> Clear dates
+                </Button>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
+        {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={clearAllFilters}>
             <X className="h-4 w-4 mr-1" /> Clear all filters
           </Button>
