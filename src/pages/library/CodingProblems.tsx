@@ -269,6 +269,7 @@ const CodingProblems = () => {
   // Persisted column visibility & widths (responsive — survives refresh).
   const tablePrefs = useCodingProblemsTablePrefs();
   tablePrefsRef.current = tablePrefs;
+  const { focusMode, toggle: toggleFocusMode } = useListingFocusMode();
 
   // Tracks whether we've finished initial sort hydration so we don't fire
   // a "Sort changed" toast for the URL/localStorage restoration on mount.
