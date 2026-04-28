@@ -1351,7 +1351,7 @@ const CodingProblemDetail = () => {
         open={!!pendingRestoreCode}
         onOpenChange={(o) => !o && setPendingRestoreCode(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Replace your current code?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1360,10 +1360,17 @@ const CodingProblemDetail = () => {
               <span className="font-medium text-foreground">
                 {pendingRestoreCode?.label}
               </span>{" "}
-              will overwrite the code currently in the editor. This can't be
-              undone.
+              will overwrite the code currently in the editor. Review the diff
+              below before confirming — this can't be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {pendingRestoreCode && (
+            <CodeDiffPreview
+              before={code}
+              after={pendingRestoreCode.code}
+              maxLines={28}
+            />
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>Keep my code</AlertDialogCancel>
             <AlertDialogAction onClick={confirmRestoreLastSubmitted}>
