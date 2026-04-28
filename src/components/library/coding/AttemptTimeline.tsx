@@ -8,6 +8,7 @@ interface Props {
   submissions: CodeSubmissionRow[];
   limit?: number;
   onSelect?: (submission: CodeSubmissionRow) => void;
+  highlightedId?: string | null;
 }
 
 const formatRelative = (iso: string) => {
@@ -23,7 +24,7 @@ const formatRelative = (iso: string) => {
   return new Date(iso).toLocaleDateString();
 };
 
-export const AttemptTimeline = ({ submissions, limit = 10, onSelect }: Props) => {
+export const AttemptTimeline = ({ submissions, limit = 10, onSelect, highlightedId }: Props) => {
   return (
     <Card className="p-3">
       <div className="flex items-center gap-2 mb-3">
