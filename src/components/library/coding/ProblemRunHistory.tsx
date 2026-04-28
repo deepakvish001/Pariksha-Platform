@@ -17,6 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ChevronDown, CheckCircle2, XCircle, AlertTriangle, Clock, HelpCircle, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CodeRunRow } from "@/hooks/useCodeRuns";
@@ -30,6 +36,7 @@ interface VerdictMeta {
   icon: LucideIcon;
   className: string;
   description: string;
+  hint: string;
 }
 
 // Maps a raw status string from the runner into a normalized verdict bucket
@@ -46,6 +53,7 @@ function getVerdictMeta(status: string | null): VerdictMeta {
       className:
         "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
       description: "Accepted — output matched expected results",
+      hint: "Your solution passed all test cases. Try to optimize time or memory next.",
     };
   }
 
@@ -58,6 +66,7 @@ function getVerdictMeta(status: string | null): VerdictMeta {
       className:
         "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
       description: "Wrong answer — output did not match expected",
+      hint: "Compare your output with the expected output in the diff view. Check edge cases (empty input, duplicates, ordering, off-by-one).",
     };
   }
 
@@ -70,6 +79,7 @@ function getVerdictMeta(status: string | null): VerdictMeta {
       className:
         "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
       description: "Run is still in progress",
+      hint: "The runner is still processing this attempt. Refresh in a moment to see the verdict.",
     };
   }
 
@@ -77,21 +87,33 @@ function getVerdictMeta(status: string | null): VerdictMeta {
   if (
     /(error|compil|runtime|timeout|^tle$|\btle\b|^mle$|\bmle$|exceeded|abort|crash|failed)/.test(s)
   ) {
+    const isTimeout = /timeout|tle/.test(s);
+    const isCompile = /compil/.test(s);
+    const isRuntime = /runtime/.test(s);
+    const isMemory = /mle|memory/.test(s);
     return {
       verdict: "error",
-      label:
-        /timeout|tle/.test(s)
-          ? "Time Limit Exceeded"
-          : /compil/.test(s)
-            ? "Compile Error"
-            : /runtime/.test(s)
-              ? "Runtime Error"
-              : /mle|memory/.test(s)
-                ? "Memory Limit Exceeded"
-                : "Error",
+      label: isTimeout
+        ? "Time Limit Exceeded"
+        : isCompile
+          ? "Compile Error"
+          : isRuntime
+            ? "Runtime Error"
+            : isMemory
+              ? "Memory Limit Exceeded"
+              : "Error",
       icon: AlertTriangle,
       className: "border-destructive/40 bg-destructive/10 text-destructive",
       description: "Execution error",
+      hint: isTimeout
+        ? "Your code took too long. Look for nested loops, unnecessary recomputation, or a more efficient algorithm."
+        : isCompile
+          ? "The code didn't compile. Check syntax errors, missing semicolons, imports, or type mismatches in the compile output."
+          : isRuntime
+            ? "Crashed during execution. Common causes: null/undefined access, division by zero, index out of bounds, stack overflow."
+            : isMemory
+              ? "Used too much memory. Avoid storing redundant data, free large structures, or use streaming over buffering."
+              : "Execution failed. Inspect stderr and compile output for details.",
     };
   }
 
@@ -101,6 +123,7 @@ function getVerdictMeta(status: string | null): VerdictMeta {
     icon: HelpCircle,
     className: "border-muted-foreground/30 bg-muted/40 text-muted-foreground",
     description: "Unknown verdict",
+    hint: "We couldn't classify this verdict. Open the run details to inspect the raw output.",
   };
 }
 
@@ -110,6 +133,29 @@ interface ProblemRunHistoryProps {
 
 export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
   const [sort, setSort] = useState<SortMode>("newest");
+
+  // Aggregate counts and find the latest verdict (by created_at, regardless of sort)
+  const summary = useMemo(() => {
+    const counts: Record<Verdict, number> = {
+      accepted: 0,
+      wrong: 0,
+      error: 0,
+      pending: 0,
+      unknown: 0,
+    };
+    let latest: { run: CodeRunRow; meta: VerdictMeta } | null = null;
+    for (const r of runs) {
+      const meta = getVerdictMeta(r.status);
+      counts[meta.verdict] += 1;
+      if (
+        !latest ||
+        new Date(r.created_at).getTime() > new Date(latest.run.created_at).getTime()
+      ) {
+        latest = { run: r, meta };
+      }
+    }
+    return { counts, latest };
+  }, [runs]);
 
   const sorted = useMemo(() => {
     const list = [...runs];
@@ -135,34 +181,103 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
   }, [runs, sort]);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <p className="text-xs text-muted-foreground">
-          Showing {runs.length} recent run{runs.length === 1 ? "" : "s"}
-        </p>
-        <div className="flex items-center gap-2">
-          <label
-            htmlFor="run-history-sort"
-            className="text-xs text-muted-foreground"
+    <TooltipProvider delayDuration={150}>
+      <div className="space-y-3">
+        {runs.length > 0 && (
+          <Card
+            className="p-3 bg-muted/20"
+            aria-label="Run history summary"
           >
-            Sort
-          </label>
-          <Select value={sort} onValueChange={(v) => setSort(v as SortMode)}>
-            <SelectTrigger
-              id="run-history-sort"
-              className="h-7 w-[140px] text-xs"
-              aria-label="Sort run history"
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div
+                className="flex items-center gap-2 flex-wrap"
+                role="group"
+                aria-label="Verdict counts"
+              >
+                <SummaryChip
+                  meta={getVerdictMeta("accepted")}
+                  count={summary.counts.accepted}
+                />
+                <SummaryChip
+                  meta={getVerdictMeta("wrong")}
+                  count={summary.counts.wrong}
+                />
+                <SummaryChip
+                  meta={getVerdictMeta("error")}
+                  count={summary.counts.error}
+                />
+                {summary.counts.pending > 0 && (
+                  <SummaryChip
+                    meta={getVerdictMeta("pending")}
+                    count={summary.counts.pending}
+                  />
+                )}
+                {summary.counts.unknown > 0 && (
+                  <SummaryChip
+                    meta={getVerdictMeta("unknown")}
+                    count={summary.counts.unknown}
+                  />
+                )}
+              </div>
+              {summary.latest && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>Latest:</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px] gap-1 inline-flex items-center cursor-help",
+                          summary.latest.meta.className,
+                        )}
+                      >
+                        {(() => {
+                          const Icon = summary.latest.meta.icon;
+                          return <Icon className="h-3 w-3" aria-hidden="true" />;
+                        })()}
+                        <span>{summary.latest.meta.label}</span>
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <VerdictTooltipBody meta={summary.latest.meta} />
+                    </TooltipContent>
+                  </Tooltip>
+                  <span className="hidden sm:inline tabular-nums">
+                    {new Date(summary.latest.run.created_at).toLocaleString()}
+                  </span>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <p className="text-xs text-muted-foreground">
+            Showing {runs.length} recent run{runs.length === 1 ? "" : "s"}
+          </p>
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="run-history-sort"
+              className="text-xs text-muted-foreground"
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest first</SelectItem>
-              <SelectItem value="oldest">Oldest first</SelectItem>
-              <SelectItem value="fastest">Fastest first</SelectItem>
-            </SelectContent>
-          </Select>
+              Sort
+            </label>
+            <Select value={sort} onValueChange={(v) => setSort(v as SortMode)}>
+              <SelectTrigger
+                id="run-history-sort"
+                className="h-7 w-[140px] text-xs"
+                aria-label="Sort run history"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest first</SelectItem>
+                <SelectItem value="oldest">Oldest first</SelectItem>
+                <SelectItem value="fastest">Fastest first</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
 
       <ol className="space-y-2 list-none p-0 m-0" aria-label="Run history">
         {sorted.map((r, idx) => {
@@ -183,18 +298,25 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
                         <span className="text-xs font-mono text-muted-foreground">
                           #{runs.length - idx}
                         </span>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-[10px] gap-1 inline-flex items-center",
-                            meta.className,
-                          )}
-                          title={r.status ?? undefined}
-                          data-verdict={meta.verdict}
-                        >
-                          <VerdictIcon className="h-3 w-3" aria-hidden="true" />
-                          <span>{meta.label}</span>
-                        </Badge>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] gap-1 inline-flex items-center cursor-help",
+                                meta.className,
+                              )}
+                              data-verdict={meta.verdict}
+                              aria-label={`${meta.label} — ${meta.description}`}
+                            >
+                              <VerdictIcon className="h-3 w-3" aria-hidden="true" />
+                              <span>{meta.label}</span>
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <VerdictTooltipBody meta={meta} rawStatus={r.status} />
+                          </TooltipContent>
+                        </Tooltip>
                         <span className="text-xs text-muted-foreground truncate">
                           {r.language}
                         </span>
@@ -270,7 +392,65 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
             </li>
           );
         })}
-      </ol>
-    </div>
+        </ol>
+      </div>
+    </TooltipProvider>
   );
 };
+
+// Compact summary chip used in the aggregate row above run history.
+function SummaryChip({ meta, count }: { meta: VerdictMeta; count: number }) {
+  const Icon = meta.icon;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-[10px] gap-1 inline-flex items-center cursor-help tabular-nums",
+            meta.className,
+            count === 0 && "opacity-50",
+          )}
+          aria-label={`${count} ${meta.label}`}
+        >
+          <Icon className="h-3 w-3" aria-hidden="true" />
+          <span className="font-mono">{count}</span>
+          <span>{meta.label}</span>
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs">
+        <VerdictTooltipBody meta={meta} />
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+// Tooltip body explaining a verdict and offering troubleshooting hints.
+function VerdictTooltipBody({
+  meta,
+  rawStatus,
+}: {
+  meta: VerdictMeta;
+  rawStatus?: string | null;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="font-semibold text-xs">{meta.label}</p>
+      <p className="text-[11px] text-muted-foreground leading-snug">
+        {meta.description}
+      </p>
+      <div className="pt-1 border-t border-border/50">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground/80 mb-0.5">
+          Troubleshooting
+        </p>
+        <p className="text-[11px] leading-snug">{meta.hint}</p>
+      </div>
+      {rawStatus &&
+        rawStatus.toLowerCase() !== meta.label.toLowerCase() && (
+          <p className="text-[10px] text-muted-foreground/70 pt-1 border-t border-border/50">
+            Raw status: <span className="font-mono">{rawStatus}</span>
+          </p>
+        )}
+    </div>
+  );
+}
