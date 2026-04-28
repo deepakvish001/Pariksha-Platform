@@ -26,6 +26,7 @@ interface RunResult {
   message: string;
   time: number | null;
   memory: number | null;
+  raw_fermion?: FermionRawDebug;
 }
 
 interface Diagnostics {
@@ -33,6 +34,7 @@ interface Diagnostics {
   requested_url?: string;
   judge0_status?: number; // kept for frontend compat
   judge0_body?: string;
+  raw_fermion_response?: unknown;
 }
 
 interface FunctionResponse<T> {
@@ -104,6 +106,25 @@ function judge0ToFermion(id: number): string | null {
   }
 }
 
+interface RuntimeConfig { cpuMs: number; wallMs: number; memKb: number }
+const FERMION_SAFE_MAX: RuntimeConfig = { cpuMs: 5000, wallMs: 6500, memKb: 512000 };
+const RUNTIME_DEFAULTS: Record<string, RuntimeConfig> = {
+  C: { cpuMs: 2000, wallMs: 5000, memKb: 512000 },
+  Cpp: { cpuMs: 2000, wallMs: 5000, memKb: 512000 },
+  Java: { cpuMs: 3000, wallMs: 6000, memKb: 512000 },
+  Python: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+  NodeJs: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+  Go: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+};
+function runConfigFor(language: string): RuntimeConfig {
+  const cfg = RUNTIME_DEFAULTS[language] ?? RUNTIME_DEFAULTS.Python;
+  return {
+    cpuMs: Math.min(cfg.cpuMs, FERMION_SAFE_MAX.cpuMs),
+    wallMs: Math.min(cfg.wallMs, FERMION_SAFE_MAX.wallMs),
+    memKb: Math.min(cfg.memKb, FERMION_SAFE_MAX.memKb),
+  };
+}
+
 // Map Fermion runStatus -> Judge0-like status object the frontend already understands
 function fermionStatusToJudge0(runStatus: string | undefined): { id: number; description: string } {
   switch (runStatus) {
@@ -127,6 +148,15 @@ interface FermionExecOutcome {
   stderr: string;
   timeMs: number | null;
   memoryKb: number | null;
+  raw: FermionRawDebug;
+}
+
+interface FermionRawDebug {
+  codingTaskStatus?: string;
+  runStatus?: string;
+  runResult?: unknown;
+  stdout?: string;
+  stderr?: string;
 }
 
 async function submitToFermion(payload: {
