@@ -94,6 +94,7 @@ import { CodeDiffPreview } from "@/components/library/coding/CodeDiffPreview";
 import { DraftSaveIndicator } from "@/components/library/coding/DraftSaveIndicator";
 import { EditorSettingsPopover } from "@/components/library/coding/EditorSettingsPopover";
 import { useFormatOnSubmitOverride } from "@/hooks/useFormatOnSubmitOverride";
+import { ChevronScroller } from "@/components/library/coding/ChevronScroller";
 
 const difficultyClass = (d: string) =>
   d === "Easy"
