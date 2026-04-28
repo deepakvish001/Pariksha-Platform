@@ -120,11 +120,8 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
 
   const [state, setState] = useState<DailyState>(() => readState());
   const [syncing, setSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<
-    "idle" | "syncing" | "synced" | "error" | "offline"
-  >("idle");
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const [justCompleted, setJustCompleted] = useState(false);
+  const lastSyncedUserRef = useRef<string | null>(null);
   const [justCompleted, setJustCompleted] = useState(false);
   const lastSyncedUserRef = useRef<string | null>(null);
 
