@@ -908,7 +908,13 @@ const CodingProblemDetail = () => {
         <ResizablePanel defaultSize={55} minSize={30}>
           <ResizablePanelGroup direction="vertical">
             <ResizablePanel defaultSize={65} minSize={25}>
-              <div className="h-full flex flex-col">
+              <div
+                className={cn(
+                  "h-full flex flex-col bg-background",
+                  isEditorFullscreen &&
+                    "fixed inset-0 z-50 h-screen w-screen border-0",
+                )}
+              >
                 {/* Editor toolbar */}
                 <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-muted/30">
                   <Select value={language} onValueChange={(v) => setLanguage(v as LangId)}>
