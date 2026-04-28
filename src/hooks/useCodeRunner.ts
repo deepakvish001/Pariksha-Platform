@@ -61,6 +61,8 @@ export const useCodeRunner = () => {
     source_code: string;
     language_id: number;
     stdin?: string;
+    problem_slug?: string;
+    language?: string;
   }): Promise<RunResult> => {
     setIsRunning(true);
     try {
