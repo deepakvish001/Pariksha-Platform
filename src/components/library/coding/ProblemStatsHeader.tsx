@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { ArrowRight, TrendingUp, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ interface Props {
   weekSolved: number;
   prevWeekSolved: number;
   continueProblem?: CodingProblem;
+  /** Render skeletons in the final card layout while stats load. */
+  loading?: boolean;
 }
 
 export const ProblemStatsHeader = ({
@@ -29,9 +31,56 @@ export const ProblemStatsHeader = ({
   weekSolved,
   prevWeekSolved,
   continueProblem,
+  loading,
 }: Props) => {
   const pct = counts.total > 0 ? Math.round((totalSolved / counts.total) * 100) : 0;
   const delta = weekSolved - prevWeekSolved;
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6" aria-busy="true">
+        {/* Progress card skeleton */}
+        <Card className="p-5 relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-20 w-20 rounded-full shrink-0" />
+            <div className="min-w-0 space-y-2 flex-1">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-7 w-20" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          </div>
+        </Card>
+
+        {/* Difficulty breakdown skeleton */}
+        <Card className="p-5">
+          <Skeleton className="h-3 w-24 mb-3" />
+          <div className="space-y-2.5">
+            {[0, 1, 2].map((i) => (
+              <div key={i}>
+                <div className="flex justify-between mb-1">
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-3 w-10" />
+                </div>
+                <Skeleton className="h-1.5 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Momentum card skeleton */}
+        <Card className="p-5 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-7 w-16" />
+            </div>
+            <Skeleton className="h-5 w-5 rounded-full" />
+          </div>
+          <Skeleton className="h-9 w-full mt-auto rounded-md" />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
