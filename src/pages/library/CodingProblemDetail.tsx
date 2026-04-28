@@ -148,6 +148,8 @@ const CodingProblemDetail = () => {
   const { submissions, loading: submissionsLoading, refetch: refetchSubmissions } = useCodingSubmissions(slug);
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
+  const { note: notesValue, setNote: setNotesValue, savedAt: notesSavedAt } = useProblemNotes(slug);
+  const { prefs: editorPrefs, incFontSize, decFontSize, MIN: FS_MIN, MAX: FS_MAX } = useEditorPrefs();
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
   // If the submission ID doesn't exist for this problem, clear the param so
