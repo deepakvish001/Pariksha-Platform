@@ -520,10 +520,20 @@ export default function SubmissionsHistory() {
                   </Card>
                 </div>
 
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap items-center">
                   {isRunning && rerunningId === detailRun.id ? (
                     <Button size="sm" variant="destructive" onClick={cancelRun}>
                       <X className="h-3.5 w-3.5 mr-1" /> Cancel re-run
+                    </Button>
+                  ) : lastRerunError?.id === detailRun.id ? (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleRerun(detailRun)}
+                      disabled={isRunning}
+                    >
+                      <Play className="h-3.5 w-3.5 mr-1" />
+                      Retry re-run
                     </Button>
                   ) : (
                     <Button
@@ -541,6 +551,16 @@ export default function SubmissionsHistory() {
                     </Link>
                   </Button>
                 </div>
+                {lastRerunError?.id === detailRun.id && (
+                  <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-destructive">
+                    Re-run failed: {lastRerunError.message}
+                  </div>
+                )}
+                {lastCancelledId === detailRun.id && !isRunning && (
+                  <div className="rounded border border-border bg-muted/30 p-2 text-muted-foreground">
+                    Re-run was cancelled.
+                  </div>
+                )}
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
