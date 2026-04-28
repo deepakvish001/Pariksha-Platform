@@ -668,6 +668,9 @@ const CodingProblemDetail = () => {
         stdin,
         problem_slug: slug,
         language,
+        ...(problem.sql
+          ? { schema: problem.sql.schema, seed: problem.sql.seed }
+          : {}),
       });
       setRunResult(result);
       setExecutionErrorDetails(null);
