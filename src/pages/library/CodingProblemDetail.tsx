@@ -133,6 +133,8 @@ const CodingProblemDetail = () => {
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const sessionTimerRef = useRef<SessionTimerHandle>(null);
   
   const [detailSubmission, setDetailSubmission] = useState<CodeSubmissionRow | null>(null);
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(() =>
