@@ -168,6 +168,8 @@ const CodingProblemDetail = () => {
     isComplete: mySolutionIsComplete,
     syncStatus: mySolutionSyncStatus,
     isCloudSynced: mySolutionIsCloudSynced,
+    lastSyncedAt: mySolutionLastSyncedAt,
+    lastConflictResolvedAt: mySolutionLastConflictAt,
   } = useProblemSolution(slug, mySolutionLanguage);
   const {
     prefs: editorPrefs,
@@ -323,6 +325,16 @@ const CodingProblemDetail = () => {
       setStdin(problem.sampleTests[0].input);
     }
   }, [problem]);
+
+  // Notify when the My Solution sync resolved a real local↔cloud conflict.
+  useEffect(() => {
+    if (!mySolutionLastConflictAt) return;
+    toast({
+      title: "My Solution merged across devices",
+      description:
+        "We kept the most recently edited version of each part (notes and per language). Nothing was lost.",
+    });
+  }, [mySolutionLastConflictAt, toast]);
 
   if (!problem) {
     return (
@@ -613,6 +625,10 @@ const CodingProblemDetail = () => {
                   fontSize={editorPrefs.fontSize}
                   syncStatus={mySolutionSyncStatus}
                   isCloudSynced={mySolutionIsCloudSynced}
+                  lastSyncedAt={mySolutionLastSyncedAt}
+                  onSignInClick={() =>
+                    navigate(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`)
+                  }
                 />
               </TabsContent>
 

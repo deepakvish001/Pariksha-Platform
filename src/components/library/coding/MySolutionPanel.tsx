@@ -89,6 +89,10 @@ interface Props {
   syncStatus?: "idle" | "syncing" | "synced" | "error" | "offline";
   /** True when persisting to the cloud (signed-in user). */
   isCloudSynced?: boolean;
+  /** When the cloud sync last completed successfully (ms epoch). */
+  lastSyncedAt?: number | null;
+  /** Invoked when the signed-out banner's CTA is clicked. */
+  onSignInClick?: () => void;
 }
 
 const formatExact = (ts: number) => {
@@ -160,6 +164,8 @@ export const MySolutionPanel = ({
   fontSize = 13,
   syncStatus = "idle",
   isCloudSynced = false,
+  lastSyncedAt = null,
+  onSignInClick,
 }: Props) => {
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [copied, setCopied] = useState(false);
@@ -361,11 +367,21 @@ export const MySolutionPanel = ({
               </TooltipTrigger>
               <TooltipContent>
                 {isCloudSynced
-                  ? "Your solution is being saved to your account so you can access it from any device."
+                  ? lastSyncedAt
+                    ? `Last synced ${new Date(lastSyncedAt).toLocaleString()}`
+                    : "Your solution is being saved to your account so you can access it from any device."
                   : "Sign in to sync your solution to your account and access it across devices."}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          {isCloudSynced && lastSyncedAt && (
+            <span
+              className="text-[11px] text-muted-foreground tabular-nums"
+              title={new Date(lastSyncedAt).toLocaleString()}
+            >
+              Last synced {formatTimestamp(lastSyncedAt, timestampFormat)}
+            </span>
+          )}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -424,6 +440,35 @@ export const MySolutionPanel = ({
           </AlertDialog>
         </div>
       </div>
+
+      {/* Signed-out banner — explains local-only persistence */}
+      {!isCloudSynced && (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-3"
+        >
+          <CloudOff className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+              Your solution is saved locally on this device only
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Sign in to sync notes and code to your account so they follow you
+              across devices and survive cache clears.
+            </p>
+          </div>
+          {onSignInClick && (
+            <Button
+              size="sm"
+              variant="default"
+              className="h-7 text-xs shrink-0"
+              onClick={onSignInClick}
+            >
+              Sign in to sync
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Notes block */}
       <div className="space-y-2">
