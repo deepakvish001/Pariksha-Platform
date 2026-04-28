@@ -413,6 +413,9 @@ const CodingProblems = () => {
               stats={perProblem.get(p.slug)}
               onToggleBookmark={toggleBookmark}
               index={idx}
+              selectionMode={selectionMode}
+              selected={selected.has(p.slug)}
+              onToggleSelected={toggleSelected}
             />
           ))}
         </div>
@@ -421,6 +424,7 @@ const CodingProblems = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                {selectionMode && <TableHead className="w-[40px]"></TableHead>}
                 <TableHead className="w-[50px]">Status</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead className="hidden md:table-cell">Topics</TableHead>
