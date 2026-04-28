@@ -338,6 +338,46 @@ const CodingProblemDetail = () => {
     });
   }, [mySolutionLastConflictAt, toast]);
 
+  // Editor keyboard shortcuts. We use a ref-bag so we can read the latest
+  // handler closures without re-binding the listener on every render.
+  const shortcutBagRef = useRef<{
+    run: () => void;
+    submit: () => void;
+    reset: () => void;
+    busy: boolean;
+  }>({ run: () => {}, submit: () => {}, reset: () => {}, busy: false });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const target = e.target as HTMLElement | null;
+      // Skip when typing in plain inputs/textareas outside Monaco — Monaco
+      // surfaces its own command palette and doesn't bubble these by default.
+      const tag = target?.tagName?.toLowerCase();
+      const isPlainEditable =
+        tag === "input" ||
+        (tag === "textarea" && !target?.closest(".monaco-editor"));
+      if (isPlainEditable) return;
+
+      if (e.key === "Enter" && e.shiftKey) {
+        e.preventDefault();
+        if (!shortcutBagRef.current.busy) shortcutBagRef.current.submit();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (!shortcutBagRef.current.busy) shortcutBagRef.current.run();
+      } else if (e.key.toLowerCase() === "r" && e.shiftKey) {
+        // Ctrl/Cmd+Shift+R → reset starter (avoid clobbering browser hard reload
+        // which is Ctrl+Shift+R on most platforms — but here we're inside the
+        // app and users expect a guard; we still preventDefault for parity).
+        e.preventDefault();
+        if (!shortcutBagRef.current.busy) shortcutBagRef.current.reset();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   if (!problem) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
