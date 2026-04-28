@@ -1114,6 +1114,18 @@ const CodingProblemDetail = () => {
         isRunning={isRunning}
         isSubmitting={isSubmitting}
       />
+
+      <ShortcutsCheatSheet
+        open={showShortcuts}
+        onOpenChange={setShowShortcuts}
+        title="Editor shortcuts"
+        shortcuts={[
+          { keys: ["Ctrl/Cmd", "Enter"], description: "Run code with current test" },
+          { keys: ["Ctrl/Cmd", "Shift", "Enter"], description: "Submit solution" },
+          { keys: ["Ctrl/Cmd", "Shift", "R"], description: "Reset to starter code" },
+          { keys: ["Esc"], description: "Close drawers and dialogs" },
+        ]}
+      />
     </div>
   );
 };
