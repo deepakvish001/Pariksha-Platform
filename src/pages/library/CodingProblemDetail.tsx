@@ -77,6 +77,7 @@ const CodingProblemDetail = () => {
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
   const { submissions, refetch: refetchSubmissions } = useCodingSubmissions(slug);
+  const { runs, refetch: refetchRuns } = useCodeRuns(slug);
 
   // Initialize code from draft or starter
   useEffect(() => {
