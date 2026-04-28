@@ -316,8 +316,6 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     if (user) {
       try {
         setSyncing(true);
-        setSyncStatus("syncing");
-        setSyncError(null);
         // ignoreDuplicates: if another device already marked this date,
         // do not overwrite the earlier completion timestamp.
         const { error: upErr } = await supabase
@@ -332,13 +330,8 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
             { onConflict: "user_id,challenge_date", ignoreDuplicates: true },
           );
         if (upErr) throw upErr;
-        setSyncStatus("synced");
-        setLastSyncedAt(new Date());
       } catch (err) {
-        const msg =
-          err instanceof Error ? err.message : "Failed to record completion";
-        setSyncError(msg);
-        setSyncStatus(navigator?.onLine === false ? "offline" : "error");
+        console.warn("Daily challenge mark-completed sync failed:", err);
       } finally {
         setSyncing(false);
       }
