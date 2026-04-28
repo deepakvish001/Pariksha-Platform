@@ -123,11 +123,27 @@ export const useCodingProblemsTablePrefs = () => {
 
   const resetAll = useCallback(() => setPrefs(defaultPrefs()), []);
 
+  const getSavedSort = useCallback(
+    (slug: string): string | undefined => prefs.sortBySlug?.[slug],
+    [prefs.sortBySlug],
+  );
+
+  const setSavedSort = useCallback((slug: string, sort: string) => {
+    setPrefs((prev) => {
+      const nextMap = { ...(prev.sortBySlug ?? {}) };
+      if (!sort || sort === "default") delete nextMap[slug];
+      else nextMap[slug] = sort;
+      return { ...prev, sortBySlug: nextMap };
+    });
+  }, []);
+
   return {
     isVisible,
     widthOf,
     toggleVisible,
     setWidth,
     resetAll,
+    getSavedSort,
+    setSavedSort,
   };
 };
