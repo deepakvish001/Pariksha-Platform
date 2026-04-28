@@ -934,6 +934,24 @@ const CodingProblemDetail = () => {
                       <RotateCcw className="h-3 w-3" />
                       Reset
                     </Button>
+                    <div className="w-px h-5 bg-border mx-1" />
+                    {slug && <SessionTimer ref={sessionTimerRef} slug={slug} />}
+                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowShortcuts(true)}
+                            className="h-8 w-8"
+                            aria-label="Keyboard shortcuts"
+                          >
+                            <Keyboard className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Keyboard shortcuts</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
                 <div className="flex-1 min-h-0">
@@ -961,28 +979,14 @@ const CodingProblemDetail = () => {
                 </TabsList>
 
                 <TabsContent value="testcase" className="flex-1 m-0 p-3 overflow-y-auto">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {problem.sampleTests.map((t, i) => (
-                        <Button
-                          key={i}
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => setStdin(t.input)}
-                        >
-                          Case {i + 1}
-                        </Button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">stdin (input passed to your program)</p>
-                    <Textarea
-                      value={stdin}
-                      onChange={(e) => setStdin(e.target.value)}
-                      className="font-mono text-xs min-h-[120px] resize-none"
-                      placeholder="Enter your test input..."
-                    />
-                  </div>
+                  <TestCaseWorkbench
+                    slug={problem.slug}
+                    sampleTests={problem.sampleTests}
+                    stdin={stdin}
+                    onStdinChange={setStdin}
+                    onRun={handleRun}
+                    isRunning={isRunning}
+                  />
                 </TabsContent>
 
                 <TabsContent value="output" className="flex-1 m-0 p-3 overflow-y-auto">
