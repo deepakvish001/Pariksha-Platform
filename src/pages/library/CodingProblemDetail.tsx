@@ -599,11 +599,15 @@ const CodingProblemDetail = () => {
                   onUseCurrentDraft={() => code}
                   onClear={clearMySolution}
                   onRestore={restoreMySolution}
+                  onUndoCodeChange={undoMySolutionCode}
+                  canUndoCode={canUndoMySolutionCode}
                   hasUnsavedCurrentCode={mySolutionHasUnsavedCurrentCode}
                   savedAt={mySolutionSavedAt}
                   hasNotes={mySolutionHasNotes}
                   hasAnyCode={mySolutionHasAnyCode}
                   isComplete={mySolutionIsComplete}
+                  timestampFormat={editorPrefs.timestampFormat}
+                  onToggleTimestampFormat={toggleTimestampFormat}
                   fontSize={editorPrefs.fontSize}
                 />
               </TabsContent>
