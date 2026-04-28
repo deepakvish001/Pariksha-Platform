@@ -77,6 +77,9 @@ import { MySolutionPanel } from "@/components/library/coding/MySolutionPanel";
 import { FloatingActionBar } from "@/components/library/coding/FloatingActionBar";
 import { SessionTimer, formatSolveTime, type SessionTimerHandle } from "@/components/library/coding/SessionTimer";
 import { TestCaseWorkbench } from "@/components/library/coding/TestCaseWorkbench";
+import { SchemaSeedToggle } from "@/components/library/coding/SchemaSeedToggle";
+import { SqlResultDiff, SqlResultTable } from "@/components/library/coding/SqlResultDiff";
+import { ProblemRunHistory } from "@/components/library/coding/ProblemRunHistory";
 import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
 import { useProblemNotes } from "@/hooks/useProblemNotes";
 import { useProblemSolution } from "@/hooks/useProblemSolution";
@@ -823,6 +826,7 @@ const CodingProblemDetail = () => {
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as EditorTabId)}
             className="h-full flex flex-col"
+            aria-label="Problem panels"
           >
             <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
               <ChevronScroller>
@@ -932,28 +936,11 @@ const CodingProblemDetail = () => {
 
                 {/* SQL Schema panel — only for SQL problems */}
                 {problem.sql && (
-                  <details
-                    open
-                    className="rounded-md border bg-muted/40 overflow-hidden"
-                  >
-                    <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted/60">
-                      Schema &amp; sample data (SQLite)
-                    </summary>
-                    <div className="border-t">
-                      <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Tables
-                      </div>
-                      <pre className="text-xs px-3 pb-3 overflow-x-auto whitespace-pre font-mono">
-                        <code>{problem.sql.schema.trim()}</code>
-                      </pre>
-                      <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-t">
-                        Seed data
-                      </div>
-                      <pre className="text-xs px-3 pb-3 overflow-x-auto whitespace-pre font-mono">
-                        <code>{problem.sql.seed.trim()}</code>
-                      </pre>
-                    </div>
-                  </details>
+                  <SchemaSeedToggle
+                    schema={problem.sql.schema}
+                    seed={problem.sql.seed}
+                    defaultOpen
+                  />
                 )}
 
                 {/* Examples */}
@@ -1119,7 +1106,7 @@ const CodingProblemDetail = () => {
                 )}
               </TabsContent>
 
-              <TabsContent value="runs" className="mt-0">
+              <TabsContent value="runs" className="mt-0" aria-label="Run history">
                 {!user ? (
                   <Card className="p-8 text-center">
                     <p className="text-muted-foreground mb-3">
@@ -1134,55 +1121,7 @@ const CodingProblemDetail = () => {
                     </p>
                   </Card>
                 ) : (
-                  <div className="space-y-2">
-                    {runs.map((r) => (
-                      <Collapsible key={r.id}>
-                        <Card className="p-3 hover:bg-muted/30 transition-colors">
-                          <CollapsibleTrigger className="w-full text-left">
-                            <div className="flex items-center justify-between gap-3 flex-wrap">
-                              <div className="flex items-center gap-3">
-                                <Badge variant="outline" className="text-xs">
-                                  {r.status ?? "Unknown"}
-                                </Badge>
-                                <span className="text-sm text-muted-foreground">{r.language}</span>
-                              </div>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                {r.time_ms !== null && <span>{r.time_ms} ms</span>}
-                                {r.memory_kb !== null && <span>{(r.memory_kb / 1024).toFixed(1)} MB</span>}
-                                <span>{new Date(r.created_at).toLocaleString()}</span>
-                              </div>
-                            </div>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent className="mt-3 space-y-2 text-xs">
-                            {r.stdin && (
-                              <div>
-                                <p className="font-semibold text-muted-foreground mb-1">Stdin</p>
-                                <pre className="bg-muted/50 p-2 rounded border overflow-x-auto">{r.stdin}</pre>
-                              </div>
-                            )}
-                            {r.stdout && (
-                              <div>
-                                <p className="font-semibold text-muted-foreground mb-1">Stdout</p>
-                                <pre className="bg-muted/50 p-2 rounded border overflow-x-auto">{r.stdout}</pre>
-                              </div>
-                            )}
-                            {r.stderr && (
-                              <div>
-                                <p className="font-semibold text-destructive mb-1">Stderr</p>
-                                <pre className="bg-destructive/10 p-2 rounded border border-destructive/30 overflow-x-auto">{r.stderr}</pre>
-                              </div>
-                            )}
-                            {r.compile_output && (
-                              <div>
-                                <p className="font-semibold text-amber-500 mb-1">Compile output</p>
-                                <pre className="bg-muted/50 p-2 rounded border overflow-x-auto">{r.compile_output}</pre>
-                              </div>
-                            )}
-                          </CollapsibleContent>
-                        </Card>
-                      </Collapsible>
-                    ))}
-                  </div>
+                  <ProblemRunHistory runs={runs} />
                 )}
               </TabsContent>
             </div>
@@ -1426,27 +1365,60 @@ const CodingProblemDetail = () => {
                 value={activeBottomTab}
                 onValueChange={(v) => setActiveBottomTab(v as "testcase" | "output")}
                 className="h-full flex flex-col"
+                aria-label="Test case and output"
               >
                 <div className="border-b overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <TabsList className="rounded-none justify-start bg-transparent border-0 h-10 px-2 w-max min-w-full flex-nowrap">
-                    <TabsTrigger value="testcase" className="shrink-0 whitespace-nowrap">Test Case</TabsTrigger>
-                    <TabsTrigger value="output" className="shrink-0 whitespace-nowrap">Output</TabsTrigger>
+                  <TabsList
+                    className="rounded-none justify-start bg-transparent border-0 h-10 px-2 w-max min-w-full flex-nowrap"
+                    aria-label="Bottom panel tabs"
+                  >
+                    <TabsTrigger
+                      value="testcase"
+                      className="shrink-0 whitespace-nowrap"
+                      aria-label="Test case input"
+                    >
+                      Test Case
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="output"
+                      className="shrink-0 whitespace-nowrap"
+                      aria-label="Run and submit output"
+                    >
+                      Output
+                    </TabsTrigger>
                   </TabsList>
                 </div>
 
-                <TabsContent value="testcase" className="flex-1 m-0 p-3 overflow-y-auto">
+                <TabsContent
+                  value="testcase"
+                  className="flex-1 m-0 p-3 overflow-y-auto"
+                  aria-label="Test case input"
+                >
                   {isSQLProblem ? (
                     <div className="space-y-3">
                       <div className="rounded-md border bg-muted/30 p-3 text-sm">
                         <p className="font-medium mb-1">Seeded dataset</p>
                         <p className="text-muted-foreground text-xs">
-                          Your query runs against the schema and seed data shown in the problem
-                          description. Click <span className="font-mono">Run</span> to execute and{" "}
+                          Your query runs against the schema and seed data shown below. Click{" "}
+                          <span className="font-mono">Run</span> to execute and{" "}
                           <span className="font-mono">Submit</span> to compare results with the
                           reference query.
                         </p>
                       </div>
-                      <Button onClick={handleRun} disabled={isRunning} size="sm" className="gap-1.5">
+                      {problem.sql && (
+                        <SchemaSeedToggle
+                          schema={problem.sql.schema}
+                          seed={problem.sql.seed}
+                          compact
+                        />
+                      )}
+                      <Button
+                        onClick={handleRun}
+                        disabled={isRunning}
+                        size="sm"
+                        className="gap-1.5"
+                        aria-label="Run SQL query"
+                      >
                         {isRunning ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
@@ -1467,10 +1439,18 @@ const CodingProblemDetail = () => {
                   )}
                 </TabsContent>
 
-                <TabsContent value="output" className="flex-1 m-0 p-3 overflow-y-auto">
+                <TabsContent
+                  value="output"
+                  className="flex-1 m-0 p-3 overflow-y-auto"
+                  aria-label="Run and submit output"
+                >
                   {isRunning || isSubmitting ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    <div
+                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                       {isSubmitting ? "Judging against hidden test cases..." : "Running..."}
                     </div>
                   ) : submitResult ? (
@@ -1492,26 +1472,33 @@ const CodingProblemDetail = () => {
                           <p className="text-xs font-semibold text-destructive">
                             Failed on test case #{(submitResult.failing_case.index ?? 0) + 1}
                           </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
-                            <div>
-                              <p className="text-muted-foreground mb-1">Input</p>
-                              <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
-                                {submitResult.failing_case.input}
-                              </pre>
+                          {isSQLProblem ? (
+                            <SqlResultDiff
+                              expected={submitResult.failing_case.expected ?? ""}
+                              actual={submitResult.failing_case.output ?? ""}
+                            />
+                          ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
+                              <div>
+                                <p className="text-muted-foreground mb-1">Input</p>
+                                <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
+                                  {submitResult.failing_case.input}
+                                </pre>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground mb-1">Expected</p>
+                                <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
+                                  {submitResult.failing_case.expected}
+                                </pre>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground mb-1">Got</p>
+                                <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
+                                  {submitResult.failing_case.output || "(empty)"}
+                                </pre>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-muted-foreground mb-1">Expected</p>
-                              <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
-                                {submitResult.failing_case.expected}
-                              </pre>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground mb-1">Got</p>
-                              <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
-                                {submitResult.failing_case.output || "(empty)"}
-                              </pre>
-                            </div>
-                          </div>
+                          )}
                           {submitResult.failing_case.error && (
                             <pre className="text-xs text-destructive bg-background p-2 rounded border overflow-x-auto">
                               {submitResult.failing_case.error}
@@ -1531,46 +1518,68 @@ const CodingProblemDetail = () => {
                         if (failed.length === 0) return null;
                         return (
                           <div className="space-y-2">
-                            <p className="text-xs font-medium text-muted-foreground">
-                              Per-test raw details ({failed.length} failing)
+                            <p
+                              className="text-xs font-medium text-muted-foreground"
+                              id="failing-tests-heading"
+                            >
+                              Failing tests ({failed.length})
                             </p>
-                            {failed.map((c) => (
-                              <details
-                                key={c.index}
-                                className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs"
-                              >
-                                <summary className="cursor-pointer font-medium flex items-center gap-2 flex-wrap">
-                                  <span className="text-destructive">Test #{c.index + 1}</span>
-                                  <Badge variant="outline" className="text-[10px]">{c.status_label}</Badge>
-                                  <span className="text-muted-foreground font-mono">
-                                    {c.time_ms} ms · {(c.memory_kb / 1024).toFixed(1)} MB
-                                  </span>
-                                </summary>
-                                <div className="mt-3 space-y-2">
-                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono">
-                                    <div>
-                                      <p className="text-muted-foreground mb-1">Input</p>
-                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.input}</pre>
+                            <div
+                              role="list"
+                              aria-labelledby="failing-tests-heading"
+                              className="space-y-2"
+                            >
+                              {failed.map((c) => {
+                                const panelId = `failing-test-${c.index}`;
+                                return (
+                                  <details
+                                    key={c.index}
+                                    role="listitem"
+                                    className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs group"
+                                  >
+                                    <summary
+                                      aria-controls={panelId}
+                                      className="cursor-pointer font-medium flex items-center gap-2 flex-wrap list-none"
+                                    >
+                                      <span className="text-destructive">Test #{c.index + 1}</span>
+                                      <Badge variant="outline" className="text-[10px]">{c.status_label}</Badge>
+                                      <span className="text-muted-foreground font-mono">
+                                        {c.time_ms} ms · {(c.memory_kb / 1024).toFixed(1)} MB
+                                      </span>
+                                    </summary>
+                                    <div id={panelId} className="mt-3 space-y-2">
+                                      {isSQLProblem ? (
+                                        <SqlResultDiff
+                                          expected={c.expected ?? ""}
+                                          actual={c.stdout ?? ""}
+                                        />
+                                      ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono">
+                                          <div>
+                                            <p className="text-muted-foreground mb-1">Input</p>
+                                            <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.input}</pre>
+                                          </div>
+                                          <div>
+                                            <p className="text-muted-foreground mb-1">Expected</p>
+                                            <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.expected}</pre>
+                                          </div>
+                                          <div>
+                                            <p className="text-muted-foreground mb-1">Got</p>
+                                            <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.stdout || "(empty)"}</pre>
+                                          </div>
+                                        </div>
+                                      )}
+                                      {c.stderr && (
+                                        <div>
+                                          <p className="text-muted-foreground mb-1">stderr</p>
+                                          <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap text-destructive">{c.stderr}</pre>
+                                        </div>
+                                      )}
                                     </div>
-                                    <div>
-                                      <p className="text-muted-foreground mb-1">Expected</p>
-                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.expected}</pre>
-                                    </div>
-                                    <div>
-                                      <p className="text-muted-foreground mb-1">Got</p>
-                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.stdout || "(empty)"}</pre>
-                                    </div>
-                                  </div>
-                                  {c.stderr && (
-                                    <div>
-                                      <p className="text-muted-foreground mb-1">stderr</p>
-                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap text-destructive">{c.stderr}</pre>
-                                    </div>
-                                  )}
-                                </div>
-
-                              </details>
-                            ))}
+                                  </details>
+                                );
+                              })}
+                            </div>
                           </div>
                         );
                       })()}
@@ -1586,10 +1595,16 @@ const CodingProblemDetail = () => {
                       </div>
                       {runResult.stdout && (
                         <div>
-                          <p className="text-xs text-muted-foreground mb-1">stdout</p>
-                          <pre className="text-xs bg-muted/50 p-3 rounded border overflow-x-auto whitespace-pre-wrap">
-                            {runResult.stdout}
-                          </pre>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            {isSQLProblem ? "Query result" : "stdout"}
+                          </p>
+                          {isSQLProblem ? (
+                            <SqlResultTable value={runResult.stdout} />
+                          ) : (
+                            <pre className="text-xs bg-muted/50 p-3 rounded border overflow-x-auto whitespace-pre-wrap">
+                              {runResult.stdout}
+                            </pre>
+                          )}
                         </div>
                       )}
                       {runResult.stderr && (

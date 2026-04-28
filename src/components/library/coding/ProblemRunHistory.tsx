@@ -1,0 +1,212 @@
+// Per-problem run history. Renders a sortable list of recent Run attempts
+// with input, status, exec time and memory. Designed to make scanning
+// across attempts easy. Each row is collapsible to reveal stdin / stdout /
+// stderr / compile output.
+import { useMemo, useState } from "react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { CodeRunRow } from "@/hooks/useCodeRuns";
+
+type SortMode = "newest" | "oldest" | "fastest";
+
+const ACCEPT_LIKE = ["accepted", "successful", "ok"];
+const ERROR_LIKE = ["error", "compilation", "wrong", "failed", "runtime", "timeout", "tle"];
+
+function statusTone(status: string | null): {
+  variant: "default" | "destructive" | "outline" | "secondary";
+  className: string;
+} {
+  const s = (status ?? "unknown").toLowerCase();
+  if (ACCEPT_LIKE.some((k) => s.includes(k))) {
+    return {
+      variant: "outline",
+      className:
+        "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    };
+  }
+  if (ERROR_LIKE.some((k) => s.includes(k))) {
+    return {
+      variant: "outline",
+      className: "border-destructive/40 bg-destructive/10 text-destructive",
+    };
+  }
+  return { variant: "outline", className: "" };
+}
+
+interface ProblemRunHistoryProps {
+  runs: CodeRunRow[];
+}
+
+export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
+  const [sort, setSort] = useState<SortMode>("newest");
+
+  const sorted = useMemo(() => {
+    const list = [...runs];
+    switch (sort) {
+      case "oldest":
+        return list.sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        );
+      case "fastest":
+        return list.sort(
+          (a, b) =>
+            (a.time_ms ?? Number.POSITIVE_INFINITY) -
+            (b.time_ms ?? Number.POSITIVE_INFINITY),
+        );
+      case "newest":
+      default:
+        return list.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
+    }
+  }, [runs, sort]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <p className="text-xs text-muted-foreground">
+          Showing {runs.length} recent run{runs.length === 1 ? "" : "s"}
+        </p>
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="run-history-sort"
+            className="text-xs text-muted-foreground"
+          >
+            Sort
+          </label>
+          <Select value={sort} onValueChange={(v) => setSort(v as SortMode)}>
+            <SelectTrigger
+              id="run-history-sort"
+              className="h-7 w-[140px] text-xs"
+              aria-label="Sort run history"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest first</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="fastest">Fastest first</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <ol className="space-y-2 list-none p-0 m-0" aria-label="Run history">
+        {sorted.map((r, idx) => {
+          const tone = statusTone(r.status);
+          const panelId = `run-${r.id}-panel`;
+          return (
+            <li key={r.id}>
+              <Collapsible>
+                <Card className="p-3 hover:bg-muted/30 transition-colors">
+                  <CollapsibleTrigger
+                    className="w-full text-left group"
+                    aria-controls={panelId}
+                    aria-label={`Run #${runs.length - idx} from ${new Date(r.created_at).toLocaleString()} — ${r.status ?? "unknown"}`}
+                  >
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-xs font-mono text-muted-foreground">
+                          #{runs.length - idx}
+                        </span>
+                        <Badge
+                          variant={tone.variant}
+                          className={cn("text-[10px]", tone.className)}
+                        >
+                          {r.status ?? "Unknown"}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {r.language}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+                        {r.time_ms !== null && (
+                          <span aria-label={`Execution time ${r.time_ms} milliseconds`}>
+                            {r.time_ms} ms
+                          </span>
+                        )}
+                        {r.memory_kb !== null && (
+                          <span aria-label={`Memory ${(r.memory_kb / 1024).toFixed(1)} megabytes`}>
+                            {(r.memory_kb / 1024).toFixed(1)} MB
+                          </span>
+                        )}
+                        <span className="hidden sm:inline">
+                          {new Date(r.created_at).toLocaleString()}
+                        </span>
+                        <span className="sm:hidden">
+                          {new Date(r.created_at).toLocaleDateString()}
+                        </span>
+                        <ChevronDown
+                          className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180"
+                          aria-hidden="true"
+                        />
+                      </div>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent
+                    id={panelId}
+                    className="mt-3 space-y-2 text-xs"
+                  >
+                    {r.stdin && (
+                      <div>
+                        <p className="font-semibold text-muted-foreground mb-1">Stdin</p>
+                        <pre className="bg-muted/50 p-2 rounded border overflow-x-auto whitespace-pre-wrap">
+                          {r.stdin}
+                        </pre>
+                      </div>
+                    )}
+                    {r.stdout && (
+                      <div>
+                        <p className="font-semibold text-muted-foreground mb-1">Stdout</p>
+                        <pre className="bg-muted/50 p-2 rounded border overflow-x-auto whitespace-pre-wrap">
+                          {r.stdout}
+                        </pre>
+                      </div>
+                    )}
+                    {r.stderr && (
+                      <div>
+                        <p className="font-semibold text-destructive mb-1">Stderr</p>
+                        <pre className="bg-destructive/10 p-2 rounded border border-destructive/30 overflow-x-auto whitespace-pre-wrap">
+                          {r.stderr}
+                        </pre>
+                      </div>
+                    )}
+                    {r.compile_output && (
+                      <div>
+                        <p className="font-semibold text-amber-500 mb-1">Compile output</p>
+                        <pre className="bg-muted/50 p-2 rounded border overflow-x-auto whitespace-pre-wrap">
+                          {r.compile_output}
+                        </pre>
+                      </div>
+                    )}
+                    {!r.stdin && !r.stdout && !r.stderr && !r.compile_output && (
+                      <p className="text-muted-foreground italic">
+                        No additional output captured for this run.
+                      </p>
+                    )}
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+};
