@@ -3,13 +3,32 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   CheckCircle2,
   Loader2,
@@ -18,9 +37,12 @@ import {
   Copy,
   Check,
   Code2,
+  Trash2,
+  Sparkles,
 } from "lucide-react";
 import { MonacoEditor } from "@/components/coding/MonacoEditor";
 import { useToast } from "@/hooks/use-toast";
+import { LANGUAGES, getLanguageById, type LangId } from "@/data/codingProblemsData";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -28,13 +50,19 @@ interface Props {
   onNotesChange: (v: string) => void;
   code: string;
   onCodeChange: (v: string) => void;
-  /** Monaco language identifier (e.g. "python", "cpp"). */
-  monacoLanguage: string;
-  /** Human-readable language name shown in the toolbar (e.g. "Python 3"). */
-  languageLabel: string;
-  /** Pulls in user's current editor draft so they can save it as their solution. */
+  /** Currently active language for the code editor. */
+  language: LangId;
+  /** Switch which language is being edited (does not change main editor). */
+  onLanguageChange: (lang: LangId) => void;
+  /** Languages that already have a saved solution (for badges). */
+  savedLanguages: LangId[];
+  /** Pulls in user's current main-editor draft so they can save it as their solution. */
   onUseCurrentDraft?: () => string;
+  onClear: () => void;
   savedAt: number | null;
+  hasNotes: boolean;
+  hasAnyCode: boolean;
+  isComplete: boolean;
   fontSize?: number;
 }
 
@@ -48,25 +76,34 @@ const formatSavedLabel = (savedAt: number | null) => {
 
 /**
  * "My Solution" — combined markdown writeup + per-language final-solution code
- * editor. Autosaves through useProblemSolution.
+ * editor. Supports editing solutions across multiple languages, shows a
+ * progress badge when both notes + code are saved, and offers a confirm-gated
+ * "Clear my solution" action.
  */
 export const MySolutionPanel = ({
   notes,
   onNotesChange,
   code,
   onCodeChange,
-  monacoLanguage,
-  languageLabel,
+  language,
+  onLanguageChange,
+  savedLanguages,
   onUseCurrentDraft,
+  onClear,
   savedAt,
+  hasNotes,
+  hasAnyCode,
+  isComplete,
   fontSize = 13,
 }: Props) => {
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const langInfo = getLanguageById(language);
+  const languageLabel = langInfo.label;
 
-  const hasNotes = notes.trim().length > 0;
   const hasCode = code.trim().length > 0;
+  const hasCurrentLangSaved = savedLanguages.includes(language);
 
   const handleCopy = async () => {
     if (!hasCode) return;
@@ -93,22 +130,105 @@ export const MySolutionPanel = ({
     });
   };
 
+  const handleClear = () => {
+    onClear();
+    toast({
+      title: "My Solution cleared",
+      description: "Your saved notes and code for this problem were removed.",
+    });
+  };
+
+  // Progress badge state
+  const progressStep = (hasNotes ? 1 : 0) + (hasAnyCode ? 1 : 0);
+  const progressLabel = isComplete
+    ? "Complete"
+    : progressStep === 1
+      ? hasNotes
+        ? "Notes saved"
+        : "Code saved"
+      : "Empty";
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold">My Solution</h3>
-          <p className="text-xs text-muted-foreground">
-            Your personal writeup + final solution. Autosaved locally.
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-sm font-semibold">My Solution</h3>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "gap-1.5 text-[10px] uppercase tracking-wider font-semibold transition-colors",
+                      isComplete
+                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                        : progressStep === 1
+                          ? "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                          : "border-border text-muted-foreground",
+                    )}
+                  >
+                    {isComplete ? (
+                      <Sparkles className="h-3 w-3" />
+                    ) : (
+                      <CheckCircle2 className="h-3 w-3" />
+                    )}
+                    {progressStep}/2 · {progressLabel}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Counts a saved notes writeup and at least one saved code
+                  solution. Persists with your problem meta.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Personal writeup + per-language solutions. Autosaved locally.
           </p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          {savedAt ? (
-            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-          ) : (
-            <Loader2 className="h-3 w-3 opacity-50" />
-          )}
-          {formatSavedLabel(savedAt)}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {savedAt ? (
+              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+            ) : (
+              <Loader2 className="h-3 w-3 opacity-50" />
+            )}
+            {formatSavedLabel(savedAt)}
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-destructive"
+                disabled={!hasNotes && !hasAnyCode}
+              >
+                <Trash2 className="h-3 w-3" />
+                Clear
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Clear My Solution?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently removes your autosaved notes and all saved
+                  code solutions for this problem (across every language). This
+                  cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleClear}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Yes, clear everything
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -168,12 +288,42 @@ export const MySolutionPanel = ({
       {/* Code block */}
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Final Solution
-            <span className="ml-2 normal-case tracking-normal text-[11px] text-muted-foreground/80">
-              ({languageLabel})
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Final Solution
             </span>
-          </span>
+            <Select
+              value={language}
+              onValueChange={(v) => onLanguageChange(v as LangId)}
+            >
+              <SelectTrigger className="h-7 w-[170px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {LANGUAGES.map((l) => {
+                  const saved = savedLanguages.includes(l.id);
+                  return (
+                    <SelectItem key={l.id} value={l.id} className="text-xs">
+                      <span className="flex items-center gap-2">
+                        {l.label}
+                        {saved && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                        )}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            {hasCurrentLangSaved && (
+              <Badge
+                variant="outline"
+                className="text-[10px] border-emerald-500/40 text-emerald-500 bg-emerald-500/10"
+              >
+                Saved
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-1.5">
             {onUseCurrentDraft && (
               <TooltipProvider>
@@ -190,7 +340,8 @@ export const MySolutionPanel = ({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Save your current editor code as the solution.
+                    Save your current editor code as the solution for{" "}
+                    {languageLabel}.
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -212,12 +363,40 @@ export const MySolutionPanel = ({
           </div>
         </div>
 
+        {/* Quick-jump chips for languages that already have a saved solution */}
+        {savedLanguages.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Saved in:
+            </span>
+            {savedLanguages.map((id) => {
+              const info = getLanguageById(id);
+              const active = id === language;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => onLanguageChange(id)}
+                  className={cn(
+                    "px-2 py-0.5 rounded-md text-[11px] border transition-colors",
+                    active
+                      ? "bg-primary/15 border-primary/40 text-primary"
+                      : "bg-muted/40 border-border text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {info.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="rounded-md border overflow-hidden bg-muted/20">
           <div className="h-[260px]">
             <MonacoEditor
               value={code}
               onChange={onCodeChange}
-              language={monacoLanguage}
+              language={langInfo.monaco}
               fontSize={fontSize}
               height="100%"
             />
@@ -225,7 +404,7 @@ export const MySolutionPanel = ({
         </div>
         {!hasCode && (
           <p className="text-xs text-muted-foreground">
-            Paste or type your accepted solution here, or use{" "}
+            Paste or type your accepted {languageLabel} solution here, or use{" "}
             <span className="font-medium">Use current draft</span>.
           </p>
         )}
