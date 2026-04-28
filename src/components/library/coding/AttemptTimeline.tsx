@@ -33,7 +33,25 @@ const formatRelative = (iso: string) => {
   return new Date(iso).toLocaleDateString();
 };
 
-export const AttemptTimeline = ({ submissions, limit = 10, onSelect, highlightedId, loading }: Props) => {
+export const AttemptTimeline = ({
+  submissions,
+  limit = 10,
+  onSelect,
+  highlightedId,
+  scrollToHighlightKey,
+  loading,
+}: Props) => {
+  const itemRefs = useRef<Record<string, HTMLLIElement | null>>({});
+
+  useEffect(() => {
+    if (!highlightedId) return;
+    const el = itemRefs.current[highlightedId];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    // Re-run whenever the trigger key changes (or highlight target changes).
+  }, [scrollToHighlightKey, highlightedId, submissions.length]);
+
   return (
     <Card className="p-3">
       <div className="flex items-center gap-2 mb-3">
