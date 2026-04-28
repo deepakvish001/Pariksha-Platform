@@ -94,6 +94,7 @@ import { CodeDiffPreview } from "@/components/library/coding/CodeDiffPreview";
 import { DraftSaveIndicator } from "@/components/library/coding/DraftSaveIndicator";
 import { EditorSettingsPopover } from "@/components/library/coding/EditorSettingsPopover";
 import { useFormatOnSubmitOverride } from "@/hooks/useFormatOnSubmitOverride";
+import { ChevronScroller } from "@/components/library/coding/ChevronScroller";
 
 const difficultyClass = (d: string) =>
   d === "Easy"
@@ -1060,8 +1061,10 @@ const CodingProblemDetail = () => {
                 )}
               >
                 {/* Editor toolbar */}
-                <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-muted/30 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex items-center gap-2 min-w-0 shrink-0">
+                <div className="px-3 py-2 border-b bg-muted/30">
+                  <ChevronScroller>
+                    <div className="flex items-center gap-2 w-max min-w-full flex-nowrap">
+                      <div className="flex items-center gap-2 min-w-0 shrink-0">
                     <Select value={language} onValueChange={(v) => setLanguage(v as LangId)}>
                       <SelectTrigger className="w-[150px] h-8 text-xs">
                         <SelectValue />
@@ -1204,6 +1207,8 @@ const CodingProblemDetail = () => {
                       onPerTaskOverrideChange={setFormatOnSubmitOverride}
                     />
                   </div>
+                    </div>
+                  </ChevronScroller>
                 </div>
                 <div className="flex-1 min-h-0 relative">
                   <MonacoEditor
