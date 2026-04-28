@@ -67,6 +67,7 @@ const read = (): Persisted => {
       visible: { ...base.visible, ...(parsed?.visible ?? {}) },
       widths: { ...base.widths, ...(parsed?.widths ?? {}) },
       sortBySlug: { ...(parsed?.sortBySlug ?? {}) },
+      density: parsed?.density === "compact" ? "compact" : "comfortable",
     };
   } catch {
     return defaultPrefs();
