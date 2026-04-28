@@ -1238,6 +1238,38 @@ const CodingProblemDetail = () => {
                         </TooltipTrigger>
                         <TooltipContent>Keyboard shortcuts</TooltipContent>
                       </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const wasCustom = isLayoutCustomized;
+                              resetTabsLayout();
+                              toast({
+                                title: wasCustom
+                                  ? "Editor layout reset"
+                                  : "Editor layout already default",
+                                description: wasCustom
+                                  ? "Tab order and active tab restored to defaults."
+                                  : undefined,
+                              });
+                            }}
+                            className={cn(
+                              "h-8 w-8",
+                              isLayoutCustomized && "text-primary",
+                            )}
+                            aria-label="Reset editor layout"
+                          >
+                            <LayoutGrid className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {isLayoutCustomized
+                            ? "Reset editor layout (customized)"
+                            : "Reset editor layout"}
+                        </TooltipContent>
+                      </Tooltip>
                     </TooltipProvider>
                     <EditorSettingsPopover
                       formatOnSubmit={effectiveFormatOnSubmit}
