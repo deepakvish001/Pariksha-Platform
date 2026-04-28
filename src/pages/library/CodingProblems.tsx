@@ -959,11 +959,14 @@ const CodingProblems = () => {
 
       {/* Smart recommendations */}
       {!focusMode && (
-        <RecommendationStrip
-          stats={{ solved, attempted, perProblem, loading }}
-          bookmarks={bookmarks}
-          dismissedKey="library-problems"
-        />
+        <>
+          <ShowRecommendationsChip dismissedKey="library-problems" />
+          <RecommendationStrip
+            stats={{ solved, attempted, perProblem, loading }}
+            bookmarks={bookmarks}
+            dismissedKey="library-problems"
+          />
+        </>
       )}
 
       {/* Stats */}
