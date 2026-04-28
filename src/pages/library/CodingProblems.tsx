@@ -806,6 +806,12 @@ const CodingProblems = () => {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          <Button asChild variant="outline" size="sm" className="gap-1.5 h-9">
+            <Link to="/library/problems/leaderboard">
+              <Trophy className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Leaderboard</span>
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" onClick={handleShareFilters} className="gap-1.5 h-9">
             <Share2 className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Share filters</span>
