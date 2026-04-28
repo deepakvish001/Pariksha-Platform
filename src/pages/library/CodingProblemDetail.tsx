@@ -1619,13 +1619,8 @@ const CodingProblemDetail = () => {
                                       <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap text-destructive">{c.stderr}</pre>
                                     </div>
                                   )}
-                                  <details className="rounded border bg-background/50 p-2">
-                                    <summary className="cursor-pointer text-muted-foreground">Raw Fermion payload</summary>
-                                    <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap">
-                                      {JSON.stringify(c.raw, null, 2)}
-                                    </pre>
-                                  </details>
                                 </div>
+
                               </details>
                             ))}
                           </div>
