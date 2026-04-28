@@ -19,7 +19,7 @@ const RUNTIME_DEFAULTS: Record<string, ExecLimits> = {
   Java:   { language: "Java",   cpuMs: 3000, wallMs: 6000, memKb: 512_000 },
   Python: { language: "Python", cpuMs: 3000, wallMs: 6000, memKb: 262_144 },
   NodeJs: { language: "NodeJs", cpuMs: 3000, wallMs: 6000, memKb: 262_144 },
-  Go:     { language: "Go":     cpuMs: 3000, wallMs: 6000, memKb: 262_144 },
+  Go:     { language: "Go",     cpuMs: 3000, wallMs: 6000, memKb: 262_144 },
   SQLite: { language: "SQLite", cpuMs: 2000, wallMs: 4000, memKb: 131_072 },
 };
 
