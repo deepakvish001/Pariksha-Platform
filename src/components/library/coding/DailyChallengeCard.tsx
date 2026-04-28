@@ -180,14 +180,6 @@ export const DailyChallengeCard = ({ daily, className }: Props) => {
             </Button>
           </div>
         </div>
-        <div className="mt-3">
-          <DailyChallengeSyncStatus
-            status={daily.syncStatus}
-            error={daily.syncError}
-            lastSyncedAt={daily.lastSyncedAt}
-            signedIn={daily.syncStatus !== "idle" || !!daily.lastSyncedAt}
-          />
-        </div>
       </Card>
     </motion.div>
   );
