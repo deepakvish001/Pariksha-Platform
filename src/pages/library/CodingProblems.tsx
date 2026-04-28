@@ -118,6 +118,9 @@ const CodingProblems = () => {
   // (vs. the initial mount restoring previous state). Used so a fresh refresh
   // restores scroll, but applying a filter / paginating jumps to the top.
   const userInteractedRef = useRef(false);
+  // Forward-ref so the mount-only effect (declared above tablePrefs) can read
+  // the saved per-list sort without re-running.
+  const tablePrefsRef = useRef<ReturnType<typeof useCodingProblemsTablePrefs> | null>(null);
   const filterSig = `${search}|${difficulty}|${selectedTopics.join(",")}|${status}|${sort}|${bookmarked ? 1 : 0}|${page}`;
 
   // On first mount: validate URL params (strip invalid view/page) and hydrate
