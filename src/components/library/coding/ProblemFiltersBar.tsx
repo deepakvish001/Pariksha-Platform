@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, X, Check, ChevronsUpDown, LayoutGrid, List, Bookmark, ArrowDownUp } from "lucide-react";
+import { Search, X, Check, ChevronsUpDown, Bookmark, ArrowDownUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
