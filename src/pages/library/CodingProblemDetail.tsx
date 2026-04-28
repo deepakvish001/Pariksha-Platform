@@ -537,6 +537,19 @@ const CodingProblemDetail = () => {
     setSubmitResult(null);
     setRunResult(null);
     setActiveBottomTab("output");
+    // Auto-format right before submit so submitted code has consistent style.
+    // Failures are non-blocking — we still submit whatever the editor has.
+    try {
+      await editorRef.current?.format();
+    } catch {
+      /* ignore formatter errors */
+    }
+    // Make sure the latest draft is persisted before we ship the submission.
+    try {
+      await flushDraft?.();
+    } catch {
+      /* ignore */
+    }
     try {
       const result = await submit({
         source_code: code,
