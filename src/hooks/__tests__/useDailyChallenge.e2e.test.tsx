@@ -185,7 +185,9 @@ describe("useDailyChallenge — cloud pull/push end-to-end (post sync-field remo
   });
 
   it("markCompleted writes locally and pushes to cloud with ignoreDuplicates", async () => {
-    const { result } = renderHook(() => useDailyChallenge());
+    const { result } = renderHook(() => useDailyChallenge(), {
+      wrapper: NoStrictWrapper,
+    });
 
     // Wait for the initial pull to finish so we don't race with it.
     await waitFor(() => expect(rpcMock).toHaveBeenCalled());
