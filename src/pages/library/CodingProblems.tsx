@@ -434,6 +434,83 @@ const CodingProblems = () => {
     toast.success(`Density: ${next}`);
   };
 
+  // Padding helper for cells based on density
+  const cellPadY = tablePrefs.density === "compact" ? "py-1.5" : "py-2.5";
+  const rowTextSize = tablePrefs.density === "compact" ? "text-xs" : "text-sm";
+
+  // Keyboard shortcuts: /, b, d, s, ?, Esc, ←, →
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const editable =
+        tag === "input" ||
+        tag === "textarea" ||
+        tag === "select" ||
+        target?.isContentEditable;
+
+      // "/" focuses the search even when not editable
+      if (e.key === "/" && !editable) {
+        e.preventDefault();
+        const el = document.querySelector<HTMLInputElement>(
+          'input[placeholder*="Search" i], input[type="search"]',
+        );
+        el?.focus();
+        el?.select();
+        return;
+      }
+
+      if (e.key === "?" && !editable) {
+        e.preventDefault();
+        setShortcutsOpen(true);
+        return;
+      }
+
+      if (e.key === "Escape") {
+        if (selectionMode) {
+          exitSelection();
+        }
+        return;
+      }
+
+      if (editable) return;
+
+      if (e.key === "b" || e.key === "B") {
+        e.preventDefault();
+        setBookmarked(!bookmarked);
+        return;
+      }
+      if (e.key === "d" || e.key === "D") {
+        e.preventDefault();
+        toggleDensity();
+        return;
+      }
+      if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        if (selectionMode) exitSelection();
+        else setSelectionMode(true);
+        return;
+      }
+      if (e.key === "ArrowLeft" && safePageRef.current > 1) {
+        e.preventDefault();
+        setPage(safePageRef.current - 1);
+        return;
+      }
+      if (e.key === "ArrowRight" && safePageRef.current < totalPagesRef.current) {
+        e.preventDefault();
+        setPage(safePageRef.current + 1);
+        return;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookmarked, selectionMode, tablePrefs.density]);
+
+  // Refs to keep keyboard handler closure-free for paging.
+  const safePageRef = useRef(1);
+  const totalPagesRef = useRef(1);
+
   // Filter
   const filtered = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
