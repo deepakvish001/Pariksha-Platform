@@ -50,6 +50,7 @@ import {
   Calendar as CalendarIcon,
   FilterX,
   Inbox,
+  Trophy,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
@@ -436,11 +437,19 @@ export default function SubmissionsHistory() {
 
   return (
     <div className="container max-w-6xl py-6 sm:py-10 space-y-6">
-      <header>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Submissions & Runs</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Your full coding history across all problems.
-        </p>
+      <header className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Submissions & Runs</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Your full coding history across all problems.
+          </p>
+        </div>
+        <Button asChild variant="outline" size="sm" className="gap-1.5">
+          <Link to="/library/problems/leaderboard">
+            <Trophy className="h-4 w-4" />
+            Global Leaderboard
+          </Link>
+        </Button>
       </header>
 
       <div className="flex flex-wrap gap-2">
