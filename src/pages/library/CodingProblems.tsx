@@ -329,7 +329,7 @@ const CodingProblems = () => {
   ]);
 
   // Pagination
-  const PAGE_SIZE = view === "grid" ? 24 : 50;
+  const PAGE_SIZE = 50;
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageSlice = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
