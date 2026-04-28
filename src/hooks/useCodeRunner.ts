@@ -55,6 +55,27 @@ const buildFunctionError = (fallback: string, payload?: FunctionEnvelope<unknown
   return new CodeExecutionError(parts.filter(Boolean).join(" • "), payload?.diagnostics);
 };
 
+export interface CaseResult {
+  index: number;
+  passed: boolean;
+  runStatus: string;
+  status_label: string;
+  time_ms: number;
+  memory_kb: number;
+  input: string;
+  expected: string;
+  stdout: string;
+  stderr: string;
+  raw: FermionRawDebug;
+}
+
+export interface ExecutionLimits {
+  language: string;
+  cpu_ms: number;
+  wall_ms: number;
+  memory_kb: number;
+}
+
 export interface SubmitResult {
   verdict: string;
   passed: number;
@@ -71,6 +92,8 @@ export interface SubmitResult {
   stderr: string | null;
   submission_id: string | null;
   raw_fermion?: FermionRawDebug | null;
+  case_results?: CaseResult[];
+  limits?: ExecutionLimits;
 }
 
 export class RunCancelledError extends Error {

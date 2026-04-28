@@ -58,7 +58,10 @@ import {
 } from "@/data/codingProblemsData";
 import { MonacoEditor, type MonacoEditorHandle } from "@/components/coding/MonacoEditor";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
-import { CodeExecutionError, useCodeRunner, type RunResult, type SubmitResult } from "@/hooks/useCodeRunner";
+import { CodeExecutionError, useCodeRunner, type RunResult, type SubmitResult, type CaseResult } from "@/hooks/useCodeRunner";
+import { getExecLimitsForLang, formatLimits } from "@/lib/coding/executionLimits";
+
+import { Cpu } from "lucide-react";
 import { useCodeDraft } from "@/hooks/useCodeDraft";
 import { useCodingSubmissions } from "@/hooks/useCodingSubmissions";
 import { useCodeRuns } from "@/hooks/useCodeRuns";
@@ -796,6 +799,29 @@ const CodingProblemDetail = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {(() => {
+            const limits = getExecLimitsForLang(language, {
+              cpuSec: problem.cpuTimeLimitSec,
+              memKb: problem.memoryLimitKb,
+            });
+            return (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className="hidden md:inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide cursor-help"
+                  >
+                    <Cpu className="h-3 w-3" />
+                    {`${(limits.cpuMs / 1000).toFixed(1)}s · ${Math.round(limits.memKb / 1024)}MB`}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  <p className="font-medium mb-1">Execution limits ({langInfo.label})</p>
+                  <p className="text-muted-foreground">{formatLimits(limits)}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })()}
           <Button
             onClick={handleRun}
             disabled={isRunning || isSubmitting}
@@ -1480,7 +1506,62 @@ const CodingProblemDetail = () => {
                           {submitResult.stderr}
                         </pre>
                       )}
-                      {submitResult.raw_fermion && submitResult.verdict !== "Accepted" && (
+                      {(() => {
+                        const cases: CaseResult[] = submitResult.case_results ?? [];
+                        const failed = cases.filter((c) => !c.passed);
+                        if (failed.length === 0) return null;
+                        return (
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Per-test raw details ({failed.length} failing)
+                            </p>
+                            {failed.map((c) => (
+                              <details
+                                key={c.index}
+                                className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs"
+                              >
+                                <summary className="cursor-pointer font-medium flex items-center gap-2 flex-wrap">
+                                  <span className="text-destructive">Test #{c.index + 1}</span>
+                                  <Badge variant="outline" className="text-[10px]">{c.status_label}</Badge>
+                                  <span className="text-muted-foreground font-mono">
+                                    {c.time_ms} ms · {(c.memory_kb / 1024).toFixed(1)} MB
+                                  </span>
+                                </summary>
+                                <div className="mt-3 space-y-2">
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono">
+                                    <div>
+                                      <p className="text-muted-foreground mb-1">Input</p>
+                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.input}</pre>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground mb-1">Expected</p>
+                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.expected}</pre>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground mb-1">Got</p>
+                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.stdout || "(empty)"}</pre>
+                                    </div>
+                                  </div>
+                                  {c.stderr && (
+                                    <div>
+                                      <p className="text-muted-foreground mb-1">stderr</p>
+                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap text-destructive">{c.stderr}</pre>
+                                    </div>
+                                  )}
+                                  <details className="rounded border bg-background/50 p-2">
+                                    <summary className="cursor-pointer text-muted-foreground">Raw Fermion payload</summary>
+                                    <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap">
+                                      {JSON.stringify(c.raw, null, 2)}
+                                    </pre>
+                                  </details>
+                                </div>
+                              </details>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                      {/* Fallback: if backend didn't send case_results, keep old single block */}
+                      {!submitResult.case_results && submitResult.raw_fermion && submitResult.verdict !== "Accepted" && (
                         <RawFermionDetails value={submitResult.raw_fermion} />
                       )}
                     </div>
