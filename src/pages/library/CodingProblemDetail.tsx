@@ -1207,6 +1207,8 @@ const CodingProblemDetail = () => {
                       onPerTaskOverrideChange={setFormatOnSubmitOverride}
                     />
                   </div>
+                    </div>
+                  </ChevronScroller>
                 </div>
                 <div className="flex-1 min-h-0 relative">
                   <MonacoEditor
