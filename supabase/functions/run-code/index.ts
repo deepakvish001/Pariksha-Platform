@@ -1,5 +1,9 @@
-// Run user code against custom stdin (no verdict, no DB write)
+// Run user code against custom stdin (logs to code_runs when authenticated)
 // Used for the "Run" button in the editor
+import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
