@@ -64,7 +64,9 @@ import { SubmissionDetailsDrawer } from "@/components/library/coding/SubmissionD
 import { ProblemMetaStrip } from "@/components/library/coding/ProblemMetaStrip";
 import { NotesPanel } from "@/components/library/coding/NotesPanel";
 import { ProgressiveHints } from "@/components/library/coding/ProgressiveHints";
+import { MySolutionPanel } from "@/components/library/coding/MySolutionPanel";
 import { useProblemNotes } from "@/hooks/useProblemNotes";
+import { useProblemSolution } from "@/hooks/useProblemSolution";
 import { useEditorPrefs } from "@/hooks/useEditorPrefs";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
@@ -146,6 +148,14 @@ const CodingProblemDetail = () => {
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
   const { note: notesValue, setNote: setNotesValue, savedAt: notesSavedAt } = useProblemNotes(slug);
+  const {
+    notes: mySolutionNotes,
+    code: mySolutionCode,
+    savedAt: mySolutionSavedAt,
+    setNotes: setMySolutionNotes,
+    setCode: setMySolutionCode,
+    hasContent: hasMySolution,
+  } = useProblemSolution(slug, language);
   const { prefs: editorPrefs, incFontSize, decFontSize, MIN: FS_MIN, MAX: FS_MAX } = useEditorPrefs();
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
@@ -434,7 +444,12 @@ const CodingProblemDetail = () => {
           <Tabs defaultValue="description" className="h-full flex flex-col">
             <TabsList className="rounded-none justify-start bg-transparent border-b h-10 px-2">
               <TabsTrigger value="description">Description</TabsTrigger>
-              <TabsTrigger value="solution">Solution</TabsTrigger>
+              <TabsTrigger value="my-solution">
+                My Solution {hasMySolution && (
+                  <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="solution">Reference</TabsTrigger>
               <TabsTrigger value="notes">
                 Notes {notesValue.trim().length > 0 && (
                   <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-primary inline-block" />
@@ -531,7 +546,7 @@ const CodingProblemDetail = () => {
                 )}
 
                 {/* Hints — progressive disclosure */}
-                <ProgressiveHints hints={problem.hints} />
+                <ProgressiveHints hints={problem.hints} slug={problem.slug} />
               </TabsContent>
 
               <TabsContent value="notes" className="mt-0">
@@ -539,6 +554,20 @@ const CodingProblemDetail = () => {
                   value={notesValue}
                   onChange={setNotesValue}
                   savedAt={notesSavedAt}
+                />
+              </TabsContent>
+
+              <TabsContent value="my-solution" className="mt-0">
+                <MySolutionPanel
+                  notes={mySolutionNotes}
+                  onNotesChange={setMySolutionNotes}
+                  code={mySolutionCode}
+                  onCodeChange={setMySolutionCode}
+                  monacoLanguage={langInfo.monaco}
+                  languageLabel={langInfo.label}
+                  onUseCurrentDraft={() => code}
+                  savedAt={mySolutionSavedAt}
+                  fontSize={editorPrefs.fontSize}
                 />
               </TabsContent>
 
