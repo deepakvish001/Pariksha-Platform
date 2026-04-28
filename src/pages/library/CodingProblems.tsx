@@ -36,6 +36,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   CODING_PROBLEMS,
   ALL_TOPICS,
   type Difficulty,
