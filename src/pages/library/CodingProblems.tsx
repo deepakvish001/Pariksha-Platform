@@ -1,27 +1,22 @@
-import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import {
-  Search,
-  Shuffle,
   CheckCircle2,
   Circle,
   CircleDot,
   Code2,
   Filter,
+  Star,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -35,7 +30,12 @@ import {
   ALL_TOPICS,
   type Difficulty,
 } from "@/data/codingProblemsData";
-import { useUserSolvedSlugs } from "@/hooks/useCodingSubmissions";
+import { useCodingAttemptStats } from "@/hooks/useCodingAttemptStats";
+import { useCodingProblemBookmarks } from "@/hooks/useCodingProblemBookmarks";
+import { ProblemStatsHeader } from "@/components/library/coding/ProblemStatsHeader";
+import { ProblemFiltersBar, type SortKey, type ViewMode } from "@/components/library/coding/ProblemFiltersBar";
+import { ProblemCard } from "@/components/library/coding/ProblemCard";
+import { RandomMenu } from "@/components/library/coding/RandomMenu";
 import { cn } from "@/lib/utils";
 
 const difficultyClass = (d: Difficulty) =>
@@ -45,47 +45,169 @@ const difficultyClass = (d: Difficulty) =>
       ? "text-amber-500 bg-amber-500/10 border-amber-500/20"
       : "text-rose-500 bg-rose-500/10 border-rose-500/20";
 
-const CodingProblems = () => {
-  const [search, setSearch] = useState("");
-  const [difficulty, setDifficulty] = useState<string>("all");
-  const [topic, setTopic] = useState<string>("all");
-  const [status, setStatus] = useState<string>("all");
-  const { solved, attempted } = useUserSolvedSlugs();
+const DIFF_ORDER: Record<Difficulty, number> = { Easy: 0, Medium: 1, Hard: 2 };
 
+const CodingProblems = () => {
+  const [params, setParams] = useSearchParams();
+
+  // Read URL state with sensible defaults
+  const search = params.get("q") ?? "";
+  const difficulty = params.get("diff") ?? "all";
+  const selectedTopics = (params.get("topics") ?? "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const status = params.get("status") ?? "all";
+  const sort = (params.get("sort") as SortKey) || "default";
+  const view = (params.get("view") as ViewMode) || "grid";
+  const bookmarked = params.get("bm") === "1";
+  const page = Math.max(1, parseInt(params.get("page") ?? "1", 10) || 1);
+
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 200);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const updateParams = (patch: Record<string, string | null>) => {
+    const next = new URLSearchParams(params);
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null || v === "" || v === "all" || v === "default" || v === "grid" || (k === "page" && v === "1")) {
+        next.delete(k);
+      } else {
+        next.set(k, v);
+      }
+    }
+    setParams(next, { replace: true });
+  };
+
+  const setSearch = (v: string) => updateParams({ q: v, page: "1" });
+  const setDifficulty = (v: string) => updateParams({ diff: v, page: "1" });
+  const setStatus = (v: string) => updateParams({ status: v, page: "1" });
+  const setSort = (v: SortKey) => updateParams({ sort: v, page: "1" });
+  const setView = (v: ViewMode) => updateParams({ view: v });
+  const setBookmarked = (v: boolean) => updateParams({ bm: v ? "1" : null, page: "1" });
+  const setPage = (n: number) => updateParams({ page: String(n) });
+
+  const toggleTopic = (t: string) => {
+    const set = new Set(selectedTopics);
+    if (set.has(t)) set.delete(t);
+    else set.add(t);
+    updateParams({ topics: Array.from(set).join(","), page: "1" });
+  };
+
+  const clearAll = () => {
+    setParams(new URLSearchParams(), { replace: true });
+    toast.success("Filters cleared", {
+      description: "Search, difficulty, topics, status, sort, and bookmarks reset.",
+    });
+  };
+
+  const { solved, attempted, perProblem, loading } = useCodingAttemptStats();
+  const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
+
+  // Filter
   const filtered = useMemo(() => {
-    return CODING_PROBLEMS.filter((p) => {
-      if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
+    const q = debouncedSearch.trim().toLowerCase();
+    let list = CODING_PROBLEMS.filter((p) => {
+      if (q) {
+        const hay = `${p.title} ${p.slug} ${p.topics.join(" ")}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       if (difficulty !== "all" && p.difficulty !== difficulty) return false;
-      if (topic !== "all" && !p.topics.includes(topic)) return false;
+      if (selectedTopics.length > 0 && !selectedTopics.every((t) => p.topics.includes(t))) return false;
       if (status === "solved" && !solved.has(p.slug)) return false;
       if (status === "attempted" && (!attempted.has(p.slug) || solved.has(p.slug))) return false;
       if (status === "todo" && attempted.has(p.slug)) return false;
+      if (bookmarked && !bookmarks.has(p.slug)) return false;
       return true;
     });
-  }, [search, difficulty, topic, status, solved, attempted]);
 
+    // Sort
+    if (sort === "title") {
+      list = [...list].sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sort === "diff-asc") {
+      list = [...list].sort((a, b) => DIFF_ORDER[a.difficulty] - DIFF_ORDER[b.difficulty]);
+    } else if (sort === "diff-desc") {
+      list = [...list].sort((a, b) => DIFF_ORDER[b.difficulty] - DIFF_ORDER[a.difficulty]);
+    } else if (sort === "recent") {
+      list = [...list].sort((a, b) => {
+        const la = perProblem.get(a.slug)?.lastAttempt ?? "";
+        const lb = perProblem.get(b.slug)?.lastAttempt ?? "";
+        return lb.localeCompare(la);
+      });
+    }
+    return list;
+  }, [
+    debouncedSearch,
+    difficulty,
+    selectedTopics.join(","),
+    status,
+    sort,
+    bookmarked,
+    bookmarks,
+    solved,
+    attempted,
+    perProblem,
+  ]);
+
+  // Pagination
+  const PAGE_SIZE = view === "grid" ? 24 : 50;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageSlice = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Stats
   const counts = useMemo(() => {
     const total = CODING_PROBLEMS.length;
     const easy = CODING_PROBLEMS.filter((p) => p.difficulty === "Easy").length;
     const medium = CODING_PROBLEMS.filter((p) => p.difficulty === "Medium").length;
     const hard = CODING_PROBLEMS.filter((p) => p.difficulty === "Hard").length;
-    const solvedEasy = CODING_PROBLEMS.filter(
-      (p) => p.difficulty === "Easy" && solved.has(p.slug),
-    ).length;
-    const solvedMedium = CODING_PROBLEMS.filter(
-      (p) => p.difficulty === "Medium" && solved.has(p.slug),
-    ).length;
-    const solvedHard = CODING_PROBLEMS.filter(
-      (p) => p.difficulty === "Hard" && solved.has(p.slug),
-    ).length;
-    return { total, easy, medium, hard, solvedEasy, solvedMedium, solvedHard };
+    const inSet = (d: Difficulty) =>
+      CODING_PROBLEMS.filter((p) => p.difficulty === d && solved.has(p.slug)).length;
+    return {
+      total,
+      easy,
+      medium,
+      hard,
+      solvedEasy: inSet("Easy"),
+      solvedMedium: inSet("Medium"),
+      solvedHard: inSet("Hard"),
+    };
   }, [solved]);
 
-  const pickRandom = () => {
-    if (filtered.length === 0) return;
-    const random = filtered[Math.floor(Math.random() * filtered.length)];
-    window.location.href = `/library/problems/${random.slug}`;
-  };
+  const { weekSolved, prevWeekSolved } = useMemo(() => {
+    const now = Date.now();
+    const week = 7 * 24 * 60 * 60 * 1000;
+    let w = 0;
+    let pw = 0;
+    perProblem.forEach((s) => {
+      if (!s.solvedAt) return;
+      const t = new Date(s.solvedAt).getTime();
+      if (now - t < week) w += 1;
+      else if (now - t < 2 * week) pw += 1;
+    });
+    return { weekSolved: w, prevWeekSolved: pw };
+  }, [perProblem]);
+
+  const continueProblem = useMemo(() => {
+    let best: { slug: string; t: string } | null = null;
+    perProblem.forEach((s, slug) => {
+      if (solved.has(slug)) return;
+      if (!s.lastAttempt) return;
+      if (!best || s.lastAttempt > best.t) best = { slug, t: s.lastAttempt };
+    });
+    return best ? CODING_PROBLEMS.find((p) => p.slug === best!.slug) : undefined;
+  }, [perProblem, solved]);
+
+  const activeFilterCount =
+    (debouncedSearch ? 1 : 0) +
+    (difficulty !== "all" ? 1 : 0) +
+    (status !== "all" ? 1 : 0) +
+    (sort !== "default" ? 1 : 0) +
+    (bookmarked ? 1 : 0) +
+    selectedTopics.length;
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
@@ -101,126 +223,130 @@ const CodingProblems = () => {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
+        className="mb-6 flex flex-wrap items-start justify-between gap-3"
       >
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
             <Code2 className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Coding Problems
-            </h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Coding Problems</h1>
             <p className="text-sm text-muted-foreground">
               Solve, run, and submit with real code execution
             </p>
           </div>
         </div>
+        <RandomMenu filtered={filtered} />
       </motion.div>
 
-      {/* Stats strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <Card className="p-4">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Total</p>
-          <p className="text-2xl font-bold mt-1">
-            {solved.size}<span className="text-base text-muted-foreground">/{counts.total}</span>
-          </p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs uppercase tracking-wider text-emerald-500">Easy</p>
-          <p className="text-2xl font-bold mt-1">
-            {counts.solvedEasy}<span className="text-base text-muted-foreground">/{counts.easy}</span>
-          </p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs uppercase tracking-wider text-amber-500">Medium</p>
-          <p className="text-2xl font-bold mt-1">
-            {counts.solvedMedium}<span className="text-base text-muted-foreground">/{counts.medium}</span>
-          </p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs uppercase tracking-wider text-rose-500">Hard</p>
-          <p className="text-2xl font-bold mt-1">
-            {counts.solvedHard}<span className="text-base text-muted-foreground">/{counts.hard}</span>
-          </p>
-        </Card>
-      </div>
+      {/* Stats */}
+      <ProblemStatsHeader
+        counts={counts}
+        totalSolved={solved.size}
+        weekSolved={weekSolved}
+        prevWeekSolved={prevWeekSolved}
+        continueProblem={continueProblem}
+      />
 
       {/* Filters */}
-      <Card className="p-4 mb-4">
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search problems..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Select value={difficulty} onValueChange={setDifficulty}>
-            <SelectTrigger className="w-full md:w-[150px]">
-              <SelectValue placeholder="Difficulty" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Difficulties</SelectItem>
-              <SelectItem value="Easy">Easy</SelectItem>
-              <SelectItem value="Medium">Medium</SelectItem>
-              <SelectItem value="Hard">Hard</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={topic} onValueChange={setTopic}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Topic" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Topics</SelectItem>
-              {ALL_TOPICS.map((t) => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-full md:w-[150px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="solved">Solved</SelectItem>
-              <SelectItem value="attempted">Attempted</SelectItem>
-              <SelectItem value="todo">To-do</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={pickRandom} variant="outline" className="gap-2">
-            <Shuffle className="h-4 w-4" />
-            Random
-          </Button>
-        </div>
+      <Card className="p-4 mb-4 sticky top-2 z-10 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <ProblemFiltersBar
+          search={search}
+          onSearch={setSearch}
+          difficulty={difficulty}
+          onDifficulty={setDifficulty}
+          topics={ALL_TOPICS}
+          selectedTopics={selectedTopics}
+          onToggleTopic={toggleTopic}
+          onClearTopics={() => updateParams({ topics: null, page: "1" })}
+          status={status}
+          onStatus={setStatus}
+          sort={sort}
+          onSort={setSort}
+          view={view}
+          onView={setView}
+          bookmarked={bookmarked}
+          onBookmarked={setBookmarked}
+          activeCount={activeFilterCount}
+          onClearAll={clearAll}
+        />
       </Card>
 
-      {/* Problems table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[60px]">Status</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead className="hidden md:table-cell">Topics</TableHead>
-              <TableHead className="w-[110px]">Difficulty</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
+      {/* Result meta */}
+      <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground">
+        <span>
+          Showing <span className="text-foreground font-medium">{pageSlice.length}</span> of{" "}
+          <span className="text-foreground font-medium">{filtered.length}</span> problems
+        </span>
+        {totalPages > 1 && (
+          <span>
+            Page {safePage} / {totalPages}
+          </span>
+        )}
+      </div>
+
+      {/* Body */}
+      {loading && filtered.length === 0 ? (
+        view === "grid" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-36 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <div className="p-3 space-y-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          </Card>
+        )
+      ) : filtered.length === 0 ? (
+        <Card className="p-12 text-center">
+          <Filter className="h-10 w-10 mx-auto mb-3 opacity-40" />
+          <p className="text-base font-medium">No problems match your filters</p>
+          <p className="text-sm text-muted-foreground mt-1 mb-4">
+            Try removing a filter or clearing all to start over.
+          </p>
+          <Button variant="outline" onClick={clearAll}>
+            Reset filters
+          </Button>
+        </Card>
+      ) : view === "grid" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {pageSlice.map((p, idx) => (
+            <ProblemCard
+              key={p.slug}
+              problem={p}
+              isSolved={solved.has(p.slug)}
+              isAttempted={attempted.has(p.slug)}
+              isBookmarked={isBookmarked(p.slug)}
+              stats={perProblem.get(p.slug)}
+              onToggleBookmark={toggleBookmark}
+              index={idx}
+            />
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
-                  <Filter className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  No problems match your filters
-                </TableCell>
+                <TableHead className="w-[50px]">Status</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead className="hidden md:table-cell">Topics</TableHead>
+                <TableHead className="w-[110px]">Difficulty</TableHead>
+                <TableHead className="hidden sm:table-cell w-[100px] text-right">Attempts</TableHead>
+                <TableHead className="w-[40px]"></TableHead>
               </TableRow>
-            ) : (
-              filtered.map((p) => {
+            </TableHeader>
+            <TableBody>
+              {pageSlice.map((p) => {
                 const isSolved = solved.has(p.slug);
                 const isAttempted = attempted.has(p.slug);
+                const stats = perProblem.get(p.slug);
+                const bm = isBookmarked(p.slug);
                 return (
                   <TableRow key={p.slug} className="group">
                     <TableCell>
@@ -254,13 +380,60 @@ const CodingProblems = () => {
                         {p.difficulty}
                       </Badge>
                     </TableCell>
+                    <TableCell className="hidden sm:table-cell text-right text-xs text-muted-foreground">
+                      {stats?.attempts ?? 0}
+                    </TableCell>
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => toggleBookmark(p.slug)}
+                        className="p-1 rounded hover:bg-muted/50"
+                        aria-label={bm ? "Remove bookmark" : "Bookmark"}
+                      >
+                        <Star
+                          className={cn(
+                            "h-4 w-4",
+                            bm
+                              ? "fill-amber-400 text-amber-400"
+                              : "text-muted-foreground/40 hover:text-amber-400",
+                          )}
+                        />
+                      </button>
+                    </TableCell>
                   </TableRow>
                 );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={safePage <= 1}
+            onClick={() => setPage(safePage - 1)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Prev
+          </Button>
+          <span className="text-sm text-muted-foreground px-3">
+            {safePage} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={safePage >= totalPages}
+            onClick={() => setPage(safePage + 1)}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
