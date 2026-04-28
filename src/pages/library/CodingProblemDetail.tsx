@@ -485,6 +485,33 @@ const CodingProblemDetail = () => {
     }
   };
 
+  /** Apply restored code and offer a one-click "Cancel restoration" undo. */
+  const applyRestore = (nextCode: string, label: string, snapshot: string) => {
+    setCode(nextCode);
+    saveDraft(nextCode);
+    setRestoreUndoSnapshot(snapshot);
+    toast({
+      title: "Restored last submitted code",
+      description: label,
+      action: (
+        <ToastAction
+          altText="Cancel restoration"
+          onClick={() => {
+            setCode(snapshot);
+            saveDraft(snapshot);
+            setRestoreUndoSnapshot(null);
+            toast({
+              title: "Restoration cancelled",
+              description: "Editor reverted to your previous code.",
+            });
+          }}
+        >
+          Cancel restoration
+        </ToastAction>
+      ),
+    });
+  };
+
   const handleRestoreLastSubmitted = () => {
     const lastForLang = submissions.find((s) => s.language === language);
     if (!lastForLang) {
@@ -496,32 +523,29 @@ const CodingProblemDetail = () => {
       return;
     }
     const label = `${langInfo.label} · ${lastForLang.verdict ?? "Pending"} · ${new Date(lastForLang.created_at).toLocaleString()}`;
-    // Compare against current draft baseline. If the editor differs from both
-    // the saved draft AND the candidate restore, confirm before clobbering.
     const baseline = draft ?? problem.starterCode[language];
     const hasUnsavedChanges = code !== baseline && code !== lastForLang.source_code;
     if (hasUnsavedChanges) {
-      setPendingRestoreCode({ code: lastForLang.source_code, label });
+      setPendingRestoreCode({
+        code: lastForLang.source_code,
+        label,
+        snapshot: code,
+      });
       return;
     }
-    setCode(lastForLang.source_code);
-    saveDraft(lastForLang.source_code);
-    toast({
-      title: "Restored last submitted code",
-      description: label,
-    });
+    applyRestore(lastForLang.source_code, label, code);
   };
 
   const confirmRestoreLastSubmitted = () => {
     if (!pendingRestoreCode) return;
-    setCode(pendingRestoreCode.code);
-    saveDraft(pendingRestoreCode.code);
-    toast({
-      title: "Restored last submitted code",
-      description: pendingRestoreCode.label,
-    });
+    applyRestore(
+      pendingRestoreCode.code,
+      pendingRestoreCode.label,
+      pendingRestoreCode.snapshot,
+    );
     setPendingRestoreCode(null);
   };
+
 
   const toggleEditorFullscreen = () => setIsEditorFullscreen((v) => !v);
 
