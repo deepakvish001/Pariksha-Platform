@@ -61,7 +61,8 @@ export const TopicBadgesWithOverflow = ({
               type="button"
               onClick={stop}
               className="inline-flex"
-              aria-label={`Show ${overflow.length} more topics`}
+              aria-label={`Show ${overflow.length} more ${overflow.length === 1 ? "topic" : "topics"} (${topics.length} total)`}
+              title={`+${overflow.length} more`}
             >
               <Badge variant="outline" className={overflowBadgeClassName}>
                 +{overflow.length}
