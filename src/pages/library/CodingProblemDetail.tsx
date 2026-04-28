@@ -109,6 +109,9 @@ const CodingProblemDetail = () => {
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(() =>
     slug ? readLastOpenedMap()[slug] ?? null : null,
   );
+  // Bumped whenever we want the AttemptTimeline to auto-scroll the highlighted
+  // entry into view (e.g. after "Go to failed cases" toast action).
+  const [timelineScrollKey, setTimelineScrollKey] = useState(0);
 
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
@@ -167,6 +170,9 @@ const CodingProblemDetail = () => {
     setDetailSubmission(s);
     setLastOpenedId(s.id);
     if (slug) writeLastOpened(slug, s.id);
+    // Trigger an auto-scroll inside the AttemptTimeline so the highlighted
+    // entry becomes visible immediately (especially for "Go to failed cases").
+    setTimelineScrollKey((k) => k + 1);
     const next = new URLSearchParams(searchParams);
     next.set("sub", s.id);
     setSearchParams(next, { replace: true });
@@ -488,6 +494,7 @@ const CodingProblemDetail = () => {
                       limit={10}
                       onSelect={openSubmission}
                       highlightedId={lastOpenedId}
+                      scrollToHighlightKey={timelineScrollKey}
                     />
                     {submissions.length > 0 && (
                       <div className="space-y-2">

@@ -252,12 +252,50 @@ const CodingProblems = () => {
   const setSearch = (v: string) => updateParams({ q: v, page: "1" });
   const setDifficulty = (v: string) => updateParams({ diff: v, page: "1" });
   const setStatus = (v: string) => updateParams({ status: v, page: "1" });
-  const setSort = (v: SortKey) => updateParams({ sort: v, page: "1" });
+  // setSort is defined further below — it needs access to tablePrefs for undo.
   const setView = (v: ViewMode) => updateParams({ view: v });
 
   // Persisted column visibility & widths (responsive — survives refresh).
   const tablePrefs = useCodingProblemsTablePrefs();
   tablePrefsRef.current = tablePrefs;
+
+  // Tracks whether we've finished initial sort hydration so we don't fire
+  // a "Sort changed" toast for the URL/localStorage restoration on mount.
+  const sortHydratedRef = useRef(false);
+  useEffect(() => {
+    // Mark hydrated on the next tick after first render commits.
+    sortHydratedRef.current = true;
+  }, []);
+
+  const setSort = (v: SortKey) => {
+    const prev = sort;
+    updateParams({ sort: v, page: "1" });
+    if (!sortHydratedRef.current) return;
+    if (prev === v) return;
+    const labelOf = (k: SortKey): string => {
+      const map: Partial<Record<SortKey, string>> = {
+        default: "Default",
+        title: "Title (A→Z)",
+        recent: "Most recent",
+        "diff-asc": "Difficulty (Easy→Hard)",
+        "diff-desc": "Difficulty (Hard→Easy)",
+        "status-asc": "Status (Solved first)",
+        "status-desc": "Status (Todo first)",
+        "accept-asc": "Acceptance (Low→High)",
+        "accept-desc": "Acceptance (High→Low)",
+        "attempts-asc": "Attempts (Low→High)",
+        "attempts-desc": "Attempts (High→Low)",
+      };
+      return map[k] ?? k;
+    };
+    toast.success(`Sorted by ${labelOf(v)}`, {
+      duration: 6000,
+      action: {
+        label: "Undo",
+        onClick: () => updateParams({ sort: prev, page: "1" }),
+      },
+    });
+  };
 
   // Persist sort (3-state) per list slug whenever it changes.
   useEffect(() => {
@@ -598,36 +636,22 @@ const CodingProblems = () => {
               <DropdownMenuItem
                 onSelect={(e) => {
                   e.preventDefault();
-                  // Snapshot current prefs so we can offer Undo
-                  let snapshot: string | null = null;
-                  try {
-                    snapshot = localStorage.getItem(
-                      "byteskill:coding-problems-table-prefs:v1",
-                    );
-                  } catch {
-                    /* ignore */
-                  }
+                  // Snapshot in-memory prefs so Undo can restore directly into
+                  // table state — no page reload needed.
+                  const snap = tablePrefs.snapshot();
                   tablePrefs.resetAll();
                   toast.success("Columns reset", {
                     description: "Visibility and widths restored to defaults.",
                     duration: 8000,
-                    action: snapshot
-                      ? {
-                          label: "Undo",
-                          onClick: () => {
-                            try {
-                              localStorage.setItem(
-                                "byteskill:coding-problems-table-prefs:v1",
-                                snapshot!,
-                              );
-                              // Reload so the hook re-reads the restored prefs.
-                              window.location.reload();
-                            } catch {
-                              toast.error("Couldn't restore previous columns");
-                            }
-                          },
-                        }
-                      : undefined,
+                    action: {
+                      label: "Undo",
+                      onClick: () => {
+                        tablePrefs.restoreSnapshot(snap);
+                        toast.success("Columns restored", {
+                          description: "Your previous visibility and widths are back.",
+                        });
+                      },
+                    },
                   });
                 }}
               >
@@ -656,6 +680,7 @@ const CodingProblems = () => {
         weekSolved={weekSolved}
         prevWeekSolved={prevWeekSolved}
         continueProblem={continueProblem}
+        loading={loading}
       />
 
       {/* Filters */}

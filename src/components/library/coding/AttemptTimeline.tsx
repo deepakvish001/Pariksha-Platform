@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
@@ -10,6 +11,11 @@ interface Props {
   limit?: number;
   onSelect?: (submission: CodeSubmissionRow) => void;
   highlightedId?: string | null;
+  /**
+   * When this value changes, auto-scroll the highlighted entry into view.
+   * Useful for "Go to failed cases" so the relevant timeline entry pops into focus.
+   */
+  scrollToHighlightKey?: string | number | null;
   /** Show a skeleton list while submissions are still being fetched. */
   loading?: boolean;
 }
@@ -27,7 +33,25 @@ const formatRelative = (iso: string) => {
   return new Date(iso).toLocaleDateString();
 };
 
-export const AttemptTimeline = ({ submissions, limit = 10, onSelect, highlightedId, loading }: Props) => {
+export const AttemptTimeline = ({
+  submissions,
+  limit = 10,
+  onSelect,
+  highlightedId,
+  scrollToHighlightKey,
+  loading,
+}: Props) => {
+  const itemRefs = useRef<Record<string, HTMLLIElement | null>>({});
+
+  useEffect(() => {
+    if (!highlightedId) return;
+    const el = itemRefs.current[highlightedId];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    // Re-run whenever the trigger key changes (or highlight target changes).
+  }, [scrollToHighlightKey, highlightedId, submissions.length]);
+
   return (
     <Card className="p-3">
       <div className="flex items-center gap-2 mb-3">
@@ -74,7 +98,13 @@ export const AttemptTimeline = ({ submissions, limit = 10, onSelect, highlighted
             const clickable = !!onSelect;
             const isHighlighted = highlightedId === s.id;
             return (
-              <li key={s.id} className="ml-4">
+              <li
+                key={s.id}
+                ref={(el) => {
+                  itemRefs.current[s.id] = el;
+                }}
+                className="ml-4"
+              >
                 <span
                   className={cn(
                     "absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full border-2 border-background",
