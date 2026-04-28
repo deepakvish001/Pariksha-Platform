@@ -658,166 +658,255 @@ const CodingProblems = () => {
         </Card>
       ) : (
         <Card className="overflow-hidden">
-          <Table>
-            <TableHeader className="bg-muted/40">
-              <TableRow className="hover:bg-transparent border-b">
-                {selectionMode && (
-                  <TableHead className="w-[44px]">
-                    <Checkbox
-                      checked={
-                        pageSlice.length > 0 &&
-                        pageSlice.every((p) => selected.has(p.slug))
-                      }
-                      onCheckedChange={(v) => {
-                        if (v) selectAllVisible();
-                        else
-                          pageSlice.forEach((p) => {
-                            if (selected.has(p.slug)) toggleSelected(p.slug);
-                          });
-                      }}
-                      aria-label="Select all on page"
-                    />
-                  </TableHead>
+          <div className="overflow-x-auto">
+            <Table className="table-fixed w-full">
+              <colgroup>
+                {selectionMode && <col style={{ width: "44px" }} />}
+                {PROBLEM_COLUMNS.map((c) =>
+                  tablePrefs.isVisible(c.id) ? (
+                    <col key={c.id} style={{ width: `${tablePrefs.widthOf(c.id)}px` }} />
+                  ) : null,
                 )}
-                <TableHead className="w-[60px] text-center">#</TableHead>
-                <TableHead className="w-[60px]">Status</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead className="hidden md:table-cell">Topics</TableHead>
-                <TableHead className="w-[110px]">Difficulty</TableHead>
-                <TableHead className="hidden lg:table-cell w-[120px] text-right">
-                  Acceptance
-                </TableHead>
-                <TableHead className="hidden sm:table-cell w-[90px] text-right">
-                  Attempts
-                </TableHead>
-                <TableHead className="w-[48px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageSlice.map((p, idx) => {
-                const isSolved = solved.has(p.slug);
-                const isAttempted = attempted.has(p.slug);
-                const stats = perProblem.get(p.slug);
-                const bm = isBookmarked(p.slug);
-                const isSel = selected.has(p.slug);
-                const acceptance =
-                  stats && stats.attempts > 0
-                    ? Math.round(((stats.accepted ?? 0) / stats.attempts) * 100)
-                    : null;
-                const rowNumber = (safePage - 1) * PAGE_SIZE + idx + 1;
-                return (
-                  <TableRow
-                    key={p.slug}
-                    data-selected={isSel}
-                    className={cn(
-                      "group transition-colors",
-                      isSel && "bg-primary/5",
-                    )}
-                  >
-                    {selectionMode && (
-                      <TableCell className="py-2.5">
-                        <Checkbox
-                          checked={isSel}
-                          onCheckedChange={() => toggleSelected(p.slug)}
-                          aria-label="Select problem"
-                        />
-                      </TableCell>
-                    )}
-                    <TableCell className="py-2.5 text-center text-xs text-muted-foreground tabular-nums">
-                      {rowNumber}
-                    </TableCell>
-                    <TableCell className="py-2.5">
-                      {isSolved ? (
-                        <CheckCircle2
-                          className="h-4 w-4 text-emerald-500"
-                          aria-label="Solved"
-                        />
-                      ) : isAttempted ? (
-                        <CircleDot
-                          className="h-4 w-4 text-amber-500"
-                          aria-label="Attempted"
-                        />
-                      ) : (
-                        <Circle
-                          className="h-4 w-4 text-muted-foreground/40"
-                          aria-label="Not started"
-                        />
+              </colgroup>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="hover:bg-transparent border-b">
+                  {selectionMode && (
+                    <TableHead className="w-[44px]">
+                      <Checkbox
+                        checked={
+                          pageSlice.length > 0 &&
+                          pageSlice.every((p) => selected.has(p.slug))
+                        }
+                        onCheckedChange={(v) => {
+                          if (v) selectAllVisible();
+                          else
+                            pageSlice.forEach((p) => {
+                              if (selected.has(p.slug)) toggleSelected(p.slug);
+                            });
+                        }}
+                        aria-label="Select all on page"
+                      />
+                    </TableHead>
+                  )}
+                  {tablePrefs.isVisible("row") && (
+                    <SortableResizableHeader
+                      columnId="row"
+                      label="#"
+                      align="center"
+                      width={tablePrefs.widthOf("row")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("row", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("status") && (
+                    <SortableResizableHeader
+                      columnId="status"
+                      label="Status"
+                      width={tablePrefs.widthOf("status")}
+                      sortable
+                      sortDir={dirOf("status")}
+                      onSortClick={() => cycleColumnSort("status")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("status", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("title") && (
+                    <SortableResizableHeader
+                      columnId="title"
+                      label="Title"
+                      width={tablePrefs.widthOf("title")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("title", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("topics") && (
+                    <SortableResizableHeader
+                      columnId="topics"
+                      label="Topics"
+                      width={tablePrefs.widthOf("topics")}
+                      className="hidden md:table-cell"
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("topics", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("difficulty") && (
+                    <SortableResizableHeader
+                      columnId="difficulty"
+                      label="Difficulty"
+                      width={tablePrefs.widthOf("difficulty")}
+                      sortable
+                      sortDir={dirOf("difficulty")}
+                      onSortClick={() => cycleColumnSort("difficulty")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("difficulty", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("acceptance") && (
+                    <SortableResizableHeader
+                      columnId="acceptance"
+                      label="Acceptance"
+                      align="right"
+                      width={tablePrefs.widthOf("acceptance")}
+                      className="hidden lg:table-cell"
+                      sortable
+                      sortDir={dirOf("acceptance")}
+                      onSortClick={() => cycleColumnSort("acceptance")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("acceptance", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("attempts") && (
+                    <SortableResizableHeader
+                      columnId="attempts"
+                      label="Attempts"
+                      align="right"
+                      width={tablePrefs.widthOf("attempts")}
+                      className="hidden sm:table-cell"
+                      sortable
+                      sortDir={dirOf("attempts")}
+                      onSortClick={() => cycleColumnSort("attempts")}
+                      resizable
+                      onResize={(px) => tablePrefs.setWidth("attempts", px)}
+                    />
+                  )}
+                  {tablePrefs.isVisible("bookmark") && (
+                    <SortableResizableHeader
+                      columnId="bookmark"
+                      label=""
+                      width={tablePrefs.widthOf("bookmark")}
+                    />
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pageSlice.map((p, idx) => {
+                  const isSolved = solved.has(p.slug);
+                  const isAttempted = attempted.has(p.slug);
+                  const stats = perProblem.get(p.slug);
+                  const bm = isBookmarked(p.slug);
+                  const isSel = selected.has(p.slug);
+                  const acceptance =
+                    stats && stats.attempts > 0
+                      ? Math.round(((stats.accepted ?? 0) / stats.attempts) * 100)
+                      : null;
+                  const rowNumber = (safePage - 1) * PAGE_SIZE + idx + 1;
+                  return (
+                    <TableRow
+                      key={p.slug}
+                      data-selected={isSel}
+                      className={cn(
+                        "group transition-colors",
+                        isSel && "bg-primary/5",
                       )}
-                    </TableCell>
-                    <TableCell className="py-2.5 min-w-0">
-                      <Link
-                        to={`/library/problems/${p.slug}`}
-                        className="font-medium hover:text-primary transition-colors block truncate"
-                      >
-                        {p.title}
-                      </Link>
-                      {/* Mobile-only inline topics */}
-                      <div className="md:hidden mt-1 flex flex-wrap gap-1">
-                        {p.topics.slice(0, 2).map((t) => (
-                          <Badge
-                            key={t}
-                            variant="secondary"
-                            className="text-[10px] font-normal px-1.5 py-0"
-                          >
-                            {t}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell py-2.5">
-                      <div className="flex flex-wrap gap-1">
-                        {p.topics.slice(0, 3).map((t) => (
-                          <Badge
-                            key={t}
-                            variant="secondary"
-                            className="text-xs font-normal"
-                          >
-                            {t}
-                          </Badge>
-                        ))}
-                        {p.topics.length > 3 && (
-                          <Badge variant="outline" className="text-xs font-normal">
-                            +{p.topics.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-2.5">
-                      <Badge
-                        variant="outline"
-                        className={cn("font-medium", difficultyClass(p.difficulty))}
-                      >
-                        {p.difficulty}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell py-2.5 text-right text-xs tabular-nums text-muted-foreground">
-                      {acceptance !== null ? `${acceptance}%` : "—"}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell py-2.5 text-right text-xs text-muted-foreground tabular-nums">
-                      {stats?.attempts ?? 0}
-                    </TableCell>
-                    <TableCell className="py-2.5">
-                      <button
-                        type="button"
-                        onClick={() => toggleBookmark(p.slug)}
-                        className="p-1 rounded hover:bg-muted/50 transition-colors"
-                        aria-label={bm ? "Remove bookmark" : "Bookmark"}
-                      >
-                        <Star
-                          className={cn(
-                            "h-4 w-4 transition-colors",
-                            bm
-                              ? "fill-amber-400 text-amber-400"
-                              : "text-muted-foreground/40 hover:text-amber-400",
+                    >
+                      {selectionMode && (
+                        <TableCell className="py-2.5">
+                          <Checkbox
+                            checked={isSel}
+                            onCheckedChange={() => toggleSelected(p.slug)}
+                            aria-label="Select problem"
+                          />
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("row") && (
+                        <TableCell className="py-2.5 text-center text-xs text-muted-foreground tabular-nums">
+                          {rowNumber}
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("status") && (
+                        <TableCell className="py-2.5">
+                          {isSolved ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-label="Solved" />
+                          ) : isAttempted ? (
+                            <CircleDot className="h-4 w-4 text-amber-500" aria-label="Attempted" />
+                          ) : (
+                            <Circle className="h-4 w-4 text-muted-foreground/40" aria-label="Not started" />
                           )}
-                        />
-                      </button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("title") && (
+                        <TableCell className="py-2.5 min-w-0">
+                          <Link
+                            to={`/library/problems/${p.slug}`}
+                            className="font-medium hover:text-primary transition-colors block truncate"
+                          >
+                            {p.title}
+                          </Link>
+                          {/* Mobile-only inline topics */}
+                          <div className="md:hidden mt-1 flex flex-wrap gap-1">
+                            {p.topics.slice(0, 2).map((t) => (
+                              <Badge
+                                key={t}
+                                variant="secondary"
+                                className="text-[10px] font-normal px-1.5 py-0"
+                              >
+                                {t}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("topics") && (
+                        <TableCell className="hidden md:table-cell py-2.5">
+                          <div className="flex flex-wrap gap-1">
+                            {p.topics.slice(0, 3).map((t) => (
+                              <Badge key={t} variant="secondary" className="text-xs font-normal">
+                                {t}
+                              </Badge>
+                            ))}
+                            {p.topics.length > 3 && (
+                              <Badge variant="outline" className="text-xs font-normal">
+                                +{p.topics.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("difficulty") && (
+                        <TableCell className="py-2.5">
+                          <Badge
+                            variant="outline"
+                            className={cn("font-medium", difficultyClass(p.difficulty))}
+                          >
+                            {p.difficulty}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("acceptance") && (
+                        <TableCell className="hidden lg:table-cell py-2.5 text-right text-xs tabular-nums text-muted-foreground">
+                          {acceptance !== null ? `${acceptance}%` : "—"}
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("attempts") && (
+                        <TableCell className="hidden sm:table-cell py-2.5 text-right text-xs text-muted-foreground tabular-nums">
+                          {stats?.attempts ?? 0}
+                        </TableCell>
+                      )}
+                      {tablePrefs.isVisible("bookmark") && (
+                        <TableCell className="py-2.5">
+                          <button
+                            type="button"
+                            onClick={() => toggleBookmark(p.slug)}
+                            className="p-1 rounded hover:bg-muted/50 transition-colors"
+                            aria-label={bm ? "Remove bookmark" : "Bookmark"}
+                          >
+                            <Star
+                              className={cn(
+                                "h-4 w-4 transition-colors",
+                                bm
+                                  ? "fill-amber-400 text-amber-400"
+                                  : "text-muted-foreground/40 hover:text-amber-400",
+                              )}
+                            />
+                          </button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       )}
 
