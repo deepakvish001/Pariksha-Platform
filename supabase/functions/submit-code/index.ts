@@ -61,6 +61,9 @@ function respond<T>(payload: FunctionResponse<T>) {
 function judge0Headers(): Record<string, string> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (JUDGE0_AUTH_TOKEN) headers[JUDGE0_AUTH_HEADER] = JUDGE0_AUTH_TOKEN;
+  if (JUDGE0_EXTRA_HEADER_NAME && JUDGE0_EXTRA_HEADER_VALUE) {
+    headers[JUDGE0_EXTRA_HEADER_NAME] = JUDGE0_EXTRA_HEADER_VALUE;
+  }
   return headers;
 }
 
