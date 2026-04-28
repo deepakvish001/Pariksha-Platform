@@ -1494,26 +1494,33 @@ const CodingProblemDetail = () => {
                           <p className="text-xs font-semibold text-destructive">
                             Failed on test case #{(submitResult.failing_case.index ?? 0) + 1}
                           </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
-                            <div>
-                              <p className="text-muted-foreground mb-1">Input</p>
-                              <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
-                                {submitResult.failing_case.input}
-                              </pre>
+                          {isSQLProblem ? (
+                            <SqlResultDiff
+                              expected={submitResult.failing_case.expected ?? ""}
+                              actual={submitResult.failing_case.output ?? ""}
+                            />
+                          ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
+                              <div>
+                                <p className="text-muted-foreground mb-1">Input</p>
+                                <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
+                                  {submitResult.failing_case.input}
+                                </pre>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground mb-1">Expected</p>
+                                <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
+                                  {submitResult.failing_case.expected}
+                                </pre>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground mb-1">Got</p>
+                                <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
+                                  {submitResult.failing_case.output || "(empty)"}
+                                </pre>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-muted-foreground mb-1">Expected</p>
-                              <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
-                                {submitResult.failing_case.expected}
-                              </pre>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground mb-1">Got</p>
-                              <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">
-                                {submitResult.failing_case.output || "(empty)"}
-                              </pre>
-                            </div>
-                          </div>
+                          )}
                           {submitResult.failing_case.error && (
                             <pre className="text-xs text-destructive bg-background p-2 rounded border overflow-x-auto">
                               {submitResult.failing_case.error}
@@ -1533,46 +1540,68 @@ const CodingProblemDetail = () => {
                         if (failed.length === 0) return null;
                         return (
                           <div className="space-y-2">
-                            <p className="text-xs font-medium text-muted-foreground">
-                              Per-test raw details ({failed.length} failing)
+                            <p
+                              className="text-xs font-medium text-muted-foreground"
+                              id="failing-tests-heading"
+                            >
+                              Failing tests ({failed.length})
                             </p>
-                            {failed.map((c) => (
-                              <details
-                                key={c.index}
-                                className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs"
-                              >
-                                <summary className="cursor-pointer font-medium flex items-center gap-2 flex-wrap">
-                                  <span className="text-destructive">Test #{c.index + 1}</span>
-                                  <Badge variant="outline" className="text-[10px]">{c.status_label}</Badge>
-                                  <span className="text-muted-foreground font-mono">
-                                    {c.time_ms} ms · {(c.memory_kb / 1024).toFixed(1)} MB
-                                  </span>
-                                </summary>
-                                <div className="mt-3 space-y-2">
-                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono">
-                                    <div>
-                                      <p className="text-muted-foreground mb-1">Input</p>
-                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.input}</pre>
+                            <div
+                              role="list"
+                              aria-labelledby="failing-tests-heading"
+                              className="space-y-2"
+                            >
+                              {failed.map((c) => {
+                                const panelId = `failing-test-${c.index}`;
+                                return (
+                                  <details
+                                    key={c.index}
+                                    role="listitem"
+                                    className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs group"
+                                  >
+                                    <summary
+                                      aria-controls={panelId}
+                                      className="cursor-pointer font-medium flex items-center gap-2 flex-wrap list-none"
+                                    >
+                                      <span className="text-destructive">Test #{c.index + 1}</span>
+                                      <Badge variant="outline" className="text-[10px]">{c.status_label}</Badge>
+                                      <span className="text-muted-foreground font-mono">
+                                        {c.time_ms} ms · {(c.memory_kb / 1024).toFixed(1)} MB
+                                      </span>
+                                    </summary>
+                                    <div id={panelId} className="mt-3 space-y-2">
+                                      {isSQLProblem ? (
+                                        <SqlResultDiff
+                                          expected={c.expected ?? ""}
+                                          actual={c.stdout ?? ""}
+                                        />
+                                      ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono">
+                                          <div>
+                                            <p className="text-muted-foreground mb-1">Input</p>
+                                            <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.input}</pre>
+                                          </div>
+                                          <div>
+                                            <p className="text-muted-foreground mb-1">Expected</p>
+                                            <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.expected}</pre>
+                                          </div>
+                                          <div>
+                                            <p className="text-muted-foreground mb-1">Got</p>
+                                            <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.stdout || "(empty)"}</pre>
+                                          </div>
+                                        </div>
+                                      )}
+                                      {c.stderr && (
+                                        <div>
+                                          <p className="text-muted-foreground mb-1">stderr</p>
+                                          <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap text-destructive">{c.stderr}</pre>
+                                        </div>
+                                      )}
                                     </div>
-                                    <div>
-                                      <p className="text-muted-foreground mb-1">Expected</p>
-                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.expected}</pre>
-                                    </div>
-                                    <div>
-                                      <p className="text-muted-foreground mb-1">Got</p>
-                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap">{c.stdout || "(empty)"}</pre>
-                                    </div>
-                                  </div>
-                                  {c.stderr && (
-                                    <div>
-                                      <p className="text-muted-foreground mb-1">stderr</p>
-                                      <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap text-destructive">{c.stderr}</pre>
-                                    </div>
-                                  )}
-                                </div>
-
-                              </details>
-                            ))}
+                                  </details>
+                                );
+                              })}
+                            </div>
                           </div>
                         );
                       })()}
