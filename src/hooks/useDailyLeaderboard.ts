@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export interface DailyLeaderboardEntry {
   user_id: string;
   display_name: string;
+  username: string | null;
   avatar_url: string | null;
   current_streak: number;
   weekly_completions: number;

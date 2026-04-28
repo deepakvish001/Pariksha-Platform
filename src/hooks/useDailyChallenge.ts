@@ -2,15 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CODING_PROBLEMS, type CodingProblem } from "@/data/codingProblemsData";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  mergeCompletions,
+  type CompletionRecord,
+} from "@/lib/dailyChallengeMerge";
 
 const STORAGE_KEY = "byteskill:coding:dailyChallenge:v2";
-
-interface CompletionRecord {
-  // YYYY-MM-DD in local time
-  date: string;
-  problemSlug: string;
-  completedAt: string; // ISO
-}
 
 interface DailyState {
   completions: CompletionRecord[];
@@ -98,7 +95,14 @@ export interface DailyChallenge {
   completedTotal: number;
   /** Last 30 days of completions (date YYYY-MM-DD + slug + ts). Newest first. */
   recentCompletions: CompletionRecord[];
+  /** True while a cloud pull/push is in flight */
   syncing: boolean;
+  /** Most recent sync lifecycle: idle | syncing | synced | error | offline */
+  syncStatus: "idle" | "syncing" | "synced" | "error" | "offline";
+  /** Last sync error message, if any */
+  syncError: string | null;
+  /** Last successful cloud sync time */
+  lastSyncedAt: Date | null;
   /** True when a successful mark-completed event just happened (for celebration) */
   justCompleted: boolean;
   acknowledgeCelebration: () => void;
@@ -122,6 +126,11 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
 
   const [state, setState] = useState<DailyState>(() => readState());
   const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<
+    "idle" | "syncing" | "synced" | "error" | "offline"
+  >("idle");
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [justCompleted, setJustCompleted] = useState(false);
   const lastSyncedUserRef = useRef<string | null>(null);
 
@@ -173,6 +182,8 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
   useEffect(() => {
     if (!user) {
       lastSyncedUserRef.current = null;
+      setSyncStatus("idle");
+      setSyncError(null);
       return;
     }
     if (lastSyncedUserRef.current === user.id) return;
@@ -181,9 +192,11 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     let cancelled = false;
     (async () => {
       setSyncing(true);
+      setSyncStatus("syncing");
+      setSyncError(null);
       try {
         // Pull last ~365 days
-        const { data } = await supabase
+        const { data, error: pullErr } = await supabase
           .from("daily_challenge_completions")
           .select("challenge_date, problem_slug, completed_at")
           .eq("user_id", user.id)
@@ -194,6 +207,7 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
           .order("challenge_date", { ascending: false });
 
         if (cancelled) return;
+        if (pullErr) throw pullErr;
 
         const remote: CompletionRecord[] = (data ?? []).map((r) => ({
           date: r.challenge_date as string,
@@ -201,29 +215,9 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
           completedAt: (r.completed_at as string) ?? new Date().toISOString(),
         }));
 
-        // Conflict-safe merge: dedupe by date; on overlap keep the EARLIEST
-        // completedAt so a later "mark done" on another device cannot
-        // retroactively change the streak day or duplicate it.
+        // Conflict-safe merge using shared pure helper.
         setState((prev) => {
-          const byDate = new Map<string, CompletionRecord>();
-          const consider = (c: CompletionRecord) => {
-            const existing = byDate.get(c.date);
-            if (!existing) {
-              byDate.set(c.date, c);
-              return;
-            }
-            // Prefer the earliest timestamp; prefer one with a real slug if tied
-            const a = Date.parse(existing.completedAt) || 0;
-            const b = Date.parse(c.completedAt) || 0;
-            if (b < a || (b === a && !existing.problemSlug && c.problemSlug)) {
-              byDate.set(c.date, c);
-            }
-          };
-          for (const c of prev.completions) consider(c);
-          for (const c of remote) consider(c);
-          const merged = Array.from(byDate.values()).sort((a, b) =>
-            a.date < b.date ? 1 : -1,
-          );
+          const merged = mergeCompletions(prev.completions, remote);
           const next = { completions: merged };
           writeState(next);
           return next;
@@ -237,7 +231,7 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
         const local = readState().completions;
         const toUpload = local.filter((c) => !remoteDates.has(c.date));
         if (toUpload.length > 0) {
-          await supabase
+          const { error: pushErr } = await supabase
             .from("daily_challenge_completions")
             .upsert(
               toUpload.map((c) => ({
@@ -248,7 +242,28 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
               })),
               { onConflict: "user_id,challenge_date", ignoreDuplicates: true },
             );
+          if (pushErr) throw pushErr;
         }
+
+        // Client-side self-heal audit: removes any leftover duplicates that
+        // bypassed the unique constraint historically. Best-effort, never
+        // fabricates completions.
+        try {
+          await supabase.rpc("audit_daily_completions" as never);
+        } catch {
+          /* non-fatal */
+        }
+
+        if (!cancelled) {
+          setSyncStatus("synced");
+          setLastSyncedAt(new Date());
+        }
+      } catch (err) {
+        if (cancelled) return;
+        const msg =
+          err instanceof Error ? err.message : "Failed to sync daily challenge";
+        setSyncError(msg);
+        setSyncStatus(navigator?.onLine === false ? "offline" : "error");
       } finally {
         if (!cancelled) setSyncing(false);
       }
@@ -320,17 +335,29 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     if (user) {
       try {
         setSyncing(true);
+        setSyncStatus("syncing");
+        setSyncError(null);
         // ignoreDuplicates: if another device already marked this date,
         // do not overwrite the earlier completion timestamp.
-        await supabase.from("daily_challenge_completions").upsert(
-          {
-            user_id: user.id,
-            challenge_date: dateKey,
-            problem_slug: problem.slug,
-            completed_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id,challenge_date", ignoreDuplicates: true },
-        );
+        const { error: upErr } = await supabase
+          .from("daily_challenge_completions")
+          .upsert(
+            {
+              user_id: user.id,
+              challenge_date: dateKey,
+              problem_slug: problem.slug,
+              completed_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id,challenge_date", ignoreDuplicates: true },
+          );
+        if (upErr) throw upErr;
+        setSyncStatus("synced");
+        setLastSyncedAt(new Date());
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Failed to record completion";
+        setSyncError(msg);
+        setSyncStatus(navigator?.onLine === false ? "offline" : "error");
       } finally {
         setSyncing(false);
       }
@@ -347,6 +374,9 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     completedTotal: state.completions.length,
     recentCompletions,
     syncing,
+    syncStatus,
+    syncError,
+    lastSyncedAt,
     justCompleted,
     acknowledgeCelebration,
     markCompleted,
