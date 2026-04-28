@@ -180,9 +180,8 @@ const DailyChallengeWeekly = () => {
             const done = completedDateSet.has(key);
             const isToday = idx === 0;
             return (
-              <Link
+              <div
                 key={key}
-                to={`/library/problems/${problem.slug}`}
                 className="flex items-center gap-3 p-3 sm:p-4 hover:bg-muted/30 transition-colors"
               >
                 <div
@@ -206,18 +205,23 @@ const DailyChallengeWeekly = () => {
                       </Badge>
                     )}
                   </div>
-                  <div className="mt-0.5 truncate text-sm font-semibold">{problem.title}</div>
+                  <Link
+                    to={`/library/problems/${problem.slug}`}
+                    className="mt-0.5 block truncate text-sm font-semibold hover:text-primary hover:underline underline-offset-2"
+                  >
+                    {problem.title}
+                  </Link>
                 </div>
                 <Badge
                   variant="outline"
-                  className={cn("text-[10px]", difficultyClass(problem.difficulty))}
+                  className={cn("text-[10px] hidden sm:inline-flex", difficultyClass(problem.difficulty))}
                 >
                   {problem.difficulty}
                 </Badge>
                 <Badge
                   variant="outline"
                   className={cn(
-                    "text-[10px]",
+                    "text-[10px] hidden sm:inline-flex",
                     done
                       ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
                       : "text-muted-foreground",
@@ -225,7 +229,21 @@ const DailyChallengeWeekly = () => {
                 >
                   {done ? "Completed" : "Open"}
                 </Badge>
-              </Link>
+                <Button
+                  asChild
+                  size="sm"
+                  variant={done ? "outline" : "secondary"}
+                  className="h-8 gap-1 text-xs"
+                >
+                  <Link
+                    to={`/library/problems/${problem.slug}`}
+                    aria-label={`Go to problem ${problem.title}`}
+                  >
+                    Go to problem
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
             );
           })}
         </Card>
