@@ -48,6 +48,62 @@ export const useCodingSubmissions = (problemSlug?: string) => {
   return { submissions, loading, refetch: fetchSubmissions };
 };
 
+export interface PagedSubmissionsParams {
+  page: number;
+  pageSize: number;
+  search?: string;
+  verdict?: string;
+  language?: string;
+}
+
+export const usePagedCodingSubmissions = ({
+  page,
+  pageSize,
+  search,
+  verdict,
+  language,
+}: PagedSubmissionsParams) => {
+  const { user } = useAuth();
+  const [submissions, setSubmissions] = useState<CodeSubmissionRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const fetchPage = useCallback(async () => {
+    if (!user) {
+      setSubmissions([]);
+      setTotal(0);
+      return;
+    }
+    setLoading(true);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    let q = supabase
+      .from("code_submissions")
+      .select("*", { count: "exact" })
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .range(from, to);
+    if (verdict && verdict !== "all") q = q.eq("verdict", verdict);
+    if (language && language !== "all") q = q.eq("language", language);
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      q = q.or(`problem_slug.ilike.${term},source_code.ilike.${term}`);
+    }
+    const { data, error, count } = await q;
+    if (!error && data) {
+      setSubmissions(data as CodeSubmissionRow[]);
+      setTotal(count ?? 0);
+    }
+    setLoading(false);
+  }, [user, page, pageSize, search, verdict, language]);
+
+  useEffect(() => {
+    fetchPage();
+  }, [fetchPage]);
+
+  return { submissions, total, loading, refetch: fetchPage };
+};
+
 export const useUserSolvedSlugs = () => {
   const { user } = useAuth();
   const [solved, setSolved] = useState<Set<string>>(new Set());
