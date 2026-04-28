@@ -12,7 +12,23 @@
  *  - markCompleted writes locally and pushes to the cloud.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
+
+/** Minimal waitFor: polls `cb` until it doesn't throw or timeout elapses. */
+const waitFor = async (cb: () => void | Promise<void>, timeout = 2000) => {
+  const start = Date.now();
+  let lastErr: unknown;
+  while (Date.now() - start < timeout) {
+    try {
+      await cb();
+      return;
+    } catch (e) {
+      lastErr = e;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("waitFor timed out");
+};
 
 // ---- Mocks ---------------------------------------------------------------
 
@@ -128,7 +144,7 @@ describe("useDailyChallenge — cloud pull/push end-to-end (post sync-field remo
     );
 
     // Public hook surface does NOT expose removed sync fields.
-    const surface = result.current as Record<string, unknown>;
+    const surface = result.current as unknown as Record<string, unknown>;
     expect(surface).not.toHaveProperty("syncStatus");
     expect(surface).not.toHaveProperty("syncError");
     expect(surface).not.toHaveProperty("lastSyncedAt");
