@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { source_code, language_id, stdin, expected_output } = body ?? {};
+    const { source_code, language_id, stdin, expected_output, problem_slug, language } = body ?? {};
 
     if (typeof source_code !== "string" || source_code.length === 0) {
       return respond<RunResult>({
@@ -221,6 +221,36 @@ Deno.serve(async (req) => {
       stdin: typeof stdin === "string" ? stdin : "",
       expected_output: typeof expected_output === "string" ? expected_output : undefined,
     });
+
+    // Best-effort log to code_runs when the caller is authenticated and provided context
+    try {
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader && typeof problem_slug === "string" && typeof language === "string") {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user) {
+          await supabase.from("code_runs").insert({
+            user_id: userData.user.id,
+            problem_slug,
+            language,
+            language_id,
+            source_code,
+            stdin: typeof stdin === "string" ? stdin : "",
+            stdout: result.stdout || null,
+            stderr: result.stderr || null,
+            compile_output: result.compile_output || null,
+            status: result.status?.description ?? null,
+            status_id: result.status?.id ?? null,
+            time_ms: result.time != null ? Math.round(result.time * 1000) : null,
+            memory_kb: result.memory ?? null,
+          });
+        }
+      }
+    } catch (logErr) {
+      console.warn("run-code: failed to log run", logErr);
+    }
 
     return respond<RunResult>({ ok: true, data: result });
   } catch (err) {
