@@ -10,6 +10,9 @@ import {
   Lightbulb,
   ChevronDown,
   ChevronRight,
+  Minus,
+  Plus,
+  Type,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -35,6 +38,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,6 +64,11 @@ import { LoginPromptDialog } from "@/components/LoginPromptDialog";
 import { ProblemDetailHeader } from "@/components/library/coding/ProblemDetailHeader";
 import { AttemptTimeline } from "@/components/library/coding/AttemptTimeline";
 import { SubmissionDetailsDrawer } from "@/components/library/coding/SubmissionDetailsDrawer";
+import { ProblemMetaStrip } from "@/components/library/coding/ProblemMetaStrip";
+import { NotesPanel } from "@/components/library/coding/NotesPanel";
+import { ProgressiveHints } from "@/components/library/coding/ProgressiveHints";
+import { useProblemNotes } from "@/hooks/useProblemNotes";
+import { useEditorPrefs } from "@/hooks/useEditorPrefs";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
 
