@@ -123,6 +123,27 @@ export const useCodingProblemsTablePrefs = () => {
 
   const resetAll = useCallback(() => setPrefs(defaultPrefs()), []);
 
+  /**
+   * Snapshot current prefs (visibility + widths + saved sorts) so the caller
+   * can restore them later without a page reload.
+   */
+  const snapshot = useCallback((): Persisted => {
+    return {
+      visible: { ...prefs.visible },
+      widths: { ...prefs.widths },
+      sortBySlug: { ...(prefs.sortBySlug ?? {}) },
+    };
+  }, [prefs]);
+
+  /** Restore a previously taken snapshot directly into state (no reload). */
+  const restoreSnapshot = useCallback((snap: Persisted) => {
+    setPrefs({
+      visible: { ...snap.visible },
+      widths: { ...snap.widths },
+      sortBySlug: { ...(snap.sortBySlug ?? {}) },
+    });
+  }, []);
+
   const getSavedSort = useCallback(
     (slug: string): string | undefined => prefs.sortBySlug?.[slug],
     [prefs.sortBySlug],
@@ -143,6 +164,8 @@ export const useCodingProblemsTablePrefs = () => {
     toggleVisible,
     setWidth,
     resetAll,
+    snapshot,
+    restoreSnapshot,
     getSavedSort,
     setSavedSort,
   };
