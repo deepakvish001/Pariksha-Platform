@@ -1640,12 +1640,14 @@ export type Database = {
         }[]
       }
       get_submission_percentiles: {
-        Args: { _submission_id: string }
+        Args: { _mode?: string; _submission_id: string }
         Returns: {
           memory_beats: number
           memory_kb: number
+          mode: string
           runtime_beats: number
           runtime_ms: number
+          total_compared: number
           total_users: number
         }[]
       }
