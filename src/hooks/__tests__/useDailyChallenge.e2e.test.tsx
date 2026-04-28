@@ -134,24 +134,9 @@ describe("useDailyChallenge — cloud pull/push end-to-end (post sync-field remo
       }),
     );
 
-    const errors: unknown[] = [];
-    const onErr = (e: unknown) => errors.push(e);
-    process.on("unhandledRejection", onErr);
-    const origWarn = console.warn;
-    const warns: unknown[] = [];
-    console.warn = (...a) => warns.push(a);
-
-    const { result } = renderHook(() => useDailyChallenge());
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 300));
+    const { result } = renderHook(() => useDailyChallenge(), {
+      wrapper: NoStrictWrapper,
     });
-    console.warn = origWarn;
-    process.off("unhandledRejection", onErr);
-    console.log("DEBUG warns:", JSON.stringify(warns));
-    console.log("DEBUG errors:", JSON.stringify(errors.map((e) => String(e))));
-    console.log("DEBUG state:", JSON.stringify(result.current.recentCompletions));
-    console.log("DEBUG select calls:", selectChain.select.mock.calls.length, "upsert:", upsertMock.mock.calls.length, "rpc:", rpcMock.mock.calls.length);
-    console.log("DEBUG after 100ms select:", selectChain.select.mock.calls.length, "rpc:", rpcMock.mock.calls.length, "upsert:", upsertMock.mock.calls.length);
 
     await waitFor(() => {
       // Remote rows should have merged in alongside the local-only row.
