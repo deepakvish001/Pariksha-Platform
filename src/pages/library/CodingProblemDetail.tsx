@@ -241,6 +241,14 @@ const CodingProblemDetail = () => {
     override: formatOnSubmitOverride,
     setOverride: setFormatOnSubmitOverride,
   } = useFormatOnSubmitOverride(slug, language, editorPrefs.formatOnSubmit);
+  const {
+    order: tabOrder,
+    active: activeTab,
+    setOrder: setTabOrder,
+    setActive: setActiveTab,
+    reset: resetTabsLayout,
+    isCustomized: isLayoutCustomized,
+  } = useEditorTabsLayout(slug, language);
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
   // If the submission ID doesn't exist for this problem, clear the param so
