@@ -387,7 +387,9 @@ const CodingProblemDetail = () => {
                     </p>
                   </Card>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    <AttemptTimeline submissions={submissions} limit={10} />
+                    <div className="space-y-2">
                     {submissions.map((s) => (
                       <Card key={s.id} className="p-3 hover:bg-muted/30 transition-colors">
                         <div className="flex items-center justify-between gap-3 flex-wrap">
