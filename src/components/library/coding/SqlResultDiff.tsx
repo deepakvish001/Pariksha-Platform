@@ -215,3 +215,75 @@ export const SqlResultDiff = ({ expected, actual, className }: SqlResultDiffProp
     </div>
   );
 };
+
+// Single-table renderer for SQL run output (no diff). Falls back to <pre>
+// when the value isn't tab-separated tabular data.
+export const SqlResultTable = ({
+  value,
+  className,
+}: {
+  value: string;
+  className?: string;
+}) => {
+  const t = parseTabular(value);
+  if (!t) {
+    return (
+      <pre
+        className={cn(
+          "text-xs bg-muted/50 p-3 rounded border overflow-x-auto whitespace-pre-wrap",
+          className,
+        )}
+      >
+        {value || "(empty)"}
+      </pre>
+    );
+  }
+  return (
+    <div
+      className={cn("rounded border bg-background overflow-x-auto", className)}
+      role="region"
+      aria-label="Query result"
+    >
+      <table className="w-full text-xs font-mono border-collapse">
+        <thead className="bg-muted/50">
+          <tr>
+            {t.columns.map((c, ci) => (
+              <th
+                key={ci}
+                scope="col"
+                className="text-left px-2 py-1.5 border-b font-semibold"
+              >
+                {c}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {t.rows.length === 0 ? (
+            <tr>
+              <td
+                colSpan={Math.max(1, t.columns.length)}
+                className="px-2 py-2 text-muted-foreground italic"
+              >
+                (no rows)
+              </td>
+            </tr>
+          ) : (
+            t.rows.map((row, ri) => (
+              <tr key={ri} className="border-b last:border-b-0">
+                {row.map((cell, ci) => (
+                  <td key={ci} className="px-2 py-1 align-top whitespace-pre-wrap break-all">
+                    {cell === "" ? <span className="text-muted-foreground">∅</span> : cell}
+                  </td>
+                ))}
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+      <p className="px-2 py-1 text-[10px] text-muted-foreground border-t bg-muted/20">
+        {t.rows.length} row{t.rows.length === 1 ? "" : "s"}
+      </p>
+    </div>
+  );
+};
