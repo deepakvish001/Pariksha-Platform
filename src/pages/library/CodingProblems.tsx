@@ -1402,51 +1402,7 @@ const CodingProblems = () => {
                       )}
                       {tablePrefs.isVisible("topics") && (
                         <TableCell className={`hidden md:table-cell ${cellPadY}`}>
-                          <div className="flex flex-wrap gap-1">
-                            {p.topics.slice(0, 3).map((t) => (
-                              <Badge key={t} variant="secondary" className="text-xs font-normal">
-                                {t}
-                              </Badge>
-                            ))}
-                            {p.topics.length > 3 && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="inline-flex"
-                                    aria-label={`Show ${p.topics.length - 3} more topics`}
-                                  >
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs font-normal cursor-pointer hover:bg-muted/60 transition-colors"
-                                    >
-                                      +{p.topics.length - 3}
-                                    </Badge>
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                  align="start"
-                                  className="w-auto max-w-xs p-2"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <div className="max-h-48 overflow-y-auto pr-1">
-                                    <div className="flex flex-wrap gap-1">
-                                      {p.topics.slice(3).map((t) => (
-                                        <Badge
-                                          key={t}
-                                          variant="secondary"
-                                          className="text-xs font-normal"
-                                        >
-                                          {t}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                          </div>
+                          <TopicBadgesWithOverflow topics={p.topics} visibleCount={3} />
                         </TableCell>
                       )}
                       {tablePrefs.isVisible("difficulty") && (
