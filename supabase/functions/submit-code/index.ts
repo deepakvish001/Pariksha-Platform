@@ -255,8 +255,8 @@ Deno.serve(async (req) => {
     if (!fermionLang)
       return respond<SubmitResult>({ ok: false, error: `Language not supported by Fermion (language_id=${language_id})`, diagnostics: { error_stage: "validation" } });
 
-    const cpuMs = Math.min(typeof cpu_time_limit === "number" ? cpu_time_limit * 1000 : 5000, 10000);
-    const wallMs = Math.min(cpuMs * 2, 15000);
+    const cpuMs = Math.min(typeof cpu_time_limit === "number" ? cpu_time_limit * 1000 : 3000, 5000);
+    const wallMs = Math.min(cpuMs * 2, 6500);
     const memKb = Math.min(typeof memory_limit === "number" ? memory_limit : 262144, 524288);
 
     // Submit all cases as a single batch, then poll.

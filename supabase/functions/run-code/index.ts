@@ -310,8 +310,8 @@ Deno.serve(async (req) => {
       source_code,
       language: fermionLang,
       stdin: typeof stdin === "string" ? stdin : "",
-      cpu_ms: 5000,
-      wall_ms: 10000,
+      cpu_ms: 3000,
+      wall_ms: 6000,
       mem_kb: 262144,
     });
 
