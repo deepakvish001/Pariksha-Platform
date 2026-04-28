@@ -25,32 +25,24 @@ interface Props {
   loading?: boolean;
 }
 
+/**
+ * Overall solved % is now surfaced by `TopicProgressRing` (with topic = "All"),
+ * so this header focuses on the difficulty breakdown and weekly momentum to
+ * avoid duplicating the same number twice on the page.
+ */
 export const ProblemStatsHeader = ({
   counts,
-  totalSolved,
+  totalSolved: _totalSolved,
   weekSolved,
   prevWeekSolved,
   continueProblem,
   loading,
 }: Props) => {
-  const pct = counts.total > 0 ? Math.round((totalSolved / counts.total) * 100) : 0;
   const delta = weekSolved - prevWeekSolved;
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6" aria-busy="true">
-        {/* Progress card skeleton */}
-        <Card className="p-5 relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-20 w-20 rounded-full shrink-0" />
-            <div className="min-w-0 space-y-2 flex-1">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-7 w-20" />
-              <Skeleton className="h-3 w-28" />
-            </div>
-          </div>
-        </Card>
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6" aria-busy="true">
         {/* Difficulty breakdown skeleton */}
         <Card className="p-5">
           <Skeleton className="h-3 w-24 mb-3" />
@@ -83,39 +75,7 @@ export const ProblemStatsHeader = ({
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
-      {/* Progress card */}
-      <Card className="p-5 relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
-        <div className="flex items-center gap-4">
-          <div className="relative h-20 w-20 shrink-0">
-            <svg viewBox="0 0 36 36" className="h-20 w-20 -rotate-90">
-              <circle cx="18" cy="18" r="15.9155" fill="none" className="stroke-muted" strokeWidth="3" />
-              <circle
-                cx="18"
-                cy="18"
-                r="15.9155"
-                fill="none"
-                className="stroke-primary transition-all duration-700"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeDasharray={`${pct}, 100`}
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-lg font-bold">{pct}%</span>
-            </div>
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Your Progress</p>
-            <p className="text-2xl font-bold mt-1">
-              {totalSolved}
-              <span className="text-base text-muted-foreground">/{counts.total}</span>
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">problems solved</p>
-          </div>
-        </div>
-      </Card>
-
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
       {/* Difficulty breakdown */}
       <Card className="p-5">
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">By Difficulty</p>
