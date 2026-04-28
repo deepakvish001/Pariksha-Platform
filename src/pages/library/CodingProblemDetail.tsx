@@ -166,6 +166,8 @@ const CodingProblemDetail = () => {
     hasNotes: mySolutionHasNotes,
     hasAnyCode: mySolutionHasAnyCode,
     isComplete: mySolutionIsComplete,
+    syncStatus: mySolutionSyncStatus,
+    isCloudSynced: mySolutionIsCloudSynced,
   } = useProblemSolution(slug, mySolutionLanguage);
   const {
     prefs: editorPrefs,
