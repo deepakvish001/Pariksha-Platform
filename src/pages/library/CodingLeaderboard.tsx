@@ -525,24 +525,37 @@ export default function CodingLeaderboard() {
     [rows, user],
   );
 
+  const [pendingJump, setPendingJump] = useState(false);
+
   const handleJumpToMe = () => {
     if (!user || !youRank) return;
     if (!youOnPage) {
-      // Jump to the page that contains the user.
       const targetPage = Math.max(1, Math.ceil(youRank.rank / PAGE_SIZE));
       if (targetPage !== page) {
         setSearch("");
         setSearchInput("");
         setPage(targetPage);
+        setPendingJump(true);
         return;
       }
     }
-    // Already on the right page — scroll to row.
     requestAnimationFrame(() => {
       youRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       youRowRef.current?.focus({ preventScroll: true });
     });
   };
+
+  // After paging completes and the row mounts, finish the jump.
+  useEffect(() => {
+    if (!pendingJump || loading) return;
+    if (youRowRef.current) {
+      requestAnimationFrame(() => {
+        youRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        youRowRef.current?.focus({ preventScroll: true });
+        setPendingJump(false);
+      });
+    }
+  }, [pendingJump, loading, rows]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
