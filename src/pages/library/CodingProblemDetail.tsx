@@ -1621,10 +1621,7 @@ const CodingProblemDetail = () => {
                             {isSQLProblem ? "Query result" : "stdout"}
                           </p>
                           {isSQLProblem ? (
-                            <SqlResultDiff
-                              expected={runResult.stdout}
-                              actual={runResult.stdout}
-                            />
+                            <SqlResultTable value={runResult.stdout} />
                           ) : (
                             <pre className="text-xs bg-muted/50 p-3 rounded border overflow-x-auto whitespace-pre-wrap">
                               {runResult.stdout}
