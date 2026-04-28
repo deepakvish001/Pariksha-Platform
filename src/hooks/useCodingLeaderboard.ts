@@ -91,3 +91,55 @@ export function useCodingLeaderboardStats() {
 
   return { stats, loading };
 }
+
+export interface CodingLeaderboardUserRank {
+  rank: number;
+  user_id: string;
+  username: string | null;
+  display_name: string;
+  avatar_url: string | null;
+  problems_solved: number;
+  total_accepted: number;
+  acceptance_rate: number;
+  fastest_avg_runtime: number | null;
+  weighted_score: number;
+  last_accepted_at: string | null;
+  total_ranked: number;
+}
+
+// Returns the current user's rank for the given window — even when the
+// user is off the visible page. Used by the "Your current rank" card.
+export function useCodingLeaderboardUserRank(
+  userId: string | null | undefined,
+  w: LeaderboardWindow,
+) {
+  const [data, setData] = useState<CodingLeaderboardUserRank | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!userId) {
+      setData(null);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      const { data: rows, error } = await supabase.rpc(
+        "get_coding_leaderboard_user_rank" as never,
+        { _user_id: userId, _window: w } as never,
+      );
+      if (cancelled) return;
+      if (!error && rows && (rows as CodingLeaderboardUserRank[]).length > 0) {
+        setData((rows as CodingLeaderboardUserRank[])[0]);
+      } else {
+        setData(null);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, w]);
+
+  return { data, loading };
+}
