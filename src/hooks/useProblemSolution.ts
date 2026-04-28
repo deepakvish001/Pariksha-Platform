@@ -225,6 +225,7 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     setEntry({ ...empty });
     setSavedAt(null);
     setDirty({ notes: false, code: {} });
+    setUndoBuffer({});
     return previous;
   }, [slug]);
 
@@ -245,6 +246,7 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
       setEntry(restored);
       setSavedAt(restored.updatedAt);
       setDirty({ notes: false, code: {} });
+      setUndoBuffer({});
     },
     [slug],
   );
@@ -268,6 +270,9 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     setCode,
     clear,
     restore,
+    undoCodeChange,
+    /** True when there is a per-language code-undo available. */
+    canUndoCode: (lang: LangId) => undoBuffer[lang] !== undefined,
     /** True if the current language's editor has edits not yet flushed. */
     hasUnsavedCurrentCode,
     /** True if any field is dirty (used for switch confirmations). */
