@@ -97,12 +97,6 @@ export interface DailyChallenge {
   recentCompletions: CompletionRecord[];
   /** True while a cloud pull/push is in flight */
   syncing: boolean;
-  /** Most recent sync lifecycle: idle | syncing | synced | error | offline */
-  syncStatus: "idle" | "syncing" | "synced" | "error" | "offline";
-  /** Last sync error message, if any */
-  syncError: string | null;
-  /** Last successful cloud sync time */
-  lastSyncedAt: Date | null;
   /** True when a successful mark-completed event just happened (for celebration) */
   justCompleted: boolean;
   acknowledgeCelebration: () => void;
@@ -126,14 +120,8 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
 
   const [state, setState] = useState<DailyState>(() => readState());
   const [syncing, setSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<
-    "idle" | "syncing" | "synced" | "error" | "offline"
-  >("idle");
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [justCompleted, setJustCompleted] = useState(false);
   const lastSyncedUserRef = useRef<string | null>(null);
-
   // ---- Midnight + timezone refresh ------------------------------------------
   useEffect(() => {
     let timer: number | undefined;
@@ -182,8 +170,6 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
   useEffect(() => {
     if (!user) {
       lastSyncedUserRef.current = null;
-      setSyncStatus("idle");
-      setSyncError(null);
       return;
     }
     if (lastSyncedUserRef.current === user.id) return;
@@ -192,8 +178,6 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     let cancelled = false;
     (async () => {
       setSyncing(true);
-      setSyncStatus("syncing");
-      setSyncError(null);
       try {
         // Pull last ~365 days
         const { data, error: pullErr } = await supabase
@@ -255,15 +239,12 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
         }
 
         if (!cancelled) {
-          setSyncStatus("synced");
-          setLastSyncedAt(new Date());
+          /* synced silently */
         }
       } catch (err) {
         if (cancelled) return;
-        const msg =
-          err instanceof Error ? err.message : "Failed to sync daily challenge";
-        setSyncError(msg);
-        setSyncStatus(navigator?.onLine === false ? "offline" : "error");
+        // Swallow — UI loads from local state; next session will retry.
+        console.warn("Daily challenge sync failed:", err);
       } finally {
         if (!cancelled) setSyncing(false);
       }
@@ -335,8 +316,6 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     if (user) {
       try {
         setSyncing(true);
-        setSyncStatus("syncing");
-        setSyncError(null);
         // ignoreDuplicates: if another device already marked this date,
         // do not overwrite the earlier completion timestamp.
         const { error: upErr } = await supabase
@@ -351,13 +330,8 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
             { onConflict: "user_id,challenge_date", ignoreDuplicates: true },
           );
         if (upErr) throw upErr;
-        setSyncStatus("synced");
-        setLastSyncedAt(new Date());
       } catch (err) {
-        const msg =
-          err instanceof Error ? err.message : "Failed to record completion";
-        setSyncError(msg);
-        setSyncStatus(navigator?.onLine === false ? "offline" : "error");
+        console.warn("Daily challenge mark-completed sync failed:", err);
       } finally {
         setSyncing(false);
       }
@@ -374,9 +348,6 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
     completedTotal: state.completions.length,
     recentCompletions,
     syncing,
-    syncStatus,
-    syncError,
-    lastSyncedAt,
     justCompleted,
     acknowledgeCelebration,
     markCompleted,
