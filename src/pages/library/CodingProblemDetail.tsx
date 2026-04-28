@@ -1108,9 +1108,9 @@ const CodingProblemDetail = () => {
         <ResizableHandle withHandle />
 
         {/* RIGHT: editor + bottom panel */}
-        <ResizablePanel defaultSize={55} minSize={30}>
-          <ResizablePanelGroup direction="vertical">
-            <ResizablePanel defaultSize={65} minSize={25}>
+        <ResizablePanel defaultSize={layoutPreset.horizontal[1]} minSize={25}>
+          <ResizablePanelGroup ref={verticalGroupRef} direction="vertical">
+            <ResizablePanel defaultSize={layoutPreset.vertical[0]} minSize={20}>
               <div
                 className={cn(
                   "h-full flex flex-col bg-background",
