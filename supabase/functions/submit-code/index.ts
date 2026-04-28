@@ -188,7 +188,7 @@ async function submitBatch(language: string, source: string, tests: TestCase[], 
     const errMsg = root?.output?.errorMessage || root?.errorMessage;
     throw new FermionError(
       `Fermion submit: expected ${tests.length} task IDs, got ${taskIds.length}${errMsg ? ` — ${errMsg}` : ""}`,
-      { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500) },
+      { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500), raw_fermion_response: root },
     );
   }
   return taskIds;
@@ -227,16 +227,19 @@ async function pollBatch(taskIds: string[]): Promise<Map<string, CaseOutcome>> {
       if (taskStatus !== "Finished") continue;
       const runResult = task?.runResult ?? task?.executionResult ?? task?.result ?? {};
       const prd = runResult?.programRunData ?? {};
+      const stdout = b64UrlDecode(prd?.stdoutBase64UrlEncoded);
+      const stderr =
+        b64UrlDecode(prd?.stderrBase64UrlEncoded) ||
+        b64UrlDecode(runResult?.compilerOutputAfterCompilationBase64UrlEncoded);
       out.set(taskId, {
         runStatus: runResult?.runStatus ?? "unknown",
-        stdout: b64UrlDecode(prd?.stdoutBase64UrlEncoded),
-        stderr:
-          b64UrlDecode(prd?.stderrBase64UrlEncoded) ||
-          b64UrlDecode(runResult?.compilerOutputAfterCompilationBase64UrlEncoded),
+        stdout,
+        stderr,
         timeMs:
           typeof prd?.cpuTimeUsedInMilliseconds === "number" ? prd.cpuTimeUsedInMilliseconds :
           typeof prd?.wallTimeUsedInMilliseconds === "number" ? prd.wallTimeUsedInMilliseconds : 0,
         memoryKb: typeof prd?.memoryUsedInKilobyte === "number" ? prd.memoryUsedInKilobyte : 0,
+        raw: { codingTaskStatus: taskStatus, runStatus: runResult?.runStatus ?? "unknown", runResult, stdout, stderr },
       });
       remaining.delete(taskId);
     }
