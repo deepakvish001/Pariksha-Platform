@@ -168,7 +168,15 @@ const CodingProblemDetail = () => {
   const restoredFailedRef = useRef(false);
 
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
-  const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
+  const { draft, draftLoaded, saveDraft, flushDraft } = useCodeDraft(slug ?? "", language);
+  // Pending candidate code for the "Last submitted" confirm dialog. When set,
+  // the dialog is open and applying it replaces the editor contents.
+  const [pendingRestoreCode, setPendingRestoreCode] = useState<{
+    code: string;
+    label: string;
+  } | null>(null);
+  // Transient hint shown briefly when entering fullscreen.
+  const [showFullscreenHint, setShowFullscreenHint] = useState(false);
   const { submissions, loading: submissionsLoading, refetch: refetchSubmissions } = useCodingSubmissions(slug);
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
