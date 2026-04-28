@@ -120,6 +120,7 @@ const CodingProblemDetail = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [language, setLanguage] = useState<LangId>("python");
+  const [mySolutionLanguage, setMySolutionLanguage] = useState<LangId>("python");
   const [code, setCode] = useState("");
   const [stdin, setStdin] = useState("");
   const [activeBottomTab, setActiveBottomTab] = useState<"testcase" | "output">("testcase");
@@ -152,10 +153,15 @@ const CodingProblemDetail = () => {
     notes: mySolutionNotes,
     code: mySolutionCode,
     savedAt: mySolutionSavedAt,
+    savedLanguages: mySolutionSavedLanguages,
     setNotes: setMySolutionNotes,
     setCode: setMySolutionCode,
+    clear: clearMySolution,
     hasContent: hasMySolution,
-  } = useProblemSolution(slug, language);
+    hasNotes: mySolutionHasNotes,
+    hasAnyCode: mySolutionHasAnyCode,
+    isComplete: mySolutionIsComplete,
+  } = useProblemSolution(slug, mySolutionLanguage);
   const { prefs: editorPrefs, incFontSize, decFontSize, MIN: FS_MIN, MAX: FS_MAX } = useEditorPrefs();
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
@@ -563,10 +569,15 @@ const CodingProblemDetail = () => {
                   onNotesChange={setMySolutionNotes}
                   code={mySolutionCode}
                   onCodeChange={setMySolutionCode}
-                  monacoLanguage={langInfo.monaco}
-                  languageLabel={langInfo.label}
+                  language={mySolutionLanguage}
+                  onLanguageChange={setMySolutionLanguage}
+                  savedLanguages={mySolutionSavedLanguages}
                   onUseCurrentDraft={() => code}
+                  onClear={clearMySolution}
                   savedAt={mySolutionSavedAt}
+                  hasNotes={mySolutionHasNotes}
+                  hasAnyCode={mySolutionHasAnyCode}
+                  isComplete={mySolutionIsComplete}
                   fontSize={editorPrefs.fontSize}
                 />
               </TabsContent>
