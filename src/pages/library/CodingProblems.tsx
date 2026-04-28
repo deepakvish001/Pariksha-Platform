@@ -821,6 +821,15 @@ const CodingProblems = () => {
           activeCount={activeFilterCount}
           onClearAll={clearAll}
         />
+        <div className="mt-3 pt-3 border-t border-border/60">
+          <TopicMasteryChips
+            topics={ALL_TOPICS}
+            selectedTopics={selectedTopics}
+            onToggle={toggleTopic}
+            onShowOnlyWeak={showOnlyWeakTopics}
+            stats={{ solved, attempted, perProblem, loading }}
+          />
+        </div>
       </Card>
 
       {/* Bulk actions */}
