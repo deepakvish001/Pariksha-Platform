@@ -1222,6 +1222,21 @@ const CodingProblems = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ShortcutsCheatSheet
+        open={shortcutsOpen}
+        onOpenChange={setShortcutsOpen}
+        shortcuts={[
+          { keys: ["?"], description: "Show keyboard shortcuts" },
+          { keys: ["/"], description: "Focus search" },
+          { keys: ["b"], description: "Toggle bookmarked-only filter" },
+          { keys: ["d"], description: "Toggle row density" },
+          { keys: ["s"], description: "Toggle selection mode" },
+          { keys: ["Esc"], description: "Clear selection / close" },
+          { keys: ["←"], description: "Previous page" },
+          { keys: ["→"], description: "Next page" },
+        ]}
+      />
     </div>
   );
 };
