@@ -93,6 +93,7 @@ import {
 import { CodeDiffPreview } from "@/components/library/coding/CodeDiffPreview";
 import { DraftSaveIndicator } from "@/components/library/coding/DraftSaveIndicator";
 import { EditorSettingsPopover } from "@/components/library/coding/EditorSettingsPopover";
+import { useFormatOnSubmitOverride } from "@/hooks/useFormatOnSubmitOverride";
 
 const difficultyClass = (d: string) =>
   d === "Easy"
@@ -184,7 +185,13 @@ const CodingProblemDetail = () => {
   const [pendingRestoreCode, setPendingRestoreCode] = useState<{
     code: string;
     label: string;
+    /** Snapshot of editor contents BEFORE the dialog opened, so a one-click
+     *  "Cancel restoration" can revert exactly to what the user had. */
+    snapshot: string;
   } | null>(null);
+  /** Snapshot of editor contents BEFORE the dialog opened, so a one-click
+   *  "Cancel restoration" can revert exactly to what the user had. */
+  const [restoreUndoSnapshot, setRestoreUndoSnapshot] = useState<string | null>(null);
   // Transient hint shown briefly when entering fullscreen.
   const [showFullscreenHint, setShowFullscreenHint] = useState(false);
   const { submissions, loading: submissionsLoading, refetch: refetchSubmissions } = useCodingSubmissions(slug);
@@ -222,6 +229,11 @@ const CodingProblemDetail = () => {
     MIN: FS_MIN,
     MAX: FS_MAX,
   } = useEditorPrefs();
+  const {
+    effective: effectiveFormatOnSubmit,
+    override: formatOnSubmitOverride,
+    setOverride: setFormatOnSubmitOverride,
+  } = useFormatOnSubmitOverride(slug, language, editorPrefs.formatOnSubmit);
 
   // Open drawer when ?sub=<id> is in URL and submissions have loaded.
   // If the submission ID doesn't exist for this problem, clear the param so
@@ -473,6 +485,33 @@ const CodingProblemDetail = () => {
     }
   };
 
+  /** Apply restored code and offer a one-click "Cancel restoration" undo. */
+  const applyRestore = (nextCode: string, label: string, snapshot: string) => {
+    setCode(nextCode);
+    saveDraft(nextCode);
+    setRestoreUndoSnapshot(snapshot);
+    toast({
+      title: "Restored last submitted code",
+      description: label,
+      action: (
+        <ToastAction
+          altText="Cancel restoration"
+          onClick={() => {
+            setCode(snapshot);
+            saveDraft(snapshot);
+            setRestoreUndoSnapshot(null);
+            toast({
+              title: "Restoration cancelled",
+              description: "Editor reverted to your previous code.",
+            });
+          }}
+        >
+          Cancel restoration
+        </ToastAction>
+      ),
+    });
+  };
+
   const handleRestoreLastSubmitted = () => {
     const lastForLang = submissions.find((s) => s.language === language);
     if (!lastForLang) {
@@ -484,32 +523,29 @@ const CodingProblemDetail = () => {
       return;
     }
     const label = `${langInfo.label} · ${lastForLang.verdict ?? "Pending"} · ${new Date(lastForLang.created_at).toLocaleString()}`;
-    // Compare against current draft baseline. If the editor differs from both
-    // the saved draft AND the candidate restore, confirm before clobbering.
     const baseline = draft ?? problem.starterCode[language];
     const hasUnsavedChanges = code !== baseline && code !== lastForLang.source_code;
     if (hasUnsavedChanges) {
-      setPendingRestoreCode({ code: lastForLang.source_code, label });
+      setPendingRestoreCode({
+        code: lastForLang.source_code,
+        label,
+        snapshot: code,
+      });
       return;
     }
-    setCode(lastForLang.source_code);
-    saveDraft(lastForLang.source_code);
-    toast({
-      title: "Restored last submitted code",
-      description: label,
-    });
+    applyRestore(lastForLang.source_code, label, code);
   };
 
   const confirmRestoreLastSubmitted = () => {
     if (!pendingRestoreCode) return;
-    setCode(pendingRestoreCode.code);
-    saveDraft(pendingRestoreCode.code);
-    toast({
-      title: "Restored last submitted code",
-      description: pendingRestoreCode.label,
-    });
+    applyRestore(
+      pendingRestoreCode.code,
+      pendingRestoreCode.label,
+      pendingRestoreCode.snapshot,
+    );
     setPendingRestoreCode(null);
   };
+
 
   const toggleEditorFullscreen = () => setIsEditorFullscreen((v) => !v);
 
@@ -550,7 +586,7 @@ const CodingProblemDetail = () => {
     setActiveBottomTab("output");
     // Auto-format right before submit so submitted code has consistent style.
     // Honors the user's "Format on submit" preference. Failures are non-blocking.
-    if (editorPrefs.formatOnSubmit !== "off") {
+    if (effectiveFormatOnSubmit !== "off") {
       try {
         await editorRef.current?.format();
       } catch {
@@ -560,7 +596,7 @@ const CodingProblemDetail = () => {
     // Optional lightweight lint pass: trim trailing whitespace, collapse 3+
     // blank lines into one, and ensure exactly one trailing newline.
     let lintCleaned: string | null = null;
-    if (editorPrefs.formatOnSubmit === "format+lint") {
+    if (effectiveFormatOnSubmit === "format+lint") {
       const current = editorRef.current?.getValue() ?? code;
       const cleaned = current
         .split("\n")
@@ -1159,8 +1195,11 @@ const CodingProblemDetail = () => {
                       </Tooltip>
                     </TooltipProvider>
                     <EditorSettingsPopover
-                      formatOnSubmit={editorPrefs.formatOnSubmit}
+                      formatOnSubmit={effectiveFormatOnSubmit}
                       onFormatOnSubmitChange={setFormatOnSubmit}
+                      perTaskOverride={formatOnSubmitOverride}
+                      perTaskLabel={`${problem.title} · ${langInfo.label}`}
+                      onPerTaskOverrideChange={setFormatOnSubmitOverride}
                     />
                   </div>
                 </div>
