@@ -429,6 +429,7 @@ Deno.serve(async (req) => {
         failing_case: failingCase,
         stderr: stderrCombined || null,
         submission_id: insertData?.id ?? null,
+        raw_fermion: rawFermion,
       },
     });
   } catch (err) {
