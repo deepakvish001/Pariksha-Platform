@@ -384,11 +384,7 @@ const CodingProblemDetail = () => {
                     <Button onClick={() => setShowLogin(true)}>Sign in</Button>
                   </Card>
                 ) : submissions.length === 0 ? (
-                  <Card className="p-8 text-center">
-                    <p className="text-muted-foreground">
-                      No submissions yet. Hit <strong>Submit</strong> to record one.
-                    </p>
-                  </Card>
+                  <AttemptTimeline submissions={[]} limit={10} />
                 ) : (
                   <div className="space-y-3">
                     <AttemptTimeline
