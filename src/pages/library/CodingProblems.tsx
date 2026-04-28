@@ -1069,7 +1069,7 @@ const CodingProblems = () => {
                     selectedTopics.length > 0 &&
                     selectedTopics.every((t) => weakTopics.includes(t)),
                   tone: "rose",
-                  onClick: showOnlyWeakTopics,
+                  onClick: () => showOnlyWeakTopics(weakTopics),
                 },
                 {
                   key: "bookmarked",
