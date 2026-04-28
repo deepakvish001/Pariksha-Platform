@@ -1023,18 +1023,26 @@ const CodingProblemDetail = () => {
               >
                 {/* Editor toolbar */}
                 <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-muted/30">
-                  <Select value={language} onValueChange={(v) => setLanguage(v as LangId)}>
-                    <SelectTrigger className="w-[180px] h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-1">
-                    <TooltipProvider delayDuration={300}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Select value={language} onValueChange={(v) => setLanguage(v as LangId)}>
+                      <SelectTrigger className="w-[150px] h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LANGUAGES.map((l) => (
+                          <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <DraftSaveIndicator
+                      status={saveStatus}
+                      lastSavedAt={lastSavedAt}
+                      isAuthenticated={!!user}
+                      className="hidden sm:inline-flex"
+                    />
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <TooltipProvider delayDuration={200}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -1069,51 +1077,52 @@ const CodingProblemDetail = () => {
                         </TooltipTrigger>
                         <TooltipContent>Larger font</TooltipContent>
                       </Tooltip>
-                    </TooltipProvider>
-                    <div className="w-px h-5 bg-border mx-1" />
-                    <TooltipProvider delayDuration={300}>
+                      <div className="w-px h-5 bg-border mx-1" />
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={handleFormat}
-                            className="h-8 gap-1.5 text-xs"
+                            className="h-8 w-8"
+                            aria-label="Format code"
                           >
-                            <Wand2 className="h-3 w-3" />
-                            Format
+                            <Wand2 className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Format code (Monaco built-in)</TooltipContent>
+                        <TooltipContent>Format code</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={handleRestoreLastSubmitted}
                             disabled={submissionsLoading}
-                            className="h-8 gap-1.5 text-xs"
+                            className="h-8 w-8"
+                            aria-label="Restore last submitted code"
                           >
-                            <History className="h-3 w-3" />
-                            Last submitted
+                            <History className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Load your most recent {langInfo.label} submission</TooltipContent>
+                        <TooltipContent>Last submitted ({langInfo.label})</TooltipContent>
                       </Tooltip>
-                    </TooltipProvider>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleReset}
-                      className="h-8 gap-1.5 text-xs"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      Reset
-                    </Button>
-                    <div className="w-px h-5 bg-border mx-1" />
-                    {slug && <SessionTimer ref={sessionTimerRef} slug={slug} />}
-                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleReset}
+                            className="h-8 w-8"
+                            aria-label="Reset to starter code"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Reset to starter</TooltipContent>
+                      </Tooltip>
+                      <div className="w-px h-5 bg-border mx-1" />
+                      {slug && <SessionTimer ref={sessionTimerRef} slug={slug} />}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -1149,6 +1158,10 @@ const CodingProblemDetail = () => {
                         <TooltipContent>Keyboard shortcuts</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    <EditorSettingsPopover
+                      formatOnSubmit={editorPrefs.formatOnSubmit}
+                      onFormatOnSubmitChange={setFormatOnSubmit}
+                    />
                   </div>
                 </div>
                 <div className="flex-1 min-h-0 relative">
