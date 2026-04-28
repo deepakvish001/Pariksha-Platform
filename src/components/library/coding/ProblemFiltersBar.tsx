@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
 import { cn } from "@/lib/utils";
 
 export type ViewMode = "grid" | "table";
