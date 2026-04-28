@@ -438,6 +438,11 @@ const CodingProblemDetail = () => {
             <TabsList className="rounded-none justify-start bg-transparent border-b h-10 px-2">
               <TabsTrigger value="description">Description</TabsTrigger>
               <TabsTrigger value="solution">Solution</TabsTrigger>
+              <TabsTrigger value="notes">
+                Notes {notesValue.trim().length > 0 && (
+                  <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-primary inline-block" />
+                )}
+              </TabsTrigger>
               <TabsTrigger value="submissions">
                 Submissions {submissions.length > 0 && (
                   <span className="ml-1.5 text-xs text-muted-foreground">({submissions.length})</span>
