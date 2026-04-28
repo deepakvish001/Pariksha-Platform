@@ -497,8 +497,30 @@ export default function SubmissionsHistory() {
         </TabsContent>
       </Tabs>
 
-      <Sheet open={!!detailRun} onOpenChange={(o) => !o && setDetailRunId(null)}>
+      <Sheet open={!!detailRunId} onOpenChange={(o) => !o && setDetailRunId(null)}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          {!detailRun && detailRunId && !runsLoading && (
+            <div className="py-12 text-center space-y-4">
+              <Eye className="h-10 w-10 mx-auto text-muted-foreground" />
+              <div>
+                <h2 className="text-lg font-semibold">Run not found</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This run (<span className="font-mono">{detailRunId.slice(0, 8)}</span>) is no
+                  longer available. It may have been deleted, or it isn't on the current page of
+                  your filtered results.
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => setDetailRunId(null)}>
+                <X className="h-4 w-4 mr-1" /> Close
+              </Button>
+            </div>
+          )}
+          {!detailRun && detailRunId && runsLoading && (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+              Loading run…
+            </div>
+          )}
           {detailRun && (
             <>
               <SheetHeader>
