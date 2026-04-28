@@ -316,10 +316,56 @@ export const MySolutionPanel = ({
             </TooltipProvider>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Personal writeup + per-language solutions. Autosaved locally.
+            Personal writeup + per-language solutions.{" "}
+            {isCloudSynced
+              ? "Synced to your account across devices."
+              : "Autosaved locally — sign in to sync across devices."}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className={cn(
+                    "flex items-center gap-1 text-[11px] rounded-full px-2 py-0.5 border",
+                    isCloudSynced
+                      ? syncStatus === "error"
+                        ? "border-destructive/40 text-destructive bg-destructive/10"
+                        : syncStatus === "syncing"
+                          ? "border-amber-500/30 text-amber-500 bg-amber-500/10"
+                          : "border-emerald-500/30 text-emerald-500 bg-emerald-500/10"
+                      : "border-muted text-muted-foreground bg-muted/40",
+                  )}
+                  aria-label="Cloud sync status"
+                >
+                  {!isCloudSynced ? (
+                    <CloudOff className="h-3 w-3" />
+                  ) : syncStatus === "syncing" ? (
+                    <CloudUpload className="h-3 w-3 animate-pulse" />
+                  ) : syncStatus === "error" ? (
+                    <AlertCircle className="h-3 w-3" />
+                  ) : (
+                    <Cloud className="h-3 w-3" />
+                  )}
+                  <span>
+                    {!isCloudSynced
+                      ? "Local only"
+                      : syncStatus === "syncing"
+                        ? "Syncing…"
+                        : syncStatus === "error"
+                          ? "Sync error"
+                          : "Cloud"}
+                  </span>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {isCloudSynced
+                  ? "Your solution is being saved to your account so you can access it from any device."
+                  : "Sign in to sync your solution to your account and access it across devices."}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
