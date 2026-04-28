@@ -82,6 +82,7 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
       setEntry(empty);
       setSavedAt(null);
       setDirty({ notes: false, code: {} });
+      setUndoBuffer({});
       dirtyMarksRef.current = new Set();
       return;
     }
@@ -97,6 +98,7 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     setEntry(normalised);
     setSavedAt(normalised.updatedAt || null);
     setDirty({ notes: false, code: {} });
+    setUndoBuffer({});
     dirtyMarksRef.current = new Set();
   }, [slug]);
 
