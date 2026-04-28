@@ -267,11 +267,7 @@ const CodingProblems = () => {
 
   // Bulk action handlers
   const selectAllVisible = () => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      pageSlice.forEach((p) => next.add(p.slug));
-      return next;
-    });
+    addMany(pageSlice.map((p) => p.slug));
   };
   const bulkBookmark = () => {
     let added = 0;
@@ -284,7 +280,7 @@ const CodingProblems = () => {
     toast.success(`Bookmarked ${added} ${added === 1 ? "problem" : "problems"}`);
     clearSelection();
   };
-  const bulkUnbookmark = () => {
+  const performBulkUnbookmark = () => {
     let removed = 0;
     selected.forEach((slug) => {
       if (isBookmarked(slug)) {
@@ -294,7 +290,27 @@ const CodingProblems = () => {
     });
     toast.success(`Removed ${removed} ${removed === 1 ? "bookmark" : "bookmarks"}`);
     clearSelection();
+    setConfirmUnbookmark(false);
   };
+  const bulkUnbookmark = () => {
+    // Count how many are actually bookmarked to decide whether to confirm
+    let count = 0;
+    selected.forEach((slug) => {
+      if (isBookmarked(slug)) count += 1;
+    });
+    if (count === 0) {
+      toast.info("None of the selected problems are bookmarked.");
+      return;
+    }
+    setConfirmUnbookmark(true);
+  };
+  const unbookmarkCount = (() => {
+    let c = 0;
+    selected.forEach((slug) => {
+      if (isBookmarked(slug)) c += 1;
+    });
+    return c;
+  })();
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
