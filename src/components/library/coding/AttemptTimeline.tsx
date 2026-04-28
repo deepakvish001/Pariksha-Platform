@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
 import { Clock, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,6 +10,8 @@ interface Props {
   limit?: number;
   onSelect?: (submission: CodeSubmissionRow) => void;
   highlightedId?: string | null;
+  /** Show a skeleton list while submissions are still being fetched. */
+  loading?: boolean;
 }
 
 const formatRelative = (iso: string) => {
