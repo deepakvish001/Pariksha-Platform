@@ -169,7 +169,7 @@ const CodingProblemDetail = () => {
   const [activeBottomTab, setActiveBottomTab] = useState<"testcase" | "output">("testcase");
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
-  const [executionErrorDetails, setExecutionErrorDetails] = useState<unknown | null>(null);
+  const [executionErrorDetails, setExecutionErrorDetails] = useState<boolean>(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
