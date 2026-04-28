@@ -472,12 +472,32 @@ const CodingProblemDetail = () => {
       });
       return;
     }
+    const label = `${langInfo.label} · ${lastForLang.verdict ?? "Pending"} · ${new Date(lastForLang.created_at).toLocaleString()}`;
+    // Compare against current draft baseline. If the editor differs from both
+    // the saved draft AND the candidate restore, confirm before clobbering.
+    const baseline = draft ?? problem.starterCode[language];
+    const hasUnsavedChanges = code !== baseline && code !== lastForLang.source_code;
+    if (hasUnsavedChanges) {
+      setPendingRestoreCode({ code: lastForLang.source_code, label });
+      return;
+    }
     setCode(lastForLang.source_code);
     saveDraft(lastForLang.source_code);
     toast({
       title: "Restored last submitted code",
-      description: `${langInfo.label} · ${lastForLang.verdict ?? "Pending"} · ${new Date(lastForLang.created_at).toLocaleString()}`,
+      description: label,
     });
+  };
+
+  const confirmRestoreLastSubmitted = () => {
+    if (!pendingRestoreCode) return;
+    setCode(pendingRestoreCode.code);
+    saveDraft(pendingRestoreCode.code);
+    toast({
+      title: "Restored last submitted code",
+      description: pendingRestoreCode.label,
+    });
+    setPendingRestoreCode(null);
   };
 
   const toggleEditorFullscreen = () => setIsEditorFullscreen((v) => !v);
