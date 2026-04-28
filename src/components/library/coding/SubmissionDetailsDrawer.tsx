@@ -71,6 +71,7 @@ const copy = async (label: string, text: string) => {
 };
 
 export const SubmissionDetailsDrawer = ({ submission, open, onOpenChange, loading }: Props) => {
+  const { data: percentiles, loading: pctLoading } = usePercentiles(submission);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
