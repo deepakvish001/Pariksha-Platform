@@ -1509,8 +1509,8 @@ const CodingProblems = () => {
             : null;
         })()}
         attempts={previewProblem ? perProblem.get(previewProblem.slug)?.attempts ?? 0 : 0}
-        starterLanguage={previewProblem?.languages?.[0]?.id}
-        starterSnippet={previewProblem?.languages?.[0]?.starterCode}
+        starterLanguage={previewProblem ? "python" : undefined}
+        starterSnippet={previewProblem?.starterCode?.python}
       />
 
       <DailyChallengeCelebration
