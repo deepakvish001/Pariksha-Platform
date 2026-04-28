@@ -221,7 +221,7 @@ async function submitToFermion(payload: {
     const errMsg = root?.output?.errorMessage || root?.errorMessage;
     throw new FermionError(
       `Fermion submit: no taskId in response${errMsg ? ` — ${errMsg}` : ""}`,
-      { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500) },
+      { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500), raw_fermion_response: root },
     );
   }
   return taskId;
@@ -257,16 +257,19 @@ async function pollFermion(taskId: string): Promise<FermionExecOutcome> {
 
     const runResult = task?.runResult ?? task?.executionResult ?? task?.result ?? {};
     const prd = runResult?.programRunData ?? {};
+    const stdout = b64UrlDecode(prd?.stdoutBase64UrlEncoded);
+    const stderr =
+      b64UrlDecode(prd?.stderrBase64UrlEncoded) ||
+      b64UrlDecode(runResult?.compilerOutputAfterCompilationBase64UrlEncoded);
     return {
       runStatus: runResult?.runStatus ?? "unknown",
-      stdout: b64UrlDecode(prd?.stdoutBase64UrlEncoded),
-      stderr:
-        b64UrlDecode(prd?.stderrBase64UrlEncoded) ||
-        b64UrlDecode(runResult?.compilerOutputAfterCompilationBase64UrlEncoded),
+      stdout,
+      stderr,
       timeMs:
         typeof prd?.cpuTimeUsedInMilliseconds === "number" ? prd.cpuTimeUsedInMilliseconds :
         typeof prd?.wallTimeUsedInMilliseconds === "number" ? prd.wallTimeUsedInMilliseconds : null,
       memoryKb: typeof prd?.memoryUsedInKilobyte === "number" ? prd.memoryUsedInKilobyte : null,
+      raw: { codingTaskStatus: taskStatus, runStatus: runResult?.runStatus ?? "unknown", runResult, stdout, stderr },
     };
   }
   throw new FermionError("Fermion polling timed out", {
