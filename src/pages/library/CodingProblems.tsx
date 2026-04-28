@@ -84,6 +84,12 @@ import { useSavedFilterPresets } from "@/hooks/useSavedFilterPresets";
 import { useListingFocusMode } from "@/hooks/useListingFocusMode";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { DailyChallengeCard } from "@/components/library/coding/DailyChallengeCard";
+import { DailyChallengeCelebration } from "@/components/library/coding/DailyChallengeCelebration";
+import { WeeklyReviewInline } from "@/components/library/coding/WeeklyReviewInline";
+import { SmartFilterChips, type SmartChip } from "@/components/library/coding/SmartFilterChips";
+import { ProblemPreviewDrawer } from "@/components/library/coding/ProblemPreviewDrawer";
+import { TopicProgressRing } from "@/components/library/coding/TopicProgressRing";
+import { Eye } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
