@@ -118,10 +118,13 @@ const CodingProblems = () => {
   // (vs. the initial mount restoring previous state). Used so a fresh refresh
   // restores scroll, but applying a filter / paginating jumps to the top.
   const userInteractedRef = useRef(false);
+  // Forward-ref so the mount-only effect (declared above tablePrefs) can read
+  // the saved per-list sort without re-running.
+  const tablePrefsRef = useRef<ReturnType<typeof useCodingProblemsTablePrefs> | null>(null);
   const filterSig = `${search}|${difficulty}|${selectedTopics.join(",")}|${status}|${sort}|${bookmarked ? 1 : 0}|${page}`;
 
   // On first mount: validate URL params (strip invalid view/page) and hydrate
-  // last page + scroll from storage.
+  // last page + scroll + saved sort from storage.
   useEffect(() => {
     try {
       const next = new URLSearchParams(params);
@@ -149,6 +152,15 @@ const CodingProblems = () => {
         const n = saved ? parseInt(saved, 10) : NaN;
         if (Number.isFinite(n) && n > 1) {
           next.set("page", String(n));
+          dirty = true;
+        }
+      }
+
+      // If no ?sort=, hydrate from saved per-list sort (3-state)
+      if (!next.has("sort")) {
+        const savedSort = tablePrefsRef.current?.getSavedSort("__list__");
+        if (savedSort && savedSort !== "default") {
+          next.set("sort", savedSort);
           dirty = true;
         }
       }
@@ -245,6 +257,12 @@ const CodingProblems = () => {
 
   // Persisted column visibility & widths (responsive — survives refresh).
   const tablePrefs = useCodingProblemsTablePrefs();
+  tablePrefsRef.current = tablePrefs;
+
+  // Persist sort (3-state) per list slug whenever it changes.
+  useEffect(() => {
+    tablePrefs.setSavedSort("__list__", sort);
+  }, [sort, tablePrefs]);
 
   // Map a column id to its current sort direction (asc/desc/null) and a
   // 3-state cycler that updates the existing `sort` URL param.
@@ -580,9 +598,36 @@ const CodingProblems = () => {
               <DropdownMenuItem
                 onSelect={(e) => {
                   e.preventDefault();
+                  // Snapshot current prefs so we can offer Undo
+                  let snapshot: string | null = null;
+                  try {
+                    snapshot = localStorage.getItem(
+                      "byteskill:coding-problems-table-prefs:v1",
+                    );
+                  } catch {
+                    /* ignore */
+                  }
                   tablePrefs.resetAll();
                   toast.success("Columns reset", {
                     description: "Visibility and widths restored to defaults.",
+                    duration: 8000,
+                    action: snapshot
+                      ? {
+                          label: "Undo",
+                          onClick: () => {
+                            try {
+                              localStorage.setItem(
+                                "byteskill:coding-problems-table-prefs:v1",
+                                snapshot!,
+                              );
+                              // Reload so the hook re-reads the restored prefs.
+                              window.location.reload();
+                            } catch {
+                              toast.error("Couldn't restore previous columns");
+                            }
+                          },
+                        }
+                      : undefined,
                   });
                 }}
               >
@@ -678,11 +723,54 @@ const CodingProblems = () => {
 
       {/* Body */}
       {loading && filtered.length === 0 ? (
-        <Card>
-          <div className="p-3 space-y-2">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <Skeleton key={i} className="h-11 w-full" />
-            ))}
+        // Table-shaped skeleton — preserves the exact final colgroup widths so
+        // the sortable/resizable header doesn't jump when data arrives.
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table className="table-fixed w-full">
+              <colgroup>
+                {selectionMode && <col style={{ width: "44px" }} />}
+                {PROBLEM_COLUMNS.map((c) =>
+                  tablePrefs.isVisible(c.id) ? (
+                    <col key={c.id} style={{ width: `${tablePrefs.widthOf(c.id)}px` }} />
+                  ) : null,
+                )}
+              </colgroup>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="hover:bg-transparent border-b">
+                  {selectionMode && <TableHead className="w-[44px]" />}
+                  {PROBLEM_COLUMNS.filter((c) => tablePrefs.isVisible(c.id)).map((c) => (
+                    <TableHead key={c.id} className="text-xs font-medium text-muted-foreground">
+                      {c.label}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <TableRow key={i} className="hover:bg-transparent">
+                    {selectionMode && (
+                      <TableCell className="py-2.5">
+                        <Skeleton className="h-4 w-4 rounded" />
+                      </TableCell>
+                    )}
+                    {PROBLEM_COLUMNS.filter((c) => tablePrefs.isVisible(c.id)).map((c) => (
+                      <TableCell key={c.id} className="py-2.5">
+                        <Skeleton
+                          className={cn(
+                            "h-4",
+                            c.id === "title" ? "w-3/4" :
+                            c.id === "topics" ? "w-2/3" :
+                            c.id === "row" || c.id === "status" || c.id === "bookmark" ? "w-4" :
+                            "w-12",
+                          )}
+                        />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </Card>
       ) : filtered.length === 0 ? (

@@ -38,6 +38,8 @@ const KEY = `byteskill:coding-problems-table-prefs:v${VERSION}`;
 interface Persisted {
   visible: Partial<Record<ProblemColumnId, boolean>>;
   widths: Partial<Record<ProblemColumnId, number>>;
+  /** Per-slug saved sort key (3-state). Use "__list__" for the main list. */
+  sortBySlug?: Record<string, string>;
 }
 
 const defaultPrefs = (): Persisted => {
@@ -47,7 +49,7 @@ const defaultPrefs = (): Persisted => {
     visible[c.id] = c.defaultVisible;
     widths[c.id] = c.defaultWidth;
   }
-  return { visible, widths };
+  return { visible, widths, sortBySlug: {} };
 };
 
 const read = (): Persisted => {
@@ -60,6 +62,7 @@ const read = (): Persisted => {
     return {
       visible: { ...base.visible, ...(parsed?.visible ?? {}) },
       widths: { ...base.widths, ...(parsed?.widths ?? {}) },
+      sortBySlug: { ...(parsed?.sortBySlug ?? {}) },
     };
   } catch {
     return defaultPrefs();
@@ -120,11 +123,27 @@ export const useCodingProblemsTablePrefs = () => {
 
   const resetAll = useCallback(() => setPrefs(defaultPrefs()), []);
 
+  const getSavedSort = useCallback(
+    (slug: string): string | undefined => prefs.sortBySlug?.[slug],
+    [prefs.sortBySlug],
+  );
+
+  const setSavedSort = useCallback((slug: string, sort: string) => {
+    setPrefs((prev) => {
+      const nextMap = { ...(prev.sortBySlug ?? {}) };
+      if (!sort || sort === "default") delete nextMap[slug];
+      else nextMap[slug] = sort;
+      return { ...prev, sortBySlug: nextMap };
+    });
+  }, []);
+
   return {
     isVisible,
     widthOf,
     toggleVisible,
     setWidth,
     resetAll,
+    getSavedSort,
+    setSavedSort,
   };
 };

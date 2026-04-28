@@ -112,7 +112,7 @@ const CodingProblemDetail = () => {
 
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
-  const { submissions, refetch: refetchSubmissions } = useCodingSubmissions(slug);
+  const { submissions, loading: submissionsLoading, refetch: refetchSubmissions } = useCodingSubmissions(slug);
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
 
@@ -477,6 +477,8 @@ const CodingProblemDetail = () => {
                     </p>
                     <Button onClick={() => setShowLogin(true)}>Sign in</Button>
                   </Card>
+                ) : submissionsLoading && submissions.length === 0 ? (
+                  <AttemptTimeline submissions={[]} limit={10} loading />
                 ) : submissions.length === 0 ? (
                   <AttemptTimeline submissions={[]} limit={10} />
                 ) : (
@@ -788,7 +790,8 @@ const CodingProblemDetail = () => {
 
       <SubmissionDetailsDrawer
         submission={detailSubmission}
-        open={!!detailSubmission}
+        open={!!detailSubmission || (!!searchParams.get("sub") && submissionsLoading)}
+        loading={submissionsLoading && !detailSubmission && !!searchParams.get("sub")}
         onOpenChange={(o) => !o && closeSubmission()}
       />
     </div>
