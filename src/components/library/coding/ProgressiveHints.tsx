@@ -154,16 +154,6 @@ export const ProgressiveHints = ({ hints, slug }: Props) => {
         </Button>
       )}
 
-      {revealed > 0 && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setRevealed(0)}
-          className="text-xs text-muted-foreground"
-        >
-          Hide all hints
-        </Button>
-      )}
     </div>
   );
 };
