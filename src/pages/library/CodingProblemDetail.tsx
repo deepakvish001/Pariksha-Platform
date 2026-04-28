@@ -266,6 +266,14 @@ const CodingProblemDetail = () => {
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <TabsContent value="description" className="mt-0 space-y-6">
+                <ProblemDetailHeader
+                  isSolved={problemStats.isSolved}
+                  isAttempted={problemStats.isAttempted}
+                  attempts={problemStats.attempts}
+                  solvedAt={problemStats.solvedAt}
+                  isBookmarked={isBookmarked(problem.slug)}
+                  onToggleBookmark={() => toggleBookmark(problem.slug)}
+                />
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className={cn("font-medium sm:hidden", difficultyClass(problem.difficulty))}>
                     {problem.difficulty}
