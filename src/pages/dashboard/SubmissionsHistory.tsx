@@ -427,7 +427,7 @@ export default function SubmissionsHistory() {
                           size="sm"
                           variant="outline"
                           className="h-7 px-2"
-                          onClick={() => setDetailRun(r)}
+                          onClick={() => setDetailRunId(r.id)}
                         >
                           <Eye className="h-3.5 w-3.5 mr-1" /> Details
                         </Button>
@@ -439,6 +439,17 @@ export default function SubmissionsHistory() {
                             onClick={cancelRun}
                           >
                             <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                          </Button>
+                        ) : lastRerunError?.id === r.id ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 border-destructive/40 text-destructive hover:text-destructive"
+                            disabled={isRunning}
+                            onClick={() => handleRerun(r)}
+                          >
+                            <Play className="h-3.5 w-3.5 mr-1" />
+                            Retry
                           </Button>
                         ) : (
                           <Button
@@ -454,6 +465,16 @@ export default function SubmissionsHistory() {
                         )}
                       </div>
                     </div>
+                    {lastRerunError?.id === r.id && (
+                      <p className="mt-2 text-xs text-destructive truncate">
+                        Re-run failed: {lastRerunError.message}
+                      </p>
+                    )}
+                    {lastCancelledId === r.id && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Re-run was cancelled.
+                      </p>
+                    )}
                   </Card>
                 );
               })}
