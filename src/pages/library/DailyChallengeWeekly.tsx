@@ -32,7 +32,7 @@ import {
   useDailyLeaderboardOptIn,
 } from "@/hooks/useDailyLeaderboard";
 import { useAuth } from "@/contexts/AuthContext";
-import { DailyChallengeSyncStatus } from "@/components/library/coding/DailyChallengeSyncStatus";
+import { DailyChallengeSyncStatus } from "@/components/library/coding/DailyChallengeSyncStatus.tsx";
 
 const buildLastNDays = (n: number) => {
   const days: string[] = [];
