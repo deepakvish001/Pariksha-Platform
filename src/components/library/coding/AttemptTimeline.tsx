@@ -42,7 +42,25 @@ export const AttemptTimeline = ({ submissions, limit = 10, onSelect, highlighted
         )}
       </div>
 
-      {submissions.length === 0 ? (
+      {loading && submissions.length === 0 ? (
+        <ol className="relative border-l border-border ml-2 space-y-3" aria-busy="true">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <li key={i} className="ml-4">
+              <span className="absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-muted" />
+              <div className="rounded-md -mx-2 px-2 py-1">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-3 w-10" />
+                  </div>
+                  <Skeleton className="h-3 w-14" />
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : submissions.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center py-6 px-3 rounded-md border border-dashed">
           <Inbox className="h-6 w-6 text-muted-foreground/50 mb-2" />
           <p className="text-sm font-medium">No submissions yet</p>
