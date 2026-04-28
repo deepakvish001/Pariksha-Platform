@@ -826,6 +826,7 @@ const CodingProblemDetail = () => {
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as EditorTabId)}
             className="h-full flex flex-col"
+            aria-label="Problem panels"
           >
             <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
               <ChevronScroller>
