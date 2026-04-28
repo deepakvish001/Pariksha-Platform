@@ -93,7 +93,7 @@ import { DailyChallengeCard } from "@/components/library/coding/DailyChallengeCa
 import { DailyChallengeCelebration } from "@/components/library/coding/DailyChallengeCelebration";
 import { WeeklyReviewInline } from "@/components/library/coding/WeeklyReviewInline";
 import { SmartFilterChips, type SmartChip } from "@/components/library/coding/SmartFilterChips";
-import { ProblemPreviewDrawer } from "@/components/library/coding/ProblemPreviewDrawer";
+import { ProblemStatsHeader } from "@/components/library/coding/ProblemStatsHeader";
 import { TopicProgressRing } from "@/components/library/coding/TopicProgressRing";
 import { Eye } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
