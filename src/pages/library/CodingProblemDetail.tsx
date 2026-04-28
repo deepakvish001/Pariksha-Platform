@@ -465,6 +465,14 @@ const CodingProblemDetail = () => {
 
   const acceptedExists = submissions.some((s) => s.verdict === "Accepted");
 
+  // Keep the shortcut bag pointing at the latest closures + busy state.
+  shortcutBagRef.current = {
+    run: handleRun,
+    submit: handleSubmit,
+    reset: handleReset,
+    busy: isRunning || isSubmitting,
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       <Helmet>
