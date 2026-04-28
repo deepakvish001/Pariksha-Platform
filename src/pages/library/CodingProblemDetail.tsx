@@ -1302,6 +1302,32 @@ const CodingProblemDetail = () => {
           { keys: ["Esc"], description: "Close drawers and dialogs" },
         ]}
       />
+
+      <AlertDialog
+        open={!!pendingRestoreCode}
+        onOpenChange={(o) => !o && setPendingRestoreCode(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace your current code?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your editor has unsaved changes that differ from your last saved
+              draft. Loading{" "}
+              <span className="font-medium text-foreground">
+                {pendingRestoreCode?.label}
+              </span>{" "}
+              will overwrite the code currently in the editor. This can't be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep my code</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRestoreLastSubmitted}>
+              Replace with last submission
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
