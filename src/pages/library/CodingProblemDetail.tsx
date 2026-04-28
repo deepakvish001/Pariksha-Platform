@@ -36,6 +36,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getProblemBySlug,
@@ -130,13 +131,24 @@ const CodingProblemDetail = () => {
         if (slug) writeLastOpened(slug, subId);
       }
     } else {
-      // Stale deep-link — strip it silently
+      // Stale deep-link — strip it and offer a way back to the most recent attempt.
       const next = new URLSearchParams(searchParams);
       next.delete("sub");
       setSearchParams(next, { replace: true });
+      const latest = submissions[0]; // submissions are ordered newest-first
       toast({
-        title: "Submission not found",
-        description: "That submission link is no longer available for this problem.",
+        title: "Submission link expired",
+        description: latest
+          ? "That submission isn't available — you can jump to your most recent attempt instead."
+          : "That submission isn't available for this problem anymore.",
+        action: latest ? (
+          <ToastAction
+            altText="Go to last attempt"
+            onClick={() => openSubmission(latest)}
+          >
+            Go to last attempt
+          </ToastAction>
+        ) : undefined,
       });
     }
   }, [searchParams, submissions, slug, detailSubmission, setSearchParams, toast]);

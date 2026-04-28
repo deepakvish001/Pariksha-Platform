@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, X, Check, ChevronsUpDown, LayoutGrid, List, Bookmark, ArrowDownUp } from "lucide-react";
+import { Search, X, Check, ChevronsUpDown, Bookmark, ArrowDownUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
 import { cn } from "@/lib/utils";
 
 export type ViewMode = "grid" | "table";
@@ -137,19 +137,6 @@ export const ProblemFiltersBar = (p: Props) => {
           <Bookmark className={cn("h-4 w-4", p.bookmarked && "fill-current")} />
         </Button>
 
-        <ToggleGroup
-          type="single"
-          value={p.view}
-          onValueChange={(v) => v && p.onView(v as ViewMode)}
-          className="border rounded-md"
-        >
-          <ToggleGroupItem value="grid" size="sm" aria-label="Grid view">
-            <LayoutGrid className="h-4 w-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="table" size="sm" aria-label="Table view">
-            <List className="h-4 w-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
       </div>
 
       {(p.activeCount > 0 || p.selectedTopics.length > 0) && (

@@ -1159,6 +1159,692 @@ print("true" if len(set(a)) != n else "false")`,
       { input: "5\n0 0 0 0 1", expected: "true" },
     ],
   },
+
+  // ----------------------------------------------------------
+  {
+    slug: "valid-anagram",
+    title: "Valid Anagram",
+    difficulty: "Easy",
+    topics: ["Hash Table", "String", "Sorting"],
+    description: `Given two strings \`s\` and \`t\`, print "true" if \`t\` is an anagram of \`s\`, else "false".
+
+**Input:** two lines, \`s\` then \`t\`.`,
+    examples: [
+      { input: "s = anagram, t = nagaram", output: "true" },
+      { input: "s = rat, t = car", output: "false" },
+    ],
+    constraints: ["1 <= |s|, |t| <= 5 * 10^4", "lowercase English letters"],
+    hints: ["Compare character counts.", "Sorting also works in O(n log n)."],
+    starterCode: {
+      python: py(`import sys
+data = sys.stdin.read().split()
+s, t = data[0], data[1]
+# TODO
+`),
+      cpp: cpp(`#include <bits/stdc++.h>
+using namespace std;
+int main(){string s,t;cin>>s>>t;
+// TODO
+return 0;}
+`),
+      java: java(`import java.util.*;
+public class Main{public static void main(String[]args){Scanner sc=new Scanner(System.in);String s=sc.next(),t=sc.next();
+// TODO
+}}
+`),
+      javascript: js(`let input="";process.stdin.on("data",d=>input+=d);
+process.stdin.on("end",()=>{const [s,t]=input.split(/\\s+/).filter(Boolean);
+// TODO
+});
+`),
+      typescript: ts(`let input="";process.stdin.on("data",(d:Buffer)=>{input+=d.toString();});
+process.stdin.on("end",()=>{const [s,t]=input.split(/\\s+/).filter(Boolean);
+// TODO
+});
+`),
+      c: c(`#include <stdio.h>
+#include <string.h>
+int main(){char s[50005],t[50005];scanf("%s %s",s,t);
+// TODO
+return 0;}
+`),
+      go: go(`package main
+import ("bufio";"fmt";"os")
+func main(){r:=bufio.NewReader(os.Stdin);var s,t string;fmt.Fscan(r,&s,&t)
+// TODO
+}
+`),
+    },
+    referenceSolution: {
+      python: `data = __import__("sys").stdin.read().split()
+s, t = data[0], data[1]
+print("true" if sorted(s) == sorted(t) else "false")`,
+    },
+    sampleTests: [
+      { input: "anagram\nnagaram", expected: "true" },
+      { input: "rat\ncar", expected: "false" },
+    ],
+    hiddenTests: [
+      { input: "anagram\nnagaram", expected: "true" },
+      { input: "rat\ncar", expected: "false" },
+      { input: "a\na", expected: "true" },
+      { input: "ab\nba", expected: "true" },
+      { input: "abc\nabd", expected: "false" },
+      { input: "listen\nsilent", expected: "true" },
+    ],
+  },
+
+  // ----------------------------------------------------------
+  {
+    slug: "reverse-linked-list",
+    title: "Reverse a List",
+    difficulty: "Easy",
+    topics: ["Array", "Two Pointers"],
+    description: `Given an array of \`n\` integers, print them reversed on one line, space-separated.
+
+**Input:** \`n\` then \`n\` integers.`,
+    examples: [{ input: "5\n1 2 3 4 5", output: "5 4 3 2 1" }],
+    constraints: ["0 <= n <= 10^5"],
+    hints: ["Two pointers from both ends."],
+    starterCode: {
+      python: py(`import sys
+data = sys.stdin.read().split()
+n = int(data[0])
+a = [int(x) for x in data[1:1+n]]
+# TODO
+`),
+      cpp: cpp(`#include <bits/stdc++.h>
+using namespace std;
+int main(){int n;cin>>n;vector<int>a(n);for(auto&x:a)cin>>x;
+// TODO
+return 0;}
+`),
+      java: java(`import java.util.*;
+public class Main{public static void main(String[]args){Scanner sc=new Scanner(System.in);int n=sc.nextInt();int[]a=new int[n];for(int i=0;i<n;i++)a[i]=sc.nextInt();
+// TODO
+}}
+`),
+      javascript: js(`let input="";process.stdin.on("data",d=>input+=d);
+process.stdin.on("end",()=>{const t=input.split(/\\s+/).filter(Boolean).map(Number);const n=t[0],a=t.slice(1,1+n);
+// TODO
+});
+`),
+      typescript: ts(`let input="";process.stdin.on("data",(d:Buffer)=>{input+=d.toString();});
+process.stdin.on("end",()=>{const t=input.split(/\\s+/).filter(Boolean).map(Number);const n=t[0],a=t.slice(1,1+n);
+// TODO
+});
+`),
+      c: c(`#include <stdio.h>
+int main(){int n;scanf("%d",&n);int a[100005];for(int i=0;i<n;i++)scanf("%d",&a[i]);
+// TODO
+return 0;}
+`),
+      go: go(`package main
+import ("bufio";"fmt";"os")
+func main(){r:=bufio.NewReader(os.Stdin);var n int;fmt.Fscan(r,&n);a:=make([]int,n);for i:=range a{fmt.Fscan(r,&a[i])}
+// TODO
+}
+`),
+    },
+    referenceSolution: {
+      python: `data = __import__("sys").stdin.read().split()
+n = int(data[0])
+a = [data[i+1] for i in range(n)]
+print(" ".join(reversed(a)))`,
+    },
+    sampleTests: [{ input: "5\n1 2 3 4 5", expected: "5 4 3 2 1" }],
+    hiddenTests: [
+      { input: "5\n1 2 3 4 5", expected: "5 4 3 2 1" },
+      { input: "1\n42", expected: "42" },
+      { input: "0\n", expected: "" },
+      { input: "3\n7 7 7", expected: "7 7 7" },
+      { input: "4\n-1 -2 -3 -4", expected: "-4 -3 -2 -1" },
+    ],
+  },
+
+  // ----------------------------------------------------------
+  {
+    slug: "binary-search",
+    title: "Binary Search",
+    difficulty: "Easy",
+    topics: ["Binary Search", "Array"],
+    description: `Given a sorted array of \`n\` integers and a target \`x\`, print the 0-based index of \`x\`, or \`-1\` if not present.
+
+**Input:** \`n x\` then \`n\` sorted integers.`,
+    examples: [{ input: "5 9\n-1 0 3 5 9", output: "4" }],
+    constraints: ["1 <= n <= 10^5", "-10^9 <= a[i], x <= 10^9"],
+    hints: ["Classic binary search — O(log n)."],
+    starterCode: {
+      python: py(`import sys
+data = sys.stdin.read().split()
+n, x = int(data[0]), int(data[1])
+a = [int(v) for v in data[2:2+n]]
+# TODO
+`),
+      cpp: cpp(`#include <bits/stdc++.h>
+using namespace std;
+int main(){int n,x;cin>>n>>x;vector<int>a(n);for(auto&v:a)cin>>v;
+// TODO
+return 0;}
+`),
+      java: java(`import java.util.*;
+public class Main{public static void main(String[]args){Scanner sc=new Scanner(System.in);int n=sc.nextInt(),x=sc.nextInt();int[]a=new int[n];for(int i=0;i<n;i++)a[i]=sc.nextInt();
+// TODO
+}}
+`),
+      javascript: js(`let input="";process.stdin.on("data",d=>input+=d);
+process.stdin.on("end",()=>{const t=input.split(/\\s+/).filter(Boolean).map(Number);const n=t[0],x=t[1],a=t.slice(2,2+n);
+// TODO
+});
+`),
+      typescript: ts(`let input="";process.stdin.on("data",(d:Buffer)=>{input+=d.toString();});
+process.stdin.on("end",()=>{const t=input.split(/\\s+/).filter(Boolean).map(Number);const n=t[0],x=t[1],a=t.slice(2,2+n);
+// TODO
+});
+`),
+      c: c(`#include <stdio.h>
+int main(){int n,x;scanf("%d %d",&n,&x);int a[100005];for(int i=0;i<n;i++)scanf("%d",&a[i]);
+// TODO
+return 0;}
+`),
+      go: go(`package main
+import ("bufio";"fmt";"os")
+func main(){r:=bufio.NewReader(os.Stdin);var n,x int;fmt.Fscan(r,&n,&x);a:=make([]int,n);for i:=range a{fmt.Fscan(r,&a[i])}
+// TODO
+}
+`),
+    },
+    referenceSolution: {
+      python: `import sys, bisect
+data = sys.stdin.read().split()
+n, x = int(data[0]), int(data[1])
+a = [int(v) for v in data[2:2+n]]
+i = bisect.bisect_left(a, x)
+print(i if i < n and a[i] == x else -1)`,
+    },
+    sampleTests: [{ input: "5 9\n-1 0 3 5 9", expected: "4" }],
+    hiddenTests: [
+      { input: "5 9\n-1 0 3 5 9", expected: "4" },
+      { input: "5 2\n-1 0 3 5 9", expected: "-1" },
+      { input: "1 5\n5", expected: "0" },
+      { input: "1 5\n6", expected: "-1" },
+      { input: "6 4\n1 2 3 4 5 6", expected: "3" },
+    ],
+  },
+
+  // ----------------------------------------------------------
+  {
+    slug: "valid-palindrome",
+    title: "Valid Palindrome",
+    difficulty: "Easy",
+    topics: ["Two Pointers", "String"],
+    description: `Given a string \`s\` (read as one full line), print "true" if it is a palindrome considering only alphanumeric characters and ignoring case, else "false".`,
+    examples: [
+      { input: "A man, a plan, a canal: Panama", output: "true" },
+      { input: "race a car", output: "false" },
+    ],
+    constraints: ["1 <= |s| <= 2 * 10^5"],
+    hints: ["Two pointers, skip non-alphanumeric, compare lowercase."],
+    starterCode: {
+      python: py(`import sys
+s = sys.stdin.read().strip("\\n")
+# TODO
+`),
+      cpp: cpp(`#include <bits/stdc++.h>
+using namespace std;
+int main(){string s;getline(cin,s);
+// TODO
+return 0;}
+`),
+      java: java(`import java.util.*;
+public class Main{public static void main(String[]args){Scanner sc=new Scanner(System.in);String s=sc.nextLine();
+// TODO
+}}
+`),
+      javascript: js(`let input="";process.stdin.on("data",d=>input+=d);
+process.stdin.on("end",()=>{const s=input.replace(/\\n$/,"");
+// TODO
+});
+`),
+      typescript: ts(`let input="";process.stdin.on("data",(d:Buffer)=>{input+=d.toString();});
+process.stdin.on("end",()=>{const s=input.replace(/\\n$/,"");
+// TODO
+});
+`),
+      c: c(`#include <stdio.h>
+#include <string.h>
+int main(){char s[200005];fgets(s,sizeof(s),stdin);
+// TODO
+return 0;}
+`),
+      go: go(`package main
+import ("bufio";"fmt";"os";"strings")
+func main(){r:=bufio.NewReader(os.Stdin);s,_:=r.ReadString('\\n');s=strings.TrimRight(s,"\\n")
+// TODO
+_=fmt.Sprint(s)
+}
+`),
+    },
+    referenceSolution: {
+      python: `import sys
+s = sys.stdin.read().rstrip("\\n")
+clean = [c.lower() for c in s if c.isalnum()]
+print("true" if clean == clean[::-1] else "false")`,
+    },
+    sampleTests: [
+      { input: "A man, a plan, a canal: Panama", expected: "true" },
+      { input: "race a car", expected: "false" },
+    ],
+    hiddenTests: [
+      { input: "A man, a plan, a canal: Panama", expected: "true" },
+      { input: "race a car", expected: "false" },
+      { input: " ", expected: "true" },
+      { input: "0P", expected: "false" },
+      { input: "ab_a", expected: "true" },
+    ],
+  },
+
+  // ----------------------------------------------------------
+  {
+    slug: "single-number",
+    title: "Single Number",
+    difficulty: "Easy",
+    topics: ["Bit Manipulation", "Array"],
+    description: `Every integer in the array appears twice except one. Find and print it.
+
+**Input:** \`n\` then \`n\` integers (n is odd).`,
+    examples: [{ input: "3\n2 2 1", output: "1" }],
+    constraints: ["1 <= n <= 3 * 10^4"],
+    hints: ["XOR all numbers — duplicates cancel."],
+    starterCode: {
+      python: py(`import sys
+data = sys.stdin.read().split()
+n = int(data[0])
+a = [int(x) for x in data[1:1+n]]
+# TODO
+`),
+      cpp: cpp(`#include <bits/stdc++.h>
+using namespace std;
+int main(){int n;cin>>n;vector<int>a(n);for(auto&x:a)cin>>x;
+// TODO
+return 0;}
+`),
+      java: java(`import java.util.*;
+public class Main{public static void main(String[]args){Scanner sc=new Scanner(System.in);int n=sc.nextInt();int[]a=new int[n];for(int i=0;i<n;i++)a[i]=sc.nextInt();
+// TODO
+}}
+`),
+      javascript: js(`let input="";process.stdin.on("data",d=>input+=d);
+process.stdin.on("end",()=>{const t=input.split(/\\s+/).filter(Boolean).map(Number);const n=t[0],a=t.slice(1,1+n);
+// TODO
+});
+`),
+      typescript: ts(`let input="";process.stdin.on("data",(d:Buffer)=>{input+=d.toString();});
+process.stdin.on("end",()=>{const t=input.split(/\\s+/).filter(Boolean).map(Number);const n=t[0],a=t.slice(1,1+n);
+// TODO
+});
+`),
+      c: c(`#include <stdio.h>
+int main(){int n;scanf("%d",&n);int a[30005];for(int i=0;i<n;i++)scanf("%d",&a[i]);
+// TODO
+return 0;}
+`),
+      go: go(`package main
+import ("bufio";"fmt";"os")
+func main(){r:=bufio.NewReader(os.Stdin);var n int;fmt.Fscan(r,&n);a:=make([]int,n);for i:=range a{fmt.Fscan(r,&a[i])}
+// TODO
+}
+`),
+    },
+    referenceSolution: {
+      python: `data = __import__("sys").stdin.read().split()
+n = int(data[0])
+ans = 0
+for v in data[1:1+n]:
+    ans ^= int(v)
+print(ans)`,
+    },
+    sampleTests: [{ input: "3\n2 2 1", expected: "1" }],
+    hiddenTests: [
+      { input: "3\n2 2 1", expected: "1" },
+      { input: "5\n4 1 2 1 2", expected: "4" },
+      { input: "1\n1", expected: "1" },
+      { input: "7\n1 2 3 1 2 3 7", expected: "7" },
+      { input: "3\n-1 -1 5", expected: "5" },
+    ],
+  },
+
+  // ----------------------------------------------------------
+  {
+    slug: "missing-number",
+    title: "Missing Number",
+    difficulty: "Easy",
+    topics: ["Math", "Array", "Bit Manipulation"],
+    description: `Given an array of \`n\` distinct integers in range \`[0, n]\`, print the only number missing from the range.
+
+**Input:** \`n\` then \`n\` integers.`,
+    examples: [{ input: "3\n3 0 1", output: "2" }],
+    constraints: ["1 <= n <= 10^4"],
+    hints: ["Sum formula: n*(n+1)/2 minus actual sum."],
+    starterCode: {
+      python: py(`import sys
+data = sys.stdin.read().split()
+n = int(data[0])
+a = [int(x) for x in data[1:1+n]]
+# TODO
+`),
+      cpp: cpp(`#include <bits/stdc++.h>
+using namespace std;
+int main(){int n;cin>>n;vector<int>a(n);for(auto&x:a)cin>>x;
+// TODO
+return 0;}
+`),
+      java: java(`import java.util.*;
+public class Main{public static void main(String[]args){Scanner sc=new Scanner(System.in);int n=sc.nextInt();int[]a=new int[n];for(int i=0;i<n;i++)a[i]=sc.nextInt();
+// TODO
+}}
+`),
+      javascript: js(`let input="";process.stdin.on("data",d=>input+=d);
+process.stdin.on("end",()=>{const t=input.split(/\\s+/).filter(Boolean).map(Number);const n=t[0],a=t.slice(1,1+n);
+// TODO
+});
+`),
+      typescript: ts(`let input="";process.stdin.on("data",(d:Buffer)=>{input+=d.toString();});
+process.stdin.on("end",()=>{const t=input.split(/\\s+/).filter(Boolean).map(Number);const n=t[0],a=t.slice(1,1+n);
+// TODO
+});
+`),
+      c: c(`#include <stdio.h>
+int main(){int n;scanf("%d",&n);int a[10005];for(int i=0;i<n;i++)scanf("%d",&a[i]);
+// TODO
+return 0;}
+`),
+      go: go(`package main
+import ("bufio";"fmt";"os")
+func main(){r:=bufio.NewReader(os.Stdin);var n int;fmt.Fscan(r,&n);a:=make([]int,n);for i:=range a{fmt.Fscan(r,&a[i])}
+// TODO
+}
+`),
+    },
+    referenceSolution: {
+      python: `data = __import__("sys").stdin.read().split()
+n = int(data[0])
+total = n * (n + 1) // 2
+print(total - sum(int(v) for v in data[1:1+n]))`,
+    },
+    sampleTests: [{ input: "3\n3 0 1", expected: "2" }],
+    hiddenTests: [
+      { input: "3\n3 0 1", expected: "2" },
+      { input: "2\n0 1", expected: "2" },
+      { input: "9\n9 6 4 2 3 5 7 0 1", expected: "8" },
+      { input: "1\n0", expected: "1" },
+      { input: "1\n1", expected: "0" },
+    ],
+  },
+
+  // ----------------------------------------------------------
+  {
+    slug: "move-zeroes",
+    title: "Move Zeroes",
+    difficulty: "Easy",
+    topics: ["Array", "Two Pointers"],
+    description: `Given an array, move all \`0\`s to the end while maintaining the relative order of the non-zero elements. Print the final array space-separated.
+
+**Input:** \`n\` then \`n\` integers.`,
+    examples: [{ input: "5\n0 1 0 3 12", output: "1 3 12 0 0" }],
+    constraints: ["1 <= n <= 10^4"],
+    hints: ["Two pointers — write index for non-zero values."],
+    starterCode: {
+      python: py(`import sys
+data = sys.stdin.read().split()
+n = int(data[0])
+a = [int(x) for x in data[1:1+n]]
+# TODO
+`),
+      cpp: cpp(`#include <bits/stdc++.h>
+using namespace std;
+int main(){int n;cin>>n;vector<int>a(n);for(auto&x:a)cin>>x;
+// TODO
+return 0;}
+`),
+      java: java(`import java.util.*;
+public class Main{public static void main(String[]args){Scanner sc=new Scanner(System.in);int n=sc.nextInt();int[]a=new int[n];for(int i=0;i<n;i++)a[i]=sc.nextInt();
+// TODO
+}}
+`),
+      javascript: js(`let input="";process.stdin.on("data",d=>input+=d);
+process.stdin.on("end",()=>{const t=input.split(/\\s+/).filter(Boolean).map(Number);const n=t[0],a=t.slice(1,1+n);
+// TODO
+});
+`),
+      typescript: ts(`let input="";process.stdin.on("data",(d:Buffer)=>{input+=d.toString();});
+process.stdin.on("end",()=>{const t=input.split(/\\s+/).filter(Boolean).map(Number);const n=t[0],a=t.slice(1,1+n);
+// TODO
+});
+`),
+      c: c(`#include <stdio.h>
+int main(){int n;scanf("%d",&n);int a[10005];for(int i=0;i<n;i++)scanf("%d",&a[i]);
+// TODO
+return 0;}
+`),
+      go: go(`package main
+import ("bufio";"fmt";"os")
+func main(){r:=bufio.NewReader(os.Stdin);var n int;fmt.Fscan(r,&n);a:=make([]int,n);for i:=range a{fmt.Fscan(r,&a[i])}
+// TODO
+}
+`),
+    },
+    referenceSolution: {
+      python: `data = __import__("sys").stdin.read().split()
+n = int(data[0])
+a = [int(v) for v in data[1:1+n]]
+nz = [v for v in a if v != 0]
+nz += [0] * (n - len(nz))
+print(" ".join(str(v) for v in nz))`,
+    },
+    sampleTests: [{ input: "5\n0 1 0 3 12", expected: "1 3 12 0 0" }],
+    hiddenTests: [
+      { input: "5\n0 1 0 3 12", expected: "1 3 12 0 0" },
+      { input: "1\n0", expected: "0" },
+      { input: "1\n5", expected: "5" },
+      { input: "4\n0 0 0 1", expected: "1 0 0 0" },
+      { input: "5\n1 2 3 4 5", expected: "1 2 3 4 5" },
+    ],
+  },
+
+  // ----------------------------------------------------------
+  {
+    slug: "factorial",
+    title: "Factorial",
+    difficulty: "Easy",
+    topics: ["Math", "Recursion"],
+    description: `Given an integer \`n\`, print \`n!\` (factorial).`,
+    examples: [{ input: "5", output: "120" }],
+    constraints: ["0 <= n <= 20"],
+    hints: ["Iterative loop is fine for n <= 20 (fits in 64-bit)."],
+    starterCode: {
+      python: py(`import sys
+n = int(sys.stdin.read().strip())
+# TODO
+`),
+      cpp: cpp(`#include <bits/stdc++.h>
+using namespace std;
+int main(){long long n;cin>>n;
+// TODO
+return 0;}
+`),
+      java: java(`import java.util.*;
+public class Main{public static void main(String[]args){Scanner sc=new Scanner(System.in);long n=sc.nextLong();
+// TODO
+}}
+`),
+      javascript: js(`let input="";process.stdin.on("data",d=>input+=d);
+process.stdin.on("end",()=>{const n=parseInt(input.trim());
+// TODO
+});
+`),
+      typescript: ts(`let input="";process.stdin.on("data",(d:Buffer)=>{input+=d.toString();});
+process.stdin.on("end",()=>{const n=parseInt(input.trim());
+// TODO
+});
+`),
+      c: c(`#include <stdio.h>
+int main(){long long n;scanf("%lld",&n);
+// TODO
+return 0;}
+`),
+      go: go(`package main
+import ("bufio";"fmt";"os")
+func main(){r:=bufio.NewReader(os.Stdin);var n int64;fmt.Fscan(r,&n)
+// TODO
+}
+`),
+    },
+    referenceSolution: {
+      python: `n = int(input())
+ans = 1
+for i in range(2, n+1):
+    ans *= i
+print(ans)`,
+    },
+    sampleTests: [{ input: "5", expected: "120" }],
+    hiddenTests: [
+      { input: "0", expected: "1" },
+      { input: "1", expected: "1" },
+      { input: "5", expected: "120" },
+      { input: "10", expected: "3628800" },
+      { input: "20", expected: "2432902008176640000" },
+    ],
+  },
+
+  // ----------------------------------------------------------
+  {
+    slug: "gcd",
+    title: "Greatest Common Divisor",
+    difficulty: "Easy",
+    topics: ["Math"],
+    description: `Given two non-negative integers \`a\` and \`b\`, print \`gcd(a, b)\`.`,
+    examples: [{ input: "12 18", output: "6" }],
+    constraints: ["0 <= a, b <= 10^9", "(a, b) != (0, 0)"],
+    hints: ["Euclidean algorithm: gcd(a,b) = gcd(b, a%b)."],
+    starterCode: {
+      python: py(`import sys
+a, b = map(int, sys.stdin.read().split())
+# TODO
+`),
+      cpp: cpp(`#include <bits/stdc++.h>
+using namespace std;
+int main(){long long a,b;cin>>a>>b;
+// TODO
+return 0;}
+`),
+      java: java(`import java.util.*;
+public class Main{public static void main(String[]args){Scanner sc=new Scanner(System.in);long a=sc.nextLong(),b=sc.nextLong();
+// TODO
+}}
+`),
+      javascript: js(`let input="";process.stdin.on("data",d=>input+=d);
+process.stdin.on("end",()=>{const [a,b]=input.split(/\\s+/).filter(Boolean).map(Number);
+// TODO
+});
+`),
+      typescript: ts(`let input="";process.stdin.on("data",(d:Buffer)=>{input+=d.toString();});
+process.stdin.on("end",()=>{const [a,b]=input.split(/\\s+/).filter(Boolean).map(Number);
+// TODO
+});
+`),
+      c: c(`#include <stdio.h>
+int main(){long long a,b;scanf("%lld %lld",&a,&b);
+// TODO
+return 0;}
+`),
+      go: go(`package main
+import ("bufio";"fmt";"os")
+func main(){r:=bufio.NewReader(os.Stdin);var a,b int64;fmt.Fscan(r,&a,&b)
+// TODO
+}
+`),
+    },
+    referenceSolution: {
+      python: `import math
+a, b = map(int, input().split())
+print(math.gcd(a, b))`,
+    },
+    sampleTests: [{ input: "12 18", expected: "6" }],
+    hiddenTests: [
+      { input: "12 18", expected: "6" },
+      { input: "0 5", expected: "5" },
+      { input: "5 0", expected: "5" },
+      { input: "1 1", expected: "1" },
+      { input: "1000000000 999999937", expected: "1" },
+      { input: "100 75", expected: "25" },
+    ],
+  },
+
+  // ----------------------------------------------------------
+  {
+    slug: "count-vowels",
+    title: "Count Vowels",
+    difficulty: "Easy",
+    topics: ["String"],
+    description: `Given a string \`s\` (one line), print the number of vowels (\`a, e, i, o, u\`, case-insensitive).`,
+    examples: [{ input: "Hello World", output: "3" }],
+    constraints: ["1 <= |s| <= 10^5"],
+    hints: ["Iterate, lowercase, check membership in a set."],
+    starterCode: {
+      python: py(`import sys
+s = sys.stdin.read().rstrip("\\n")
+# TODO
+`),
+      cpp: cpp(`#include <bits/stdc++.h>
+using namespace std;
+int main(){string s;getline(cin,s);
+// TODO
+return 0;}
+`),
+      java: java(`import java.util.*;
+public class Main{public static void main(String[]args){Scanner sc=new Scanner(System.in);String s=sc.nextLine();
+// TODO
+}}
+`),
+      javascript: js(`let input="";process.stdin.on("data",d=>input+=d);
+process.stdin.on("end",()=>{const s=input.replace(/\\n$/,"");
+// TODO
+});
+`),
+      typescript: ts(`let input="";process.stdin.on("data",(d:Buffer)=>{input+=d.toString();});
+process.stdin.on("end",()=>{const s=input.replace(/\\n$/,"");
+// TODO
+});
+`),
+      c: c(`#include <stdio.h>
+#include <string.h>
+int main(){char s[100005];fgets(s,sizeof(s),stdin);
+// TODO
+return 0;}
+`),
+      go: go(`package main
+import ("bufio";"fmt";"os";"strings")
+func main(){r:=bufio.NewReader(os.Stdin);s,_:=r.ReadString('\\n');s=strings.TrimRight(s,"\\n")
+// TODO
+_=fmt.Sprint(s)
+}
+`),
+    },
+    referenceSolution: {
+      python: `import sys
+s = sys.stdin.read().rstrip("\\n").lower()
+print(sum(1 for c in s if c in "aeiou"))`,
+    },
+    sampleTests: [{ input: "Hello World", expected: "3" }],
+    hiddenTests: [
+      { input: "Hello World", expected: "3" },
+      { input: "AEIOU", expected: "5" },
+      { input: "bcdfg", expected: "0" },
+      { input: "y", expected: "0" },
+      { input: "The quick brown fox", expected: "5" },
+    ],
+  },
 ];
 
 export const getProblemBySlug = (slug: string) =>
