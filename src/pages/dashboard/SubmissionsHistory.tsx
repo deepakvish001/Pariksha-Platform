@@ -125,17 +125,29 @@ const RowSkeleton = () => (
   </Card>
 );
 
+const LARGE_COPY_THRESHOLD = 20_000; // ~20KB triggers loading state
+
 const CopyButton = ({ text, label }: { text: string; label?: string }) => {
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<"idle" | "copying" | "copied" | "error">("idle");
   const onCopy = async () => {
+    if (!text) return;
+    const isLarge = text.length > LARGE_COPY_THRESHOLD;
+    if (isLarge) setState("copying");
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setState("copied");
+      toast.success(`${label ?? "Content"} copied`, {
+        description: `${text.length.toLocaleString()} characters`,
+      });
+      setTimeout(() => setState("idle"), 1800);
     } catch {
-      /* noop */
+      setState("error");
+      toast.error("Copy failed");
+      setTimeout(() => setState("idle"), 1800);
     }
   };
+  const Icon =
+    state === "copying" ? Loader2 : state === "copied" ? Check : Copy;
   return (
     <Button
       type="button"
@@ -143,10 +155,19 @@ const CopyButton = ({ text, label }: { text: string; label?: string }) => {
       variant="ghost"
       className="h-6 px-2 text-xs"
       onClick={onCopy}
-      disabled={!text}
+      disabled={!text || state === "copying"}
     >
-      {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-      {copied ? "Copied" : label ?? "Copy"}
+      <Icon className={`h-3 w-3 mr-1 ${state === "copying" ? "animate-spin" : ""}`} />
+      {state === "copying"
+        ? "Copying…"
+        : state === "copied"
+        ? "Copied"
+        : state === "error"
+        ? "Failed"
+        : label ?? "Copy"}
+      {text && text.length > LARGE_COPY_THRESHOLD && state === "idle" && (
+        <span className="ml-1 text-muted-foreground">({Math.round(text.length / 1024)}KB)</span>
+      )}
     </Button>
   );
 };
