@@ -1,21 +1,29 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CODING_PROBLEMS, type CodingProblem } from "@/data/codingProblemsData";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-const STORAGE_KEY = "byteskill:coding:dailyChallenge:v1";
+const STORAGE_KEY = "byteskill:coding:dailyChallenge:v2";
 
-interface DailyState {
-  // ISO date strings (YYYY-MM-DD) of days the user completed the daily challenge
-  completedDates: string[];
+interface CompletionRecord {
+  // YYYY-MM-DD in local time
+  date: string;
+  problemSlug: string;
+  completedAt: string; // ISO
 }
 
-const todayKey = (d = new Date()): string => {
+interface DailyState {
+  completions: CompletionRecord[];
+}
+
+/** YYYY-MM-DD in local time */
+const toDateKey = (d = new Date()): string => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 };
 
-// Deterministic hash from a string -> 32-bit int
 const hashString = (s: string): number => {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < s.length; i++) {
@@ -28,12 +36,30 @@ const hashString = (s: string): number => {
 const readState = (): DailyState => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { completedDates: [] };
+    if (!raw) return { completions: [] };
     const parsed = JSON.parse(raw);
-    if (parsed && Array.isArray(parsed.completedDates)) return parsed;
-    return { completedDates: [] };
+    if (parsed && Array.isArray(parsed.completions)) return parsed;
+    // migrate v1 (string[] of dates) if present
+    const legacy = localStorage.getItem("byteskill:coding:dailyChallenge:v1");
+    if (legacy) {
+      try {
+        const legacyParsed = JSON.parse(legacy);
+        if (Array.isArray(legacyParsed.completedDates)) {
+          return {
+            completions: legacyParsed.completedDates.map((d: string) => ({
+              date: d,
+              problemSlug: "",
+              completedAt: new Date(d + "T12:00:00").toISOString(),
+            })),
+          };
+        }
+      } catch {
+        /* noop */
+      }
+    }
+    return { completions: [] };
   } catch {
-    return { completedDates: [] };
+    return { completions: [] };
   }
 };
 
@@ -45,18 +71,23 @@ const writeState = (s: DailyState) => {
   }
 };
 
-const computeStreak = (dates: Set<string>, today: string): number => {
+const computeStreak = (completedDates: Set<string>, today: string): number => {
   let streak = 0;
   const cursor = new Date(today + "T00:00:00");
-  // Allow today not yet completed: start from yesterday in that case
-  if (!dates.has(todayKey(cursor))) {
+  if (!completedDates.has(toDateKey(cursor))) {
     cursor.setDate(cursor.getDate() - 1);
   }
-  while (dates.has(todayKey(cursor))) {
+  while (completedDates.has(toDateKey(cursor))) {
     streak += 1;
     cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
+};
+
+/** Pick deterministic problem-of-the-day from a date key */
+const pickProblemForDate = (dateKey: string): CodingProblem => {
+  const idx = hashString(dateKey) % CODING_PROBLEMS.length;
+  return CODING_PROBLEMS[idx];
 };
 
 export interface DailyChallenge {
@@ -65,57 +96,241 @@ export interface DailyChallenge {
   isCompletedToday: boolean;
   streak: number;
   completedTotal: number;
-  markCompleted: () => void;
+  /** Last 30 days of completions (date YYYY-MM-DD + slug + ts). Newest first. */
+  recentCompletions: CompletionRecord[];
+  syncing: boolean;
+  /** True when a successful mark-completed event just happened (for celebration) */
+  justCompleted: boolean;
+  acknowledgeCelebration: () => void;
+  markCompleted: () => Promise<void>;
+  pickProblemForDate: (dateKey: string) => CodingProblem;
 }
 
 /**
- * Picks a deterministic problem-of-the-day from CODING_PROBLEMS.
- * Tracks completion locally and exposes a streak counter.
- *
- * Pass `solvedSlugs` to auto-mark today's challenge as completed when the
- * user has an accepted submission for today's problem.
+ * Daily challenge hook with:
+ * - Deterministic local-day problem-of-the-day
+ * - Live local-midnight rollover (re-renders the consumer at next 00:00:00 local)
+ * - Timezone-change safety (re-evaluates today on focus/visibility/storage)
+ * - Cloud sync via daily_challenge_completions for signed-in users
  */
 export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => {
-  const dateKey = useMemo(() => todayKey(), []);
+  const { user } = useAuth();
+  const [now, setNow] = useState(() => new Date());
 
-  const problem = useMemo(() => {
-    const idx = hashString(dateKey) % CODING_PROBLEMS.length;
-    return CODING_PROBLEMS[idx];
-  }, [dateKey]);
+  const dateKey = useMemo(() => toDateKey(now), [now]);
+  const problem = useMemo(() => pickProblemForDate(dateKey), [dateKey]);
 
   const [state, setState] = useState<DailyState>(() => readState());
+  const [syncing, setSyncing] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
+  const lastSyncedUserRef = useRef<string | null>(null);
 
-  // Auto-mark when solved
+  // ---- Midnight + timezone refresh ------------------------------------------
+  useEffect(() => {
+    let timer: number | undefined;
+
+    const scheduleNext = () => {
+      const cur = new Date();
+      const tomorrow = new Date(cur);
+      tomorrow.setDate(cur.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      const ms = Math.max(1000, tomorrow.getTime() - cur.getTime());
+      // Cap the timeout — some browsers throttle long timers; this also helps if
+      // the system clock or timezone changes mid-wait.
+      const capped = Math.min(ms, 60 * 1000); // re-check at least every minute
+      timer = window.setTimeout(() => {
+        const next = new Date();
+        // Only commit a re-render if the date key actually changed, to avoid
+        // re-rendering every minute. The render is what consumers depend on.
+        setNow((prev) => (toDateKey(prev) === toDateKey(next) ? prev : next));
+        scheduleNext();
+      }, capped);
+    };
+
+    scheduleNext();
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") setNow(new Date());
+    };
+    const onFocus = () => setNow(new Date());
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) setState(readState());
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      if (timer) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
+  // ---- Cloud sync: pull on login, push on local change ---------------------
+  useEffect(() => {
+    if (!user) {
+      lastSyncedUserRef.current = null;
+      return;
+    }
+    if (lastSyncedUserRef.current === user.id) return;
+    lastSyncedUserRef.current = user.id;
+
+    let cancelled = false;
+    (async () => {
+      setSyncing(true);
+      try {
+        // Pull last ~365 days
+        const { data } = await supabase
+          .from("daily_challenge_completions")
+          .select("challenge_date, problem_slug, completed_at")
+          .eq("user_id", user.id)
+          .gte(
+            "challenge_date",
+            toDateKey(new Date(Date.now() - 365 * 24 * 3600 * 1000)),
+          )
+          .order("challenge_date", { ascending: false });
+
+        if (cancelled) return;
+
+        const remote: CompletionRecord[] = (data ?? []).map((r) => ({
+          date: r.challenge_date as string,
+          problemSlug: (r.problem_slug as string) ?? "",
+          completedAt: (r.completed_at as string) ?? new Date().toISOString(),
+        }));
+
+        // Merge: union of dates; remote wins on overlap
+        setState((prev) => {
+          const byDate = new Map<string, CompletionRecord>();
+          for (const c of prev.completions) byDate.set(c.date, c);
+          for (const c of remote) byDate.set(c.date, c);
+          const merged = Array.from(byDate.values()).sort((a, b) =>
+            a.date < b.date ? 1 : -1,
+          );
+          const next = { completions: merged };
+          writeState(next);
+          return next;
+        });
+
+        // Push any local-only rows back to cloud
+        const remoteDates = new Set(remote.map((r) => r.date));
+        const local = readState().completions;
+        const toUpload = local.filter((c) => !remoteDates.has(c.date));
+        if (toUpload.length > 0) {
+          await supabase
+            .from("daily_challenge_completions")
+            .upsert(
+              toUpload.map((c) => ({
+                user_id: user.id,
+                challenge_date: c.date,
+                problem_slug: c.problemSlug || pickProblemForDate(c.date).slug,
+                completed_at: c.completedAt,
+              })),
+              { onConflict: "user_id,challenge_date" },
+            );
+        }
+      } finally {
+        if (!cancelled) setSyncing(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  // ---- Auto-mark when user has an accepted submission for today's slug -----
   useEffect(() => {
     if (!solvedSlugs || !problem) return;
     if (!solvedSlugs.has(problem.slug)) return;
     setState((prev) => {
-      if (prev.completedDates.includes(dateKey)) return prev;
-      const next = { completedDates: [...prev.completedDates, dateKey] };
+      if (prev.completions.some((c) => c.date === dateKey)) return prev;
+      const rec: CompletionRecord = {
+        date: dateKey,
+        problemSlug: problem.slug,
+        completedAt: new Date().toISOString(),
+      };
+      const next = { completions: [rec, ...prev.completions] };
       writeState(next);
+      // Push to cloud (best-effort)
+      if (user) {
+        void supabase.from("daily_challenge_completions").upsert(
+          {
+            user_id: user.id,
+            challenge_date: rec.date,
+            problem_slug: rec.problemSlug,
+            completed_at: rec.completedAt,
+          },
+          { onConflict: "user_id,challenge_date" },
+        );
+      }
+      setJustCompleted(true);
       return next;
     });
-  }, [solvedSlugs, problem, dateKey]);
+  }, [solvedSlugs, problem, dateKey, user]);
 
-  const completedSet = useMemo(() => new Set(state.completedDates), [state.completedDates]);
-  const isCompletedToday = completedSet.has(dateKey);
-  const streak = useMemo(() => computeStreak(completedSet, dateKey), [completedSet, dateKey]);
+  const completedDateSet = useMemo(
+    () => new Set(state.completions.map((c) => c.date)),
+    [state.completions],
+  );
+  const isCompletedToday = completedDateSet.has(dateKey);
+  const streak = useMemo(
+    () => computeStreak(completedDateSet, dateKey),
+    [completedDateSet, dateKey],
+  );
 
-  const markCompleted = () => {
+  const recentCompletions = useMemo(() => {
+    return state.completions.slice(0, 30);
+  }, [state.completions]);
+
+  const markCompleted = useCallback(async () => {
     setState((prev) => {
-      if (prev.completedDates.includes(dateKey)) return prev;
-      const next = { completedDates: [...prev.completedDates, dateKey] };
+      if (prev.completions.some((c) => c.date === dateKey)) return prev;
+      const rec: CompletionRecord = {
+        date: dateKey,
+        problemSlug: problem.slug,
+        completedAt: new Date().toISOString(),
+      };
+      const next = { completions: [rec, ...prev.completions] };
       writeState(next);
+      setJustCompleted(true);
       return next;
     });
-  };
+    if (user) {
+      try {
+        setSyncing(true);
+        await supabase.from("daily_challenge_completions").upsert(
+          {
+            user_id: user.id,
+            challenge_date: dateKey,
+            problem_slug: problem.slug,
+            completed_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id,challenge_date" },
+        );
+      } finally {
+        setSyncing(false);
+      }
+    }
+  }, [dateKey, problem, user]);
+
+  const acknowledgeCelebration = useCallback(() => setJustCompleted(false), []);
 
   return {
     problem,
     dateKey,
     isCompletedToday,
     streak,
-    completedTotal: completedSet.size,
+    completedTotal: state.completions.length,
+    recentCompletions,
+    syncing,
+    justCompleted,
+    acknowledgeCelebration,
     markCompleted,
+    pickProblemForDate,
   };
 };
+
+export { toDateKey, pickProblemForDate };
