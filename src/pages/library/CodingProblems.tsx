@@ -82,7 +82,10 @@ import {
   SortableResizableHeader,
   type SortDir,
 } from "@/components/library/coding/SortableResizableHeader";
-import { RecommendationStrip } from "@/components/library/coding/RecommendationStrip";
+import {
+  RecommendationStrip,
+  ShowRecommendationsChip,
+} from "@/components/library/coding/RecommendationStrip";
 import { TopicMasteryChips } from "@/components/library/coding/TopicMasteryChips";
 import { SavedFiltersMenu } from "@/components/library/coding/SavedFiltersMenu";
 import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
