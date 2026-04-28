@@ -11,6 +11,8 @@ const corsHeaders = {
 const JUDGE0_URL = Deno.env.get("JUDGE0_URL")?.replace(/\/$/, "") ?? "";
 const JUDGE0_AUTH_HEADER = Deno.env.get("JUDGE0_AUTH_HEADER") ?? "X-Auth-Token";
 const JUDGE0_AUTH_TOKEN = Deno.env.get("JUDGE0_AUTH_TOKEN") ?? "";
+const JUDGE0_EXTRA_HEADER_NAME = Deno.env.get("JUDGE0_EXTRA_HEADER_NAME") ?? "";
+const JUDGE0_EXTRA_HEADER_VALUE = Deno.env.get("JUDGE0_EXTRA_HEADER_VALUE") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
