@@ -461,6 +461,21 @@ const CodingProblems = () => {
 
       {/* Filters */}
       <Card className="p-4 mb-4 sticky top-2 z-10 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Filters
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleShareFilters}
+            className="gap-1.5 h-7 px-2 text-xs"
+            title="Copy a shareable link with the current search, topics, status, sort, view, and page"
+          >
+            <Link2 className="h-3.5 w-3.5" />
+            Copy shareable link
+          </Button>
+        </div>
         <ProblemFiltersBar
           search={search}
           onSearch={setSearch}
