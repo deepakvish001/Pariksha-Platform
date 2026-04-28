@@ -1688,6 +1688,23 @@ export type Database = {
           weighted_score: number
         }[]
       }
+      get_coding_leaderboard_user_rank: {
+        Args: { _user_id: string; _window?: string }
+        Returns: {
+          acceptance_rate: number
+          avatar_url: string
+          display_name: string
+          fastest_avg_runtime: number
+          last_accepted_at: string
+          problems_solved: number
+          rank: number
+          total_accepted: number
+          total_ranked: number
+          user_id: string
+          username: string
+          weighted_score: number
+        }[]
+      }
       get_daily_challenge_leaderboard: {
         Args: { _limit?: number }
         Returns: {
