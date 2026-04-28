@@ -492,6 +492,8 @@ Deno.serve(async (req) => {
         stderr: stderrCombined || null,
         submission_id: insertData?.id ?? null,
         raw_fermion: rawFermion,
+        case_results: caseResults,
+        limits: { language: fermionLang, cpu_ms: cpuMs, wall_ms: wallMs, memory_kb: memKb },
       },
     });
   } catch (err) {
