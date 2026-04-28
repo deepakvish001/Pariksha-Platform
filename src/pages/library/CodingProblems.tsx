@@ -263,7 +263,7 @@ const CodingProblems = () => {
     if (selectedTopics.length > 0) next.set("topics", selectedTopics.join(","));
     if (status !== "all") next.set("status", status);
     if (sort !== "default") next.set("sort", sort);
-    if (view !== "table") next.set("view", view);
+    // view is always "table" now (grid retired) — no need to encode
     if (bookmarked) next.set("bm", "1");
     if (page > 1) next.set("page", String(page));
     const qs = next.toString();
