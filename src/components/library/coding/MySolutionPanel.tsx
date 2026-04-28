@@ -46,6 +46,7 @@ import { MonacoEditor } from "@/components/coding/MonacoEditor";
 import { useToast } from "@/hooks/use-toast";
 import { LANGUAGES, getLanguageById, type LangId } from "@/data/codingProblemsData";
 import type { SolutionEntry } from "@/hooks/useProblemSolution";
+import type { TimestampFormat } from "@/hooks/useEditorPrefs";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -67,31 +68,59 @@ interface Props {
   onClear: () => SolutionEntry | null;
   /** Restores a previously-cleared snapshot. */
   onRestore: (snapshot: SolutionEntry) => void;
+  /** Per-language one-step undo for code edits. */
+  onUndoCodeChange: (lang: LangId) => boolean;
+  canUndoCode: (lang: LangId) => boolean;
   /** True when the editor has unsaved changes for the current language. */
   hasUnsavedCurrentCode: boolean;
   savedAt: number | null;
   hasNotes: boolean;
   hasAnyCode: boolean;
   isComplete: boolean;
+  /** "relative" → "5m ago", "exact" → "14:32:11". */
+  timestampFormat: TimestampFormat;
+  onToggleTimestampFormat: () => void;
   fontSize?: number;
 }
 
-const formatSavedLabel = (savedAt: number | null) => {
-  if (!savedAt) return "Not saved yet";
-  const diff = Date.now() - savedAt;
-  if (diff < 3000) return "Saved";
-  if (diff < 60_000) return `Saved ${Math.floor(diff / 1000)}s ago`;
-  return `Saved ${Math.floor(diff / 60_000)}m ago`;
+const formatExact = (ts: number) => {
+  const d = new Date(ts);
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  return sameDay
+    ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : d.toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 };
 
-const formatRelative = (ts: number | undefined) => {
-  if (!ts) return "";
+const formatRelativeShort = (ts: number) => {
   const diff = Date.now() - ts;
   if (diff < 5000) return "just now";
   if (diff < 60_000) return `${Math.floor(diff / 1000)}s ago`;
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
   if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
   return `${Math.floor(diff / 86_400_000)}d ago`;
+};
+
+const formatTimestamp = (ts: number | undefined, fmt: TimestampFormat) => {
+  if (!ts) return "";
+  return fmt === "exact" ? formatExact(ts) : formatRelativeShort(ts);
+};
+
+const formatSavedLabel = (savedAt: number | null, fmt: TimestampFormat) => {
+  if (!savedAt) return "Not saved yet";
+  if (fmt === "exact") return `Saved ${formatExact(savedAt)}`;
+  const diff = Date.now() - savedAt;
+  if (diff < 3000) return "Saved";
+  if (diff < 60_000) return `Saved ${Math.floor(diff / 1000)}s ago`;
+  return `Saved ${Math.floor(diff / 60_000)}m ago`;
 };
 
 /**
