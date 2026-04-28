@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ToastAction } from "@/components/ui/toast";
 import {
   CheckCircle2,
   Loader2,
@@ -39,10 +40,12 @@ import {
   Code2,
   Trash2,
   Sparkles,
+  Undo2,
 } from "lucide-react";
 import { MonacoEditor } from "@/components/coding/MonacoEditor";
 import { useToast } from "@/hooks/use-toast";
 import { LANGUAGES, getLanguageById, type LangId } from "@/data/codingProblemsData";
+import type { SolutionEntry } from "@/hooks/useProblemSolution";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -56,9 +59,16 @@ interface Props {
   onLanguageChange: (lang: LangId) => void;
   /** Languages that already have a saved solution (for badges). */
   savedLanguages: LangId[];
+  /** Per-language last-saved timestamps from the persisted entry. */
+  codeUpdatedAt: Partial<Record<LangId, number>>;
   /** Pulls in user's current main-editor draft so they can save it as their solution. */
   onUseCurrentDraft?: () => string;
-  onClear: () => void;
+  /** Returns the previous snapshot so the panel can offer an undo. */
+  onClear: () => SolutionEntry | null;
+  /** Restores a previously-cleared snapshot. */
+  onRestore: (snapshot: SolutionEntry) => void;
+  /** True when the editor has unsaved changes for the current language. */
+  hasUnsavedCurrentCode: boolean;
   savedAt: number | null;
   hasNotes: boolean;
   hasAnyCode: boolean;
@@ -74,11 +84,20 @@ const formatSavedLabel = (savedAt: number | null) => {
   return `Saved ${Math.floor(diff / 60_000)}m ago`;
 };
 
+const formatRelative = (ts: number | undefined) => {
+  if (!ts) return "";
+  const diff = Date.now() - ts;
+  if (diff < 5000) return "just now";
+  if (diff < 60_000) return `${Math.floor(diff / 1000)}s ago`;
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+};
+
 /**
  * "My Solution" — combined markdown writeup + per-language final-solution code
- * editor. Supports editing solutions across multiple languages, shows a
- * progress badge when both notes + code are saved, and offers a confirm-gated
- * "Clear my solution" action.
+ * editor. Shows progress + per-language timestamps, supports clear-with-undo,
+ * and confirms language switches when there are unsaved edits.
  */
 export const MySolutionPanel = ({
   notes,
@@ -88,8 +107,11 @@ export const MySolutionPanel = ({
   language,
   onLanguageChange,
   savedLanguages,
+  codeUpdatedAt,
   onUseCurrentDraft,
   onClear,
+  onRestore,
+  hasUnsavedCurrentCode,
   savedAt,
   hasNotes,
   hasAnyCode,
@@ -98,6 +120,7 @@ export const MySolutionPanel = ({
 }: Props) => {
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [copied, setCopied] = useState(false);
+  const [pendingLang, setPendingLang] = useState<LangId | null>(null);
   const { toast } = useToast();
   const langInfo = getLanguageById(language);
   const languageLabel = langInfo.label;
@@ -130,12 +153,52 @@ export const MySolutionPanel = ({
     });
   };
 
-  const handleClear = () => {
-    onClear();
+  const performClear = () => {
+    const previous = onClear();
+    if (!previous) {
+      toast({
+        title: "Nothing to clear",
+      });
+      return;
+    }
     toast({
       title: "My Solution cleared",
-      description: "Your saved notes and code for this problem were removed.",
+      description: "Notes and saved code were removed for this problem.",
+      duration: 8000,
+      action: (
+        <ToastAction
+          altText="Undo clear"
+          onClick={() => {
+            onRestore(previous);
+            toast({
+              title: "My Solution restored",
+              description: "Your notes and code were brought back.",
+            });
+          }}
+        >
+          <Undo2 className="h-3.5 w-3.5 mr-1" />
+          Undo
+        </ToastAction>
+      ),
     });
+  };
+
+  // Language switch confirmation when current language has unsaved edits
+  // that would be flushed (and could overwrite a previously-saved version).
+  const requestLanguageChange = (next: LangId) => {
+    if (next === language) return;
+    if (hasUnsavedCurrentCode && hasCurrentLangSaved) {
+      setPendingLang(next);
+      return;
+    }
+    onLanguageChange(next);
+  };
+
+  const confirmLanguageChange = () => {
+    if (pendingLang) {
+      onLanguageChange(pendingLang);
+      setPendingLang(null);
+    }
   };
 
   // Progress badge state
@@ -213,18 +276,18 @@ export const MySolutionPanel = ({
               <AlertDialogHeader>
                 <AlertDialogTitle>Clear My Solution?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This permanently removes your autosaved notes and all saved
-                  code solutions for this problem (across every language). This
-                  cannot be undone.
+                  This removes your autosaved notes and all saved code
+                  solutions for this problem (across every language). You'll
+                  have a few seconds to undo from a toast after.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={handleClear}
+                  onClick={performClear}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Yes, clear everything
+                  Yes, clear it
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -294,7 +357,7 @@ export const MySolutionPanel = ({
             </span>
             <Select
               value={language}
-              onValueChange={(v) => onLanguageChange(v as LangId)}
+              onValueChange={(v) => requestLanguageChange(v as LangId)}
             >
               <SelectTrigger className="h-7 w-[170px] text-xs">
                 <SelectValue />
@@ -321,6 +384,14 @@ export const MySolutionPanel = ({
                 className="text-[10px] border-emerald-500/40 text-emerald-500 bg-emerald-500/10"
               >
                 Saved
+              </Badge>
+            )}
+            {hasUnsavedCurrentCode && (
+              <Badge
+                variant="outline"
+                className="text-[10px] border-amber-500/40 text-amber-500 bg-amber-500/10"
+              >
+                Unsaved edits
               </Badge>
             )}
           </div>
@@ -372,20 +443,44 @@ export const MySolutionPanel = ({
             {savedLanguages.map((id) => {
               const info = getLanguageById(id);
               const active = id === language;
+              const ts = codeUpdatedAt[id];
+              const rel = formatRelative(ts);
               return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => onLanguageChange(id)}
-                  className={cn(
-                    "px-2 py-0.5 rounded-md text-[11px] border transition-colors",
-                    active
-                      ? "bg-primary/15 border-primary/40 text-primary"
-                      : "bg-muted/40 border-border text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {info.label}
-                </button>
+                <TooltipProvider key={id}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => requestLanguageChange(id)}
+                        className={cn(
+                          "px-2 py-0.5 rounded-md text-[11px] border transition-colors flex items-center gap-1.5",
+                          active
+                            ? "bg-primary/15 border-primary/40 text-primary"
+                            : "bg-muted/40 border-border text-muted-foreground hover:bg-muted",
+                        )}
+                      >
+                        <span>{info.label}</span>
+                        {rel && (
+                          <span
+                            className={cn(
+                              "text-[10px] tabular-nums",
+                              active
+                                ? "text-primary/70"
+                                : "text-muted-foreground/70",
+                            )}
+                          >
+                            · {rel}
+                          </span>
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {ts
+                        ? `Last saved ${new Date(ts).toLocaleString()}`
+                        : "Saved"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               );
             })}
           </div>
@@ -409,6 +504,34 @@ export const MySolutionPanel = ({
           </p>
         )}
       </div>
+
+      {/* Confirm language switch when unsaved edits would overwrite saved code */}
+      <AlertDialog
+        open={!!pendingLang}
+        onOpenChange={(open) => !open && setPendingLang(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Switch language with unsaved edits?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your current edits to{" "}
+              <span className="font-medium">{languageLabel}</span> haven't been
+              flushed yet. They'll autosave and overwrite the previously-saved{" "}
+              {languageLabel} solution. Continue switching to{" "}
+              <span className="font-medium">
+                {pendingLang ? getLanguageById(pendingLang).label : ""}
+              </span>
+              ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay on {languageLabel}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLanguageChange}>
+              Save & switch
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
