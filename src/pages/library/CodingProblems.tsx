@@ -400,6 +400,40 @@ const CodingProblems = () => {
     }
   };
 
+  // Build only the query string (no origin) for saved presets.
+  const buildCurrentQuery = (): string => {
+    const next = new URLSearchParams();
+    if (search.trim()) next.set("q", search.trim());
+    if (difficulty !== "all") next.set("diff", difficulty);
+    if (selectedTopics.length > 0) next.set("topics", selectedTopics.join(","));
+    if (status !== "all") next.set("status", status);
+    if (sort !== "default") next.set("sort", sort);
+    if (bookmarked) next.set("bm", "1");
+    if (page > 1) next.set("page", String(page));
+    return next.toString();
+  };
+
+  // Apply a saved preset's query string by replacing current params.
+  const applyPresetQuery = (qs: string) => {
+    setParams(new URLSearchParams(qs), { replace: true });
+  };
+
+  // Show only weak topics: replace selection with the provided list.
+  const showOnlyWeakTopics = (weak: string[]) => {
+    if (weak.length === 0) return;
+    updateParams({ topics: weak.join(","), page: "1" });
+    toast.success(`Filtered to ${weak.length} weak topic${weak.length === 1 ? "" : "s"}`, {
+      description: "Showing topics where your solve rate is below 50%.",
+    });
+  };
+
+  // Density toggle (compact ↔ comfortable)
+  const toggleDensity = () => {
+    const next = tablePrefs.density === "compact" ? "comfortable" : "compact";
+    tablePrefs.setDensity(next);
+    toast.success(`Density: ${next}`);
+  };
+
   // Filter
   const filtered = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
