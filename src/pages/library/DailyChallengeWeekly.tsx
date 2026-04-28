@@ -32,7 +32,7 @@ import {
   useDailyLeaderboardOptIn,
 } from "@/hooks/useDailyLeaderboard";
 import { useAuth } from "@/contexts/AuthContext";
-import { DailyChallengeSyncStatus } from "@/components/library/coding/DailyChallengeSyncStatus";
+
 
 const buildLastNDays = (n: number) => {
   const days: string[] = [];
@@ -144,14 +144,6 @@ const DailyChallengeWeekly = () => {
         <p className="text-sm text-muted-foreground">
           Your last 7 daily challenges, your current streak, and the opt-in leaderboard.
         </p>
-        <div className="mt-3">
-          <DailyChallengeSyncStatus
-            status={daily.syncStatus}
-            error={daily.syncError}
-            lastSyncedAt={daily.lastSyncedAt}
-            signedIn={!!user}
-          />
-        </div>
       </motion.header>
 
       {/* Summary tiles */}

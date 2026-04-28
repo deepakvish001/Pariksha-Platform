@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { DailyChallenge } from "@/hooks/useDailyChallenge";
-import { DailyChallengeSyncStatus } from "@/components/library/coding/DailyChallengeSyncStatus";
+
 
 interface Props {
   daily: DailyChallenge;
@@ -179,14 +179,6 @@ export const DailyChallengeCard = ({ daily, className }: Props) => {
               </Link>
             </Button>
           </div>
-        </div>
-        <div className="mt-3">
-          <DailyChallengeSyncStatus
-            status={daily.syncStatus}
-            error={daily.syncError}
-            lastSyncedAt={daily.lastSyncedAt}
-            signedIn={daily.syncStatus !== "idle" || !!daily.lastSyncedAt}
-          />
         </div>
       </Card>
     </motion.div>
