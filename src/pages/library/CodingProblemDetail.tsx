@@ -546,7 +546,7 @@ const CodingProblemDetail = () => {
                 )}
 
                 {/* Hints — progressive disclosure */}
-                <ProgressiveHints hints={problem.hints} />
+                <ProgressiveHints hints={problem.hints} slug={problem.slug} />
               </TabsContent>
 
               <TabsContent value="notes" className="mt-0">
