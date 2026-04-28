@@ -17,34 +17,91 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CheckCircle2, XCircle, AlertTriangle, Clock, HelpCircle, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CodeRunRow } from "@/hooks/useCodeRuns";
 
 type SortMode = "newest" | "oldest" | "fastest";
+type Verdict = "accepted" | "wrong" | "error" | "pending" | "unknown";
 
-const ACCEPT_LIKE = ["accepted", "successful", "ok"];
-const ERROR_LIKE = ["error", "compilation", "wrong", "failed", "runtime", "timeout", "tle"];
-
-function statusTone(status: string | null): {
-  variant: "default" | "destructive" | "outline" | "secondary";
+interface VerdictMeta {
+  verdict: Verdict;
+  label: string;
+  icon: LucideIcon;
   className: string;
-} {
-  const s = (status ?? "unknown").toLowerCase();
-  if (ACCEPT_LIKE.some((k) => s.includes(k))) {
+  description: string;
+}
+
+// Maps a raw status string from the runner into a normalized verdict bucket
+// with its display metadata (label, icon, color, screen-reader description).
+function getVerdictMeta(status: string | null): VerdictMeta {
+  const s = (status ?? "").toLowerCase().trim();
+
+  // Accepted: solution matched expected output
+  if (/(accepted|^ac$|\bac\b|successful|^ok$|passed|correct)/.test(s)) {
     return {
-      variant: "outline",
+      verdict: "accepted",
+      label: "Accepted",
+      icon: CheckCircle2,
       className:
         "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+      description: "Accepted — output matched expected results",
     };
   }
-  if (ERROR_LIKE.some((k) => s.includes(k))) {
+
+  // Wrong Answer: ran successfully but output didn't match
+  if (/(wrong|^wa$|mismatch|incorrect|failed test)/.test(s)) {
     return {
-      variant: "outline",
-      className: "border-destructive/40 bg-destructive/10 text-destructive",
+      verdict: "wrong",
+      label: "Wrong Answer",
+      icon: XCircle,
+      className:
+        "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+      description: "Wrong answer — output did not match expected",
     };
   }
-  return { variant: "outline", className: "" };
+
+  // Pending / running
+  if (/(pending|queued|running|in[_\s-]?progress)/.test(s)) {
+    return {
+      verdict: "pending",
+      label: "Pending",
+      icon: Clock,
+      className:
+        "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+      description: "Run is still in progress",
+    };
+  }
+
+  // Error: compile, runtime, timeout, MLE, generic failure
+  if (
+    /(error|compil|runtime|timeout|^tle$|\btle\b|^mle$|\bmle$|exceeded|abort|crash|failed)/.test(s)
+  ) {
+    return {
+      verdict: "error",
+      label:
+        /timeout|tle/.test(s)
+          ? "Time Limit Exceeded"
+          : /compil/.test(s)
+            ? "Compile Error"
+            : /runtime/.test(s)
+              ? "Runtime Error"
+              : /mle|memory/.test(s)
+                ? "Memory Limit Exceeded"
+                : "Error",
+      icon: AlertTriangle,
+      className: "border-destructive/40 bg-destructive/10 text-destructive",
+      description: "Execution error",
+    };
+  }
+
+  return {
+    verdict: "unknown",
+    label: status ?? "Unknown",
+    icon: HelpCircle,
+    className: "border-muted-foreground/30 bg-muted/40 text-muted-foreground",
+    description: "Unknown verdict",
+  };
 }
 
 interface ProblemRunHistoryProps {
@@ -109,7 +166,8 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
 
       <ol className="space-y-2 list-none p-0 m-0" aria-label="Run history">
         {sorted.map((r, idx) => {
-          const tone = statusTone(r.status);
+          const meta = getVerdictMeta(r.status);
+          const VerdictIcon = meta.icon;
           const panelId = `run-${r.id}-panel`;
           return (
             <li key={r.id}>
@@ -118,7 +176,7 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
                   <CollapsibleTrigger
                     className="w-full text-left group"
                     aria-controls={panelId}
-                    aria-label={`Run #${runs.length - idx} from ${new Date(r.created_at).toLocaleString()} — ${r.status ?? "unknown"}`}
+                    aria-label={`Run #${runs.length - idx} from ${new Date(r.created_at).toLocaleString()} — ${meta.description}${r.status && r.status.toLowerCase() !== meta.label.toLowerCase() ? ` (${r.status})` : ""}`}
                   >
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-3 min-w-0">
@@ -126,10 +184,16 @@ export const ProblemRunHistory = ({ runs }: ProblemRunHistoryProps) => {
                           #{runs.length - idx}
                         </span>
                         <Badge
-                          variant={tone.variant}
-                          className={cn("text-[10px]", tone.className)}
+                          variant="outline"
+                          className={cn(
+                            "text-[10px] gap-1 inline-flex items-center",
+                            meta.className,
+                          )}
+                          title={r.status ?? undefined}
+                          data-verdict={meta.verdict}
                         >
-                          {r.status ?? "Unknown"}
+                          <VerdictIcon className="h-3 w-3" aria-hidden="true" />
+                          <span>{meta.label}</span>
                         </Badge>
                         <span className="text-xs text-muted-foreground truncate">
                           {r.language}
