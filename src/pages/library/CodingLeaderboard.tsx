@@ -1,7 +1,7 @@
 // Public global coding leaderboard page.
 // Accessible to guests; ranks users by a weighted score that combines
 // unique problems solved (weighted by difficulty) with a small speed bonus.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
@@ -18,6 +18,13 @@ import {
   ChevronRight,
   LogIn,
   EyeOff,
+  CalendarDays,
+  Sun,
+  Hourglass,
+  ListChecks,
+  Play,
+  ArrowDown,
+  User as UserIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -37,6 +44,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   useCodingLeaderboard,
   useCodingLeaderboardStats,
+  useCodingLeaderboardUserRank,
   type CodingLeaderboardRow,
   type LeaderboardWindow,
 } from "@/hooks/useCodingLeaderboard";
