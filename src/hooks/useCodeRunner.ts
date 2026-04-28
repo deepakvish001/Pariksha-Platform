@@ -118,12 +118,16 @@ export const useCodeRunner = () => {
     stdin?: string;
     problem_slug?: string;
     language?: string;
+    // SQL-mode extensions
+    schema?: string;
+    seed?: string;
   }): Promise<RunResult> => {
     const controller = new AbortController();
     setRunController(controller);
     setIsRunning(true);
     try {
-      const invokePromise = supabase.functions.invoke("run-code", {
+      const fnName = params.language === "sql" ? "run-sql" : "run-code";
+      const invokePromise = supabase.functions.invoke(fnName, {
         body: params,
       });
       const abortPromise = new Promise<never>((_, reject) => {
