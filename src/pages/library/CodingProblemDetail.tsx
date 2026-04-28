@@ -1079,7 +1079,7 @@ const CodingProblemDetail = () => {
                       className="hidden sm:inline-flex"
                     />
                   </div>
-                  <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-0.5 shrink-0 flex-nowrap">
                     <TooltipProvider delayDuration={200}>
                       <Tooltip>
                         <TooltipTrigger asChild>
