@@ -90,6 +90,8 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error" | "offline">(
     "idle",
   );
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const [lastConflictResolvedAt, setLastConflictResolvedAt] = useState<number | null>(null);
   /** Tracks unsaved changes since the last flush. */
   const [dirty, setDirty] = useState<{
     notes: boolean;
