@@ -172,6 +172,316 @@ function StatCard({
   );
 }
 
+// ─── Skeleton matching final podium card layout ───
+function PodiumSkeleton({ rank }: { rank: 1 | 2 | 3 }) {
+  const heights = { 1: "md:translate-y-0", 2: "md:translate-y-4", 3: "md:translate-y-8" };
+  return (
+    <div className={cn("flex-1", heights[rank])}>
+      <div className="rounded-xl border-2 border-border/40 bg-card/40 p-5 text-center">
+        <Skeleton className="h-5 w-5 rounded-full mx-auto mb-3" />
+        <Skeleton className="h-16 w-16 rounded-full mx-auto mb-3" />
+        <Skeleton className="h-4 w-28 mx-auto" />
+        <Skeleton className="h-3 w-20 mx-auto mt-1" />
+        <div className="mt-3 pt-3 border-t border-border/40 space-y-2">
+          <Skeleton className="h-7 w-16 mx-auto" />
+          <Skeleton className="h-2.5 w-12 mx-auto" />
+          <div className="flex justify-center gap-3 pt-1">
+            <Skeleton className="h-3 w-8" />
+            <Skeleton className="h-3 w-12" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Skeleton matching final row layout ───
+function RowSkeleton() {
+  return (
+    <div className="flex items-stretch gap-2 rounded-lg border border-border/40 bg-card/30">
+      <div className="flex-1 min-w-0 flex items-center gap-3 p-3">
+        <Skeleton className="h-5 w-5 rounded-full shrink-0" />
+        <Skeleton className="h-9 w-9 rounded-full shrink-0" />
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Skeleton className="h-3.5 w-32" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <div className="hidden sm:flex items-center gap-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="space-y-1 text-center">
+              <Skeleton className="h-3.5 w-8 mx-auto" />
+              <Skeleton className="h-2.5 w-10 mx-auto" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="h-5 w-12 rounded-md" />
+      </div>
+      <div className="hidden md:flex items-center gap-1 px-2 border-l border-border/40">
+        <Skeleton className="h-7 w-7 rounded-md" />
+        <Skeleton className="h-7 w-7 rounded-md" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Contextual empty state ───
+function EmptyState({
+  window,
+  search,
+  isAuthed,
+  onClearSearch,
+}: {
+  window: LeaderboardWindow;
+  search: string;
+  isAuthed: boolean;
+  onClearSearch?: () => void;
+}) {
+  if (search) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <Search className="h-10 w-10 mx-auto mb-2 opacity-50" />
+        <p className="text-sm font-medium text-foreground">
+          No solvers match “{search}”
+        </p>
+        <p className="text-xs mt-1">
+          Try a different username, or clear the search to see everyone.
+        </p>
+        {onClearSearch && (
+          <Button size="sm" variant="outline" className="mt-3" onClick={onClearSearch}>
+            Clear search
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  const config: Record<
+    LeaderboardWindow,
+    { icon: typeof Trophy; title: string; sub: string }
+  > = {
+    today: {
+      icon: Sun,
+      title: "No accepted solutions yet today",
+      sub: "Be the first to log an Accepted submission today and claim the top spot.",
+    },
+    week: {
+      icon: CalendarDays,
+      title: "Quiet week so far",
+      sub: "No problems have been solved this week. A fresh leaderboard is up for grabs.",
+    },
+    all: {
+      icon: Hourglass,
+      title: "Leaderboard is just getting started",
+      sub: "No ranked solvers yet. Solve any problem to get on the board.",
+    },
+  };
+  const { icon: Icon, title, sub } = config[window];
+
+  return (
+    <div className="text-center py-12">
+      <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3">
+        <Icon className="h-6 w-6 text-primary" />
+      </div>
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">{sub}</p>
+      <div className="mt-4 flex items-center justify-center gap-2">
+        <Button size="sm" asChild>
+          <Link to="/library/problems">Solve a problem</Link>
+        </Button>
+        {!isAuthed && (
+          <Button size="sm" variant="outline" asChild>
+            <Link to="/login">Sign in</Link>
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Per-row jump links to runs / submissions ───
+function RowQuickLinks({ row, isYou }: { row: CodingLeaderboardRow; isYou: boolean }) {
+  // Self → personal history pages. Others → public profile (RLS hides
+  // raw runs/submissions of other users).
+  const runsHref = isYou
+    ? "/dashboard/submissions?tab=runs"
+    : row.username
+      ? `/u/${row.username}#runs`
+      : null;
+  const subsHref = isYou
+    ? "/dashboard/submissions"
+    : row.username
+      ? `/u/${row.username}#submissions`
+      : null;
+
+  return (
+    <div className="hidden md:flex items-center gap-0.5 pr-1 pl-1 border-l border-border/40 shrink-0">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            asChild={!!runsHref}
+            disabled={!runsHref}
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={isYou ? "View your runs" : `View ${row.display_name}'s runs`}
+          >
+            {runsHref ? (
+              <Link to={runsHref}>
+                <Play className="h-3.5 w-3.5" />
+              </Link>
+            ) : (
+              <Play className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {isYou ? "View your runs" : "View runs (on profile)"}
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            asChild={!!subsHref}
+            disabled={!subsHref}
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={
+              isYou
+                ? "View your submissions"
+                : `View ${row.display_name}'s submissions`
+            }
+          >
+            {subsHref ? (
+              <Link to={subsHref}>
+                <ListChecks className="h-3.5 w-3.5" />
+              </Link>
+            ) : (
+              <ListChecks className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {isYou ? "View your submissions" : "View submissions (on profile)"}
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
+// ─── Your-rank summary card with jump-to-row ───
+function YourRankCard({
+  loading,
+  rank,
+  window,
+  onJump,
+  onOpenBreakdown,
+}: {
+  loading: boolean;
+  rank: import("@/hooks/useCodingLeaderboard").CodingLeaderboardUserRank | null;
+  window: LeaderboardWindow;
+  onJump: () => void;
+  onOpenBreakdown: () => void;
+}) {
+  const windowLabel =
+    window === "today" ? "today" : window === "week" ? "this week" : "all-time";
+
+  if (loading) {
+    return (
+      <Card className="bg-primary/5 border-primary/30">
+        <CardContent className="p-4 flex items-center gap-3">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+          <Skeleton className="h-9 w-28" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!rank) {
+    return (
+      <Card className="bg-muted/30 border-dashed border-border/60">
+        <CardContent className="p-4 flex items-center gap-3 flex-wrap">
+          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0">
+            <UserIcon className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold">
+              You're not ranked {windowLabel} yet
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Get an Accepted submission {windowLabel === "all-time" ? "" : windowLabel} to appear on the board.
+            </p>
+          </div>
+          <Button asChild size="sm">
+            <Link to="/library/problems">Solve a problem</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const pct =
+    rank.total_ranked > 0
+      ? Math.max(1, Math.round((rank.rank / rank.total_ranked) * 100))
+      : null;
+
+  return (
+    <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/30">
+      <CardContent className="p-4 flex items-center gap-3 flex-wrap">
+        <div className="relative">
+          <Avatar className="h-12 w-12 ring-2 ring-primary/40">
+            <AvatarImage src={rank.avatar_url ?? undefined} alt={rank.display_name} />
+            <AvatarFallback>
+              {rank.display_name.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <Badge
+            variant="secondary"
+            className="absolute -bottom-1 -right-1 px-1.5 h-5 text-[10px] font-mono shadow"
+          >
+            #{rank.rank}
+          </Badge>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-semibold truncate">
+              Your rank — {windowLabel}
+            </p>
+            {pct !== null && (
+              <Badge variant="outline" className="text-[10px] h-4">
+                Top {pct}%
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {rank.problems_solved} solved · {Math.round(rank.weighted_score)} score
+            {rank.fastest_avg_runtime
+              ? ` · avg ${
+                  rank.fastest_avg_runtime < 1000
+                    ? `${Math.round(rank.fastest_avg_runtime)} ms`
+                    : `${(rank.fastest_avg_runtime / 1000).toFixed(2)} s`
+                }`
+              : ""}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <Button size="sm" variant="outline" onClick={onOpenBreakdown}>
+            Breakdown
+          </Button>
+          <Button size="sm" onClick={onJump}>
+            <ArrowDown className="h-3.5 w-3.5 mr-1" />
+            Jump to me
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function CodingLeaderboard() {
   const { user } = useAuth();
   const [window, setWindow] = useState<LeaderboardWindow>("all");
