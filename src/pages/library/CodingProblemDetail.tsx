@@ -626,7 +626,7 @@ const CodingProblemDetail = () => {
       return;
     }
     const label = `${langInfo.label} · ${lastForLang.verdict ?? "Pending"} · ${new Date(lastForLang.created_at).toLocaleString()}`;
-    const baseline = draft ?? problem.starterCode[language];
+    const baseline = draft ?? getStarter(language);
     const hasUnsavedChanges = code !== baseline && code !== lastForLang.source_code;
     if (hasUnsavedChanges) {
       setPendingRestoreCode({
