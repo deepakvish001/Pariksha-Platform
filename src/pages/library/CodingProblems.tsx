@@ -16,6 +16,9 @@ import {
   Link2,
   Columns3,
   RotateCcw,
+  Keyboard,
+  Rows3,
+  Rows2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
