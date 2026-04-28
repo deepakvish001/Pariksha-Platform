@@ -680,6 +680,7 @@ const CodingProblems = () => {
         weekSolved={weekSolved}
         prevWeekSolved={prevWeekSolved}
         continueProblem={continueProblem}
+        loading={loading}
       />
 
       {/* Filters */}
