@@ -27,6 +27,7 @@ interface SubmitResult {
   failing_case: Record<string, unknown> | null;
   stderr: string | null;
   submission_id: string | null;
+  raw_fermion?: FermionRawDebug | null;
 }
 
 interface Diagnostics {
@@ -34,6 +35,7 @@ interface Diagnostics {
   requested_url?: string;
   judge0_status?: number;
   judge0_body?: string;
+  raw_fermion_response?: unknown;
 }
 
 interface FunctionResponse<T> {
@@ -97,6 +99,28 @@ function judge0ToFermion(id: number): string | null {
   }
 }
 
+interface RuntimeConfig { cpuMs: number; wallMs: number; memKb: number }
+const FERMION_SAFE_MAX: RuntimeConfig = { cpuMs: 5000, wallMs: 6500, memKb: 512000 };
+const RUNTIME_DEFAULTS: Record<string, RuntimeConfig> = {
+  C: { cpuMs: 2000, wallMs: 5000, memKb: 512000 },
+  Cpp: { cpuMs: 2000, wallMs: 5000, memKb: 512000 },
+  Java: { cpuMs: 3000, wallMs: 6000, memKb: 512000 },
+  Python: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+  NodeJs: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+  Go: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+};
+function runConfigFor(language: string, overrides?: { cpuSec?: number; memKb?: number }): RuntimeConfig {
+  const cfg = RUNTIME_DEFAULTS[language] ?? RUNTIME_DEFAULTS.Python;
+  const requestedCpuMs = typeof overrides?.cpuSec === "number" ? overrides.cpuSec * 1000 : cfg.cpuMs;
+  const requestedMemKb = typeof overrides?.memKb === "number" ? overrides.memKb : cfg.memKb;
+  const cpuMs = Math.min(requestedCpuMs, cfg.cpuMs, FERMION_SAFE_MAX.cpuMs);
+  return {
+    cpuMs,
+    wallMs: Math.min(Math.max(cfg.wallMs, cpuMs), FERMION_SAFE_MAX.wallMs),
+    memKb: Math.min(requestedMemKb, cfg.memKb, FERMION_SAFE_MAX.memKb),
+  };
+}
+
 interface TestCase { input: string; expected: string }
 interface CaseOutcome {
   runStatus: string;
@@ -104,6 +128,15 @@ interface CaseOutcome {
   stderr: string;
   timeMs: number;
   memoryKb: number;
+  raw: FermionRawDebug;
+}
+
+interface FermionRawDebug {
+  codingTaskStatus?: string;
+  runStatus?: string;
+  runResult?: unknown;
+  stdout?: string;
+  stderr?: string;
 }
 
 async function submitBatch(language: string, source: string, tests: TestCase[], cpuMs: number, wallMs: number, memKb: number): Promise<string[]> {
@@ -155,7 +188,7 @@ async function submitBatch(language: string, source: string, tests: TestCase[], 
     const errMsg = root?.output?.errorMessage || root?.errorMessage;
     throw new FermionError(
       `Fermion submit: expected ${tests.length} task IDs, got ${taskIds.length}${errMsg ? ` — ${errMsg}` : ""}`,
-      { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500) },
+      { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500), raw_fermion_response: root },
     );
   }
   return taskIds;
@@ -194,16 +227,19 @@ async function pollBatch(taskIds: string[]): Promise<Map<string, CaseOutcome>> {
       if (taskStatus !== "Finished") continue;
       const runResult = task?.runResult ?? task?.executionResult ?? task?.result ?? {};
       const prd = runResult?.programRunData ?? {};
+      const stdout = b64UrlDecode(prd?.stdoutBase64UrlEncoded);
+      const stderr =
+        b64UrlDecode(prd?.stderrBase64UrlEncoded) ||
+        b64UrlDecode(runResult?.compilerOutputAfterCompilationBase64UrlEncoded);
       out.set(taskId, {
         runStatus: runResult?.runStatus ?? "unknown",
-        stdout: b64UrlDecode(prd?.stdoutBase64UrlEncoded),
-        stderr:
-          b64UrlDecode(prd?.stderrBase64UrlEncoded) ||
-          b64UrlDecode(runResult?.compilerOutputAfterCompilationBase64UrlEncoded),
+        stdout,
+        stderr,
         timeMs:
           typeof prd?.cpuTimeUsedInMilliseconds === "number" ? prd.cpuTimeUsedInMilliseconds :
           typeof prd?.wallTimeUsedInMilliseconds === "number" ? prd.wallTimeUsedInMilliseconds : 0,
         memoryKb: typeof prd?.memoryUsedInKilobyte === "number" ? prd.memoryUsedInKilobyte : 0,
+        raw: { codingTaskStatus: taskStatus, runStatus: runResult?.runStatus ?? "unknown", runResult, stdout, stderr },
       });
       remaining.delete(taskId);
     }
@@ -258,9 +294,8 @@ Deno.serve(async (req) => {
     if (!fermionLang)
       return respond<SubmitResult>({ ok: false, error: `Language not supported by Fermion (language_id=${language_id})`, diagnostics: { error_stage: "validation" } });
 
-    const cpuMs = Math.min(typeof cpu_time_limit === "number" ? cpu_time_limit * 1000 : 3000, 5000);
-    const wallMs = Math.min(cpuMs * 2, 6500);
-    const memKb = Math.min(typeof memory_limit === "number" ? memory_limit : 262144, 524288);
+    const limits = runConfigFor(fermionLang, { cpuSec: cpu_time_limit, memKb: memory_limit });
+    const { cpuMs, wallMs, memKb } = limits;
 
     // Submit all cases as a single batch, then poll.
     const taskIds = await submitBatch(fermionLang, source_code, tests as TestCase[], cpuMs, wallMs, memKb);
@@ -272,6 +307,7 @@ Deno.serve(async (req) => {
     let totalTimeMs = 0;
     let maxMemory = 0;
     let stderrCombined = "";
+    let rawFermion: FermionRawDebug | null = null;
 
     for (let i = 0; i < tests.length; i++) {
       const t = tests[i] as TestCase;
@@ -289,10 +325,12 @@ Deno.serve(async (req) => {
           verdict = "Compile Error";
           stderrCombined = r.stderr || "Compilation failed";
           failingCase = { index: i, input: t.input, expected: t.expected, output: "", error: stderrCombined };
+          rawFermion = r.raw;
           break;
         case "time-limit-exceeded":
           verdict = "Time Limit Exceeded";
           failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
+          rawFermion = r.raw;
           break;
         case "non-zero-exit-code":
         case "died-sigsev":
@@ -302,11 +340,13 @@ Deno.serve(async (req) => {
           verdict = "Runtime Error";
           stderrCombined = r.stderr || r.runStatus;
           failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout, error: stderrCombined };
+          rawFermion = r.raw;
           break;
         case "internal-isolate-error":
         case "unknown":
           verdict = "Internal Error";
           stderrCombined = r.stderr || "Judge internal error";
+          rawFermion = r.raw;
           break;
         case "wrong-answer": {
           // Re-check ourselves with normalization (Fermion ExactMatch may be strict on trailing newlines)
@@ -315,6 +355,7 @@ Deno.serve(async (req) => {
           if (got === want) { passed++; continue; }
           verdict = "Wrong Answer";
           failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
+          rawFermion = r.raw;
           break;
         }
         case "successful":
@@ -324,6 +365,7 @@ Deno.serve(async (req) => {
           if (got !== want) {
             verdict = "Wrong Answer";
             failingCase = { index: i, input: t.input, expected: t.expected, output: r.stdout };
+            rawFermion = r.raw;
             break;
           }
           passed++;
@@ -387,6 +429,7 @@ Deno.serve(async (req) => {
         failing_case: failingCase,
         stderr: stderrCombined || null,
         submission_id: insertData?.id ?? null,
+        raw_fermion: rawFermion,
       },
     });
   } catch (err) {

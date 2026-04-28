@@ -26,6 +26,7 @@ interface RunResult {
   message: string;
   time: number | null;
   memory: number | null;
+  raw_fermion?: FermionRawDebug;
 }
 
 interface Diagnostics {
@@ -33,6 +34,7 @@ interface Diagnostics {
   requested_url?: string;
   judge0_status?: number; // kept for frontend compat
   judge0_body?: string;
+  raw_fermion_response?: unknown;
 }
 
 interface FunctionResponse<T> {
@@ -104,6 +106,25 @@ function judge0ToFermion(id: number): string | null {
   }
 }
 
+interface RuntimeConfig { cpuMs: number; wallMs: number; memKb: number }
+const FERMION_SAFE_MAX: RuntimeConfig = { cpuMs: 5000, wallMs: 6500, memKb: 512000 };
+const RUNTIME_DEFAULTS: Record<string, RuntimeConfig> = {
+  C: { cpuMs: 2000, wallMs: 5000, memKb: 512000 },
+  Cpp: { cpuMs: 2000, wallMs: 5000, memKb: 512000 },
+  Java: { cpuMs: 3000, wallMs: 6000, memKb: 512000 },
+  Python: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+  NodeJs: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+  Go: { cpuMs: 3000, wallMs: 6000, memKb: 262144 },
+};
+function runConfigFor(language: string): RuntimeConfig {
+  const cfg = RUNTIME_DEFAULTS[language] ?? RUNTIME_DEFAULTS.Python;
+  return {
+    cpuMs: Math.min(cfg.cpuMs, FERMION_SAFE_MAX.cpuMs),
+    wallMs: Math.min(cfg.wallMs, FERMION_SAFE_MAX.wallMs),
+    memKb: Math.min(cfg.memKb, FERMION_SAFE_MAX.memKb),
+  };
+}
+
 // Map Fermion runStatus -> Judge0-like status object the frontend already understands
 function fermionStatusToJudge0(runStatus: string | undefined): { id: number; description: string } {
   switch (runStatus) {
@@ -127,6 +148,15 @@ interface FermionExecOutcome {
   stderr: string;
   timeMs: number | null;
   memoryKb: number | null;
+  raw: FermionRawDebug;
+}
+
+interface FermionRawDebug {
+  codingTaskStatus?: string;
+  runStatus?: string;
+  runResult?: unknown;
+  stdout?: string;
+  stderr?: string;
 }
 
 async function submitToFermion(payload: {
@@ -191,7 +221,7 @@ async function submitToFermion(payload: {
     const errMsg = root?.output?.errorMessage || root?.errorMessage;
     throw new FermionError(
       `Fermion submit: no taskId in response${errMsg ? ` — ${errMsg}` : ""}`,
-      { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500) },
+      { error_stage: "submit", requested_url: SUBMIT_URL, judge0_body: text.slice(0, 500), raw_fermion_response: root },
     );
   }
   return taskId;
@@ -227,16 +257,19 @@ async function pollFermion(taskId: string): Promise<FermionExecOutcome> {
 
     const runResult = task?.runResult ?? task?.executionResult ?? task?.result ?? {};
     const prd = runResult?.programRunData ?? {};
+    const stdout = b64UrlDecode(prd?.stdoutBase64UrlEncoded);
+    const stderr =
+      b64UrlDecode(prd?.stderrBase64UrlEncoded) ||
+      b64UrlDecode(runResult?.compilerOutputAfterCompilationBase64UrlEncoded);
     return {
       runStatus: runResult?.runStatus ?? "unknown",
-      stdout: b64UrlDecode(prd?.stdoutBase64UrlEncoded),
-      stderr:
-        b64UrlDecode(prd?.stderrBase64UrlEncoded) ||
-        b64UrlDecode(runResult?.compilerOutputAfterCompilationBase64UrlEncoded),
+      stdout,
+      stderr,
       timeMs:
         typeof prd?.cpuTimeUsedInMilliseconds === "number" ? prd.cpuTimeUsedInMilliseconds :
         typeof prd?.wallTimeUsedInMilliseconds === "number" ? prd.wallTimeUsedInMilliseconds : null,
       memoryKb: typeof prd?.memoryUsedInKilobyte === "number" ? prd.memoryUsedInKilobyte : null,
+      raw: { codingTaskStatus: taskStatus, runStatus: runResult?.runStatus ?? "unknown", runResult, stdout, stderr },
     };
   }
   throw new FermionError("Fermion polling timed out", {
@@ -274,6 +307,7 @@ async function runOnFermion(payload: {
     message: runStatus,
     time: outcome.timeMs != null ? outcome.timeMs / 1000 : null,
     memory: outcome.memoryKb,
+    raw_fermion: outcome.raw,
   };
 }
 
@@ -316,9 +350,9 @@ Deno.serve(async (req) => {
       source_code,
       language: fermionLang,
       stdin: typeof stdin === "string" ? stdin : "",
-      cpu_ms: 3000,
-      wall_ms: 6000,
-      mem_kb: 262144,
+      cpu_ms: runConfigFor(fermionLang).cpuMs,
+      wall_ms: runConfigFor(fermionLang).wallMs,
+      mem_kb: runConfigFor(fermionLang).memKb,
     });
 
     // Best-effort log to code_runs

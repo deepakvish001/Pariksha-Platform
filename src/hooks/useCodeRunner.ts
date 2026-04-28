@@ -9,13 +9,23 @@ export interface RunResult {
   message: string;
   time: number | null;
   memory: number | null;
+  raw_fermion?: FermionRawDebug;
 }
 
-interface FunctionDiagnostics {
+export interface FermionRawDebug {
+  codingTaskStatus?: string;
+  runStatus?: string;
+  runResult?: unknown;
+  stdout?: string;
+  stderr?: string;
+}
+
+export interface FunctionDiagnostics {
   error_stage?: string;
   requested_url?: string;
   judge0_status?: number;
   judge0_body?: string;
+  raw_fermion_response?: unknown;
 }
 
 interface FunctionEnvelope<T> {
@@ -23,6 +33,15 @@ interface FunctionEnvelope<T> {
   data?: T;
   error?: string;
   diagnostics?: FunctionDiagnostics;
+}
+
+export class CodeExecutionError extends Error {
+  diagnostics?: FunctionDiagnostics;
+  constructor(message: string, diagnostics?: FunctionDiagnostics) {
+    super(message);
+    this.name = "CodeExecutionError";
+    this.diagnostics = diagnostics;
+  }
 }
 
 const buildFunctionError = (fallback: string, payload?: FunctionEnvelope<unknown>) => {
@@ -33,7 +52,7 @@ const buildFunctionError = (fallback: string, payload?: FunctionEnvelope<unknown
   if (payload?.diagnostics?.judge0_status) {
     parts.push(`Judge0 status: ${payload.diagnostics.judge0_status}`);
   }
-  return new Error(parts.filter(Boolean).join(" • "));
+  return new CodeExecutionError(parts.filter(Boolean).join(" • "), payload?.diagnostics);
 };
 
 export interface SubmitResult {
@@ -51,6 +70,7 @@ export interface SubmitResult {
   } | null;
   stderr: string | null;
   submission_id: string | null;
+  raw_fermion?: FermionRawDebug | null;
 }
 
 export class RunCancelledError extends Error {
