@@ -44,6 +44,9 @@ interface ProblemCardProps {
   stats?: PerProblemStats;
   onToggleBookmark: (slug: string) => void;
   index: number;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelected?: (slug: string) => void;
 }
 
 export const ProblemCard = ({
@@ -54,6 +57,9 @@ export const ProblemCard = ({
   stats,
   onToggleBookmark,
   index,
+  selectionMode = false,
+  selected = false,
+  onToggleSelected,
 }: ProblemCardProps) => {
   const StatusIcon = isSolved ? CheckCircle2 : isAttempted ? CircleDot : Circle;
   const statusColor = isSolved
@@ -73,10 +79,23 @@ export const ProblemCard = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: Math.min(index * 0.02, 0.3) }}
     >
-      <Card className="group relative overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all h-full flex flex-col">
+      <Card
+        className={cn(
+          "group relative overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all h-full flex flex-col",
+          selected && "border-primary ring-1 ring-primary/40",
+        )}
+      >
         <div className={cn("absolute left-0 top-0 bottom-0 w-1", difficultyStripe(problem.difficulty))} />
         <div className="p-4 flex-1 flex flex-col gap-3 pl-5">
           <div className="flex items-start justify-between gap-2">
+            {selectionMode && (
+              <Checkbox
+                checked={selected}
+                onCheckedChange={() => onToggleSelected?.(problem.slug)}
+                aria-label="Select problem"
+                className="mt-1"
+              />
+            )}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
