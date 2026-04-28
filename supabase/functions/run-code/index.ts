@@ -174,7 +174,14 @@ Deno.serve(async (req) => {
     if (!JUDGE0_URL) {
       return respond<RunResult>({
         ok: false,
-        error: "JUDGE0_URL not configured",
+        error: "Code execution is not configured. Add JUDGE0_URL (and JUDGE0_AUTH_TOKEN / JUDGE0_AUTH_HEADER for RapidAPI) in Lovable Cloud → Backend → Secrets.",
+        diagnostics: { error_stage: "config" },
+      });
+    }
+    if (JUDGE0_URL.includes("rapidapi.com") && (!JUDGE0_AUTH_TOKEN || !JUDGE0_EXTRA_HEADER_VALUE)) {
+      return respond<RunResult>({
+        ok: false,
+        error: "RapidAPI Judge0 requires both an API key and host header. Set JUDGE0_AUTH_TOKEN (your x-rapidapi-key) and JUDGE0_EXTRA_HEADER_NAME=x-rapidapi-host + JUDGE0_EXTRA_HEADER_VALUE=judge0-ce.p.rapidapi.com in Lovable Cloud → Backend → Secrets.",
         diagnostics: { error_stage: "config" },
       });
     }
