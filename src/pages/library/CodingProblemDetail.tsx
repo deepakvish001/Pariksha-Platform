@@ -151,58 +151,6 @@ const writeLastFailed = (slug: string, id: string | null) =>
 const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 
-const extractRawFermionFromError = (err: unknown): unknown | null => {
-  if (!(err instanceof CodeExecutionError)) return null;
-  return err.diagnostics?.raw_fermion_response ?? err.diagnostics ?? null;
-};
-
-const RawFermionDetails = ({ value }: { value: unknown }) => {
-  const record = asRecord(value);
-  const status = record.runStatus ?? record.codingTaskStatus ?? asRecord(record.output)?.status;
-  const stdout = typeof record.stdout === "string" ? record.stdout : "";
-  const stderr = typeof record.stderr === "string" ? record.stderr : "";
-  const runResult = record.runResult ?? asRecord(asRecord(record.output)?.data).runResult;
-
-  return (
-    <details className="rounded-md border border-border bg-muted/30 p-3 text-xs">
-      <summary className="cursor-pointer font-medium text-muted-foreground">Raw Fermion response</summary>
-      <div className="mt-3 space-y-3">
-        {status && (
-          <div>
-            <p className="mb-1 text-muted-foreground">status</p>
-            <pre className="overflow-x-auto rounded border bg-background p-2 whitespace-pre-wrap">{String(status)}</pre>
-          </div>
-        )}
-        {runResult !== undefined && (
-          <div>
-            <p className="mb-1 text-muted-foreground">runResult</p>
-            <pre className="max-h-48 overflow-auto rounded border bg-background p-2 whitespace-pre-wrap">
-              {JSON.stringify(runResult, null, 2)}
-            </pre>
-          </div>
-        )}
-        {(stdout || stderr) && (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <div>
-              <p className="mb-1 text-muted-foreground">stdout</p>
-              <pre className="overflow-x-auto rounded border bg-background p-2 whitespace-pre-wrap">{stdout || "(empty)"}</pre>
-            </div>
-            <div>
-              <p className="mb-1 text-muted-foreground">stderr</p>
-              <pre className="overflow-x-auto rounded border bg-background p-2 whitespace-pre-wrap">{stderr || "(empty)"}</pre>
-            </div>
-          </div>
-        )}
-        <div>
-          <p className="mb-1 text-muted-foreground">full payload</p>
-          <pre className="max-h-56 overflow-auto rounded border bg-background p-2 whitespace-pre-wrap">
-            {JSON.stringify(value, null, 2)}
-          </pre>
-        </div>
-      </div>
-    </details>
-  );
-};
 
 const CodingProblemDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -221,7 +169,7 @@ const CodingProblemDetail = () => {
   const [activeBottomTab, setActiveBottomTab] = useState<"testcase" | "output">("testcase");
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
-  const [executionErrorDetails, setExecutionErrorDetails] = useState<unknown | null>(null);
+  const [executionErrorDetails, setExecutionErrorDetails] = useState<boolean>(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
@@ -659,7 +607,7 @@ const CodingProblemDetail = () => {
     }
     setRunResult(null);
     setSubmitResult(null);
-    setExecutionErrorDetails(null);
+    setExecutionErrorDetails(false);
     setActiveBottomTab("output");
     try {
       const result = await run({
@@ -673,10 +621,10 @@ const CodingProblemDetail = () => {
           : {}),
       });
       setRunResult(result);
-      setExecutionErrorDetails(null);
+      setExecutionErrorDetails(false);
       refetchRuns();
     } catch (err) {
-      setExecutionErrorDetails(extractRawFermionFromError(err));
+      setExecutionErrorDetails(true);
       toast({
         title: "Run failed",
         description: (err as Error).message,
@@ -692,7 +640,7 @@ const CodingProblemDetail = () => {
     }
     setSubmitResult(null);
     setRunResult(null);
-    setExecutionErrorDetails(null);
+    setExecutionErrorDetails(false);
     setActiveBottomTab("output");
     // Auto-format right before submit so submitted code has consistent style.
     // Honors the user's "Format on submit" preference. Failures are non-blocking.
@@ -749,7 +697,7 @@ const CodingProblemDetail = () => {
           : {}),
       });
       setSubmitResult(result);
-      setExecutionErrorDetails(null);
+      setExecutionErrorDetails(false);
       refetchSubmissions();
       const isAccepted = result.verdict === "Accepted";
       const elapsedMs = sessionTimerRef.current?.getElapsedMs() ?? 0;
@@ -763,7 +711,7 @@ const CodingProblemDetail = () => {
         variant: isAccepted ? "default" : "destructive",
       });
     } catch (err) {
-      setExecutionErrorDetails(extractRawFermionFromError(err));
+      setExecutionErrorDetails(true);
       toast({
         title: "Submit failed",
         description: (err as Error).message,
@@ -1619,22 +1567,13 @@ const CodingProblemDetail = () => {
                                       <pre className="bg-background p-2 rounded border overflow-x-auto whitespace-pre-wrap text-destructive">{c.stderr}</pre>
                                     </div>
                                   )}
-                                  <details className="rounded border bg-background/50 p-2">
-                                    <summary className="cursor-pointer text-muted-foreground">Raw Fermion payload</summary>
-                                    <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap">
-                                      {JSON.stringify(c.raw, null, 2)}
-                                    </pre>
-                                  </details>
                                 </div>
+
                               </details>
                             ))}
                           </div>
                         );
                       })()}
-                      {/* Fallback: if backend didn't send case_results, keep old single block */}
-                      {!submitResult.case_results && submitResult.raw_fermion && submitResult.verdict !== "Accepted" && (
-                        <RawFermionDetails value={submitResult.raw_fermion} />
-                      )}
                     </div>
                   ) : runResult ? (
                     <div className="space-y-3">
@@ -1669,14 +1608,10 @@ const CodingProblemDetail = () => {
                           </pre>
                         </div>
                       )}
-                      {runResult.raw_fermion && runResult.status.id !== 3 && (
-                        <RawFermionDetails value={runResult.raw_fermion} />
-                      )}
                     </div>
                   ) : executionErrorDetails ? (
                     <div className="space-y-3">
                       <p className="text-sm text-destructive">Execution failed before a result was produced.</p>
-                      <RawFermionDetails value={executionErrorDetails} />
                     </div>
                   ) : (
                     <div className="text-sm text-muted-foreground text-center py-8">
