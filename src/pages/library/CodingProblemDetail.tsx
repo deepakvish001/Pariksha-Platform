@@ -1419,19 +1419,36 @@ const CodingProblemDetail = () => {
                   </TabsList>
                 </div>
 
-                <TabsContent value="testcase" className="flex-1 m-0 p-3 overflow-y-auto">
+                <TabsContent
+                  value="testcase"
+                  className="flex-1 m-0 p-3 overflow-y-auto"
+                  aria-label="Test case input"
+                >
                   {isSQLProblem ? (
                     <div className="space-y-3">
                       <div className="rounded-md border bg-muted/30 p-3 text-sm">
                         <p className="font-medium mb-1">Seeded dataset</p>
                         <p className="text-muted-foreground text-xs">
-                          Your query runs against the schema and seed data shown in the problem
-                          description. Click <span className="font-mono">Run</span> to execute and{" "}
+                          Your query runs against the schema and seed data shown below. Click{" "}
+                          <span className="font-mono">Run</span> to execute and{" "}
                           <span className="font-mono">Submit</span> to compare results with the
                           reference query.
                         </p>
                       </div>
-                      <Button onClick={handleRun} disabled={isRunning} size="sm" className="gap-1.5">
+                      {problem.sql && (
+                        <SchemaSeedToggle
+                          schema={problem.sql.schema}
+                          seed={problem.sql.seed}
+                          compact
+                        />
+                      )}
+                      <Button
+                        onClick={handleRun}
+                        disabled={isRunning}
+                        size="sm"
+                        className="gap-1.5"
+                        aria-label="Run SQL query"
+                      >
                         {isRunning ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
