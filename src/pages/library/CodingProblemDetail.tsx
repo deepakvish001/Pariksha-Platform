@@ -1120,7 +1120,7 @@ const CodingProblemDetail = () => {
                     </TooltipProvider>
                   </div>
                 </div>
-                <div className="flex-1 min-h-0">
+                <div className="flex-1 min-h-0 relative">
                   <MonacoEditor
                     ref={editorRef}
                     value={code}
@@ -1128,6 +1128,15 @@ const CodingProblemDetail = () => {
                     language={langInfo.monaco}
                     fontSize={editorPrefs.fontSize}
                   />
+                  {isEditorFullscreen && showFullscreenHint && (
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-50 rounded-full border bg-background/90 backdrop-blur px-3 py-1.5 text-xs font-medium shadow-md animate-in fade-in slide-in-from-top-2 duration-200"
+                    >
+                      Press <kbd className="mx-1 rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">Esc</kbd> to exit fullscreen
+                    </div>
+                  )}
                 </div>
               </div>
             </ResizablePanel>
