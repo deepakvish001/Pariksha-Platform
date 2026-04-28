@@ -1626,10 +1626,6 @@ const CodingProblemDetail = () => {
                           </div>
                         );
                       })()}
-                      {/* Fallback: if backend didn't send case_results, keep old single block */}
-                      {!submitResult.case_results && submitResult.raw_fermion && submitResult.verdict !== "Accepted" && (
-                        <RawFermionDetails value={submitResult.raw_fermion} />
-                      )}
                     </div>
                   ) : runResult ? (
                     <div className="space-y-3">
