@@ -82,6 +82,8 @@ import { SavedFiltersMenu } from "@/components/library/coding/SavedFiltersMenu";
 import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
 import { useSavedFilterPresets } from "@/hooks/useSavedFilterPresets";
 import { useListingFocusMode } from "@/hooks/useListingFocusMode";
+import { useDailyChallenge } from "@/hooks/useDailyChallenge";
+import { DailyChallengeCard } from "@/components/library/coding/DailyChallengeCard";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -353,6 +355,7 @@ const CodingProblems = () => {
   };
 
   const { solved, attempted, perProblem, loading } = useCodingAttemptStats();
+  const daily = useDailyChallenge(solved);
   const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
 
   // Persisted selection (bulk actions) — survives refresh and pagination
@@ -893,6 +896,9 @@ const CodingProblems = () => {
           <RandomMenu filtered={filtered} />
         </div>
       </motion.div>
+
+      {/* Daily Challenge */}
+      {!focusMode && <DailyChallengeCard daily={daily} />}
 
       {/* Smart recommendations */}
       {!focusMode && (
