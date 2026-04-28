@@ -95,7 +95,14 @@ export interface DailyChallenge {
   completedTotal: number;
   /** Last 30 days of completions (date YYYY-MM-DD + slug + ts). Newest first. */
   recentCompletions: CompletionRecord[];
+  /** True while a cloud pull/push is in flight */
   syncing: boolean;
+  /** Most recent sync lifecycle: idle | syncing | synced | error | offline */
+  syncStatus: "idle" | "syncing" | "synced" | "error" | "offline";
+  /** Last sync error message, if any */
+  syncError: string | null;
+  /** Last successful cloud sync time */
+  lastSyncedAt: Date | null;
   /** True when a successful mark-completed event just happened (for celebration) */
   justCompleted: boolean;
   acknowledgeCelebration: () => void;
@@ -119,6 +126,11 @@ export const useDailyChallenge = (solvedSlugs?: Set<string>): DailyChallenge => 
 
   const [state, setState] = useState<DailyState>(() => readState());
   const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<
+    "idle" | "syncing" | "synced" | "error" | "offline"
+  >("idle");
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [justCompleted, setJustCompleted] = useState(false);
   const lastSyncedUserRef = useRef<string | null>(null);
 
