@@ -2,7 +2,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
-import { Copy } from "lucide-react";
+import { Copy, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 
@@ -36,12 +36,35 @@ export const SubmissionDetailsDrawer = ({ submission, open, onOpenChange }: Prop
           </div>
         ) : (
           <div className="mt-4 space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <VerdictBadge verdict={submission.verdict} />
-              <Badge variant="outline">{submission.language}</Badge>
-              <Badge variant="secondary">
-                {submission.passed_tests}/{submission.total_tests} tests
-              </Badge>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <VerdictBadge verdict={submission.verdict} />
+                <Badge variant="outline">{submission.language}</Badge>
+                <Badge variant="secondary">
+                  {submission.passed_tests}/{submission.total_tests} tests
+                </Badge>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1.5 text-xs"
+                onClick={async () => {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set("sub", submission.id);
+                  url.hash = "submissions";
+                  try {
+                    await navigator.clipboard.writeText(url.toString());
+                    toast.success("Link copied", {
+                      description: "Anyone with this URL will jump straight to this submission.",
+                    });
+                  } catch {
+                    toast.error("Couldn't copy link", { description: url.toString() });
+                  }
+                }}
+              >
+                <Link2 className="h-3 w-3" />
+                Copy link
+              </Button>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
