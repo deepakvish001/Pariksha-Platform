@@ -16,6 +16,12 @@ interface Props {
    * Useful for "Go to failed cases" so the relevant timeline entry pops into focus.
    */
   scrollToHighlightKey?: string | number | null;
+  /**
+   * Pixel offset to subtract when auto-scrolling — accounts for any sticky
+   * header (e.g. the problem detail toolbar) so the highlighted entry isn't
+   * hidden underneath. Defaults to 80px.
+   */
+  scrollOffsetTop?: number;
   /** Show a skeleton list while submissions are still being fetched. */
   loading?: boolean;
 }
@@ -39,6 +45,7 @@ export const AttemptTimeline = ({
   onSelect,
   highlightedId,
   scrollToHighlightKey,
+  scrollOffsetTop = 80,
   loading,
 }: Props) => {
   const itemRefs = useRef<Record<string, HTMLLIElement | null>>({});
@@ -46,11 +53,41 @@ export const AttemptTimeline = ({
   useEffect(() => {
     if (!highlightedId) return;
     const el = itemRefs.current[highlightedId];
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!el) return;
+
+    // Find the nearest scrollable ancestor so we work both inside the
+    // page-level scroll (submissions tab) and inside the drawer's overflow.
+    const findScrollParent = (node: HTMLElement | null): HTMLElement | Window => {
+      let current: HTMLElement | null = node?.parentElement ?? null;
+      while (current) {
+        const style = getComputedStyle(current);
+        const overflowY = style.overflowY;
+        if (
+          (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") &&
+          current.scrollHeight > current.clientHeight
+        ) {
+          return current;
+        }
+        current = current.parentElement;
+      }
+      return window;
+    };
+
+    const scroller = findScrollParent(el);
+    const elRect = el.getBoundingClientRect();
+
+    if (scroller === window) {
+      const target = window.scrollY + elRect.top - scrollOffsetTop;
+      window.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
+    } else {
+      const container = scroller as HTMLElement;
+      const containerRect = container.getBoundingClientRect();
+      const target =
+        container.scrollTop + (elRect.top - containerRect.top) - scrollOffsetTop;
+      container.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
     }
     // Re-run whenever the trigger key changes (or highlight target changes).
-  }, [scrollToHighlightKey, highlightedId, submissions.length]);
+  }, [scrollToHighlightKey, highlightedId, submissions.length, scrollOffsetTop]);
 
   return (
     <Card className="p-3">

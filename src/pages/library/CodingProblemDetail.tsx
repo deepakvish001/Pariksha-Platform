@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import {
@@ -66,10 +66,11 @@ const difficultyClass = (d: string) =>
       : "text-rose-500 bg-rose-500/10 border-rose-500/20";
 
 const LAST_OPENED_KEY = "byteskill:coding-last-opened-submission";
+const LAST_FAILED_KEY = "byteskill:coding-last-failed-submission";
 
-const readLastOpenedMap = (): Record<string, string> => {
+const readMap = (key: string): Record<string, string> => {
   try {
-    const raw = localStorage.getItem(LAST_OPENED_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return {};
     const v = JSON.parse(raw);
     return v && typeof v === "object" ? v : {};
@@ -78,16 +79,24 @@ const readLastOpenedMap = (): Record<string, string> => {
   }
 };
 
-const writeLastOpened = (slug: string, id: string | null) => {
+const writeMapEntry = (key: string, slug: string, id: string | null) => {
   try {
-    const map = readLastOpenedMap();
+    const map = readMap(key);
     if (id) map[slug] = id;
     else delete map[slug];
-    localStorage.setItem(LAST_OPENED_KEY, JSON.stringify(map));
+    localStorage.setItem(key, JSON.stringify(map));
   } catch {
     /* ignore */
   }
 };
+
+const readLastOpenedMap = () => readMap(LAST_OPENED_KEY);
+const writeLastOpened = (slug: string, id: string | null) =>
+  writeMapEntry(LAST_OPENED_KEY, slug, id);
+
+const readLastFailedMap = () => readMap(LAST_FAILED_KEY);
+const writeLastFailed = (slug: string, id: string | null) =>
+  writeMapEntry(LAST_FAILED_KEY, slug, id);
 
 const CodingProblemDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -109,9 +118,16 @@ const CodingProblemDetail = () => {
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(() =>
     slug ? readLastOpenedMap()[slug] ?? null : null,
   );
+  const [lastFailedId, setLastFailedId] = useState<string | null>(() =>
+    slug ? readLastFailedMap()[slug] ?? null : null,
+  );
   // Bumped whenever we want the AttemptTimeline to auto-scroll the highlighted
-  // entry into view (e.g. after "Go to failed cases" toast action).
+  // entry into view (e.g. after "Go to failed cases" toast action, or when a
+  // previously-highlighted failed attempt is restored on remount).
   const [timelineScrollKey, setTimelineScrollKey] = useState(0);
+  // Tracks whether we've already auto-restored the persisted "last failed"
+  // highlight for this mount, so we don't keep re-triggering it.
+  const restoredFailedRef = useRef(false);
 
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
   const { draft, draftLoaded, saveDraft } = useCodeDraft(slug ?? "", language);
@@ -157,7 +173,9 @@ const CodingProblemDetail = () => {
         action: target ? (
           <ToastAction
             altText={latestFailed ? "Go to failed cases" : "Go to last attempt"}
-            onClick={() => openSubmission(target)}
+            onClick={() =>
+              latestFailed ? jumpToFailed(latestFailed) : openSubmission(target)
+            }
           >
             {latestFailed ? "Go to failed cases" : "Go to last attempt"}
           </ToastAction>
@@ -178,6 +196,34 @@ const CodingProblemDetail = () => {
     setSearchParams(next, { replace: true });
   };
 
+  /**
+   * Jump to a failed submission: opens its drawer, persists it as the last
+   * highlighted failed attempt for this slug, and shows a confirmation toast
+   * that names the specific test case (when available).
+   */
+  const jumpToFailed = (s: CodeSubmissionRow) => {
+    openSubmission(s);
+    setLastFailedId(s.id);
+    if (slug) writeLastFailed(slug, s.id);
+
+    // Build a friendly description that names the failing case if we have it.
+    const failingCase = (s.failing_case ?? null) as
+      | { index?: number | null; name?: string | null }
+      | null;
+    const caseLabel = failingCase
+      ? failingCase.name
+        ? `case "${failingCase.name}"`
+        : typeof failingCase.index === "number"
+          ? `test case #${failingCase.index + 1}`
+          : "the failing case"
+      : `${s.passed_tests}/${s.total_tests} tests passed`;
+
+    toast({
+      title: "Jumped to failed attempt",
+      description: `Highlighted ${caseLabel} on the timeline.`,
+    });
+  };
+
   const closeSubmission = () => {
     setDetailSubmission(null);
     if (searchParams.get("sub")) {
@@ -186,6 +232,27 @@ const CodingProblemDetail = () => {
       setSearchParams(next, { replace: true });
     }
   };
+
+  // Restore previously-highlighted failed attempt when submissions arrive,
+  // but only if the user hasn't deep-linked a specific submission. Auto-scrolls
+  // the timeline to the same entry once.
+  useEffect(() => {
+    if (restoredFailedRef.current) return;
+    if (!slug || !lastFailedId) return;
+    if (submissions.length === 0) return;
+    if (searchParams.get("sub")) return;
+    const exists = submissions.some((s) => s.id === lastFailedId);
+    if (!exists) {
+      // Stale persisted id — clear it.
+      writeLastFailed(slug, null);
+      setLastFailedId(null);
+      restoredFailedRef.current = true;
+      return;
+    }
+    setLastOpenedId(lastFailedId);
+    setTimelineScrollKey((k) => k + 1);
+    restoredFailedRef.current = true;
+  }, [submissions, slug, lastFailedId, searchParams]);
 
   // Derived per-problem stats
   const problemStats = useMemo(() => {
