@@ -75,9 +75,12 @@ const CodingProblems = () => {
     .filter(Boolean);
   const status = params.get("status") ?? "all";
   const sort = (params.get("sort") as SortKey) || "default";
-  const view = (params.get("view") as ViewMode) || "table";
+  // Grid mode has been retired — table is the only valid view.
+  const view: ViewMode = "table";
   const bookmarked = params.get("bm") === "1";
-  const page = Math.max(1, parseInt(params.get("page") ?? "1", 10) || 1);
+  const rawPage = params.get("page");
+  const parsedPage = rawPage !== null ? parseInt(rawPage, 10) : NaN;
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
   const [debouncedSearch, setDebouncedSearch] = useState(search);
 
