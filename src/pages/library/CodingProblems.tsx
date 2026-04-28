@@ -769,6 +769,24 @@ const CodingProblems = () => {
                 </DropdownMenuCheckboxItem>
               ))}
               <DropdownMenuSeparator />
+              <DropdownMenuLabel>Row density</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={tablePrefs.density === "comfortable"}
+                onCheckedChange={() => tablePrefs.setDensity("comfortable")}
+                onSelect={(e) => e.preventDefault()}
+              >
+                <Rows3 className="h-3.5 w-3.5 mr-2" />
+                Comfortable
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={tablePrefs.density === "compact"}
+                onCheckedChange={() => tablePrefs.setDensity("compact")}
+                onSelect={(e) => e.preventDefault()}
+              >
+                <Rows2 className="h-3.5 w-3.5 mr-2" />
+                Compact
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onSelect={(e) => {
                   e.preventDefault();
