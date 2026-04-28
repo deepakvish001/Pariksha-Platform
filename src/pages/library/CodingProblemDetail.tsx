@@ -1089,6 +1089,14 @@ const CodingProblemDetail = () => {
         loading={submissionsLoading && !detailSubmission && !!searchParams.get("sub")}
         onOpenChange={(o) => !o && closeSubmission()}
       />
+
+      <FloatingActionBar
+        onRun={handleRun}
+        onSubmit={handleSubmit}
+        onReset={handleReset}
+        isRunning={isRunning}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 };
