@@ -307,6 +307,7 @@ async function runOnFermion(payload: {
     message: runStatus,
     time: outcome.timeMs != null ? outcome.timeMs / 1000 : null,
     memory: outcome.memoryKb,
+    raw_fermion: outcome.raw,
   };
 }
 
@@ -349,9 +350,9 @@ Deno.serve(async (req) => {
       source_code,
       language: fermionLang,
       stdin: typeof stdin === "string" ? stdin : "",
-      cpu_ms: 3000,
-      wall_ms: 6000,
-      mem_kb: 262144,
+      cpu_ms: runConfigFor(fermionLang).cpuMs,
+      wall_ms: runConfigFor(fermionLang).wallMs,
+      mem_kb: runConfigFor(fermionLang).memKb,
     });
 
     // Best-effort log to code_runs
