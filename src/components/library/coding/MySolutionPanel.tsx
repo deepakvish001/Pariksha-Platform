@@ -89,6 +89,10 @@ interface Props {
   syncStatus?: "idle" | "syncing" | "synced" | "error" | "offline";
   /** True when persisting to the cloud (signed-in user). */
   isCloudSynced?: boolean;
+  /** When the cloud sync last completed successfully (ms epoch). */
+  lastSyncedAt?: number | null;
+  /** Invoked when the signed-out banner's CTA is clicked. */
+  onSignInClick?: () => void;
 }
 
 const formatExact = (ts: number) => {
