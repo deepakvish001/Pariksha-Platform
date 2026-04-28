@@ -48,6 +48,7 @@ export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
         if (action) await action.run();
       },
       focus: () => editorRef.current?.focus(),
+      getValue: () => editorRef.current?.getValue() ?? "",
     }));
 
     return (
