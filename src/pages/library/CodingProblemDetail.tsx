@@ -134,6 +134,7 @@ const CodingProblemDetail = () => {
         language,
       });
       setRunResult(result);
+      refetchRuns();
     } catch (err) {
       toast({
         title: "Run failed",
