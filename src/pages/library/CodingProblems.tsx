@@ -257,6 +257,12 @@ const CodingProblems = () => {
 
   // Persisted column visibility & widths (responsive — survives refresh).
   const tablePrefs = useCodingProblemsTablePrefs();
+  tablePrefsRef.current = tablePrefs;
+
+  // Persist sort (3-state) per list slug whenever it changes.
+  useEffect(() => {
+    tablePrefs.setSavedSort("__list__", sort);
+  }, [sort, tablePrefs]);
 
   // Map a column id to its current sort direction (asc/desc/null) and a
   // 3-state cycler that updates the existing `sort` URL param.
