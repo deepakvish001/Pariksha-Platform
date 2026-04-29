@@ -420,6 +420,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
     !!dateFrom ||
     !!dateTo ||
     tab !== "submissions" ||
+    sort !== "newest" ||
     subPage !== 1 ||
     runPage !== 1 ||
     !!detailRunId;
