@@ -10,9 +10,10 @@
  import { ScrollArea } from "@/components/ui/scroll-area";
  import { Badge } from "@/components/ui/badge";
  import { cn } from "@/lib/utils";
- import { useNotifications, Notification } from "@/hooks/useNotifications";
- import { formatDistanceToNow } from "date-fns";
- import { Link } from "react-router-dom";
+import { useNotifications, Notification } from "@/hooks/useNotifications";
+import { formatDistanceToNow } from "date-fns";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
  
  const getNotificationIcon = (type: string) => {
    switch (type) {
@@ -34,7 +35,9 @@
    onMarkRead: () => void;
    onDelete: () => void;
  }) => {
-   const data = notification.data as Record<string, string>;
+  const data = notification.data as Record<string, string>;
+  const { extendedProfile } = useAuth();
+  const profileUsername = (extendedProfile as { username?: string } | null)?.username ?? null;
  
    return (
      <motion.div
@@ -55,14 +58,14 @@
            <p className="text-xs text-muted-foreground mt-1">
              {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
            </p>
-           {notification.type === "new_follower" && data.follower_id && (
-             <Link
-               to={`/dashboard/profile`}
-               className="text-xs text-primary hover:underline mt-1 inline-block"
-             >
-               View profile
-             </Link>
-           )}
+          {notification.type === "new_follower" && data.follower_id && profileUsername && (
+            <Link
+              to={`/u/${profileUsername}`}
+              className="text-xs text-primary hover:underline mt-1 inline-block"
+            >
+              View profile
+            </Link>
+          )}
          </div>
          <div className="flex items-center gap-1">
            {!notification.read && (

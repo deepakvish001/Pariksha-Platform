@@ -19,7 +19,7 @@ import Signup from "./pages/Signup";
 import DashboardMatrix from "./pages/DashboardMatrix";
 import SubmissionsHistory from "./pages/dashboard/SubmissionsHistory";
 import DashboardSheets from "./pages/DashboardSheets";
-import DashboardProfileRedirect from "./pages/DashboardProfileRedirect";
+
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -155,7 +155,7 @@ const App = () => (
                   <Route index element={<DashboardMatrix />} />
                   <Route path="sheets" element={<DashboardSheets />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
-                  <Route path="profile" element={<DashboardProfileRedirect />} />
+                  
                   <Route path="submissions" element={<SubmissionsHistory />} />
                   <Route path="roadmaps" element={<DashboardRoadmaps />} />
                   <Route path="roadmaps/compare" element={<DashboardRoadmapCompare />} />
