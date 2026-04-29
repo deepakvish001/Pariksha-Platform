@@ -338,7 +338,7 @@ Deno.serve(async (req) => {
     const { cpuMs, wallMs, memKb } = limits;
 
     // Submit all cases as a single batch, then poll.
-    const taskIds = await submitBatch(fermionLang, source_code, tests as TestCase[], cpuMs, wallMs, memKb);
+    const taskIds = await submitBatch(fermionLang, source_code, effectiveTests, cpuMs, wallMs, memKb);
     const results = await pollBatch(taskIds);
 
     let passed = 0;
@@ -367,8 +367,8 @@ Deno.serve(async (req) => {
       }
     };
 
-    for (let i = 0; i < tests.length; i++) {
-      const t = tests[i] as TestCase;
+    for (let i = 0; i < effectiveTests.length; i++) {
+      const t = effectiveTests[i];
       const r = results.get(taskIds[i]);
       if (!r) {
         if (!firstFailureSeen) { verdict = "Internal Error"; stderrCombined = "Missing result for test case"; firstFailureSeen = true; }
@@ -476,7 +476,7 @@ Deno.serve(async (req) => {
         runtime_ms: runtimeMs,
         memory_kb: maxMemory,
         passed_tests: passed,
-        total_tests: tests.length,
+        total_tests: effectiveTests.length,
         failing_case: failingCase,
         stderr: stderrCombined || null,
         is_submission: true,
@@ -509,7 +509,7 @@ Deno.serve(async (req) => {
       data: {
         verdict,
         passed,
-        total: tests.length,
+        total: effectiveTests.length,
         runtime_ms: runtimeMs,
         memory_kb: maxMemory,
         failing_case: failingCase,
