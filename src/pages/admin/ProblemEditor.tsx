@@ -928,6 +928,8 @@ const ProblemEditor = () => {
           <CodePerLanguage
             value={form.starter_code}
             onChange={(v) => update("starter_code", v)}
+            fieldPrefix="starter_code"
+            highlightedField={highlightedField}
             activeLang={activeLang}
             setActiveLang={setActiveLang}
             extraActions={
