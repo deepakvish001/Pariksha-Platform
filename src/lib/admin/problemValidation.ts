@@ -1,4 +1,6 @@
 import type { FullProblemPayload } from "@/hooks/useAdminProblems";
+import { getExecLimitsForLang } from "@/lib/coding/executionLimits";
+import type { LangId } from "@/data/codingProblemsData";
 
 export type SectionStatus = "ok" | "warn" | "error" | "empty";
 export type TabId =
@@ -303,26 +305,109 @@ export const validateProblem = (form: FullProblemPayload): ValidationReport => {
   }
 
   // ---------------- Limits ----------------
+  // Cross-checks the configured CPU/memory budget against the per-language Fermion
+  // grading caps for every language that actually has starter or reference code (or SQL).
+  // Anything above the language cap will be silently capped at grading time, so we
+  // surface a per-field warning naming each affected language.
   {
     const r: SectionResult = { status: "ok", errors: [], warnings: [] };
-    const cpu = form.cpu_time_limit_sec;
-    const mem = form.memory_limit_kb;
-    if (cpu == null || cpu <= 0)
+    const cpuSec = form.cpu_time_limit_sec;
+    const memKb = form.memory_limit_kb;
+
+    // Required + sane absolute bounds.
+    if (cpuSec == null || cpuSec <= 0)
       r.errors.push({ field: "cpu_time_limit_sec", message: "CPU time limit must be > 0" });
     else {
-      if (cpu < 0.5) r.warnings.push({ field: "cpu_time_limit_sec", message: "CPU limit < 0.5s may cause flakiness" });
-      if (cpu > 10) r.warnings.push({ field: "cpu_time_limit_sec", message: "CPU limit > 10s may slow grading" });
-      if (cpu > 5) r.warnings.push({ field: "cpu_time_limit_sec", message: "CPU limit > 5s exceeds Fermion safe max (will be capped)" });
+      if (cpuSec < 0.25)
+        r.errors.push({ field: "cpu_time_limit_sec", message: "CPU limit < 0.25s is below grader resolution" });
+      if (cpuSec < 0.5)
+        r.warnings.push({ field: "cpu_time_limit_sec", message: "CPU limit < 0.5s may cause flaky verdicts" });
+      if (cpuSec > 10)
+        r.warnings.push({ field: "cpu_time_limit_sec", message: "CPU limit > 10s slows grading and is rarely useful" });
     }
-    if (mem == null || mem <= 0)
+    if (memKb == null || memKb <= 0) {
       r.errors.push({ field: "memory_limit_kb", message: "Memory limit is required" });
-    else {
-      if (mem < 16_000) r.warnings.push({ field: "memory_limit_kb", message: "Memory < 16 MB is unusually low" });
-      if (mem > 512_000) r.warnings.push({ field: "memory_limit_kb", message: "Memory > 512 MB exceeds Fermion safe max (will be capped)" });
+    } else {
+      if (memKb < 16_000)
+        r.warnings.push({ field: "memory_limit_kb", message: "Memory < 16 MB is unusually low — may break interpreted languages" });
+      if (!Number.isInteger(memKb))
+        r.errors.push({ field: "memory_limit_kb", message: "Memory limit must be an integer KB value" });
     }
-    // Consistency: heavy memory + tiny CPU is a smell
-    if (cpu && mem && cpu < 1 && mem > 256_000)
-      r.warnings.push({ field: "memory_limit_kb", message: "High memory with very low CPU limit is unusual" });
+
+    // Determine which languages this problem actually targets so we only cross-check those.
+    const isSqlOnly = !!form.sql_spec;
+    const targetLangs: LangId[] = isSqlOnly
+      ? (["sql"] as LangId[])
+      : (Array.from(
+          new Set([
+            ...Object.entries(form.starter_code ?? {})
+              .filter(([, v]) => (v ?? "").trim().length > 0)
+              .map(([k]) => k as LangId),
+            ...Object.entries(form.reference_solution ?? {})
+              .filter(([, v]) => (v ?? "").trim().length > 0)
+              .map(([k]) => k as LangId),
+          ]),
+        ));
+
+    if (cpuSec && cpuSec > 0 && targetLangs.length > 0) {
+      const requestedCpuMs = cpuSec * 1000;
+      const cpuOver: { lang: LangId; capMs: number }[] = [];
+      const cpuTight: { lang: LangId; capMs: number }[] = [];
+      targetLangs.forEach((lang) => {
+        const caps = getExecLimitsForLang(lang); // raw language cap (no overrides)
+        if (requestedCpuMs > caps.cpuMs) cpuOver.push({ lang, capMs: caps.cpuMs });
+        else if (caps.cpuMs - requestedCpuMs < 250) cpuTight.push({ lang, capMs: caps.cpuMs });
+      });
+      cpuOver.forEach(({ lang, capMs }) => {
+        r.warnings.push({
+          field: "cpu_time_limit_sec",
+          message: `CPU ${cpuSec}s will be capped to ${(capMs / 1000).toFixed(1)}s for ${lang} at grading`,
+        });
+      });
+      cpuTight.forEach(({ lang, capMs }) => {
+        r.warnings.push({
+          field: "cpu_time_limit_sec",
+          message: `CPU budget for ${lang} is within 0.25s of its cap (${(capMs / 1000).toFixed(1)}s) — fast solutions may TLE intermittently`,
+        });
+      });
+    }
+
+    if (memKb && memKb > 0 && targetLangs.length > 0) {
+      const memOver: { lang: LangId; capKb: number }[] = [];
+      const memTight: { lang: LangId; capKb: number }[] = [];
+      targetLangs.forEach((lang) => {
+        const caps = getExecLimitsForLang(lang);
+        if (memKb > caps.memKb) memOver.push({ lang, capKb: caps.memKb });
+        else if (caps.memKb - memKb < 16_000) memTight.push({ lang, capKb: caps.memKb });
+      });
+      memOver.forEach(({ lang, capKb }) => {
+        r.warnings.push({
+          field: "memory_limit_kb",
+          message: `Memory ${Math.round(memKb / 1024)} MB will be capped to ${Math.round(capKb / 1024)} MB for ${lang} at grading`,
+        });
+      });
+      memTight.forEach(({ lang, capKb }) => {
+        r.warnings.push({
+          field: "memory_limit_kb",
+          message: `Memory budget for ${lang} is within 16 MB of its cap (${Math.round(capKb / 1024)} MB)`,
+        });
+      });
+    }
+
+    // Internal consistency between CPU and memory budgets.
+    if (cpuSec && memKb) {
+      if (cpuSec < 1 && memKb > 256_000)
+        r.warnings.push({
+          field: "memory_limit_kb",
+          message: "High memory (>256 MB) with very low CPU (<1s) is unusual — pick a preset or rebalance",
+        });
+      if (cpuSec > 5 && memKb < 64_000)
+        r.warnings.push({
+          field: "memory_limit_kb",
+          message: "Long CPU (>5s) with tight memory (<64 MB) is unusual — long-running solutions usually need RAM",
+        });
+    }
+
     sections.limits = finalize(r);
   }
 
@@ -347,3 +432,22 @@ export const TAB_LABELS: Record<TabId, string> = {
   sql: "SQL Spec",
   limits: "Limits",
 };
+
+/**
+ * Map a field id (e.g. "examples[2].output", "sql_spec.schema_sql", "title")
+ * back to the editor tab it belongs to. Used by the publish checklist for jumps.
+ */
+export const fieldToTab = (field: string): TabId | null => {
+  if (!field) return null;
+  if (field === "title" || field === "slug" || field.startsWith("topics")) return "basics";
+  if (field === "description") return "statement";
+  if (field.startsWith("examples")) return "examples";
+  if (field.startsWith("constraints") || field.startsWith("hints")) return "constraints";
+  if (field.startsWith("starter_code")) return "starter";
+  if (field.startsWith("reference_solution")) return "reference";
+  if (field.startsWith("sample_tests") || field.startsWith("hidden_tests")) return "tests";
+  if (field.startsWith("sql_spec")) return "sql";
+  if (field === "cpu_time_limit_sec" || field === "memory_limit_kb") return "limits";
+  return null;
+};
+

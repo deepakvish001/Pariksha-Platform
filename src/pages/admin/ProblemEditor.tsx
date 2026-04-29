@@ -66,6 +66,7 @@ import { formatRelative } from "@/lib/formatRelative";
 import { validateProblem, TAB_LABELS, type TabId } from "@/lib/admin/problemValidation";
 import { TabBadge } from "@/components/admin/editor/TabBadge";
 import { PublishChecklistDialog } from "@/components/admin/editor/PublishChecklistDialog";
+import { useFieldHighlight, fieldHighlightClass } from "@/hooks/useFieldHighlight";
 import { MarkdownToolbar } from "@/components/admin/editor/MarkdownToolbar";
 import { BulkTestsDialog } from "@/components/admin/editor/BulkTestsDialog";
 import { BulkExamplesDialog } from "@/components/admin/editor/BulkExamplesDialog";
@@ -156,6 +157,14 @@ const ProblemEditor = () => {
   const { data: distinctTopics } = useDistinctTopics();
   const report = useMemo(() => validateProblem(form), [form]);
   const runHistory = useRunHistory(slug ?? "");
+  const { highlightedField, flash: flashField } = useFieldHighlight();
+
+  const jumpToField = (field: string, tab: TabId) => {
+    setActiveTab(tab);
+    setPublishOpen(false);
+    // Wait for the tab content to mount before scrolling/focusing.
+    requestAnimationFrame(() => flashField(field));
+  };
 
   useEffect(() => {
     try { localStorage.setItem(ACTIVE_TAB_KEY, activeTab); } catch {}
@@ -441,6 +450,7 @@ const ProblemEditor = () => {
               onOpenChange={setPublishOpen}
               report={report}
               onJumpTo={(t) => { setActiveTab(t); setPublishOpen(false); }}
+              onJumpToField={jumpToField}
               onConfirm={() => { update("is_published", true); setPublishOpen(false); }}
               trigger={
                 <Button
@@ -546,6 +556,8 @@ const ProblemEditor = () => {
             <div>
               <Label>Title</Label>
               <Input
+                data-field="title"
+                className={fieldHighlightClass("title", highlightedField)}
                 value={form.title}
                 onChange={(e) => {
                   update("title", e.target.value);
@@ -560,6 +572,8 @@ const ProblemEditor = () => {
               {isNew ? (
                 <>
                   <Input
+                    data-field="slug"
+                    className={fieldHighlightClass("slug", highlightedField)}
                     value={form.slug}
                     onChange={(e) => update("slug", slugify(e.target.value))}
                     placeholder="two-sum"
@@ -711,10 +725,11 @@ const ProblemEditor = () => {
               />
               <Textarea
                 ref={descRef}
+                data-field="description"
                 value={form.description}
                 onChange={(e) => update("description", e.target.value)}
                 rows={20}
-                className="font-mono text-sm"
+                className={`font-mono text-sm ${fieldHighlightClass("description", highlightedField)}`}
               />
             </Card>
             <Card className="p-4">
@@ -809,24 +824,26 @@ const ProblemEditor = () => {
                   <Textarea
                     rows={3}
                     placeholder="Input"
+                    data-field={`examples[${i}].input`}
                     value={ex.input}
                     onChange={(e) => {
                       const next = [...form.examples];
                       next[i] = { ...ex, input: e.target.value };
                       update("examples", next);
                     }}
-                    className="font-mono text-xs"
+                    className={`font-mono text-xs ${fieldHighlightClass(`examples[${i}].input`, highlightedField)}`}
                   />
                   <Textarea
                     rows={3}
                     placeholder="Output"
+                    data-field={`examples[${i}].output`}
                     value={ex.output}
                     onChange={(e) => {
                       const next = [...form.examples];
                       next[i] = { ...ex, output: e.target.value };
                       update("examples", next);
                     }}
-                    className="font-mono text-xs"
+                    className={`font-mono text-xs ${fieldHighlightClass(`examples[${i}].output`, highlightedField)}`}
                   />
                   <Textarea
                     rows={3}
@@ -1047,6 +1064,8 @@ const ProblemEditor = () => {
               onChange={(t) => update("sample_tests", t)}
               referenceSource={form.reference_solution[activeLang] ?? ""}
               referenceLang={activeLang}
+              fieldKey="sample_tests"
+              highlightedField={highlightedField}
               onSaveRun={(idx, t, res) => {
                 const expected = (t.expected ?? "").trimEnd();
                 const got = res.stdout;
@@ -1076,6 +1095,8 @@ const ProblemEditor = () => {
               onChange={(t) => update("hidden_tests", t)}
               referenceSource={form.reference_solution[activeLang] ?? ""}
               referenceLang={activeLang}
+              fieldKey="hidden_tests"
+              highlightedField={highlightedField}
               onSaveRun={(idx, t, res) => {
                 const expected = (t.expected ?? "").trimEnd();
                 const got = res.stdout;
@@ -1227,6 +1248,8 @@ const ProblemEditor = () => {
               <div>
                 <Label>CPU time limit (seconds)</Label>
                 <Input
+                  data-field="cpu_time_limit_sec"
+                  className={fieldHighlightClass("cpu_time_limit_sec", highlightedField)}
                   type="number"
                   step="0.5"
                   value={form.cpu_time_limit_sec}
@@ -1238,6 +1261,8 @@ const ProblemEditor = () => {
               <div>
                 <Label>Memory limit (KB)</Label>
                 <Input
+                  data-field="memory_limit_kb"
+                  className={fieldHighlightClass("memory_limit_kb", highlightedField)}
                   type="number"
                   value={form.memory_limit_kb}
                   onChange={(e) => update("memory_limit_kb", Number(e.target.value))}
@@ -1395,6 +1420,8 @@ const TestsTable = ({
   referenceSource,
   referenceLang,
   onSaveRun,
+  fieldKey,
+  highlightedField,
 }: {
   title: string;
   subtitle?: string;
@@ -1407,6 +1434,9 @@ const TestsTable = ({
     test: { input: string; expected: string },
     res: { stdout: string; stderr: string; ok: boolean; expected?: string },
   ) => void;
+  /** "sample_tests" or "hidden_tests" — drives data-field IDs for jumping. */
+  fieldKey?: "sample_tests" | "hidden_tests";
+  highlightedField?: string | null;
 }) => (
   <Card className="space-y-3 p-4">
     <div className="flex flex-wrap items-center gap-2">
@@ -1443,24 +1473,26 @@ const TestsTable = ({
           <Textarea
             rows={3}
             placeholder="stdin"
+            data-field={fieldKey ? `${fieldKey}[${i}].input` : undefined}
             value={t.input}
             onChange={(e) => {
               const next = [...tests];
               next[i] = { ...t, input: e.target.value };
               onChange(next);
             }}
-            className="font-mono text-xs"
+            className={`font-mono text-xs ${fieldKey ? fieldHighlightClass(`${fieldKey}[${i}].input`, highlightedField ?? null) : ""}`}
           />
           <Textarea
             rows={3}
             placeholder="expected stdout"
+            data-field={fieldKey ? `${fieldKey}[${i}].expected` : undefined}
             value={t.expected}
             onChange={(e) => {
               const next = [...tests];
               next[i] = { ...t, expected: e.target.value };
               onChange(next);
             }}
-            className="font-mono text-xs"
+            className={`font-mono text-xs ${fieldKey ? fieldHighlightClass(`${fieldKey}[${i}].expected`, highlightedField ?? null) : ""}`}
           />
           <div className="flex flex-col gap-1">
             {referenceLang && (
