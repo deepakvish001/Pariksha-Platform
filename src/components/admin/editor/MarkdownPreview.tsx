@@ -33,8 +33,7 @@ export const MarkdownPreview = ({ source, className }: Props) => {
             if (!inline && match) {
               return (
                 <SyntaxHighlighter
-                  // @ts-expect-error style typing differs across versions
-                  style={oneDark}
+                  style={oneDark as any}
                   language={match[1]}
                   PreTag="div"
                   customStyle={{
