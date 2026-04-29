@@ -183,5 +183,19 @@ export const useStudyPlan = () => {
     []
   );
 
-  return { plan, tasks, loading, generating, generate, updateTaskStatus, refresh };
+  const moveTaskToDay = useCallback(async (taskId: string, newDay: string) => {
+    // Optimistic update
+    setTasks((cur) => cur.map((t) => (t.id === taskId ? { ...t, day_date: newDay } : t)));
+    const { error } = await supabase
+      .from("user_study_plan_tasks")
+      .update({ day_date: newDay })
+      .eq("id", taskId);
+    if (error) {
+      // revert by refresh
+      await refresh();
+      throw error;
+    }
+  }, [refresh]);
+
+  return { plan, tasks, loading, generating, generate, updateTaskStatus, moveTaskToDay, refresh };
 };
