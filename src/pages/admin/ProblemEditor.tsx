@@ -499,6 +499,25 @@ const ProblemEditor = () => {
                   </Badge>
                 </div>
               )}
+              {form.slug && (
+                <div className="mt-2 flex items-center gap-2 rounded-md border border-dashed bg-muted/20 px-2 py-1.5 text-xs text-muted-foreground">
+                  <span className="truncate">
+                    Public URL: <code className="font-mono">/library/problems/{form.slug}</code>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="ml-auto h-6 w-6"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${location.origin}/library/problems/${form.slug}`);
+                      toast({ title: "Copied", description: "Public URL copied to clipboard." });
+                    }}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
             </div>
             <div>
               <Label>Difficulty</Label>
@@ -513,6 +532,20 @@ const ProblemEditor = () => {
                   <SelectItem value="hard">Hard</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="mt-2">
+                <Badge
+                  className={
+                    form.difficulty === "easy"
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                      : form.difficulty === "medium"
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                      : "border-destructive/40 bg-destructive/10 text-destructive"
+                  }
+                  variant="outline"
+                >
+                  Preview: {form.difficulty.toUpperCase()}
+                </Badge>
+              </div>
             </div>
             <div>
               <Label>Topics</Label>
@@ -545,6 +578,26 @@ const ProblemEditor = () => {
                   </Badge>
                 ))}
               </div>
+              {distinctTopics && distinctTopics.length > 0 && (
+                <div className="mt-3">
+                  <p className="mb-1 text-xs text-muted-foreground">Suggested (click to add)</p>
+                  <div className="flex flex-wrap gap-1">
+                    {distinctTopics
+                      .filter((t) => !form.topics.includes(t))
+                      .slice(0, 18)
+                      .map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => update("topics", [...form.topics, t])}
+                          className="rounded-full border border-dashed px-2 py-0.5 text-xs text-muted-foreground hover:border-solid hover:bg-accent hover:text-accent-foreground"
+                        >
+                          + {t}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </TabsContent>
