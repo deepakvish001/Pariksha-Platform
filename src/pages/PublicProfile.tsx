@@ -1,56 +1,144 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import {
+  User,
+  Mail,
+  Phone,
   MapPin,
   Calendar,
+  Briefcase,
+  Target,
+  BookOpen,
   Globe,
   Twitter,
   Linkedin,
   Github,
   Instagram,
+  FileText,
   Code,
-  ExternalLink,
-  ArrowLeft,
   Loader2,
-  UserX,
-  Sparkles,
-  Target,
-  Briefcase,
   Share2,
-  Copy,
-  Check,
-  Facebook,
-  User as UserIcon,
-  Trophy,
+  ArrowLeft,
+  UserX,
+  UserPlus,
+  UserMinus,
+  Users,
+  Heart,
+  CheckCircle2,
+  ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
- import PublicProfileAchievements from "@/components/PublicProfileAchievements";
+import PublicProfileAchievements from "@/components/PublicProfileAchievements";
 import { useProfileFollowCounts } from "@/hooks/useProfileFollowCounts";
 import { useFollows } from "@/hooks/useFollows";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, Heart, UserPlus, UserMinus } from "lucide-react";
+
+// Read-only field tile that mirrors DashboardProfile's ProfileField
+const ReadOnlyField = ({
+  label,
+  value,
+  icon: Icon,
+  href,
+}: {
+  label: string;
+  value?: string | null;
+  icon: React.ElementType;
+  href?: string | null;
+}) => {
+  const isEmpty = !value;
+  const inner = (
+    <div
+      className={cn(
+        "flex items-center justify-between p-3 rounded-lg border transition-all",
+        isEmpty
+          ? "border-dashed border-muted-foreground/30 bg-muted/30"
+          : "border-border bg-card hover:bg-muted/50",
+      )}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className={cn(
+            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+            isEmpty ? "bg-muted" : "bg-primary/10",
+          )}
+        >
+          <Icon className={cn("w-4 h-4", isEmpty ? "text-muted-foreground" : "text-primary")} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p
+            className={cn(
+              "text-sm font-medium truncate",
+              isEmpty ? "text-muted-foreground italic" : "text-foreground",
+            )}
+          >
+            {isEmpty ? "Not set" : value}
+          </p>
+        </div>
+      </div>
+      {href && !isEmpty && (
+        <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
+      )}
+    </div>
+  );
+
+  if (href && !isEmpty) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className="block">
+        {inner}
+      </a>
+    );
+  }
+  return inner;
+};
+
+const ReadOnlyArrayField = ({
+  label,
+  items,
+  icon: Icon,
+  colorClass = "bg-primary/10 text-primary",
+}: {
+  label: string;
+  items?: string[] | null;
+  icon: React.ElementType;
+  colorClass?: string;
+}) => (
+  <div className="space-y-2">
+    <div className="flex items-center gap-2">
+      <Icon className="w-4 h-4 text-muted-foreground" />
+      <span className="text-sm font-medium">{label}</span>
+    </div>
+    {items && items.length > 0 ? (
+      <div className="flex flex-wrap gap-2">
+        {items.map((item, i) => (
+          <Badge key={i} variant="secondary" className={colorClass}>
+            {item}
+          </Badge>
+        ))}
+      </div>
+    ) : (
+      <div className="p-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 text-center">
+        <p className="text-xs text-muted-foreground">No items added</p>
+      </div>
+    )}
+  </div>
+);
 
 interface PublicProfileData {
   username: string;
-   user_id: string;
+  user_id: string;
   full_name: string;
   avatar_url: string | null;
+  created_at: string;
   bio: string | null;
   location: string | null;
   occupation: string | null;
@@ -58,7 +146,6 @@ interface PublicProfileData {
   skills: string[];
   interests: string[];
   goals: string[];
-  aspirations: string[];
   twitter_url: string | null;
   linkedin_url: string | null;
   github_url: string | null;
@@ -68,148 +155,18 @@ interface PublicProfileData {
   codeforces_url: string | null;
   codechef_url: string | null;
   geeksforgeeks_url: string | null;
-  created_at: string;
+  resume_url: string | null;
+  profile_completion_percentage: number | null;
 }
-
-const SocialLink = ({
-  url,
-  icon: Icon,
-  label,
-  color,
-}: {
-  url: string | null;
-  icon: React.ElementType;
-  label: string;
-  color: string;
-}) => {
-  if (!url) return null;
-
-  return (
-    <motion.a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(
-        "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all hover:scale-105",
-        color
-      )}
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      <Icon className="w-4 h-4" />
-      <span className="text-sm font-medium">{label}</span>
-      <ExternalLink className="w-3 h-3 ml-auto opacity-50" />
-    </motion.a>
-  );
-};
-
-const CodingProfileCard = ({
-  url,
-  platform,
-  icon,
-}: {
-  url: string | null;
-  platform: string;
-  icon: string;
-}) => {
-  if (!url) return null;
-
-  return (
-    <motion.a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:border-primary/50 transition-all"
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-    >
-      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-        <Code className="w-5 h-5 text-primary" />
-      </div>
-      <div className="flex-1">
-        <p className="font-medium text-sm">{platform}</p>
-        <p className="text-xs text-muted-foreground truncate max-w-[150px]">
-          {url.replace(/https?:\/\/(www\.)?/, "")}
-        </p>
-      </div>
-      <ExternalLink className="w-4 h-4 text-muted-foreground" />
-    </motion.a>
-  );
-};
-
-interface SideNavSection {
-  id: string;
-  label: string;
-  icon: React.ElementType;
-}
-
-const ProfileSideNav = ({ sections }: { sections: SideNavSection[] }) => {
-  const [active, setActive] = useState<string>(sections[0]?.id ?? "");
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visible[0]?.target?.id) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
-    );
-    sections.forEach((s) => {
-      const el = document.getElementById(s.id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, [sections]);
-
-  const handleClick = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  return (
-    <aside className="hidden lg:block">
-      <nav
-        aria-label="Profile sections"
-        className="sticky top-24 space-y-1 rounded-xl border border-border/50 bg-card/40 backdrop-blur p-2"
-      >
-        <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          On this profile
-        </p>
-        {sections.map((s) => {
-          const Icon = s.icon;
-          const isActive = active === s.id;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => handleClick(s.id)}
-              className={cn(
-                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left",
-                isActive
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-              )}
-              aria-current={isActive ? "true" : undefined}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{s.label}</span>
-            </button>
-          );
-        })}
-      </nav>
-    </aside>
-  );
-};
 
 const PublicProfile = () => {
   const { username } = useParams<{ username: string }>();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<PublicProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const { user } = useAuth();
-  const { followersCount, followingCount, isLoading: isLoadingCounts } = useProfileFollowCounts(profile?.user_id);
+  const { followersCount, followingCount, isLoading: isLoadingCounts } =
+    useProfileFollowCounts(profile?.user_id);
   const { isFollowing, followUser, unfollowUser } = useFollows();
   const [isFollowLoading, setIsFollowLoading] = useState(false);
 
@@ -220,145 +177,73 @@ const PublicProfile = () => {
         setIsLoading(false);
         return;
       }
-
       try {
-        // Fetch public profile data from secure view (excludes sensitive data like phone numbers)
-        const { data: extendedData, error: extendedError } = await supabase
+        const { data: ext, error: extErr } = await supabase
           .from("public_user_profiles" as any)
           .select("*")
           .eq("username", username)
-          .maybeSingle() as { data: {
-            user_id: string;
-            username: string;
-            bio: string | null;
-            location: string | null;
-            occupation: string | null;
-            website: string | null;
-            skills: string[] | null;
-            interests: string[] | null;
-            goals: string[] | null;
-            aspirations: string[] | null;
-            twitter_url: string | null;
-            linkedin_url: string | null;
-            github_url: string | null;
-            instagram_url: string | null;
-            leetcode_url: string | null;
-            hackerrank_url: string | null;
-            codeforces_url: string | null;
-            codechef_url: string | null;
-            geeksforgeeks_url: string | null;
-            total_xp: number | null;
-            current_level: number | null;
-            xp_this_week: number | null;
-            profile_completion_percentage: number | null;
-            created_at: string;
-          } | null; error: any };
+          .maybeSingle() as { data: any; error: any };
 
-        if (extendedError || !extendedData) {
+        if (extErr || !ext) {
           setNotFound(true);
           setIsLoading(false);
           return;
         }
 
-        // Fetch basic profile info
-        const { data: basicData, error: basicError } = await supabase
+        const { data: basic, error: basicErr } = await supabase
           .from("profiles")
           .select("full_name, avatar_url, created_at")
-          .eq("user_id", extendedData.user_id)
+          .eq("user_id", ext.user_id)
           .maybeSingle();
 
-        if (basicError || !basicData) {
+        if (basicErr || !basic) {
           setNotFound(true);
           setIsLoading(false);
           return;
         }
 
         setProfile({
-          username: extendedData.username || username,
-           user_id: extendedData.user_id,
-          full_name: basicData.full_name || "Anonymous",
-          avatar_url: basicData.avatar_url,
-          bio: extendedData.bio,
-          location: extendedData.location,
-          occupation: extendedData.occupation,
-          website: extendedData.website,
-          skills: extendedData.skills || [],
-          interests: extendedData.interests || [],
-          goals: extendedData.goals || [],
-          aspirations: extendedData.aspirations || [],
-          twitter_url: extendedData.twitter_url,
-          linkedin_url: extendedData.linkedin_url,
-          github_url: extendedData.github_url,
-          instagram_url: extendedData.instagram_url,
-          leetcode_url: extendedData.leetcode_url,
-          hackerrank_url: extendedData.hackerrank_url,
-          codeforces_url: extendedData.codeforces_url,
-          codechef_url: extendedData.codechef_url,
-          geeksforgeeks_url: extendedData.geeksforgeeks_url,
-          created_at: basicData.created_at,
+          username: ext.username || username,
+          user_id: ext.user_id,
+          full_name: basic.full_name || "Anonymous",
+          avatar_url: basic.avatar_url,
+          created_at: basic.created_at,
+          bio: ext.bio,
+          location: ext.location,
+          occupation: ext.occupation,
+          website: ext.website,
+          skills: ext.skills || [],
+          interests: ext.interests || [],
+          goals: ext.goals || [],
+          twitter_url: ext.twitter_url,
+          linkedin_url: ext.linkedin_url,
+          github_url: ext.github_url,
+          instagram_url: ext.instagram_url,
+          leetcode_url: ext.leetcode_url,
+          hackerrank_url: ext.hackerrank_url,
+          codeforces_url: ext.codeforces_url,
+          codechef_url: ext.codechef_url,
+          geeksforgeeks_url: ext.geeksforgeeks_url,
+          resume_url: ext.resume_url ?? null,
+          profile_completion_percentage: ext.profile_completion_percentage ?? null,
         });
-      } catch (error) {
-        console.error("Error fetching profile:", error);
+      } catch (err) {
+        console.error("Error fetching profile:", err);
         setNotFound(true);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchProfile();
   }, [username]);
 
-  const getInitials = (name: string) => {
-    return name
+  const getInitials = (name: string) =>
+    name
       .split(" ")
       .map((n) => n.charAt(0))
       .join("")
       .toUpperCase()
       .slice(0, 2);
-  };
-
-  const shareUrl = `${window.location.origin}/u/${profile?.username}`;
-  const shareText = `Check out ${profile?.full_name}'s profile on Byteskill!`;
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      toast.success("Link copied to clipboard!");
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      toast.error("Failed to copy link");
-    }
-  };
-
-  const handleShareTwitter = () => {
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  const handleShareLinkedIn = () => {
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  const handleShareFacebook = () => {
-    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${profile?.full_name}'s Profile`,
-          text: shareText,
-          url: shareUrl,
-        });
-      } catch (error) {
-        // User cancelled or error occurred
-      }
-    }
-  };
 
   const handleFollowToggle = async () => {
     if (!profile?.user_id || !user) return;
@@ -382,7 +267,7 @@ const PublicProfile = () => {
     );
   }
 
-  if (notFound) {
+  if (notFound || !profile) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -412,25 +297,44 @@ const PublicProfile = () => {
     );
   }
 
-  const hasSocialLinks =
-    profile?.twitter_url ||
-    profile?.linkedin_url ||
-    profile?.github_url ||
-    profile?.instagram_url;
-
-  const hasCodingProfiles =
-    profile?.leetcode_url ||
-    profile?.hackerrank_url ||
-    profile?.codeforces_url ||
-    profile?.codechef_url ||
-    profile?.geeksforgeeks_url;
+  // Profile-strength checklist (read-only mirror of DashboardProfile)
+  const profileChecklist = [
+    { key: "bio", label: "Bio", filled: !!profile.bio },
+    { key: "location", label: "Location", filled: !!profile.location },
+    { key: "occupation", label: "Occupation", filled: !!profile.occupation },
+    { key: "skills", label: "Skills", filled: profile.skills.length > 0 },
+    { key: "goals", label: "Goals", filled: profile.goals.length > 0 },
+    { key: "linkedin", label: "LinkedIn", filled: !!profile.linkedin_url },
+    { key: "github", label: "GitHub", filled: !!profile.github_url },
+    { key: "leetcode", label: "LeetCode", filled: !!profile.leetcode_url },
+  ];
+  const filledCount = profileChecklist.filter((c) => c.filled).length;
+  const completionPercent = Math.round((filledCount / profileChecklist.length) * 100);
+  const strengthLabel =
+    completionPercent >= 100
+      ? "Strong"
+      : completionPercent >= 60
+        ? "Good"
+        : completionPercent >= 30
+          ? "Fair"
+          : "Weak";
+  const strengthColor =
+    completionPercent >= 100
+      ? "text-emerald-500"
+      : completionPercent >= 60
+        ? "text-blue-500"
+        : completionPercent >= 30
+          ? "text-amber-500"
+          : "text-red-500";
 
   const siteUrl = window.location.origin;
-  const profileUrl = `${siteUrl}/u/${profile?.username}`;
-  const profileTitle = `${profile?.full_name} (@${profile?.username}) | Byteskill`;
-  const profileDescription = profile?.bio 
+  const profileUrl = `${siteUrl}/u/${profile.username}`;
+  const profileTitle = `${profile.full_name} (@${profile.username}) | Byteskill`;
+  const profileDescription = profile.bio
     ? profile.bio.slice(0, 155) + (profile.bio.length > 155 ? "..." : "")
-    : `Check out ${profile?.full_name}'s profile on Byteskill. ${profile?.occupation ? `${profile.occupation}` : ""} ${profile?.location ? `from ${profile.location}` : ""}`.trim();
+    : `Check out ${profile.full_name}'s profile on Byteskill. ${profile.occupation ?? ""} ${profile.location ? `from ${profile.location}` : ""}`.trim();
+
+  const isOwner = user?.id === profile.user_id;
 
   return (
     <div className="min-h-screen bg-background">
@@ -438,395 +342,343 @@ const PublicProfile = () => {
         <title>{profileTitle}</title>
         <meta name="description" content={profileDescription} />
         <link rel="canonical" href={profileUrl} />
-        
-        {/* Open Graph / Facebook */}
         <meta property="og:type" content="profile" />
         <meta property="og:url" content={profileUrl} />
         <meta property="og:title" content={profileTitle} />
         <meta property="og:description" content={profileDescription} />
-        {profile?.avatar_url && <meta property="og:image" content={profile.avatar_url} />}
-        <meta property="profile:username" content={profile?.username || ""} />
-        
-        {/* Twitter */}
+        {profile.avatar_url && <meta property="og:image" content={profile.avatar_url} />}
+        <meta property="profile:username" content={profile.username} />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:url" content={profileUrl} />
         <meta name="twitter:title" content={profileTitle} />
         <meta name="twitter:description" content={profileDescription} />
-        {profile?.avatar_url && <meta name="twitter:image" content={profile.avatar_url} />}
-        
-        {/* JSON-LD Structured Data */}
+        {profile.avatar_url && <meta name="twitter:image" content={profile.avatar_url} />}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Person",
-            name: profile?.full_name,
+            name: profile.full_name,
             url: profileUrl,
-            image: profile?.avatar_url || undefined,
-            description: profile?.bio || undefined,
-            jobTitle: profile?.occupation || undefined,
-            address: profile?.location ? {
-              "@type": "PostalAddress",
-              addressLocality: profile.location
-            } : undefined,
+            image: profile.avatar_url || undefined,
+            description: profile.bio || undefined,
+            jobTitle: profile.occupation || undefined,
+            address: profile.location
+              ? { "@type": "PostalAddress", addressLocality: profile.location }
+              : undefined,
             sameAs: [
-              profile?.twitter_url,
-              profile?.linkedin_url,
-              profile?.github_url,
-              profile?.instagram_url,
-              profile?.leetcode_url,
-              profile?.hackerrank_url,
-              profile?.codeforces_url,
-              profile?.codechef_url,
-              profile?.geeksforgeeks_url,
-              profile?.website,
+              profile.twitter_url,
+              profile.linkedin_url,
+              profile.github_url,
+              profile.instagram_url,
+              profile.leetcode_url,
+              profile.hackerrank_url,
+              profile.codeforces_url,
+              profile.codechef_url,
+              profile.geeksforgeeks_url,
+              profile.website,
             ].filter(Boolean),
-            knowsAbout: profile?.skills?.length ? profile.skills : undefined,
+            knowsAbout: profile.skills.length ? profile.skills : undefined,
           })}
         </script>
       </Helmet>
-      
+
       <Navbar />
 
-      <main className="section-container py-8 md:py-12">
-        <div className="max-w-5xl mx-auto">
-          <div className="space-y-8 min-w-0">
-          {/* Profile Header */}
-          <section id="overview" className="scroll-mt-24">
+      <main className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
+        {/* Profile Strength Card */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-primary/20">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative h-16 w-16 shrink-0">
+                    <svg className="h-16 w-16 -rotate-90" viewBox="0 0 36 36">
+                      <path
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="hsl(var(--muted))"
+                        strokeWidth="3"
+                      />
+                      <path
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth="3"
+                        strokeDasharray={`${completionPercent}, 100`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm font-bold">{completionPercent}%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Profile Strength</p>
+                    <p className={cn("text-lg font-bold", strengthColor)}>{strengthLabel}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {filledCount}/{profileChecklist.length} fields completed
+                    </p>
+                  </div>
+                </div>
+                <div className="flex-1 border-t sm:border-t-0 sm:border-l border-border pt-3 sm:pt-0 sm:pl-4 flex items-center justify-center">
+                  <div className="text-center">
+                    {completionPercent >= 100 ? (
+                      <>
+                        <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-1" />
+                        <p className="text-sm font-medium">Profile complete!</p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        @{profile.username} is still building their profile
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-1 mt-4">
+                {profileChecklist.map((item) => (
+                  <div
+                    key={item.key}
+                    className={cn(
+                      "h-1.5 flex-1 rounded-full transition-colors",
+                      item.filled ? "bg-primary" : "bg-muted",
+                    )}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Profile Header Card */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="overflow-hidden">
+            <div className="h-28 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent" />
+            <CardContent className="relative pt-0 pb-5">
+              <div className="flex flex-col md:flex-row items-start md:items-end gap-5 -mt-14">
+                <div className="relative">
+                  <Avatar className="h-28 w-28 border-4 border-background shadow-xl">
+                    <AvatarImage src={profile.avatar_url || undefined} />
+                    <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                      {getInitials(profile.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <div className="flex-1 space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-xl font-bold">{profile.full_name}</h1>
+                    <Badge variant="outline">@{profile.username}</Badge>
+                  </div>
+                  {profile.bio && (
+                    <p className="text-sm text-muted-foreground">{profile.bio}</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    {profile.location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {profile.location}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Joined {new Date(profile.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm pt-1">
+                    <span className="flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      <strong>{isLoadingCounts ? "…" : followersCount}</strong>
+                      <span className="text-muted-foreground">followers</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Heart className="h-3.5 w-3.5 text-muted-foreground" />
+                      <strong>{isLoadingCounts ? "…" : followingCount}</strong>
+                      <span className="text-muted-foreground">following</span>
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isOwner ? (
+                    <Link to="/dashboard/profile">
+                      <Button size="sm" variant="outline" className="gap-1.5">
+                        <Share2 className="h-3.5 w-3.5" /> Edit Profile
+                      </Button>
+                    </Link>
+                  ) : user ? (
+                    <Button
+                      size="sm"
+                      variant={isFollowing(profile.user_id) ? "outline" : "default"}
+                      onClick={handleFollowToggle}
+                      disabled={isFollowLoading}
+                      className="gap-1.5"
+                    >
+                      {isFollowing(profile.user_id) ? (
+                        <>
+                          <UserMinus className="h-3.5 w-3.5" /> Unfollow
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-3.5 w-3.5" /> Follow
+                        </>
+                      )}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          {/* Personal Info */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
           >
-            <Card className="overflow-hidden">
-              <div className="h-32 bg-gradient-to-r from-primary/30 via-primary/20 to-transparent" />
-              <CardContent className="relative pt-0 pb-8">
-                {/* Share Button - positioned in top right */}
-                <div className="absolute top-4 right-4">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <Share2 className="h-4 w-4" />
-                        Share
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={handleCopyLink} className="cursor-pointer">
-                        {copied ? (
-                          <Check className="h-4 w-4 mr-2 text-green-500" />
-                        ) : (
-                          <Copy className="h-4 w-4 mr-2" />
-                        )}
-                        Copy Link
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleShareTwitter} className="cursor-pointer">
-                        <Twitter className="h-4 w-4 mr-2" />
-                        Share on X
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleShareLinkedIn} className="cursor-pointer">
-                        <Linkedin className="h-4 w-4 mr-2" />
-                        Share on LinkedIn
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleShareFacebook} className="cursor-pointer">
-                        <Facebook className="h-4 w-4 mr-2" />
-                        Share on Facebook
-                      </DropdownMenuItem>
-                      {typeof navigator !== "undefined" && navigator.share && (
-                        <DropdownMenuItem onClick={handleNativeShare} className="cursor-pointer">
-                          <Share2 className="h-4 w-4 mr-2" />
-                          More Options
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Personal Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <ReadOnlyField
+                  label="Username"
+                  value={`@${profile.username}`}
+                  icon={User}
+                />
+                <ReadOnlyField label="Location" value={profile.location} icon={MapPin} />
+                <ReadOnlyField
+                  label="Occupation"
+                  value={profile.occupation}
+                  icon={Briefcase}
+                />
+                <ReadOnlyField
+                  label="Website"
+                  value={profile.website}
+                  icon={Globe}
+                  href={profile.website}
+                />
+              </CardContent>
+            </Card>
+          </motion.div>
 
-                <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16">
-                  {/* Avatar */}
-                  <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
-                    <AvatarImage src={profile?.avatar_url || undefined} />
-                    <AvatarFallback className="text-3xl bg-primary/10 text-primary">
-                      {getInitials(profile?.full_name || "U")}
-                    </AvatarFallback>
-                  </Avatar>
+          {/* Skills & Goals */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Skills & Goals</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <ReadOnlyArrayField
+                  label="Skills"
+                  items={profile.skills}
+                  icon={Code}
+                  colorClass="bg-blue-500/10 text-blue-600"
+                />
+                <ReadOnlyArrayField
+                  label="Interests"
+                  items={profile.interests}
+                  icon={BookOpen}
+                  colorClass="bg-emerald-500/10 text-emerald-600"
+                />
+                <ReadOnlyArrayField
+                  label="Goals"
+                  items={profile.goals}
+                  icon={Target}
+                  colorClass="bg-purple-500/10 text-purple-600"
+                />
+              </CardContent>
+            </Card>
+          </motion.div>
 
-                  {/* Info */}
-                  <div className="flex-1 text-center md:text-left space-y-2">
-                    <div className="flex flex-col md:flex-row items-center gap-2">
-                      <h1 className="text-3xl font-bold">{profile?.full_name}</h1>
-                      <Badge variant="outline" className="text-primary">
-                        @{profile?.username}
-                      </Badge>
-                    </div>
-                    {profile?.bio && (
-                      <p className="text-muted-foreground max-w-2xl">{profile.bio}</p>
-                    )}
-                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-muted-foreground">
-                      {profile?.occupation && (
-                        <div className="flex items-center gap-1">
-                          <Briefcase className="h-4 w-4" />
-                          {profile.occupation}
-                        </div>
-                      )}
-                      {profile?.location && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          {profile.location}
-                        </div>
-                      )}
-                      {profile?.website && (
-                        <a
-                          href={profile.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 hover:text-primary transition-colors"
-                        >
-                          <Globe className="h-4 w-4" />
-                          Website
-                        </a>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        Joined {new Date(profile?.created_at || "").toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-                      </div>
-                    </div>
-
-                  {/* Follow Stats */}
-                  <div className="flex items-center justify-center md:justify-start gap-6 mt-4">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-semibold">{isLoadingCounts ? "..." : followersCount}</span>
-                      <span className="text-muted-foreground text-sm">Followers</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-semibold">{isLoadingCounts ? "..." : followingCount}</span>
-                      <span className="text-muted-foreground text-sm">Following</span>
-                    </div>
-                  </div>
-
-                  {/* Follow Button */}
-                  {user && profile?.user_id && user.id !== profile.user_id && (
-                    <div className="flex justify-center md:justify-start mt-4">
-                      <Button
-                        variant={isFollowing(profile.user_id) ? "outline" : "default"}
-                        size="sm"
-                        onClick={handleFollowToggle}
-                        disabled={isFollowLoading}
-                        className="gap-2"
-                      >
-                        {isFollowing(profile.user_id) ? (
-                          <>
-                            <UserMinus className="h-4 w-4" />
-                            Unfollow
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="h-4 w-4" />
-                            Follow
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                  </div>
+          {/* Links & Profiles */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-2"
+          >
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Links & Profiles</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <ReadOnlyField
+                    label="LinkedIn"
+                    value={profile.linkedin_url}
+                    icon={Linkedin}
+                    href={profile.linkedin_url}
+                  />
+                  <ReadOnlyField
+                    label="GitHub"
+                    value={profile.github_url}
+                    icon={Github}
+                    href={profile.github_url}
+                  />
+                  <ReadOnlyField
+                    label="Twitter"
+                    value={profile.twitter_url}
+                    icon={Twitter}
+                    href={profile.twitter_url}
+                  />
+                  <ReadOnlyField
+                    label="Instagram"
+                    value={profile.instagram_url}
+                    icon={Instagram}
+                    href={profile.instagram_url}
+                  />
+                  <ReadOnlyField
+                    label="LeetCode"
+                    value={profile.leetcode_url}
+                    icon={Code}
+                    href={profile.leetcode_url}
+                  />
+                  <ReadOnlyField
+                    label="HackerRank"
+                    value={profile.hackerrank_url}
+                    icon={Code}
+                    href={profile.hackerrank_url}
+                  />
+                  <ReadOnlyField
+                    label="CodeForces"
+                    value={profile.codeforces_url}
+                    icon={Code}
+                    href={profile.codeforces_url}
+                  />
+                  <ReadOnlyField
+                    label="CodeChef"
+                    value={profile.codechef_url}
+                    icon={Code}
+                    href={profile.codechef_url}
+                  />
+                  <ReadOnlyField
+                    label="GeeksForGeeks"
+                    value={profile.geeksforgeeks_url}
+                    icon={Code}
+                    href={profile.geeksforgeeks_url}
+                  />
+                  <ReadOnlyField
+                    label="Resume"
+                    value={profile.resume_url}
+                    icon={FileText}
+                    href={profile.resume_url}
+                  />
                 </div>
               </CardContent>
             </Card>
           </motion.div>
-          </section>
-
-          <div id="skills" className="scroll-mt-24 grid gap-6 lg:grid-cols-2">
-            {/* Skills & Interests */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    Skills & Interests
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {profile?.skills && profile.skills.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Skills</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.skills.map((skill, index) => (
-                          <Badge key={index} variant="secondary" className="bg-blue-500/10 text-blue-600">
-                            {skill}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {profile?.interests && profile.interests.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Interests</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.interests.map((interest, index) => (
-                          <Badge key={index} variant="secondary" className="bg-green-500/10 text-green-600">
-                            {interest}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {(!profile?.skills?.length && !profile?.interests?.length) && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No skills or interests added yet
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Goals & Aspirations */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-primary" />
-                    Goals & Aspirations
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {profile?.aspirations && profile.aspirations.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Aspirations</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.aspirations.map((aspiration, index) => (
-                          <Badge key={index} variant="secondary" className="bg-yellow-500/10 text-yellow-600">
-                            {aspiration}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {profile?.goals && profile.goals.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Goals</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.goals.map((goal, index) => (
-                          <Badge key={index} variant="secondary" className="bg-purple-500/10 text-purple-600">
-                            {goal}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {(!profile?.aspirations?.length && !profile?.goals?.length) && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No goals or aspirations added yet
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Social Links */}
-            {hasSocialLinks && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Globe className="w-5 h-5 text-primary" />
-                      Social Links
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-2">
-                    <SocialLink
-                      url={profile?.twitter_url || null}
-                      icon={Twitter}
-                      label="Twitter"
-                      color="hover:bg-sky-500/10 hover:border-sky-500/30 hover:text-sky-500"
-                    />
-                    <SocialLink
-                      url={profile?.linkedin_url || null}
-                      icon={Linkedin}
-                      label="LinkedIn"
-                      color="hover:bg-blue-500/10 hover:border-blue-500/30 hover:text-blue-500"
-                    />
-                    <SocialLink
-                      url={profile?.github_url || null}
-                      icon={Github}
-                      label="GitHub"
-                      color="hover:bg-gray-500/10 hover:border-gray-500/30"
-                    />
-                    <SocialLink
-                      url={profile?.instagram_url || null}
-                      icon={Instagram}
-                      label="Instagram"
-                      color="hover:bg-pink-500/10 hover:border-pink-500/30 hover:text-pink-500"
-                    />
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-
-            {/* Coding Profiles */}
-            {hasCodingProfiles && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-              >
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Code className="w-5 h-5 text-primary" />
-                      Coding Profiles
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-2">
-                    <CodingProfileCard
-                      url={profile?.leetcode_url || null}
-                      platform="LeetCode"
-                      icon="leetcode"
-                    />
-                    <CodingProfileCard
-                      url={profile?.hackerrank_url || null}
-                      platform="HackerRank"
-                      icon="hackerrank"
-                    />
-                    <CodingProfileCard
-                      url={profile?.codeforces_url || null}
-                      platform="CodeForces"
-                      icon="codeforces"
-                    />
-                    <CodingProfileCard
-                      url={profile?.codechef_url || null}
-                      platform="CodeChef"
-                      icon="codechef"
-                    />
-                    <CodingProfileCard
-                      url={profile?.geeksforgeeks_url || null}
-                      platform="GeeksForGeeks"
-                      icon="gfg"
-                    />
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-
-             {/* Achievements */}
-             {profile?.user_id && (
-               <div id="achievements" className="scroll-mt-24">
-                 <PublicProfileAchievements userId={profile.user_id} />
-               </div>
-             )}
-          </div>
-          </div>
         </div>
+
+        {/* Achievements (kept from previous public profile) */}
+        {profile.user_id && (
+          <div className="pt-2">
+            <PublicProfileAchievements userId={profile.user_id} />
+          </div>
+        )}
       </main>
 
       <Footer />
