@@ -450,6 +450,7 @@ const ProblemEditor = () => {
               onOpenChange={setPublishOpen}
               report={report}
               onJumpTo={(t) => { setActiveTab(t); setPublishOpen(false); }}
+              onJumpToField={jumpToField}
               onConfirm={() => { update("is_published", true); setPublishOpen(false); }}
               trigger={
                 <Button
