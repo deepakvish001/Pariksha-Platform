@@ -1422,6 +1422,8 @@ const CodePerLanguage = ({
   setActiveLang,
   extraActions,
   footer,
+  fieldPrefix,
+  highlightedField,
 }: {
   value: Record<string, string>;
   onChange: (v: Record<string, string>) => void;
@@ -1429,23 +1431,55 @@ const CodePerLanguage = ({
   setActiveLang: (l: LangId) => void;
   extraActions?: React.ReactNode;
   footer?: React.ReactNode;
+  /** "starter_code" or "reference_solution" — drives data-field IDs. */
+  fieldPrefix?: "starter_code" | "reference_solution";
+  highlightedField?: string | null;
 }) => {
   const lang = LANGUAGES.find((l) => l.id === activeLang)!;
   const editorRef = useRef<MonacoEditorHandle>(null);
+
+  // If validation jumps to a per-language field for a non-active language,
+  // switch tabs automatically so the editor surface shows the failing code.
+  useEffect(() => {
+    if (!fieldPrefix || !highlightedField) return;
+    const prefix = `${fieldPrefix}.`;
+    if (highlightedField.startsWith(prefix)) {
+      const targetLang = highlightedField.slice(prefix.length) as LangId;
+      if (targetLang && targetLang !== activeLang && LANGUAGES.some((l) => l.id === targetLang)) {
+        setActiveLang(targetLang);
+      }
+    }
+  }, [highlightedField, fieldPrefix, activeLang, setActiveLang]);
+
+  const editorFieldId = fieldPrefix ? `${fieldPrefix}.${activeLang}` : undefined;
+  const sectionFieldId = fieldPrefix;
+  const editorHighlight = editorFieldId
+    ? fieldHighlightClass(editorFieldId, highlightedField ?? null)
+    : "";
+  const sectionHighlight = sectionFieldId
+    ? fieldHighlightClass(sectionFieldId, highlightedField ?? null)
+    : "";
+
   return (
-    <Card className="space-y-3 p-4">
+    <Card className={`space-y-3 p-4 ${sectionHighlight}`} data-field={sectionFieldId}>
       <div className="flex flex-wrap items-center gap-2">
-        {LANGUAGES.map((l) => (
-          <Button
-            key={l.id}
-            variant={l.id === activeLang ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveLang(l.id)}
-          >
-            {l.label}
-            {value[l.id] ? <CheckCircle2 className="ml-1.5 h-3 w-3 text-emerald-500" /> : null}
-          </Button>
-        ))}
+        {LANGUAGES.map((l) => {
+          const fid = fieldPrefix ? `${fieldPrefix}.${l.id}` : undefined;
+          const isFailing = !!fid && highlightedField === fid && l.id !== activeLang;
+          return (
+            <Button
+              key={l.id}
+              data-field={fid}
+              variant={l.id === activeLang ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveLang(l.id)}
+              className={isFailing ? "ring-2 ring-destructive ring-offset-2 ring-offset-background" : ""}
+            >
+              {l.label}
+              {value[l.id] ? <CheckCircle2 className="ml-1.5 h-3 w-3 text-emerald-500" /> : null}
+            </Button>
+          );
+        })}
         <div className="ml-auto flex flex-wrap gap-2">
           {extraActions}
           <Button variant="ghost" size="sm" type="button" onClick={() => editorRef.current?.format()}>
@@ -1453,7 +1487,10 @@ const CodePerLanguage = ({
           </Button>
         </div>
       </div>
-      <div className="h-[420px] overflow-hidden rounded-md border">
+      <div
+        data-field={editorFieldId}
+        className={`h-[420px] overflow-hidden rounded-md border ${editorHighlight}`}
+      >
         <MonacoEditor
           ref={editorRef}
           value={value[activeLang] ?? ""}
