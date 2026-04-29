@@ -262,7 +262,7 @@ const PublicProfile = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center py-24">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -270,30 +270,26 @@ const PublicProfile = () => {
 
   if (notFound || !profile) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
-              <UserX className="w-12 h-12 text-muted-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold mb-2">Profile Not Found</h1>
-            <p className="text-muted-foreground mb-6">
-              The user @{username} doesn't exist or hasn't set up their public profile yet.
-            </p>
-            <Link to="/">
-              <Button variant="outline" className="gap-2">
-                <ArrowLeft className="w-4 h-4" />
-                Go Home
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
-        <Footer />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+            <UserX className="w-12 h-12 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Profile Not Found</h1>
+          <p className="text-muted-foreground mb-6">
+            The user @{username} doesn't exist or hasn't set up their public profile yet.
+          </p>
+          <Link to="/">
+            <Button variant="outline" className="gap-2">
+              <ArrowLeft className="w-4 h-4" />
+              Go Home
+            </Button>
+          </Link>
+        </motion.div>
       </div>
     );
   }
