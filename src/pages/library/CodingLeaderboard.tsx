@@ -671,6 +671,14 @@ export default function CodingLeaderboard() {
     [rows, minScore],
   );
 
+  // Dynamic upper bound for the min-score slider — keep it sensible relative
+  // to actual data. Round up to nearest 50 for nicer ticks.
+  const scoreSliderMax = useMemo(() => {
+    const top = rows.reduce((m, r) => Math.max(m, Math.round(r.weighted_score)), 0);
+    const padded = Math.max(top, minScore, 50);
+    return Math.ceil(padded / 50) * 50;
+  }, [rows, minScore]);
+
   const podium = useMemo(
     () => (page === 1 && !search && !difficulty ? filteredRows.slice(0, 3) : []),
     [filteredRows, page, search, difficulty],
