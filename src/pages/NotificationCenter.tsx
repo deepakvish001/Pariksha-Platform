@@ -57,13 +57,15 @@ const NotificationItem = ({
   onDelete: () => void;
 }) => {
   const data = notification.data as Record<string, unknown>;
+  const { extendedProfile } = useAuth();
+  const profileUsername = (extendedProfile as { username?: string } | null)?.username ?? null;
 
   const getActionLink = () => {
     switch (notification.type) {
       case "velocity_reminder":
         return data.roadmap_id ? `/research/roadmap/${data.roadmap_id}` : null;
       case "new_follower":
-        return "/dashboard/profile";
+        return profileUsername ? `/u/${profileUsername}` : null;
       case "rare_achievement":
         return "/achievements";
       default:
