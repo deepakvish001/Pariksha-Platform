@@ -105,6 +105,7 @@ import { GuestSidebarTooltip } from "@/components/GuestSidebarTooltip";
 const PROFILE_SENTINEL = "__profile__";
 const homeNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
+  { title: "My Plan", url: "/dashboard/my-plan", icon: Sparkles },
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
   { title: "Roadmap", url: "/dashboard/roadmaps", icon: Route },
   { title: "Coding Problems", url: "/library/problems", icon: Terminal },
@@ -116,6 +117,7 @@ const homeNavItems = [
 // Active (unlocked) routes
 const ACTIVE_ROUTES = new Set([
   "/dashboard",
+  "/dashboard/my-plan",
   "/dashboard/sheets",
   "/dashboard/roadmaps",
   "/dashboard/roadmap/fullstack",

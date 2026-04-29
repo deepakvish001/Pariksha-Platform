@@ -19,6 +19,7 @@ import Signup from "./pages/Signup";
 import DashboardMatrix from "./pages/DashboardMatrix";
 import SubmissionsHistory from "./pages/dashboard/SubmissionsHistory";
 import Leaderboard from "./pages/dashboard/Leaderboard";
+import MyPlan from "./pages/dashboard/MyPlan";
 import DashboardSheets from "./pages/DashboardSheets";
 
 import Settings from "./pages/Settings";
