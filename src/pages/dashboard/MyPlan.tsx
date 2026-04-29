@@ -155,7 +155,12 @@ const MyPlan = () => {
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            {profile && plan && <CatchUpButton tasks={tasks} onCatchUp={catchUp} />}
+            {profile && plan && (
+              <CatchUpButton
+                tasks={tasks}
+                onCatchUp={() => catchUp(profile.weekday_minutes, profile.weekend_minutes)}
+              />
+            )}
             {profile && !editProfileOpen && (
               <Button variant="outline" size="sm" onClick={() => setEditProfileOpen(true)}>
                 <Settings2 className="h-3.5 w-3.5 sm:mr-1.5" />

@@ -6,7 +6,7 @@ import { toast } from "@/hooks/use-toast";
 
 interface Props {
   tasks: PlanTask[];
-  onCatchUp: () => Promise<number>;
+  onCatchUp: () => Promise<number> | Promise<number | undefined>;
 }
 
 const todayIso = () => {
@@ -28,7 +28,7 @@ export const CatchUpButton = ({ tasks, onCatchUp }: Props) => {
   const handle = async () => {
     setBusy(true);
     try {
-      const n = await onCatchUp();
+      const n = (await onCatchUp()) ?? overdue.length;
       toast({
         title: "Caught up",
         description: `${n} overdue task${n === 1 ? "" : "s"} rescheduled across the next 14 days.`,
