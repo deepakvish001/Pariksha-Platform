@@ -671,12 +671,12 @@ export default function CodingLeaderboard() {
   );
 
   const podium = useMemo(
-    () => (page === 1 && !search && !difficulty && minScore === 0 ? filteredRows.slice(0, 3) : []),
-    [filteredRows, page, search, difficulty, minScore],
+    () => (page === 1 && !search && !difficulty ? filteredRows.slice(0, 3) : []),
+    [filteredRows, page, search, difficulty],
   );
   const rest = useMemo(
-    () => (page === 1 && !search && !difficulty && minScore === 0 ? filteredRows.slice(3) : filteredRows),
-    [filteredRows, page, search, difficulty, minScore],
+    () => (page === 1 && !search && !difficulty ? filteredRows.slice(3) : filteredRows),
+    [filteredRows, page, search, difficulty],
   );
 
   const openBreakdown = (row: CodingLeaderboardRow) =>
