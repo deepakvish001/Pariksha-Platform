@@ -341,8 +341,12 @@ const ProblemEditor = () => {
     await save.mutateAsync(cleaned);
     setDirty(false);
     try {
-      localStorage.removeItem(DRAFT_KEY(undefined));
+      localStorage.removeItem(DRAFT_KEY(slug));
+      // For brand-new problems, also clear the temp "__new__" draft so the next /new is empty.
+      if (isNew) localStorage.removeItem(DRAFT_KEY(undefined));
     } catch (_) {}
+    setLastDraftSavedAt(null);
+    setDraftRestoredAt(null);
     if (isNew) nav(`/admin/problems/${cleaned.slug}/edit`, { replace: true });
   };
 
