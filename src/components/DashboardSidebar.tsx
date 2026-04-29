@@ -341,7 +341,7 @@ const CollapsibleGroup = ({ title, items, groupIcon, iconColor = "text-muted-for
 
 
 export function DashboardSidebar() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, extendedProfile, signOut } = useAuth();
   const { unreadCount } = useNotifications();
   const { theme, resolvedTheme, setTheme } = useThemeSync();
   const { state, toggleSidebar } = useSidebar();
