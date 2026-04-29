@@ -370,6 +370,15 @@ const CodingProblems = () => {
   };
 
   const { solved, attempted, perProblem, loading } = useCodingAttemptStats();
+  const { data: dbProblems = [] } = useDbCodingProblems();
+  // Merge admin-published DB problems with the bundled static array.
+  // DB row wins on conflict so admin edits override the static baseline.
+  const ALL_PROBLEMS = useMemo(() => {
+    const bySlug = new Map<string, (typeof CODING_PROBLEMS)[number]>();
+    for (const p of CODING_PROBLEMS) bySlug.set(p.slug, p);
+    for (const p of dbProblems) bySlug.set(p.slug, p);
+    return Array.from(bySlug.values());
+  }, [dbProblems]);
   const daily = useDailyChallenge(solved);
   const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
 
