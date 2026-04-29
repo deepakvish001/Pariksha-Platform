@@ -239,6 +239,33 @@ export const useStudyPlan = () => {
     if (error) { await refresh(); throw error; }
   }, [refresh]);
 
+  const addAdhocTask = useCallback(
+    async (input: {
+      title: string; topic: string; difficulty: "easy" | "medium" | "hard";
+      est_minutes: number; day_date: string;
+    }) => {
+      if (!user) throw new Error("Not signed in");
+      if (!plan) throw new Error("Generate a plan first");
+      const sameDay = tasks.filter((t) => t.day_date === input.day_date);
+      const order_index = sameDay.length;
+      const { data, error } = await supabase.from("user_study_plan_tasks").insert({
+        plan_id: plan.id,
+        user_id: user.id,
+        day_date: input.day_date,
+        order_index,
+        topic: input.topic,
+        title: input.title,
+        difficulty: input.difficulty,
+        est_minutes: input.est_minutes,
+        source_type: "custom",
+        status: "pending" as const,
+      }).select().single();
+      if (error) throw error;
+      setTasks((cur) => [...cur, data as PlanTask]);
+    },
+    [user, plan, tasks]
+  );
+
   /** Move all overdue (pending/in_progress) tasks to today and the next few days, respecting time budget. */
   const catchUp = useCallback(
     async (weekdayBudget: number, weekendBudget: number) => {
@@ -286,6 +313,6 @@ export const useStudyPlan = () => {
   return {
     plan, tasks, loading, generating,
     generate, updateTaskStatus, moveTaskToDay, toggleLock, setActualMinutes, catchUp,
-    refresh,
+    addAdhocTask, refresh,
   };
 };

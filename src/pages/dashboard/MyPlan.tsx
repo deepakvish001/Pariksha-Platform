@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Sparkles, Loader2, RefreshCw, Settings2, Target, Calendar, FileDown, ChevronDown,
+  CalendarPlus,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStudyProfile } from "@/hooks/useStudyProfile";
@@ -28,7 +29,10 @@ import { StreakHistoryChart } from "@/components/my-plan/StreakHistoryChart";
 import { FocusTimerCard } from "@/components/my-plan/FocusTimerCard";
 import { DailyCheckInDialog } from "@/components/my-plan/DailyCheckInDialog";
 import { CatchUpButton } from "@/components/my-plan/CatchUpButton";
+import { GoalProgressWidget } from "@/components/my-plan/GoalProgressWidget";
+import { AddAdhocTaskDialog } from "@/components/my-plan/AddAdhocTaskDialog";
 import { exportPlanToPdf } from "@/lib/my-plan/exportPlanPdf";
+import { downloadPlanIcs } from "@/lib/my-plan/exportPlanIcs";
 import { resolveTaskLink } from "@/lib/my-plan/taskLinks";
 import type { RecommendationMode } from "@/lib/adaptive/rerank";
 import { toast } from "@/hooks/use-toast";
@@ -48,7 +52,7 @@ const MyPlan = () => {
   const { stats } = usePlatformStats();
   const {
     plan, tasks, loading: planLoading, generating,
-    generate, updateTaskStatus, moveTaskToDay, toggleLock, catchUp,
+    generate, updateTaskStatus, moveTaskToDay, toggleLock, catchUp, addAdhocTask,
   } = useStudyPlan();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [recMode, setRecMode] = useState<RecommendationMode>(() => {
@@ -81,6 +85,45 @@ const MyPlan = () => {
       localStorage.setItem("myplan:checkin", today);
     }
   }, [user, tasks]);
+
+  // Keyboard shortcuts: J/K cycle through today's tasks, Enter toggles done, P exports PDF.
+  useEffect(() => {
+    if (!plan) return;
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const today = todayIso();
+      const todays = tasks.filter((t) => t.day_date === today);
+      if (todays.length === 0 && e.key.toLowerCase() !== "p") return;
+      const focusedId = document.activeElement?.id?.startsWith("task-")
+        ? document.activeElement.id.replace(/^task-/, "")
+        : null;
+      const idx = focusedId ? todays.findIndex((t) => t.id === focusedId) : -1;
+
+      if (e.key === "j" || e.key === "J") {
+        e.preventDefault();
+        const next = todays[Math.min(todays.length - 1, idx + 1)] ?? todays[0];
+        document.getElementById(`task-${next.id}`)?.focus();
+      } else if (e.key === "k" || e.key === "K") {
+        e.preventDefault();
+        const prev = todays[Math.max(0, idx - 1)] ?? todays[0];
+        document.getElementById(`task-${prev.id}`)?.focus();
+      } else if (e.key === "Enter" && focusedId) {
+        const t = todays.find((tt) => tt.id === focusedId);
+        if (t) {
+          e.preventDefault();
+          updateTaskStatus(t.id, t.status === "done" ? "pending" : "done");
+        }
+      } else if ((e.key === "p" || e.key === "P") && profile) {
+        e.preventDefault();
+        exportPlanToPdf(plan, tasks, profile, 28);
+        toast({ title: "PDF generated", description: "Your 28-day plan summary is downloading." });
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [plan, tasks, profile, updateTaskStatus]);
 
   const daysLeft = useMemo(() => {
     if (!profile?.target_date) return null;
@@ -168,16 +211,41 @@ const MyPlan = () => {
               </Button>
             )}
             {profile && plan && (
-              <Button
-                variant="outline" size="sm"
-                onClick={() => {
-                  exportPlanToPdf(plan, tasks, profile, 28);
-                  toast({ title: "PDF generated", description: "Your 28-day plan summary is downloading." });
-                }}
-              >
-                <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
-                <span className="hidden sm:inline">Export PDF</span>
-              </Button>
+              <AddAdhocTaskDialog onAdd={addAdhocTask} />
+            )}
+            {profile && plan && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Export</span>
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Export plan</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      exportPlanToPdf(plan, tasks, profile, 28);
+                      toast({ title: "PDF generated", description: "Your 28-day plan summary is downloading." });
+                    }}
+                  >
+                    <FileDown className="h-3.5 w-3.5 mr-2" /> 28-day PDF summary
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      downloadPlanIcs(tasks, { days: 28, startHour: 9 });
+                      toast({
+                        title: "Calendar file downloaded",
+                        description: "Open the .ics in Google or Apple Calendar to subscribe.",
+                      });
+                    }}
+                  >
+                    <CalendarPlus className="h-3.5 w-3.5 mr-2" /> Calendar (.ics)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             {profile && (
               <DropdownMenu>
@@ -286,6 +354,7 @@ const MyPlan = () => {
                 {plan && <ProgressAnalytics tasks={tasks} />}
               </div>
               <div className="space-y-4 sm:space-y-6">
+                {plan && <GoalProgressWidget tasks={tasks} />}
                 {plan && (
                   <FocusTimerCard
                     tasks={tasks}
