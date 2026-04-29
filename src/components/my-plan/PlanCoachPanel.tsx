@@ -414,16 +414,32 @@ export const PlanCoachPanel = ({
               </span>
             </div>
             {(summary.topStrong.length > 0 || summary.topWeak.length > 0) && (
-              <div className="flex flex-wrap items-center gap-1 text-[11px]">
-                {summary.topStrong.slice(0, 1).map((t) => (
-                  <Badge key={`s-${t.topic}`} variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30 h-5 px-1.5">
-                    {t.topic} {t.pct}%
-                  </Badge>
+              <div className="space-y-1.5 pt-0.5">
+                {summary.topStrong.slice(0, 2).map((t) => (
+                  <div key={`s-${t.topic}`} className="space-y-0.5">
+                    <div className="flex items-baseline justify-between gap-2 text-[11px]">
+                      <span className="truncate font-medium text-green-600 dark:text-green-400">
+                        ↑ {t.topic}
+                      </span>
+                      <span className="text-muted-foreground tabular-nums shrink-0">
+                        {t.done}/{t.total} · {t.pct}%
+                      </span>
+                    </div>
+                    <Progress value={t.pct} className="h-1 [&>div]:bg-green-500/70" />
+                  </div>
                 ))}
                 {summary.topWeak.slice(0, 2).map((t) => (
-                  <Badge key={`w-${t.topic}`} variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 h-5 px-1.5">
-                    {t.topic} {t.pct}%
-                  </Badge>
+                  <div key={`w-${t.topic}`} className="space-y-0.5">
+                    <div className="flex items-baseline justify-between gap-2 text-[11px]">
+                      <span className="truncate font-medium text-amber-600 dark:text-amber-400">
+                        ↓ {t.topic}
+                      </span>
+                      <span className="text-muted-foreground tabular-nums shrink-0">
+                        {t.done}/{t.total} · {t.pct}%
+                      </span>
+                    </div>
+                    <Progress value={t.pct} className="h-1 [&>div]:bg-amber-500/70" />
+                  </div>
                 ))}
               </div>
             )}
