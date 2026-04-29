@@ -1027,6 +1027,56 @@ export default function CodingLeaderboard() {
           </CardContent>
         </Card>
 
+        {/* Results count summary — updates live with chips/filters */}
+        <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-muted-foreground">
+          <p aria-live="polite">
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Loading results…
+              </span>
+            ) : (
+              <>
+                <span className="font-semibold text-foreground tabular-nums">
+                  {filteredRows.length}
+                </span>{" "}
+                {filteredRows.length === 1 ? "solver" : "solvers"} on this page
+                {minScore > 0 && (
+                  <span className="opacity-80"> · score ≥ {minScore}</span>
+                )}
+                {difficulty && (
+                  <span className="opacity-80"> · {difficulty} only</span>
+                )}
+                {search && (
+                  <span className="opacity-80"> · matching “{search}”</span>
+                )}
+                {minScore > 0 && filteredRows.length < rows.length && (
+                  <span className="opacity-70">
+                    {" "}({rows.length - filteredRows.length} hidden by min score)
+                  </span>
+                )}
+              </>
+            )}
+          </p>
+          {(minScore > 0 || difficulty || search) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => {
+                setMinScoreInput("");
+                setSearchInput("");
+                updateParams(
+                  { diff: null, q: null, minScore: null },
+                  { resetPage: true },
+                );
+              }}
+            >
+              <X className="h-3 w-3 mr-1" /> Clear filters
+            </Button>
+          )}
+        </div>
+
         {/* Your current rank card */}
         {user && (
           <YourRankCard
