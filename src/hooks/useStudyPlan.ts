@@ -25,6 +25,8 @@ export interface PlanTask {
   completed_at: string | null;
   started_at: string | null;
   locked: boolean;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
 }
 
 export interface StudyPlan {
