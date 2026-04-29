@@ -148,9 +148,13 @@ const ProblemEditor = () => {
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 
-  // Slug collision check (debounced) for new problems.
+  // Slug collision check (debounced) — only relevant for new problems.
+  // Existing problems have a read-only slug, so we skip the check entirely.
   useEffect(() => {
-    if (!isNew) return;
+    if (!isNew) {
+      setSlugTaken(false);
+      return;
+    }
     const s = slugify(form.slug);
     if (!s) {
       setSlugTaken(false);
