@@ -35,8 +35,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 import PublicProfileAchievements from "@/components/PublicProfileAchievements";
 import { useProfileFollowCounts } from "@/hooks/useProfileFollowCounts";
