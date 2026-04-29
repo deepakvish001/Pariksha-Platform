@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
@@ -7,6 +7,7 @@ import {
   useSaveProblem,
 } from "@/hooks/useAdminProblems";
 import { useLastPublishEvent } from "@/hooks/useLastPublishEvent";
+import { useDistinctTopics } from "@/hooks/useDistinctTopics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,12 +20,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LANGUAGES, type LangId } from "@/data/codingProblemsData";
-import { MonacoEditor } from "@/components/coding/MonacoEditor";
-import { Plus, Trash2, Save, ArrowLeft, X, Globe, EyeOff, AlertCircle, ExternalLink } from "lucide-react";
+import { MonacoEditor, type MonacoEditorHandle } from "@/components/coding/MonacoEditor";
+import {
+  Plus,
+  Trash2,
+  Save,
+  ArrowLeft,
+  X,
+  Globe,
+  EyeOff,
+  AlertCircle,
+  ExternalLink,
+  Copy,
+  Wand2,
+  Upload,
+  Play,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import {
@@ -39,6 +63,31 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { formatRelative } from "@/lib/formatRelative";
+import { validateProblem, TAB_LABELS, type TabId } from "@/lib/admin/problemValidation";
+import { TabBadge } from "@/components/admin/editor/TabBadge";
+import { PublishChecklistDialog } from "@/components/admin/editor/PublishChecklistDialog";
+import { MarkdownToolbar } from "@/components/admin/editor/MarkdownToolbar";
+import { BulkTestsDialog } from "@/components/admin/editor/BulkTestsDialog";
+import { RunReferenceButton } from "@/components/admin/editor/RunReferenceButton";
+import { scaffoldStarterFromReference } from "@/lib/admin/codeScaffold";
+import { supabase } from "@/integrations/supabase/client";
+
+const ACTIVE_TAB_KEY = "admin:problem-editor:tab";
+
+const COMMON_CONSTRAINT_PRESETS = [
+  "1 <= n <= 10^5",
+  "1 <= n <= 10^9",
+  "-10^9 <= a[i] <= 10^9",
+  "1 <= a[i] <= 10^4",
+  "All values are unique",
+  "The answer is guaranteed to fit in a 32-bit integer",
+];
+
+const LIMIT_PRESETS = [
+  { label: "Fast (1s / 128 MB)", cpu: 1, mem: 128000 },
+  { label: "Default (2s / 256 MB)", cpu: 2, mem: 256000 },
+  { label: "Heavy (5s / 512 MB)", cpu: 5, mem: 512000 },
+];
 
 const slugify = (s: string) =>
   s
@@ -82,6 +131,24 @@ const ProblemEditor = () => {
   const [dirty, setDirty] = useState(false);
   const [slugTaken, setSlugTaken] = useState(false);
   const [draftRestoredAt, setDraftRestoredAt] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    try {
+      const t = localStorage.getItem(ACTIVE_TAB_KEY) as TabId | null;
+      return t ?? "basics";
+    } catch { return "basics"; }
+  });
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [refValidation, setRefValidation] = useState<{
+    running: boolean;
+    results: { idx: number; pass: boolean; got: string; expected: string }[] | null;
+  }>({ running: false, results: null });
+  const descRef = useRef<HTMLTextAreaElement>(null);
+  const { data: distinctTopics } = useDistinctTopics();
+  const report = useMemo(() => validateProblem(form), [form]);
+
+  useEffect(() => {
+    try { localStorage.setItem(ACTIVE_TAB_KEY, activeTab); } catch {}
+  }, [activeTab]);
 
   // Restore localStorage draft for NEW problems on first mount.
   useEffect(() => {
@@ -290,33 +357,27 @@ const ProblemEditor = () => {
               </AlertDialogContent>
             </AlertDialog>
           ) : (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
+            <PublishChecklistDialog
+              open={publishOpen}
+              onOpenChange={setPublishOpen}
+              report={report}
+              onJumpTo={(t) => { setActiveTab(t); setPublishOpen(false); }}
+              onConfirm={() => { update("is_published", true); setPublishOpen(false); }}
+              trigger={
                 <Button
                   variant="default"
                   size="sm"
                   disabled={!form.title.trim() || !form.slug.trim()}
                 >
                   <Globe className="mr-2 h-4 w-4" /> Publish
+                  {!report.canPublish && (
+                    <Badge variant="outline" className="ml-2 border-destructive/50 text-destructive">
+                      {report.blockingErrors.length}
+                    </Badge>
+                  )}
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Publish this problem?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Once published, "{form.title || form.slug}" will appear in the
-                    public coding library and learners can solve and submit. Hidden
-                    tests stay private. You can unpublish later if needed.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => update("is_published", true)}>
-                    Publish
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              }
+            />
           )}
           {!isNew && (
             <Button variant="outline" size="sm" asChild>
@@ -391,17 +452,14 @@ const ProblemEditor = () => {
           </Badge>
         )}
       </div>
-      <Tabs defaultValue="basics">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)}>
         <TabsList className="flex flex-wrap h-auto">
-          <TabsTrigger value="basics">Basics</TabsTrigger>
-          <TabsTrigger value="statement">Statement</TabsTrigger>
-          <TabsTrigger value="examples">Examples</TabsTrigger>
-          <TabsTrigger value="constraints">Constraints &amp; Hints</TabsTrigger>
-          <TabsTrigger value="starter">Starter Code</TabsTrigger>
-          <TabsTrigger value="reference">Reference Solution</TabsTrigger>
-          <TabsTrigger value="tests">Tests</TabsTrigger>
-          <TabsTrigger value="sql">SQL Spec</TabsTrigger>
-          <TabsTrigger value="limits">Limits</TabsTrigger>
+          {(Object.keys(TAB_LABELS) as TabId[]).map((id) => (
+            <TabsTrigger key={id} value={id}>
+              {TAB_LABELS[id]}
+              <TabBadge status={report.sections[id].status} />
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value="basics">
@@ -441,6 +499,25 @@ const ProblemEditor = () => {
                   </Badge>
                 </div>
               )}
+              {form.slug && (
+                <div className="mt-2 flex items-center gap-2 rounded-md border border-dashed bg-muted/20 px-2 py-1.5 text-xs text-muted-foreground">
+                  <span className="truncate">
+                    Public URL: <code className="font-mono">/library/problems/{form.slug}</code>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="ml-auto h-6 w-6"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${location.origin}/library/problems/${form.slug}`);
+                      toast({ title: "Copied", description: "Public URL copied to clipboard." });
+                    }}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
             </div>
             <div>
               <Label>Difficulty</Label>
@@ -455,6 +532,20 @@ const ProblemEditor = () => {
                   <SelectItem value="hard">Hard</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="mt-2">
+                <Badge
+                  className={
+                    form.difficulty === "easy"
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                      : form.difficulty === "medium"
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                      : "border-destructive/40 bg-destructive/10 text-destructive"
+                  }
+                  variant="outline"
+                >
+                  Preview: {form.difficulty.toUpperCase()}
+                </Badge>
+              </div>
             </div>
             <div>
               <Label>Topics</Label>
@@ -487,6 +578,26 @@ const ProblemEditor = () => {
                   </Badge>
                 ))}
               </div>
+              {distinctTopics && distinctTopics.length > 0 && (
+                <div className="mt-3">
+                  <p className="mb-1 text-xs text-muted-foreground">Suggested (click to add)</p>
+                  <div className="flex flex-wrap gap-1">
+                    {distinctTopics
+                      .filter((t) => !form.topics.includes(t))
+                      .slice(0, 18)
+                      .map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => update("topics", [...form.topics, t])}
+                          className="rounded-full border border-dashed px-2 py-0.5 text-xs text-muted-foreground hover:border-solid hover:bg-accent hover:text-accent-foreground"
+                        >
+                          + {t}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </TabsContent>
@@ -494,8 +605,33 @@ const ProblemEditor = () => {
         <TabsContent value="statement">
           <div className="grid gap-4 lg:grid-cols-2">
             <Card className="p-4">
-              <Label>Description (Markdown)</Label>
+              <div className="mb-2 flex items-center justify-between">
+                <Label>Description (Markdown)</Label>
+                <span className="text-xs text-muted-foreground">
+                  {form.description.length} chars · {form.description.trim().split(/\s+/).filter(Boolean).length} words
+                  {" · ~"}
+                  {Math.max(1, Math.round(form.description.trim().split(/\s+/).filter(Boolean).length / 200))} min read
+                </span>
+              </div>
+              <MarkdownToolbar
+                textareaRef={descRef}
+                value={form.description}
+                onChange={(v) => update("description", v)}
+                onInsertExamples={() => {
+                  const real = form.examples.filter((e) => e.input || e.output);
+                  if (!real.length) {
+                    toast({ title: "No examples", description: "Add examples first.", variant: "destructive" });
+                    return;
+                  }
+                  const md = "\n\n## Examples\n\n" + real.map((ex, i) =>
+                    `**Example ${i + 1}**\n\n\`\`\`\nInput: ${ex.input}\nOutput: ${ex.output}${ex.explanation ? `\nExplanation: ${ex.explanation}` : ""}\n\`\`\``
+                  ).join("\n\n") + "\n";
+                  update("description", form.description + md);
+                  toast({ title: "Inserted", description: `${real.length} example(s) appended.` });
+                }}
+              />
               <Textarea
+                ref={descRef}
                 value={form.description}
                 onChange={(e) => update("description", e.target.value)}
                 rows={20}
@@ -514,28 +650,81 @@ const ProblemEditor = () => {
         <TabsContent value="examples">
           <Card className="space-y-3 p-4">
             {form.examples.map((ex, i) => (
-              <div key={i} className="grid gap-2 rounded-md border p-3 md:grid-cols-3">
-                <Textarea
-                  rows={3}
-                  placeholder="Input"
-                  value={ex.input}
-                  onChange={(e) => {
-                    const next = [...form.examples];
-                    next[i] = { ...ex, input: e.target.value };
-                    update("examples", next);
-                  }}
-                />
-                <Textarea
-                  rows={3}
-                  placeholder="Output"
-                  value={ex.output}
-                  onChange={(e) => {
-                    const next = [...form.examples];
-                    next[i] = { ...ex, output: e.target.value };
-                    update("examples", next);
-                  }}
-                />
-                <div className="flex gap-2">
+              <div key={i} className="space-y-2 rounded-md border p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Example {i + 1}</span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={i === 0}
+                      onClick={() => {
+                        const next = [...form.examples];
+                        [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                        update("examples", next);
+                      }}
+                      title="Move up"
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={i === form.examples.length - 1}
+                      onClick={() => {
+                        const next = [...form.examples];
+                        [next[i + 1], next[i]] = [next[i], next[i + 1]];
+                        update("examples", next);
+                      }}
+                      title="Move down"
+                    >
+                      ↓
+                    </Button>
+                    <RunReferenceButton
+                      source={form.reference_solution[activeLang] ?? ""}
+                      language={activeLang}
+                      stdin={ex.input}
+                      label={`Run (${activeLang})`}
+                      onResult={(out) => {
+                        const next = [...form.examples];
+                        next[i] = { ...ex, output: out };
+                        update("examples", next);
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        update("examples", form.examples.filter((_, x) => x !== i))
+                      }
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid gap-2 md:grid-cols-3">
+                  <Textarea
+                    rows={3}
+                    placeholder="Input"
+                    value={ex.input}
+                    onChange={(e) => {
+                      const next = [...form.examples];
+                      next[i] = { ...ex, input: e.target.value };
+                      update("examples", next);
+                    }}
+                    className="font-mono text-xs"
+                  />
+                  <Textarea
+                    rows={3}
+                    placeholder="Output"
+                    value={ex.output}
+                    onChange={(e) => {
+                      const next = [...form.examples];
+                      next[i] = { ...ex, output: e.target.value };
+                      update("examples", next);
+                    }}
+                    className="font-mono text-xs"
+                  />
                   <Textarea
                     rows={3}
                     placeholder="Explanation (optional)"
@@ -546,15 +735,6 @@ const ProblemEditor = () => {
                       update("examples", next);
                     }}
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      update("examples", form.examples.filter((_, x) => x !== i))
-                    }
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
                 </div>
               </div>
             ))}
@@ -571,18 +751,40 @@ const ProblemEditor = () => {
 
         <TabsContent value="constraints">
           <div className="grid gap-4 md:grid-cols-2">
-            <ListEditor
-              title="Constraints"
-              items={form.constraints}
-              onChange={(v) => update("constraints", v)}
-              placeholder="1 <= n <= 10^5"
-            />
-            <ListEditor
-              title="Hints"
-              items={form.hints}
-              onChange={(v) => update("hints", v)}
-              placeholder="Try a hash map…"
-            />
+            <Card className="space-y-3 p-4">
+              <ListEditor
+                title="Constraints"
+                items={form.constraints}
+                onChange={(v) => update("constraints", v)}
+                placeholder="1 <= n <= 10^5"
+                inline
+              />
+              <div>
+                <p className="mb-1 text-xs text-muted-foreground">Quick presets</p>
+                <div className="flex flex-wrap gap-1">
+                  {COMMON_CONSTRAINT_PRESETS.filter((p) => !form.constraints.includes(p)).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => update("constraints", [...form.constraints, p])}
+                      className="rounded-full border border-dashed px-2 py-0.5 font-mono text-xs text-muted-foreground hover:border-solid hover:bg-accent hover:text-accent-foreground"
+                    >
+                      + {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <ListEditor
+                title="Hints (revealed in order)"
+                items={form.hints}
+                onChange={(v) => update("hints", v)}
+                placeholder="Try a hash map…"
+                numbered
+                inline
+              />
+            </Card>
           </div>
         </TabsContent>
 
@@ -592,6 +794,45 @@ const ProblemEditor = () => {
             onChange={(v) => update("starter_code", v)}
             activeLang={activeLang}
             setActiveLang={setActiveLang}
+            extraActions={
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    const ref = form.reference_solution[activeLang];
+                    if (!ref?.trim()) {
+                      toast({ title: "No reference", description: `Add a ${activeLang} reference solution first.`, variant: "destructive" });
+                      return;
+                    }
+                    update("starter_code", { ...form.starter_code, [activeLang]: scaffoldStarterFromReference(activeLang, ref) });
+                    toast({ title: "Scaffold generated", description: "Review the body and adjust as needed." });
+                  }}
+                >
+                  <Wand2 className="mr-1.5 h-3.5 w-3.5" /> Generate from reference
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" type="button">
+                      <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy from…
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {LANGUAGES.filter((l) => l.id !== activeLang && (form.starter_code[l.id] ?? "").trim()).map((l) => (
+                      <DropdownMenuItem
+                        key={l.id}
+                        onClick={() =>
+                          update("starter_code", { ...form.starter_code, [activeLang]: form.starter_code[l.id] })
+                        }
+                      >
+                        {l.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            }
           />
         </TabsContent>
 
@@ -601,20 +842,81 @@ const ProblemEditor = () => {
             onChange={(v) => update("reference_solution", v)}
             activeLang={activeLang}
             setActiveLang={setActiveLang}
+            extraActions={
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                disabled={refValidation.running}
+                onClick={async () => {
+                  const ref = form.reference_solution[activeLang];
+                  if (!ref?.trim()) { toast({ title: "No reference", variant: "destructive" }); return; }
+                  if (!form.sample_tests.length) { toast({ title: "No sample tests" }); return; }
+                  setRefValidation({ running: true, results: null });
+                  const langInfo = LANGUAGES.find((l) => l.id === activeLang)!;
+                  const results: { idx: number; pass: boolean; got: string; expected: string }[] = [];
+                  for (let i = 0; i < form.sample_tests.length; i++) {
+                    const t = form.sample_tests[i];
+                    try {
+                      const { data } = await supabase.functions.invoke("run-code", {
+                        body: { source_code: ref, language_id: langInfo.judge0Id, language: activeLang, stdin: t.input },
+                      });
+                      const payload = (data as any)?.data ?? data;
+                      const got = ((payload?.stdout ?? "") as string).trimEnd();
+                      results.push({ idx: i, pass: got === t.expected.trimEnd(), got, expected: t.expected });
+                    } catch (err: any) {
+                      results.push({ idx: i, pass: false, got: `ERROR: ${err?.message ?? "?"}`, expected: t.expected });
+                    }
+                  }
+                  setRefValidation({ running: false, results });
+                  const ok = results.filter((r) => r.pass).length;
+                  toast({ title: `Reference: ${ok}/${results.length} passed` });
+                }}
+              >
+                {refValidation.running ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Play className="mr-1.5 h-3.5 w-3.5" />}
+                Validate against samples
+              </Button>
+            }
+            footer={
+              refValidation.results && (
+                <div className="space-y-1 rounded-md border bg-muted/20 p-2 text-xs">
+                  {refValidation.results.map((r) => (
+                    <div key={r.idx} className="flex items-start gap-2">
+                      {r.pass ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-emerald-500" /> : <XCircle className="mt-0.5 h-3.5 w-3.5 text-destructive" />}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">Sample #{r.idx + 1} — {r.pass ? "pass" : "fail"}</p>
+                        {!r.pass && (
+                          <pre className="mt-0.5 max-h-24 overflow-auto whitespace-pre-wrap font-mono text-[10px] text-muted-foreground">
+                            expected: {r.expected}
+                            {"\n"}got: {r.got}
+                          </pre>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
           />
         </TabsContent>
 
         <TabsContent value="tests">
           <div className="space-y-4">
             <TestsTable
-              title="Sample tests (visible to user)"
+              title="Sample tests"
+              subtitle="visible to user"
               tests={form.sample_tests}
               onChange={(t) => update("sample_tests", t)}
+              referenceSource={form.reference_solution[activeLang] ?? ""}
+              referenceLang={activeLang}
             />
             <TestsTable
-              title="Hidden tests (used at submit)"
+              title="Hidden tests"
+              subtitle="used at submit"
               tests={form.hidden_tests}
               onChange={(t) => update("hidden_tests", t)}
+              referenceSource={form.reference_solution[activeLang] ?? ""}
+              referenceLang={activeLang}
             />
           </div>
         </TabsContent>
@@ -671,14 +973,45 @@ const ProblemEditor = () => {
                     update("sql_spec", { ...form.sql_spec!, starter: v })
                   }
                 />
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={form.sql_spec.order_matters}
-                    onCheckedChange={(v) =>
-                      update("sql_spec", { ...form.sql_spec!, order_matters: v })
-                    }
-                  />
-                  <Label>Row order matters</Label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={form.sql_spec.order_matters}
+                      onCheckedChange={(v) =>
+                        update("sql_spec", { ...form.sql_spec!, order_matters: v })
+                      }
+                    />
+                    <Label>Row order matters</Label>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const { data } = await supabase.functions.invoke("run-sql", {
+                          body: {
+                            source_code: form.sql_spec!.reference_query,
+                            language: "sql",
+                            schema: form.sql_spec!.schema_sql,
+                            seed: form.sql_spec!.seed_sql,
+                          },
+                        });
+                        const payload = (data as any)?.data ?? data;
+                        const out = (payload?.stdout ?? "").toString();
+                        const stderr = (payload?.stderr ?? "").toString();
+                        if (stderr && !out) {
+                          toast({ title: "SQL error", description: stderr.slice(0, 300), variant: "destructive" });
+                          return;
+                        }
+                        toast({ title: "Reference query ran", description: out.slice(0, 300) || "(no rows)" });
+                      } catch (err: any) {
+                        toast({ title: "Run failed", description: err?.message, variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <Play className="mr-1.5 h-3.5 w-3.5" /> Run reference query
+                  </Button>
                 </div>
               </>
             )}
@@ -686,25 +1019,48 @@ const ProblemEditor = () => {
         </TabsContent>
 
         <TabsContent value="limits">
-          <Card className="grid gap-4 p-4 md:grid-cols-2">
+          <Card className="space-y-4 p-4">
             <div>
-              <Label>CPU time limit (seconds)</Label>
-              <Input
-                type="number"
-                step="0.5"
-                value={form.cpu_time_limit_sec}
-                onChange={(e) =>
-                  update("cpu_time_limit_sec", Number(e.target.value))
-                }
-              />
+              <p className="mb-2 text-xs text-muted-foreground">Presets</p>
+              <div className="flex flex-wrap gap-2">
+                {LIMIT_PRESETS.map((p) => (
+                  <Button
+                    key={p.label}
+                    variant={form.cpu_time_limit_sec === p.cpu && form.memory_limit_kb === p.mem ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      update("cpu_time_limit_sec", p.cpu);
+                      update("memory_limit_kb", p.mem);
+                    }}
+                  >
+                    {p.label}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div>
-              <Label>Memory limit (KB)</Label>
-              <Input
-                type="number"
-                value={form.memory_limit_kb}
-                onChange={(e) => update("memory_limit_kb", Number(e.target.value))}
-              />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label>CPU time limit (seconds)</Label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  value={form.cpu_time_limit_sec}
+                  onChange={(e) =>
+                    update("cpu_time_limit_sec", Number(e.target.value))
+                  }
+                />
+              </div>
+              <div>
+                <Label>Memory limit (KB)</Label>
+                <Input
+                  type="number"
+                  value={form.memory_limit_kb}
+                  onChange={(e) => update("memory_limit_kb", Number(e.target.value))}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  ≈ {Math.round((form.memory_limit_kb ?? 0) / 1024)} MB
+                </p>
+              </div>
             </div>
           </Card>
         </TabsContent>
@@ -718,15 +1074,20 @@ const ListEditor = ({
   items,
   onChange,
   placeholder,
+  numbered,
+  inline,
 }: {
   title: string;
   items: string[];
   onChange: (v: string[]) => void;
   placeholder?: string;
+  numbered?: boolean;
+  inline?: boolean;
 }) => {
   const [val, setVal] = useState("");
+  const Wrapper: any = inline ? "div" : Card;
   return (
-    <Card className="space-y-2 p-4">
+    <Wrapper className={inline ? "space-y-2" : "space-y-2 p-4"}>
       <Label>{title}</Label>
       <div className="flex gap-2">
         <Input
@@ -756,18 +1117,37 @@ const ListEditor = ({
       <ul className="space-y-1">
         {items.map((it, i) => (
           <li key={i} className="flex items-center justify-between rounded-md bg-muted px-3 py-1.5 text-sm">
-            <span>{it}</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onChange(items.filter((_, x) => x !== i))}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <span className="min-w-0 flex-1">
+              {numbered && <span className="mr-2 text-xs text-muted-foreground">Hint {i + 1}</span>}
+              {it}
+            </span>
+            <div className="flex items-center gap-1">
+              {numbered && (
+                <>
+                  <Button variant="ghost" size="icon" disabled={i === 0} onClick={() => {
+                    const next = [...items];
+                    [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                    onChange(next);
+                  }}>↑</Button>
+                  <Button variant="ghost" size="icon" disabled={i === items.length - 1} onClick={() => {
+                    const next = [...items];
+                    [next[i + 1], next[i]] = [next[i], next[i + 1]];
+                    onChange(next);
+                  }}>↓</Button>
+                </>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onChange(items.filter((_, x) => x !== i))}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </li>
         ))}
       </ul>
-    </Card>
+    </Wrapper>
   );
 };
 
@@ -776,16 +1156,21 @@ const CodePerLanguage = ({
   onChange,
   activeLang,
   setActiveLang,
+  extraActions,
+  footer,
 }: {
   value: Record<string, string>;
   onChange: (v: Record<string, string>) => void;
   activeLang: LangId;
   setActiveLang: (l: LangId) => void;
+  extraActions?: React.ReactNode;
+  footer?: React.ReactNode;
 }) => {
   const lang = LANGUAGES.find((l) => l.id === activeLang)!;
+  const editorRef = useRef<MonacoEditorHandle>(null);
   return (
     <Card className="space-y-3 p-4">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {LANGUAGES.map((l) => (
           <Button
             key={l.id}
@@ -794,75 +1179,121 @@ const CodePerLanguage = ({
             onClick={() => setActiveLang(l.id)}
           >
             {l.label}
-            {value[l.id] ? <span className="ml-2 text-xs">●</span> : null}
+            {value[l.id] ? <CheckCircle2 className="ml-1.5 h-3 w-3 text-emerald-500" /> : null}
           </Button>
         ))}
+        <div className="ml-auto flex flex-wrap gap-2">
+          {extraActions}
+          <Button variant="ghost" size="sm" type="button" onClick={() => editorRef.current?.format()}>
+            Format
+          </Button>
+        </div>
       </div>
       <div className="h-[420px] overflow-hidden rounded-md border">
         <MonacoEditor
+          ref={editorRef}
           value={value[activeLang] ?? ""}
           onChange={(v) => onChange({ ...value, [activeLang]: v })}
           language={lang.monaco}
         />
       </div>
+      {footer}
     </Card>
   );
 };
 
 const TestsTable = ({
   title,
+  subtitle,
   tests,
   onChange,
+  referenceSource,
+  referenceLang,
 }: {
   title: string;
+  subtitle?: string;
   tests: { input: string; expected: string }[];
   onChange: (v: { input: string; expected: string }[]) => void;
+  referenceSource?: string;
+  referenceLang?: LangId;
 }) => (
   <Card className="space-y-3 p-4">
-    <div className="flex items-center justify-between">
-      <Label>{title}</Label>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onChange([...tests, { input: "", expected: "" }])}
-      >
-        <Plus className="mr-2 h-4 w-4" /> Add test
-      </Button>
+    <div className="flex flex-wrap items-center gap-2">
+      <Label className="flex items-center gap-2">
+        {title}
+        <Badge variant="secondary" className="ml-1">{tests.length}</Badge>
+        {subtitle && <span className="text-xs font-normal text-muted-foreground">({subtitle})</span>}
+      </Label>
+      <div className="ml-auto flex flex-wrap gap-2">
+        <BulkTestsDialog
+          existing={tests}
+          onAdd={(added) => onChange([...tests, ...added])}
+          trigger={
+            <Button variant="outline" size="sm" type="button">
+              <Upload className="mr-1.5 h-3.5 w-3.5" /> Bulk add
+            </Button>
+          }
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onChange([...tests, { input: "", expected: "" }])}
+        >
+          <Plus className="mr-2 h-4 w-4" /> Add test
+        </Button>
+      </div>
     </div>
     {tests.length === 0 && (
       <p className="text-sm text-muted-foreground">No tests yet.</p>
     )}
     {tests.map((t, i) => (
-      <div key={i} className="grid gap-2 rounded-md border p-2 md:grid-cols-[1fr_1fr_auto]">
-        <Textarea
-          rows={3}
-          placeholder="stdin"
-          value={t.input}
-          onChange={(e) => {
-            const next = [...tests];
-            next[i] = { ...t, input: e.target.value };
-            onChange(next);
-          }}
-          className="font-mono text-xs"
-        />
-        <Textarea
-          rows={3}
-          placeholder="expected stdout"
-          value={t.expected}
-          onChange={(e) => {
-            const next = [...tests];
-            next[i] = { ...t, expected: e.target.value };
-            onChange(next);
-          }}
-          className="font-mono text-xs"
-        />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onChange(tests.filter((_, x) => x !== i))}
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+      <div key={i} className="space-y-2 rounded-md border p-2">
+        <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+          <Textarea
+            rows={3}
+            placeholder="stdin"
+            value={t.input}
+            onChange={(e) => {
+              const next = [...tests];
+              next[i] = { ...t, input: e.target.value };
+              onChange(next);
+            }}
+            className="font-mono text-xs"
+          />
+          <Textarea
+            rows={3}
+            placeholder="expected stdout"
+            value={t.expected}
+            onChange={(e) => {
+              const next = [...tests];
+              next[i] = { ...t, expected: e.target.value };
+              onChange(next);
+            }}
+            className="font-mono text-xs"
+          />
+          <div className="flex flex-col gap-1">
+            {referenceLang && (
+              <RunReferenceButton
+                source={referenceSource ?? ""}
+                language={referenceLang}
+                stdin={t.input}
+                label="Fill expected"
+                onResult={(out) => {
+                  const next = [...tests];
+                  next[i] = { ...t, expected: out };
+                  onChange(next);
+                }}
+              />
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onChange(tests.filter((_, x) => x !== i))}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        </div>
       </div>
     ))}
   </Card>

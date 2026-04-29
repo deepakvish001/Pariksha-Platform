@@ -1,53 +1,92 @@
-## Goal
+# Better Problem Editor (/admin/problems/new)
 
-Add a dedicated admin page that lists every `publish` and `unpublish` event for coding problems, with filters (action, problem slug search, date range, actor) and proper pagination. Distinct from the existing general Audit Log (which shows all admin actions).
+Make each tab in the Problem Editor feel complete and trustworthy: clear validation, completion indicators on every tab, in-place previews, and quick-fill helpers — without changing the data model.
 
-## New files
+## What you'll see
 
-**`src/hooks/usePublishHistory.ts`** — React Query hook fetching paginated publish/unpublish events.
-- Query key: `["publish-history", filters, page]`.
-- Uses Supabase ranged `.range(from, to)` with `count: "exact"` for total rows.
-- Filters applied server-side:
-  - `entity_type = 'coding_problem'`
-  - `action in ('publish','unpublish')` (or single action when filter set)
-  - `entity_slug ilike %search%` when slug search provided
-  - `created_at >= from` / `<= to` when date range set
-  - `actor_id = ?` when actor filter set
-- Returns `{ rows, total, pageSize }`.
-- Joins actor display via a second query: fetch `profiles` (`user_id, full_name, avatar_url`) for the unique `actor_id`s in the page and merge client-side (no FK exists, so no nested select).
+- **Tab badges** — every tab title shows a status dot:
+  - green ✓ when the section is valid/complete
+  - red ! when it has errors (blocks publish)
+  - gray • when empty/optional
+- **Pre-publish checklist** — clicking Publish opens a checklist (title, slug, description, ≥1 example, starter for ≥1 language, reference solution for that language, ≥1 sample test, ≥1 hidden test, SQL spec valid if enabled). Publish is blocked until required items pass; warnings are shown but allowed.
+- **Quick action bar** under the header: Save · Save & Publish · Duplicate to draft · Open as learner · Copy slug · Reset draft.
+- **Per-tab improvements** below.
 
-**`src/pages/admin/PublishHistory.tsx`** — The page UI inside `AdminShell`.
-- Header: title "Publish History" + subtitle.
-- Filter bar (responsive grid):
-  - Action select: All / Published / Unpublished.
-  - Slug search input (debounced 300ms).
-  - Date range: two date pickers (From / To) using existing `Calendar` + `Popover`.
-  - Actor select: dropdown of distinct actors that appear in current results (with "All admins" default).
-  - "Reset filters" ghost button.
-- Results table (semantic tokens only):
-  - Columns: Action badge (green=Published, amber=Unpublished), Problem (slug, links to `/admin/problems/:slug/edit`), Actor (avatar + name or short id), Time (relative + absolute tooltip).
-  - Empty state when no rows.
-  - Loading skeletons.
-- Pagination footer:
-  - "Showing X–Y of Z events".
-  - Prev / Next buttons + page-size select (25 / 50 / 100, default 25).
-  - Disable buttons at boundaries.
-- "View as learner" quick link per row when problem is currently published (optional, only if cheap).
+### Basics
+- Live URL preview (`/library/problems/<slug>`) with copy button.
+- Topic suggestions chip row from existing distinct topics in DB (click to add).
+- Difficulty shown with the same color badge users will see.
+- Inline validation: title length 3–120, slug regex hint, duplicate-slug check (already present, surfaced inline with icon).
 
-## Wiring
+### Statement
+- Split view kept; add toolbar above textarea: Bold / Italic / Code / Link / H2 / List / Insert example block.
+- Word + character counter, reading-time estimate.
+- "Insert from examples" button appends a Markdown table of examples into the description.
 
-- **`src/App.tsx`** — add `<Route path="publish-history" element={<PublishHistory />} />` under the existing `/admin` parent route, plus the import.
-- **`src/components/admin/AdminShell.tsx`** — add nav item: `{ to: "/admin/publish-history", label: "Publish History", icon: History }` (lucide `History`), placed between Problems and Audit Log.
+### Examples
+- Drag-to-reorder handles.
+- "Run reference" button per example: runs the active-language reference solution against the example input via existing `run-code` edge function and fills Output.
+- Mark example as "primary" (used in OG cards / first preview).
+
+### Constraints & Hints
+- Hint reveal-order is the list order; show "Hint 1, Hint 2…" labels.
+- Constraints: quick-insert chips for common patterns (`1 <= n <= 10^5`, `-10^9 <= a[i] <= 10^9`, etc.).
+
+### Starter Code
+- Language tabs show a check when filled.
+- "Generate from reference" button: strips the function body of the reference solution to scaffold a starter (best-effort per language).
+- "Copy from another language" dropdown.
+- Format button uses Monaco's formatter (already exposed via the editor handle).
+
+### Reference Solution
+- Same language tabs + format button.
+- "Validate against sample tests" button: runs reference on every sample test and reports pass/fail inline. Required-green for publish.
+
+### Tests
+- Two clearly separated tables (Sample / Hidden) with counts in headers.
+- Per-row "Run reference → fill expected" to auto-populate `expected` from the reference solution output.
+- Bulk paste: textarea modal accepting `input ||| expected` lines, one test per line.
+- Import/Export tests as JSON.
+- Warning chip when sample and hidden share identical inputs.
+
+### SQL Spec
+- "Run reference query" button against schema+seed via existing `run-sql` edge function; shows result rows in a small table.
+- Syntax-highlighted SQL via Monaco instead of plain Textarea.
+- Validation: schema/seed/reference all required when enabled; surface in tab badge.
+
+### Limits
+- Presets: Fast (1s/128MB), Default (2s/256MB), Heavy (5s/512MB).
+- Show a friendly "≈ MB" next to memory KB.
 
 ## Technical details
 
-- All filters live in component state and feed a single hook input. Page resets to 1 whenever filters change (via `useEffect` on a stable filter key).
-- Use `keepPreviousData: true` so pagination feels instant.
-- Use the existing `formatRelative` style helper pattern from `ProblemEditor.tsx` (extract a tiny shared util `src/lib/formatRelative.ts` so both files import it instead of duplicating).
-- Styling uses semantic tokens (`bg-card`, `text-muted-foreground`, `border-border`, `bg-emerald-500/10` for published badge, `bg-amber-500/10` for unpublished — matching existing banner colors in `ProblemEditor.tsx`).
-- RLS: `admin_audit_log` already permits SELECT for admins, so no migration needed.
+- New file `src/lib/admin/problemValidation.ts` exporting `validateProblem(form): { sections: Record<TabId,{status,errors,warnings}>, canPublish, requiredFailures }`. Used by tab badges and the publish checklist.
+- New `src/components/admin/editor/`:
+  - `TabBadge.tsx` — small dot beside `TabsTrigger` children.
+  - `PublishChecklistDialog.tsx` — replaces the current Publish AlertDialog; shows pass/fail list, blocks on required failures.
+  - `MarkdownToolbar.tsx` — buttons that wrap selection in the textarea (uses `selectionStart/End`).
+  - `BulkTestsDialog.tsx` — paste / import / export.
+  - `RunReferenceButton.tsx` — calls `supabase.functions.invoke("run-code", …)` for code, `"run-sql"` for SQL spec.
+- `useDistinctTopics` hook: `select topics from coding_problems` then flatten + uniq, cached 5 min.
+- Examples reorder uses `@dnd-kit/sortable` (already used in folders).
+- Language "copy from another" and "generate from reference": pure utilities in `src/lib/admin/codeScaffold.ts` with regex-based body stripping per language; falls back to copying the whole reference if it can't detect the body.
+- Persist active tab in `localStorage` so reopening the editor returns to the last tab.
+- Keep the existing sticky status banner, dirty-tracking, autosave, Cmd/Ctrl+S, and audit-log behavior unchanged.
+- No DB migrations required. No new edge functions. Uses existing `run-code`, `run-sql`, `coding_problems`.
+
+## Files to add
+- `src/lib/admin/problemValidation.ts`
+- `src/lib/admin/codeScaffold.ts`
+- `src/components/admin/editor/TabBadge.tsx`
+- `src/components/admin/editor/PublishChecklistDialog.tsx`
+- `src/components/admin/editor/MarkdownToolbar.tsx`
+- `src/components/admin/editor/BulkTestsDialog.tsx`
+- `src/components/admin/editor/RunReferenceButton.tsx`
+- `src/hooks/useDistinctTopics.ts`
+
+## Files to edit
+- `src/pages/admin/ProblemEditor.tsx` — wire validation into tab triggers, swap Publish dialog, add quick-action bar, per-tab enhancements, persist active tab.
 
 ## Out of scope
-
-- No CSV export (can add later if asked).
-- No edits to the existing generic `AuditLog.tsx` page — it stays as-is for cross-cutting admin actions.
+- No schema changes, no new admin pages, no changes to learner-facing problem rendering.
+- No AI generation of full problems (kept lightweight; can be a follow-up).
