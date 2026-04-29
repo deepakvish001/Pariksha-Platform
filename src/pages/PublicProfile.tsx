@@ -682,8 +682,6 @@ const PublicProfile = () => {
           </div>
         )}
       </main>
-
-      <Footer />
     </div>
   );
 };
