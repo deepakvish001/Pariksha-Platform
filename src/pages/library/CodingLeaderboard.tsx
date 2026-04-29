@@ -623,9 +623,16 @@ export default function CodingLeaderboard() {
   const search = (searchParams.get("q") ?? "").trim();
   const difficulty = parseDifficulty(searchParams.get("diff"));
   const acceptedOnly = searchParams.get("accepted") !== "0";
+  const minScoreParam = searchParams.get("minScore");
+  const minScore = (() => {
+    const n = Number(minScoreParam);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  })();
 
   const [searchInput, setSearchInput] = useState(search);
   useEffect(() => setSearchInput(search), [search]);
+  const [minScoreInput, setMinScoreInput] = useState(minScore ? String(minScore) : "");
+  useEffect(() => setMinScoreInput(minScore ? String(minScore) : ""), [minScore]);
 
   const [drawerUser, setDrawerUser] = useState<{ id: string; rank: number } | null>(null);
 
