@@ -571,7 +571,7 @@ const CodingProblems = () => {
   // Filter
   const filtered = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
-    let list = CODING_PROBLEMS.filter((p) => {
+    let list = ALL_PROBLEMS.filter((p) => {
       if (q) {
         const hay = `${p.title} ${p.slug} ${p.topics.join(" ")}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -636,6 +636,7 @@ const CodingProblems = () => {
     solved,
     attempted,
     perProblem,
+    ALL_PROBLEMS,
   ]);
 
   // Pagination
@@ -652,12 +653,12 @@ const CodingProblems = () => {
 
   // Stats
   const counts = useMemo(() => {
-    const total = CODING_PROBLEMS.length;
-    const easy = CODING_PROBLEMS.filter((p) => p.difficulty === "Easy").length;
-    const medium = CODING_PROBLEMS.filter((p) => p.difficulty === "Medium").length;
-    const hard = CODING_PROBLEMS.filter((p) => p.difficulty === "Hard").length;
+    const total = ALL_PROBLEMS.length;
+    const easy = ALL_PROBLEMS.filter((p) => p.difficulty === "Easy").length;
+    const medium = ALL_PROBLEMS.filter((p) => p.difficulty === "Medium").length;
+    const hard = ALL_PROBLEMS.filter((p) => p.difficulty === "Hard").length;
     const inSet = (d: Difficulty) =>
-      CODING_PROBLEMS.filter((p) => p.difficulty === d && solved.has(p.slug)).length;
+      ALL_PROBLEMS.filter((p) => p.difficulty === d && solved.has(p.slug)).length;
     return {
       total,
       easy,
@@ -667,7 +668,7 @@ const CodingProblems = () => {
       solvedMedium: inSet("Medium"),
       solvedHard: inSet("Hard"),
     };
-  }, [solved]);
+  }, [solved, ALL_PROBLEMS]);
 
   const { weekSolved, prevWeekSolved } = useMemo(() => {
     const now = Date.now();
@@ -690,8 +691,8 @@ const CodingProblems = () => {
       if (!s.lastAttempt) return;
       if (!best || s.lastAttempt > best.t) best = { slug, t: s.lastAttempt };
     });
-    return best ? CODING_PROBLEMS.find((p) => p.slug === best!.slug) : undefined;
-  }, [perProblem, solved]);
+    return best ? ALL_PROBLEMS.find((p) => p.slug === best!.slug) : undefined;
+  }, [perProblem, solved, ALL_PROBLEMS]);
 
   const activeFilterCount =
     (debouncedSearch ? 1 : 0) +
