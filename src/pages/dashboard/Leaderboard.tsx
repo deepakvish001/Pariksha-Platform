@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Trophy, ListChecks, Play, LogIn, Lock } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,8 @@ import { SubmissionsAndRunsBody } from "./SubmissionsHistory";
 const VALID_TABS = ["leaderboard", "submissions", "runs"] as const;
 type LeaderboardTab = (typeof VALID_TABS)[number];
 
-function AuthGate({ feature }: { feature: string }) {
+function AuthGate({ feature, returnTo }: { feature: string; returnTo: string }) {
+  const fromState = { from: { pathname: returnTo.split("?")[0], search: returnTo.includes("?") ? `?${returnTo.split("?")[1]}` : "" } };
   return (
     <Card className="p-10 text-center space-y-4 max-w-xl mx-auto mt-6">
       <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mx-auto">
@@ -22,23 +23,27 @@ function AuthGate({ feature }: { feature: string }) {
           Your {feature} are private to your account. Log in to view, filter, and re-run them.
         </p>
       </div>
-      <div className="flex justify-center gap-2">
+      <div className="flex flex-col sm:flex-row justify-center gap-2">
         <Button asChild>
-          <Link to="/login">
+          <Link to="/login" state={fromState}>
             <LogIn className="h-4 w-4 mr-1.5" />
-            Sign in
+            Sign in & return here
           </Link>
         </Button>
         <Button asChild variant="outline">
-          <Link to="/signup">Create account</Link>
+          <Link to="/signup" state={fromState}>Create account</Link>
         </Button>
       </div>
+      <p className="text-xs text-muted-foreground pt-1">
+        We'll bring you right back to your {feature} tab.
+      </p>
     </Card>
   );
 }
 
 export default function Leaderboard() {
   const { user } = useAuth();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get("view") ?? "leaderboard";
   const tab: LeaderboardTab = (VALID_TABS as readonly string[]).includes(rawTab)
@@ -51,6 +56,8 @@ export default function Leaderboard() {
     else params.set("view", next);
     setSearchParams(params, { replace: true });
   };
+
+  const returnTo = `${location.pathname}${location.search}`;
 
   return (
     <div className="container max-w-6xl py-6 sm:py-10 space-y-6">
@@ -85,11 +92,11 @@ export default function Leaderboard() {
         </TabsContent>
 
         <TabsContent value="submissions" className="mt-4">
-          {user ? <SubmissionsAndRunsBody forcedTab="submissions" /> : <AuthGate feature="submissions" />}
+          {user ? <SubmissionsAndRunsBody forcedTab="submissions" /> : <AuthGate feature="submissions" returnTo={returnTo} />}
         </TabsContent>
 
         <TabsContent value="runs" className="mt-4">
-          {user ? <SubmissionsAndRunsBody forcedTab="runs" /> : <AuthGate feature="runs" />}
+          {user ? <SubmissionsAndRunsBody forcedTab="runs" /> : <AuthGate feature="runs" returnTo={returnTo} />}
         </TabsContent>
       </Tabs>
     </div>
