@@ -147,7 +147,7 @@ const DroppableDay = ({ day, isToday, children, total, done, count, open, onTogg
   );
 };
 
-export const WeeklyPlanView = ({ tasks, onToggle, onMoveTask, onBulkUpdate, onRestore }: Props) => {
+export const WeeklyPlanView = ({ tasks, onToggle, onMoveTask, onBulkUpdate, onRestore, onLogActivity }: Props) => {
   const todayIso = todayIsoFn();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [activeTask, setActiveTask] = useState<PlanTask | null>(null);
