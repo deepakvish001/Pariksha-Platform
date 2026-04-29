@@ -985,7 +985,23 @@ const ProblemEditor = () => {
                   }
                   setRefValidation({ running: false, results });
                   const ok = results.filter((r) => r.pass).length;
-                  toast({ title: `Reference: ${ok}/${results.length} passed` });
+                  // Save to run history for troubleshooting / diff comparison.
+                  runHistory.append({
+                    kind: "validate-samples",
+                    language: activeLang,
+                    label: "Validate against samples",
+                    passed: ok,
+                    total: results.length,
+                    cases: results.map<RunHistoryCase>((r) => ({
+                      index: r.idx,
+                      pass: r.pass,
+                      input: form.sample_tests[r.idx]?.input ?? "",
+                      expected: (r.expected ?? "").trimEnd(),
+                      got: r.got,
+                      diff: r.pass ? undefined : buildLineDiff((r.expected ?? "").trimEnd(), r.got),
+                    })),
+                  });
+                  toast({ title: `Reference: ${ok}/${results.length} passed`, description: "Saved to run history." });
                 }}
               >
                 {refValidation.running ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Play className="mr-1.5 h-3.5 w-3.5" />}
