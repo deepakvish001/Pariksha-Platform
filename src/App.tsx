@@ -132,7 +132,7 @@ const App = () => (
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/u/:username" element={<PublicProfile />} />
+                
                 <Route path="/shared/:shareCode" element={<SharedFolder />} />
                 <Route
                   path="/onboarding"
