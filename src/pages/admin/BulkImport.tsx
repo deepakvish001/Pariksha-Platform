@@ -80,18 +80,28 @@ const BulkImport = () => {
   const [busy, setBusy] = useState(false);
   const nav = useNavigate();
 
+  const parseRow = (raw: any, index: number): Row => {
+    const r = ProblemSchema.safeParse(raw);
+    if (r.success) return { ok: true, data: r.data, raw, index };
+    const issues: RowIssue[] = r.error.issues.map((i) => ({
+      path: i.path.join(".") || "(root)",
+      message: i.message,
+    }));
+    return {
+      ok: false,
+      error: issues.map((i) => `${i.path}: ${i.message}`).join("; "),
+      issues,
+      raw,
+      index,
+    };
+  };
+
   const handleFile = async (file: File) => {
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
       const arr = Array.isArray(parsed) ? parsed : [parsed];
-      const next: Row[] = arr.map((raw) => {
-        const r = ProblemSchema.safeParse(raw);
-        return r.success
-          ? { ok: true, data: r.data, raw }
-          : { ok: false, error: r.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "), raw };
-      });
-      setRows(next);
+      setRows(arr.map((raw, i) => parseRow(raw, i)));
     } catch (e: any) {
       toast({ title: "Invalid JSON", description: e.message, variant: "destructive" });
     }
