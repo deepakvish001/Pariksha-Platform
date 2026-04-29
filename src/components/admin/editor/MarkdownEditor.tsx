@@ -23,9 +23,11 @@ import {
   Copy,
   Trash2,
   Loader2,
+  Images,
 } from "lucide-react";
 import { MarkdownToolbar } from "./MarkdownToolbar";
 import { MarkdownPreview } from "./MarkdownPreview";
+import { ImageGalleryPanel } from "./ImageGalleryPanel";
 import { useMarkdownImageUpload } from "@/hooks/useMarkdownImageUpload";
 import { deleteProblemImage } from "@/lib/admin/uploadProblemImage";
 import { toast } from "@/hooks/use-toast";
@@ -66,8 +68,27 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
   ) => {
     const [mode, setMode] = useState<Mode>("split");
     const [fullscreen, setFullscreen] = useState(false);
+    const [galleryOpen, setGalleryOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    /** Inserts arbitrary text at the textarea cursor (or appends). Used by the
+     *  gallery panel and the URL prompt. */
+    const insertAtCursor = (snippet: string) => {
+      const el = textareaRef.current;
+      if (!el) {
+        onChange((value ? value + "\n" : "") + snippet + "\n");
+        return;
+      }
+      const start = el.selectionStart ?? value.length;
+      const end = el.selectionEnd ?? value.length;
+      const next = value.slice(0, start) + snippet + value.slice(end);
+      onChange(next);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.selectionStart = el.selectionEnd = start + snippet.length;
+      });
+    };
 
     useImperativeHandle(ref, () => ({
       focus: () => textareaRef.current?.focus(),
@@ -142,7 +163,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       <div
         className={cn(
           "grid gap-3",
-          mode === "split" ? "lg:grid-cols-2" : "grid-cols-1",
+          galleryOpen
+            ? mode === "split"
+              ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_280px]"
+              : "lg:grid-cols-[minmax(0,1fr)_280px]"
+            : mode === "split"
+              ? "lg:grid-cols-2"
+              : "grid-cols-1",
         )}
       >
         {(mode === "edit" || mode === "split") && (
@@ -213,6 +240,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
             </div>
           </div>
         )}
+
+        {galleryOpen && (
+          <ImageGalleryPanel
+            open={galleryOpen}
+            onClose={() => setGalleryOpen(false)}
+            currentSlug={slug}
+            onInsert={(md) => insertAtCursor(md)}
+          />
+        )}
       </div>
     );
 
@@ -270,6 +306,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
               }
             }}
           />
+          {!fullscreen && (
+            <Button
+              type="button"
+              size="sm"
+              variant={galleryOpen ? "secondary" : "outline"}
+              className="h-7 px-2"
+              onClick={() => setGalleryOpen((v) => !v)}
+              title="Show gallery of all uploaded images"
+            >
+              <Images className="mr-1 h-3.5 w-3.5" />
+              {galleryOpen ? "Hide gallery" : "Gallery"}
+            </Button>
+          )}
           {!fullscreen && (
             <Button
               type="button"
