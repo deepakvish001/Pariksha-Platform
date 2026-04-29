@@ -239,6 +239,14 @@ const ProblemEditor = () => {
           </h1>
         </div>
         <div className="flex items-center gap-3">
+          {dirty && (
+            <span className="text-xs text-amber-500">● Unsaved changes</span>
+          )}
+          {!dirty && draftRestoredAt && isNew && (
+            <span className="text-xs text-muted-foreground">
+              Draft restored
+            </span>
+          )}
           <div className="flex items-center gap-2">
             <Switch
               checked={form.is_published}
@@ -246,7 +254,7 @@ const ProblemEditor = () => {
             />
             <span className="text-sm">{form.is_published ? "Published" : "Draft"}</span>
           </div>
-          <Button onClick={handleSave} disabled={save.isPending}>
+          <Button onClick={handleSave} disabled={save.isPending || (isNew && slugTaken)}>
             <Save className="mr-2 h-4 w-4" />
             {save.isPending ? "Saving…" : "Save"}
           </Button>
