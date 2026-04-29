@@ -294,17 +294,27 @@ const ProblemEditor = () => {
             </div>
             <div>
               <Label>Slug</Label>
-              <Input
-                value={form.slug}
-                onChange={(e) => update("slug", slugify(e.target.value))}
-                placeholder="two-sum"
-                disabled={!isNew}
-              />
-              <p className={`mt-1 text-xs ${slugTaken && isNew ? "text-destructive" : "text-muted-foreground"}`}>
-                {slugTaken && isNew
-                  ? "This slug is already taken — pick another."
-                  : "URL-safe identifier; cannot be changed after creation."}
-              </p>
+              {isNew ? (
+                <>
+                  <Input
+                    value={form.slug}
+                    onChange={(e) => update("slug", slugify(e.target.value))}
+                    placeholder="two-sum"
+                  />
+                  <p className={`mt-1 text-xs ${slugTaken ? "text-destructive" : "text-muted-foreground"}`}>
+                    {slugTaken
+                      ? "This slug is already taken — pick another."
+                      : "URL-safe identifier; cannot be changed after creation."}
+                  </p>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+                  <code className="font-mono text-sm">{form.slug}</code>
+                  <Badge variant="outline" className="ml-auto text-xs">
+                    Read-only
+                  </Badge>
+                </div>
+              )}
             </div>
             <div>
               <Label>Difficulty</Label>
