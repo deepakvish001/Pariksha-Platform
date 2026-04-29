@@ -39,6 +39,8 @@ You MUST always call the "coach_reply" tool with:
     • "reschedule_today" — task is overdue (day_date < today.date), move to today.
     • "reschedule_tomorrow" — task is in upcoming days but you recommend pulling it earlier or pushing to tomorrow.
     • "mark_done" — user clearly indicated they finished it.
+    • "snooze_24h" — overdue task the user wants to push to tomorrow with one click.
+    • "bulk_start_next" — kick off the next 2-3 tasks for a chosen day. For this kind only, set "task_ids" to those 2-3 ids and you may omit task_id/task_title (use the first id as task_id, and a label like "Start next N tasks for <date>" as task_title).
   Provide a 1-line "reason" for each action grounded in the data (e.g. "Weakest topic: Arrays at 20%").
 
 Hard rules:
@@ -70,9 +72,14 @@ const tool = {
               task_title: { type: "string", description: "Verbatim title from context." },
               kind: {
                 type: "string",
-                enum: ["start_today", "reschedule_today", "reschedule_tomorrow", "mark_done"],
+                enum: ["start_today", "reschedule_today", "reschedule_tomorrow", "mark_done", "snooze_24h", "bulk_start_next"],
               },
               reason: { type: "string", description: "One short sentence grounded in the data." },
+              task_ids: {
+                type: "array",
+                items: { type: "string" },
+                description: "Only for kind='bulk_start_next': 2-3 real task ids from context.",
+              },
             },
             required: ["task_id", "task_title", "kind", "reason"],
             additionalProperties: false,
@@ -200,6 +207,14 @@ serve(async (req) => {
 
     const cleanActions = (actions as Array<Record<string, unknown>>)
       .filter((a) => typeof a?.task_id === "string" && knownIds.has(a.task_id as string))
+      .map((a) => {
+        if (a.kind === "bulk_start_next" && Array.isArray(a.task_ids)) {
+          a.task_ids = (a.task_ids as unknown[])
+            .filter((id): id is string => typeof id === "string" && knownIds.has(id))
+            .slice(0, 3);
+        }
+        return a;
+      })
       .slice(0, 3);
 
     return new Response(JSON.stringify({ summary_md, actions: cleanActions }), {
