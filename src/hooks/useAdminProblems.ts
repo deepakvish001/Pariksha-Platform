@@ -134,6 +134,69 @@ export const useTogglePublish = () => {
   });
 };
 
+export const useDuplicateProblem = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (slug: string): Promise<string> => {
+      const { data: full, error: getErr } = await supabase.rpc(
+        "admin_get_full_problem",
+        { _slug: slug },
+      );
+      if (getErr) throw getErr;
+      const f = full as any;
+      if (!f?.problem) throw new Error("Source problem not found");
+      const base = f.problem.slug;
+      // Find a free slug: <base>-copy, <base>-copy-2, ...
+      const { data: existing } = await supabase
+        .from("coding_problems")
+        .select("slug")
+        .ilike("slug", `${base}-copy%`);
+      const taken = new Set((existing ?? []).map((r: any) => r.slug));
+      let candidate = `${base}-copy`;
+      let n = 2;
+      while (taken.has(candidate)) candidate = `${base}-copy-${n++}`;
+
+      const payload = {
+        slug: candidate,
+        title: `${f.problem.title} (Copy)`,
+        difficulty: f.problem.difficulty,
+        topics: f.problem.topics ?? [],
+        description: f.problem.description ?? "",
+        examples: f.problem.examples ?? [],
+        constraints: f.problem.constraints ?? [],
+        hints: f.problem.hints ?? [],
+        cpu_time_limit_sec: Number(f.problem.cpu_time_limit_sec ?? 2),
+        memory_limit_kb: f.problem.memory_limit_kb ?? 256000,
+        is_published: false,
+        starter_code: f.starter_code ?? {},
+        reference_solution: f.reference_solution ?? {},
+        sample_tests: f.sample_tests ?? [],
+        hidden_tests: f.hidden_tests ?? [],
+        sql_spec: f.sql_spec ?? null,
+      };
+      const { error: saveErr } = await supabase.rpc("admin_save_problem", {
+        payload: payload as any,
+      });
+      if (saveErr) throw saveErr;
+      return candidate;
+    },
+    onSuccess: (newSlug) => {
+      qc.invalidateQueries({ queryKey: ["admin-problems"] });
+      toast({
+        title: "Duplicated",
+        description: `Created draft "${newSlug}".`,
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Duplicate failed",
+        description: err?.message ?? "Unknown error",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 export const useAuditLog = () => {
   return useQuery({
     queryKey: ["admin-audit-log"],

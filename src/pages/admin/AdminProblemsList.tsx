@@ -1,15 +1,23 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   useAdminProblems,
   useDeleteProblem,
+  useDuplicateProblem,
   useTogglePublish,
 } from "@/hooks/useAdminProblems";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -18,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Trash2, Pencil } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Copy, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,14 +48,49 @@ const diffColor = (d: string) =>
 
 const AdminProblemsList = () => {
   const [search, setSearch] = useState("");
+  const [difficulty, setDifficulty] = useState<string>("all");
+  const [topic, setTopic] = useState<string>("all");
+  const [published, setPublished] = useState<string>("all");
   const { data: problems = [], isLoading } = useAdminProblems(search);
   const del = useDeleteProblem();
   const toggle = useTogglePublish();
+  const duplicate = useDuplicateProblem();
+
+  const allTopics = useMemo(() => {
+    const s = new Set<string>();
+    problems.forEach((p) => (p.topics ?? []).forEach((t) => s.add(t)));
+    return Array.from(s).sort((a, b) => a.localeCompare(b));
+  }, [problems]);
+
+  const filtered = useMemo(() => {
+    return problems.filter((p) => {
+      if (difficulty !== "all" && p.difficulty !== difficulty) return false;
+      if (topic !== "all" && !(p.topics ?? []).includes(topic)) return false;
+      if (published === "published" && !p.is_published) return false;
+      if (published === "draft" && p.is_published) return false;
+      return true;
+    });
+  }, [problems, difficulty, topic, published]);
+
+  const filtersActive =
+    difficulty !== "all" || topic !== "all" || published !== "all" || !!search;
+
+  const clearFilters = () => {
+    setSearch("");
+    setDifficulty("all");
+    setTopic("all");
+    setPublished("all");
+  };
 
   return (
     <AdminShell>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Coding Problems</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Coding Problems</h1>
+          <p className="text-xs text-muted-foreground">
+            {filtered.length} of {problems.length} shown
+          </p>
+        </div>
         <Button asChild>
           <Link to="/admin/problems/new">
             <Plus className="mr-2 h-4 w-4" /> New Problem
@@ -55,14 +98,55 @@ const AdminProblemsList = () => {
         </Button>
       </div>
 
-      <div className="mb-4 relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by title…"
-          className="pl-9"
-        />
+      <div className="mb-4 flex flex-wrap items-end gap-2">
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by title…"
+            className="pl-9"
+          />
+        </div>
+        <Select value={difficulty} onValueChange={setDifficulty}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Difficulty" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All difficulty</SelectItem>
+            <SelectItem value="easy">Easy</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="hard">Hard</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={topic} onValueChange={setTopic}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Topic" />
+          </SelectTrigger>
+          <SelectContent className="max-h-[260px]">
+            <SelectItem value="all">All topics</SelectItem>
+            {allTopics.map((t) => (
+              <SelectItem key={t} value={t}>
+                {t}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={published} onValueChange={setPublished}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All status</SelectItem>
+            <SelectItem value="published">Published</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
+          </SelectContent>
+        </Select>
+        {filtersActive && (
+          <Button variant="ghost" size="sm" onClick={clearFilters}>
+            <X className="mr-1 h-3 w-3" /> Clear
+          </Button>
+        )}
       </div>
 
       <div className="rounded-lg border">
@@ -84,14 +168,16 @@ const AdminProblemsList = () => {
                   Loading…
                 </TableCell>
               </TableRow>
-            ) : problems.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  No problems yet. Create one or import from JSON.
+                  {problems.length === 0
+                    ? "No problems yet. Create one or import from JSON."
+                    : "No problems match the current filters."}
                 </TableCell>
               </TableRow>
             ) : (
-              problems.map((p) => (
+              filtered.map((p) => (
                 <TableRow key={p.slug}>
                   <TableCell className="font-medium">{p.title}</TableCell>
                   <TableCell className="hidden md:table-cell font-mono text-xs text-muted-foreground">
@@ -107,6 +193,11 @@ const AdminProblemsList = () => {
                           {t}
                         </Badge>
                       ))}
+                      {(p.topics?.length ?? 0) > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{(p.topics?.length ?? 0) - 3}
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -119,14 +210,23 @@ const AdminProblemsList = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button asChild variant="ghost" size="icon">
+                      <Button asChild variant="ghost" size="icon" title="Edit">
                         <Link to={`/admin/problems/${p.slug}/edit`}>
                           <Pencil className="h-4 w-4" />
                         </Link>
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Duplicate as draft"
+                        disabled={duplicate.isPending}
+                        onClick={() => duplicate.mutate(p.slug)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" title="Delete">
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </AlertDialogTrigger>

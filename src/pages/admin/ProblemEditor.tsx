@@ -23,9 +23,20 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LANGUAGES, type LangId } from "@/data/codingProblemsData";
 import { MonacoEditor } from "@/components/coding/MonacoEditor";
-import { Plus, Trash2, Save, ArrowLeft, X } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, X, Globe, EyeOff, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const slugify = (s: string) =>
   s
@@ -148,9 +159,13 @@ const ProblemEditor = () => {
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 
-  // Slug collision check (debounced) for new problems.
+  // Slug collision check (debounced) — only relevant for new problems.
+  // Existing problems have a read-only slug, so we skip the check entirely.
   useEffect(() => {
-    if (!isNew) return;
+    if (!isNew) {
+      setSlugTaken(false);
+      return;
+    }
     const s = slugify(form.slug);
     if (!s) {
       setSlugTaken(false);
@@ -247,13 +262,59 @@ const ProblemEditor = () => {
               Draft restored
             </span>
           )}
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={form.is_published}
-              onCheckedChange={(v) => update("is_published", v)}
-            />
-            <span className="text-sm">{form.is_published ? "Published" : "Draft"}</span>
-          </div>
+          {form.is_published ? (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <EyeOff className="mr-2 h-4 w-4" /> Unpublish
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Unpublish this problem?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Learners will no longer see "{form.title || form.slug}" in the
+                    library. Existing submissions are kept. You can re-publish at any
+                    time.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => update("is_published", false)}>
+                    Unpublish
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          ) : (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  disabled={!form.title.trim() || !form.slug.trim()}
+                >
+                  <Globe className="mr-2 h-4 w-4" /> Publish
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Publish this problem?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Once published, "{form.title || form.slug}" will appear in the
+                    public coding library and learners can solve and submit. Hidden
+                    tests stay private. You can unpublish later if needed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => update("is_published", true)}>
+                    Publish
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button onClick={handleSave} disabled={save.isPending || (isNew && slugTaken)}>
             <Save className="mr-2 h-4 w-4" />
             {save.isPending ? "Saving…" : "Save"}
@@ -261,6 +322,34 @@ const ProblemEditor = () => {
         </div>
       </div>
 
+      <div
+        className={`mb-4 flex items-start gap-3 rounded-lg border p-3 text-sm ${
+          form.is_published
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : "border-amber-500/30 bg-amber-500/5"
+        }`}
+      >
+        {form.is_published ? (
+          <Globe className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+        ) : (
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="font-medium">
+            {form.is_published ? "Published" : "Draft — not visible to learners"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {form.is_published
+              ? "Changes here are saved as drafts until you press Save. Already published — visible to all learners."
+              : "Fill in the details, then use the Publish button above to make this problem live. Don't forget to Save first."}
+          </p>
+        </div>
+        {dirty && (
+          <Badge variant="outline" className="border-amber-500/40 text-amber-500">
+            Unsaved
+          </Badge>
+        )}
+      </div>
       <Tabs defaultValue="basics">
         <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="basics">Basics</TabsTrigger>
@@ -290,17 +379,27 @@ const ProblemEditor = () => {
             </div>
             <div>
               <Label>Slug</Label>
-              <Input
-                value={form.slug}
-                onChange={(e) => update("slug", slugify(e.target.value))}
-                placeholder="two-sum"
-                disabled={!isNew}
-              />
-              <p className={`mt-1 text-xs ${slugTaken && isNew ? "text-destructive" : "text-muted-foreground"}`}>
-                {slugTaken && isNew
-                  ? "This slug is already taken — pick another."
-                  : "URL-safe identifier; cannot be changed after creation."}
-              </p>
+              {isNew ? (
+                <>
+                  <Input
+                    value={form.slug}
+                    onChange={(e) => update("slug", slugify(e.target.value))}
+                    placeholder="two-sum"
+                  />
+                  <p className={`mt-1 text-xs ${slugTaken ? "text-destructive" : "text-muted-foreground"}`}>
+                    {slugTaken
+                      ? "This slug is already taken — pick another."
+                      : "URL-safe identifier; cannot be changed after creation."}
+                  </p>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+                  <code className="font-mono text-sm">{form.slug}</code>
+                  <Badge variant="outline" className="ml-auto text-xs">
+                    Read-only
+                  </Badge>
+                </div>
+              )}
             </div>
             <div>
               <Label>Difficulty</Label>
