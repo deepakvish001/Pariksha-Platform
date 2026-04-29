@@ -46,6 +46,7 @@ import {
   ALL_TOPICS,
   type Difficulty,
 } from "@/data/codingProblemsData";
+import { useDbCodingProblems } from "@/hooks/useCodingProblems";
 import { useCodingAttemptStats } from "@/hooks/useCodingAttemptStats";
 import { useCodingProblemBookmarks } from "@/hooks/useCodingProblemBookmarks";
 import { ProblemStatsHeader } from "@/components/library/coding/ProblemStatsHeader";
