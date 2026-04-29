@@ -1469,24 +1469,26 @@ const TestsTable = ({
           <Textarea
             rows={3}
             placeholder="stdin"
+            data-field={fieldKey ? `${fieldKey}[${i}].input` : undefined}
             value={t.input}
             onChange={(e) => {
               const next = [...tests];
               next[i] = { ...t, input: e.target.value };
               onChange(next);
             }}
-            className="font-mono text-xs"
+            className={`font-mono text-xs ${fieldKey ? fieldHighlightClass(`${fieldKey}[${i}].input`, highlightedField ?? null) : ""}`}
           />
           <Textarea
             rows={3}
             placeholder="expected stdout"
+            data-field={fieldKey ? `${fieldKey}[${i}].expected` : undefined}
             value={t.expected}
             onChange={(e) => {
               const next = [...tests];
               next[i] = { ...t, expected: e.target.value };
               onChange(next);
             }}
-            className="font-mono text-xs"
+            className={`font-mono text-xs ${fieldKey ? fieldHighlightClass(`${fieldKey}[${i}].expected`, highlightedField ?? null) : ""}`}
           />
           <div className="flex flex-col gap-1">
             {referenceLang && (
