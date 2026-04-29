@@ -5,6 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const FERMION_KEY = Deno.env.get("FERMION_RAPIDAPI_KEY") ?? "";
 
 const FERMION_HOST = "fermion-online-compiler.p.rapidapi.com";
@@ -301,9 +302,32 @@ Deno.serve(async (req) => {
       return respond<SubmitResult>({ ok: false, error: "Invalid source_code", diagnostics: { error_stage: "validation" } });
     if (typeof language_id !== "number" || typeof language !== "string")
       return respond<SubmitResult>({ ok: false, error: "Invalid language", diagnostics: { error_stage: "validation" } });
-    if (!problem_slug || !Array.isArray(tests) || tests.length === 0)
+    if (!problem_slug)
+      return respond<SubmitResult>({ ok: false, error: "problem_slug required", diagnostics: { error_stage: "validation" } });
+
+    // Prefer DB-stored hidden tests (zero-trust): fetch via service role and
+    // override any client-supplied tests when the problem exists in DB.
+    let effectiveTests: TestCase[] = Array.isArray(tests) ? (tests as TestCase[]) : [];
+    if (SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: dbTests } = await admin
+          .from("coding_problem_tests")
+          .select("input,expected,ord")
+          .eq("problem_slug", problem_slug)
+          .eq("kind", "hidden")
+          .order("ord", { ascending: true });
+        if (dbTests && dbTests.length > 0) {
+          effectiveTests = dbTests.map((t: any) => ({ input: t.input ?? "", expected: t.expected ?? "" }));
+        }
+      } catch (_) {
+        // Fallback to client tests on DB error.
+      }
+    }
+
+    if (effectiveTests.length === 0)
       return respond<SubmitResult>({ ok: false, error: "tests required", diagnostics: { error_stage: "validation" } });
-    if (tests.length > 30)
+    if (effectiveTests.length > 30)
       return respond<SubmitResult>({ ok: false, error: "Too many tests", diagnostics: { error_stage: "validation" } });
 
     const fermionLang = judge0ToFermion(language_id);
