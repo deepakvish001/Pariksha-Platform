@@ -156,7 +156,7 @@ const App = () => (
                   <Route index element={<DashboardMatrix />} />
                   <Route path="sheets" element={<DashboardSheets />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
-                  <Route path="profile" element={<DashboardProfile />} />
+                  <Route path="profile" element={<DashboardProfileRedirect />} />
                   <Route path="submissions" element={<SubmissionsHistory />} />
                   <Route path="roadmaps" element={<DashboardRoadmaps />} />
                   <Route path="roadmaps/compare" element={<DashboardRoadmapCompare />} />
