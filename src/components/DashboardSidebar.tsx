@@ -532,6 +532,15 @@ export function DashboardSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
                 {homeNavItems.map((item) => {
+                  const isProfile = item.url === PROFILE_SENTINEL;
+                  const username = (extendedProfile as { username?: string } | null)?.username ?? null;
+                  const resolvedUrl = isProfile
+                    ? username
+                      ? `/u/${username}`
+                      : user
+                        ? "/onboarding"
+                        : "/login"
+                    : item.url;
                   const isRoadmap = item.url === "/dashboard/roadmaps";
                   const handleClick = isRoadmap
                     ? (e: React.MouseEvent) => {
@@ -551,16 +560,21 @@ export function DashboardSidebar() {
                         }
                       }
                     : undefined;
+                  const isActive = isProfile
+                    ? location.pathname.startsWith("/u/") &&
+                      !!username &&
+                      location.pathname === `/u/${username}`
+                    : location.pathname === resolvedUrl;
                   return (
                     <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                       <SidebarMenuButton
                         asChild
-                        isActive={location.pathname === item.url}
+                        isActive={isActive}
                         tooltip={item.title}
                         size="lg"
                         className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
                       >
-                        <Link to={item.url} onClick={handleClick} className="group-data-[collapsible=icon]:justify-center">
+                        <Link to={resolvedUrl} onClick={handleClick} className="group-data-[collapsible=icon]:justify-center">
                           <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
                           <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
                         </Link>
