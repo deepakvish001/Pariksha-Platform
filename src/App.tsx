@@ -270,6 +270,25 @@ const App = () => (
                   <Route index element={<UnderConstruction />} />
                 </Route>
 
+                {/* Admin routes - admin role required */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <DashboardLayout>
+                        <Outlet />
+                      </DashboardLayout>
+                    </AdminRoute>
+                  }
+                >
+                  <Route index element={<AdminOverview />} />
+                  <Route path="problems" element={<AdminProblemsList />} />
+                  <Route path="problems/new" element={<ProblemEditor />} />
+                  <Route path="problems/import" element={<BulkImport />} />
+                  <Route path="problems/:slug/edit" element={<ProblemEditor />} />
+                  <Route path="audit" element={<AuditLog />} />
+                </Route>
+
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
