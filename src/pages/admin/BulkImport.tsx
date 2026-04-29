@@ -176,6 +176,80 @@ const BulkImport = () => {
   const validCount = rows.filter((r) => r.ok).length;
   const invalidCount = rows.length - validCount;
 
+  const downloadJson = (data: unknown, filename: string) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+  };
+
+  const downloadReport = () => {
+    const report = {
+      generated_at: new Date().toISOString(),
+      summary: {
+        total: rows.length,
+        valid: validCount,
+        invalid: invalidCount,
+      },
+      valid: rows
+        .filter((r) => r.ok)
+        .map((r) => ({ row: r.index + 1, slug: r.raw?.slug, title: r.raw?.title })),
+      errors: rows
+        .filter((r) => !r.ok)
+        .map((r) => ({
+          row: r.index + 1,
+          slug: r.raw?.slug ?? null,
+          title: r.raw?.title ?? null,
+          issues: r.issues ?? [],
+        })),
+    };
+    downloadJson(report, "bulk-import-report.json");
+  };
+
+  const downloadCorrected = () => {
+    // A re-uploadable JSON: keeps every row, fills missing required fields with
+    // safe defaults so the admin can finish editing externally instead of
+    // starting over. Valid rows pass through unchanged.
+    const corrected = rows.map((r) => {
+      if (r.ok) return r.data;
+      const raw = r.raw && typeof r.raw === "object" ? r.raw : {};
+      return {
+        slug: raw.slug || `__fix_me_row_${r.index + 1}`,
+        title: raw.title || "(missing — please fill in)",
+        difficulty: ["easy", "medium", "hard"].includes(raw.difficulty)
+          ? raw.difficulty
+          : "medium",
+        topics: Array.isArray(raw.topics) ? raw.topics : [],
+        description: typeof raw.description === "string" ? raw.description : "",
+        examples: Array.isArray(raw.examples) ? raw.examples : [],
+        constraints: Array.isArray(raw.constraints) ? raw.constraints : [],
+        hints: Array.isArray(raw.hints) ? raw.hints : [],
+        cpu_time_limit_sec:
+          typeof raw.cpu_time_limit_sec === "number" ? raw.cpu_time_limit_sec : 2,
+        memory_limit_kb:
+          typeof raw.memory_limit_kb === "number" ? raw.memory_limit_kb : 256000,
+        is_published: false,
+        starter_code:
+          raw.starter_code && typeof raw.starter_code === "object"
+            ? raw.starter_code
+            : {},
+        reference_solution:
+          raw.reference_solution && typeof raw.reference_solution === "object"
+            ? raw.reference_solution
+            : {},
+        sample_tests: Array.isArray(raw.sample_tests) ? raw.sample_tests : [],
+        hidden_tests: Array.isArray(raw.hidden_tests) ? raw.hidden_tests : [],
+        sql_spec: raw.sql_spec ?? null,
+        // Inline hint to the admin about what was wrong on this row.
+        __issues: r.issues ?? [],
+      };
+    });
+    downloadJson(corrected, "bulk-import-corrected.json");
+  };
+
   return (
     <AdminShell>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -211,8 +285,8 @@ const BulkImport = () => {
 
       {rows.length > 0 && (
         <Card className="mt-4 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex gap-2">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
               <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-500">
                 {validCount} valid
               </Badge>
@@ -221,15 +295,42 @@ const BulkImport = () => {
                   {invalidCount} invalid
                 </Badge>
               )}
+              <Badge variant="outline">{rows.length} total</Badge>
             </div>
-            <Button onClick={importValid} disabled={busy || validCount === 0}>
-              {busy ? "Importing…" : `Import ${validCount} problems`}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {invalidCount > 0 && (
+                <>
+                  <Button variant="outline" size="sm" onClick={downloadReport}>
+                    <FileJson className="mr-2 h-4 w-4" /> Report
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadCorrected}>
+                    <FileJson className="mr-2 h-4 w-4" /> Corrected JSON
+                  </Button>
+                </>
+              )}
+              <Button onClick={importValid} disabled={busy || validCount === 0}>
+                {busy ? "Importing…" : `Import ${validCount} problems`}
+              </Button>
+            </div>
           </div>
+
+          {invalidCount > 0 && (
+            <div className="mb-3 rounded-md border border-rose-500/30 bg-rose-500/5 p-3 text-xs">
+              <p className="font-medium text-rose-500">
+                {invalidCount} row{invalidCount === 1 ? "" : "s"} failed validation.
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                Click <strong>Corrected JSON</strong> to download a re-uploadable file
+                with safe defaults filled in for missing fields, or <strong>Report</strong>{" "}
+                for a structured error log you can share.
+              </p>
+            </div>
+          )}
+
           <div className="max-h-[480px] space-y-1 overflow-y-auto">
-            {rows.map((r, i) => (
+            {rows.map((r) => (
               <div
-                key={i}
+                key={r.index}
                 className={`flex items-start gap-2 rounded-md border p-2 text-sm ${
                   r.ok ? "border-emerald-500/30" : "border-rose-500/30 bg-rose-500/5"
                 }`}
@@ -241,10 +342,20 @@ const BulkImport = () => {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-xs">
-                    {r.raw?.slug ?? `row ${i + 1}`} — {r.raw?.title ?? "?"}
+                    <span className="text-muted-foreground">Row {r.index + 1}</span> —{" "}
+                    {r.raw?.slug ?? "(no slug)"} — {r.raw?.title ?? "?"}
                   </p>
-                  {r.error && (
-                    <p className="mt-1 text-xs text-rose-500">{r.error}</p>
+                  {r.issues && r.issues.length > 0 && (
+                    <ul className="mt-1 space-y-0.5 text-xs text-rose-500">
+                      {r.issues.map((iss, idx) => (
+                        <li key={idx}>
+                          <code className="rounded bg-rose-500/10 px-1 py-0.5 font-mono">
+                            {iss.path}
+                          </code>{" "}
+                          {iss.message}
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
               </div>
