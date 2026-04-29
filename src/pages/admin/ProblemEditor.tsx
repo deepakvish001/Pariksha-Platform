@@ -54,6 +54,8 @@ const emptyPayload = (): FullProblemPayload => ({
   sql_spec: null,
 });
 
+const DRAFT_KEY = (slug?: string) => `admin:problem-draft:${slug ?? "__new__"}`;
+
 const ProblemEditor = () => {
   const { slug } = useParams();
   const isNew = !slug;
@@ -63,6 +65,25 @@ const ProblemEditor = () => {
   const [form, setForm] = useState<FullProblemPayload>(emptyPayload());
   const [topicInput, setTopicInput] = useState("");
   const [activeLang, setActiveLang] = useState<LangId>("python");
+  const [dirty, setDirty] = useState(false);
+  const [slugTaken, setSlugTaken] = useState(false);
+  const [draftRestoredAt, setDraftRestoredAt] = useState<string | null>(null);
+
+  // Restore localStorage draft for NEW problems on first mount.
+  useEffect(() => {
+    if (!isNew) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY(undefined));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.form) {
+          setForm(parsed.form);
+          setDraftRestoredAt(parsed.savedAt ?? null);
+        }
+      }
+    } catch (_) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (loaded?.problem) {
@@ -93,11 +114,56 @@ const ProblemEditor = () => {
             }
           : null,
       });
+      setDirty(false);
     }
   }, [loaded]);
 
-  const update = <K extends keyof FullProblemPayload>(k: K, v: FullProblemPayload[K]) =>
+  const update = <K extends keyof FullProblemPayload>(k: K, v: FullProblemPayload[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
+    setDirty(true);
+  };
+
+  // Autosave drafts to localStorage every 5 seconds while dirty (new problems only).
+  useEffect(() => {
+    if (!isNew || !dirty) return;
+    const id = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          DRAFT_KEY(undefined),
+          JSON.stringify({ form, savedAt: new Date().toISOString() }),
+        );
+      } catch (_) {}
+    }, 5000);
+    return () => window.clearTimeout(id);
+  }, [form, dirty, isNew]);
+
+  // Block route/window unload while dirty.
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
+  // Slug collision check (debounced) for new problems.
+  useEffect(() => {
+    if (!isNew) return;
+    const s = slugify(form.slug);
+    if (!s) {
+      setSlugTaken(false);
+      return;
+    }
+    const t = window.setTimeout(async () => {
+      const { data } = await import("@/integrations/supabase/client").then((m) =>
+        m.supabase.from("coding_problems").select("slug").eq("slug", s).maybeSingle(),
+      );
+      setSlugTaken(!!data);
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [form.slug, isNew]);
 
   const addTopic = () => {
     const t = topicInput.trim();
@@ -115,6 +181,14 @@ const ProblemEditor = () => {
       });
       return;
     }
+    if (isNew && slugTaken) {
+      toast({
+        title: "Slug already taken",
+        description: "Pick a different slug.",
+        variant: "destructive",
+      });
+      return;
+    }
     const cleaned: FullProblemPayload = {
       ...form,
       slug: slugify(form.slug),
@@ -123,8 +197,25 @@ const ProblemEditor = () => {
       hints: form.hints.filter(Boolean),
     };
     await save.mutateAsync(cleaned);
+    setDirty(false);
+    try {
+      localStorage.removeItem(DRAFT_KEY(undefined));
+    } catch (_) {}
     if (isNew) nav(`/admin/problems/${cleaned.slug}/edit`, { replace: true });
   };
+
+  // Cmd/Ctrl+S to save.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, slugTaken]);
 
   const previewMd = useMemo(() => form.description, [form.description]);
 
