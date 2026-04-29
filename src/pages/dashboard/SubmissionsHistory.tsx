@@ -547,6 +547,83 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
         )}
       </div>
 
+      {/* Active filter chips — one-click removal */}
+      {(search || verdict !== "all" || language !== "all" || sort !== "newest" || dateFrom || dateTo) && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground mr-1">Active filters:</span>
+          {search && (
+            <Badge variant="secondary" className="gap-1 pr-1">
+              <span className="text-[11px]">Search: “{search}”</span>
+              <button
+                type="button"
+                aria-label="Clear search filter"
+                onClick={() => {
+                  setSearchInput("");
+                  updateParams({ q: null, subPage: null, runPage: null });
+                }}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {verdict !== "all" && (
+            <Badge variant="secondary" className="gap-1 pr-1">
+              <span className="text-[11px]">Verdict: {verdict}</span>
+              <button
+                type="button"
+                aria-label="Clear verdict filter"
+                onClick={() => updateParams({ verdict: null, subPage: null })}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {language !== "all" && (
+            <Badge variant="secondary" className="gap-1 pr-1">
+              <span className="text-[11px]">Language: {language}</span>
+              <button
+                type="button"
+                aria-label="Clear language filter"
+                onClick={() => updateParams({ lang: null, subPage: null, runPage: null })}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {sort !== "newest" && (
+            <Badge variant="secondary" className="gap-1 pr-1">
+              <span className="text-[11px]">
+                Sort: {sort === "oldest" ? "Oldest first" : "Best score"}
+              </span>
+              <button
+                type="button"
+                aria-label="Reset sort to newest"
+                onClick={() => updateParams({ sort: null, subPage: null, runPage: null })}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {(dateFrom || dateTo) && (
+            <Badge variant="secondary" className="gap-1 pr-1">
+              <span className="text-[11px]">Date: {dateRangeLabel}</span>
+              <button
+                type="button"
+                aria-label="Clear date range filter"
+                onClick={() => setDateRange({ from: undefined, to: undefined })}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+        </div>
+      )}
+
       <Tabs value={tab} onValueChange={(v) => forcedTab ? undefined : updateParams({ tab: v === "submissions" ? null : v })}>
         {!forcedTab && (
           <TabsList>
@@ -565,18 +642,49 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
           ) : submissions.length === 0 ? (
             <Card className="p-10 text-center space-y-3">
               <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <p className="font-medium">No submissions match your filters</p>
-                <p className="text-sm text-muted-foreground">
-                  {hasActiveFilters
-                    ? "Try widening the date range, clearing search, or resetting filters."
-                    : "Solve a problem from the Coding Library to see it here."}
-                </p>
+                {hasActiveFilters ? (
+                  <div className="text-sm text-muted-foreground space-y-1.5">
+                    <p>None of your submissions match the current filters:</p>
+                    <ul className="text-xs inline-flex flex-wrap gap-x-3 gap-y-1 justify-center">
+                      {search && <li>• search “{search}”</li>}
+                      {verdict !== "all" && <li>• verdict = {verdict}</li>}
+                      {language !== "all" && <li>• language = {language}</li>}
+                      {sort !== "newest" && (
+                        <li>• sort = {sort === "oldest" ? "oldest" : "best score"}</li>
+                      )}
+                      {(dateFrom || dateTo) && <li>• date {dateRangeLabel}</li>}
+                    </ul>
+                    <p className="text-xs">
+                      Remove a chip above, or clear individual filters below.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Solve a problem from the Coding Library to see it here.
+                  </p>
+                )}
               </div>
-              <div className="flex justify-center gap-2 pt-1">
+              <div className="flex flex-wrap justify-center gap-2 pt-1">
+                {search && (
+                  <Button variant="outline" size="sm" onClick={() => { setSearchInput(""); updateParams({ q: null, subPage: null }); }}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear search
+                  </Button>
+                )}
+                {verdict !== "all" && (
+                  <Button variant="outline" size="sm" onClick={() => updateParams({ verdict: null, subPage: null })}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear verdict
+                  </Button>
+                )}
+                {(dateFrom || dateTo) && (
+                  <Button variant="outline" size="sm" onClick={() => setDateRange({ from: undefined, to: undefined })}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear dates
+                  </Button>
+                )}
                 {hasActiveFilters && (
                   <Button variant="outline" size="sm" onClick={clearAllFilters}>
-                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset filters
+                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset all
                   </Button>
                 )}
                 <Button size="sm" asChild>
@@ -627,21 +735,51 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
           ) : runs.length === 0 ? (
             <Card className="p-10 text-center space-y-3">
               <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <p className="font-medium">No runs match your filters</p>
-                <p className="text-sm text-muted-foreground">
-                  {hasActiveFilters
-                    ? "Try a wider date range or clear the search/language filter."
-                    : "Use “Run” in the editor to see your test runs here."}
-                </p>
+                {hasActiveFilters ? (
+                  <div className="text-sm text-muted-foreground space-y-1.5">
+                    <p>None of your runs match the current filters:</p>
+                    <ul className="text-xs inline-flex flex-wrap gap-x-3 gap-y-1 justify-center">
+                      {search && <li>• search “{search}”</li>}
+                      {language !== "all" && <li>• language = {language}</li>}
+                      {sort !== "newest" && (
+                        <li>• sort = {sort === "oldest" ? "oldest" : "best score"}</li>
+                      )}
+                      {(dateFrom || dateTo) && <li>• date {dateRangeLabel}</li>}
+                    </ul>
+                    <p className="text-xs">
+                      Note: verdict filter only affects submissions. Remove a chip above or clear individual filters below.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Use “Run” in the editor to see your test runs here.
+                  </p>
+                )}
               </div>
-              {hasActiveFilters && (
-                <div className="flex justify-center pt-1">
-                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
-                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset filters
+              <div className="flex flex-wrap justify-center gap-2 pt-1">
+                {search && (
+                  <Button variant="outline" size="sm" onClick={() => { setSearchInput(""); updateParams({ q: null, runPage: null }); }}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear search
                   </Button>
-                </div>
-              )}
+                )}
+                {language !== "all" && (
+                  <Button variant="outline" size="sm" onClick={() => updateParams({ lang: null, subPage: null, runPage: null })}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear language
+                  </Button>
+                )}
+                {(dateFrom || dateTo) && (
+                  <Button variant="outline" size="sm" onClick={() => setDateRange({ from: undefined, to: undefined })}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear dates
+                  </Button>
+                )}
+                {hasActiveFilters && (
+                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset all
+                  </Button>
+                )}
+              </div>
             </Card>
           ) : (
             <>

@@ -671,12 +671,12 @@ export default function CodingLeaderboard() {
   );
 
   const podium = useMemo(
-    () => (page === 1 && !search && !difficulty && minScore === 0 ? filteredRows.slice(0, 3) : []),
-    [filteredRows, page, search, difficulty, minScore],
+    () => (page === 1 && !search && !difficulty ? filteredRows.slice(0, 3) : []),
+    [filteredRows, page, search, difficulty],
   );
   const rest = useMemo(
-    () => (page === 1 && !search && !difficulty && minScore === 0 ? filteredRows.slice(3) : filteredRows),
-    [filteredRows, page, search, difficulty, minScore],
+    () => (page === 1 && !search && !difficulty ? filteredRows.slice(3) : filteredRows),
+    [filteredRows, page, search, difficulty],
   );
 
   const openBreakdown = (row: CodingLeaderboardRow) =>
@@ -741,6 +741,14 @@ export default function CodingLeaderboard() {
 
   const windowLabel =
     window === "today" ? "today" : window === "week" ? "this week" : "of all time";
+  const windowRangeLabel =
+    window === "today" ? "Today" : window === "week" ? "Last 7 days" : "All time";
+  const windowRangeSub =
+    window === "today"
+      ? "Accepted submissions from today (UTC)"
+      : window === "week"
+        ? "Accepted submissions in the last 7 days"
+        : "All accepted submissions ever";
 
   // Pagination math — when total is unknown (server doesn't return count),
   // assume there's a next page only if the current page is full.
@@ -826,34 +834,43 @@ export default function CodingLeaderboard() {
         )}
 
         {/* Window tabs + search */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <Tabs
-            value={window}
-            onValueChange={(v) =>
-              updateParams({ window: v }, { resetPage: true })
-            }
-          >
-            <TabsList>
-              <TabsTrigger value="all">All-time</TabsTrigger>
-              <TabsTrigger value="week">This week</TabsTrigger>
-              <TabsTrigger value="today">Today</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <form onSubmit={handleSearch} className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search by username"
-                className="h-9 pl-8 w-48 md:w-64"
-                aria-label="Search leaderboard"
-              />
-            </div>
-            <Button type="submit" size="sm" variant="secondary">
-              Search
-            </Button>
-          </form>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <Tabs
+              value={window}
+              onValueChange={(v) =>
+                updateParams({ window: v }, { resetPage: true })
+              }
+            >
+              <TabsList>
+                <TabsTrigger value="all" aria-label="All time">All time</TabsTrigger>
+                <TabsTrigger value="week" aria-label="Last 7 days">Last 7 days</TabsTrigger>
+                <TabsTrigger value="today" aria-label="Today">Today</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <form onSubmit={handleSearch} className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search by username"
+                  className="h-9 pl-8 w-48 md:w-64"
+                  aria-label="Search leaderboard"
+                />
+              </div>
+              <Button type="submit" size="sm" variant="secondary">
+                Search
+              </Button>
+            </form>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary" className="gap-1.5">
+              <CalendarDays className="h-3 w-3" />
+              <span className="font-semibold">{windowRangeLabel}</span>
+            </Badge>
+            <span className="text-xs text-muted-foreground">{windowRangeSub}</span>
+          </div>
         </div>
 
         {/* Filter row: difficulty pills + accepted-only toggle */}
