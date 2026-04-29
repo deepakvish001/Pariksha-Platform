@@ -763,11 +763,35 @@ const ProblemEditor = () => {
                       source={form.reference_solution[activeLang] ?? ""}
                       language={activeLang}
                       stdin={ex.input}
+                      expected={ex.output}
                       label={`Run (${activeLang})`}
                       onResult={(out) => {
                         const next = [...form.examples];
                         next[i] = { ...ex, output: out };
                         update("examples", next);
+                      }}
+                      onSavedRun={(res) => {
+                        const got = res.stdout;
+                        const expected = (ex.output ?? "").trimEnd();
+                        const pass = got === expected;
+                        runHistory.append({
+                          kind: "run-example",
+                          language: activeLang,
+                          label: `Example ${i + 1}`,
+                          passed: pass ? 1 : 0,
+                          total: 1,
+                          note: res.stderr ? `stderr: ${res.stderr.slice(0, 120)}` : undefined,
+                          cases: [
+                            {
+                              index: i,
+                              pass,
+                              input: ex.input,
+                              expected,
+                              got,
+                              diff: pass ? undefined : buildLineDiff(expected, got),
+                            },
+                          ],
+                        });
                       }}
                     />
                     <Button
