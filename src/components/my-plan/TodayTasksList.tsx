@@ -2,14 +2,16 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar, Sparkles, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+import { Clock, Calendar, Sparkles, ArrowUpRight, ArrowDownRight, Minus, Info } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { PlanTask } from "@/hooks/useStudyPlan";
-import { getNextRecommendation } from "@/lib/adaptive/rerank";
+import { getNextRecommendation, type RecommendationMode } from "@/lib/adaptive/rerank";
 
 interface Props {
   tasks: PlanTask[];
   onToggle: (taskId: string, status: PlanTask["status"]) => void;
+  mode?: RecommendationMode;
 }
 
 const difficultyClass = (d: string) =>
@@ -23,12 +25,12 @@ const todayKey = () => {
   return t.toISOString().slice(0, 10);
 };
 
-export const TodayTasksList = ({ tasks, onToggle }: Props) => {
+export const TodayTasksList = ({ tasks, onToggle, mode = "adaptive" }: Props) => {
   const today = todayKey();
   const todays = useMemo(() => tasks.filter((t) => t.day_date === today), [tasks, today]);
   const totalMinutes = todays.reduce((sum, t) => sum + t.est_minutes, 0);
   const doneMinutes = todays.filter((t) => t.status === "done").reduce((s, t) => s + t.est_minutes, 0);
-  const recommendation = useMemo(() => getNextRecommendation(tasks), [tasks]);
+  const recommendation = useMemo(() => getNextRecommendation(tasks, mode), [tasks, mode]);
   const DeltaIcon = recommendation
     ? (recommendation.difficultyDelta > 0 ? ArrowUpRight : recommendation.difficultyDelta < 0 ? ArrowDownRight : Minus)
     : Minus;
@@ -61,12 +63,41 @@ export const TodayTasksList = ({ tasks, onToggle }: Props) => {
         <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5 text-xs sm:text-sm">
           <Sparkles className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="font-medium">
-              Next up: {recommendation.task.title}
-              <span className="ml-2 text-muted-foreground inline-flex items-center gap-0.5">
+            <p className="font-medium flex items-center gap-2 flex-wrap">
+              <span>Next up: {recommendation.task.title}</span>
+              <span className="text-muted-foreground inline-flex items-center gap-0.5 font-normal">
                 <DeltaIcon className="h-3 w-3" />
-                {recommendation.difficultyDelta > 0 ? "harder" : recommendation.difficultyDelta < 0 ? "easier" : "same level"}
+                {mode === "fixed"
+                  ? "fixed difficulty"
+                  : recommendation.difficultyDelta > 0
+                  ? "harder"
+                  : recommendation.difficultyDelta < 0
+                  ? "easier"
+                  : "same level"}
               </span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Why this task was recommended"
+                    className="inline-flex items-center justify-center h-5 w-5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
+                  >
+                    <Info className="h-3 w-3" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="top" className="w-72 text-xs space-y-2">
+                  <p className="font-semibold text-sm">Why this pick?</p>
+                  <p className="text-muted-foreground">{recommendation.reason}</p>
+                  <div className="text-[11px] text-muted-foreground border-t pt-2">
+                    Mode: <span className="font-medium capitalize">{mode}</span>
+                    {" · "}
+                    Difficulty change:{" "}
+                    <span className="font-medium">
+                      {recommendation.difficultyDelta > 0 ? "+1 step" : recommendation.difficultyDelta < 0 ? "-1 step" : "0"}
+                    </span>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </p>
             <p className="text-muted-foreground text-xs mt-0.5">{recommendation.reason}</p>
           </div>
