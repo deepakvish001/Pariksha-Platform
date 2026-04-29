@@ -122,8 +122,10 @@ export const TodayTasksList = ({
             <div
               key={t.id}
               id={`task-${t.id}`}
+              tabIndex={0}
               className={cn(
                 "flex items-start gap-3 rounded-lg border border-border p-3 transition-colors",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
                 t.status === "done" && "opacity-60 bg-muted/30",
                 statusClass(t.status)
               )}
