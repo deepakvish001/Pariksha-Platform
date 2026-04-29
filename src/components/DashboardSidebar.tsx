@@ -359,6 +359,10 @@ export function DashboardSidebar() {
   const [prevUnreadCount, setPrevUnreadCount] = useState(unreadCount);
   const isCollapsed = state === "collapsed";
   const isGuest = !user;
+  const { isAdmin } = useUserRole();
+  const visibleHomeNavItems = isAdmin
+    ? [...homeNavItems, { title: "Admin Panel", url: "/admin", icon: Shield }]
+    : homeNavItems;
 
   const getNextTheme = () => {
     if (theme === "light") return "dark";
@@ -537,7 +541,7 @@ export function DashboardSidebar() {
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                {homeNavItems.map((item) => {
+                {visibleHomeNavItems.map((item) => {
                   const isProfile = item.url === PROFILE_SENTINEL;
                   const username = (extendedProfile as { username?: string } | null)?.username ?? null;
                   const resolvedUrl = isProfile
