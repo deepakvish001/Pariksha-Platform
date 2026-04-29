@@ -1615,6 +1615,8 @@ export type Database = {
           locked: boolean
           order_index: number
           plan_id: string
+          scheduled_end: string | null
+          scheduled_start: string | null
           score: number | null
           source_id: string | null
           source_type: string | null
@@ -1637,6 +1639,8 @@ export type Database = {
           locked?: boolean
           order_index?: number
           plan_id: string
+          scheduled_end?: string | null
+          scheduled_start?: string | null
           score?: number | null
           source_id?: string | null
           source_type?: string | null
@@ -1659,6 +1663,8 @@ export type Database = {
           locked?: boolean
           order_index?: number
           plan_id?: string
+          scheduled_end?: string | null
+          scheduled_start?: string | null
           score?: number | null
           source_id?: string | null
           source_type?: string | null
