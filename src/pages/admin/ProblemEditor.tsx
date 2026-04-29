@@ -336,11 +336,13 @@ const ProblemEditor = () => {
       </div>
 
       <div
-        className={`mb-4 flex items-start gap-3 rounded-lg border p-3 text-sm ${
+        className={`sticky top-2 z-30 mb-4 flex items-start gap-3 rounded-lg border p-3 text-sm shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/70 ${
           form.is_published
             ? "border-emerald-500/30 bg-emerald-500/5"
             : "border-amber-500/30 bg-amber-500/5"
         }`}
+        role="status"
+        aria-live="polite"
       >
         {form.is_published ? (
           <Globe className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
@@ -348,13 +350,38 @@ const ProblemEditor = () => {
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
         )}
         <div className="min-w-0 flex-1">
-          <p className="font-medium">
-            {form.is_published ? "Published" : "Draft — not visible to learners"}
-          </p>
-          <p className="text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-medium">
+              {form.is_published ? "Published" : "Draft — not visible to learners"}
+            </p>
+            <Badge
+              variant="outline"
+              className={
+                form.is_published
+                  ? "border-emerald-500/40 text-emerald-500"
+                  : "border-amber-500/40 text-amber-500"
+              }
+            >
+              {form.is_published ? "Live" : "Draft"}
+            </Badge>
+            {lastPublishEvent && (
+              <span className="text-xs text-muted-foreground">
+                Last {lastPublishEvent.action === "publish" ? "published" : "unpublished"}{" "}
+                <time dateTime={lastPublishEvent.created_at} title={new Date(lastPublishEvent.created_at).toLocaleString()}>
+                  {formatRelative(lastPublishEvent.created_at)}
+                </time>
+              </span>
+            )}
+            {!lastPublishEvent && !isNew && (
+              <span className="text-xs text-muted-foreground">
+                No publish history yet
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {form.is_published
-              ? "Changes here are saved as drafts until you press Save. Already published — visible to all learners."
-              : "Fill in the details, then use the Publish button above to make this problem live. Don't forget to Save first."}
+              ? "Visible to all learners. Edits save as drafts here until you press Save."
+              : "Fill in the details, then press Publish above to make this problem live. Save your changes first."}
           </p>
         </div>
         {dirty && (
