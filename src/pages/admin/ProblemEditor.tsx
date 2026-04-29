@@ -556,6 +556,8 @@ const ProblemEditor = () => {
             <div>
               <Label>Title</Label>
               <Input
+                data-field="title"
+                className={fieldHighlightClass("title", highlightedField)}
                 value={form.title}
                 onChange={(e) => {
                   update("title", e.target.value);
@@ -570,6 +572,8 @@ const ProblemEditor = () => {
               {isNew ? (
                 <>
                   <Input
+                    data-field="slug"
+                    className={fieldHighlightClass("slug", highlightedField)}
                     value={form.slug}
                     onChange={(e) => update("slug", slugify(e.target.value))}
                     placeholder="two-sum"
