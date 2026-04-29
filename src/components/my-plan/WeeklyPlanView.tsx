@@ -106,9 +106,10 @@ interface DroppableDayProps {
   count: number;
   open: boolean;
   onToggleOpen: () => void;
+  bulkSlot?: React.ReactNode;
 }
 
-const DroppableDay = ({ day, isToday, children, total, done, count, open, onToggleOpen }: DroppableDayProps) => {
+const DroppableDay = ({ day, isToday, children, total, done, count, open, onToggleOpen, bulkSlot }: DroppableDayProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: `day-${day}` });
   return (
     <Collapsible open={open} onOpenChange={onToggleOpen}>
@@ -119,20 +120,21 @@ const DroppableDay = ({ day, isToday, children, total, done, count, open, onTogg
           isOver && "bg-primary/10 ring-1 ring-primary/40"
         )}
       >
-        <CollapsibleTrigger className="w-full">
-          <div className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
-            <div className="flex items-center gap-2">
-              <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
-              <span className="font-medium text-sm">
-                {isToday ? "Today" : dayLabel(day)}
-              </span>
-              {isToday && <Badge variant="default" className="text-xs h-5">Today</Badge>}
-            </div>
-            <div className="text-xs text-muted-foreground">
+        <div className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md gap-2">
+          <CollapsibleTrigger className="flex items-center gap-2 flex-1 min-w-0 text-left">
+            <ChevronDown className={cn("h-4 w-4 transition-transform shrink-0", open && "rotate-180")} />
+            <span className="font-medium text-sm truncate">
+              {isToday ? "Today" : dayLabel(day)}
+            </span>
+            {isToday && <Badge variant="default" className="text-xs h-5">Today</Badge>}
+          </CollapsibleTrigger>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground">
               {done}/{count} · {total} min
-            </div>
+            </span>
+            {bulkSlot}
           </div>
-        </CollapsibleTrigger>
+        </div>
         <CollapsibleContent className="pl-4 pr-2 py-1 space-y-0.5 min-h-[8px]">
           {children}
         </CollapsibleContent>
@@ -141,7 +143,7 @@ const DroppableDay = ({ day, isToday, children, total, done, count, open, onTogg
   );
 };
 
-export const WeeklyPlanView = ({ tasks, onToggle, onMoveTask }: Props) => {
+export const WeeklyPlanView = ({ tasks, onToggle, onMoveTask, onBulkUpdate, onRestore }: Props) => {
   const todayIso = todayIsoFn();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [activeTask, setActiveTask] = useState<PlanTask | null>(null);
@@ -219,6 +221,16 @@ export const WeeklyPlanView = ({ tasks, onToggle, onMoveTask }: Props) => {
                 count={dayTasks.length}
                 open={open}
                 onToggleOpen={() => toggleDay(day)}
+                bulkSlot={
+                  onBulkUpdate && onRestore ? (
+                    <BulkDayActions
+                      day={day}
+                      tasks={dayTasks}
+                      onBulkUpdate={onBulkUpdate}
+                      onRestore={onRestore}
+                    />
+                  ) : undefined
+                }
               >
                 {dayTasks.map((t) => (
                   <DraggableTask key={t.id} task={t} onToggle={onToggle} />
