@@ -623,9 +623,16 @@ export default function CodingLeaderboard() {
   const search = (searchParams.get("q") ?? "").trim();
   const difficulty = parseDifficulty(searchParams.get("diff"));
   const acceptedOnly = searchParams.get("accepted") !== "0";
+  const minScoreParam = searchParams.get("minScore");
+  const minScore = (() => {
+    const n = Number(minScoreParam);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  })();
 
   const [searchInput, setSearchInput] = useState(search);
   useEffect(() => setSearchInput(search), [search]);
+  const [minScoreInput, setMinScoreInput] = useState(minScore ? String(minScore) : "");
+  useEffect(() => setMinScoreInput(minScore ? String(minScore) : ""), [minScore]);
 
   const [drawerUser, setDrawerUser] = useState<{ id: string; rank: number } | null>(null);
 
@@ -657,13 +664,19 @@ export default function CodingLeaderboard() {
   });
   const { stats, loading: statsLoading } = useCodingLeaderboardStats();
 
+  // Client-side min-score filter (RPC doesn't support it).
+  const filteredRows = useMemo(
+    () => (minScore > 0 ? rows.filter((r) => Math.round(r.weighted_score) >= minScore) : rows),
+    [rows, minScore],
+  );
+
   const podium = useMemo(
-    () => (page === 1 && !search && !difficulty ? rows.slice(0, 3) : []),
-    [rows, page, search, difficulty],
+    () => (page === 1 && !search && !difficulty && minScore === 0 ? filteredRows.slice(0, 3) : []),
+    [filteredRows, page, search, difficulty, minScore],
   );
   const rest = useMemo(
-    () => (page === 1 && !search && !difficulty ? rows.slice(3) : rows),
-    [rows, page, search, difficulty],
+    () => (page === 1 && !search && !difficulty && minScore === 0 ? filteredRows.slice(3) : filteredRows),
+    [filteredRows, page, search, difficulty, minScore],
   );
 
   const openBreakdown = (row: CodingLeaderboardRow) =>
@@ -888,7 +901,32 @@ export default function CodingLeaderboard() {
               </FilterPill>
             </div>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="min-score" className="text-xs text-muted-foreground">
+                  Min score
+                </Label>
+                <Input
+                  id="min-score"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  placeholder="0"
+                  value={minScoreInput}
+                  onChange={(e) => setMinScoreInput(e.target.value)}
+                  onBlur={() => {
+                    const n = Number(minScoreInput);
+                    const next = Number.isFinite(n) && n > 0 ? String(Math.floor(n)) : null;
+                    updateParams({ minScore: next }, { resetPage: true });
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  }}
+                  className="h-8 w-20 text-xs"
+                  aria-label="Minimum weighted score"
+                />
+              </div>
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Label
@@ -914,17 +952,18 @@ export default function CodingLeaderboard() {
                 </TooltipContent>
               </Tooltip>
 
-              {(difficulty || !acceptedOnly || search) && (
+              {(difficulty || !acceptedOnly || search || minScore > 0) && (
                 <Button
                   size="sm"
                   variant="ghost"
                   className="h-7 px-2 text-xs text-muted-foreground"
-                  onClick={() =>
+                  onClick={() => {
+                    setMinScoreInput("");
                     updateParams(
-                      { diff: null, accepted: null, q: null },
+                      { diff: null, accepted: null, q: null, minScore: null },
                       { resetPage: true },
-                    )
-                  }
+                    );
+                  }}
                 >
                   <X className="h-3 w-3 mr-1" /> Reset
                 </Button>

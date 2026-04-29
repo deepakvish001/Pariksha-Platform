@@ -49,6 +49,8 @@ export const useCodeRuns = (problemSlug?: string) => {
   return { runs, loading, refetch: fetchRuns };
 };
 
+export type RunsSort = "newest" | "oldest" | "best_score";
+
 export interface PagedRunsParams {
   page: number;
   pageSize: number;
@@ -58,6 +60,7 @@ export interface PagedRunsParams {
   dateFrom?: string;
   /** Inclusive upper bound on created_at (YYYY-MM-DD, local; end-of-day). */
   dateTo?: string;
+  sort?: RunsSort;
 }
 
 import { __dateBounds } from "./useCodingSubmissions";
@@ -69,6 +72,7 @@ export const usePagedCodeRuns = ({
   language,
   dateFrom,
   dateTo,
+  sort = "newest",
 }: PagedRunsParams) => {
   const { user } = useAuth();
   const [runs, setRuns] = useState<CodeRunRow[]>([]);
@@ -87,9 +91,22 @@ export const usePagedCodeRuns = ({
     let q = supabase
       .from("code_runs")
       .select("*", { count: "exact" })
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .range(from, to);
+      .eq("user_id", user.id);
+
+    // For runs "best score" approximates as Accepted-status first, then fastest runtime.
+    if (sort === "best_score") {
+      q = q
+        .order("status", { ascending: true, nullsFirst: false })
+        .order("time_ms", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false });
+    } else if (sort === "oldest") {
+      q = q.order("created_at", { ascending: true });
+    } else {
+      q = q.order("created_at", { ascending: false });
+    }
+
+    q = q.range(from, to);
+
     if (language && language !== "all") q = q.eq("language", language);
     const fromIso = __dateBounds.startOfDayIso(dateFrom);
     const toIso = __dateBounds.endOfDayIso(dateTo);
@@ -97,7 +114,7 @@ export const usePagedCodeRuns = ({
     if (toIso) q = q.lte("created_at", toIso);
     if (search && search.trim()) {
       const term = `%${search.trim()}%`;
-      q = q.or(`problem_slug.ilike.${term},source_code.ilike.${term}`);
+      q = q.or(`problem_slug.ilike.${term},source_code.ilike.${term},status.ilike.${term}`);
     }
     const { data, error, count } = await q;
     if (!error && data) {
@@ -105,7 +122,7 @@ export const usePagedCodeRuns = ({
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [user, page, pageSize, search, language, dateFrom, dateTo]);
+  }, [user, page, pageSize, search, language, dateFrom, dateTo, sort]);
 
   useEffect(() => {
     fetchPage();

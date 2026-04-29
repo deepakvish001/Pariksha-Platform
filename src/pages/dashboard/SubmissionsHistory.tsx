@@ -198,7 +198,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
   // current URL has none of the filter params present (so a fresh deep-link or
   // a "Clear all" reset still wins).
   const PREFS_KEY = user ? `byteskill:submissions-history:prefs:${user.id}` : null;
-  const FILTER_KEYS = ["q", "verdict", "lang", "from", "to", "tab"] as const;
+  const FILTER_KEYS = ["q", "verdict", "lang", "from", "to", "tab", "sort"] as const;
 
   // ---- Hydrate persisted filter prefs into the URL on first mount ---------
   // This runs only when no filter param is in the URL — so a shared link or a
@@ -236,6 +236,10 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
   const dateFrom = searchParams.get("from") ?? "";
   const dateTo = searchParams.get("to") ?? "";
   const tab = forcedTab ?? (searchParams.get("tab") ?? "submissions");
+  const rawSort = searchParams.get("sort") ?? "newest";
+  const sort = (["newest", "oldest", "best_score"] as const).includes(rawSort as never)
+    ? (rawSort as "newest" | "oldest" | "best_score")
+    : "newest";
   const subPage = Math.max(1, parseInt(searchParams.get("subPage") ?? "1", 10) || 1);
   const runPage = Math.max(1, parseInt(searchParams.get("runPage") ?? "1", 10) || 1);
 
@@ -296,7 +300,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
     } catch {
       /* ignore quota errors */
     }
-  }, [search, verdict, language, dateFrom, dateTo, tab, PREFS_KEY, searchParams]);
+  }, [search, verdict, language, dateFrom, dateTo, tab, sort, PREFS_KEY, searchParams]);
 
   const { submissions, total: subTotal, loading: subsLoading, refetch: refetchSubs } =
     usePagedCodingSubmissions({
@@ -307,6 +311,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
       language,
       dateFrom,
       dateTo,
+      sort,
     });
   const { runs, total: runTotal, loading: runsLoading, refetch: refetchRuns } =
     usePagedCodeRuns({
@@ -316,6 +321,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
       language,
       dateFrom,
       dateTo,
+      sort,
     });
 
   const { run, isRunning, cancelRun } = useCodeRunner();
@@ -414,6 +420,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
     !!dateFrom ||
     !!dateTo ||
     tab !== "submissions" ||
+    sort !== "newest" ||
     subPage !== 1 ||
     runPage !== 1 ||
     !!detailRunId;
@@ -443,10 +450,11 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
 
       <div className="flex flex-wrap gap-2">
         <Input
-          placeholder="Search problem slug or source code…"
+          placeholder="Search by problem name, verdict, or code…"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           className="max-w-sm"
+          aria-label="Search submissions and runs"
         />
         <Select
           value={verdict}
@@ -466,6 +474,19 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
           <SelectContent>
             <SelectItem value="all">All languages</SelectItem>
             {LANGUAGE_OPTIONS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select
+          value={sort}
+          onValueChange={(v) => updateParams({ sort: v === "newest" ? null : v, subPage: null, runPage: null })}
+        >
+          <SelectTrigger className="w-[160px]" aria-label="Sort order">
+            <SelectValue placeholder="Sort" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Newest first</SelectItem>
+            <SelectItem value="oldest">Oldest first</SelectItem>
+            <SelectItem value="best_score">Best score</SelectItem>
           </SelectContent>
         </Select>
         <Popover>

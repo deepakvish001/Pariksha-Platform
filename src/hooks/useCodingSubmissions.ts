@@ -48,6 +48,8 @@ export const useCodingSubmissions = (problemSlug?: string) => {
   return { submissions, loading, refetch: fetchSubmissions };
 };
 
+export type SubmissionsSort = "newest" | "oldest" | "best_score";
+
 export interface PagedSubmissionsParams {
   page: number;
   pageSize: number;
@@ -58,6 +60,7 @@ export interface PagedSubmissionsParams {
   dateFrom?: string;
   /** Inclusive upper bound on created_at (YYYY-MM-DD, local; end-of-day). */
   dateTo?: string;
+  sort?: SubmissionsSort;
 }
 
 /** Convert YYYY-MM-DD → ISO start-of-day in local TZ. */
@@ -81,6 +84,7 @@ export const usePagedCodingSubmissions = ({
   language,
   dateFrom,
   dateTo,
+  sort = "newest",
 }: PagedSubmissionsParams) => {
   const { user } = useAuth();
   const [submissions, setSubmissions] = useState<CodeSubmissionRow[]>([]);
@@ -99,9 +103,22 @@ export const usePagedCodingSubmissions = ({
     let q = supabase
       .from("code_submissions")
       .select("*", { count: "exact" })
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .range(from, to);
+      .eq("user_id", user.id);
+
+    // "Best score" = most tests passed first, then fewest total, then newest.
+    if (sort === "best_score") {
+      q = q
+        .order("passed_tests", { ascending: false })
+        .order("total_tests", { ascending: true })
+        .order("created_at", { ascending: false });
+    } else if (sort === "oldest") {
+      q = q.order("created_at", { ascending: true });
+    } else {
+      q = q.order("created_at", { ascending: false });
+    }
+
+    q = q.range(from, to);
+
     if (verdict && verdict !== "all") q = q.eq("verdict", verdict);
     if (language && language !== "all") q = q.eq("language", language);
     const fromIso = startOfDayIso(dateFrom);
@@ -110,7 +127,7 @@ export const usePagedCodingSubmissions = ({
     if (toIso) q = q.lte("created_at", toIso);
     if (search && search.trim()) {
       const term = `%${search.trim()}%`;
-      q = q.or(`problem_slug.ilike.${term},source_code.ilike.${term}`);
+      q = q.or(`problem_slug.ilike.${term},source_code.ilike.${term},verdict.ilike.${term}`);
     }
     const { data, error, count } = await q;
     if (!error && data) {
@@ -118,7 +135,7 @@ export const usePagedCodingSubmissions = ({
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [user, page, pageSize, search, verdict, language, dateFrom, dateTo]);
+  }, [user, page, pageSize, search, verdict, language, dateFrom, dateTo, sort]);
 
   useEffect(() => {
     fetchPage();
