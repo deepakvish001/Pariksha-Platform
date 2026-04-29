@@ -10,9 +10,10 @@
  import { ScrollArea } from "@/components/ui/scroll-area";
  import { Badge } from "@/components/ui/badge";
  import { cn } from "@/lib/utils";
- import { useNotifications, Notification } from "@/hooks/useNotifications";
- import { formatDistanceToNow } from "date-fns";
- import { Link } from "react-router-dom";
+import { useNotifications, Notification } from "@/hooks/useNotifications";
+import { formatDistanceToNow } from "date-fns";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
  
  const getNotificationIcon = (type: string) => {
    switch (type) {
