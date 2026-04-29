@@ -132,7 +132,7 @@ const App = () => (
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/u/:username" element={<PublicProfile />} />
+                
                 <Route path="/shared/:shareCode" element={<SharedFolder />} />
                 <Route
                   path="/onboarding"
@@ -164,6 +164,11 @@ const App = () => (
                   {/* All roadmaps now use the interactive flow view */}
                   <Route path="roadmaps/:roadmapId" element={<FullStackRoadmap />} />
                   <Route path="roadmap/fullstack" element={<FullStackRoadmap />} />
+                </Route>
+
+                {/* Public profile - inside dashboard layout so it shows the sidebar */}
+                <Route element={<PublicDashboardWrapper />}>
+                  <Route path="/u/:username" element={<PublicProfile />} />
                 </Route>
                 {/* Library routes - public */}
                 <Route path="/library" element={<PublicDashboardWrapper />}>
