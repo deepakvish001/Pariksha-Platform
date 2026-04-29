@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          diff: Json | null
+          entity_slug: string | null
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          diff?: Json | null
+          entity_slug?: string | null
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          diff?: Json | null
+          entity_slug?: string | null
+          entity_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
       ai_content_likes: {
         Row: {
           content_id: string
@@ -320,6 +350,197 @@ export type Database = {
           user_id?: string
           weighted_score?: number
           window_kind?: string
+        }
+        Relationships: []
+      }
+      coding_problem_reference_solutions: {
+        Row: {
+          code: string
+          id: string
+          lang_id: string
+          problem_slug: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string
+          id?: string
+          lang_id: string
+          problem_slug: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          lang_id?: string
+          problem_slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coding_problem_reference_solutions_problem_slug_fkey"
+            columns: ["problem_slug"]
+            isOneToOne: false
+            referencedRelation: "coding_problems"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      coding_problem_sql_specs: {
+        Row: {
+          order_matters: boolean
+          problem_slug: string
+          reference_query: string
+          schema_sql: string
+          seed_sql: string
+          starter: string
+          updated_at: string
+        }
+        Insert: {
+          order_matters?: boolean
+          problem_slug: string
+          reference_query?: string
+          schema_sql?: string
+          seed_sql?: string
+          starter?: string
+          updated_at?: string
+        }
+        Update: {
+          order_matters?: boolean
+          problem_slug?: string
+          reference_query?: string
+          schema_sql?: string
+          seed_sql?: string
+          starter?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coding_problem_sql_specs_problem_slug_fkey"
+            columns: ["problem_slug"]
+            isOneToOne: true
+            referencedRelation: "coding_problems"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      coding_problem_starter_code: {
+        Row: {
+          code: string
+          id: string
+          lang_id: string
+          problem_slug: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string
+          id?: string
+          lang_id: string
+          problem_slug: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          lang_id?: string
+          problem_slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coding_problem_starter_code_problem_slug_fkey"
+            columns: ["problem_slug"]
+            isOneToOne: false
+            referencedRelation: "coding_problems"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      coding_problem_tests: {
+        Row: {
+          created_at: string
+          expected: string
+          id: string
+          input: string
+          kind: string
+          ord: number
+          problem_slug: string
+        }
+        Insert: {
+          created_at?: string
+          expected?: string
+          id?: string
+          input?: string
+          kind: string
+          ord?: number
+          problem_slug: string
+        }
+        Update: {
+          created_at?: string
+          expected?: string
+          id?: string
+          input?: string
+          kind?: string
+          ord?: number
+          problem_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coding_problem_tests_problem_slug_fkey"
+            columns: ["problem_slug"]
+            isOneToOne: false
+            referencedRelation: "coding_problems"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      coding_problems: {
+        Row: {
+          constraints: string[]
+          cpu_time_limit_sec: number | null
+          created_at: string
+          created_by: string | null
+          description: string
+          difficulty: string
+          examples: Json
+          hints: string[]
+          is_published: boolean
+          memory_limit_kb: number | null
+          slug: string
+          title: string
+          topics: string[]
+          updated_at: string
+        }
+        Insert: {
+          constraints?: string[]
+          cpu_time_limit_sec?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          difficulty?: string
+          examples?: Json
+          hints?: string[]
+          is_published?: boolean
+          memory_limit_kb?: number | null
+          slug: string
+          title: string
+          topics?: string[]
+          updated_at?: string
+        }
+        Update: {
+          constraints?: string[]
+          cpu_time_limit_sec?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          difficulty?: string
+          examples?: Json
+          hints?: string[]
+          is_published?: boolean
+          memory_limit_kb?: number | null
+          slug?: string
+          title?: string
+          topics?: string[]
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1559,6 +1780,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_study_focus_sessions: {
         Row: {
           actual_minutes: number | null
@@ -1943,6 +2185,8 @@ export type Database = {
       }
     }
     Functions: {
+      admin_get_full_problem: { Args: { _slug: string }; Returns: Json }
+      admin_save_problem: { Args: { payload: Json }; Returns: Json }
       audit_daily_completions: { Args: never; Returns: Json }
       audit_daily_completions_all: { Args: never; Returns: Json }
       award_xp: {
@@ -2092,9 +2336,17 @@ export type Database = {
           total_users: number
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       snapshot_my_coding_leaderboard_rank: { Args: never; Returns: Json }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       study_year:
         | "1st Year"
         | "2nd Year"
@@ -2230,6 +2482,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       study_year: [
         "1st Year",
         "2nd Year",
