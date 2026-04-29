@@ -919,11 +919,27 @@ export default function CodingLeaderboard() {
               </FilterPill>
             </div>
 
-            <div className="ml-auto flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <Label htmlFor="min-score" className="text-xs text-muted-foreground">
+            <div className="ml-auto flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="min-score" className="text-xs text-muted-foreground shrink-0">
                   Min score
                 </Label>
+                <Slider
+                  aria-label="Minimum weighted score slider"
+                  value={[minScore]}
+                  min={0}
+                  max={Math.max(100, scoreSliderMax)}
+                  step={1}
+                  onValueChange={(v) => {
+                    const n = v[0] ?? 0;
+                    setMinScoreInput(n > 0 ? String(n) : "");
+                  }}
+                  onValueCommit={(v) => {
+                    const n = v[0] ?? 0;
+                    updateParams({ minScore: n > 0 ? String(n) : null }, { resetPage: true });
+                  }}
+                  className="w-32"
+                />
                 <Input
                   id="min-score"
                   type="number"
@@ -943,6 +959,19 @@ export default function CodingLeaderboard() {
                   className="h-8 w-20 text-xs"
                   aria-label="Minimum weighted score"
                 />
+                {minScore > 0 && (
+                  <button
+                    type="button"
+                    aria-label="Clear minimum score filter"
+                    onClick={() => {
+                      setMinScoreInput("");
+                      updateParams({ minScore: null }, { resetPage: true });
+                    }}
+                    className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-muted-foreground/20 text-muted-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
 
               <Tooltip>
