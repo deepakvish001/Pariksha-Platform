@@ -605,8 +605,33 @@ const ProblemEditor = () => {
         <TabsContent value="statement">
           <div className="grid gap-4 lg:grid-cols-2">
             <Card className="p-4">
-              <Label>Description (Markdown)</Label>
+              <div className="mb-2 flex items-center justify-between">
+                <Label>Description (Markdown)</Label>
+                <span className="text-xs text-muted-foreground">
+                  {form.description.length} chars · {form.description.trim().split(/\s+/).filter(Boolean).length} words
+                  {" · ~"}
+                  {Math.max(1, Math.round(form.description.trim().split(/\s+/).filter(Boolean).length / 200))} min read
+                </span>
+              </div>
+              <MarkdownToolbar
+                textareaRef={descRef}
+                value={form.description}
+                onChange={(v) => update("description", v)}
+                onInsertExamples={() => {
+                  const real = form.examples.filter((e) => e.input || e.output);
+                  if (!real.length) {
+                    toast({ title: "No examples", description: "Add examples first.", variant: "destructive" });
+                    return;
+                  }
+                  const md = "\n\n## Examples\n\n" + real.map((ex, i) =>
+                    `**Example ${i + 1}**\n\n\`\`\`\nInput: ${ex.input}\nOutput: ${ex.output}${ex.explanation ? `\nExplanation: ${ex.explanation}` : ""}\n\`\`\``
+                  ).join("\n\n") + "\n";
+                  update("description", form.description + md);
+                  toast({ title: "Inserted", description: `${real.length} example(s) appended.` });
+                }}
+              />
               <Textarea
+                ref={descRef}
                 value={form.description}
                 onChange={(e) => update("description", e.target.value)}
                 rows={20}
@@ -625,28 +650,81 @@ const ProblemEditor = () => {
         <TabsContent value="examples">
           <Card className="space-y-3 p-4">
             {form.examples.map((ex, i) => (
-              <div key={i} className="grid gap-2 rounded-md border p-3 md:grid-cols-3">
-                <Textarea
-                  rows={3}
-                  placeholder="Input"
-                  value={ex.input}
-                  onChange={(e) => {
-                    const next = [...form.examples];
-                    next[i] = { ...ex, input: e.target.value };
-                    update("examples", next);
-                  }}
-                />
-                <Textarea
-                  rows={3}
-                  placeholder="Output"
-                  value={ex.output}
-                  onChange={(e) => {
-                    const next = [...form.examples];
-                    next[i] = { ...ex, output: e.target.value };
-                    update("examples", next);
-                  }}
-                />
-                <div className="flex gap-2">
+              <div key={i} className="space-y-2 rounded-md border p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Example {i + 1}</span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={i === 0}
+                      onClick={() => {
+                        const next = [...form.examples];
+                        [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                        update("examples", next);
+                      }}
+                      title="Move up"
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={i === form.examples.length - 1}
+                      onClick={() => {
+                        const next = [...form.examples];
+                        [next[i + 1], next[i]] = [next[i], next[i + 1]];
+                        update("examples", next);
+                      }}
+                      title="Move down"
+                    >
+                      ↓
+                    </Button>
+                    <RunReferenceButton
+                      source={form.reference_solution[activeLang] ?? ""}
+                      language={activeLang}
+                      stdin={ex.input}
+                      label={`Run (${activeLang})`}
+                      onResult={(out) => {
+                        const next = [...form.examples];
+                        next[i] = { ...ex, output: out };
+                        update("examples", next);
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        update("examples", form.examples.filter((_, x) => x !== i))
+                      }
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid gap-2 md:grid-cols-3">
+                  <Textarea
+                    rows={3}
+                    placeholder="Input"
+                    value={ex.input}
+                    onChange={(e) => {
+                      const next = [...form.examples];
+                      next[i] = { ...ex, input: e.target.value };
+                      update("examples", next);
+                    }}
+                    className="font-mono text-xs"
+                  />
+                  <Textarea
+                    rows={3}
+                    placeholder="Output"
+                    value={ex.output}
+                    onChange={(e) => {
+                      const next = [...form.examples];
+                      next[i] = { ...ex, output: e.target.value };
+                      update("examples", next);
+                    }}
+                    className="font-mono text-xs"
+                  />
                   <Textarea
                     rows={3}
                     placeholder="Explanation (optional)"
@@ -657,15 +735,6 @@ const ProblemEditor = () => {
                       update("examples", next);
                     }}
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      update("examples", form.examples.filter((_, x) => x !== i))
-                    }
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
                 </div>
               </div>
             ))}
