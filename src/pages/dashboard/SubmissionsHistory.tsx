@@ -526,15 +526,17 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
         )}
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => updateParams({ tab: v === "submissions" ? null : v })}>
-        <TabsList>
-          <TabsTrigger value="submissions">
-            Submissions ({subTotal})
-          </TabsTrigger>
-          <TabsTrigger value="runs">
-            Runs ({runTotal})
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={tab} onValueChange={(v) => forcedTab ? undefined : updateParams({ tab: v === "submissions" ? null : v })}>
+        {!forcedTab && (
+          <TabsList>
+            <TabsTrigger value="submissions">
+              Submissions ({subTotal})
+            </TabsTrigger>
+            <TabsTrigger value="runs">
+              Runs ({runTotal})
+            </TabsTrigger>
+          </TabsList>
+        )}
 
         <TabsContent value="submissions" className="mt-4 space-y-2">
           {subsLoading ? (
