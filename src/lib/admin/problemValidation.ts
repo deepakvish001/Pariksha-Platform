@@ -38,6 +38,20 @@ const ok = (): SectionResult => ({ status: "ok", errors: [], warnings: [] });
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // Matches simple constraint patterns like "1 <= n <= 10^5" or "a.length >= 1"
 const CONSTRAINT_HINT_RE = /(<=|>=|<|>|=|≤|≥)/;
+// Detects "<lower> <= <var> <= <upper>" style numeric bounds so we can sanity
+// check that lower <= upper. Supports plain ints and "10^5" / "1e9" notations.
+const NUMERIC_RANGE_RE =
+  /(-?\d+(?:\.\d+)?(?:\^\d+|e\d+)?)\s*(?:<=|≤)\s*[A-Za-z_][\w.]*\s*(?:<=|≤)\s*(-?\d+(?:\.\d+)?(?:\^\d+|e\d+)?)/;
+
+const parseNumericLiteral = (raw: string): number | null => {
+  const s = raw.trim();
+  const caret = s.match(/^(-?\d+(?:\.\d+)?)\^(\d+)$/);
+  if (caret) return Number(caret[1]) ** Number(caret[2]);
+  const sci = s.match(/^(-?\d+(?:\.\d+)?)e(\d+)$/i);
+  if (sci) return Number(sci[1]) * Math.pow(10, Number(sci[2]));
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+};
 
 const finalize = (r: SectionResult, fallback: SectionStatus = "ok"): SectionResult => {
   r.status = r.errors.length ? "error" : r.warnings.length ? "warn" : fallback;
@@ -157,10 +171,31 @@ export const validateProblem = (form: FullProblemPayload): ValidationReport => {
         }
         if (trimmed.length > 200)
           r.warnings.push({ field: fid, message: `Constraint #${i + 1} is very long (>200 chars)` });
+        if (trimmed !== c)
+          r.warnings.push({ field: fid, message: `Constraint #${i + 1} has leading/trailing whitespace` });
         if (seen.has(trimmed))
           r.warnings.push({ field: fid, message: `Constraint #${i + 1} duplicates an earlier entry` });
         seen.add(trimmed);
         if (CONSTRAINT_HINT_RE.test(trimmed)) hasNumeric = true;
+
+        // Numeric-bound consistency: lower must be <= upper.
+        const m = trimmed.match(NUMERIC_RANGE_RE);
+        if (m) {
+          const lo = parseNumericLiteral(m[1]);
+          const hi = parseNumericLiteral(m[2]);
+          if (lo != null && hi != null && lo > hi) {
+            r.errors.push({
+              field: fid,
+              message: `Constraint #${i + 1}: lower bound ${m[1]} > upper bound ${m[2]}`,
+            });
+          }
+        }
+        // Catch a common formatting slip: mixing < and <= e.g. "1 < n <= 5".
+        if (/[^<>=]<\s*[A-Za-z_]/.test(trimmed) && /<=/.test(trimmed))
+          r.warnings.push({
+            field: fid,
+            message: `Constraint #${i + 1}: mixes "<" and "<=" — pick one form for clarity`,
+          });
       });
       if (!hasNumeric)
         r.warnings.push({ field: "constraints", message: "No numeric bounds detected (e.g. 1 <= n <= 10^5)" });
@@ -170,11 +205,29 @@ export const validateProblem = (form: FullProblemPayload): ValidationReport => {
     if (hints.length === 0) {
       r.warnings.push({ field: "hints", message: "No hints listed" });
     } else {
+      const seenHints = new Set<string>();
       hints.forEach((h, i) => {
-        if (!h.trim()) r.errors.push({ field: `hints[${i}]`, message: `Hint #${i + 1} is empty` });
-        else if (h.trim().length < 8)
-          r.warnings.push({ field: `hints[${i}]`, message: `Hint #${i + 1} is very short` });
+        const fid = `hints[${i}]`;
+        const trimmed = h.trim();
+        if (!trimmed) {
+          r.errors.push({ field: fid, message: `Hint #${i + 1} is empty` });
+          return;
+        }
+        if (trimmed.length < 8)
+          r.warnings.push({ field: fid, message: `Hint #${i + 1} is very short (<8 chars)` });
+        if (trimmed.length > 400)
+          r.warnings.push({ field: fid, message: `Hint #${i + 1} is too long (>400 chars) — split it up` });
+        if (h !== trimmed)
+          r.warnings.push({ field: fid, message: `Hint #${i + 1} has leading/trailing whitespace` });
+        if (/\n{3,}/.test(h))
+          r.warnings.push({ field: fid, message: `Hint #${i + 1} contains excessive blank lines` });
+        const norm = trimmed.toLowerCase();
+        if (seenHints.has(norm))
+          r.warnings.push({ field: fid, message: `Hint #${i + 1} duplicates an earlier hint` });
+        seenHints.add(norm);
       });
+      if (hints.length > 5)
+        r.warnings.push({ field: "hints", message: "More than 5 hints may over-spoil the problem" });
     }
     sections.constraints = finalize(r);
   }
@@ -186,14 +239,31 @@ export const validateProblem = (form: FullProblemPayload): ValidationReport => {
     const r: SectionResult = { status: "ok", errors: [], warnings: [] };
     const entries = Object.entries(form.starter_code ?? {});
     const langs = entries.filter(([, v]) => (v ?? "").trim().length > 0);
+    const refLangSet = new Set(
+      Object.entries(form.reference_solution ?? {})
+        .filter(([, v]) => (v ?? "").trim().length > 0)
+        .map(([k]) => k),
+    );
     if (!isSqlOnly) {
       if (langs.length === 0)
         r.errors.push({ field: "starter_code", message: "Provide starter code for at least one language" });
       else if (langs.length < 2)
         r.warnings.push({ field: "starter_code", message: "Consider adding starters for more languages" });
       langs.forEach(([lang, code]) => {
-        if (code.length < 10)
-          r.warnings.push({ field: `starter_code.${lang}`, message: `Starter for ${lang} looks too short` });
+        const fid = `starter_code.${lang}`;
+        if (code.trim().length < 10)
+          r.warnings.push({ field: fid, message: `Starter for ${lang} looks too short` });
+        if (hasTrailingWhitespace(code))
+          r.warnings.push({ field: fid, message: `Starter for ${lang} has trailing whitespace` });
+        if (/TODO|FIXME/i.test(code))
+          r.warnings.push({ field: fid, message: `Starter for ${lang} still contains TODO/FIXME` });
+        // Per-language consistency: if a reference exists for any language, every
+        // starter should ideally have a matching reference for the same language.
+        if (refLangSet.size > 0 && !refLangSet.has(lang))
+          r.warnings.push({
+            field: fid,
+            message: `Starter exists for ${lang} but no matching reference solution`,
+          });
       });
     }
     const baseStatus: SectionStatus = langs.length || isSqlOnly ? "ok" : "empty";
@@ -204,23 +274,32 @@ export const validateProblem = (form: FullProblemPayload): ValidationReport => {
   {
     const r: SectionResult = { status: "ok", errors: [], warnings: [] };
     const refEntries = Object.entries(form.reference_solution ?? {}).filter(([, v]) => (v ?? "").trim().length > 0);
+    const starterLangSet = new Set(
+      Object.entries(form.starter_code ?? {})
+        .filter(([, v]) => (v ?? "").trim().length > 0)
+        .map(([k]) => k),
+    );
     if (!isSqlOnly) {
       if (refEntries.length === 0)
         r.errors.push({ field: "reference_solution", message: "Provide a reference solution for at least one language" });
-      const starterLangs = new Set(
-        Object.entries(form.starter_code ?? {})
-          .filter(([, v]) => (v ?? "").trim().length > 0)
-          .map(([k]) => k),
-      );
       const refLangs = new Set(refEntries.map(([k]) => k));
-      const overlap = [...starterLangs].some((l) => refLangs.has(l));
-      if (starterLangs.size > 0 && refLangs.size > 0 && !overlap)
+      const overlap = [...starterLangSet].some((l) => refLangs.has(l));
+      if (starterLangSet.size > 0 && refLangs.size > 0 && !overlap)
         r.warnings.push({ field: "reference_solution", message: "No language has both starter and reference" });
       refEntries.forEach(([lang, code]) => {
-        if (code.length < 20)
-          r.warnings.push({ field: `reference_solution.${lang}`, message: `Reference for ${lang} looks too short` });
+        const fid = `reference_solution.${lang}`;
+        if (code.trim().length < 20)
+          r.warnings.push({ field: fid, message: `Reference for ${lang} looks too short` });
         if (/TODO|FIXME/i.test(code))
-          r.warnings.push({ field: `reference_solution.${lang}`, message: `Reference for ${lang} contains TODO/FIXME` });
+          r.warnings.push({ field: fid, message: `Reference for ${lang} contains TODO/FIXME` });
+        if (hasTrailingWhitespace(code))
+          r.warnings.push({ field: fid, message: `Reference for ${lang} has trailing whitespace` });
+        // Per-language consistency: surface references that lack a starter.
+        if (starterLangSet.size > 0 && !starterLangSet.has(lang))
+          r.warnings.push({
+            field: fid,
+            message: `Reference exists for ${lang} but no matching starter — learners will start from scratch`,
+          });
       });
     }
     const baseStatus: SectionStatus = refEntries.length || isSqlOnly ? "ok" : "empty";
