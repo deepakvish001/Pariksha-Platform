@@ -1074,15 +1074,20 @@ const ListEditor = ({
   items,
   onChange,
   placeholder,
+  numbered,
+  inline,
 }: {
   title: string;
   items: string[];
   onChange: (v: string[]) => void;
   placeholder?: string;
+  numbered?: boolean;
+  inline?: boolean;
 }) => {
   const [val, setVal] = useState("");
+  const Wrapper: any = inline ? "div" : Card;
   return (
-    <Card className="space-y-2 p-4">
+    <Wrapper className={inline ? "space-y-2" : "space-y-2 p-4"}>
       <Label>{title}</Label>
       <div className="flex gap-2">
         <Input
@@ -1112,18 +1117,37 @@ const ListEditor = ({
       <ul className="space-y-1">
         {items.map((it, i) => (
           <li key={i} className="flex items-center justify-between rounded-md bg-muted px-3 py-1.5 text-sm">
-            <span>{it}</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onChange(items.filter((_, x) => x !== i))}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <span className="min-w-0 flex-1">
+              {numbered && <span className="mr-2 text-xs text-muted-foreground">Hint {i + 1}</span>}
+              {it}
+            </span>
+            <div className="flex items-center gap-1">
+              {numbered && (
+                <>
+                  <Button variant="ghost" size="icon" disabled={i === 0} onClick={() => {
+                    const next = [...items];
+                    [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                    onChange(next);
+                  }}>↑</Button>
+                  <Button variant="ghost" size="icon" disabled={i === items.length - 1} onClick={() => {
+                    const next = [...items];
+                    [next[i + 1], next[i]] = [next[i], next[i + 1]];
+                    onChange(next);
+                  }}>↓</Button>
+                </>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onChange(items.filter((_, x) => x !== i))}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </li>
         ))}
       </ul>
-    </Card>
+    </Wrapper>
   );
 };
 
@@ -1132,16 +1156,21 @@ const CodePerLanguage = ({
   onChange,
   activeLang,
   setActiveLang,
+  extraActions,
+  footer,
 }: {
   value: Record<string, string>;
   onChange: (v: Record<string, string>) => void;
   activeLang: LangId;
   setActiveLang: (l: LangId) => void;
+  extraActions?: React.ReactNode;
+  footer?: React.ReactNode;
 }) => {
   const lang = LANGUAGES.find((l) => l.id === activeLang)!;
+  const editorRef = useRef<MonacoEditorHandle>(null);
   return (
     <Card className="space-y-3 p-4">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {LANGUAGES.map((l) => (
           <Button
             key={l.id}
@@ -1150,75 +1179,121 @@ const CodePerLanguage = ({
             onClick={() => setActiveLang(l.id)}
           >
             {l.label}
-            {value[l.id] ? <span className="ml-2 text-xs">●</span> : null}
+            {value[l.id] ? <CheckCircle2 className="ml-1.5 h-3 w-3 text-emerald-500" /> : null}
           </Button>
         ))}
+        <div className="ml-auto flex flex-wrap gap-2">
+          {extraActions}
+          <Button variant="ghost" size="sm" type="button" onClick={() => editorRef.current?.format()}>
+            Format
+          </Button>
+        </div>
       </div>
       <div className="h-[420px] overflow-hidden rounded-md border">
         <MonacoEditor
+          ref={editorRef}
           value={value[activeLang] ?? ""}
           onChange={(v) => onChange({ ...value, [activeLang]: v })}
           language={lang.monaco}
         />
       </div>
+      {footer}
     </Card>
   );
 };
 
 const TestsTable = ({
   title,
+  subtitle,
   tests,
   onChange,
+  referenceSource,
+  referenceLang,
 }: {
   title: string;
+  subtitle?: string;
   tests: { input: string; expected: string }[];
   onChange: (v: { input: string; expected: string }[]) => void;
+  referenceSource?: string;
+  referenceLang?: LangId;
 }) => (
   <Card className="space-y-3 p-4">
-    <div className="flex items-center justify-between">
-      <Label>{title}</Label>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onChange([...tests, { input: "", expected: "" }])}
-      >
-        <Plus className="mr-2 h-4 w-4" /> Add test
-      </Button>
+    <div className="flex flex-wrap items-center gap-2">
+      <Label className="flex items-center gap-2">
+        {title}
+        <Badge variant="secondary" className="ml-1">{tests.length}</Badge>
+        {subtitle && <span className="text-xs font-normal text-muted-foreground">({subtitle})</span>}
+      </Label>
+      <div className="ml-auto flex flex-wrap gap-2">
+        <BulkTestsDialog
+          existing={tests}
+          onAdd={(added) => onChange([...tests, ...added])}
+          trigger={
+            <Button variant="outline" size="sm" type="button">
+              <Upload className="mr-1.5 h-3.5 w-3.5" /> Bulk add
+            </Button>
+          }
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onChange([...tests, { input: "", expected: "" }])}
+        >
+          <Plus className="mr-2 h-4 w-4" /> Add test
+        </Button>
+      </div>
     </div>
     {tests.length === 0 && (
       <p className="text-sm text-muted-foreground">No tests yet.</p>
     )}
     {tests.map((t, i) => (
-      <div key={i} className="grid gap-2 rounded-md border p-2 md:grid-cols-[1fr_1fr_auto]">
-        <Textarea
-          rows={3}
-          placeholder="stdin"
-          value={t.input}
-          onChange={(e) => {
-            const next = [...tests];
-            next[i] = { ...t, input: e.target.value };
-            onChange(next);
-          }}
-          className="font-mono text-xs"
-        />
-        <Textarea
-          rows={3}
-          placeholder="expected stdout"
-          value={t.expected}
-          onChange={(e) => {
-            const next = [...tests];
-            next[i] = { ...t, expected: e.target.value };
-            onChange(next);
-          }}
-          className="font-mono text-xs"
-        />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onChange(tests.filter((_, x) => x !== i))}
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+      <div key={i} className="space-y-2 rounded-md border p-2">
+        <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+          <Textarea
+            rows={3}
+            placeholder="stdin"
+            value={t.input}
+            onChange={(e) => {
+              const next = [...tests];
+              next[i] = { ...t, input: e.target.value };
+              onChange(next);
+            }}
+            className="font-mono text-xs"
+          />
+          <Textarea
+            rows={3}
+            placeholder="expected stdout"
+            value={t.expected}
+            onChange={(e) => {
+              const next = [...tests];
+              next[i] = { ...t, expected: e.target.value };
+              onChange(next);
+            }}
+            className="font-mono text-xs"
+          />
+          <div className="flex flex-col gap-1">
+            {referenceLang && (
+              <RunReferenceButton
+                source={referenceSource ?? ""}
+                language={referenceLang}
+                stdin={t.input}
+                label="Fill expected"
+                onResult={(out) => {
+                  const next = [...tests];
+                  next[i] = { ...t, expected: out };
+                  onChange(next);
+                }}
+              />
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onChange(tests.filter((_, x) => x !== i))}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        </div>
       </div>
     ))}
   </Card>
