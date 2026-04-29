@@ -52,12 +52,29 @@ export const MarkdownPreview = ({ source, className }: Props) => {
               </code>
             );
           },
-          img({ src, alt }) {
+          img({ src, alt, title }) {
+            // Custom width syntax: ![alt](url "=480px") or ![alt](url "=480x320")
+            // Lets admins constrain how an image renders without raw HTML.
+            let width: number | undefined;
+            let height: number | undefined;
+            let displayTitle = title as string | undefined;
+            const m = (title as string | undefined)?.match(
+              /^=\s*(\d+)(?:\s*x\s*(\d+))?\s*(px)?$/i,
+            );
+            if (m) {
+              width = Number(m[1]);
+              height = m[2] ? Number(m[2]) : undefined;
+              displayTitle = undefined;
+            }
             return (
               <img
                 src={src as string}
                 alt={alt || ""}
+                title={displayTitle}
                 loading="lazy"
+                width={width}
+                height={height}
+                style={width ? { maxWidth: "100%", width } : undefined}
                 className="my-2"
               />
             );

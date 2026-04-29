@@ -134,8 +134,53 @@ export const validateProblem = (form: FullProblemPayload): ValidationReport => {
             message: `Image URL "${url.slice(0, 50)}" is local-only and will not load for learners`,
           });
         }
+        // Broken-link heuristics: placeholder URLs left from incomplete uploads,
+        // or obviously empty / malformed values.
+        if (/^uploading-/i.test(url)) {
+          r.errors.push({
+            field: "description",
+            message: `Image upload placeholder still in statement: "${url.slice(0, 60)}"`,
+          });
+        }
+        if (!/^(https?:|data:|blob:|\/|#)/i.test(url)) {
+          r.warnings.push({
+            field: "description",
+            message: `Image URL "${url.slice(0, 50)}" looks malformed (missing scheme)`,
+          });
+        }
       });
 
+      // Markdown linter: fenced code blocks that are excessively long.
+      const fenceRe = /```([^\n`]*)\n([\s\S]*?)```/g;
+      let fence: RegExpExecArray | null;
+      let fenceIdx = 0;
+      while ((fence = fenceRe.exec(form.description ?? "")) !== null) {
+        const body = fence[2] ?? "";
+        const lines = body.split("\n").length;
+        const bytes = body.length;
+        if (lines > 60) {
+          r.warnings.push({
+            field: "description",
+            message: `Code block #${fenceIdx + 1} is ${lines} lines — consider trimming or moving to a hint`,
+          });
+        }
+        if (bytes > 4000) {
+          r.warnings.push({
+            field: "description",
+            message: `Code block #${fenceIdx + 1} is ${(bytes / 1024).toFixed(1)} KB — readers will scroll endlessly`,
+          });
+        }
+        fenceIdx += 1;
+      }
+
+      // Markdown linter: excessive consecutive blank lines (>2).
+      const blankMatches = (form.description ?? "").match(/\n{4,}/g);
+      if (blankMatches?.length) {
+        r.warnings.push({
+          field: "description",
+          message: `Statement has ${blankMatches.length} run(s) of 3+ blank lines — collapse for cleaner rendering`,
+        });
+      }
     }
     sections.statement = finalize(r);
   }

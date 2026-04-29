@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useRef, useState } from "react";
+import { RefObject, useCallback, useEffect, useRef, useState } from "react";
 import {
   uploadProblemImage,
   validateImageFile,
@@ -7,6 +7,8 @@ import {
 import { toast } from "@/hooks/use-toast";
 
 const MAX_FILES_PER_BATCH = 10;
+const SESSION_KEY = "admin.problemEditor.sessionImages.v1";
+const SESSION_LIMIT = 30;
 
 interface Options {
   textareaRef: RefObject<HTMLTextAreaElement>;
@@ -20,9 +22,29 @@ export interface SessionImage extends UploadedProblemImage {
   uploadedAt: number;
 }
 
+const readSession = (): SessionImage[] => {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeSession = (imgs: SessionImage[]) => {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(imgs.slice(0, SESSION_LIMIT)));
+  } catch {
+    /* ignore quota errors */
+  }
+};
+
 /** Wires drop, paste and file-picker events to a textarea, replacing
  *  inline `![Uploading…]()` placeholders with the final markdown image
- *  syntax once the upload finishes. */
+ *  syntax once the upload finishes. Persists session images to
+ *  localStorage so they survive refreshes / route changes. */
 export const useMarkdownImageUpload = ({
   textareaRef,
   value,
@@ -30,10 +52,16 @@ export const useMarkdownImageUpload = ({
   slug,
 }: Options) => {
   const [uploading, setUploading] = useState(0);
-  const [sessionImages, setSessionImages] = useState<SessionImage[]>([]);
-  // Latest value, kept in a ref so async replacements don't clobber edits.
+  const [sessionImages, setSessionImages] = useState<SessionImage[]>(() =>
+    readSession(),
+  );
   const valueRef = useRef(value);
   valueRef.current = value;
+
+  // Persist session image manager so listings remain across refreshes.
+  useEffect(() => {
+    writeSession(sessionImages);
+  }, [sessionImages]);
 
   const insertAtCursor = useCallback(
     (snippet: string) => {
@@ -70,6 +98,44 @@ export const useMarkdownImageUpload = ({
     [onChange],
   );
 
+  const recordSession = useCallback((img: SessionImage) => {
+    setSessionImages((prev) => {
+      const next = [img, ...prev.filter((i) => i.path !== img.path)].slice(
+        0,
+        SESSION_LIMIT,
+      );
+      return next;
+    });
+  }, []);
+
+  /** Lower-level upload that does NOT touch the editor — useful for the
+   *  gallery sidebar which inserts after collecting alt text from the user. */
+  const uploadOnly = useCallback(
+    async (file: File): Promise<UploadedProblemImage | null> => {
+      const err = validateImageFile(file);
+      if (err) {
+        toast({ title: "Image rejected", description: err, variant: "destructive" });
+        return null;
+      }
+      setUploading((n) => n + 1);
+      try {
+        const res = await uploadProblemImage(file, { slug });
+        recordSession({ ...res, name: file.name, uploadedAt: Date.now() });
+        return res;
+      } catch (e: any) {
+        toast({
+          title: "Upload failed",
+          description: e?.message ?? "Could not upload image.",
+          variant: "destructive",
+        });
+        return null;
+      } finally {
+        setUploading((n) => Math.max(0, n - 1));
+      }
+    },
+    [recordSession, slug],
+  );
+
   const uploadFile = useCallback(
     async (file: File) => {
       const err = validateImageFile(file);
@@ -87,12 +153,8 @@ export const useMarkdownImageUpload = ({
         const altBase = file.name.replace(/\.[^.]+$/, "");
         const md = `![${altBase}](${res.publicUrl})`;
         replaceInValue(tag, md);
-        setSessionImages((prev) => [
-          { ...res, name: file.name, uploadedAt: Date.now() },
-          ...prev,
-        ]);
+        recordSession({ ...res, name: file.name, uploadedAt: Date.now() });
       } catch (e: any) {
-        // Strip the placeholder line on failure
         replaceInValue(tag + "\n", "");
         replaceInValue(tag, "");
         toast({
@@ -104,7 +166,7 @@ export const useMarkdownImageUpload = ({
         setUploading((n) => Math.max(0, n - 1));
       }
     },
-    [insertAtCursor, replaceInValue, slug],
+    [insertAtCursor, recordSession, replaceInValue, slug],
   );
 
   const uploadFiles = useCallback(
@@ -117,7 +179,6 @@ export const useMarkdownImageUpload = ({
           description: `Only the first ${MAX_FILES_PER_BATCH} files were uploaded.`,
         });
       }
-      // Sequential keeps the placeholder/replacement order intact.
       for (const f of list) {
         // eslint-disable-next-line no-await-in-loop
         await uploadFile(f);
@@ -156,11 +217,17 @@ export const useMarkdownImageUpload = ({
     [uploadFiles],
   );
 
+  const removeFromSession = useCallback((path: string) => {
+    setSessionImages((prev) => prev.filter((i) => i.path !== path));
+  }, []);
+
   return {
     uploading,
     sessionImages,
     uploadFiles,
+    uploadOnly,
     onDrop,
     onPaste,
+    removeFromSession,
   };
 };
