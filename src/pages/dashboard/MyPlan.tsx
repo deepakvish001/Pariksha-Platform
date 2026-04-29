@@ -211,16 +211,41 @@ const MyPlan = () => {
               </Button>
             )}
             {profile && plan && (
-              <Button
-                variant="outline" size="sm"
-                onClick={() => {
-                  exportPlanToPdf(plan, tasks, profile, 28);
-                  toast({ title: "PDF generated", description: "Your 28-day plan summary is downloading." });
-                }}
-              >
-                <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
-                <span className="hidden sm:inline">Export PDF</span>
-              </Button>
+              <AddAdhocTaskDialog onAdd={addAdhocTask} />
+            )}
+            {profile && plan && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Export</span>
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Export plan</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      exportPlanToPdf(plan, tasks, profile, 28);
+                      toast({ title: "PDF generated", description: "Your 28-day plan summary is downloading." });
+                    }}
+                  >
+                    <FileDown className="h-3.5 w-3.5 mr-2" /> 28-day PDF summary
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      downloadPlanIcs(tasks, { days: 28, startHour: 9 });
+                      toast({
+                        title: "Calendar file downloaded",
+                        description: "Open the .ics in Google or Apple Calendar to subscribe.",
+                      });
+                    }}
+                  >
+                    <CalendarPlus className="h-3.5 w-3.5 mr-2" /> Calendar (.ics)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             {profile && (
               <DropdownMenu>
