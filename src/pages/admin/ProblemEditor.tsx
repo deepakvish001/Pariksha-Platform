@@ -73,6 +73,7 @@ import { BulkExamplesDialog } from "@/components/admin/editor/BulkExamplesDialog
 import { RunReferenceButton } from "@/components/admin/editor/RunReferenceButton";
 import { RunHistoryPanel } from "@/components/admin/editor/RunHistoryPanel";
 import { useRunHistory, buildLineDiff, type RunHistoryCase } from "@/hooks/useRunHistory";
+import { HintsPreview } from "@/components/admin/editor/HintsPreview";
 import { scaffoldStarterFromReference } from "@/lib/admin/codeScaffold";
 import { supabase } from "@/integrations/supabase/client";
 
