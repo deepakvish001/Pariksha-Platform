@@ -901,7 +901,32 @@ export default function CodingLeaderboard() {
               </FilterPill>
             </div>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="min-score" className="text-xs text-muted-foreground">
+                  Min score
+                </Label>
+                <Input
+                  id="min-score"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  placeholder="0"
+                  value={minScoreInput}
+                  onChange={(e) => setMinScoreInput(e.target.value)}
+                  onBlur={() => {
+                    const n = Number(minScoreInput);
+                    const next = Number.isFinite(n) && n > 0 ? String(Math.floor(n)) : null;
+                    updateParams({ minScore: next }, { resetPage: true });
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  }}
+                  className="h-8 w-20 text-xs"
+                  aria-label="Minimum weighted score"
+                />
+              </div>
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Label
@@ -927,17 +952,18 @@ export default function CodingLeaderboard() {
                 </TooltipContent>
               </Tooltip>
 
-              {(difficulty || !acceptedOnly || search) && (
+              {(difficulty || !acceptedOnly || search || minScore > 0) && (
                 <Button
                   size="sm"
                   variant="ghost"
                   className="h-7 px-2 text-xs text-muted-foreground"
-                  onClick={() =>
+                  onClick={() => {
+                    setMinScoreInput("");
                     updateParams(
-                      { diff: null, accepted: null, q: null },
+                      { diff: null, accepted: null, q: null, minScore: null },
                       { resetPage: true },
-                    )
-                  }
+                    );
+                  }}
                 >
                   <X className="h-3 w-3 mr-1" /> Reset
                 </Button>
