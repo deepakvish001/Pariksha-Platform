@@ -1,77 +1,53 @@
-
 ## Goal
 
-Make the admin panel feel "complete end-to-end": when an admin publishes/edits/unpublishes a coding problem, learners on `/library/problems` immediately see the change. Also add a visible **Admin** button so the owner (vishwakarmadeepak310@gmail.com) can jump into `/admin` from the dashboard, and tighten remaining UX gaps in the admin panel.
+Add a dedicated admin page that lists every `publish` and `unpublish` event for coding problems, with filters (action, problem slug search, date range, actor) and proper pagination. Distinct from the existing general Audit Log (which shows all admin actions).
 
-## What's already built (no rework)
+## New files
 
-- DB tables: `coding_problems`, `coding_problem_starter_code`, `coding_problem_reference_solutions`, `coding_problem_tests`, `coding_problem_sql_specs`, `admin_audit_log`, `user_roles`, `app_role` enum, `has_role()` security definer, RLS.
-- RPCs: `admin_get_full_problem`, `admin_save_problem`.
-- Edge function `submit-code` already pulls hidden tests server-side.
-- Admin pages: Overview, Problems List (search, difficulty/topic/status filters, duplicate dialog, delete dialog, publish toggle, audit logging), Problem Editor (read-only slug for existing, draft autosave, publish/unpublish AlertDialog with confirmation, status banner, Cmd/S, slug-collision check for new), Bulk Import (Zod validation, corrected-JSON download with re-validation summary, CSV error export, seed loader), Audit Log page.
-- Hook `useDbCodingProblems` exists but is **not wired** into the learner-facing pages.
+**`src/hooks/usePublishHistory.ts`** — React Query hook fetching paginated publish/unpublish events.
+- Query key: `["publish-history", filters, page]`.
+- Uses Supabase ranged `.range(from, to)` with `count: "exact"` for total rows.
+- Filters applied server-side:
+  - `entity_type = 'coding_problem'`
+  - `action in ('publish','unpublish')` (or single action when filter set)
+  - `entity_slug ilike %search%` when slug search provided
+  - `created_at >= from` / `<= to` when date range set
+  - `actor_id = ?` when actor filter set
+- Returns `{ rows, total, pageSize }`.
+- Joins actor display via a second query: fetch `profiles` (`user_id, full_name, avatar_url`) for the unique `actor_id`s in the page and merge client-side (no FK exists, so no nested select).
 
-## Phase 1 — Connect admin → learner (the missing link)
+**`src/pages/admin/PublishHistory.tsx`** — The page UI inside `AdminShell`.
+- Header: title "Publish History" + subtitle.
+- Filter bar (responsive grid):
+  - Action select: All / Published / Unpublished.
+  - Slug search input (debounced 300ms).
+  - Date range: two date pickers (From / To) using existing `Calendar` + `Popover`.
+  - Actor select: dropdown of distinct actors that appear in current results (with "All admins" default).
+  - "Reset filters" ghost button.
+- Results table (semantic tokens only):
+  - Columns: Action badge (green=Published, amber=Unpublished), Problem (slug, links to `/admin/problems/:slug/edit`), Actor (avatar + name or short id), Time (relative + absolute tooltip).
+  - Empty state when no rows.
+  - Loading skeletons.
+- Pagination footer:
+  - "Showing X–Y of Z events".
+  - Prev / Next buttons + page-size select (25 / 50 / 100, default 25).
+  - Disable buttons at boundaries.
+- "View as learner" quick link per row when problem is currently published (optional, only if cheap).
 
-Right now `/library/problems` and `/library/problems/:slug` still read from the static `CODING_PROBLEMS` array, so publishing a new problem in admin doesn't show up for users. Fix:
+## Wiring
 
-1. **Merge DB problems with static data** in `src/pages/library/CodingProblems.tsx`:
-   - Call `useDbCodingProblems()`.
-   - Build the working list as `[...staticProblems, ...dbProblemsNotInStatic]` (de-dupe by slug; DB row wins on conflict so admin edits override). Memoize.
-   - Replace the 6 direct `CODING_PROBLEMS` references (lines 381, 564, 645–650, 683) with the merged list.
-   - Ensure topic/difficulty stat cards count merged list.
+- **`src/App.tsx`** — add `<Route path="publish-history" element={<PublishHistory />} />` under the existing `/admin` parent route, plus the import.
+- **`src/components/admin/AdminShell.tsx`** — add nav item: `{ to: "/admin/publish-history", label: "Publish History", icon: History }` (lucide `History`), placed between Problems and Audit Log.
 
-2. **Problem detail** in `src/pages/library/CodingProblemDetail.tsx`:
-   - Try DB lookup first via a new lightweight hook `useDbCodingProblem(slug)` (single problem + starter/ref/sample/sql joins, mirrors `useDbCodingProblems` for one slug).
-   - Fall back to `getCodingProblemBySlug(slug)` (static) if not found in DB.
-   - Loading skeleton while DB query resolves.
+## Technical details
 
-3. **React Query invalidation hand-off**: when admin publishes/unpublishes/saves/deletes, also invalidate `["coding-problems-db"]` so learner pages already loaded refresh on next focus. Add the invalidation to `useTogglePublish`, `useSaveProblem`, `useDeleteProblem`, `useDuplicateProblem` in `src/hooks/useAdminProblems.ts`.
-
-## Phase 2 — Admin entry button on the dashboard
-
-Add a visible **Admin** entry for users with the `admin` role:
-
-1. In `src/components/DashboardSidebar.tsx`:
-   - Import `useUserRole`.
-   - In the `homeNavItems` render path, conditionally append `{ title: "Admin Panel", url: "/admin", icon: Shield }` when `isAdmin === true`.
-   - Add `/admin` to `ACTIVE_ROUTES` so it isn't shown as locked.
-   - Use a distinct accent color (e.g. `text-primary`) for the icon.
-
-2. **Top-right shortcut** in `src/pages/DashboardMatrix.tsx`: small "Admin" button (Shield icon) shown only when `isAdmin`, linking to `/admin`. Subtle, lives next to other quick actions.
-
-3. Confirmation: the user `vishwakarmadeepak310@gmail.com` already has the admin role inserted in earlier phases. We will run a quick read query to verify; if missing, insert into `user_roles`.
-
-## Phase 3 — Admin panel polish
-
-Small high-leverage improvements based on the current code:
-
-1. **Overview KPIs** (`AdminOverview.tsx`): add two more cards — "Total submissions (7d)" and "Active learners (7d)" — using simple counts from `code_submissions` (group by date). Read-only; admin-gated by route.
-
-2. **Problems list quick filters**: add count chips above the table ("All N", "Drafts X", "Published Y") that act as one-click status filters. Add a "Last updated" sortable column header.
-
-3. **Editor "View as learner" button**: in `ProblemEditor.tsx`, add a button next to Save that opens `/library/problems/<slug>` in a new tab when the problem exists. Disabled for new/unsaved drafts.
-
-4. **Validation pre-publish gate**: extend the publish AlertDialog to show a checklist (description present, ≥1 sample test, ≥1 hidden test, ≥1 starter language, reference solution for at least one language). Block confirm if any required check fails; warn (not block) on optional ones.
-
-5. **Audit log filters**: in `AuditLog.tsx`, add filter by action type (publish / unpublish / save / delete) and date range; show the actor's email by joining `profiles` (best-effort, fall back to short user id).
-
-## Phase 4 — Verification
-
-- Manual: create a new problem in `/admin/problems/new`, fill required fields, publish → confirm it appears in `/library/problems` table, opens cleanly at `/library/problems/<slug>`, sample tests visible, submit runs (hidden tests stay server-side).
-- Unpublish → confirm it disappears for learners but remains in admin list as Draft.
-- Duplicate → confirm draft copy appears with `-copy` slug suffix.
-- Sidebar shows "Admin Panel" only when logged in as admin; hidden for guests/regular users.
-
-## Technical notes
-
-- New file: `src/hooks/useDbCodingProblem.ts` (single-problem variant of existing `useDbCodingProblems`).
-- No DB schema changes needed.
-- No new edge functions.
-- Keep static `CODING_PROBLEMS` as a baseline fallback so existing 50+ problems remain available even if DB is empty.
+- All filters live in component state and feed a single hook input. Page resets to 1 whenever filters change (via `useEffect` on a stable filter key).
+- Use `keepPreviousData: true` so pagination feels instant.
+- Use the existing `formatRelative` style helper pattern from `ProblemEditor.tsx` (extract a tiny shared util `src/lib/formatRelative.ts` so both files import it instead of duplicating).
+- Styling uses semantic tokens (`bg-card`, `text-muted-foreground`, `border-border`, `bg-emerald-500/10` for published badge, `bg-amber-500/10` for unpublished — matching existing banner colors in `ProblemEditor.tsx`).
+- RLS: `admin_audit_log` already permits SELECT for admins, so no migration needed.
 
 ## Out of scope
 
-- Migrating the static array into the DB (that's the existing "Load static seed" flow in Bulk Import — admin can run it manually).
-- Public admin invite flow (admin role assigned via DB only).
-- Rich tag/topic taxonomy management UI.
+- No CSV export (can add later if asked).
+- No edits to the existing generic `AuditLog.tsx` page — it stays as-is for cross-cutting admin actions.
