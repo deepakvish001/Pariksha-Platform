@@ -235,7 +235,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
   const language = searchParams.get("lang") ?? "all";
   const dateFrom = searchParams.get("from") ?? "";
   const dateTo = searchParams.get("to") ?? "";
-  const tab = searchParams.get("tab") ?? "submissions";
+  const tab = forcedTab ?? (searchParams.get("tab") ?? "submissions");
   const subPage = Math.max(1, parseInt(searchParams.get("subPage") ?? "1", 10) || 1);
   const runPage = Math.max(1, parseInt(searchParams.get("runPage") ?? "1", 10) || 1);
 
@@ -419,20 +419,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
     !!detailRunId;
 
   if (!user) {
-    return (
-      <div className="container max-w-4xl py-12">
-        <Card className="p-8 text-center">
-          <Code2 className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <h1 className="text-xl font-semibold mb-2">Sign in to view your history</h1>
-          <p className="text-muted-foreground mb-4">
-            Your submissions and runs are private to your account.
-          </p>
-          <Button asChild>
-            <Link to="/login">Sign in</Link>
-          </Button>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   return (
