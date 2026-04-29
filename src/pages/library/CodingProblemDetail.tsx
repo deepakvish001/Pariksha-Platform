@@ -56,6 +56,7 @@ import {
   getLanguageById,
   type LangId,
 } from "@/data/codingProblemsData";
+import { useDbCodingProblem } from "@/hooks/useDbCodingProblem";
 import { MonacoEditor, type MonacoEditorHandle } from "@/components/coding/MonacoEditor";
 import { VerdictBadge } from "@/components/coding/VerdictBadge";
 import { CodeExecutionError, useCodeRunner, type RunResult, type SubmitResult, type CaseResult } from "@/hooks/useCodeRunner";
@@ -161,7 +162,9 @@ const CodingProblemDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const problem = useMemo(() => (slug ? getProblemBySlug(slug) : undefined), [slug]);
+  const staticProblem = useMemo(() => (slug ? getProblemBySlug(slug) : undefined), [slug]);
+  const { data: dbProblem } = useDbCodingProblem(staticProblem ? undefined : slug);
+  const problem = staticProblem ?? dbProblem ?? undefined;
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isSQLProblem = !!problem?.sql;
