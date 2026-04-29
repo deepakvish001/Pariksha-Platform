@@ -20,6 +20,7 @@ import DashboardMatrix from "./pages/DashboardMatrix";
 import SubmissionsHistory from "./pages/dashboard/SubmissionsHistory";
 import DashboardSheets from "./pages/DashboardSheets";
 import DashboardProfile from "./pages/DashboardProfile";
+import DashboardProfileRedirect from "./pages/DashboardProfileRedirect";
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
 import ForgotPassword from "./pages/ForgotPassword";
