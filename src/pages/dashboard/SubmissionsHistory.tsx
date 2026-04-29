@@ -568,8 +568,11 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
             </Badge>
           )}
           {verdict !== "all" && (
-            <Badge variant="secondary" className="gap-1 pr-1">
-              <span className="text-[11px]">Verdict: {verdict}</span>
+            <Badge variant="secondary" className="gap-1 pr-1" title="Verdict filtering applies to submissions only — runs are unaffected.">
+              <span className="text-[11px]">
+                Verdict: {verdict}
+                <span className="ml-1 opacity-70">(submissions only)</span>
+              </span>
               <button
                 type="button"
                 aria-label="Clear verdict filter"
