@@ -1,115 +1,106 @@
-# Coding Problems — Next-Level Upgrades
+# Personalized AI Dashboard
 
-Both pages already have a strong base (filters, daily challenge, smart chips, focus mode, recommendations, topic mastery, resizable panels, hints, runs, submissions, notes, My Solution). This plan adds the gaps that most affect day‑to‑day practice: better at‑a‑glance signal on the list, a cleaner workspace, and a real feedback loop after submission. No DB migrations required.
+A new "My Plan" dashboard that asks for the user's goal, timeline, and weekday/weekend study capacity, fetches their public competitive-programming profiles, and generates an adaptive sheet that re-prioritizes itself after every attempt.
 
----
+## Important reality check on third-party APIs
 
-## A. Listing page (`/library/problems`)
+Before building, you should know that **only some of these platforms have usable public APIs**:
 
-### A1. Streak & momentum strip (top-of-page)
-A slim band above the stats header showing:
-- Current solve streak (days in a row with ≥1 AC)
-- Longest streak this month
-- Today's solved count vs daily goal (configurable, stored in `localStorage`)
-- A 14-day mini sparkline of daily solves
-Encourages return visits and complements the existing Daily Challenge card.
+| Platform | Status | What we can fetch |
+|---|---|---|
+| LeetCode | No official API. Unofficial GraphQL works but breaks often & has CORS/rate limits. We'd proxy via an Edge Function. | Solved counts (easy/med/hard), recent submissions, contest rating |
+| Codeforces | Official public API | Rating, solved problems, contest history |
+| CodeChef | No official API | Scrape rating from public profile (fragile) |
+| HackerRank | No public API | Badges via profile scrape (fragile) |
+| HackerEarth | No public API | Limited scrape |
+| GeeksforGeeks | No public API | Coding score scrape (fragile) |
+| Unstop | No public API | Not feasible reliably |
 
-### A2. Calendar heatmap popover
-A small "Activity" button in the stats header opens a 90‑day GitHub‑style heatmap of submissions (reuses the existing `CalendarHeatmap` component). Click a day → filters the list to problems attempted that day.
+**Recommendation:** Ship Phase 1 with **LeetCode + Codeforces** (most reliable + cover ~90% of users). Add the rest later as best-effort with clear "may be outdated" labels. I'll structure the code so adding more platforms is plug-and-play.
 
-### A3. Difficulty distribution mini‑chart
-In the "By Difficulty" tile, add a stacked horizontal bar showing solved vs attempted vs unattempted per difficulty. Hover reveals exact counts. Replaces today's pure number list with a glanceable visual.
+## What gets built
 
-### A4. Saved views (named filter sets)
-Extend the existing `useSavedFilterPresets` UI to support:
-- Pinning up to 3 presets as one‑click chips next to Smart Filters
-- Inline rename / reorder
-- Visual "active preset" indicator when current URL params match a saved view
+### 1. Sidebar entry + new route
+- New "My Plan" item in the Dashboard sidebar group (icon: `Sparkles`).
+- Route: `/dashboard/my-plan` (protected — requires login).
 
-### A5. Row inline status quick‑actions
-Hovering a row reveals a tiny action cluster at the right edge:
-- Toggle bookmark
-- Mark for revisit (SM‑2‑lite)
-- Copy problem link
-- "Mark solved without code" (for off‑platform solves)
-Keeps power features one click away without re‑introducing the removed preview drawer.
+### 2. Onboarding wizard (first visit)
+A 4-step dialog the first time the user opens My Plan:
+1. **Goal** — Placement / Internship / FAANG prep / Switch jobs / Competitive programming (with target date).
+2. **Current level self-assessment** — Beginner / Intermediate / Advanced + topics already comfortable with.
+3. **Time budget** — Weekday hours/day + Weekend hours/day + days/week.
+4. **Connect profiles** — Optional inputs for LeetCode username, Codeforces handle, CodeChef, HackerRank, GFG, HackerEarth. "Skip for now" allowed.
 
-### A6. Companies & tags multi‑facet filter
-Add a faceted filter popover to the filter bar with:
-- Companies (multi‑select, search inside)
-- Topic tags (multi‑select, search inside)
-- "Has hints", "Has editorial", "Has video" toggles
-URL‑synced like other filters. Counts shown next to each option.
+Saved to a new `user_study_profile` table.
 
-### A7. Compare‑with‑peers row badge (opt‑in)
-For each problem, a tiny badge showing global acceptance percentile vs the user's attempts (e.g. "you: 2 tries · avg: 3.1"). Only renders when the user has at least one attempt. Pure read from existing `code_submissions` aggregates.
+### 3. Profile fetcher (Edge Function)
+One Edge Function `fetch-coding-profiles` that takes `{ platform, handle }` and returns a normalized:
+```
+{ platform, handle, rating, solved: {easy, medium, hard, total}, lastSyncedAt, raw }
+```
+- Uses Codeforces public API directly.
+- Uses LeetCode GraphQL through the function (avoids CORS).
+- For CodeChef/HackerRank/GFG: best-effort HTML scrape, marked `confidence: "low"`.
+- Results cached in `user_platform_stats` (refreshable, max 1×/hour per platform).
 
-### A8. Empty / loading polish
-- Skeleton rows that match column visibility prefs (today they're generic)
-- A friendly empty state when filters return nothing, with a "Clear filters" CTA and 3 suggested problems
+### 4. AI plan generator (Edge Function)
+`generate-study-plan` calls Lovable AI (`google/gemini-3-flash-preview`) with structured tool-calling output:
+- Input: goal, target date, time budget, platform stats, existing topic progress (`user_topic_progress`).
+- Output: ordered list of weeks → days → tasks (topic + difficulty + estimated minutes + source sheet/problem slug).
+- Stored in new `user_study_plans` (JSONB plan + metadata) and `user_study_plan_tasks` (one row per task with status).
 
----
+### 5. Adaptive re-ranking
+After each task is marked done OR the user attempts a linked problem (we already log `code_submissions` and `quiz_results`):
+- A lightweight scoring function (client-side, no AI call needed for every attempt) adjusts upcoming task priority:
+  - Wrong/slow → insert reinforcement task on same topic the next day.
+  - Correct/fast → skip ahead, unlock harder variant.
+  - Repeated weakness on a topic → AI re-plan call (debounced, max 1×/day).
 
-## B. Detail page (`/library/problems/:slug`)
+### 6. The dashboard view itself
+At `/dashboard/my-plan`:
+- **Header card**: goal, days remaining, daily streak, today's required minutes.
+- **Today's tasks** (checklist with timer, links to existing sheet topics & coding problems).
+- **This week** view (collapsible days).
+- **Connected profiles strip** (rating chips, last synced, manual refresh button).
+- **Adaptive insights panel**: "Your weakest area this week is Graphs — added 2 tasks."
+- **Re-plan button** (calls AI again with current state).
 
-### B1. Session timer + Pomodoro (top‑right of editor)
-- Auto‑starts on first edit, pauses after 60s idle
-- Optional 25/5 Pomodoro toggle with a subtle toast
-- Stores time‑on‑problem per slug in `localStorage`
-- On AC, success toast shows "Solved in Xm Ys"
+## Technical details
 
-### B2. Test case workbench
-Replace the single stdin textarea with a tabbed workbench:
-- One tab per sample test (auto‑loaded from problem data)
-- "+ Custom" tabs persisted per slug in `localStorage`
-- Per‑tab "Run only this" button
-- Results panel highlights pass/fail per tab
+**New tables (migration):**
+- `user_study_profile` (user_id PK, goal, target_date, weekday_minutes, weekend_minutes, level, topics_known[], created_at, updated_at)
+- `user_platform_stats` (user_id, platform, handle, rating, solved_easy/med/hard, raw jsonb, last_synced_at, sync_status; PK user_id+platform)
+- `user_study_plans` (id, user_id, plan jsonb, generated_at, model, is_active)
+- `user_study_plan_tasks` (id, plan_id, user_id, day_date, order_index, topic, difficulty, est_minutes, source_type, source_id, status, completed_at, score)
 
-### B3. Submissions diff viewer
-On the Submissions tab, allow selecting two rows → "Compare". Opens a Monaco `DiffEditor` (already loaded) side‑by‑side. Helps users see what changed between WA and AC.
+All with RLS: user can only see/modify own rows.
 
-### B4. Solution explorer after AC
-Once any AC exists for the problem, the Reference tab adds:
-- A collapsible "My latest AC" section
-- Quick stats: runtime/memory percentile vs the user's other ACs
-- One‑click "Save as My Solution" → calls existing `MySolutionPanel.onUseCurrentDraft`
+**New Edge Functions:**
+- `fetch-coding-profiles` (public, validates input, rate-limits per user via in-memory map)
+- `generate-study-plan` (validates JWT, calls Lovable AI with tool-call schema)
 
-### B5. Companies & frequency tab
-A new tab listing tagged companies as chips with "Practice this company's set" → links to `/library/problems?company=...`. Uses existing `companies` field; no new data.
+**New files:**
+- `src/pages/dashboard/MyPlan.tsx`
+- `src/components/my-plan/PlanOnboardingWizard.tsx`
+- `src/components/my-plan/PlatformProfilesCard.tsx`
+- `src/components/my-plan/TodayTasksList.tsx`
+- `src/components/my-plan/AdaptiveInsights.tsx`
+- `src/hooks/useStudyPlan.ts`, `usePlatformStats.ts`, `useStudyProfile.ts`
+- `src/lib/adaptive/rerank.ts` (pure scoring logic, unit-testable)
 
-### B6. Hints progress bar + "Reveal all / Hide all"
-Above the hints list show `2 / 4 hints revealed` with a thin progress bar and a paired toggle, building on existing `ProgressiveHints` reveal state.
+**Edits:**
+- `src/App.tsx` — add route.
+- `src/components/DashboardSidebar.tsx` — add "My Plan" entry.
 
-### B7. Editor enhancements
-- `Ctrl/Cmd+Enter` → Run, `Ctrl/Cmd+Shift+Enter` → Submit, `Ctrl/Cmd+.` → toggle hint reveal (added to existing `ShortcutsCheatSheet`)
-- Editor toolbar: format (Prettier where possible), reset to starter, copy code, toggle word‑wrap
-- Persist language + font size across problems (already partial via `useEditorPrefs`; ensure font size + wrap are sticky)
+## Phasing (suggested)
 
-### B8. Mark for revisit + scheduled review
-Button next to bookmark → schedules problem with simple SM‑2‑lite cadence (3d / 7d / 14d) in `localStorage`. Drives the "Due for revision" smart chip already on the list.
+- **Phase 1 (this build)**: Tables + onboarding wizard + LeetCode & Codeforces fetchers + AI plan generation + dashboard view + manual "mark done" adaptation.
+- **Phase 2 (later)**: CodeChef/HackerRank/GFG scrapers, automatic re-ranking from `code_submissions` triggers, weekly email recap of adherence.
 
-### B9. Visual polish
-- Breadcrumb: `Library / Problems / Two Sum`
-- Animated count‑up for acceptance % and attempt counters (framer‑motion)
-- Skeletons for every tab while data loads
-- Glass card consistent with deep‑black aesthetic on editor and side panels
+## Open questions before I start
 
----
+1. Should the plan strictly use **existing sheets/problems in the app** (DSA sheet, SQL, coding problems library) as task sources, or also generate freeform topics?
+2. For the unreliable platforms (CodeChef/GFG/etc.), do you want them included in Phase 1 with "best effort" labels, or skip until Phase 2?
+3. Should the onboarding wizard be required before the dashboard renders, or show a sample/preview plan with a "Personalize" CTA?
 
-## Suggested build order (waves)
-
-1. **Wave 1 — workspace polish:** B1, B2, B6, B7 (immediate daily‑use wins)
-2. **Wave 2 — feedback loop:** B3, B4, B8
-3. **Wave 3 — discovery:** A1, A2, A3, A8
-4. **Wave 4 — power filtering:** A4, A5, A6, B5, A7
-
-Reply with the wave (or specific item numbers) you want first and I'll implement it. Default if you just say "go": **Wave 1**.
-
----
-
-## Technical notes
-
-- No DB migrations needed. All new state is either localStorage (`byteskill:coding:*`) or derived from existing tables (`code_submissions`, `code_runs`, `user_problem_solutions`, bookmarks).
-- Diff viewer reuses already‑loaded Monaco via `DiffEditor` export — no new dep.
-- All colors via semantic Tailwind tokens; lucide `Map` aliased as `MapIcon` per project rule.
-- Reuses existing components: `CalendarHeatmap`, `ShortcutsCheatSheet`, `ProgressiveHints`, `MySolutionPanel`, `SavedFiltersMenu`, `SmartFilterChips`, `TopicProgressRing`.
+I can proceed with sensible defaults (use existing sheets, Phase-1 = LeetCode + Codeforces, wizard required) if you don't want to answer — just say "go".

@@ -1148,6 +1148,60 @@ export type Database = {
         }
         Relationships: []
       }
+      user_platform_stats: {
+        Row: {
+          created_at: string
+          handle: string
+          id: string
+          last_synced_at: string
+          platform: string
+          rating: number | null
+          raw: Json
+          solved_easy: number
+          solved_hard: number
+          solved_medium: number
+          solved_total: number
+          sync_error: string | null
+          sync_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          handle: string
+          id?: string
+          last_synced_at?: string
+          platform: string
+          rating?: number | null
+          raw?: Json
+          solved_easy?: number
+          solved_hard?: number
+          solved_medium?: number
+          solved_total?: number
+          sync_error?: string | null
+          sync_status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          handle?: string
+          id?: string
+          last_synced_at?: string
+          platform?: string
+          rating?: number | null
+          raw?: Json
+          solved_easy?: number
+          solved_hard?: number
+          solved_medium?: number
+          solved_total?: number
+          sync_error?: string | null
+          sync_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_problem_solutions: {
         Row: {
           code: Json
@@ -1460,6 +1514,146 @@ export type Database = {
           roadmap_id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_study_plan_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          day_date: string
+          difficulty: string
+          est_minutes: number
+          id: string
+          order_index: number
+          plan_id: string
+          score: number | null
+          source_id: string | null
+          source_type: string | null
+          source_url: string | null
+          status: string
+          title: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          day_date: string
+          difficulty?: string
+          est_minutes?: number
+          id?: string
+          order_index?: number
+          plan_id: string
+          score?: number | null
+          source_id?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          status?: string
+          title: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          day_date?: string
+          difficulty?: string
+          est_minutes?: number
+          id?: string
+          order_index?: number
+          plan_id?: string
+          score?: number | null
+          source_id?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          status?: string
+          title?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_study_plan_tasks_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "user_study_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_study_plans: {
+        Row: {
+          created_at: string
+          generated_at: string
+          id: string
+          is_active: boolean
+          model: string | null
+          plan: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          is_active?: boolean
+          model?: string | null
+          plan?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          is_active?: boolean
+          model?: string | null
+          plan?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_study_profile: {
+        Row: {
+          created_at: string
+          goal: string
+          level: string
+          notes: string | null
+          target_date: string | null
+          topics_known: string[]
+          updated_at: string
+          user_id: string
+          weekday_minutes: number
+          weekend_minutes: number
+        }
+        Insert: {
+          created_at?: string
+          goal: string
+          level?: string
+          notes?: string | null
+          target_date?: string | null
+          topics_known?: string[]
+          updated_at?: string
+          user_id: string
+          weekday_minutes?: number
+          weekend_minutes?: number
+        }
+        Update: {
+          created_at?: string
+          goal?: string
+          level?: string
+          notes?: string | null
+          target_date?: string | null
+          topics_known?: string[]
+          updated_at?: string
+          user_id?: string
+          weekday_minutes?: number
+          weekend_minutes?: number
         }
         Relationships: []
       }
