@@ -68,8 +68,27 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
   ) => {
     const [mode, setMode] = useState<Mode>("split");
     const [fullscreen, setFullscreen] = useState(false);
+    const [galleryOpen, setGalleryOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    /** Inserts arbitrary text at the textarea cursor (or appends). Used by the
+     *  gallery panel and the URL prompt. */
+    const insertAtCursor = (snippet: string) => {
+      const el = textareaRef.current;
+      if (!el) {
+        onChange((value ? value + "\n" : "") + snippet + "\n");
+        return;
+      }
+      const start = el.selectionStart ?? value.length;
+      const end = el.selectionEnd ?? value.length;
+      const next = value.slice(0, start) + snippet + value.slice(end);
+      onChange(next);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.selectionStart = el.selectionEnd = start + snippet.length;
+      });
+    };
 
     useImperativeHandle(ref, () => ({
       focus: () => textareaRef.current?.focus(),
