@@ -642,18 +642,49 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
           ) : submissions.length === 0 ? (
             <Card className="p-10 text-center space-y-3">
               <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <p className="font-medium">No submissions match your filters</p>
-                <p className="text-sm text-muted-foreground">
-                  {hasActiveFilters
-                    ? "Try widening the date range, clearing search, or resetting filters."
-                    : "Solve a problem from the Coding Library to see it here."}
-                </p>
+                {hasActiveFilters ? (
+                  <div className="text-sm text-muted-foreground space-y-1.5">
+                    <p>None of your submissions match the current filters:</p>
+                    <ul className="text-xs inline-flex flex-wrap gap-x-3 gap-y-1 justify-center">
+                      {search && <li>• search “{search}”</li>}
+                      {verdict !== "all" && <li>• verdict = {verdict}</li>}
+                      {language !== "all" && <li>• language = {language}</li>}
+                      {sort !== "newest" && (
+                        <li>• sort = {sort === "oldest" ? "oldest" : "best score"}</li>
+                      )}
+                      {(dateFrom || dateTo) && <li>• date {dateRangeLabel}</li>}
+                    </ul>
+                    <p className="text-xs">
+                      Remove a chip above, or clear individual filters below.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Solve a problem from the Coding Library to see it here.
+                  </p>
+                )}
               </div>
-              <div className="flex justify-center gap-2 pt-1">
+              <div className="flex flex-wrap justify-center gap-2 pt-1">
+                {search && (
+                  <Button variant="outline" size="sm" onClick={() => { setSearchInput(""); updateParams({ q: null, subPage: null }); }}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear search
+                  </Button>
+                )}
+                {verdict !== "all" && (
+                  <Button variant="outline" size="sm" onClick={() => updateParams({ verdict: null, subPage: null })}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear verdict
+                  </Button>
+                )}
+                {(dateFrom || dateTo) && (
+                  <Button variant="outline" size="sm" onClick={() => setDateRange({ from: undefined, to: undefined })}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear dates
+                  </Button>
+                )}
                 {hasActiveFilters && (
                   <Button variant="outline" size="sm" onClick={clearAllFilters}>
-                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset filters
+                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset all
                   </Button>
                 )}
                 <Button size="sm" asChild>
