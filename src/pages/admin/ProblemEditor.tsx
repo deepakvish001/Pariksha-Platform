@@ -66,6 +66,7 @@ import { formatRelative } from "@/lib/formatRelative";
 import { validateProblem, TAB_LABELS, type TabId } from "@/lib/admin/problemValidation";
 import { TabBadge } from "@/components/admin/editor/TabBadge";
 import { PublishChecklistDialog } from "@/components/admin/editor/PublishChecklistDialog";
+import { useFieldHighlight, fieldHighlightClass } from "@/hooks/useFieldHighlight";
 import { MarkdownToolbar } from "@/components/admin/editor/MarkdownToolbar";
 import { BulkTestsDialog } from "@/components/admin/editor/BulkTestsDialog";
 import { BulkExamplesDialog } from "@/components/admin/editor/BulkExamplesDialog";
