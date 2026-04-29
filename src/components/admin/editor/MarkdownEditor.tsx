@@ -23,9 +23,11 @@ import {
   Copy,
   Trash2,
   Loader2,
+  Images,
 } from "lucide-react";
 import { MarkdownToolbar } from "./MarkdownToolbar";
 import { MarkdownPreview } from "./MarkdownPreview";
+import { ImageGalleryPanel } from "./ImageGalleryPanel";
 import { useMarkdownImageUpload } from "@/hooks/useMarkdownImageUpload";
 import { deleteProblemImage } from "@/lib/admin/uploadProblemImage";
 import { toast } from "@/hooks/use-toast";
