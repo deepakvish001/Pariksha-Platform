@@ -38,6 +38,20 @@ const ok = (): SectionResult => ({ status: "ok", errors: [], warnings: [] });
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // Matches simple constraint patterns like "1 <= n <= 10^5" or "a.length >= 1"
 const CONSTRAINT_HINT_RE = /(<=|>=|<|>|=|≤|≥)/;
+// Detects "<lower> <= <var> <= <upper>" style numeric bounds so we can sanity
+// check that lower <= upper. Supports plain ints and "10^5" / "1e9" notations.
+const NUMERIC_RANGE_RE =
+  /(-?\d+(?:\.\d+)?(?:\^\d+|e\d+)?)\s*(?:<=|≤)\s*[A-Za-z_][\w.]*\s*(?:<=|≤)\s*(-?\d+(?:\.\d+)?(?:\^\d+|e\d+)?)/;
+
+const parseNumericLiteral = (raw: string): number | null => {
+  const s = raw.trim();
+  const caret = s.match(/^(-?\d+(?:\.\d+)?)\^(\d+)$/);
+  if (caret) return Number(caret[1]) ** Number(caret[2]);
+  const sci = s.match(/^(-?\d+(?:\.\d+)?)e(\d+)$/i);
+  if (sci) return Number(sci[1]) * Math.pow(10, Number(sci[2]));
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+};
 
 const finalize = (r: SectionResult, fallback: SectionStatus = "ok"): SectionResult => {
   r.status = r.errors.length ? "error" : r.warnings.length ? "warn" : fallback;
