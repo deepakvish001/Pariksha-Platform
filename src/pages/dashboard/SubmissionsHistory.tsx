@@ -236,6 +236,10 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
   const dateFrom = searchParams.get("from") ?? "";
   const dateTo = searchParams.get("to") ?? "";
   const tab = forcedTab ?? (searchParams.get("tab") ?? "submissions");
+  const rawSort = searchParams.get("sort") ?? "newest";
+  const sort = (["newest", "oldest", "best_score"] as const).includes(rawSort as never)
+    ? (rawSort as "newest" | "oldest" | "best_score")
+    : "newest";
   const subPage = Math.max(1, parseInt(searchParams.get("subPage") ?? "1", 10) || 1);
   const runPage = Math.max(1, parseInt(searchParams.get("runPage") ?? "1", 10) || 1);
 
