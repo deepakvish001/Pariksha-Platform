@@ -165,12 +165,7 @@ const BulkImport = () => {
           }
         : null,
     }));
-    const next: Row[] = mapped.map((raw) => {
-      const r = ProblemSchema.safeParse(raw);
-      return r.success
-        ? { ok: true, data: r.data, raw }
-        : { ok: false, error: r.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "), raw };
-    });
+    const next: Row[] = mapped.map((raw, i) => parseRow(raw, i));
     setRows(next);
     toast({
       title: "Loaded static seed",
