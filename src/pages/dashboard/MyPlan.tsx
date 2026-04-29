@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Sparkles, Loader2, RefreshCw, Settings2, Target, Calendar, FileDown, ChevronDown,
+  CalendarPlus,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStudyProfile } from "@/hooks/useStudyProfile";
@@ -28,7 +29,10 @@ import { StreakHistoryChart } from "@/components/my-plan/StreakHistoryChart";
 import { FocusTimerCard } from "@/components/my-plan/FocusTimerCard";
 import { DailyCheckInDialog } from "@/components/my-plan/DailyCheckInDialog";
 import { CatchUpButton } from "@/components/my-plan/CatchUpButton";
+import { GoalProgressWidget } from "@/components/my-plan/GoalProgressWidget";
+import { AddAdhocTaskDialog } from "@/components/my-plan/AddAdhocTaskDialog";
 import { exportPlanToPdf } from "@/lib/my-plan/exportPlanPdf";
+import { downloadPlanIcs } from "@/lib/my-plan/exportPlanIcs";
 import { resolveTaskLink } from "@/lib/my-plan/taskLinks";
 import type { RecommendationMode } from "@/lib/adaptive/rerank";
 import { toast } from "@/hooks/use-toast";
@@ -48,7 +52,7 @@ const MyPlan = () => {
   const { stats } = usePlatformStats();
   const {
     plan, tasks, loading: planLoading, generating,
-    generate, updateTaskStatus, moveTaskToDay, toggleLock, catchUp,
+    generate, updateTaskStatus, moveTaskToDay, toggleLock, catchUp, addAdhocTask,
   } = useStudyPlan();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [recMode, setRecMode] = useState<RecommendationMode>(() => {
