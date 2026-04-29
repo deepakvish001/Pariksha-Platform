@@ -198,7 +198,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
   // current URL has none of the filter params present (so a fresh deep-link or
   // a "Clear all" reset still wins).
   const PREFS_KEY = user ? `byteskill:submissions-history:prefs:${user.id}` : null;
-  const FILTER_KEYS = ["q", "verdict", "lang", "from", "to", "tab"] as const;
+  const FILTER_KEYS = ["q", "verdict", "lang", "from", "to", "tab", "sort"] as const;
 
   // ---- Hydrate persisted filter prefs into the URL on first mount ---------
   // This runs only when no filter param is in the URL — so a shared link or a
