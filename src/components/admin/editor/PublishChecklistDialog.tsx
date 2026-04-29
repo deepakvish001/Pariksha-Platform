@@ -66,10 +66,26 @@ export const PublishChecklistDialog = ({
                   {(sec.errors.length > 0 || sec.warnings.length > 0) && (
                     <ul className="mt-1.5 space-y-1 pl-6 text-xs">
                       {sec.errors.map((e, i) => (
-                        <li key={`e${i}`} className="text-destructive">• {e}</li>
+                        <li key={`e${i}`} className="text-destructive">
+                          <span className="mr-1">•</span>
+                          {e.field && (
+                            <code className="mr-1 rounded bg-destructive/10 px-1 py-0.5 font-mono text-[10px]">
+                              {e.field}
+                            </code>
+                          )}
+                          {e.message}
+                        </li>
                       ))}
                       {sec.warnings.map((w, i) => (
-                        <li key={`w${i}`} className="text-amber-600 dark:text-amber-400">• {w}</li>
+                        <li key={`w${i}`} className="text-amber-600 dark:text-amber-400">
+                          <span className="mr-1">•</span>
+                          {w.field && (
+                            <code className="mr-1 rounded bg-amber-500/10 px-1 py-0.5 font-mono text-[10px]">
+                              {w.field}
+                            </code>
+                          )}
+                          {w.message}
+                        </li>
                       ))}
                     </ul>
                   )}
