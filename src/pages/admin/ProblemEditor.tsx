@@ -157,6 +157,14 @@ const ProblemEditor = () => {
   const { data: distinctTopics } = useDistinctTopics();
   const report = useMemo(() => validateProblem(form), [form]);
   const runHistory = useRunHistory(slug ?? "");
+  const { highlightedField, flash: flashField } = useFieldHighlight();
+
+  const jumpToField = (field: string, tab: TabId) => {
+    setActiveTab(tab);
+    setPublishOpen(false);
+    // Wait for the tab content to mount before scrolling/focusing.
+    requestAnimationFrame(() => flashField(field));
+  };
 
   useEffect(() => {
     try { localStorage.setItem(ACTIVE_TAB_KEY, activeTab); } catch {}
