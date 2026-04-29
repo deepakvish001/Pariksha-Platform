@@ -889,6 +889,8 @@ const ProblemEditor = () => {
                 items={form.constraints}
                 onChange={(v) => update("constraints", v)}
                 placeholder="1 <= n <= 10^5"
+                fieldPrefix="constraints"
+                highlightedField={highlightedField}
                 inline
               />
               <div>
@@ -913,6 +915,8 @@ const ProblemEditor = () => {
                 items={form.hints}
                 onChange={(v) => update("hints", v)}
                 placeholder="Try a hash map…"
+                fieldPrefix="hints"
+                highlightedField={highlightedField}
                 numbered
                 inline
               />
