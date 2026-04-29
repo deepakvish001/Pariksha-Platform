@@ -388,7 +388,7 @@ const CodingProblems = () => {
     const totals = new Map<string, number>();
     const solvedMap = new Map<string, number>();
     const attemptedMap = new Map<string, number>();
-    for (const p of CODING_PROBLEMS) {
+    for (const p of ALL_PROBLEMS) {
       for (const t of p.topics) {
         totals.set(t, (totals.get(t) ?? 0) + 1);
         if (solved.has(p.slug)) solvedMap.set(t, (solvedMap.get(t) ?? 0) + 1);
