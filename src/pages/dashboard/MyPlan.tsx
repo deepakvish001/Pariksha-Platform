@@ -117,6 +117,19 @@ const MyPlan = () => {
                 <span className="hidden sm:inline">Edit profile</span>
               </Button>
             )}
+            {profile && plan && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  exportPlanToPdf(plan, tasks, profile, 28);
+                  toast({ title: "PDF generated", description: "Your 28-day plan summary is downloading." });
+                }}
+              >
+                <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">Export PDF</span>
+              </Button>
+            )}
             {profile && (
               <Button size="sm" onClick={handleGenerate} disabled={generating}>
                 {generating ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 sm:mr-1.5" />}
@@ -188,7 +201,7 @@ const MyPlan = () => {
             {/* Main grid */}
             <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-                {plan && <TodayTasksList tasks={tasks} onToggle={updateTaskStatus} />}
+                {plan && <TodayTasksList tasks={tasks} onToggle={updateTaskStatus} mode={recMode} />}
                 {plan && (
                   <WeeklyPlanView
                     tasks={tasks}
@@ -196,6 +209,7 @@ const MyPlan = () => {
                     onMoveTask={moveTaskToDay}
                   />
                 )}
+                {plan && <StreakHistoryChart tasks={tasks} />}
                 {plan && <ProgressAnalytics tasks={tasks} />}
               </div>
               <div className="space-y-4 sm:space-y-6">
@@ -203,6 +217,8 @@ const MyPlan = () => {
                   <AIRecommendations
                     tasks={tasks}
                     onStart={(t) => handleStartTask(t.id)}
+                    mode={recMode}
+                    onModeChange={setRecMode}
                   />
                 )}
                 {plan && <AdaptiveInsights plan={plan} tasks={tasks} />}
