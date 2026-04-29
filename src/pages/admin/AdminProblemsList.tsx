@@ -98,6 +98,26 @@ const AdminProblemsList = () => {
         </Button>
       </div>
 
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {[
+          { key: "all", label: `All ${problems.length}` },
+          { key: "published", label: `Published ${problems.filter((p) => p.is_published).length}` },
+          { key: "draft", label: `Drafts ${problems.filter((p) => !p.is_published).length}` },
+        ].map((c) => (
+          <button
+            key={c.key}
+            onClick={() => setPublished(c.key)}
+            className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+              published === c.key
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
       <div className="mb-4 flex flex-wrap items-end gap-2">
         <div className="relative min-w-[220px] flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

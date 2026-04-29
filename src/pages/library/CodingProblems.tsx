@@ -46,6 +46,7 @@ import {
   ALL_TOPICS,
   type Difficulty,
 } from "@/data/codingProblemsData";
+import { useDbCodingProblems } from "@/hooks/useCodingProblems";
 import { useCodingAttemptStats } from "@/hooks/useCodingAttemptStats";
 import { useCodingProblemBookmarks } from "@/hooks/useCodingProblemBookmarks";
 import { ProblemStatsHeader } from "@/components/library/coding/ProblemStatsHeader";
@@ -369,6 +370,15 @@ const CodingProblems = () => {
   };
 
   const { solved, attempted, perProblem, loading } = useCodingAttemptStats();
+  const { data: dbProblems = [] } = useDbCodingProblems();
+  // Merge admin-published DB problems with the bundled static array.
+  // DB row wins on conflict so admin edits override the static baseline.
+  const ALL_PROBLEMS = useMemo(() => {
+    const bySlug = new Map<string, (typeof CODING_PROBLEMS)[number]>();
+    for (const p of CODING_PROBLEMS) bySlug.set(p.slug, p);
+    for (const p of dbProblems) bySlug.set(p.slug, p);
+    return Array.from(bySlug.values());
+  }, [dbProblems]);
   const daily = useDailyChallenge(solved);
   const { bookmarks, toggle: toggleBookmark, isBookmarked } = useCodingProblemBookmarks();
 
@@ -378,7 +388,7 @@ const CodingProblems = () => {
     const totals = new Map<string, number>();
     const solvedMap = new Map<string, number>();
     const attemptedMap = new Map<string, number>();
-    for (const p of CODING_PROBLEMS) {
+    for (const p of ALL_PROBLEMS) {
       for (const t of p.topics) {
         totals.set(t, (totals.get(t) ?? 0) + 1);
         if (solved.has(p.slug)) solvedMap.set(t, (solvedMap.get(t) ?? 0) + 1);
@@ -386,7 +396,7 @@ const CodingProblems = () => {
       }
     }
     return { totals, solvedMap, attemptedMap };
-  }, [solved, attempted]);
+  }, [solved, attempted, ALL_PROBLEMS]);
 
   // Identify weak topics: solved < 30% (and at least 1 attempt or unsolved problems)
   const weakTopics = useMemo(() => {
@@ -561,7 +571,7 @@ const CodingProblems = () => {
   // Filter
   const filtered = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
-    let list = CODING_PROBLEMS.filter((p) => {
+    let list = ALL_PROBLEMS.filter((p) => {
       if (q) {
         const hay = `${p.title} ${p.slug} ${p.topics.join(" ")}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -626,6 +636,7 @@ const CodingProblems = () => {
     solved,
     attempted,
     perProblem,
+    ALL_PROBLEMS,
   ]);
 
   // Pagination
@@ -642,12 +653,12 @@ const CodingProblems = () => {
 
   // Stats
   const counts = useMemo(() => {
-    const total = CODING_PROBLEMS.length;
-    const easy = CODING_PROBLEMS.filter((p) => p.difficulty === "Easy").length;
-    const medium = CODING_PROBLEMS.filter((p) => p.difficulty === "Medium").length;
-    const hard = CODING_PROBLEMS.filter((p) => p.difficulty === "Hard").length;
+    const total = ALL_PROBLEMS.length;
+    const easy = ALL_PROBLEMS.filter((p) => p.difficulty === "Easy").length;
+    const medium = ALL_PROBLEMS.filter((p) => p.difficulty === "Medium").length;
+    const hard = ALL_PROBLEMS.filter((p) => p.difficulty === "Hard").length;
     const inSet = (d: Difficulty) =>
-      CODING_PROBLEMS.filter((p) => p.difficulty === d && solved.has(p.slug)).length;
+      ALL_PROBLEMS.filter((p) => p.difficulty === d && solved.has(p.slug)).length;
     return {
       total,
       easy,
@@ -657,7 +668,7 @@ const CodingProblems = () => {
       solvedMedium: inSet("Medium"),
       solvedHard: inSet("Hard"),
     };
-  }, [solved]);
+  }, [solved, ALL_PROBLEMS]);
 
   const { weekSolved, prevWeekSolved } = useMemo(() => {
     const now = Date.now();
@@ -680,8 +691,8 @@ const CodingProblems = () => {
       if (!s.lastAttempt) return;
       if (!best || s.lastAttempt > best.t) best = { slug, t: s.lastAttempt };
     });
-    return best ? CODING_PROBLEMS.find((p) => p.slug === best!.slug) : undefined;
-  }, [perProblem, solved]);
+    return best ? ALL_PROBLEMS.find((p) => p.slug === best!.slug) : undefined;
+  }, [perProblem, solved, ALL_PROBLEMS]);
 
   const activeFilterCount =
     (debouncedSearch ? 1 : 0) +

@@ -23,7 +23,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LANGUAGES, type LangId } from "@/data/codingProblemsData";
 import { MonacoEditor } from "@/components/coding/MonacoEditor";
-import { Plus, Trash2, Save, ArrowLeft, X, Globe, EyeOff, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, X, Globe, EyeOff, AlertCircle, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import {
@@ -314,6 +314,17 @@ const ProblemEditor = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          )}
+          {!isNew && (
+            <Button variant="outline" size="sm" asChild>
+              <a
+                href={`/library/problems/${form.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" /> View as learner
+              </a>
+            </Button>
           )}
           <Button onClick={handleSave} disabled={save.isPending || (isNew && slugTaken)}>
             <Save className="mr-2 h-4 w-4" />

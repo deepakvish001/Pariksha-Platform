@@ -54,8 +54,10 @@ import {
   Lock,
   Terminal,
   History as HistoryIcon,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useThemeSync } from "@/hooks/useThemeSync";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -126,6 +128,7 @@ const ACTIVE_ROUTES = new Set([
   "/dashboard/submissions",
   "/settings",
   "/library/problems",
+  "/admin",
 ]);
 
 const isRouteLocked = (url: string) => !ACTIVE_ROUTES.has(url.split("?")[0]);
@@ -356,6 +359,10 @@ export function DashboardSidebar() {
   const [prevUnreadCount, setPrevUnreadCount] = useState(unreadCount);
   const isCollapsed = state === "collapsed";
   const isGuest = !user;
+  const { isAdmin } = useUserRole();
+  const visibleHomeNavItems = isAdmin
+    ? [...homeNavItems, { title: "Admin Panel", url: "/admin", icon: Shield }]
+    : homeNavItems;
 
   const getNextTheme = () => {
     if (theme === "light") return "dark";
@@ -534,7 +541,7 @@ export function DashboardSidebar() {
             )}
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                {homeNavItems.map((item) => {
+                {visibleHomeNavItems.map((item) => {
                   const isProfile = item.url === PROFILE_SENTINEL;
                   const username = (extendedProfile as { username?: string } | null)?.username ?? null;
                   const resolvedUrl = isProfile
