@@ -43,6 +43,7 @@ function AuthGate({ feature, returnTo }: { feature: string; returnTo: string }) 
 
 export default function Leaderboard() {
   const { user } = useAuth();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get("view") ?? "leaderboard";
   const tab: LeaderboardTab = (VALID_TABS as readonly string[]).includes(rawTab)
@@ -55,6 +56,8 @@ export default function Leaderboard() {
     else params.set("view", next);
     setSearchParams(params, { replace: true });
   };
+
+  const returnTo = `${location.pathname}${location.search}`;
 
   return (
     <div className="container max-w-6xl py-6 sm:py-10 space-y-6">
