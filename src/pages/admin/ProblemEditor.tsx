@@ -23,9 +23,20 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LANGUAGES, type LangId } from "@/data/codingProblemsData";
 import { MonacoEditor } from "@/components/coding/MonacoEditor";
-import { Plus, Trash2, Save, ArrowLeft, X } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, X, Globe, EyeOff, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const slugify = (s: string) =>
   s
