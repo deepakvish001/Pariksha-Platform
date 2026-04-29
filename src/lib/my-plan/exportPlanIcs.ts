@@ -66,9 +66,9 @@ export const buildPlanIcs = (tasks: PlanTask[], opts: Opts = {}): string => {
       cursor = end;
       const summary = `${t.topic} — ${t.title}`;
       const desc =
-        `Difficulty: ${t.difficulty}\\n` +
+        `Difficulty: ${t.difficulty}\n` +
         `Estimated: ${t.est_minutes} min` +
-        (t.source_url ? `\\nResource: ${t.source_url}` : "");
+        (t.source_url ? `\nResource: ${t.source_url}` : "");
       lines.push(
         "BEGIN:VEVENT",
         `UID:${t.id}@byteskill.app`,
