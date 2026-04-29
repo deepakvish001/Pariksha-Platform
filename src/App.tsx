@@ -90,6 +90,12 @@ import Resources from "./pages/platform/Resources";
 import Collections from "./pages/platform/Collections";
 
 import PublicProfile from "./pages/PublicProfile";
+import { AdminRoute } from "@/components/AdminRoute";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminProblemsList from "./pages/admin/AdminProblemsList";
+import ProblemEditor from "./pages/admin/ProblemEditor";
+import BulkImport from "./pages/admin/BulkImport";
+import AuditLog from "./pages/admin/AuditLog";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
@@ -262,6 +268,25 @@ const App = () => (
                 {/* Under Construction page for locked features */}
                 <Route path="/under-construction" element={<PublicDashboardWrapper />}>
                   <Route index element={<UnderConstruction />} />
+                </Route>
+
+                {/* Admin routes - admin role required */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <DashboardLayout>
+                        <Outlet />
+                      </DashboardLayout>
+                    </AdminRoute>
+                  }
+                >
+                  <Route index element={<AdminOverview />} />
+                  <Route path="problems" element={<AdminProblemsList />} />
+                  <Route path="problems/new" element={<ProblemEditor />} />
+                  <Route path="problems/import" element={<BulkImport />} />
+                  <Route path="problems/:slug/edit" element={<ProblemEditor />} />
+                  <Route path="audit" element={<AuditLog />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -1,162 +1,103 @@
-## My Plan — End-to-end Upgrade
+## Goal
 
-Current My Plan ships profile wizard, AI plan generation, daily/weekly views, drag-to-reschedule, adaptive recommendations, charts, streak history, and PDF export. Below is what's missing to make it feel like a real, daily-use product. Each item is independently shippable.
+Build an Admin Panel that lets admins create, edit, upload (CSV/JSON bulk), and manage coding problems entirely from the UI — replacing the hardcoded `src/data/codingProblemsData.ts` with a database-driven system. Admins can also manage difficulty metadata, hidden tests, SQL specs, and bulk-import from JSON.
 
----
+## Scope
 
-### 1. Make tasks actionable (deep-linking + content)
+- New admin role + access guard
+- DB-backed coding problems (replaces static file as source of truth, with fallback)
+- Admin pages under `/admin/*`
+- CRUD UI for problems with tabs (Statement, Examples, Constraints/Hints, Starter Code, Reference Solution, Tests, SQL Spec, Limits)
+- Bulk JSON/CSV upload + validation preview
+- Audit log of admin actions
 
-Today, "Start" on a task only scrolls to it. Wire each task to the real practice surface so users can actually do the work.
+## Phase 1 — Roles & Access
 
-- Extend AI plan schema with `source_id` (e.g. problem slug, sheet topic id, quiz category) and `source_url`.
-- In `generate-study-plan`, give the model a curated catalog (DSA topics, SQL questions, coding problems, quiz categories) so it can reference real items instead of free-text.
-- Add a `task_links` resolver on the client that maps `source_type` → route:
-  - `coding` → `/library/problems/<slug>`
-  - `dsa` / `sql` → `/library/dsa-questions?topic=...`
-  - `quiz` → `/library/quiz?category=...`
-  - `concept` → roadmap node deep link
-- "Start" button opens the resource in a new tab and marks the task `in_progress`.
+1. **Migration**: create `app_role` enum (`admin`, `moderator`, `user`), `user_roles` table, and `has_role(uuid, app_role)` SECURITY DEFINER function (per project's user-roles standard).
+2. Seed the current logged-in user as `admin` (one-time via migration insert prompt).
+3. New hook `useUserRole()` and `<AdminRoute>` guard component.
+4. Sidebar entry "Admin" (visible only when `has_role(admin)` returns true).
 
-### 2. Daily check-in & auto-status
+## Phase 2 — Database Schema
 
-- New status `in_progress` plus `partial` (some progress, finish tomorrow).
-- A "Daily check-in" prompt appears after 8pm or on next-day open: surfaces unfinished tasks, lets the user mark Done / Skipped / Carry over (auto-moves to tomorrow).
-- Cross-link with existing data: when a `coding` task's `source_id` has an Accepted submission in `code_submissions` after the task was created, mark it Done automatically.
+New tables (all RLS-protected; SELECT public for non-sensitive fields, INSERT/UPDATE/DELETE admin-only via `has_role`):
 
-### 3. Focus session timer
+- `coding_problems` — slug (PK), title, difficulty, topics (text[]), description (md), examples (jsonb), constraints (text[]), hints (text[]), cpu_time_limit_sec, memory_limit_kb, is_published (bool), created_by, created_at, updated_at
+- `coding_problem_starter_code` — problem_slug, lang_id, code (allows per-language rows)
+- `coding_problem_reference_solutions` — problem_slug, lang_id, code (admin-only SELECT — never expose to clients)
+- `coding_problem_tests` — id, problem_slug, kind (`sample` | `hidden`), input, expected, ord (hidden tests admin-only SELECT)
+- `coding_problem_sql_specs` — problem_slug (PK), schema_sql, seed_sql, reference_query, order_matters, starter
+- `admin_audit_log` — id, actor_id, action, entity_type, entity_slug, diff (jsonb), created_at
 
-- Pomodoro-style timer card on Today's tasks: pick a task, run 25/5 cycles, log actual minutes spent.
-- New table `user_study_focus_sessions` (task_id, started_at, ended_at, actual_minutes, completed_cycles).
-- Feeds back into adaptive engine: tasks consistently exceeding `est_minutes` raise difficulty signal; under-running tasks lower it.
+Extend `coding_problems_meta` to FK from `coding_problems.slug`.
 
-### 4. Smart re-plan & catch-up
+## Phase 3 — Data Layer
 
-- "Catch up" button when user has overdue tasks: redistributes them across the next N days respecting weekday/weekend budget.
-- "Re-plan from here" button regenerates only days `>= today + 1`, keeping locked items.
-- Per-task "Lock to day" toggle so re-plans skip pinned items.
+1. `useAdminProblems()` — list/search/paginate with filters (difficulty, topic, published).
+2. `useAdminProblem(slug)` — fetch full problem joined with starter/solution/tests/sql.
+3. Mutations: `createProblem`, `updateProblem`, `deleteProblem`, `publishToggle`, `upsertStarterCode`, `upsertReferenceSolution`, `replaceTests`, `upsertSqlSpec`.
+4. Update existing consumers (`CodingProblems.tsx`, `CodingProblemDetail.tsx`, `useDailyChallenge.ts`, `RecommendationStrip.tsx`, `TopicMasteryChips.tsx`) to load from DB via a new `useCodingProblems()` hook (cached via React Query). Keep `codingProblemsData.ts` only as a typing source.
+5. Edge functions `run-code` / `submit-code` updated to fetch hidden tests server-side from DB (never trust client) using service-role.
 
-### 5. Calendar export & subscriptions
+## Phase 4 — Admin Pages (`/admin`)
 
-- Export current plan as `.ics` so users can drop it into Google/Apple Calendar (28 days max).
-- Optional iCal feed via signed edge function URL (`/functions/v1/plan-ical?token=...`) so the calendar stays in sync.
-- Per-task `add to calendar` quick action.
-
-### 6. Platform sync scheduler
-
-Today, syncs run only when user clicks Connect/Refresh.
-
-- New table `user_platform_sync_jobs` with `next_run_at`, `interval_hours`.
-- pg_cron job (every hour) calls `fetch-coding-profiles-batch` edge function to refresh due handles.
-- UI shows "Auto-sync: every 24h" toggle per platform and last-success timestamp.
-- After each sync, if `solved_*` counts change meaningfully, queue an "update recommendations" notification.
-
-### 7. AI Coach chat (plan-aware)
-
-- New tab/panel: a streaming chat (reuses Lovable AI Gateway) seeded with the user's profile, current plan, last 14 days of progress, platform stats.
-- Common quick actions: "Why this plan?", "I have less time this week", "Skip graphs for now", "Make it harder".
-- Coach can call tools: `regenerate_plan`, `move_task`, `mark_done`, `set_time_budget`. All actions confirm before applying.
-
-### 8. Goals beyond a single date
-
-- Support multiple goal types: target date, weekly XP target, problems-per-week target, topic-mastery target.
-- Goal progress widget under the gradient header replaces the simple "days left" count when relevant.
-- Notifications (reuse `send-velocity-reminder` infra) when user is behind pace.
-
-### 9. Weekly review email
-
-- Sunday email summarising last week: completion rate, streak, top topics, AI's recommended focus for next week.
-- Reuses `send-weekly-digest` Edge Function — extend payload with `myplan` block.
-- Honors existing notification preferences.
-
-### 10. Polish & accessibility
-
-- Empty states everywhere (no plan, no platforms, no tasks today).
-- Keyboard: J/K to move between today's tasks, Enter to toggle done, R to open recommendations, P to print.
-- Mobile FAB with quick "Add ad-hoc task" + "Start focus session".
-- Loading skeletons matching DashboardSkeleton style across all panels.
-- Optimistic concurrency on plan tasks (handle two tabs editing same task).
-
----
-
-## Technical changes
-
-### Database (single migration)
-
-```sql
--- New columns on user_study_plan_tasks
-ALTER TABLE public.user_study_plan_tasks
-  ADD COLUMN locked boolean NOT NULL DEFAULT false,
-  ADD COLUMN actual_minutes integer,
-  ADD COLUMN started_at timestamptz,
-  ADD COLUMN source_url text;
-
-ALTER TABLE public.user_study_plan_tasks
-  DROP CONSTRAINT IF EXISTS user_study_plan_tasks_status_check;
--- Status enum widened via validation trigger (immutability rules)
-CREATE OR REPLACE FUNCTION public.validate_plan_task_status()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.status NOT IN ('pending','in_progress','partial','done','skipped') THEN
-    RAISE EXCEPTION 'Invalid status %', NEW.status;
-  END IF;
-  RETURN NEW;
-END $$;
-CREATE TRIGGER trg_validate_plan_task_status
-  BEFORE INSERT OR UPDATE ON public.user_study_plan_tasks
-  FOR EACH ROW EXECUTE FUNCTION public.validate_plan_task_status();
-
--- Focus sessions
-CREATE TABLE public.user_study_focus_sessions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  task_id uuid REFERENCES public.user_study_plan_tasks(id) ON DELETE SET NULL,
-  started_at timestamptz NOT NULL DEFAULT now(),
-  ended_at timestamptz,
-  actual_minutes integer,
-  completed_cycles integer NOT NULL DEFAULT 0
-);
-ALTER TABLE public.user_study_focus_sessions ENABLE ROW LEVEL SECURITY;
--- Owner-only RLS for select/insert/update/delete
-
--- Sync schedule
-CREATE TABLE public.user_platform_sync_jobs (
-  user_id uuid NOT NULL,
-  platform text NOT NULL,
-  interval_hours integer NOT NULL DEFAULT 24,
-  next_run_at timestamptz NOT NULL DEFAULT now(),
-  last_run_at timestamptz,
-  last_status text,
-  PRIMARY KEY (user_id, platform)
-);
--- RLS, plus pg_cron entry calling new edge function.
+```text
+/admin                       → Admin dashboard (stats: total problems, drafts, recent edits)
+/admin/problems              → Problems table (search, filter, bulk publish/delete)
+/admin/problems/new          → Create wizard
+/admin/problems/:slug/edit   → Tabbed editor
+/admin/problems/import       → Bulk JSON/CSV upload
+/admin/audit                 → Audit log viewer
 ```
 
-### Edge functions
+### Editor tabs (`ProblemEditor.tsx`)
 
-- New `plan-coach` (streaming chat with tools).
-- New `plan-ical` (token-authenticated `.ics` feed).
-- New `fetch-coding-profiles-batch` (called by pg_cron).
-- Extend `generate-study-plan` to accept `partial: { from_day_offset, lock_ids[] }` and return only the requested slice.
+1. **Basics** — slug, title, difficulty, topics (chip input), is_published toggle
+2. **Statement** — Markdown editor with live preview
+3. **Examples** — repeatable rows (input, output, explanation)
+4. **Constraints & Hints** — list editors
+5. **Starter Code** — Monaco tabs per language (reuse existing `MonacoEditor`)
+6. **Reference Solution** — Monaco tabs per language (admin-only)
+7. **Tests** — two tables (Sample, Hidden) with input/expected, drag-reorder, CSV paste
+8. **SQL Spec** (shown when `sql` lang enabled) — schema, seed, reference query, order_matters
+9. **Limits** — cpuTimeLimitSec, memoryLimitKb
 
-### Frontend
+Save → upserts atomically inside a Postgres function `admin_save_problem(payload jsonb)` for transactional consistency.
 
-- `useFocusSession`, `usePlanCoach`, `useTaskLinks` hooks.
-- New components: `FocusTimerCard`, `DailyCheckInDialog`, `PlanCoachPanel`, `CatchUpButton`, `LockTaskToggle`, `CalendarExportMenu`, `SyncSchedulerSettings`, `GoalProgressWidget`.
-- Update `useStudyPlan` with `replanFromDay`, `lockTask`, `setActualMinutes`, `addAdhocTask`.
+### Bulk Import (`/admin/problems/import`)
 
----
+- Drag-and-drop JSON file (array matching `CodingProblem` shape) or CSV (basics only).
+- Zod-validated preview table: rows colored green (valid) / red (errors with field details).
+- "Import N valid problems" button — upsert by slug, audit log per row.
+- Includes a "Download starter JSON template" link.
+- Bonus: "Import from existing static file" one-click button that ingests `CODING_PROBLEMS` array as the initial seed.
 
-## Suggested rollout order
+## Phase 5 — Security
 
-1. Database migration + status widening.
-2. Deep-linking + AI catalog (1).
-3. Daily check-in + auto-mark from submissions (2).
-4. Focus timer (3).
-5. Catch-up & smart re-plan (4).
-6. Calendar export (5).
-7. Sync scheduler (6).
-8. AI Coach chat (7).
-9. Multi-goal support + weekly review email (8, 9).
-10. Polish, keyboard, mobile FAB (10).
+- All admin mutations gated by `has_role(auth.uid(), 'admin')` in RLS.
+- Reference solutions + hidden tests: SELECT policy `has_role(admin)` only; consumed server-side by edge functions via service role.
+- Edge functions verify JWT and role server-side before returning sensitive data.
+- Zod validation on every mutation hook + edge function body.
 
-Each phase is independently shippable so you can pause/iterate after any step.
+## Phase 6 — UX polish
+
+- Unsaved-changes warning on editor (block route change).
+- Auto-save drafts to localStorage every 5s.
+- Slug auto-generated from title with collision check.
+- Markdown preview side-by-side toggle.
+- Keyboard shortcut Cmd+S to save.
+- Empty states + skeletons.
+
+## Out of scope (separate follow-ups)
+
+- Versioning/rollback of problem edits beyond audit log diff
+- Multi-admin review/approval workflow
+- Image upload inside markdown statements (can be added with `avatars`-style bucket later)
+
+## Technical notes
+
+- Roles table follows project's strict pattern (`mem://core` user-roles rule).
+- Migration must seed initial admin (will prompt for the user's email/uid at apply time).
+- All consumers switch to React Query cache with 5-min staleTime to avoid hammering DB.
+- `admin_save_problem` RPC accepts a single jsonb payload; runs `INSERT ... ON CONFLICT` for parent + child rows inside a transaction.
+- Monaco editor + react-markdown already available in the project.
