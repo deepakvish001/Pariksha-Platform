@@ -262,13 +262,59 @@ const ProblemEditor = () => {
               Draft restored
             </span>
           )}
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={form.is_published}
-              onCheckedChange={(v) => update("is_published", v)}
-            />
-            <span className="text-sm">{form.is_published ? "Published" : "Draft"}</span>
-          </div>
+          {form.is_published ? (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <EyeOff className="mr-2 h-4 w-4" /> Unpublish
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Unpublish this problem?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Learners will no longer see "{form.title || form.slug}" in the
+                    library. Existing submissions are kept. You can re-publish at any
+                    time.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => update("is_published", false)}>
+                    Unpublish
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          ) : (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  disabled={!form.title.trim() || !form.slug.trim()}
+                >
+                  <Globe className="mr-2 h-4 w-4" /> Publish
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Publish this problem?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Once published, "{form.title || form.slug}" will appear in the
+                    public coding library and learners can solve and submit. Hidden
+                    tests stay private. You can unpublish later if needed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => update("is_published", true)}>
+                    Publish
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button onClick={handleSave} disabled={save.isPending || (isNew && slugTaken)}>
             <Save className="mr-2 h-4 w-4" />
             {save.isPending ? "Saving…" : "Save"}
@@ -276,6 +322,34 @@ const ProblemEditor = () => {
         </div>
       </div>
 
+      <div
+        className={`mb-4 flex items-start gap-3 rounded-lg border p-3 text-sm ${
+          form.is_published
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : "border-amber-500/30 bg-amber-500/5"
+        }`}
+      >
+        {form.is_published ? (
+          <Globe className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+        ) : (
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="font-medium">
+            {form.is_published ? "Published" : "Draft — not visible to learners"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {form.is_published
+              ? "Changes here are saved as drafts until you press Save. Already published — visible to all learners."
+              : "Fill in the details, then use the Publish button above to make this problem live. Don't forget to Save first."}
+          </p>
+        </div>
+        {dirty && (
+          <Badge variant="outline" className="border-amber-500/40 text-amber-500">
+            Unsaved
+          </Badge>
+        )}
+      </div>
       <Tabs defaultValue="basics">
         <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="basics">Basics</TabsTrigger>
