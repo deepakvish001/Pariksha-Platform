@@ -96,6 +96,7 @@ import AdminProblemsList from "./pages/admin/AdminProblemsList";
 import ProblemEditor from "./pages/admin/ProblemEditor";
 import BulkImport from "./pages/admin/BulkImport";
 import AuditLog from "./pages/admin/AuditLog";
+import PublishHistory from "./pages/admin/PublishHistory";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
@@ -287,6 +288,7 @@ const App = () => (
                   <Route path="problems/import" element={<BulkImport />} />
                   <Route path="problems/:slug/edit" element={<ProblemEditor />} />
                   <Route path="audit" element={<AuditLog />} />
+                  <Route path="publish-history" element={<PublishHistory />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

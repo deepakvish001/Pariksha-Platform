@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { Shield, FileCode2, Upload, ScrollText, LayoutGrid } from "lucide-react";
+import { Shield, FileCode2, Upload, ScrollText, LayoutGrid, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/admin", label: "Overview", icon: LayoutGrid, end: true },
   { to: "/admin/problems", label: "Problems", icon: FileCode2 },
   { to: "/admin/problems/import", label: "Bulk Import", icon: Upload },
+  { to: "/admin/publish-history", label: "Publish History", icon: History },
   { to: "/admin/audit", label: "Audit Log", icon: ScrollText },
 ];
 

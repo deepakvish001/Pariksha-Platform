@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { formatRelative } from "@/lib/formatRelative";
 
 const slugify = (s: string) =>
   s
@@ -46,20 +47,6 @@ const slugify = (s: string) =>
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
-
-const formatRelative = (iso: string) => {
-  const then = new Date(iso).getTime();
-  const diff = Date.now() - then;
-  const sec = Math.round(diff / 1000);
-  if (sec < 60) return "just now";
-  const min = Math.round(sec / 60);
-  if (min < 60) return `${min} min ago`;
-  const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr} hr ago`;
-  const day = Math.round(hr / 24);
-  if (day < 7) return `${day} day${day === 1 ? "" : "s"} ago`;
-  return new Date(iso).toLocaleDateString();
-};
 
 const emptyPayload = (): FullProblemPayload => ({
   slug: "",
