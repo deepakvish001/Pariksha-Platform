@@ -56,12 +56,16 @@ const ACTION_META: Record<CoachAction["kind"], { label: string; Icon: typeof Pla
   bulk_start_next: { label: "Start next batch", Icon: Rocket },
 };
 
-export const PlanCoachPanel = ({ tasks, profile, onUpdateTaskStatus, onMoveTaskToDay, trigger }: Props) => {
+export const PlanCoachPanel = ({
+  tasks, profile, onUpdateTaskStatus, onMoveTaskToDay,
+  onBulkMoveToDay, onRestoreDays, onLogActivity, trigger,
+}: Props) => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [busyKeys, setBusyKeys] = useState<Set<string>>(new Set());
   const { messages, streaming, error, send, reset, stop, consumeAction } = useCoachChat();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const anyBusy = busyKeys.size > 0;
 
   // --- Header summary (streak + top topics) ---
   const summary = useMemo(() => {
