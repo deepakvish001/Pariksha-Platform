@@ -817,14 +817,26 @@ const ProblemEditor = () => {
                 </div>
               </div>
             ))}
-            <Button
-              variant="outline"
-              onClick={() =>
-                update("examples", [...form.examples, { input: "", output: "" }])
-              }
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add example
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  update("examples", [...form.examples, { input: "", output: "" }])
+                }
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add example
+              </Button>
+              <BulkExamplesDialog
+                existing={form.examples.filter((e) => e.input || e.output)}
+                onAdd={(added) => update("examples", [...form.examples, ...added])}
+                onReplace={(items) => update("examples", items.length ? items : [{ input: "", output: "" }])}
+                trigger={
+                  <Button variant="outline" type="button">
+                    <Upload className="mr-2 h-4 w-4" /> Import / export JSON
+                  </Button>
+                }
+              />
+            </div>
           </Card>
         </TabsContent>
 
