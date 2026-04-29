@@ -725,10 +725,11 @@ const ProblemEditor = () => {
               />
               <Textarea
                 ref={descRef}
+                data-field="description"
                 value={form.description}
                 onChange={(e) => update("description", e.target.value)}
                 rows={20}
-                className="font-mono text-sm"
+                className={`font-mono text-sm ${fieldHighlightClass("description", highlightedField)}`}
               />
             </Card>
             <Card className="p-4">
