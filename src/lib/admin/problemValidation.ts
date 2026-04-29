@@ -1,4 +1,6 @@
 import type { FullProblemPayload } from "@/hooks/useAdminProblems";
+import { getExecLimitsForLang } from "@/lib/coding/executionLimits";
+import type { LangId } from "@/data/codingProblemsData";
 
 export type SectionStatus = "ok" | "warn" | "error" | "empty";
 export type TabId =
