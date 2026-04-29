@@ -86,6 +86,45 @@ const MyPlan = () => {
     }
   }, [user, tasks]);
 
+  // Keyboard shortcuts: J/K cycle through today's tasks, Enter toggles done, P exports PDF.
+  useEffect(() => {
+    if (!plan) return;
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const today = todayIso();
+      const todays = tasks.filter((t) => t.day_date === today);
+      if (todays.length === 0 && e.key.toLowerCase() !== "p") return;
+      const focusedId = document.activeElement?.id?.startsWith("task-")
+        ? document.activeElement.id.replace(/^task-/, "")
+        : null;
+      const idx = focusedId ? todays.findIndex((t) => t.id === focusedId) : -1;
+
+      if (e.key === "j" || e.key === "J") {
+        e.preventDefault();
+        const next = todays[Math.min(todays.length - 1, idx + 1)] ?? todays[0];
+        document.getElementById(`task-${next.id}`)?.focus();
+      } else if (e.key === "k" || e.key === "K") {
+        e.preventDefault();
+        const prev = todays[Math.max(0, idx - 1)] ?? todays[0];
+        document.getElementById(`task-${prev.id}`)?.focus();
+      } else if (e.key === "Enter" && focusedId) {
+        const t = todays.find((tt) => tt.id === focusedId);
+        if (t) {
+          e.preventDefault();
+          updateTaskStatus(t.id, t.status === "done" ? "pending" : "done");
+        }
+      } else if ((e.key === "p" || e.key === "P") && profile) {
+        e.preventDefault();
+        exportPlanToPdf(plan, tasks, profile, 28);
+        toast({ title: "PDF generated", description: "Your 28-day plan summary is downloading." });
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [plan, tasks, profile, updateTaskStatus]);
+
   const daysLeft = useMemo(() => {
     if (!profile?.target_date) return null;
     return Math.max(0, Math.ceil((new Date(profile.target_date).getTime() - Date.now()) / 86400000));
