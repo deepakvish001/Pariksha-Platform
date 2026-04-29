@@ -82,6 +82,8 @@ export const useSaveProblem = () => {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["admin-problems"] });
       qc.invalidateQueries({ queryKey: ["admin-problem", vars.slug] });
+      qc.invalidateQueries({ queryKey: ["coding-problems-db"] });
+      qc.invalidateQueries({ queryKey: ["coding-problem-db", vars.slug] });
       toast({ title: "Saved", description: `Problem "${vars.slug}" saved.` });
     },
     onError: (err: any) => {
@@ -106,6 +108,7 @@ export const useDeleteProblem = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-problems"] });
+      qc.invalidateQueries({ queryKey: ["coding-problems-db"] });
       toast({ title: "Deleted", description: "Problem removed." });
     },
     onError: (err: any) => {
@@ -147,6 +150,8 @@ export const useTogglePublish = () => {
       qc.invalidateQueries({ queryKey: ["admin-problems"] });
       qc.invalidateQueries({ queryKey: ["admin-problem", slug] });
       qc.invalidateQueries({ queryKey: ["admin-audit-log"] });
+      qc.invalidateQueries({ queryKey: ["coding-problems-db"] });
+      qc.invalidateQueries({ queryKey: ["coding-problem-db", slug] });
       toast({
         title: publish ? "Published" : "Unpublished",
         description: publish
@@ -212,6 +217,7 @@ export const useDuplicateProblem = () => {
     },
     onSuccess: (newSlug) => {
       qc.invalidateQueries({ queryKey: ["admin-problems"] });
+      qc.invalidateQueries({ queryKey: ["coding-problems-db"] });
       toast({
         title: "Duplicated",
         description: `Created draft "${newSlug}".`,
