@@ -61,7 +61,8 @@ import { VerdictBadge } from "@/components/coding/VerdictBadge";
 import { CodeExecutionError, useCodeRunner, type RunResult, type SubmitResult, type CaseResult } from "@/hooks/useCodeRunner";
 import { getExecLimitsForLang, formatLimits } from "@/lib/coding/executionLimits";
 
-import { Cpu } from "lucide-react";
+import { Cpu, Info } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useCodeDraft } from "@/hooks/useCodeDraft";
 import { useCodingSubmissions } from "@/hooks/useCodingSubmissions";
 import { useCodeRuns } from "@/hooks/useCodeRuns";
