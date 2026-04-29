@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { StudyProfile } from "./useStudyProfile";
 import type { PlatformStat } from "./usePlatformStats";
 
+export type PlanTaskStatus = "pending" | "in_progress" | "partial" | "done" | "skipped";
+
 export interface PlanTask {
   id: string;
   plan_id: string;
@@ -14,12 +16,15 @@ export interface PlanTask {
   title: string;
   difficulty: "easy" | "medium" | "hard";
   est_minutes: number;
+  actual_minutes: number | null;
   source_type: string | null;
   source_id: string | null;
   source_url: string | null;
-  status: "pending" | "done" | "skipped";
+  status: PlanTaskStatus;
   score: number | null;
   completed_at: string | null;
+  started_at: string | null;
+  locked: boolean;
 }
 
 export interface StudyPlan {
@@ -29,6 +34,12 @@ export interface StudyPlan {
   is_active: boolean;
   generated_at: string;
 }
+
+const todayIso = () => {
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  return t.toISOString().slice(0, 10);
+};
 
 export const useStudyPlan = () => {
   const { user } = useAuth();
@@ -69,12 +80,15 @@ export const useStudyPlan = () => {
     setLoading(false);
   }, [user]);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  useEffect(() => { refresh(); }, [refresh]);
 
   const generate = useCallback(
-    async (profile: StudyProfile, platformStats: PlatformStat[], completedTopics: string[]) => {
+    async (
+      profile: StudyProfile,
+      platformStats: PlatformStat[],
+      completedTopics: string[],
+      opts?: { fromDayOffset?: number; preserveLocked?: boolean }
+    ) => {
       if (!user) throw new Error("Not signed in");
       setGenerating(true);
       try {
@@ -91,14 +105,10 @@ export const useStudyPlan = () => {
             platform_stats: platformStats.map((s) => ({
               platform: s.platform,
               rating: s.rating,
-              solved: {
-                easy: s.solved_easy,
-                medium: s.solved_medium,
-                hard: s.solved_hard,
-                total: s.solved_total,
-              },
+              solved: { easy: s.solved_easy, medium: s.solved_medium, hard: s.solved_hard, total: s.solved_total },
             })),
             completed_topics: completedTopics,
+            partial: opts?.fromDayOffset != null ? { from_day_offset: opts.fromDayOffset } : undefined,
           },
         });
         if (error) throw error;
@@ -115,37 +125,59 @@ export const useStudyPlan = () => {
               difficulty: "easy" | "medium" | "hard";
               est_minutes: number;
               source_type: string;
+              source_id?: string | null;
+              source_url?: string | null;
             }>;
           }>;
         };
 
-        // Deactivate old plans
-        await supabase
-          .from("user_study_plans")
-          .update({ is_active: false })
-          .eq("user_id", user.id)
-          .eq("is_active", true);
-
-        const { data: newPlan, error: pErr } = await supabase
-          .from("user_study_plans")
-          .insert({
-            user_id: user.id,
-            plan: { summary: aiPlan.summary, weak_areas: aiPlan.weak_areas },
-            model: "google/gemini-3-flash-preview",
-            is_active: true,
-          })
-          .select()
-          .single();
-        if (pErr) throw pErr;
-
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        const fromOffset = opts?.fromDayOffset ?? 0;
+
+        let activePlanId: string;
+
+        if (fromOffset === 0) {
+          // Full re-plan: deactivate everything and start fresh
+          await supabase.from("user_study_plans").update({ is_active: false })
+            .eq("user_id", user.id).eq("is_active", true);
+
+          const { data: newPlan, error: pErr } = await supabase
+            .from("user_study_plans")
+            .insert({
+              user_id: user.id,
+              plan: { summary: aiPlan.summary, weak_areas: aiPlan.weak_areas },
+              model: "google/gemini-3-flash-preview",
+              is_active: true,
+            })
+            .select().single();
+          if (pErr) throw pErr;
+          activePlanId = newPlan.id;
+        } else {
+          // Partial re-plan: keep existing plan, delete unlocked tasks from cutoff onward
+          if (!plan) throw new Error("No active plan to re-plan");
+          activePlanId = plan.id;
+          const cutoff = new Date(today);
+          cutoff.setDate(cutoff.getDate() + fromOffset);
+          const cutoffIso = cutoff.toISOString().slice(0, 10);
+          let del = supabase.from("user_study_plan_tasks").delete()
+            .eq("plan_id", plan.id).gte("day_date", cutoffIso);
+          if (opts?.preserveLocked) del = del.eq("locked", false);
+          const { error: delErr } = await del;
+          if (delErr) throw delErr;
+
+          // Update summary/weak areas on the existing plan
+          await supabase.from("user_study_plans")
+            .update({ plan: { summary: aiPlan.summary, weak_areas: aiPlan.weak_areas } })
+            .eq("id", plan.id);
+        }
+
         const taskRows = aiPlan.days.flatMap((day) =>
           day.tasks.map((t, idx) => {
             const d = new Date(today);
             d.setDate(d.getDate() + day.day_offset);
             return {
-              plan_id: newPlan.id,
+              plan_id: activePlanId,
               user_id: user.id,
               day_date: d.toISOString().slice(0, 10),
               order_index: idx,
@@ -154,7 +186,9 @@ export const useStudyPlan = () => {
               difficulty: t.difficulty,
               est_minutes: t.est_minutes,
               source_type: t.source_type,
-              status: "pending",
+              source_id: t.source_id ?? null,
+              source_url: t.source_url ?? null,
+              status: "pending" as const,
             };
           })
         );
@@ -167,13 +201,14 @@ export const useStudyPlan = () => {
         setGenerating(false);
       }
     },
-    [user, refresh]
+    [user, plan, refresh]
   );
 
   const updateTaskStatus = useCallback(
-    async (taskId: string, status: PlanTask["status"], score?: number) => {
+    async (taskId: string, status: PlanTaskStatus, score?: number) => {
       const patch: Record<string, unknown> = { status };
       if (status === "done") patch.completed_at = new Date().toISOString();
+      if (status === "in_progress") patch.started_at = new Date().toISOString();
       if (score !== undefined) patch.score = score;
       await supabase.from("user_study_plan_tasks").update(patch).eq("id", taskId);
       setTasks((cur) =>
@@ -184,18 +219,73 @@ export const useStudyPlan = () => {
   );
 
   const moveTaskToDay = useCallback(async (taskId: string, newDay: string) => {
-    // Optimistic update
     setTasks((cur) => cur.map((t) => (t.id === taskId ? { ...t, day_date: newDay } : t)));
     const { error } = await supabase
-      .from("user_study_plan_tasks")
-      .update({ day_date: newDay })
-      .eq("id", taskId);
-    if (error) {
-      // revert by refresh
-      await refresh();
-      throw error;
-    }
+      .from("user_study_plan_tasks").update({ day_date: newDay }).eq("id", taskId);
+    if (error) { await refresh(); throw error; }
   }, [refresh]);
 
-  return { plan, tasks, loading, generating, generate, updateTaskStatus, moveTaskToDay, refresh };
+  const toggleLock = useCallback(async (taskId: string, locked: boolean) => {
+    setTasks((cur) => cur.map((t) => (t.id === taskId ? { ...t, locked } : t)));
+    const { error } = await supabase
+      .from("user_study_plan_tasks").update({ locked }).eq("id", taskId);
+    if (error) { await refresh(); throw error; }
+  }, [refresh]);
+
+  const setActualMinutes = useCallback(async (taskId: string, minutes: number) => {
+    setTasks((cur) => cur.map((t) => (t.id === taskId ? { ...t, actual_minutes: minutes } : t)));
+    const { error } = await supabase
+      .from("user_study_plan_tasks").update({ actual_minutes: minutes }).eq("id", taskId);
+    if (error) { await refresh(); throw error; }
+  }, [refresh]);
+
+  /** Move all overdue (pending/in_progress) tasks to today and the next few days, respecting time budget. */
+  const catchUp = useCallback(
+    async (weekdayBudget: number, weekendBudget: number) => {
+      const today = todayIso();
+      const overdue = tasks.filter(
+        (t) => t.day_date < today && (t.status === "pending" || t.status === "in_progress")
+      );
+      if (overdue.length === 0) return 0;
+
+      // Build a queue of next 14 days with remaining capacity
+      const days: { iso: string; remaining: number }[] = [];
+      const t0 = new Date();
+      t0.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 14; i++) {
+        const d = new Date(t0);
+        d.setDate(d.getDate() + i);
+        const iso = d.toISOString().slice(0, 10);
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const budget = isWeekend ? weekendBudget : weekdayBudget;
+        const used = tasks
+          .filter((tt) => tt.day_date === iso && tt.status !== "skipped")
+          .reduce((s, tt) => s + tt.est_minutes, 0);
+        days.push({ iso, remaining: Math.max(0, budget - used) });
+      }
+
+      const updates: { id: string; day_date: string }[] = [];
+      for (const task of overdue) {
+        const slot = days.find((d) => d.remaining >= task.est_minutes) ?? days[days.length - 1];
+        slot.remaining = Math.max(0, slot.remaining - task.est_minutes);
+        updates.push({ id: task.id, day_date: slot.iso });
+      }
+
+      // Apply in parallel
+      await Promise.all(
+        updates.map((u) =>
+          supabase.from("user_study_plan_tasks").update({ day_date: u.day_date }).eq("id", u.id)
+        )
+      );
+      await refresh();
+      return updates.length;
+    },
+    [tasks, refresh]
+  );
+
+  return {
+    plan, tasks, loading, generating,
+    generate, updateTaskStatus, moveTaskToDay, toggleLock, setActualMinutes, catchUp,
+    refresh,
+  };
 };
