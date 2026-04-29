@@ -30,6 +30,10 @@ interface Props {
   onRestore?: (
     snapshot: Array<{ id: string; status: PlanTaskStatus; completed_at: string | null }>
   ) => Promise<void>;
+  onLogActivity?: (entry: {
+    kind: "bulk_mark_done" | "bulk_mark_pending" | "bulk_undo_status";
+    summary: string; detail?: string; count: number;
+  }) => void;
 }
 
 const difficultyClass = (d: string) =>
