@@ -1416,6 +1416,8 @@ const TestsTable = ({
   referenceSource,
   referenceLang,
   onSaveRun,
+  fieldKey,
+  highlightedField,
 }: {
   title: string;
   subtitle?: string;
@@ -1428,6 +1430,9 @@ const TestsTable = ({
     test: { input: string; expected: string },
     res: { stdout: string; stderr: string; ok: boolean; expected?: string },
   ) => void;
+  /** "sample_tests" or "hidden_tests" — drives data-field IDs for jumping. */
+  fieldKey?: "sample_tests" | "hidden_tests";
+  highlightedField?: string | null;
 }) => (
   <Card className="space-y-3 p-4">
     <div className="flex flex-wrap items-center gap-2">
