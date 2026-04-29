@@ -396,7 +396,7 @@ const CodingProblems = () => {
       }
     }
     return { totals, solvedMap, attemptedMap };
-  }, [solved, attempted]);
+  }, [solved, attempted, ALL_PROBLEMS]);
 
   // Identify weak topics: solved < 30% (and at least 1 attempt or unsolved problems)
   const weakTopics = useMemo(() => {
