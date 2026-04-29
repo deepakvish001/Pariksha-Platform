@@ -385,12 +385,30 @@ const ProblemEditor = () => {
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          {dirty && (
-            <span className="text-xs text-amber-500">● Unsaved changes</span>
+          {dirty && lastDraftSavedAt && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-500"
+              title={`Auto-saved at ${new Date(lastDraftSavedAt).toLocaleString()}`}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Draft saved {formatRelative(lastDraftSavedAt)}
+            </span>
           )}
-          {!dirty && draftRestoredAt && isNew && (
-            <span className="text-xs text-muted-foreground">
-              Draft restored
+          {dirty && !lastDraftSavedAt && (
+            <span className="text-xs text-amber-500">● Unsaved — autosave in a moment…</span>
+          )}
+          {!dirty && draftRestoredAt && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              Draft restored from {formatRelative(draftRestoredAt)}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-[11px]"
+                onClick={discardDraft}
+              >
+                Discard
+              </Button>
             </span>
           )}
           {form.is_published ? (
