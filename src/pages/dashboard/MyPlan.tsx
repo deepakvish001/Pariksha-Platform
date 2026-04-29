@@ -354,6 +354,7 @@ const MyPlan = () => {
                 {plan && <ProgressAnalytics tasks={tasks} />}
               </div>
               <div className="space-y-4 sm:space-y-6">
+                {plan && <GoalProgressWidget tasks={tasks} />}
                 {plan && (
                   <FocusTimerCard
                     tasks={tasks}
