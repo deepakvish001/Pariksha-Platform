@@ -735,7 +735,26 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
         <TabsContent value="runs" className="mt-4 space-y-2">
           {runsLoading ? (
             <>{Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)}</>
-          ) : runs.length === 0 ? (
+          ) : (
+            <>
+              {verdict !== "all" && (
+                <Card className="p-3 bg-amber-500/5 border-amber-500/30">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">Heads up:</span>{" "}
+                    The verdict filter (<span className="font-mono">{verdict}</span>)
+                    only applies to submissions — runs don't have verdicts, so it's
+                    ignored here.{" "}
+                    <button
+                      type="button"
+                      onClick={() => updateParams({ tab: null })}
+                      className="underline underline-offset-2 hover:text-foreground"
+                    >
+                      View submissions instead →
+                    </button>
+                  </p>
+                </Card>
+              )}
+              {runs.length === 0 ? (
             <Card className="p-10 text-center space-y-3">
               <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
               <div className="space-y-1.5">
@@ -751,8 +770,21 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
                       )}
                       {(dateFrom || dateTo) && <li>• date {dateRangeLabel}</li>}
                     </ul>
+                    {verdict !== "all" && (
+                      <p className="text-xs text-amber-500">
+                        Note: <span className="font-mono">verdict = {verdict}</span> only
+                        applies to submissions — it's ignored on runs.{" "}
+                        <button
+                          type="button"
+                          onClick={() => updateParams({ tab: null })}
+                          className="underline underline-offset-2 hover:text-foreground"
+                        >
+                          View submissions →
+                        </button>
+                      </p>
+                    )}
                     <p className="text-xs">
-                      Note: verdict filter only affects submissions. Remove a chip above or clear individual filters below.
+                      Remove a chip above, or clear individual filters below.
                     </p>
                   </div>
                 ) : (
@@ -784,7 +816,10 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
                 )}
               </div>
             </Card>
-          ) : (
+              ) : null}
+            </>
+          )}
+          {!runsLoading && runs.length > 0 && (
             <>
               {runs.map((r) => {
                 const isThisRunning = isRunning && rerunningId === r.id;
