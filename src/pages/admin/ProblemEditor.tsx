@@ -1064,6 +1064,8 @@ const ProblemEditor = () => {
               onChange={(t) => update("sample_tests", t)}
               referenceSource={form.reference_solution[activeLang] ?? ""}
               referenceLang={activeLang}
+              fieldKey="sample_tests"
+              highlightedField={highlightedField}
               onSaveRun={(idx, t, res) => {
                 const expected = (t.expected ?? "").trimEnd();
                 const got = res.stdout;
