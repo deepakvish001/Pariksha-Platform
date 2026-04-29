@@ -11,7 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, Send, Square, RotateCcw, Bot, User as UserIcon,
   Flame, Play, CalendarClock, CalendarPlus, CheckCircle2, Loader2,
+  AlarmClock, Rocket,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { ToastAction } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useCoachChat, type CoachAction, type CoachContext } from "@/hooks/useCoachChat";
@@ -23,6 +26,9 @@ interface Props {
   profile: StudyProfile | null;
   onUpdateTaskStatus: (taskId: string, status: PlanTaskStatus) => Promise<void> | void;
   onMoveTaskToDay: (taskId: string, day: string) => Promise<void>;
+  onBulkMoveToDay?: (taskIds: string[], day: string) => Promise<Array<{ id: string; day_date: string }>>;
+  onRestoreDays?: (snapshot: Array<{ id: string; day_date: string }>) => Promise<void>;
+  onLogActivity?: (entry: { kind: "coach_action"; summary: string; detail?: string; count: number }) => void;
   trigger?: React.ReactNode;
 }
 
@@ -37,8 +43,8 @@ const tomorrowIsoFn = () => {
 const SUGGESTIONS = [
   "What should I do next right now?",
   "Summarize my upcoming streak and weak topics.",
-  "I have less time this week — what should I cut?",
-  "Make tomorrow easier on me.",
+  "Bulk-start the next 2-3 tasks for today.",
+  "Snooze my overdue tasks to tomorrow.",
 ];
 
 const ACTION_META: Record<CoachAction["kind"], { label: string; Icon: typeof Play }> = {
@@ -46,6 +52,8 @@ const ACTION_META: Record<CoachAction["kind"], { label: string; Icon: typeof Pla
   reschedule_today: { label: "Move to today", Icon: CalendarClock },
   reschedule_tomorrow: { label: "Move to tomorrow", Icon: CalendarPlus },
   mark_done: { label: "Mark done", Icon: CheckCircle2 },
+  snooze_24h: { label: "Snooze 24h", Icon: AlarmClock },
+  bulk_start_next: { label: "Start next batch", Icon: Rocket },
 };
 
 export const PlanCoachPanel = ({ tasks, profile, onUpdateTaskStatus, onMoveTaskToDay, trigger }: Props) => {
