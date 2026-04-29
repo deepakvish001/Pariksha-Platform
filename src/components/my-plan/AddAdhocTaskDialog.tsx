@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export interface AdhocTaskInput {
@@ -17,6 +18,10 @@ export interface AdhocTaskInput {
   difficulty: "easy" | "medium" | "hard";
   est_minutes: number;
   day_date: string;
+  /** Optional ISO timestamp (with timezone). When set, exporters use exact times. */
+  scheduled_start?: string | null;
+  /** Optional ISO timestamp (with timezone). When set with scheduled_start, exporters use exact times. */
+  scheduled_end?: string | null;
 }
 
 interface Props {
@@ -29,31 +34,91 @@ const todayIso = () => {
   const d = new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10);
 };
 
+/** Combine "YYYY-MM-DD" + "HH:mm" into a full ISO string in local time. */
+const combineLocal = (dayIso: string, time: string): string | null => {
+  if (!dayIso || !time) return null;
+  const [h, m] = time.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  const [y, mo, d] = dayIso.split("-").map(Number);
+  return new Date(y, mo - 1, d, h, m, 0, 0).toISOString();
+};
+
+const minutesBetween = (startTime: string, endTime: string): number => {
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+  return (eh * 60 + em) - (sh * 60 + sm);
+};
+
 export const AddAdhocTaskDialog = ({ defaultDay, onAdd, trigger }: Props) => {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState<AdhocTaskInput>({
-    title: "",
-    topic: "Custom",
-    difficulty: "medium",
-    est_minutes: 30,
-    day_date: defaultDay ?? todayIso(),
-  });
 
-  const reset = () => setForm({
-    title: "", topic: "Custom", difficulty: "medium",
-    est_minutes: 30, day_date: defaultDay ?? todayIso(),
-  });
+  const [title, setTitle] = useState("");
+  const [topic, setTopic] = useState("Custom");
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+  const [day, setDay] = useState(defaultDay ?? todayIso());
+  const [estMinutes, setEstMinutes] = useState(30);
+
+  // Precise times (optional)
+  const [usePreciseTime, setUsePreciseTime] = useState(false);
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("09:30");
+
+  // Keep est_minutes in sync when precise times are enabled
+  useEffect(() => {
+    if (!usePreciseTime) return;
+    const m = minutesBetween(startTime, endTime);
+    if (m > 0 && m !== estMinutes) setEstMinutes(m);
+  }, [usePreciseTime, startTime, endTime]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reset = () => {
+    setTitle("");
+    setTopic("Custom");
+    setDifficulty("medium");
+    setDay(defaultDay ?? todayIso());
+    setEstMinutes(30);
+    setUsePreciseTime(false);
+    setStartTime("09:00");
+    setEndTime("09:30");
+  };
 
   const submit = async () => {
-    if (!form.title.trim()) {
+    if (!title.trim()) {
       toast({ title: "Title is required", variant: "destructive" });
       return;
     }
+    let scheduled_start: string | null = null;
+    let scheduled_end: string | null = null;
+    let finalMinutes = estMinutes;
+
+    if (usePreciseTime) {
+      const span = minutesBetween(startTime, endTime);
+      if (span <= 0) {
+        toast({ title: "End time must be after start time", variant: "destructive" });
+        return;
+      }
+      scheduled_start = combineLocal(day, startTime);
+      scheduled_end = combineLocal(day, endTime);
+      finalMinutes = span;
+    }
+
     setBusy(true);
     try {
-      await onAdd({ ...form, title: form.title.trim(), topic: form.topic.trim() || "Custom" });
-      toast({ title: "Task added", description: `Scheduled for ${form.day_date}` });
+      await onAdd({
+        title: title.trim(),
+        topic: topic.trim() || "Custom",
+        difficulty,
+        est_minutes: Math.max(5, finalMinutes),
+        day_date: day,
+        scheduled_start,
+        scheduled_end,
+      });
+      toast({
+        title: "Task added",
+        description: usePreciseTime
+          ? `Scheduled for ${day} at ${startTime}–${endTime}`
+          : `Scheduled for ${day}`,
+      });
       setOpen(false);
       reset();
     } catch (e) {
@@ -85,24 +150,25 @@ export const AddAdhocTaskDialog = ({ defaultDay, onAdd, trigger }: Props) => {
           <div className="space-y-1.5">
             <Label htmlFor="adhoc-title">Title</Label>
             <Input
-              id="adhoc-title" value={form.title} autoFocus
+              id="adhoc-title" value={title} autoFocus
               placeholder="e.g. Review binary search notes"
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              onChange={(e) => setTitle(e.target.value)}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="adhoc-topic">Topic</Label>
               <Input
-                id="adhoc-topic" value={form.topic}
-                onChange={(e) => setForm({ ...form, topic: e.target.value })}
+                id="adhoc-topic" value={topic}
+                onChange={(e) => setTopic(e.target.value)}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="adhoc-min">Minutes</Label>
               <Input
-                id="adhoc-min" type="number" min={5} max={480} value={form.est_minutes}
-                onChange={(e) => setForm({ ...form, est_minutes: Math.max(5, Number(e.target.value) || 30) })}
+                id="adhoc-min" type="number" min={5} max={480} value={estMinutes}
+                disabled={usePreciseTime}
+                onChange={(e) => setEstMinutes(Math.max(5, Number(e.target.value) || 30))}
               />
             </div>
           </div>
@@ -110,8 +176,8 @@ export const AddAdhocTaskDialog = ({ defaultDay, onAdd, trigger }: Props) => {
             <div className="space-y-1.5">
               <Label>Difficulty</Label>
               <Select
-                value={form.difficulty}
-                onValueChange={(v) => setForm({ ...form, difficulty: v as AdhocTaskInput["difficulty"] })}
+                value={difficulty}
+                onValueChange={(v) => setDifficulty(v as "easy" | "medium" | "hard")}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -124,10 +190,48 @@ export const AddAdhocTaskDialog = ({ defaultDay, onAdd, trigger }: Props) => {
             <div className="space-y-1.5">
               <Label htmlFor="adhoc-day">Day</Label>
               <Input
-                id="adhoc-day" type="date" value={form.day_date}
-                onChange={(e) => setForm({ ...form, day_date: e.target.value })}
+                id="adhoc-day" type="date" value={day}
+                onChange={(e) => setDay(e.target.value)}
               />
             </div>
+          </div>
+
+          {/* Optional precise time block */}
+          <div className="rounded-lg border border-border/50 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="adhoc-precise" className="flex items-center gap-1.5 cursor-pointer">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                Set exact start &amp; end time
+              </Label>
+              <Switch
+                id="adhoc-precise"
+                checked={usePreciseTime}
+                onCheckedChange={setUsePreciseTime}
+              />
+            </div>
+            {usePreciseTime && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="adhoc-start">Start</Label>
+                  <Input
+                    id="adhoc-start" type="time" value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="adhoc-end">End</Label>
+                  <Input
+                    id="adhoc-end" type="time" value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+            {usePreciseTime && (
+              <p className="text-xs text-muted-foreground">
+                Calendar export will use these exact times instead of stacking from 9 AM.
+              </p>
+            )}
           </div>
         </div>
 

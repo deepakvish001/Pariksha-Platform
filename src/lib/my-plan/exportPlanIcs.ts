@@ -61,13 +61,19 @@ export const buildPlanIcs = (tasks: PlanTask[], opts: Opts = {}): string => {
     const [y, m, d] = dayIso.split("-").map(Number);
     let cursor = new Date(y, m - 1, d, startHour, 0, 0, 0);
     for (const t of dayTasks) {
-      const start = new Date(cursor);
-      const end = new Date(cursor.getTime() + t.est_minutes * 60_000);
-      cursor = end;
+      // If user pinned an exact start/end, honor it; otherwise stack sequentially.
+      const hasPrecise = !!(t.scheduled_start && t.scheduled_end);
+      const start = hasPrecise ? new Date(t.scheduled_start as string) : new Date(cursor);
+      const end = hasPrecise
+        ? new Date(t.scheduled_end as string)
+        : new Date(cursor.getTime() + t.est_minutes * 60_000);
+      if (!hasPrecise) cursor = end;
+
       const summary = `${t.topic} — ${t.title}`;
       const desc =
         `Difficulty: ${t.difficulty}\n` +
         `Estimated: ${t.est_minutes} min` +
+        (hasPrecise ? `\nExact time: user-set` : "") +
         (t.source_url ? `\nResource: ${t.source_url}` : "");
       lines.push(
         "BEGIN:VEVENT",
