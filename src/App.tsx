@@ -165,6 +165,11 @@ const App = () => (
                   <Route path="roadmaps/:roadmapId" element={<FullStackRoadmap />} />
                   <Route path="roadmap/fullstack" element={<FullStackRoadmap />} />
                 </Route>
+
+                {/* Public profile - inside dashboard layout so it shows the sidebar */}
+                <Route element={<PublicDashboardWrapper />}>
+                  <Route path="/u/:username" element={<PublicProfile />} />
+                </Route>
                 {/* Library routes - public */}
                 <Route path="/library" element={<PublicDashboardWrapper />}>
                   <Route path="positions" element={<PositionResources />} />
