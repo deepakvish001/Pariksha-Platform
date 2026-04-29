@@ -74,6 +74,7 @@ const ProblemEditor = () => {
   const nav = useNavigate();
   const { data: loaded, isLoading } = useAdminProblem(slug);
   const save = useSaveProblem();
+  const { data: lastPublishEvent } = useLastPublishEvent(slug);
   const [form, setForm] = useState<FullProblemPayload>(emptyPayload());
   const [topicInput, setTopicInput] = useState("");
   const [activeLang, setActiveLang] = useState<LangId>("python");
