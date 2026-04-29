@@ -150,6 +150,7 @@ const App = () => (
                   <Route path="achievements" element={<Achievements />} />
                   <Route path="notifications" element={<NotificationCenter />} />
                   <Route path="notifications/preferences" element={<NotificationPreferences />} />
+                  <Route path="my-plan" element={<MyPlan />} />
                 </Route>
 
                 {/* Public dashboard routes (viewable without login) */}
