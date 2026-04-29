@@ -117,6 +117,7 @@ const homeNavItems = [
 // Active (unlocked) routes
 const ACTIVE_ROUTES = new Set([
   "/dashboard",
+  "/dashboard/my-plan",
   "/dashboard/sheets",
   "/dashboard/roadmaps",
   "/dashboard/roadmap/fullstack",
