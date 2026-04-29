@@ -664,13 +664,19 @@ export default function CodingLeaderboard() {
   });
   const { stats, loading: statsLoading } = useCodingLeaderboardStats();
 
+  // Client-side min-score filter (RPC doesn't support it).
+  const filteredRows = useMemo(
+    () => (minScore > 0 ? rows.filter((r) => Math.round(r.weighted_score) >= minScore) : rows),
+    [rows, minScore],
+  );
+
   const podium = useMemo(
-    () => (page === 1 && !search && !difficulty ? rows.slice(0, 3) : []),
-    [rows, page, search, difficulty],
+    () => (page === 1 && !search && !difficulty && minScore === 0 ? filteredRows.slice(0, 3) : []),
+    [filteredRows, page, search, difficulty, minScore],
   );
   const rest = useMemo(
-    () => (page === 1 && !search && !difficulty ? rows.slice(3) : rows),
-    [rows, page, search, difficulty],
+    () => (page === 1 && !search && !difficulty && minScore === 0 ? filteredRows.slice(3) : filteredRows),
+    [filteredRows, page, search, difficulty, minScore],
   );
 
   const openBreakdown = (row: CodingLeaderboardRow) =>
