@@ -420,6 +420,6 @@ export const useStudyPlan = () => {
   return {
     plan, tasks, loading, generating,
     generate, updateTaskStatus, moveTaskToDay, toggleLock, setActualMinutes, catchUp,
-    addAdhocTask, bulkUpdateStatus, restoreStatuses, refresh,
+    addAdhocTask, bulkUpdateStatus, restoreStatuses, bulkMoveToDay, restoreDays, refresh,
   };
 };
