@@ -2,10 +2,24 @@ import { useCallback, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type CoachRole = "user" | "assistant";
+export type CoachActionKind =
+  | "start_today"
+  | "reschedule_today"
+  | "reschedule_tomorrow"
+  | "mark_done";
+
+export interface CoachAction {
+  task_id: string;
+  task_title: string;
+  kind: CoachActionKind;
+  reason: string;
+}
+
 export interface CoachMessage {
   id: string;
   role: CoachRole;
   content: string;
+  actions?: CoachAction[];
 }
 
 export interface CoachContext {
@@ -19,10 +33,11 @@ export interface CoachContext {
   today?: { date: string; total: number; done: number };
   upcoming_days?: Array<{
     date: string;
-    tasks: Array<{ title: string; topic: string; difficulty: string; status: string; est_minutes: number }>;
+    tasks: Array<{ id: string; title: string; topic: string; difficulty: string; status: string; est_minutes: number }>;
   }>;
   weak_topics?: Array<{ topic: string; total: number; done: number; pct: number }>;
   recent_completions?: Array<{ date: string; title: string; topic: string }>;
+  overdue?: Array<{ id: string; title: string; topic: string; day_date: string; est_minutes: number }>;
 }
 
 const COACH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-coach`;
@@ -45,6 +60,16 @@ export const useCoachChat = () => {
     setStreaming(false);
   }, []);
 
+  const consumeAction = useCallback((messageId: string, taskId: string) => {
+    setMessages((cur) =>
+      cur.map((m) =>
+        m.id === messageId
+          ? { ...m, actions: (m.actions ?? []).filter((a) => a.task_id !== taskId) }
+          : m
+      )
+    );
+  }, []);
+
   const send = useCallback(async (input: string, context: CoachContext) => {
     const trimmed = input.trim();
     if (!trimmed || streaming) return;
@@ -60,14 +85,6 @@ export const useCoachChat = () => {
 
     const controller = new AbortController();
     abortRef.current = controller;
-
-    let assistantSoFar = "";
-    const pushDelta = (chunk: string) => {
-      assistantSoFar += chunk;
-      setMessages((cur) =>
-        cur.map((m) => (m.id === assistantId ? { ...m, content: assistantSoFar } : m))
-      );
-    };
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -86,89 +103,38 @@ export const useCoachChat = () => {
         }),
       });
 
-      if (!resp.ok || !resp.body) {
-        let msg = `Request failed (${resp.status})`;
-        try {
-          const j = await resp.json();
-          if (j?.error) msg = j.error;
-        } catch { /* ignore */ }
+      const json = await resp.json().catch(() => ({} as Record<string, unknown>));
+      if (!resp.ok) {
+        const msg = (json as { error?: string })?.error ?? `Request failed (${resp.status})`;
         throw new Error(msg);
       }
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-      let streamDone = false;
+      const summary = (json as { summary_md?: string }).summary_md ?? "";
+      const actions = ((json as { actions?: CoachAction[] }).actions ?? []).filter(
+        (a) => a && typeof a.task_id === "string" && typeof a.task_title === "string"
+      );
 
-      while (!streamDone) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
-
-        let nl: number;
-        while ((nl = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, nl);
-          textBuffer = textBuffer.slice(nl + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") { streamDone = true; break; }
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) pushDelta(content);
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
-          }
-        }
-      }
-
-      // Final flush
-      if (textBuffer.trim()) {
-        for (let raw of textBuffer.split("\n")) {
-          if (!raw) continue;
-          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-          if (raw.startsWith(":") || raw.trim() === "" || !raw.startsWith("data: ")) continue;
-          const jsonStr = raw.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) pushDelta(content);
-          } catch { /* ignore partials */ }
-        }
-      }
-
-      if (!assistantSoFar) {
-        setMessages((cur) =>
-          cur.map((m) =>
-            m.id === assistantId
-              ? { ...m, content: "_(No response — please try again.)_" }
-              : m
-          )
-        );
-      }
+      setMessages((cur) =>
+        cur.map((m) =>
+          m.id === assistantId
+            ? { ...m, content: summary || "_(No response — please try again.)_", actions }
+            : m
+        )
+      );
     } catch (e) {
-      if ((e as Error).name === "AbortError") {
-        // user-cancelled, leave whatever has streamed so far
-      } else {
-        const msg = e instanceof Error ? e.message : "Unknown error";
-        setError(msg);
-        setMessages((cur) =>
-          cur.map((m) =>
-            m.id === assistantId
-              ? { ...m, content: `_⚠️ ${msg}_` }
-              : m
-          )
-        );
-      }
+      if ((e as Error).name === "AbortError") return;
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      setError(msg);
+      setMessages((cur) =>
+        cur.map((m) =>
+          m.id === assistantId ? { ...m, content: `_⚠️ ${msg}_` } : m
+        )
+      );
     } finally {
       setStreaming(false);
       abortRef.current = null;
     }
   }, [messages, streaming]);
 
-  return { messages, streaming, error, send, reset, stop };
+  return { messages, streaming, error, send, reset, stop, consumeAction };
 };

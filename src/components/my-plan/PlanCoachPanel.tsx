@@ -7,38 +7,100 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Send, Square, RotateCcw, Bot, User as UserIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Sparkles, Send, Square, RotateCcw, Bot, User as UserIcon,
+  Flame, Play, CalendarClock, CalendarPlus, CheckCircle2, Loader2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCoachChat, type CoachContext } from "@/hooks/useCoachChat";
-import type { PlanTask } from "@/hooks/useStudyPlan";
+import { toast } from "@/hooks/use-toast";
+import { useCoachChat, type CoachAction, type CoachContext } from "@/hooks/useCoachChat";
+import type { PlanTask, PlanTaskStatus } from "@/hooks/useStudyPlan";
 import type { StudyProfile } from "@/hooks/useStudyProfile";
 
 interface Props {
   tasks: PlanTask[];
   profile: StudyProfile | null;
+  onUpdateTaskStatus: (taskId: string, status: PlanTaskStatus) => Promise<void> | void;
+  onMoveTaskToDay: (taskId: string, day: string) => Promise<void>;
   trigger?: React.ReactNode;
 }
 
-const todayIso = () => {
-  const d = new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10);
+const todayIsoFn = () => {
+  const d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString().slice(0, 10);
+};
+const tomorrowIsoFn = () => {
+  const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
 };
 
 const SUGGESTIONS = [
   "What should I do next right now?",
-  "Why is my plan structured this way?",
+  "Summarize my upcoming streak and weak topics.",
   "I have less time this week — what should I cut?",
   "Make tomorrow easier on me.",
 ];
 
-export const PlanCoachPanel = ({ tasks, profile, trigger }: Props) => {
+const ACTION_META: Record<CoachAction["kind"], { label: string; Icon: typeof Play }> = {
+  start_today: { label: "Start now", Icon: Play },
+  reschedule_today: { label: "Move to today", Icon: CalendarClock },
+  reschedule_tomorrow: { label: "Move to tomorrow", Icon: CalendarPlus },
+  mark_done: { label: "Mark done", Icon: CheckCircle2 },
+};
+
+export const PlanCoachPanel = ({ tasks, profile, onUpdateTaskStatus, onMoveTaskToDay, trigger }: Props) => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const { messages, streaming, error, send, reset, stop } = useCoachChat();
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const { messages, streaming, error, send, reset, stop, consumeAction } = useCoachChat();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Build the context payload sent to the edge function on every send.
+  // --- Header summary (streak + top topics) ---
+  const summary = useMemo(() => {
+    const today = todayIsoFn();
+
+    // Streak
+    const doneByDay = new Set(
+      tasks.filter((t) => t.status === "done" && t.completed_at)
+        .map((t) => (t.completed_at as string).slice(0, 10))
+    );
+    let streak = 0;
+    const cursor = new Date(); cursor.setHours(0, 0, 0, 0);
+    if (!doneByDay.has(cursor.toISOString().slice(0, 10))) cursor.setDate(cursor.getDate() - 1);
+    while (doneByDay.has(cursor.toISOString().slice(0, 10))) {
+      streak += 1; cursor.setDate(cursor.getDate() - 1);
+    }
+
+    // Topic breakdown
+    const topicMap = new Map<string, { total: number; done: number }>();
+    for (const t of tasks) {
+      if (t.status === "skipped") continue;
+      const key = (t.topic || "Other").trim();
+      const e = topicMap.get(key) ?? { total: 0, done: 0 };
+      e.total += 1;
+      if (t.status === "done") e.done += 1;
+      topicMap.set(key, e);
+    }
+    const topics = Array.from(topicMap.entries())
+      .map(([topic, v]) => ({ topic, total: v.total, done: v.done, pct: v.total > 0 ? Math.round((v.done / v.total) * 100) : 0 }))
+      .filter((r) => r.total >= 1);
+
+    const topStrong = [...topics].sort((a, b) => b.pct - a.pct || b.total - a.total).slice(0, 2);
+    const topWeak = [...topics].filter((r) => r.total >= 2).sort((a, b) => a.pct - b.pct || b.total - a.total).slice(0, 2);
+
+    const todays = tasks.filter((t) => t.day_date === today);
+    return {
+      streak,
+      todayDone: todays.filter((t) => t.status === "done").length,
+      todayTotal: todays.length,
+      topStrong,
+      topWeak,
+    };
+  }, [tasks]);
+
+  // --- Coach context payload (now includes ids + overdue) ---
   const context: CoachContext = useMemo(() => {
-    const today = todayIso();
+    const today = todayIsoFn();
 
     const totals = {
       total: tasks.length,
@@ -54,35 +116,27 @@ export const PlanCoachPanel = ({ tasks, profile, trigger }: Props) => {
       done: todays.filter((t) => t.status === "done").length,
     };
 
-    // Streak
-    const doneByDay = new Set(
-      tasks.filter((t) => t.status === "done" && t.completed_at)
-        .map((t) => (t.completed_at as string).slice(0, 10))
-    );
-    let streak = 0;
-    const cursor = new Date(); cursor.setHours(0,0,0,0);
-    if (!doneByDay.has(cursor.toISOString().slice(0,10))) cursor.setDate(cursor.getDate() - 1);
-    while (doneByDay.has(cursor.toISOString().slice(0,10))) {
-      streak += 1; cursor.setDate(cursor.getDate() - 1);
-    }
-
-    // Upcoming 4 days (today + 3)
     const upcomingDays: CoachContext["upcoming_days"] = [];
     for (let i = 0; i < 4; i++) {
-      const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + i);
-      const iso = d.toISOString().slice(0,10);
+      const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + i);
+      const iso = d.toISOString().slice(0, 10);
       const dayTasks = tasks
         .filter((t) => t.day_date === iso)
         .sort((a, b) => a.order_index - b.order_index)
-        .slice(0, 8) // cap per day
+        .slice(0, 8)
         .map((t) => ({
-          title: t.title, topic: t.topic, difficulty: t.difficulty,
+          id: t.id, title: t.title, topic: t.topic, difficulty: t.difficulty,
           status: t.status, est_minutes: t.est_minutes,
         }));
       if (dayTasks.length > 0) upcomingDays.push({ date: iso, tasks: dayTasks });
     }
 
-    // Weak topics
+    const overdue = tasks
+      .filter((t) => t.day_date < today && (t.status === "pending" || t.status === "in_progress" || t.status === "partial"))
+      .sort((a, b) => a.day_date.localeCompare(b.day_date))
+      .slice(0, 8)
+      .map((t) => ({ id: t.id, title: t.title, topic: t.topic, day_date: t.day_date, est_minutes: t.est_minutes }));
+
     const topicMap = new Map<string, { total: number; done: number }>();
     for (const t of tasks) {
       if (t.status === "skipped") continue;
@@ -98,8 +152,7 @@ export const PlanCoachPanel = ({ tasks, profile, trigger }: Props) => {
       .sort((a, b) => a.pct - b.pct)
       .slice(0, 5);
 
-    // Recent completions (last 7 days, max 8)
-    const sevenAgo = new Date(); sevenAgo.setHours(0,0,0,0); sevenAgo.setDate(sevenAgo.getDate() - 7);
+    const sevenAgo = new Date(); sevenAgo.setHours(0, 0, 0, 0); sevenAgo.setDate(sevenAgo.getDate() - 7);
     const recentCompletions = tasks
       .filter((t) => t.status === "done" && t.completed_at && new Date(t.completed_at) >= sevenAgo)
       .sort((a, b) => (b.completed_at as string).localeCompare(a.completed_at as string))
@@ -115,16 +168,16 @@ export const PlanCoachPanel = ({ tasks, profile, trigger }: Props) => {
       target_date: profile?.target_date ?? null,
       weekday_minutes: profile?.weekday_minutes ?? null,
       weekend_minutes: profile?.weekend_minutes ?? null,
-      streak_days: streak,
+      streak_days: summary.streak,
       totals,
       today: todayBlock,
       upcoming_days: upcomingDays,
       weak_topics: weakTopics,
       recent_completions: recentCompletions,
+      overdue,
     };
-  }, [tasks, profile]);
+  }, [tasks, profile, summary.streak]);
 
-  // Auto-scroll on new tokens
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -142,6 +195,49 @@ export const PlanCoachPanel = ({ tasks, profile, trigger }: Props) => {
     void send(text, context);
   };
 
+  const runAction = async (messageId: string, action: CoachAction) => {
+    const task = tasks.find((t) => t.id === action.task_id);
+    if (!task) {
+      toast({ title: "Task not found", description: "It may have been removed since the suggestion was made.", variant: "destructive" });
+      consumeAction(messageId, action.task_id);
+      return;
+    }
+    setBusyAction(`${messageId}:${action.task_id}`);
+    try {
+      switch (action.kind) {
+        case "start_today": {
+          if (task.day_date !== todayIsoFn()) await onMoveTaskToDay(task.id, todayIsoFn());
+          if (task.status === "pending") await onUpdateTaskStatus(task.id, "in_progress");
+          toast({ title: "Started", description: task.title });
+          break;
+        }
+        case "reschedule_today": {
+          await onMoveTaskToDay(task.id, todayIsoFn());
+          toast({ title: "Moved to today", description: task.title });
+          break;
+        }
+        case "reschedule_tomorrow": {
+          await onMoveTaskToDay(task.id, tomorrowIsoFn());
+          toast({ title: "Moved to tomorrow", description: task.title });
+          break;
+        }
+        case "mark_done": {
+          await onUpdateTaskStatus(task.id, "done");
+          toast({ title: "Marked done", description: task.title });
+          break;
+        }
+      }
+      consumeAction(messageId, action.task_id);
+    } catch (e) {
+      toast({
+        title: "Couldn't apply action", variant: "destructive",
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -156,13 +252,45 @@ export const PlanCoachPanel = ({ tasks, profile, trigger }: Props) => {
         side="right"
         className="w-full sm:max-w-md flex flex-col p-0 gap-0"
       >
-        <SheetHeader className="p-4 border-b border-border/40 space-y-0.5">
-          <SheetTitle className="flex items-center gap-2 text-base">
-            <Sparkles className="h-4 w-4 text-primary" /> AI Coach
-          </SheetTitle>
-          <SheetDescription className="text-xs">
-            Ask anything about your plan. I can see today's tasks, your streak, and weak topics.
-          </SheetDescription>
+        <SheetHeader className="p-4 border-b border-border/40 space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-0.5">
+              <SheetTitle className="flex items-center gap-2 text-base">
+                <Sparkles className="h-4 w-4 text-primary" /> AI Coach
+              </SheetTitle>
+              <SheetDescription className="text-xs">
+                Sees today's tasks, your streak, and weak topics. Suggests one-click next moves.
+              </SheetDescription>
+            </div>
+          </div>
+
+          {/* Live coach summary */}
+          <div className="rounded-lg border border-border/40 bg-muted/20 px-3 py-2 space-y-1.5">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-1.5">
+                <Flame className={cn("h-3.5 w-3.5", summary.streak > 0 ? "text-amber-500" : "text-muted-foreground")} />
+                <span className="font-semibold tabular-nums">{summary.streak}</span>
+                <span className="text-muted-foreground">day streak</span>
+              </div>
+              <span className="text-muted-foreground tabular-nums">
+                Today: {summary.todayDone}/{summary.todayTotal}
+              </span>
+            </div>
+            {(summary.topStrong.length > 0 || summary.topWeak.length > 0) && (
+              <div className="flex flex-wrap items-center gap-1 text-[11px]">
+                {summary.topStrong.slice(0, 1).map((t) => (
+                  <Badge key={`s-${t.topic}`} variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30 h-5 px-1.5">
+                    {t.topic} {t.pct}%
+                  </Badge>
+                ))}
+                {summary.topWeak.slice(0, 2).map((t) => (
+                  <Badge key={`w-${t.topic}`} variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 h-5 px-1.5">
+                    {t.topic} {t.pct}%
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
         </SheetHeader>
 
         <ScrollArea className="flex-1 min-h-0">
@@ -204,26 +332,73 @@ export const PlanCoachPanel = ({ tasks, profile, trigger }: Props) => {
                 >
                   {m.role === "user" ? <UserIcon className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
                 </div>
-                <div
-                  className={cn(
-                    "rounded-lg px-3 py-2 text-sm max-w-[85%] min-w-0",
-                    m.role === "user"
-                      ? "bg-primary/10 border border-primary/20"
-                      : "bg-muted/40 border border-border/40"
-                  )}
-                >
-                  {m.role === "assistant" ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {m.content || "…"}
-                      </ReactMarkdown>
+                <div className="max-w-[85%] min-w-0 space-y-2">
+                  <div
+                    className={cn(
+                      "rounded-lg px-3 py-2 text-sm",
+                      m.role === "user"
+                        ? "bg-primary/10 border border-primary/20"
+                        : "bg-muted/40 border border-border/40"
+                    )}
+                  >
+                    {m.role === "assistant" ? (
+                      <div className="prose prose-sm dark:prose-invert max-w-none break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {m.content || "…"}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                    )}
+                  </div>
+
+                  {/* One-click action chips */}
+                  {m.role === "assistant" && m.actions && m.actions.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+                        Suggested next actions
+                      </p>
+                      <div className="flex flex-col gap-1.5">
+                        {m.actions.map((a) => {
+                          const meta = ACTION_META[a.kind];
+                          const Icon = meta.Icon;
+                          const isBusy = busyAction === `${m.id}:${a.task_id}`;
+                          return (
+                            <div
+                              key={a.task_id + a.kind}
+                              className="rounded-lg border border-border/50 bg-background/60 px-2.5 py-2 flex items-start gap-2"
+                            >
+                              <div className="flex-1 min-w-0 space-y-0.5">
+                                <p className="text-xs font-medium truncate">{a.task_title}</p>
+                                <p className="text-[11px] text-muted-foreground line-clamp-2">{a.reason}</p>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-7 px-2 text-xs shrink-0"
+                                onClick={() => runAction(m.id, a)}
+                                disabled={isBusy || streaming}
+                              >
+                                {isBusy
+                                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                                  : <Icon className="h-3 w-3 mr-1" />}
+                                {meta.label}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  ) : (
-                    <p className="whitespace-pre-wrap break-words">{m.content}</p>
                   )}
                 </div>
               </div>
             ))}
+
+            {streaming && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Coach is thinking…
+              </div>
+            )}
 
             {error && (
               <div className="text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-3 py-2">

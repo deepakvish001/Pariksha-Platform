@@ -18,27 +18,72 @@ interface PlanContext {
   streak_days?: number | null;
   totals?: { total: number; done: number; skipped: number; pending: number };
   today?: { date: string; total: number; done: number };
-  upcoming_days?: Array<{ date: string; tasks: Array<{ title: string; topic: string; difficulty: string; status: string; est_minutes: number }> }>;
+  upcoming_days?: Array<{ date: string; tasks: Array<{ id?: string; title: string; topic: string; difficulty: string; status: string; est_minutes: number }> }>;
   weak_topics?: Array<{ topic: string; total: number; done: number; pct: number }>;
   recent_completions?: Array<{ date: string; title: string; topic: string }>;
+  overdue?: Array<{ id: string; title: string; topic: string; day_date: string; est_minutes: number }>;
 }
 
 const buildSystemPrompt = (ctx: PlanContext) => `You are "Coach", an embedded AI advisor inside Byteskill's My Plan dashboard.
-You can SEE the user's actual study plan, today's tasks, completion stats, streak, and weak topics.
-Your job: answer questions about the plan and recommend the user's next concrete action.
+You can SEE the user's actual study plan, today's tasks, completion stats, streak, weak topics, and overdue items.
 
-Style:
-- Reply in short, focused markdown. Use bullet points and bold sparingly.
-- Reference SPECIFIC task titles and topics from the context when relevant.
-- When suggesting a next action, name it explicitly (e.g. "Start 'Two Sum' next").
-- If the user is on a streak, acknowledge it briefly and don't break momentum.
-- Don't invent tasks or topics not present in the plan. If you need missing info, ask one short question.
-- If completion is low and many tasks are overdue, suggest using "Catch up" or "Re-plan from tomorrow".
-- Keep most replies under 120 words.
+You MUST always call the "coach_reply" tool with:
+- summary_md: a SHORT markdown reply (under 120 words) that:
+    1) Acknowledges streak in one short line if streak_days > 0.
+    2) Names 1-2 top weak/strong topics with concrete numbers.
+    3) Answers the user's question directly.
+- actions: an array of 2-3 concrete next-action suggestions the user can do RIGHT NOW.
+  Each action MUST reference a real task from upcoming_days or overdue (use its id and title verbatim).
+  Pick "kind":
+    • "start_today" — task is on today's date and pending/in_progress.
+    • "reschedule_today" — task is overdue (day_date < today.date), move to today.
+    • "reschedule_tomorrow" — task is in upcoming days but you recommend pulling it earlier or pushing to tomorrow.
+    • "mark_done" — user clearly indicated they finished it.
+  Provide a 1-line "reason" for each action grounded in the data (e.g. "Weakest topic: Arrays at 20%").
+
+Hard rules:
+- Never invent task ids or titles. Only use ids/titles present in the context.
+- If there are no actionable tasks, return actions: [].
+- Keep summary_md tight, scannable, no emojis except a single optional 🔥 for streak.
 
 USER PLAN CONTEXT (JSON):
 ${JSON.stringify(ctx, null, 2)}
 `;
+
+const tool = {
+  type: "function",
+  function: {
+    name: "coach_reply",
+    description: "Return a short markdown reply plus 2-3 concrete next-action suggestions the user can one-click execute.",
+    parameters: {
+      type: "object",
+      properties: {
+        summary_md: { type: "string", description: "Short markdown reply, under 120 words." },
+        actions: {
+          type: "array",
+          minItems: 0,
+          maxItems: 3,
+          items: {
+            type: "object",
+            properties: {
+              task_id: { type: "string", description: "Real task id from context." },
+              task_title: { type: "string", description: "Verbatim title from context." },
+              kind: {
+                type: "string",
+                enum: ["start_today", "reschedule_today", "reschedule_tomorrow", "mark_done"],
+              },
+              reason: { type: "string", description: "One short sentence grounded in the data." },
+            },
+            required: ["task_id", "task_title", "kind", "reason"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["summary_md", "actions"],
+      additionalProperties: false,
+    },
+  },
+} as const;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -73,7 +118,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    
+
     for (const m of messages) {
       if ((m.role !== "user" && m.role !== "assistant") || typeof m.content !== "string") {
         return new Response(JSON.stringify({ error: "Invalid message shape" }), {
@@ -86,7 +131,7 @@ serve(async (req) => {
         });
       }
     }
-    
+
     const trimmed = messages.slice(-20);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -100,11 +145,13 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        stream: true,
+        stream: false,
         messages: [
           { role: "system", content: buildSystemPrompt(context) },
           ...trimmed,
         ],
+        tools: [tool],
+        tool_choice: { type: "function", function: { name: "coach_reply" } },
       }),
     });
 
@@ -126,8 +173,37 @@ serve(async (req) => {
       });
     }
 
-    return new Response(resp.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    const data = await resp.json();
+    const call = data?.choices?.[0]?.message?.tool_calls?.[0];
+    let summary_md = "";
+    let actions: unknown[] = [];
+    if (call?.function?.arguments) {
+      try {
+        const parsed = JSON.parse(call.function.arguments);
+        summary_md = typeof parsed.summary_md === "string" ? parsed.summary_md : "";
+        actions = Array.isArray(parsed.actions) ? parsed.actions : [];
+      } catch (e) {
+        console.error("plan-coach: failed to parse tool args", e);
+      }
+    }
+    // Fallback to text content if model didn't call the tool.
+    if (!summary_md) {
+      summary_md = data?.choices?.[0]?.message?.content ?? "_(No response — please try again.)_";
+    }
+
+    // Validate actions against the known task ids in context to prevent hallucinated ids.
+    const knownIds = new Set<string>();
+    for (const d of context.upcoming_days ?? []) {
+      for (const t of d.tasks) if (t.id) knownIds.add(t.id);
+    }
+    for (const t of context.overdue ?? []) knownIds.add(t.id);
+
+    const cleanActions = (actions as Array<Record<string, unknown>>)
+      .filter((a) => typeof a?.task_id === "string" && knownIds.has(a.task_id as string))
+      .slice(0, 3);
+
+    return new Response(JSON.stringify({ summary_md, actions: cleanActions }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("plan-coach error", e);
