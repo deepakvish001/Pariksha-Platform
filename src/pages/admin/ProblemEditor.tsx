@@ -68,7 +68,10 @@ import { TabBadge } from "@/components/admin/editor/TabBadge";
 import { PublishChecklistDialog } from "@/components/admin/editor/PublishChecklistDialog";
 import { MarkdownToolbar } from "@/components/admin/editor/MarkdownToolbar";
 import { BulkTestsDialog } from "@/components/admin/editor/BulkTestsDialog";
+import { BulkExamplesDialog } from "@/components/admin/editor/BulkExamplesDialog";
 import { RunReferenceButton } from "@/components/admin/editor/RunReferenceButton";
+import { RunHistoryPanel } from "@/components/admin/editor/RunHistoryPanel";
+import { useRunHistory, buildLineDiff, type RunHistoryCase } from "@/hooks/useRunHistory";
 import { scaffoldStarterFromReference } from "@/lib/admin/codeScaffold";
 import { supabase } from "@/integrations/supabase/client";
 
