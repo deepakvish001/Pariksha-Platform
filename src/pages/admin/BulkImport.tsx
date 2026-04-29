@@ -40,7 +40,18 @@ const ProblemSchema = z.object({
     .optional(),
 });
 
-type Row = { ok: boolean; data?: any; error?: string; raw: any };
+interface RowIssue {
+  path: string;
+  message: string;
+}
+type Row = {
+  ok: boolean;
+  data?: any;
+  error?: string;
+  issues?: RowIssue[];
+  raw: any;
+  index: number;
+};
 
 const TEMPLATE = JSON.stringify(
   [
