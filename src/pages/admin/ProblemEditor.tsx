@@ -697,49 +697,32 @@ const ProblemEditor = () => {
         </TabsContent>
 
         <TabsContent value="statement">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card className="p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <Label>Description (Markdown)</Label>
-                <span className="text-xs text-muted-foreground">
-                  {form.description.length} chars · {form.description.trim().split(/\s+/).filter(Boolean).length} words
-                  {" · ~"}
-                  {Math.max(1, Math.round(form.description.trim().split(/\s+/).filter(Boolean).length / 200))} min read
-                </span>
-              </div>
-              <MarkdownToolbar
-                textareaRef={descRef}
-                value={form.description}
-                onChange={(v) => update("description", v)}
-                onInsertExamples={() => {
-                  const real = form.examples.filter((e) => e.input || e.output);
-                  if (!real.length) {
-                    toast({ title: "No examples", description: "Add examples first.", variant: "destructive" });
-                    return;
-                  }
-                  const md = "\n\n## Examples\n\n" + real.map((ex, i) =>
-                    `**Example ${i + 1}**\n\n\`\`\`\nInput: ${ex.input}\nOutput: ${ex.output}${ex.explanation ? `\nExplanation: ${ex.explanation}` : ""}\n\`\`\``
-                  ).join("\n\n") + "\n";
-                  update("description", form.description + md);
-                  toast({ title: "Inserted", description: `${real.length} example(s) appended.` });
-                }}
-              />
-              <Textarea
-                ref={descRef}
-                data-field="description"
-                value={form.description}
-                onChange={(e) => update("description", e.target.value)}
-                rows={20}
-                className={`font-mono text-sm ${fieldHighlightClass("description", highlightedField)}`}
-              />
-            </Card>
-            <Card className="p-4">
-              <Label>Preview</Label>
-              <div className="prose prose-invert max-w-none rounded-md border bg-muted/30 p-3 text-sm">
-                <ReactMarkdown>{previewMd || "_Nothing yet._"}</ReactMarkdown>
-              </div>
-            </Card>
-          </div>
+          <MarkdownEditor
+            value={form.description}
+            onChange={(v) => update("description", v)}
+            slug={form.slug || undefined}
+            fieldId="description"
+            highlightClassName={fieldHighlightClass("description", highlightedField)}
+            onInsertExamples={() => {
+              const real = form.examples.filter((e) => e.input || e.output);
+              if (!real.length) {
+                toast({ title: "No examples", description: "Add examples first.", variant: "destructive" });
+                return;
+              }
+              const md =
+                "\n\n## Examples\n\n" +
+                real
+                  .map(
+                    (ex, i) =>
+                      `**Example ${i + 1}**\n\n\`\`\`\nInput: ${ex.input}\nOutput: ${ex.output}${
+                        ex.explanation ? `\nExplanation: ${ex.explanation}` : ""
+                      }\n\`\`\``,
+                  )
+                  .join("\n\n") + "\n";
+              update("description", form.description + md);
+              toast({ title: "Inserted", description: `${real.length} example(s) appended.` });
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="examples">
