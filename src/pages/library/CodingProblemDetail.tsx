@@ -777,6 +777,8 @@ const CodingProblemDetail = () => {
               cpuSec: problem.cpuTimeLimitSec,
               memKb: problem.memoryLimitKb,
             });
+            const limitsLabel = `${(limits.cpuMs / 1000).toFixed(1)} seconds CPU and ${Math.round(limits.memKb / 1024)} megabytes memory`;
+            const popoverId = "exec-limits-help";
             return (
               <div className="hidden md:inline-flex items-center gap-1">
                 <Tooltip>
@@ -784,9 +786,12 @@ const CodingProblemDetail = () => {
                     <Badge
                       variant="outline"
                       className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide cursor-help"
+                      aria-label={`Execution limits for ${langInfo.label}: ${limitsLabel}`}
                     >
-                      <Cpu className="h-3 w-3" />
-                      {`${(limits.cpuMs / 1000).toFixed(1)}s · ${Math.round(limits.memKb / 1024)}MB`}
+                      <Cpu className="h-3 w-3" aria-hidden="true" />
+                      <span aria-hidden="true">
+                        {`${(limits.cpuMs / 1000).toFixed(1)}s · ${Math.round(limits.memKb / 1024)}MB`}
+                      </span>
                     </Badge>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs">
@@ -800,17 +805,31 @@ const CodingProblemDetail = () => {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      aria-label="What do these limits mean?"
-                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      aria-label={`Explain execution limits (currently ${limitsLabel} for ${langInfo.label})`}
+                      aria-controls={popoverId}
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md"
                     >
-                      <Info className="h-3.5 w-3.5" />
+                      <Info className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span className="sr-only">About execution limits</span>
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent side="bottom" align="end" className="w-80 text-xs space-y-2">
-                    <p className="text-sm font-semibold text-foreground">
-                      What do <span className="font-mono">{(limits.cpuMs / 1000).toFixed(1)}s · {Math.round(limits.memKb / 1024)}MB</span> mean?
+                  <PopoverContent
+                    id={popoverId}
+                    side="bottom"
+                    align="end"
+                    role="dialog"
+                    aria-labelledby={`${popoverId}-title`}
+                    aria-describedby={`${popoverId}-desc`}
+                    className="w-80 text-xs space-y-2 focus:outline-none"
+                  >
+                    <p id={`${popoverId}-title`} className="text-sm font-semibold text-foreground">
+                      What do{" "}
+                      <span className="font-mono">
+                        {(limits.cpuMs / 1000).toFixed(1)}s · {Math.round(limits.memKb / 1024)}MB
+                      </span>{" "}
+                      mean?
                     </p>
-                    <p className="text-muted-foreground">
+                    <p id={`${popoverId}-desc`} className="text-muted-foreground">
                       These are the <span className="font-medium text-foreground">execution limits</span> applied to your code when you Run or Submit it on this problem.
                     </p>
                     <ul className="space-y-1.5 text-muted-foreground">
@@ -827,6 +846,7 @@ const CodingProblemDetail = () => {
                     <p className="text-[11px] text-muted-foreground pt-1 border-t">
                       Limits vary per language (e.g. Python and Java get a bit more time than C++). Switching the language updates these numbers automatically.
                     </p>
+                    <p className="sr-only">Press Escape to close this dialog.</p>
                   </PopoverContent>
                 </Popover>
               </div>
