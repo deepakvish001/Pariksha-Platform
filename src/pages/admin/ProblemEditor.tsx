@@ -357,33 +357,27 @@ const ProblemEditor = () => {
               </AlertDialogContent>
             </AlertDialog>
           ) : (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
+            <PublishChecklistDialog
+              open={publishOpen}
+              onOpenChange={setPublishOpen}
+              report={report}
+              onJumpTo={(t) => { setActiveTab(t); setPublishOpen(false); }}
+              onConfirm={() => { update("is_published", true); setPublishOpen(false); }}
+              trigger={
                 <Button
                   variant="default"
                   size="sm"
                   disabled={!form.title.trim() || !form.slug.trim()}
                 >
                   <Globe className="mr-2 h-4 w-4" /> Publish
+                  {!report.canPublish && (
+                    <Badge variant="outline" className="ml-2 border-destructive/50 text-destructive">
+                      {report.blockingErrors.length}
+                    </Badge>
+                  )}
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Publish this problem?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Once published, "{form.title || form.slug}" will appear in the
-                    public coding library and learners can solve and submit. Hidden
-                    tests stay private. You can unpublish later if needed.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => update("is_published", true)}>
-                    Publish
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              }
+            />
           )}
           {!isNew && (
             <Button variant="outline" size="sm" asChild>
