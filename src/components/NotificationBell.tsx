@@ -58,14 +58,14 @@ import { useAuth } from "@/contexts/AuthContext";
            <p className="text-xs text-muted-foreground mt-1">
              {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
            </p>
-           {notification.type === "new_follower" && data.follower_id && (
-             <Link
-               to={`/dashboard/profile`}
-               className="text-xs text-primary hover:underline mt-1 inline-block"
-             >
-               View profile
-             </Link>
-           )}
+          {notification.type === "new_follower" && data.follower_id && profileUsername && (
+            <Link
+              to={`/u/${profileUsername}`}
+              className="text-xs text-primary hover:underline mt-1 inline-block"
+            >
+              View profile
+            </Link>
+          )}
          </div>
          <div className="flex items-center gap-1">
            {!notification.read && (
