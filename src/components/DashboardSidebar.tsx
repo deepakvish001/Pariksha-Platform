@@ -100,13 +100,16 @@ import BrandLogo from "@/components/BrandLogo";
 import { GuestSidebarTooltip } from "@/components/GuestSidebarTooltip";
 
 // Home section - Main entry points
+// NOTE: Profile uses a sentinel "__profile__" url that gets resolved at render time
+// to `/u/<username>` for the logged-in user.
+const PROFILE_SENTINEL = "__profile__";
 const homeNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
   { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
   { title: "Roadmap", url: "/dashboard/roadmaps", icon: Route },
   { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "Submissions", url: "/dashboard/submissions", icon: HistoryIcon },
-  { title: "Profile", url: "/dashboard/profile", icon: User },
+  { title: "Profile", url: PROFILE_SENTINEL, icon: User },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -116,7 +119,7 @@ const ACTIVE_ROUTES = new Set([
   "/dashboard/sheets",
   "/dashboard/roadmaps",
   "/dashboard/roadmap/fullstack",
-  "/dashboard/profile",
+  PROFILE_SENTINEL,
   "/dashboard/submissions",
   "/settings",
   "/library/problems",
