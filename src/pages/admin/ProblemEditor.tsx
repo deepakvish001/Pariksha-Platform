@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
@@ -7,6 +7,7 @@ import {
   useSaveProblem,
 } from "@/hooks/useAdminProblems";
 import { useLastPublishEvent } from "@/hooks/useLastPublishEvent";
+import { useDistinctTopics } from "@/hooks/useDistinctTopics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,12 +20,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LANGUAGES, type LangId } from "@/data/codingProblemsData";
-import { MonacoEditor } from "@/components/coding/MonacoEditor";
-import { Plus, Trash2, Save, ArrowLeft, X, Globe, EyeOff, AlertCircle, ExternalLink } from "lucide-react";
+import { MonacoEditor, type MonacoEditorHandle } from "@/components/coding/MonacoEditor";
+import {
+  Plus,
+  Trash2,
+  Save,
+  ArrowLeft,
+  X,
+  Globe,
+  EyeOff,
+  AlertCircle,
+  ExternalLink,
+  Copy,
+  Wand2,
+  Upload,
+  Play,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import {
@@ -39,6 +63,31 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { formatRelative } from "@/lib/formatRelative";
+import { validateProblem, TAB_LABELS, type TabId } from "@/lib/admin/problemValidation";
+import { TabBadge } from "@/components/admin/editor/TabBadge";
+import { PublishChecklistDialog } from "@/components/admin/editor/PublishChecklistDialog";
+import { MarkdownToolbar } from "@/components/admin/editor/MarkdownToolbar";
+import { BulkTestsDialog } from "@/components/admin/editor/BulkTestsDialog";
+import { RunReferenceButton } from "@/components/admin/editor/RunReferenceButton";
+import { scaffoldStarterFromReference } from "@/lib/admin/codeScaffold";
+import { supabase } from "@/integrations/supabase/client";
+
+const ACTIVE_TAB_KEY = "admin:problem-editor:tab";
+
+const COMMON_CONSTRAINT_PRESETS = [
+  "1 <= n <= 10^5",
+  "1 <= n <= 10^9",
+  "-10^9 <= a[i] <= 10^9",
+  "1 <= a[i] <= 10^4",
+  "All values are unique",
+  "The answer is guaranteed to fit in a 32-bit integer",
+];
+
+const LIMIT_PRESETS = [
+  { label: "Fast (1s / 128 MB)", cpu: 1, mem: 128000 },
+  { label: "Default (2s / 256 MB)", cpu: 2, mem: 256000 },
+  { label: "Heavy (5s / 512 MB)", cpu: 5, mem: 512000 },
+];
 
 const slugify = (s: string) =>
   s
