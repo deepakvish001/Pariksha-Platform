@@ -751,18 +751,40 @@ const ProblemEditor = () => {
 
         <TabsContent value="constraints">
           <div className="grid gap-4 md:grid-cols-2">
-            <ListEditor
-              title="Constraints"
-              items={form.constraints}
-              onChange={(v) => update("constraints", v)}
-              placeholder="1 <= n <= 10^5"
-            />
-            <ListEditor
-              title="Hints"
-              items={form.hints}
-              onChange={(v) => update("hints", v)}
-              placeholder="Try a hash map…"
-            />
+            <Card className="space-y-3 p-4">
+              <ListEditor
+                title="Constraints"
+                items={form.constraints}
+                onChange={(v) => update("constraints", v)}
+                placeholder="1 <= n <= 10^5"
+                inline
+              />
+              <div>
+                <p className="mb-1 text-xs text-muted-foreground">Quick presets</p>
+                <div className="flex flex-wrap gap-1">
+                  {COMMON_CONSTRAINT_PRESETS.filter((p) => !form.constraints.includes(p)).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => update("constraints", [...form.constraints, p])}
+                      className="rounded-full border border-dashed px-2 py-0.5 font-mono text-xs text-muted-foreground hover:border-solid hover:bg-accent hover:text-accent-foreground"
+                    >
+                      + {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <ListEditor
+                title="Hints (revealed in order)"
+                items={form.hints}
+                onChange={(v) => update("hints", v)}
+                placeholder="Try a hash map…"
+                numbered
+                inline
+              />
+            </Card>
           </div>
         </TabsContent>
 
@@ -772,6 +794,45 @@ const ProblemEditor = () => {
             onChange={(v) => update("starter_code", v)}
             activeLang={activeLang}
             setActiveLang={setActiveLang}
+            extraActions={
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    const ref = form.reference_solution[activeLang];
+                    if (!ref?.trim()) {
+                      toast({ title: "No reference", description: `Add a ${activeLang} reference solution first.`, variant: "destructive" });
+                      return;
+                    }
+                    update("starter_code", { ...form.starter_code, [activeLang]: scaffoldStarterFromReference(activeLang, ref) });
+                    toast({ title: "Scaffold generated", description: "Review the body and adjust as needed." });
+                  }}
+                >
+                  <Wand2 className="mr-1.5 h-3.5 w-3.5" /> Generate from reference
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" type="button">
+                      <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy from…
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {LANGUAGES.filter((l) => l.id !== activeLang && (form.starter_code[l.id] ?? "").trim()).map((l) => (
+                      <DropdownMenuItem
+                        key={l.id}
+                        onClick={() =>
+                          update("starter_code", { ...form.starter_code, [activeLang]: form.starter_code[l.id] })
+                        }
+                      >
+                        {l.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            }
           />
         </TabsContent>
 
@@ -781,20 +842,81 @@ const ProblemEditor = () => {
             onChange={(v) => update("reference_solution", v)}
             activeLang={activeLang}
             setActiveLang={setActiveLang}
+            extraActions={
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                disabled={refValidation.running}
+                onClick={async () => {
+                  const ref = form.reference_solution[activeLang];
+                  if (!ref?.trim()) { toast({ title: "No reference", variant: "destructive" }); return; }
+                  if (!form.sample_tests.length) { toast({ title: "No sample tests" }); return; }
+                  setRefValidation({ running: true, results: null });
+                  const langInfo = LANGUAGES.find((l) => l.id === activeLang)!;
+                  const results: { idx: number; pass: boolean; got: string; expected: string }[] = [];
+                  for (let i = 0; i < form.sample_tests.length; i++) {
+                    const t = form.sample_tests[i];
+                    try {
+                      const { data } = await supabase.functions.invoke("run-code", {
+                        body: { source_code: ref, language_id: langInfo.judge0Id, language: activeLang, stdin: t.input },
+                      });
+                      const payload = (data as any)?.data ?? data;
+                      const got = ((payload?.stdout ?? "") as string).trimEnd();
+                      results.push({ idx: i, pass: got === t.expected.trimEnd(), got, expected: t.expected });
+                    } catch (err: any) {
+                      results.push({ idx: i, pass: false, got: `ERROR: ${err?.message ?? "?"}`, expected: t.expected });
+                    }
+                  }
+                  setRefValidation({ running: false, results });
+                  const ok = results.filter((r) => r.pass).length;
+                  toast({ title: `Reference: ${ok}/${results.length} passed` });
+                }}
+              >
+                {refValidation.running ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Play className="mr-1.5 h-3.5 w-3.5" />}
+                Validate against samples
+              </Button>
+            }
+            footer={
+              refValidation.results && (
+                <div className="space-y-1 rounded-md border bg-muted/20 p-2 text-xs">
+                  {refValidation.results.map((r) => (
+                    <div key={r.idx} className="flex items-start gap-2">
+                      {r.pass ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-emerald-500" /> : <XCircle className="mt-0.5 h-3.5 w-3.5 text-destructive" />}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">Sample #{r.idx + 1} — {r.pass ? "pass" : "fail"}</p>
+                        {!r.pass && (
+                          <pre className="mt-0.5 max-h-24 overflow-auto whitespace-pre-wrap font-mono text-[10px] text-muted-foreground">
+                            expected: {r.expected}
+                            {"\n"}got: {r.got}
+                          </pre>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
           />
         </TabsContent>
 
         <TabsContent value="tests">
           <div className="space-y-4">
             <TestsTable
-              title="Sample tests (visible to user)"
+              title="Sample tests"
+              subtitle="visible to user"
               tests={form.sample_tests}
               onChange={(t) => update("sample_tests", t)}
+              referenceSource={form.reference_solution[activeLang] ?? ""}
+              referenceLang={activeLang}
             />
             <TestsTable
-              title="Hidden tests (used at submit)"
+              title="Hidden tests"
+              subtitle="used at submit"
               tests={form.hidden_tests}
               onChange={(t) => update("hidden_tests", t)}
+              referenceSource={form.reference_solution[activeLang] ?? ""}
+              referenceLang={activeLang}
             />
           </div>
         </TabsContent>
@@ -851,14 +973,45 @@ const ProblemEditor = () => {
                     update("sql_spec", { ...form.sql_spec!, starter: v })
                   }
                 />
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={form.sql_spec.order_matters}
-                    onCheckedChange={(v) =>
-                      update("sql_spec", { ...form.sql_spec!, order_matters: v })
-                    }
-                  />
-                  <Label>Row order matters</Label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={form.sql_spec.order_matters}
+                      onCheckedChange={(v) =>
+                        update("sql_spec", { ...form.sql_spec!, order_matters: v })
+                      }
+                    />
+                    <Label>Row order matters</Label>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const { data } = await supabase.functions.invoke("run-sql", {
+                          body: {
+                            source_code: form.sql_spec!.reference_query,
+                            language: "sql",
+                            schema: form.sql_spec!.schema_sql,
+                            seed: form.sql_spec!.seed_sql,
+                          },
+                        });
+                        const payload = (data as any)?.data ?? data;
+                        const out = (payload?.stdout ?? "").toString();
+                        const stderr = (payload?.stderr ?? "").toString();
+                        if (stderr && !out) {
+                          toast({ title: "SQL error", description: stderr.slice(0, 300), variant: "destructive" });
+                          return;
+                        }
+                        toast({ title: "Reference query ran", description: out.slice(0, 300) || "(no rows)" });
+                      } catch (err: any) {
+                        toast({ title: "Run failed", description: err?.message, variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <Play className="mr-1.5 h-3.5 w-3.5" /> Run reference query
+                  </Button>
                 </div>
               </>
             )}
@@ -866,25 +1019,48 @@ const ProblemEditor = () => {
         </TabsContent>
 
         <TabsContent value="limits">
-          <Card className="grid gap-4 p-4 md:grid-cols-2">
+          <Card className="space-y-4 p-4">
             <div>
-              <Label>CPU time limit (seconds)</Label>
-              <Input
-                type="number"
-                step="0.5"
-                value={form.cpu_time_limit_sec}
-                onChange={(e) =>
-                  update("cpu_time_limit_sec", Number(e.target.value))
-                }
-              />
+              <p className="mb-2 text-xs text-muted-foreground">Presets</p>
+              <div className="flex flex-wrap gap-2">
+                {LIMIT_PRESETS.map((p) => (
+                  <Button
+                    key={p.label}
+                    variant={form.cpu_time_limit_sec === p.cpu && form.memory_limit_kb === p.mem ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      update("cpu_time_limit_sec", p.cpu);
+                      update("memory_limit_kb", p.mem);
+                    }}
+                  >
+                    {p.label}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div>
-              <Label>Memory limit (KB)</Label>
-              <Input
-                type="number"
-                value={form.memory_limit_kb}
-                onChange={(e) => update("memory_limit_kb", Number(e.target.value))}
-              />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label>CPU time limit (seconds)</Label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  value={form.cpu_time_limit_sec}
+                  onChange={(e) =>
+                    update("cpu_time_limit_sec", Number(e.target.value))
+                  }
+                />
+              </div>
+              <div>
+                <Label>Memory limit (KB)</Label>
+                <Input
+                  type="number"
+                  value={form.memory_limit_kb}
+                  onChange={(e) => update("memory_limit_kb", Number(e.target.value))}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  ≈ {Math.round((form.memory_limit_kb ?? 0) / 1024)} MB
+                </p>
+              </div>
             </div>
           </Card>
         </TabsContent>
