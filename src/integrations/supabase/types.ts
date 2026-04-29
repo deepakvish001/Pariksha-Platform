@@ -1202,6 +1202,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_platform_sync_jobs: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          handle: string
+          interval_hours: number
+          last_error: string | null
+          last_run_at: string | null
+          last_status: string | null
+          next_run_at: string
+          platform: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          handle: string
+          interval_hours?: number
+          last_error?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          next_run_at?: string
+          platform: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          handle?: string
+          interval_hours?: number
+          last_error?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          next_run_at?: string
+          platform?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_problem_solutions: {
         Row: {
           code: Json
@@ -1517,20 +1559,67 @@ export type Database = {
         }
         Relationships: []
       }
+      user_study_focus_sessions: {
+        Row: {
+          actual_minutes: number | null
+          completed_cycles: number
+          created_at: string
+          ended_at: string | null
+          id: string
+          notes: string | null
+          started_at: string
+          task_id: string | null
+          user_id: string
+        }
+        Insert: {
+          actual_minutes?: number | null
+          completed_cycles?: number
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          started_at?: string
+          task_id?: string | null
+          user_id: string
+        }
+        Update: {
+          actual_minutes?: number | null
+          completed_cycles?: number
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          started_at?: string
+          task_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_study_focus_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "user_study_plan_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_study_plan_tasks: {
         Row: {
+          actual_minutes: number | null
           completed_at: string | null
           created_at: string
           day_date: string
           difficulty: string
           est_minutes: number
           id: string
+          locked: boolean
           order_index: number
           plan_id: string
           score: number | null
           source_id: string | null
           source_type: string | null
           source_url: string | null
+          started_at: string | null
           status: string
           title: string
           topic: string
@@ -1538,18 +1627,21 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          actual_minutes?: number | null
           completed_at?: string | null
           created_at?: string
           day_date: string
           difficulty?: string
           est_minutes?: number
           id?: string
+          locked?: boolean
           order_index?: number
           plan_id: string
           score?: number | null
           source_id?: string | null
           source_type?: string | null
           source_url?: string | null
+          started_at?: string | null
           status?: string
           title: string
           topic: string
@@ -1557,18 +1649,21 @@ export type Database = {
           user_id: string
         }
         Update: {
+          actual_minutes?: number | null
           completed_at?: string | null
           created_at?: string
           day_date?: string
           difficulty?: string
           est_minutes?: number
           id?: string
+          locked?: boolean
           order_index?: number
           plan_id?: string
           score?: number | null
           source_id?: string | null
           source_type?: string | null
           source_url?: string | null
+          started_at?: string | null
           status?: string
           title?: string
           topic?: string

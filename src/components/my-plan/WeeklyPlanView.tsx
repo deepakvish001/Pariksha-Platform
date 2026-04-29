@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, GripVertical, Pencil } from "lucide-react";
+import { ChevronDown, GripVertical, Pencil, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import type { PlanTask } from "@/hooks/useStudyPlan";
@@ -50,6 +50,7 @@ const DraggableTask = ({ task, onToggle }: DraggableTaskProps) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
     data: { task },
+    disabled: task.locked,
   });
 
   return (
@@ -60,15 +61,19 @@ const DraggableTask = ({ task, onToggle }: DraggableTaskProps) => {
         isDragging && "opacity-30"
       )}
     >
-      <button
-        {...listeners}
-        {...attributes}
-        aria-label={`Drag ${task.title}`}
-        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
-        type="button"
-      >
-        <GripVertical className="h-3.5 w-3.5" />
-      </button>
+      {task.locked ? (
+        <Lock className="h-3.5 w-3.5 text-primary" aria-label="Locked to day" />
+      ) : (
+        <button
+          {...listeners}
+          {...attributes}
+          aria-label={`Drag ${task.title}`}
+          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+          type="button"
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
+      )}
       <Checkbox
         checked={task.status === "done"}
         onCheckedChange={(c) => onToggle(task.id, c ? "done" : "pending")}

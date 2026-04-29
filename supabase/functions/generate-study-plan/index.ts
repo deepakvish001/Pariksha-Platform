@@ -32,11 +32,11 @@ const PLAN_TOOL = {
         weak_areas: { type: "array", items: { type: "string" }, description: "Topics the user should focus on" },
         days: {
           type: "array",
-          description: "Ordered list of study days (start from today). Up to 28 days.",
+          description: "Ordered list of study days. day_offset is relative to the requested START day.",
           items: {
             type: "object",
             properties: {
-              day_offset: { type: "integer", description: "0 = today, 1 = tomorrow, ..." },
+              day_offset: { type: "integer", description: "0 = start day, 1 = next day, ..." },
               tasks: {
                 type: "array",
                 items: {
@@ -47,6 +47,7 @@ const PLAN_TOOL = {
                     difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
                     est_minutes: { type: "integer", minimum: 5, maximum: 240 },
                     source_type: { type: "string", enum: ["dsa", "sql", "coding", "concept", "quiz"] },
+                    source_id: { type: "string", description: "Optional: a slug/topic that the app can deep-link to (e.g. 'two-sum', 'graphs', 'window-functions'). Use lowercase kebab-case when possible." },
                   },
                   required: ["topic", "title", "difficulty", "est_minutes", "source_type"],
                   additionalProperties: false,
@@ -64,6 +65,17 @@ const PLAN_TOOL = {
   },
 };
 
+const SOURCE_CATALOG = `
+Available source types and example source_id values the app can deep-link:
+
+- coding (LeetCode-style problems): "two-sum", "valid-parentheses", "merge-intervals", "lru-cache", "word-ladder", "course-schedule", "longest-substring-without-repeating-characters"
+- dsa (DSA topic study): "arrays", "linked-list", "stack-queue", "trees", "binary-search-trees", "graphs", "dynamic-programming", "greedy", "backtracking", "tries", "heap", "sliding-window", "two-pointers", "bit-manipulation"
+- sql (SQL practice): "joins", "window-functions", "aggregations", "subqueries", "indexes", "transactions"
+- quiz (rapid-fire multiple choice): "operating-systems", "dbms", "computer-networks", "oops", "system-design"
+- concept (theory & roadmap reading): use a topic name as source_id (e.g. "react-hooks", "kubernetes", "postgres-indexing")
+
+Prefer real topic slugs from this list when relevant — they will deep-link to existing app pages.`;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -74,6 +86,8 @@ Deno.serve(async (req) => {
     const profile = body.profile as ProfileInput;
     const stats = (body.platform_stats ?? []) as PlatformStat[];
     const completedTopics = (body.completed_topics ?? []) as string[];
+    const partial = body.partial as { from_day_offset?: number } | undefined;
+    const fromOffset = Math.max(0, partial?.from_day_offset ?? 0);
 
     if (!profile?.goal || !profile?.weekday_minutes || !profile?.weekend_minutes) {
       return json({ error: "Missing profile fields" }, 400);
@@ -82,11 +96,16 @@ Deno.serve(async (req) => {
     const daysToTarget = profile.target_date
       ? Math.max(1, Math.ceil((new Date(profile.target_date).getTime() - Date.now()) / 86400000))
       : 28;
-    const planDays = Math.min(28, daysToTarget);
+    const planDays = Math.min(28 - fromOffset, daysToTarget - fromOffset);
+    const effectiveDays = Math.max(1, planDays);
 
-    const systemPrompt = `You are an expert DSA & placement-prep coach. Build a realistic, day-by-day study plan that adapts to the user's goal, current level, and time budget. Mix theory + practice. Front-load the user's WEAK areas (low solved counts on platforms or unfamiliar topics). Skip topics already in their "topics_known" list unless reinforcement is needed. Each day should respect the time budget (weekdays vs weekends). Use diverse source_types — don't make everything "coding". Keep task titles short and concrete.`;
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    startDate.setDate(startDate.getDate() + fromOffset);
 
-    const userPrompt = `Generate a ${planDays}-day study plan.
+    const systemPrompt = `You are an expert DSA & placement-prep coach. Build a realistic, day-by-day study plan that adapts to the user's goal, current level, and time budget. Mix theory + practice. Front-load the user's WEAK areas (low solved counts on platforms or unfamiliar topics). Skip topics already in their "topics_known" list unless reinforcement is needed. Each day should respect the time budget (weekdays vs weekends). Use diverse source_types — don't make everything "coding". Keep task titles short and concrete. Whenever possible, fill source_id with a slug from the provided catalog so the app can deep-link the task.`;
+
+    const userPrompt = `${partial ? `Generate the NEXT ${effectiveDays} days of the plan starting at day_offset 0 (which corresponds to the user's day ${fromOffset} from today).` : `Generate a ${effectiveDays}-day study plan starting today.`}
 
 Goal: ${profile.goal}
 Target date: ${profile.target_date ?? "no fixed date"}
@@ -101,7 +120,9 @@ ${stats.length === 0 ? "No platforms connected." : stats.map(s =>
   `- ${s.platform}: rating ${s.rating ?? "N/A"}, solved E:${s.solved.easy} M:${s.solved.medium} H:${s.solved.hard} (total ${s.solved.total})`
 ).join("\n")}
 
-Use day_offset 0 for today. Today is a ${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date().getDay()]}. Match each day's total est_minutes to the appropriate budget (weekday vs weekend).`;
+${SOURCE_CATALOG}
+
+Use day_offset 0 for the start day. The start day is a ${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][startDate.getDay()]}. Match each day's total est_minutes to the appropriate budget (weekday vs weekend).`;
 
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -133,8 +154,17 @@ Use day_offset 0 for today. Today is a ${["Sunday","Monday","Tuesday","Wednesday
     if (!toolCall?.function?.arguments) {
       return json({ error: "AI returned no plan" }, 500);
     }
-    const plan = JSON.parse(toolCall.function.arguments);
-    return json({ plan }, 200);
+    const aiPlan = JSON.parse(toolCall.function.arguments);
+
+    // Shift day_offset back to be relative to TODAY (so client can keep the existing math)
+    if (fromOffset > 0 && Array.isArray(aiPlan.days)) {
+      aiPlan.days = aiPlan.days.map((d: { day_offset: number }) => ({
+        ...d,
+        day_offset: d.day_offset + fromOffset,
+      }));
+    }
+
+    return json({ plan: aiPlan }, 200);
   } catch (e) {
     console.error("generate-study-plan error", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
