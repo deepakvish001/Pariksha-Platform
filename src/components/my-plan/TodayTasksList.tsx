@@ -2,15 +2,23 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar, Sparkles, ArrowUpRight, ArrowDownRight, Minus, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Clock, Calendar, Sparkles, ArrowUpRight, ArrowDownRight, Minus, Info,
+  ExternalLink, Lock, LockOpen, Play,
+} from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import type { PlanTask } from "@/hooks/useStudyPlan";
+import type { PlanTask, PlanTaskStatus } from "@/hooks/useStudyPlan";
 import { getNextRecommendation, type RecommendationMode } from "@/lib/adaptive/rerank";
+import { resolveTaskLink, taskLinkLabel } from "@/lib/my-plan/taskLinks";
+import { Link } from "react-router-dom";
 
 interface Props {
   tasks: PlanTask[];
-  onToggle: (taskId: string, status: PlanTask["status"]) => void;
+  onToggle: (taskId: string, status: PlanTaskStatus) => void;
+  onLockToggle?: (taskId: string, locked: boolean) => void;
+  onStartTask?: (taskId: string) => void;
   mode?: RecommendationMode;
 }
 
@@ -19,13 +27,19 @@ const difficultyClass = (d: string) =>
   : d === "hard" ? "bg-red-500/15 text-red-500 border-red-500/30"
   : "bg-amber-500/15 text-amber-500 border-amber-500/30";
 
+const statusClass = (s: PlanTaskStatus) =>
+  s === "in_progress" ? "border-primary/40 bg-primary/5"
+  : s === "partial" ? "border-amber-500/30 bg-amber-500/5"
+  : s === "skipped" ? "opacity-50 line-through"
+  : "";
+
 const todayKey = () => {
-  const t = new Date();
-  t.setHours(0, 0, 0, 0);
-  return t.toISOString().slice(0, 10);
+  const t = new Date(); t.setHours(0,0,0,0); return t.toISOString().slice(0,10);
 };
 
-export const TodayTasksList = ({ tasks, onToggle, mode = "adaptive" }: Props) => {
+export const TodayTasksList = ({
+  tasks, onToggle, onLockToggle, onStartTask, mode = "adaptive",
+}: Props) => {
   const today = todayKey();
   const todays = useMemo(() => tasks.filter((t) => t.day_date === today), [tasks, today]);
   const totalMinutes = todays.reduce((sum, t) => sum + t.est_minutes, 0);
@@ -67,13 +81,9 @@ export const TodayTasksList = ({ tasks, onToggle, mode = "adaptive" }: Props) =>
               <span>Next up: {recommendation.task.title}</span>
               <span className="text-muted-foreground inline-flex items-center gap-0.5 font-normal">
                 <DeltaIcon className="h-3 w-3" />
-                {mode === "fixed"
-                  ? "fixed difficulty"
-                  : recommendation.difficultyDelta > 0
-                  ? "harder"
-                  : recommendation.difficultyDelta < 0
-                  ? "easier"
-                  : "same level"}
+                {mode === "fixed" ? "fixed difficulty"
+                  : recommendation.difficultyDelta > 0 ? "harder"
+                  : recommendation.difficultyDelta < 0 ? "easier" : "same level"}
               </span>
               <Popover>
                 <PopoverTrigger asChild>
@@ -105,38 +115,89 @@ export const TodayTasksList = ({ tasks, onToggle, mode = "adaptive" }: Props) =>
       )}
 
       <div className="space-y-2">
-        {todays.map((t) => (
-          <div
-            key={t.id}
-            className={cn(
-              "flex items-start gap-3 rounded-lg border border-border p-3 transition-colors",
-              t.status === "done" && "opacity-60 bg-muted/30"
-            )}
-          >
-            <Checkbox
-              checked={t.status === "done"}
-              onCheckedChange={(c) => onToggle(t.id, c ? "done" : "pending")}
-              className="mt-1"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={cn("font-medium", t.status === "done" && "line-through")}>
-                  {t.title}
-                </span>
-                <Badge variant="outline" className={cn("text-xs", difficultyClass(t.difficulty))}>
-                  {t.difficulty}
-                </Badge>
-                <Badge variant="secondary" className="text-xs">{t.topic}</Badge>
-                {t.source_type && (
-                  <Badge variant="outline" className="text-xs capitalize">{t.source_type}</Badge>
+        {todays.map((t) => {
+          const link = resolveTaskLink(t);
+          const isExternal = link?.startsWith("http");
+          return (
+            <div
+              key={t.id}
+              id={`task-${t.id}`}
+              className={cn(
+                "flex items-start gap-3 rounded-lg border border-border p-3 transition-colors",
+                t.status === "done" && "opacity-60 bg-muted/30",
+                statusClass(t.status)
+              )}
+            >
+              <Checkbox
+                checked={t.status === "done"}
+                onCheckedChange={(c) => onToggle(t.id, c ? "done" : "pending")}
+                className="mt-1"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={cn("font-medium", t.status === "done" && "line-through")}>
+                    {t.title}
+                  </span>
+                  <Badge variant="outline" className={cn("text-xs", difficultyClass(t.difficulty))}>
+                    {t.difficulty}
+                  </Badge>
+                  <Badge variant="secondary" className="text-xs">{t.topic}</Badge>
+                  {t.source_type && (
+                    <Badge variant="outline" className="text-xs capitalize">{t.source_type}</Badge>
+                  )}
+                  {t.status === "in_progress" && (
+                    <Badge className="text-xs bg-primary/15 text-primary border-primary/30" variant="outline">
+                      in progress
+                    </Badge>
+                  )}
+                  {t.status === "partial" && (
+                    <Badge className="text-xs bg-amber-500/15 text-amber-500 border-amber-500/30" variant="outline">
+                      partial
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> {t.est_minutes} min
+                    {t.actual_minutes ? ` · ${t.actual_minutes} actual` : ""}
+                  </span>
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5">
+                {link && (
+                  isExternal ? (
+                    <a href={link} target="_blank" rel="noopener noreferrer">
+                      <Button size="sm" variant="outline" onClick={() => onStartTask?.(t.id)}>
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">{taskLinkLabel(t)}</span>
+                      </Button>
+                    </a>
+                  ) : (
+                    <Link to={link} target="_blank">
+                      <Button size="sm" variant="outline" onClick={() => onStartTask?.(t.id)}>
+                        <Play className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">{taskLinkLabel(t)}</span>
+                      </Button>
+                    </Link>
+                  )
+                )}
+                {onLockToggle && (
+                  <Button
+                    size="icon" variant="ghost"
+                    className="h-7 w-7"
+                    aria-label={t.locked ? "Unlock task (allow re-plan to move it)" : "Lock task to this day"}
+                    title={t.locked ? "Locked — re-plan won't move this" : "Lock to this day"}
+                    onClick={() => onLockToggle(t.id, !t.locked)}
+                  >
+                    {t.locked
+                      ? <Lock className="h-3.5 w-3.5 text-primary" />
+                      : <LockOpen className="h-3.5 w-3.5 text-muted-foreground" />}
+                  </Button>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                <Clock className="h-3 w-3" /> {t.est_minutes} min
-              </p>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );
