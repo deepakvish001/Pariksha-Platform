@@ -741,6 +741,14 @@ export default function CodingLeaderboard() {
 
   const windowLabel =
     window === "today" ? "today" : window === "week" ? "this week" : "of all time";
+  const windowRangeLabel =
+    window === "today" ? "Today" : window === "week" ? "Last 7 days" : "All time";
+  const windowRangeSub =
+    window === "today"
+      ? "Accepted submissions from today (UTC)"
+      : window === "week"
+        ? "Accepted submissions in the last 7 days"
+        : "All accepted submissions ever";
 
   // Pagination math — when total is unknown (server doesn't return count),
   // assume there's a next page only if the current page is full.
