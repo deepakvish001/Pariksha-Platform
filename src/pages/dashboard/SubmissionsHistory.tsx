@@ -449,10 +449,11 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
 
       <div className="flex flex-wrap gap-2">
         <Input
-          placeholder="Search problem slug or source code…"
+          placeholder="Search by problem name, verdict, or code…"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           className="max-w-sm"
+          aria-label="Search submissions and runs"
         />
         <Select
           value={verdict}
@@ -472,6 +473,19 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
           <SelectContent>
             <SelectItem value="all">All languages</SelectItem>
             {LANGUAGE_OPTIONS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select
+          value={sort}
+          onValueChange={(v) => updateParams({ sort: v === "newest" ? null : v, subPage: null, runPage: null })}
+        >
+          <SelectTrigger className="w-[160px]" aria-label="Sort order">
+            <SelectValue placeholder="Sort" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Newest first</SelectItem>
+            <SelectItem value="oldest">Oldest first</SelectItem>
+            <SelectItem value="best_score">Best score</SelectItem>
           </SelectContent>
         </Select>
         <Popover>
