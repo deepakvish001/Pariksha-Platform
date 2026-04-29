@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Sparkles, Send, Square, RotateCcw, Bot, User as UserIcon,
   Flame, Play, CalendarClock, CalendarPlus, CheckCircle2, Loader2,
