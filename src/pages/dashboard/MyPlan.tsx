@@ -365,6 +365,7 @@ const MyPlan = () => {
                     onMoveTask={moveTaskToDay}
                     onBulkUpdate={bulkUpdateStatus}
                     onRestore={restoreStatuses}
+                    onLogActivity={logActivity}
                   />
                 )}
                 {plan && <StreakHistoryChart tasks={tasks} />}
