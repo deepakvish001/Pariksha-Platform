@@ -432,3 +432,22 @@ export const TAB_LABELS: Record<TabId, string> = {
   sql: "SQL Spec",
   limits: "Limits",
 };
+
+/**
+ * Map a field id (e.g. "examples[2].output", "sql_spec.schema_sql", "title")
+ * back to the editor tab it belongs to. Used by the publish checklist for jumps.
+ */
+export const fieldToTab = (field: string): TabId | null => {
+  if (!field) return null;
+  if (field === "title" || field === "slug" || field.startsWith("topics")) return "basics";
+  if (field === "description") return "statement";
+  if (field.startsWith("examples")) return "examples";
+  if (field.startsWith("constraints") || field.startsWith("hints")) return "constraints";
+  if (field.startsWith("starter_code")) return "starter";
+  if (field.startsWith("reference_solution")) return "reference";
+  if (field.startsWith("sample_tests") || field.startsWith("hidden_tests")) return "tests";
+  if (field.startsWith("sql_spec")) return "sql";
+  if (field === "cpu_time_limit_sec" || field === "memory_limit_kb") return "limits";
+  return null;
+};
+
