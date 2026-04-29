@@ -239,14 +239,31 @@ export const validateProblem = (form: FullProblemPayload): ValidationReport => {
     const r: SectionResult = { status: "ok", errors: [], warnings: [] };
     const entries = Object.entries(form.starter_code ?? {});
     const langs = entries.filter(([, v]) => (v ?? "").trim().length > 0);
+    const refLangSet = new Set(
+      Object.entries(form.reference_solution ?? {})
+        .filter(([, v]) => (v ?? "").trim().length > 0)
+        .map(([k]) => k),
+    );
     if (!isSqlOnly) {
       if (langs.length === 0)
         r.errors.push({ field: "starter_code", message: "Provide starter code for at least one language" });
       else if (langs.length < 2)
         r.warnings.push({ field: "starter_code", message: "Consider adding starters for more languages" });
       langs.forEach(([lang, code]) => {
-        if (code.length < 10)
-          r.warnings.push({ field: `starter_code.${lang}`, message: `Starter for ${lang} looks too short` });
+        const fid = `starter_code.${lang}`;
+        if (code.trim().length < 10)
+          r.warnings.push({ field: fid, message: `Starter for ${lang} looks too short` });
+        if (hasTrailingWhitespace(code))
+          r.warnings.push({ field: fid, message: `Starter for ${lang} has trailing whitespace` });
+        if (/TODO|FIXME/i.test(code))
+          r.warnings.push({ field: fid, message: `Starter for ${lang} still contains TODO/FIXME` });
+        // Per-language consistency: if a reference exists for any language, every
+        // starter should ideally have a matching reference for the same language.
+        if (refLangSet.size > 0 && !refLangSet.has(lang))
+          r.warnings.push({
+            field: fid,
+            message: `Starter exists for ${lang} but no matching reference solution`,
+          });
       });
     }
     const baseStatus: SectionStatus = langs.length || isSqlOnly ? "ok" : "empty";
@@ -257,23 +274,32 @@ export const validateProblem = (form: FullProblemPayload): ValidationReport => {
   {
     const r: SectionResult = { status: "ok", errors: [], warnings: [] };
     const refEntries = Object.entries(form.reference_solution ?? {}).filter(([, v]) => (v ?? "").trim().length > 0);
+    const starterLangSet = new Set(
+      Object.entries(form.starter_code ?? {})
+        .filter(([, v]) => (v ?? "").trim().length > 0)
+        .map(([k]) => k),
+    );
     if (!isSqlOnly) {
       if (refEntries.length === 0)
         r.errors.push({ field: "reference_solution", message: "Provide a reference solution for at least one language" });
-      const starterLangs = new Set(
-        Object.entries(form.starter_code ?? {})
-          .filter(([, v]) => (v ?? "").trim().length > 0)
-          .map(([k]) => k),
-      );
       const refLangs = new Set(refEntries.map(([k]) => k));
-      const overlap = [...starterLangs].some((l) => refLangs.has(l));
-      if (starterLangs.size > 0 && refLangs.size > 0 && !overlap)
+      const overlap = [...starterLangSet].some((l) => refLangs.has(l));
+      if (starterLangSet.size > 0 && refLangs.size > 0 && !overlap)
         r.warnings.push({ field: "reference_solution", message: "No language has both starter and reference" });
       refEntries.forEach(([lang, code]) => {
-        if (code.length < 20)
-          r.warnings.push({ field: `reference_solution.${lang}`, message: `Reference for ${lang} looks too short` });
+        const fid = `reference_solution.${lang}`;
+        if (code.trim().length < 20)
+          r.warnings.push({ field: fid, message: `Reference for ${lang} looks too short` });
         if (/TODO|FIXME/i.test(code))
-          r.warnings.push({ field: `reference_solution.${lang}`, message: `Reference for ${lang} contains TODO/FIXME` });
+          r.warnings.push({ field: fid, message: `Reference for ${lang} contains TODO/FIXME` });
+        if (hasTrailingWhitespace(code))
+          r.warnings.push({ field: fid, message: `Reference for ${lang} has trailing whitespace` });
+        // Per-language consistency: surface references that lack a starter.
+        if (starterLangSet.size > 0 && !starterLangSet.has(lang))
+          r.warnings.push({
+            field: fid,
+            message: `Reference exists for ${lang} but no matching starter — learners will start from scratch`,
+          });
       });
     }
     const baseStatus: SectionStatus = refEntries.length || isSqlOnly ? "ok" : "empty";
