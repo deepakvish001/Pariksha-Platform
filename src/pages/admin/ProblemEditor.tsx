@@ -824,24 +824,26 @@ const ProblemEditor = () => {
                   <Textarea
                     rows={3}
                     placeholder="Input"
+                    data-field={`examples[${i}].input`}
                     value={ex.input}
                     onChange={(e) => {
                       const next = [...form.examples];
                       next[i] = { ...ex, input: e.target.value };
                       update("examples", next);
                     }}
-                    className="font-mono text-xs"
+                    className={`font-mono text-xs ${fieldHighlightClass(`examples[${i}].input`, highlightedField)}`}
                   />
                   <Textarea
                     rows={3}
                     placeholder="Output"
+                    data-field={`examples[${i}].output`}
                     value={ex.output}
                     onChange={(e) => {
                       const next = [...form.examples];
                       next[i] = { ...ex, output: e.target.value };
                       update("examples", next);
                     }}
-                    className="font-mono text-xs"
+                    className={`font-mono text-xs ${fieldHighlightClass(`examples[${i}].output`, highlightedField)}`}
                   />
                   <Textarea
                     rows={3}
