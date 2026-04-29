@@ -296,8 +296,10 @@ const ProblemEditor = () => {
                 placeholder="two-sum"
                 disabled={!isNew}
               />
-              <p className="mt-1 text-xs text-muted-foreground">
-                URL-safe identifier; cannot be changed after creation.
+              <p className={`mt-1 text-xs ${slugTaken && isNew ? "text-destructive" : "text-muted-foreground"}`}>
+                {slugTaken && isNew
+                  ? "This slug is already taken — pick another."
+                  : "URL-safe identifier; cannot be changed after creation."}
               </p>
             </div>
             <div>
