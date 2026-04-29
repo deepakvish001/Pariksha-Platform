@@ -300,7 +300,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
     } catch {
       /* ignore quota errors */
     }
-  }, [search, verdict, language, dateFrom, dateTo, tab, PREFS_KEY, searchParams]);
+  }, [search, verdict, language, dateFrom, dateTo, tab, sort, PREFS_KEY, searchParams]);
 
   const { submissions, total: subTotal, loading: subsLoading, refetch: refetchSubs } =
     usePagedCodingSubmissions({
@@ -311,6 +311,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
       language,
       dateFrom,
       dateTo,
+      sort,
     });
   const { runs, total: runTotal, loading: runsLoading, refetch: refetchRuns } =
     usePagedCodeRuns({
@@ -320,6 +321,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
       language,
       dateFrom,
       dateTo,
+      sort,
     });
 
   const { run, isRunning, cancelRun } = useCodeRunner();
