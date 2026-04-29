@@ -216,7 +216,12 @@ const MyPlan = () => {
               <AddAdhocTaskDialog onAdd={addAdhocTask} />
             )}
             {profile && plan && (
-              <PlanCoachPanel tasks={tasks} profile={profile} />
+              <PlanCoachPanel
+                tasks={tasks}
+                profile={profile}
+                onUpdateTaskStatus={updateTaskStatus}
+                onMoveTaskToDay={moveTaskToDay}
+              />
             )}
             {profile && plan && (
               <DropdownMenu>
