@@ -1,103 +1,77 @@
+
 ## Goal
 
-Build an Admin Panel that lets admins create, edit, upload (CSV/JSON bulk), and manage coding problems entirely from the UI — replacing the hardcoded `src/data/codingProblemsData.ts` with a database-driven system. Admins can also manage difficulty metadata, hidden tests, SQL specs, and bulk-import from JSON.
+Make the admin panel feel "complete end-to-end": when an admin publishes/edits/unpublishes a coding problem, learners on `/library/problems` immediately see the change. Also add a visible **Admin** button so the owner (vishwakarmadeepak310@gmail.com) can jump into `/admin` from the dashboard, and tighten remaining UX gaps in the admin panel.
 
-## Scope
+## What's already built (no rework)
 
-- New admin role + access guard
-- DB-backed coding problems (replaces static file as source of truth, with fallback)
-- Admin pages under `/admin/*`
-- CRUD UI for problems with tabs (Statement, Examples, Constraints/Hints, Starter Code, Reference Solution, Tests, SQL Spec, Limits)
-- Bulk JSON/CSV upload + validation preview
-- Audit log of admin actions
+- DB tables: `coding_problems`, `coding_problem_starter_code`, `coding_problem_reference_solutions`, `coding_problem_tests`, `coding_problem_sql_specs`, `admin_audit_log`, `user_roles`, `app_role` enum, `has_role()` security definer, RLS.
+- RPCs: `admin_get_full_problem`, `admin_save_problem`.
+- Edge function `submit-code` already pulls hidden tests server-side.
+- Admin pages: Overview, Problems List (search, difficulty/topic/status filters, duplicate dialog, delete dialog, publish toggle, audit logging), Problem Editor (read-only slug for existing, draft autosave, publish/unpublish AlertDialog with confirmation, status banner, Cmd/S, slug-collision check for new), Bulk Import (Zod validation, corrected-JSON download with re-validation summary, CSV error export, seed loader), Audit Log page.
+- Hook `useDbCodingProblems` exists but is **not wired** into the learner-facing pages.
 
-## Phase 1 — Roles & Access
+## Phase 1 — Connect admin → learner (the missing link)
 
-1. **Migration**: create `app_role` enum (`admin`, `moderator`, `user`), `user_roles` table, and `has_role(uuid, app_role)` SECURITY DEFINER function (per project's user-roles standard).
-2. Seed the current logged-in user as `admin` (one-time via migration insert prompt).
-3. New hook `useUserRole()` and `<AdminRoute>` guard component.
-4. Sidebar entry "Admin" (visible only when `has_role(admin)` returns true).
+Right now `/library/problems` and `/library/problems/:slug` still read from the static `CODING_PROBLEMS` array, so publishing a new problem in admin doesn't show up for users. Fix:
 
-## Phase 2 — Database Schema
+1. **Merge DB problems with static data** in `src/pages/library/CodingProblems.tsx`:
+   - Call `useDbCodingProblems()`.
+   - Build the working list as `[...staticProblems, ...dbProblemsNotInStatic]` (de-dupe by slug; DB row wins on conflict so admin edits override). Memoize.
+   - Replace the 6 direct `CODING_PROBLEMS` references (lines 381, 564, 645–650, 683) with the merged list.
+   - Ensure topic/difficulty stat cards count merged list.
 
-New tables (all RLS-protected; SELECT public for non-sensitive fields, INSERT/UPDATE/DELETE admin-only via `has_role`):
+2. **Problem detail** in `src/pages/library/CodingProblemDetail.tsx`:
+   - Try DB lookup first via a new lightweight hook `useDbCodingProblem(slug)` (single problem + starter/ref/sample/sql joins, mirrors `useDbCodingProblems` for one slug).
+   - Fall back to `getCodingProblemBySlug(slug)` (static) if not found in DB.
+   - Loading skeleton while DB query resolves.
 
-- `coding_problems` — slug (PK), title, difficulty, topics (text[]), description (md), examples (jsonb), constraints (text[]), hints (text[]), cpu_time_limit_sec, memory_limit_kb, is_published (bool), created_by, created_at, updated_at
-- `coding_problem_starter_code` — problem_slug, lang_id, code (allows per-language rows)
-- `coding_problem_reference_solutions` — problem_slug, lang_id, code (admin-only SELECT — never expose to clients)
-- `coding_problem_tests` — id, problem_slug, kind (`sample` | `hidden`), input, expected, ord (hidden tests admin-only SELECT)
-- `coding_problem_sql_specs` — problem_slug (PK), schema_sql, seed_sql, reference_query, order_matters, starter
-- `admin_audit_log` — id, actor_id, action, entity_type, entity_slug, diff (jsonb), created_at
+3. **React Query invalidation hand-off**: when admin publishes/unpublishes/saves/deletes, also invalidate `["coding-problems-db"]` so learner pages already loaded refresh on next focus. Add the invalidation to `useTogglePublish`, `useSaveProblem`, `useDeleteProblem`, `useDuplicateProblem` in `src/hooks/useAdminProblems.ts`.
 
-Extend `coding_problems_meta` to FK from `coding_problems.slug`.
+## Phase 2 — Admin entry button on the dashboard
 
-## Phase 3 — Data Layer
+Add a visible **Admin** entry for users with the `admin` role:
 
-1. `useAdminProblems()` — list/search/paginate with filters (difficulty, topic, published).
-2. `useAdminProblem(slug)` — fetch full problem joined with starter/solution/tests/sql.
-3. Mutations: `createProblem`, `updateProblem`, `deleteProblem`, `publishToggle`, `upsertStarterCode`, `upsertReferenceSolution`, `replaceTests`, `upsertSqlSpec`.
-4. Update existing consumers (`CodingProblems.tsx`, `CodingProblemDetail.tsx`, `useDailyChallenge.ts`, `RecommendationStrip.tsx`, `TopicMasteryChips.tsx`) to load from DB via a new `useCodingProblems()` hook (cached via React Query). Keep `codingProblemsData.ts` only as a typing source.
-5. Edge functions `run-code` / `submit-code` updated to fetch hidden tests server-side from DB (never trust client) using service-role.
+1. In `src/components/DashboardSidebar.tsx`:
+   - Import `useUserRole`.
+   - In the `homeNavItems` render path, conditionally append `{ title: "Admin Panel", url: "/admin", icon: Shield }` when `isAdmin === true`.
+   - Add `/admin` to `ACTIVE_ROUTES` so it isn't shown as locked.
+   - Use a distinct accent color (e.g. `text-primary`) for the icon.
 
-## Phase 4 — Admin Pages (`/admin`)
+2. **Top-right shortcut** in `src/pages/DashboardMatrix.tsx`: small "Admin" button (Shield icon) shown only when `isAdmin`, linking to `/admin`. Subtle, lives next to other quick actions.
 
-```text
-/admin                       → Admin dashboard (stats: total problems, drafts, recent edits)
-/admin/problems              → Problems table (search, filter, bulk publish/delete)
-/admin/problems/new          → Create wizard
-/admin/problems/:slug/edit   → Tabbed editor
-/admin/problems/import       → Bulk JSON/CSV upload
-/admin/audit                 → Audit log viewer
-```
+3. Confirmation: the user `vishwakarmadeepak310@gmail.com` already has the admin role inserted in earlier phases. We will run a quick read query to verify; if missing, insert into `user_roles`.
 
-### Editor tabs (`ProblemEditor.tsx`)
+## Phase 3 — Admin panel polish
 
-1. **Basics** — slug, title, difficulty, topics (chip input), is_published toggle
-2. **Statement** — Markdown editor with live preview
-3. **Examples** — repeatable rows (input, output, explanation)
-4. **Constraints & Hints** — list editors
-5. **Starter Code** — Monaco tabs per language (reuse existing `MonacoEditor`)
-6. **Reference Solution** — Monaco tabs per language (admin-only)
-7. **Tests** — two tables (Sample, Hidden) with input/expected, drag-reorder, CSV paste
-8. **SQL Spec** (shown when `sql` lang enabled) — schema, seed, reference query, order_matters
-9. **Limits** — cpuTimeLimitSec, memoryLimitKb
+Small high-leverage improvements based on the current code:
 
-Save → upserts atomically inside a Postgres function `admin_save_problem(payload jsonb)` for transactional consistency.
+1. **Overview KPIs** (`AdminOverview.tsx`): add two more cards — "Total submissions (7d)" and "Active learners (7d)" — using simple counts from `code_submissions` (group by date). Read-only; admin-gated by route.
 
-### Bulk Import (`/admin/problems/import`)
+2. **Problems list quick filters**: add count chips above the table ("All N", "Drafts X", "Published Y") that act as one-click status filters. Add a "Last updated" sortable column header.
 
-- Drag-and-drop JSON file (array matching `CodingProblem` shape) or CSV (basics only).
-- Zod-validated preview table: rows colored green (valid) / red (errors with field details).
-- "Import N valid problems" button — upsert by slug, audit log per row.
-- Includes a "Download starter JSON template" link.
-- Bonus: "Import from existing static file" one-click button that ingests `CODING_PROBLEMS` array as the initial seed.
+3. **Editor "View as learner" button**: in `ProblemEditor.tsx`, add a button next to Save that opens `/library/problems/<slug>` in a new tab when the problem exists. Disabled for new/unsaved drafts.
 
-## Phase 5 — Security
+4. **Validation pre-publish gate**: extend the publish AlertDialog to show a checklist (description present, ≥1 sample test, ≥1 hidden test, ≥1 starter language, reference solution for at least one language). Block confirm if any required check fails; warn (not block) on optional ones.
 
-- All admin mutations gated by `has_role(auth.uid(), 'admin')` in RLS.
-- Reference solutions + hidden tests: SELECT policy `has_role(admin)` only; consumed server-side by edge functions via service role.
-- Edge functions verify JWT and role server-side before returning sensitive data.
-- Zod validation on every mutation hook + edge function body.
+5. **Audit log filters**: in `AuditLog.tsx`, add filter by action type (publish / unpublish / save / delete) and date range; show the actor's email by joining `profiles` (best-effort, fall back to short user id).
 
-## Phase 6 — UX polish
+## Phase 4 — Verification
 
-- Unsaved-changes warning on editor (block route change).
-- Auto-save drafts to localStorage every 5s.
-- Slug auto-generated from title with collision check.
-- Markdown preview side-by-side toggle.
-- Keyboard shortcut Cmd+S to save.
-- Empty states + skeletons.
-
-## Out of scope (separate follow-ups)
-
-- Versioning/rollback of problem edits beyond audit log diff
-- Multi-admin review/approval workflow
-- Image upload inside markdown statements (can be added with `avatars`-style bucket later)
+- Manual: create a new problem in `/admin/problems/new`, fill required fields, publish → confirm it appears in `/library/problems` table, opens cleanly at `/library/problems/<slug>`, sample tests visible, submit runs (hidden tests stay server-side).
+- Unpublish → confirm it disappears for learners but remains in admin list as Draft.
+- Duplicate → confirm draft copy appears with `-copy` slug suffix.
+- Sidebar shows "Admin Panel" only when logged in as admin; hidden for guests/regular users.
 
 ## Technical notes
 
-- Roles table follows project's strict pattern (`mem://core` user-roles rule).
-- Migration must seed initial admin (will prompt for the user's email/uid at apply time).
-- All consumers switch to React Query cache with 5-min staleTime to avoid hammering DB.
-- `admin_save_problem` RPC accepts a single jsonb payload; runs `INSERT ... ON CONFLICT` for parent + child rows inside a transaction.
-- Monaco editor + react-markdown already available in the project.
+- New file: `src/hooks/useDbCodingProblem.ts` (single-problem variant of existing `useDbCodingProblems`).
+- No DB schema changes needed.
+- No new edge functions.
+- Keep static `CODING_PROBLEMS` as a baseline fallback so existing 50+ problems remain available even if DB is empty.
+
+## Out of scope
+
+- Migrating the static array into the DB (that's the existing "Load static seed" flow in Bulk Import — admin can run it manually).
+- Public admin invite flow (admin role assigned via DB only).
+- Rich tag/topic taxonomy management UI.
