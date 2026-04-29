@@ -128,6 +128,7 @@ const ACTIVE_ROUTES = new Set([
   "/dashboard/submissions",
   "/settings",
   "/library/problems",
+  "/admin",
 ]);
 
 const isRouteLocked = (url: string) => !ACTIVE_ROUTES.has(url.split("?")[0]);
