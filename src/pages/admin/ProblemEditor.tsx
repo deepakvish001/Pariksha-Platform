@@ -1290,6 +1290,8 @@ const ListEditor = ({
   placeholder,
   numbered,
   inline,
+  fieldPrefix,
+  highlightedField,
 }: {
   title: string;
   items: string[];
@@ -1297,11 +1299,17 @@ const ListEditor = ({
   placeholder?: string;
   numbered?: boolean;
   inline?: boolean;
+  /** Validation field id base, e.g. "constraints" or "hints". When set, each row
+   *  exposes data-field="<prefix>[i]" and gets the highlight ring. */
+  fieldPrefix?: string;
+  highlightedField?: string | null;
 }) => {
   const [val, setVal] = useState("");
+  const [editing, setEditing] = useState<{ idx: number; value: string } | null>(null);
   const Wrapper: any = inline ? "div" : Card;
+  const groupId = `${fieldPrefix ?? title.toLowerCase()}-listeditor`;
   return (
-    <Wrapper className={inline ? "space-y-2" : "space-y-2 p-4"}>
+    <Wrapper className={inline ? "space-y-2" : "space-y-2 p-4"} data-field={fieldPrefix} id={groupId}>
       <Label>{title}</Label>
       <div className="flex gap-2">
         <Input
@@ -1329,37 +1337,75 @@ const ListEditor = ({
         </Button>
       </div>
       <ul className="space-y-1">
-        {items.map((it, i) => (
-          <li key={i} className="flex items-center justify-between rounded-md bg-muted px-3 py-1.5 text-sm">
-            <span className="min-w-0 flex-1">
-              {numbered && <span className="mr-2 text-xs text-muted-foreground">Hint {i + 1}</span>}
-              {it}
-            </span>
-            <div className="flex items-center gap-1">
-              {numbered && (
-                <>
-                  <Button variant="ghost" size="icon" disabled={i === 0} onClick={() => {
-                    const next = [...items];
-                    [next[i - 1], next[i]] = [next[i], next[i - 1]];
-                    onChange(next);
-                  }}>↑</Button>
-                  <Button variant="ghost" size="icon" disabled={i === items.length - 1} onClick={() => {
-                    const next = [...items];
-                    [next[i + 1], next[i]] = [next[i], next[i + 1]];
-                    onChange(next);
-                  }}>↓</Button>
-                </>
+        {items.map((it, i) => {
+          const fid = fieldPrefix ? `${fieldPrefix}[${i}]` : undefined;
+          const highlighted = !!fid && highlightedField === fid;
+          const isEditing = editing?.idx === i;
+          return (
+            <li
+              key={i}
+              data-field={fid}
+              className={`flex items-center justify-between gap-2 rounded-md bg-muted px-3 py-1.5 text-sm ${
+                fid ? fieldHighlightClass(fid, highlightedField ?? null) : ""
+              } ${highlighted ? "border border-destructive/50" : ""}`}
+            >
+              {isEditing ? (
+                <Input
+                  autoFocus
+                  value={editing!.value}
+                  onChange={(e) => setEditing({ idx: i, value: e.target.value })}
+                  onBlur={() => {
+                    const v = editing!.value.trim();
+                    if (v) {
+                      const next = [...items];
+                      next[i] = v;
+                      onChange(next);
+                    }
+                    setEditing(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    if (e.key === "Escape") setEditing(null);
+                  }}
+                  className="h-7 text-sm"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditing({ idx: i, value: it })}
+                  className="min-w-0 flex-1 truncate text-left hover:underline"
+                  title="Click to edit"
+                >
+                  {numbered && <span className="mr-2 text-xs text-muted-foreground">Hint {i + 1}</span>}
+                  {it}
+                </button>
               )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onChange(items.filter((_, x) => x !== i))}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </li>
-        ))}
+              <div className="flex items-center gap-1">
+                {numbered && (
+                  <>
+                    <Button variant="ghost" size="icon" disabled={i === 0} onClick={() => {
+                      const next = [...items];
+                      [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                      onChange(next);
+                    }}>↑</Button>
+                    <Button variant="ghost" size="icon" disabled={i === items.length - 1} onClick={() => {
+                      const next = [...items];
+                      [next[i + 1], next[i]] = [next[i], next[i + 1]];
+                      onChange(next);
+                    }}>↓</Button>
+                  </>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onChange(items.filter((_, x) => x !== i))}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </Wrapper>
   );
