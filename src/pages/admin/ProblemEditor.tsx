@@ -131,6 +131,24 @@ const ProblemEditor = () => {
   const [dirty, setDirty] = useState(false);
   const [slugTaken, setSlugTaken] = useState(false);
   const [draftRestoredAt, setDraftRestoredAt] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    try {
+      const t = localStorage.getItem(ACTIVE_TAB_KEY) as TabId | null;
+      return t ?? "basics";
+    } catch { return "basics"; }
+  });
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [refValidation, setRefValidation] = useState<{
+    running: boolean;
+    results: { idx: number; pass: boolean; got: string; expected: string }[] | null;
+  }>({ running: false, results: null });
+  const descRef = useRef<HTMLTextAreaElement>(null);
+  const { data: distinctTopics } = useDistinctTopics();
+  const report = useMemo(() => validateProblem(form), [form]);
+
+  useEffect(() => {
+    try { localStorage.setItem(ACTIVE_TAB_KEY, activeTab); } catch {}
+  }, [activeTab]);
 
   // Restore localStorage draft for NEW problems on first mount.
   useEffect(() => {
