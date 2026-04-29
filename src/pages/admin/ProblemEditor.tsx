@@ -134,6 +134,13 @@ const ProblemEditor = () => {
   const [dirty, setDirty] = useState(false);
   const [slugTaken, setSlugTaken] = useState(false);
   const [draftRestoredAt, setDraftRestoredAt] = useState<string | null>(null);
+  const [lastDraftSavedAt, setLastDraftSavedAt] = useState<string | null>(null);
+  // Tick every 15s so the "Draft saved Xs ago" label stays fresh.
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick((n) => n + 1), 15000);
+    return () => window.clearInterval(id);
+  }, []);
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     try {
       const t = localStorage.getItem(ACTIVE_TAB_KEY) as TabId | null;
@@ -148,6 +155,7 @@ const ProblemEditor = () => {
   const descRef = useRef<HTMLTextAreaElement>(null);
   const { data: distinctTopics } = useDistinctTopics();
   const report = useMemo(() => validateProblem(form), [form]);
+  const runHistory = useRunHistory(slug ?? "");
 
   useEffect(() => {
     try { localStorage.setItem(ACTIVE_TAB_KEY, activeTab); } catch {}
