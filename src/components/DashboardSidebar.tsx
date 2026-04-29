@@ -54,8 +54,10 @@ import {
   Lock,
   Terminal,
   History as HistoryIcon,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useThemeSync } from "@/hooks/useThemeSync";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
