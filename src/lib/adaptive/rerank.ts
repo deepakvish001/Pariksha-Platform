@@ -25,8 +25,11 @@ export interface NextRecommendation {
   difficultyDelta: -1 | 0 | 1;
 }
 
+export type RecommendationMode = "adaptive" | "fixed";
+
 export const getNextRecommendation = (
-  tasks: PlanTask[]
+  tasks: PlanTask[],
+  mode: RecommendationMode = "adaptive"
 ): NextRecommendation | null => {
   if (tasks.length === 0) return null;
 
@@ -49,28 +52,39 @@ export const getNextRecommendation = (
   const last = finished[0];
 
   let delta: -1 | 0 | 1 = 0;
-  let reason = "Continuing your scheduled plan";
+  let reason = "Continuing your scheduled plan in original order";
   let preferTopic: string | null = null;
+
+  if (mode === "fixed") {
+    return {
+      task: upcoming[0],
+      reason: "Fixed-difficulty mode: following your plan in scheduled order without adapting to recent results.",
+      difficultyDelta: 0,
+    };
+  }
 
   if (last) {
     const score = last.score ?? null;
     if (last.status === "skipped" || (score !== null && score <= 40)) {
       delta = -1;
       preferTopic = last.topic;
-      reason = `Last attempt on "${last.topic}" was tough — easing difficulty and reinforcing the topic`;
+      reason = score !== null
+        ? `Last attempt on "${last.topic}" scored ${score}% (≤40%) — easing difficulty and reinforcing the same topic.`
+        : `You skipped the last "${last.topic}" task — easing difficulty and re-queuing the topic.`;
     } else if (score !== null && score >= 80) {
       delta = 1;
-      reason = `Strong run on "${last.topic}" (${score}%) — pushing difficulty up`;
+      reason = `Strong run on "${last.topic}" (${score}%) — bumping difficulty up by one step.`;
     } else if (last.status === "done") {
-      // Streak of 2+ recent dones bumps difficulty
       const recentTwo = finished.slice(0, 2);
       if (recentTwo.length === 2 && recentTwo.every((t) => t.status === "done")) {
         delta = 1;
-        reason = `2 in a row completed — leveling up difficulty`;
+        reason = `2 completions in a row on ${recentTwo.map((t) => `"${t.topic}"`).join(" and ")} — leveling difficulty up.`;
       } else {
-        reason = `Nice work on "${last.topic}" — staying at the same level`;
+        reason = `Completed "${last.topic}"${score !== null ? ` at ${score}%` : ""} — holding the same difficulty.`;
       }
     }
+  } else {
+    reason = "No completed tasks yet — starting from your first scheduled item at its original difficulty.";
   }
 
   // Pick the best matching upcoming task
