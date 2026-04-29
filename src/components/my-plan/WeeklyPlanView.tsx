@@ -1,15 +1,28 @@
 import { useMemo, useState } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, GripVertical, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 import type { PlanTask } from "@/hooks/useStudyPlan";
 
 interface Props {
   tasks: PlanTask[];
   onToggle: (taskId: string, status: PlanTask["status"]) => void;
+  onMoveTask: (taskId: string, newDay: string) => Promise<void>;
 }
 
 const difficultyClass = (d: string) =>
@@ -22,9 +35,105 @@ const dayLabel = (iso: string) => {
   return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 };
 
-export const WeeklyPlanView = ({ tasks, onToggle }: Props) => {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const todayIso = today.toISOString().slice(0, 10);
+const todayIsoFn = () => {
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  return t.toISOString().slice(0, 10);
+};
+
+interface DraggableTaskProps {
+  task: PlanTask;
+  onToggle: Props["onToggle"];
+}
+
+const DraggableTask = ({ task, onToggle }: DraggableTaskProps) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: task.id,
+    data: { task },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex items-center gap-2 py-1.5 px-1 rounded-md group",
+        isDragging && "opacity-30"
+      )}
+    >
+      <button
+        {...listeners}
+        {...attributes}
+        aria-label={`Drag ${task.title}`}
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+        type="button"
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+      <Checkbox
+        checked={task.status === "done"}
+        onCheckedChange={(c) => onToggle(task.id, c ? "done" : "pending")}
+      />
+      <span className={cn("text-sm flex-1 min-w-0 truncate", task.status === "done" && "line-through opacity-60")}>
+        {task.title}
+      </span>
+      <Badge variant="outline" className={cn("text-xs", difficultyClass(task.difficulty))}>
+        {task.difficulty}
+      </Badge>
+      <span className="text-xs text-muted-foreground">{task.est_minutes}m</span>
+    </div>
+  );
+};
+
+interface DroppableDayProps {
+  day: string;
+  isToday: boolean;
+  isOver: boolean;
+  children: React.ReactNode;
+  total: number;
+  done: number;
+  count: number;
+  open: boolean;
+  onToggleOpen: () => void;
+}
+
+const DroppableDay = ({ day, isToday, children, total, done, count, open, onToggleOpen }: DroppableDayProps) => {
+  const { setNodeRef, isOver } = useDroppable({ id: `day-${day}` });
+  return (
+    <Collapsible open={open} onOpenChange={onToggleOpen}>
+      <div
+        ref={setNodeRef}
+        className={cn(
+          "rounded-md transition-colors",
+          isOver && "bg-primary/10 ring-1 ring-primary/40"
+        )}
+      >
+        <CollapsibleTrigger className="w-full">
+          <div className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
+            <div className="flex items-center gap-2">
+              <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
+              <span className="font-medium text-sm">
+                {isToday ? "Today" : dayLabel(day)}
+              </span>
+              {isToday && <Badge variant="default" className="text-xs h-5">Today</Badge>}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {done}/{count} · {total} min
+            </div>
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pl-4 pr-2 py-1 space-y-0.5 min-h-[8px]">
+          {children}
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+};
+
+export const WeeklyPlanView = ({ tasks, onToggle, onMoveTask }: Props) => {
+  const todayIso = todayIsoFn();
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const [activeTask, setActiveTask] = useState<PlanTask | null>(null);
+  const [openDays, setOpenDays] = useState<Set<string>>(new Set([todayIso]));
 
   const grouped = useMemo(() => {
     const map = new Map<string, PlanTask[]>();
@@ -36,8 +145,6 @@ export const WeeklyPlanView = ({ tasks, onToggle }: Props) => {
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [tasks, todayIso]);
 
-  const [openDays, setOpenDays] = useState<Set<string>>(new Set([todayIso]));
-
   if (grouped.length === 0) return null;
 
   const toggleDay = (d: string) =>
@@ -48,52 +155,82 @@ export const WeeklyPlanView = ({ tasks, onToggle }: Props) => {
       return next;
     });
 
+  const handleDragStart = (e: DragStartEvent) => {
+    const t = (e.active.data.current as { task?: PlanTask } | undefined)?.task;
+    if (t) setActiveTask(t);
+  };
+
+  const handleDragEnd = async (e: DragEndEvent) => {
+    setActiveTask(null);
+    if (!e.over) return;
+    const overId = String(e.over.id);
+    if (!overId.startsWith("day-")) return;
+    const newDay = overId.slice(4);
+    const task = (e.active.data.current as { task?: PlanTask } | undefined)?.task;
+    if (!task || task.day_date === newDay) return;
+    // expand the destination day
+    setOpenDays((cur) => new Set(cur).add(newDay));
+    try {
+      await onMoveTask(task.id, newDay);
+      toast({
+        title: "Task moved",
+        description: `Rescheduled to ${newDay === todayIso ? "Today" : dayLabel(newDay)}`,
+      });
+    } catch {
+      toast({ title: "Couldn't move task", variant: "destructive" });
+    }
+  };
+
   return (
     <Card className="p-4 sm:p-6">
-      <h2 className="text-lg font-semibold mb-3">Upcoming days</h2>
-      <div className="space-y-2">
-        {grouped.map(([day, dayTasks]) => {
-          const open = openDays.has(day);
-          const total = dayTasks.reduce((s, t) => s + t.est_minutes, 0);
-          const done = dayTasks.filter((t) => t.status === "done").length;
-          const isToday = day === todayIso;
-          return (
-            <Collapsible key={day} open={open} onOpenChange={() => toggleDay(day)}>
-              <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50">
-                  <div className="flex items-center gap-2">
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
-                    <span className="font-medium text-sm">
-                      {isToday ? "Today" : dayLabel(day)}
-                    </span>
-                    {isToday && <Badge variant="default" className="text-xs h-5">Today</Badge>}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {done}/{dayTasks.length} · {total} min
-                  </div>
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pl-6 pr-2 py-1 space-y-1">
-                {dayTasks.map((t) => (
-                  <div key={t.id} className="flex items-center gap-2 py-1">
-                    <Checkbox
-                      checked={t.status === "done"}
-                      onCheckedChange={(c) => onToggle(t.id, c ? "done" : "pending")}
-                    />
-                    <span className={cn("text-sm flex-1", t.status === "done" && "line-through opacity-60")}>
-                      {t.title}
-                    </span>
-                    <Badge variant="outline" className={cn("text-xs", difficultyClass(t.difficulty))}>
-                      {t.difficulty}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">{t.est_minutes}m</span>
-                  </div>
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
-          );
-        })}
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold">Upcoming days</h2>
+        <p className="text-xs text-muted-foreground hidden sm:flex items-center gap-1">
+          <Pencil className="h-3 w-3" /> Drag tasks between days to reschedule
+        </p>
       </div>
+
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="space-y-1">
+          {grouped.map(([day, dayTasks]) => {
+            const open = openDays.has(day);
+            const total = dayTasks.reduce((s, t) => s + t.est_minutes, 0);
+            const done = dayTasks.filter((t) => t.status === "done").length;
+            return (
+              <DroppableDay
+                key={day}
+                day={day}
+                isToday={day === todayIso}
+                isOver={false}
+                total={total}
+                done={done}
+                count={dayTasks.length}
+                open={open}
+                onToggleOpen={() => toggleDay(day)}
+              >
+                {dayTasks.map((t) => (
+                  <DraggableTask key={t.id} task={t} onToggle={onToggle} />
+                ))}
+                {open && dayTasks.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic py-2">Drop tasks here</p>
+                )}
+              </DroppableDay>
+            );
+          })}
+        </div>
+
+        <DragOverlay>
+          {activeTask && (
+            <div className="flex items-center gap-2 py-1.5 px-2 rounded-md bg-popover border border-border shadow-lg">
+              <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm">{activeTask.title}</span>
+              <Badge variant="outline" className={cn("text-xs", difficultyClass(activeTask.difficulty))}>
+                {activeTask.difficulty}
+              </Badge>
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
     </Card>
   );
 };

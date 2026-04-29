@@ -2,9 +2,10 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar } from "lucide-react";
+import { Clock, Calendar, Sparkles, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PlanTask } from "@/hooks/useStudyPlan";
+import { getNextRecommendation } from "@/lib/adaptive/rerank";
 
 interface Props {
   tasks: PlanTask[];
@@ -27,6 +28,10 @@ export const TodayTasksList = ({ tasks, onToggle }: Props) => {
   const todays = useMemo(() => tasks.filter((t) => t.day_date === today), [tasks, today]);
   const totalMinutes = todays.reduce((sum, t) => sum + t.est_minutes, 0);
   const doneMinutes = todays.filter((t) => t.status === "done").reduce((s, t) => s + t.est_minutes, 0);
+  const recommendation = useMemo(() => getNextRecommendation(tasks), [tasks]);
+  const DeltaIcon = recommendation
+    ? (recommendation.difficultyDelta > 0 ? ArrowUpRight : recommendation.difficultyDelta < 0 ? ArrowDownRight : Minus)
+    : Minus;
 
   if (todays.length === 0) {
     return (
@@ -51,6 +56,22 @@ export const TodayTasksList = ({ tasks, onToggle }: Props) => {
           <Clock className="h-3 w-3" /> {totalMinutes} min planned
         </Badge>
       </div>
+
+      {recommendation && (
+        <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5 text-xs sm:text-sm">
+          <Sparkles className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium">
+              Next up: {recommendation.task.title}
+              <span className="ml-2 text-muted-foreground inline-flex items-center gap-0.5">
+                <DeltaIcon className="h-3 w-3" />
+                {recommendation.difficultyDelta > 0 ? "harder" : recommendation.difficultyDelta < 0 ? "easier" : "same level"}
+              </span>
+            </p>
+            <p className="text-muted-foreground text-xs mt-0.5">{recommendation.reason}</p>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         {todays.map((t) => (
