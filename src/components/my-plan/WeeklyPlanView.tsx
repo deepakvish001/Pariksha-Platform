@@ -232,6 +232,7 @@ export const WeeklyPlanView = ({ tasks, onToggle, onMoveTask, onBulkUpdate, onRe
                       tasks={dayTasks}
                       onBulkUpdate={onBulkUpdate}
                       onRestore={onRestore}
+                      onLogActivity={onLogActivity}
                     />
                   ) : undefined
                 }
