@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { formatRelative } from "@/lib/formatRelative";
 
 const slugify = (s: string) =>
   s
@@ -46,8 +47,6 @@ const slugify = (s: string) =>
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
-
-import { formatRelative } from "@/lib/formatRelative";
 
 const emptyPayload = (): FullProblemPayload => ({
   slug: "",
