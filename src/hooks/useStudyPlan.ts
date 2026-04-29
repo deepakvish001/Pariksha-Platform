@@ -25,6 +25,8 @@ export interface PlanTask {
   completed_at: string | null;
   started_at: string | null;
   locked: boolean;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
 }
 
 export interface StudyPlan {
@@ -243,6 +245,8 @@ export const useStudyPlan = () => {
     async (input: {
       title: string; topic: string; difficulty: "easy" | "medium" | "hard";
       est_minutes: number; day_date: string;
+      scheduled_start?: string | null;
+      scheduled_end?: string | null;
     }) => {
       if (!user) throw new Error("Not signed in");
       if (!plan) throw new Error("Generate a plan first");
@@ -259,11 +263,69 @@ export const useStudyPlan = () => {
         est_minutes: input.est_minutes,
         source_type: "custom",
         status: "pending" as const,
+        scheduled_start: input.scheduled_start ?? null,
+        scheduled_end: input.scheduled_end ?? null,
       }).select().single();
       if (error) throw error;
       setTasks((cur) => [...cur, data as PlanTask]);
     },
     [user, plan, tasks]
+  );
+
+  /** Bulk-update the status of many tasks at once. Returns previous statuses for undo. */
+  const bulkUpdateStatus = useCallback(
+    async (taskIds: string[], status: PlanTaskStatus) => {
+      if (taskIds.length === 0) return [];
+      const previous = tasks
+        .filter((t) => taskIds.includes(t.id))
+        .map((t) => ({ id: t.id, status: t.status, completed_at: t.completed_at }));
+      const patch: Record<string, unknown> = { status };
+      if (status === "done") patch.completed_at = new Date().toISOString();
+      else if (status === "pending") patch.completed_at = null;
+      // Optimistic
+      setTasks((cur) =>
+        cur.map((t) =>
+          taskIds.includes(t.id) ? { ...t, ...patch, status } as PlanTask : t
+        )
+      );
+      const { error } = await supabase
+        .from("user_study_plan_tasks")
+        .update(patch)
+        .in("id", taskIds);
+      if (error) { await refresh(); throw error; }
+      return previous;
+    },
+    [tasks, refresh]
+  );
+
+  /** Restore a snapshot returned from bulkUpdateStatus. */
+  const restoreStatuses = useCallback(
+    async (snapshot: Array<{ id: string; status: PlanTaskStatus; completed_at: string | null }>) => {
+      if (snapshot.length === 0) return;
+      // Optimistic restore
+      setTasks((cur) =>
+        cur.map((t) => {
+          const s = snapshot.find((x) => x.id === t.id);
+          return s ? { ...t, status: s.status, completed_at: s.completed_at } : t;
+        })
+      );
+      // Group by (status, completed_at) so we can update in batches
+      const byKey = new Map<string, { status: PlanTaskStatus; completed_at: string | null; ids: string[] }>();
+      for (const s of snapshot) {
+        const key = `${s.status}|${s.completed_at ?? ""}`;
+        const e = byKey.get(key) ?? { status: s.status, completed_at: s.completed_at, ids: [] };
+        e.ids.push(s.id);
+        byKey.set(key, e);
+      }
+      await Promise.all(
+        Array.from(byKey.values()).map((g) =>
+          supabase.from("user_study_plan_tasks")
+            .update({ status: g.status, completed_at: g.completed_at })
+            .in("id", g.ids)
+        )
+      );
+    },
+    []
   );
 
   /** Move all overdue (pending/in_progress) tasks to today and the next few days, respecting time budget. */
@@ -313,6 +375,6 @@ export const useStudyPlan = () => {
   return {
     plan, tasks, loading, generating,
     generate, updateTaskStatus, moveTaskToDay, toggleLock, setActualMinutes, catchUp,
-    addAdhocTask, refresh,
+    addAdhocTask, bulkUpdateStatus, restoreStatuses, refresh,
   };
 };

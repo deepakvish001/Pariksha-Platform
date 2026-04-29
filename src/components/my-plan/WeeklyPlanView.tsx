@@ -17,12 +17,19 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, GripVertical, Pencil, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import type { PlanTask } from "@/hooks/useStudyPlan";
+import type { PlanTask, PlanTaskStatus } from "@/hooks/useStudyPlan";
+import { BulkDayActions } from "./BulkDayActions";
 
 interface Props {
   tasks: PlanTask[];
   onToggle: (taskId: string, status: PlanTask["status"]) => void;
   onMoveTask: (taskId: string, newDay: string) => Promise<void>;
+  onBulkUpdate?: (
+    taskIds: string[], status: PlanTaskStatus
+  ) => Promise<Array<{ id: string; status: PlanTaskStatus; completed_at: string | null }>>;
+  onRestore?: (
+    snapshot: Array<{ id: string; status: PlanTaskStatus; completed_at: string | null }>
+  ) => Promise<void>;
 }
 
 const difficultyClass = (d: string) =>
