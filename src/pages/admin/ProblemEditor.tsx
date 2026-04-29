@@ -978,6 +978,8 @@ const ProblemEditor = () => {
           <CodePerLanguage
             value={form.reference_solution}
             onChange={(v) => update("reference_solution", v)}
+            fieldPrefix="reference_solution"
+            highlightedField={highlightedField}
             activeLang={activeLang}
             setActiveLang={setActiveLang}
             extraActions={
