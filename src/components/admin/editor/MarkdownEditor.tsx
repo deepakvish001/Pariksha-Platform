@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -28,10 +29,12 @@ import {
 import { MarkdownToolbar } from "./MarkdownToolbar";
 import { MarkdownPreview } from "./MarkdownPreview";
 import { ImageGalleryPanel } from "./ImageGalleryPanel";
+import { AltTextDialog, type InsertImageDetails } from "./AltTextDialog";
 import { useMarkdownImageUpload } from "@/hooks/useMarkdownImageUpload";
 import { deleteProblemImage } from "@/lib/admin/uploadProblemImage";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import type { GalleryImage } from "@/hooks/useProblemAssetGallery";
 
 type Mode = "edit" | "split" | "preview";
 
@@ -53,6 +56,50 @@ export interface MarkdownEditorHandle {
   focus: () => void;
 }
 
+const GALLERY_OPEN_KEY = "admin.markdownEditor.galleryOpen.v1";
+const MODE_KEY = "admin.markdownEditor.mode.v1";
+
+const readBoolKey = (k: string, fallback: boolean): boolean => {
+  try {
+    const v = localStorage.getItem(k);
+    if (v === null) return fallback;
+    return v === "1";
+  } catch {
+    return fallback;
+  }
+};
+
+const writeBoolKey = (k: string, v: boolean) => {
+  try {
+    localStorage.setItem(k, v ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+};
+
+const readModeKey = (): Mode => {
+  try {
+    const v = localStorage.getItem(MODE_KEY);
+    if (v === "edit" || v === "split" || v === "preview") return v;
+  } catch {
+    /* ignore */
+  }
+  return "split";
+};
+
+/** Append a markdown title that encodes a width hint readable by MarkdownPreview. */
+const buildImageMarkdown = (alt: string, url: string, width?: number) => {
+  if (width && width > 0) return `![${alt}](${url} "=${Math.round(width)}px")`;
+  return `![${alt}](${url})`;
+};
+
+interface PendingInsert {
+  url: string;
+  defaultAlt: string;
+  /** When true, the alt dialog will allow choosing a width. */
+  allowWidth: boolean;
+}
+
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
   (
     {
@@ -66,14 +113,27 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
     },
     ref,
   ) => {
-    const [mode, setMode] = useState<Mode>("split");
+    const [mode, setMode] = useState<Mode>(() => readModeKey());
     const [fullscreen, setFullscreen] = useState(false);
-    const [galleryOpen, setGalleryOpen] = useState(false);
+    const [galleryOpen, setGalleryOpen] = useState<boolean>(() =>
+      readBoolKey(GALLERY_OPEN_KEY, false),
+    );
+    const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
+
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const fullscreenTriggerRef = useRef<HTMLButtonElement>(null);
 
-    /** Inserts arbitrary text at the textarea cursor (or appends). Used by the
-     *  gallery panel and the URL prompt. */
+    // Persist UI state across navigations.
+    useEffect(() => writeBoolKey(GALLERY_OPEN_KEY, galleryOpen), [galleryOpen]);
+    useEffect(() => {
+      try {
+        localStorage.setItem(MODE_KEY, mode);
+      } catch {
+        /* ignore */
+      }
+    }, [mode]);
+
     const insertAtCursor = (snippet: string) => {
       const el = textareaRef.current;
       if (!el) {
@@ -94,7 +154,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       focus: () => textareaRef.current?.focus(),
     }));
 
-    const { uploading, sessionImages, uploadFiles, onDrop, onPaste } =
+    const { uploading, sessionImages, uploadFiles, uploadOnly, onDrop, onPaste } =
       useMarkdownImageUpload({
         textareaRef,
         value,
@@ -107,21 +167,50 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
     const handleInsertImageUrl = () => {
       const url = window.prompt("Image URL");
       if (!url) return;
-      const alt = window.prompt("Alt text (for screen readers)", "") ?? "";
-      const md = `![${alt}](${url})`;
-      const el = textareaRef.current;
-      if (!el) {
-        onChange(value + "\n" + md + "\n");
-        return;
-      }
-      const start = el.selectionStart ?? value.length;
-      const end = el.selectionEnd ?? value.length;
-      const next = value.slice(0, start) + md + value.slice(end);
-      onChange(next);
-      requestAnimationFrame(() => {
-        el.focus();
-        el.selectionStart = el.selectionEnd = start + md.length;
+      setPendingInsert({
+        url,
+        defaultAlt: "",
+        allowWidth: false,
       });
+    };
+
+    const handleInsertImageWithSize = () => {
+      const url = window.prompt("Image URL");
+      if (!url) return;
+      setPendingInsert({ url, defaultAlt: "", allowWidth: true });
+    };
+
+    /** Gallery click → prompt for alt text first, then insert. */
+    const handleGalleryRequestInsert = (img: GalleryImage) => {
+      setPendingInsert({
+        url: img.publicUrl,
+        defaultAlt: img.name.replace(/\.[^.]+$/, ""),
+        allowWidth: true,
+      });
+    };
+
+    const handleConfirmInsert = (details: InsertImageDetails) => {
+      if (!pendingInsert) return;
+      const md = buildImageMarkdown(details.alt, pendingInsert.url, details.width);
+      insertAtCursor(md);
+      setPendingInsert(null);
+    };
+
+    /** Upload-from-gallery: route through uploadOnly (no placeholder) and then
+     *  ask for alt text via the dialog before inserting markdown. */
+    const handleGalleryUpload = async (files: FileList | File[]) => {
+      const list = Array.from(files);
+      for (const f of list) {
+        // eslint-disable-next-line no-await-in-loop
+        const res = await uploadOnly(f);
+        if (res) {
+          setPendingInsert({
+            url: res.publicUrl,
+            defaultAlt: f.name.replace(/\.[^.]+$/, ""),
+            allowWidth: true,
+          });
+        }
+      }
     };
 
     // Keyboard shortcuts: ⌘B / ⌘I / ⌘K / ⌘⇧I
@@ -181,6 +270,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
               onInsertExamples={onInsertExamples}
               onPickImageUpload={handlePickImage}
               onInsertImageUrl={handleInsertImageUrl}
+              onInsertImageWithSize={handleInsertImageWithSize}
               uploading={uploading > 0}
             />
             <Textarea
@@ -193,6 +283,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
               onKeyDown={handleKeyDown}
               rows={fullscreen ? 30 : rows}
               spellCheck
+              aria-label="Problem statement markdown source"
               className={cn(
                 "font-mono text-sm",
                 fullscreen && "min-h-[60vh]",
@@ -205,8 +296,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
                 Drop / paste images · ⌘B bold · ⌘I italic · ⌘K link · ⌘⇧I upload
               </span>
               {uploading > 0 && (
-                <span className="flex items-center gap-1 text-amber-500">
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                <span
+                  className="flex items-center gap-1 text-amber-500"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
                   Uploading {uploading}
                 </span>
               )}
@@ -217,6 +312,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
               accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
               multiple
               hidden
+              aria-hidden="true"
               onChange={(e) => {
                 if (e.target.files?.length) {
                   void uploadFiles(e.target.files);
@@ -235,6 +331,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
                 "rounded-md border bg-muted/30 p-3 overflow-auto",
                 fullscreen ? "min-h-[60vh]" : "min-h-[200px]",
               )}
+              role="region"
+              aria-label="Markdown preview"
             >
               <MarkdownPreview source={value} />
             </div>
@@ -247,6 +345,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
             onClose={() => setGalleryOpen(false)}
             currentSlug={slug}
             onInsert={(md) => insertAtCursor(md)}
+            onRequestInsert={handleGalleryRequestInsert}
+            onUploadFiles={handleGalleryUpload}
+            uploading={uploading > 0}
           />
         )}
       </div>
@@ -254,15 +355,21 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
 
     const header = (
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1 rounded-md border p-0.5">
+        <div
+          className="flex items-center gap-1 rounded-md border p-0.5"
+          role="radiogroup"
+          aria-label="Editor view mode"
+        >
           <Button
             type="button"
             size="sm"
             variant={mode === "edit" ? "secondary" : "ghost"}
             className="h-7 px-2"
             onClick={() => setMode("edit")}
+            role="radio"
+            aria-checked={mode === "edit"}
           >
-            <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+            <Pencil className="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Edit
           </Button>
           <Button
             type="button"
@@ -270,8 +377,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
             variant={mode === "split" ? "secondary" : "ghost"}
             className="h-7 px-2"
             onClick={() => setMode("split")}
+            role="radio"
+            aria-checked={mode === "split"}
           >
-            <Columns className="mr-1 h-3.5 w-3.5" /> Split
+            <Columns className="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Split
           </Button>
           <Button
             type="button"
@@ -279,12 +388,14 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
             variant={mode === "preview" ? "secondary" : "ghost"}
             className="h-7 px-2"
             onClick={() => setMode("preview")}
+            role="radio"
+            aria-checked={mode === "preview"}
           >
-            <Eye className="mr-1 h-3.5 w-3.5" /> Preview
+            <Eye className="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Preview
           </Button>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>
+          <span aria-live="off">
             {stats.chars} chars · {stats.words} words · ~{stats.minRead} min read
           </span>
           <ImagesPopover
@@ -313,21 +424,25 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
               variant={galleryOpen ? "secondary" : "outline"}
               className="h-7 px-2"
               onClick={() => setGalleryOpen((v) => !v)}
+              aria-pressed={galleryOpen}
+              aria-label={galleryOpen ? "Hide image gallery" : "Show image gallery"}
               title="Show gallery of all uploaded images"
             >
-              <Images className="mr-1 h-3.5 w-3.5" />
+              <Images className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
               {galleryOpen ? "Hide gallery" : "Gallery"}
             </Button>
           )}
           {!fullscreen && (
             <Button
+              ref={fullscreenTriggerRef}
               type="button"
               size="sm"
               variant="outline"
               className="h-7 px-2"
               onClick={() => setFullscreen(true)}
+              aria-label="Open editor in full-screen"
             >
-              <Maximize2 className="mr-1 h-3.5 w-3.5" /> Full-screen
+              <Maximize2 className="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Full-screen
             </Button>
           )}
         </div>
@@ -341,15 +456,38 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
           {editorBody}
         </Card>
 
-        <Dialog open={fullscreen} onOpenChange={setFullscreen}>
-          <DialogContent className="max-w-[96vw] sm:max-w-[96vw]">
+        <Dialog
+          open={fullscreen}
+          onOpenChange={(open) => {
+            setFullscreen(open);
+            // Restore focus on the trigger when the dialog closes (a11y).
+            if (!open) {
+              requestAnimationFrame(() => fullscreenTriggerRef.current?.focus());
+            }
+          }}
+        >
+          <DialogContent
+            className="max-w-[96vw] sm:max-w-[96vw]"
+            aria-describedby="md-fullscreen-desc"
+          >
             <DialogHeader>
               <DialogTitle>Edit problem statement</DialogTitle>
+              <DialogDescription id="md-fullscreen-desc">
+                Distraction-free Markdown authoring. Press Escape to exit.
+              </DialogDescription>
             </DialogHeader>
             {header}
             {editorBody}
           </DialogContent>
         </Dialog>
+
+        <AltTextDialog
+          open={!!pendingInsert}
+          imageUrl={pendingInsert?.url}
+          defaultAlt={pendingInsert?.defaultAlt}
+          onCancel={() => setPendingInsert(null)}
+          onConfirm={handleConfirmInsert}
+        />
       </>
     );
   },
@@ -366,18 +504,31 @@ const ImagesPopover = ({ images, onCopy, onDelete }: ImagesPopoverProps) => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button type="button" size="sm" variant="outline" className="h-7 px-2">
-          <ImageIcon className="mr-1 h-3.5 w-3.5" />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 px-2"
+          aria-label={`Recent uploaded images (${images.length})`}
+        >
+          <ImageIcon className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
           Images {images.length > 0 ? `(${images.length})` : ""}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-2">
+      <PopoverContent
+        align="end"
+        className="w-80 p-2"
+        aria-label="Recent uploaded images"
+      >
         {images.length === 0 ? (
           <p className="px-2 py-3 text-center text-xs text-muted-foreground">
-            Uploaded images from this session will appear here.
+            Uploaded images will appear here. They persist across refreshes.
           </p>
         ) : (
-          <ul className="max-h-72 space-y-1 overflow-auto">
+          <ul
+            className="max-h-72 space-y-1 overflow-auto"
+            aria-label="Uploaded images list"
+          >
             {images.map((img) => (
               <li
                 key={img.path}
@@ -385,7 +536,7 @@ const ImagesPopover = ({ images, onCopy, onDelete }: ImagesPopoverProps) => {
               >
                 <img
                   src={img.publicUrl}
-                  alt={img.name}
+                  alt=""
                   className="h-10 w-10 flex-shrink-0 rounded object-cover"
                 />
                 <div className="min-w-0 flex-1">
@@ -399,20 +550,22 @@ const ImagesPopover = ({ images, onCopy, onDelete }: ImagesPopoverProps) => {
                   size="icon"
                   variant="ghost"
                   className="h-7 w-7"
+                  aria-label={`Copy URL of ${img.name}`}
                   title="Copy URL"
                   onClick={() => onCopy(img.publicUrl)}
                 >
-                  <Copy className="h-3.5 w-3.5" />
+                  <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
                 <Button
                   type="button"
                   size="icon"
                   variant="ghost"
                   className="h-7 w-7 text-destructive"
+                  aria-label={`Delete ${img.name} from storage`}
                   title="Delete from storage"
                   onClick={() => onDelete(img.path)}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
               </li>
             ))}
