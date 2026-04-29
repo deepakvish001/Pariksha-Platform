@@ -35,7 +35,9 @@ import { useAuth } from "@/contexts/AuthContext";
    onMarkRead: () => void;
    onDelete: () => void;
  }) => {
-   const data = notification.data as Record<string, string>;
+  const data = notification.data as Record<string, string>;
+  const { extendedProfile } = useAuth();
+  const profileUsername = (extendedProfile as { username?: string } | null)?.username ?? null;
  
    return (
      <motion.div
