@@ -207,35 +207,156 @@ export const PlanCoachPanel = ({
     void send(text, context);
   };
 
-  const runAction = async (messageId: string, action: CoachAction) => {
-    const task = tasks.find((t) => t.id === action.task_id);
-    if (!task) {
-      toast({ title: "Task not found", description: "It may have been removed since the suggestion was made.", variant: "destructive" });
-      consumeAction(messageId, action.task_id);
+  const offerStatusUndo = (
+    snap: Array<{ id: string; status: PlanTaskStatus; completed_at: string | null }>,
+    label: string,
+  ) => {
+    toast({
+      title: label,
+      duration: 6000,
+      action: (
+        <ToastAction
+          altText="Undo"
+          onClick={async () => {
+            try {
+              await Promise.all(
+                snap.map((s) => onUpdateTaskStatus(s.id, s.status)),
+              );
+              toast({ title: "Undone", description: "Previous statuses restored." });
+            } catch (e) {
+              toast({
+                title: "Couldn't undo", variant: "destructive",
+                description: e instanceof Error ? e.message : "Unknown error",
+              });
+            }
+          }}
+        >
+          Undo
+        </ToastAction>
+      ),
+    });
+  };
+
+  const offerMoveUndo = (snap: Array<{ id: string; day_date: string }>, label: string) => {
+    if (!onRestoreDays) {
+      toast({ title: label, duration: 5000 });
       return;
     }
-    setBusyAction(`${messageId}:${action.task_id}`);
+    toast({
+      title: label,
+      duration: 6000,
+      action: (
+        <ToastAction
+          altText="Undo"
+          onClick={async () => {
+            try {
+              await onRestoreDays(snap);
+              toast({ title: "Undone", description: "Previous schedule restored." });
+            } catch (e) {
+              toast({
+                title: "Couldn't undo", variant: "destructive",
+                description: e instanceof Error ? e.message : "Unknown error",
+              });
+            }
+          }}
+        >
+          Undo
+        </ToastAction>
+      ),
+    });
+  };
+
+  const runAction = async (messageId: string, action: CoachAction) => {
+    const key = `${messageId}:${action.task_id}:${action.kind}`;
+    setBusyKeys((cur) => new Set(cur).add(key));
     try {
+      // Bulk start: handle a batch of task ids client-side.
+      if (action.kind === "bulk_start_next") {
+        const ids = (action.task_ids ?? []).filter((id) => tasks.some((t) => t.id === id));
+        if (ids.length === 0) {
+          toast({ title: "No tasks to start", description: "The suggestion referenced unknown tasks.", variant: "destructive" });
+          consumeAction(messageId, action.task_id);
+          return;
+        }
+        const today = todayIsoFn();
+        // Snapshot prior days for undo
+        const moveSnap: Array<{ id: string; day_date: string }> = tasks
+          .filter((t) => ids.includes(t.id) && t.day_date !== today)
+          .map((t) => ({ id: t.id, day_date: t.day_date }));
+        const idsNeedingMove = moveSnap.map((s) => s.id);
+        if (idsNeedingMove.length > 0 && onBulkMoveToDay) {
+          await onBulkMoveToDay(idsNeedingMove, today);
+        } else {
+          // Fallback: move one by one
+          for (const id of idsNeedingMove) await onMoveTaskToDay(id, today);
+        }
+        // Mark pending → in_progress (capture for undo)
+        const statusSnap: Array<{ id: string; status: PlanTaskStatus; completed_at: string | null }> = tasks
+          .filter((t) => ids.includes(t.id) && t.status === "pending")
+          .map((t) => ({ id: t.id, status: t.status, completed_at: t.completed_at }));
+        await Promise.all(statusSnap.map((s) => onUpdateTaskStatus(s.id, "in_progress")));
+
+        const summary = `Started ${ids.length} task${ids.length === 1 ? "" : "s"} for today`;
+        onLogActivity?.({ kind: "coach_action", summary, detail: action.reason, count: ids.length });
+
+        if (statusSnap.length > 0) {
+          offerStatusUndo(statusSnap, summary);
+        } else if (moveSnap.length > 0) {
+          offerMoveUndo(moveSnap, summary);
+        } else {
+          toast({ title: summary });
+        }
+        consumeAction(messageId, action.task_id);
+        return;
+      }
+
+      const task = tasks.find((t) => t.id === action.task_id);
+      if (!task) {
+        toast({ title: "Task not found", description: "It may have been removed since the suggestion was made.", variant: "destructive" });
+        consumeAction(messageId, action.task_id);
+        return;
+      }
+
       switch (action.kind) {
         case "start_today": {
-          if (task.day_date !== todayIsoFn()) await onMoveTaskToDay(task.id, todayIsoFn());
-          if (task.status === "pending") await onUpdateTaskStatus(task.id, "in_progress");
-          toast({ title: "Started", description: task.title });
+          const moveSnap = task.day_date !== todayIsoFn() ? [{ id: task.id, day_date: task.day_date }] : [];
+          if (moveSnap.length > 0) await onMoveTaskToDay(task.id, todayIsoFn());
+          const statusSnap = task.status === "pending"
+            ? [{ id: task.id, status: task.status, completed_at: task.completed_at }]
+            : [];
+          if (statusSnap.length > 0) await onUpdateTaskStatus(task.id, "in_progress");
+          const label = `Started: ${task.title}`;
+          onLogActivity?.({ kind: "coach_action", summary: label, detail: action.reason, count: 1 });
+          if (statusSnap.length > 0) offerStatusUndo(statusSnap, label);
+          else if (moveSnap.length > 0) offerMoveUndo(moveSnap, label);
+          else toast({ title: label });
           break;
         }
         case "reschedule_today": {
+          const snap = [{ id: task.id, day_date: task.day_date }];
           await onMoveTaskToDay(task.id, todayIsoFn());
-          toast({ title: "Moved to today", description: task.title });
+          const label = `Moved to today: ${task.title}`;
+          onLogActivity?.({ kind: "coach_action", summary: label, detail: action.reason, count: 1 });
+          offerMoveUndo(snap, label);
           break;
         }
-        case "reschedule_tomorrow": {
+        case "reschedule_tomorrow":
+        case "snooze_24h": {
+          const snap = [{ id: task.id, day_date: task.day_date }];
           await onMoveTaskToDay(task.id, tomorrowIsoFn());
-          toast({ title: "Moved to tomorrow", description: task.title });
+          const label = action.kind === "snooze_24h"
+            ? `Snoozed 24h: ${task.title}`
+            : `Moved to tomorrow: ${task.title}`;
+          onLogActivity?.({ kind: "coach_action", summary: label, detail: action.reason, count: 1 });
+          offerMoveUndo(snap, label);
           break;
         }
         case "mark_done": {
+          const snap = [{ id: task.id, status: task.status, completed_at: task.completed_at }];
           await onUpdateTaskStatus(task.id, "done");
-          toast({ title: "Marked done", description: task.title });
+          const label = `Marked done: ${task.title}`;
+          onLogActivity?.({ kind: "coach_action", summary: label, detail: action.reason, count: 1 });
+          offerStatusUndo(snap, label);
           break;
         }
       }
@@ -246,7 +367,11 @@ export const PlanCoachPanel = ({
         description: e instanceof Error ? e.message : "Unknown error",
       });
     } finally {
-      setBusyAction(null);
+      setBusyKeys((cur) => {
+        const next = new Set(cur);
+        next.delete(key);
+        return next;
+      });
     }
   };
 
