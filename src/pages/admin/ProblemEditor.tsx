@@ -68,7 +68,10 @@ import { TabBadge } from "@/components/admin/editor/TabBadge";
 import { PublishChecklistDialog } from "@/components/admin/editor/PublishChecklistDialog";
 import { MarkdownToolbar } from "@/components/admin/editor/MarkdownToolbar";
 import { BulkTestsDialog } from "@/components/admin/editor/BulkTestsDialog";
+import { BulkExamplesDialog } from "@/components/admin/editor/BulkExamplesDialog";
 import { RunReferenceButton } from "@/components/admin/editor/RunReferenceButton";
+import { RunHistoryPanel } from "@/components/admin/editor/RunHistoryPanel";
+import { useRunHistory, buildLineDiff, type RunHistoryCase } from "@/hooks/useRunHistory";
 import { scaffoldStarterFromReference } from "@/lib/admin/codeScaffold";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -131,6 +134,13 @@ const ProblemEditor = () => {
   const [dirty, setDirty] = useState(false);
   const [slugTaken, setSlugTaken] = useState(false);
   const [draftRestoredAt, setDraftRestoredAt] = useState<string | null>(null);
+  const [lastDraftSavedAt, setLastDraftSavedAt] = useState<string | null>(null);
+  // Tick every 15s so the "Draft saved Xs ago" label stays fresh.
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick((n) => n + 1), 15000);
+    return () => window.clearInterval(id);
+  }, []);
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     try {
       const t = localStorage.getItem(ACTIVE_TAB_KEY) as TabId | null;
@@ -145,29 +155,34 @@ const ProblemEditor = () => {
   const descRef = useRef<HTMLTextAreaElement>(null);
   const { data: distinctTopics } = useDistinctTopics();
   const report = useMemo(() => validateProblem(form), [form]);
+  const runHistory = useRunHistory(slug ?? "");
 
   useEffect(() => {
     try { localStorage.setItem(ACTIVE_TAB_KEY, activeTab); } catch {}
   }, [activeTab]);
 
-  // Restore localStorage draft for NEW problems on first mount.
+  // Restore localStorage draft on first mount (works for new + existing problems).
+  // For existing problems we wait until the loaded problem arrives so we can compare.
+  const draftLoadedRef = useRef(false);
   useEffect(() => {
-    if (!isNew) return;
+    if (draftLoadedRef.current) return;
+    if (!isNew && !loaded?.problem) return;
+    draftLoadedRef.current = true;
     try {
-      const raw = localStorage.getItem(DRAFT_KEY(undefined));
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.form) {
-          setForm(parsed.form);
-          setDraftRestoredAt(parsed.savedAt ?? null);
-        }
+      const raw = localStorage.getItem(DRAFT_KEY(slug));
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.form) {
+        setForm(parsed.form);
+        setDraftRestoredAt(parsed.savedAt ?? null);
+        setLastDraftSavedAt(parsed.savedAt ?? null);
+        setDirty(true);
       }
     } catch (_) {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isNew, loaded, slug]);
 
   useEffect(() => {
-    if (loaded?.problem) {
+    if (loaded?.problem && !draftLoadedRef.current) {
       const p = loaded.problem;
       setForm({
         slug: p.slug,
@@ -204,19 +219,61 @@ const ProblemEditor = () => {
     setDirty(true);
   };
 
-  // Autosave drafts to localStorage every 5 seconds while dirty (new problems only).
+  const discardDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY(slug)); } catch (_) {}
+    setDraftRestoredAt(null);
+    setLastDraftSavedAt(null);
+    draftLoadedRef.current = false;
+    if (loaded?.problem) {
+      const p = loaded.problem;
+      setForm({
+        slug: p.slug,
+        title: p.title,
+        difficulty: p.difficulty,
+        topics: p.topics ?? [],
+        description: p.description ?? "",
+        examples: Array.isArray(p.examples) && p.examples.length > 0 ? p.examples : [{ input: "", output: "" }],
+        constraints: p.constraints ?? [],
+        hints: p.hints ?? [],
+        cpu_time_limit_sec: Number(p.cpu_time_limit_sec ?? 2),
+        memory_limit_kb: p.memory_limit_kb ?? 256000,
+        is_published: !!p.is_published,
+        starter_code: loaded.starter_code ?? {},
+        reference_solution: loaded.reference_solution ?? {},
+        sample_tests: loaded.sample_tests ?? [],
+        hidden_tests: loaded.hidden_tests ?? [],
+        sql_spec: loaded.sql_spec
+          ? {
+              schema_sql: loaded.sql_spec.schema_sql ?? "",
+              seed_sql: loaded.sql_spec.seed_sql ?? "",
+              reference_query: loaded.sql_spec.reference_query ?? "",
+              order_matters: !!loaded.sql_spec.order_matters,
+              starter: loaded.sql_spec.starter ?? "",
+            }
+          : null,
+      });
+    } else {
+      setForm(emptyPayload());
+    }
+    setDirty(false);
+    toast({ title: "Draft discarded" });
+  };
+
+  // Autosave drafts to localStorage every 3 seconds while dirty (any problem).
   useEffect(() => {
-    if (!isNew || !dirty) return;
+    if (!dirty) return;
     const id = window.setTimeout(() => {
       try {
+        const savedAt = new Date().toISOString();
         localStorage.setItem(
-          DRAFT_KEY(undefined),
-          JSON.stringify({ form, savedAt: new Date().toISOString() }),
+          DRAFT_KEY(slug),
+          JSON.stringify({ form, savedAt }),
         );
+        setLastDraftSavedAt(savedAt);
       } catch (_) {}
-    }, 5000);
+    }, 3000);
     return () => window.clearTimeout(id);
-  }, [form, dirty, isNew]);
+  }, [form, dirty, slug]);
 
   // Block route/window unload while dirty.
   useEffect(() => {
@@ -284,8 +341,12 @@ const ProblemEditor = () => {
     await save.mutateAsync(cleaned);
     setDirty(false);
     try {
-      localStorage.removeItem(DRAFT_KEY(undefined));
+      localStorage.removeItem(DRAFT_KEY(slug));
+      // For brand-new problems, also clear the temp "__new__" draft so the next /new is empty.
+      if (isNew) localStorage.removeItem(DRAFT_KEY(undefined));
     } catch (_) {}
+    setLastDraftSavedAt(null);
+    setDraftRestoredAt(null);
     if (isNew) nav(`/admin/problems/${cleaned.slug}/edit`, { replace: true });
   };
 
@@ -324,12 +385,30 @@ const ProblemEditor = () => {
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          {dirty && (
-            <span className="text-xs text-amber-500">● Unsaved changes</span>
+          {dirty && lastDraftSavedAt && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-500"
+              title={`Auto-saved at ${new Date(lastDraftSavedAt).toLocaleString()}`}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Draft saved {formatRelative(lastDraftSavedAt)}
+            </span>
           )}
-          {!dirty && draftRestoredAt && isNew && (
-            <span className="text-xs text-muted-foreground">
-              Draft restored
+          {dirty && !lastDraftSavedAt && (
+            <span className="text-xs text-amber-500">● Unsaved — autosave in a moment…</span>
+          )}
+          {!dirty && draftRestoredAt && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              Draft restored from {formatRelative(draftRestoredAt)}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-[11px]"
+                onClick={discardDraft}
+              >
+                Discard
+              </Button>
             </span>
           )}
           {form.is_published ? (
@@ -684,11 +763,35 @@ const ProblemEditor = () => {
                       source={form.reference_solution[activeLang] ?? ""}
                       language={activeLang}
                       stdin={ex.input}
+                      expected={ex.output}
                       label={`Run (${activeLang})`}
                       onResult={(out) => {
                         const next = [...form.examples];
                         next[i] = { ...ex, output: out };
                         update("examples", next);
+                      }}
+                      onSavedRun={(res) => {
+                        const got = res.stdout;
+                        const expected = (ex.output ?? "").trimEnd();
+                        const pass = got === expected;
+                        runHistory.append({
+                          kind: "run-example",
+                          language: activeLang,
+                          label: `Example ${i + 1}`,
+                          passed: pass ? 1 : 0,
+                          total: 1,
+                          note: res.stderr ? `stderr: ${res.stderr.slice(0, 120)}` : undefined,
+                          cases: [
+                            {
+                              index: i,
+                              pass,
+                              input: ex.input,
+                              expected,
+                              got,
+                              diff: pass ? undefined : buildLineDiff(expected, got),
+                            },
+                          ],
+                        });
                       }}
                     />
                     <Button
@@ -738,14 +841,26 @@ const ProblemEditor = () => {
                 </div>
               </div>
             ))}
-            <Button
-              variant="outline"
-              onClick={() =>
-                update("examples", [...form.examples, { input: "", output: "" }])
-              }
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add example
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  update("examples", [...form.examples, { input: "", output: "" }])
+                }
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add example
+              </Button>
+              <BulkExamplesDialog
+                existing={form.examples.filter((e) => e.input || e.output)}
+                onAdd={(added) => update("examples", [...form.examples, ...added])}
+                onReplace={(items) => update("examples", items.length ? items : [{ input: "", output: "" }])}
+                trigger={
+                  <Button variant="outline" type="button">
+                    <Upload className="mr-2 h-4 w-4" /> Import / export JSON
+                  </Button>
+                }
+              />
+            </div>
           </Card>
         </TabsContent>
 
@@ -870,7 +985,23 @@ const ProblemEditor = () => {
                   }
                   setRefValidation({ running: false, results });
                   const ok = results.filter((r) => r.pass).length;
-                  toast({ title: `Reference: ${ok}/${results.length} passed` });
+                  // Save to run history for troubleshooting / diff comparison.
+                  runHistory.append({
+                    kind: "validate-samples",
+                    language: activeLang,
+                    label: "Validate against samples",
+                    passed: ok,
+                    total: results.length,
+                    cases: results.map<RunHistoryCase>((r) => ({
+                      index: r.idx,
+                      pass: r.pass,
+                      input: form.sample_tests[r.idx]?.input ?? "",
+                      expected: (r.expected ?? "").trimEnd(),
+                      got: r.got,
+                      diff: r.pass ? undefined : buildLineDiff((r.expected ?? "").trimEnd(), r.got),
+                    })),
+                  });
+                  toast({ title: `Reference: ${ok}/${results.length} passed`, description: "Saved to run history." });
                 }}
               >
                 {refValidation.running ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Play className="mr-1.5 h-3.5 w-3.5" />}
@@ -898,6 +1029,13 @@ const ProblemEditor = () => {
               )
             }
           />
+          <div className="mt-4">
+            <RunHistoryPanel
+              entries={runHistory.entries}
+              onClear={runHistory.clear}
+              onRemove={runHistory.remove}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="tests">
@@ -909,6 +1047,27 @@ const ProblemEditor = () => {
               onChange={(t) => update("sample_tests", t)}
               referenceSource={form.reference_solution[activeLang] ?? ""}
               referenceLang={activeLang}
+              onSaveRun={(idx, t, res) => {
+                const expected = (t.expected ?? "").trimEnd();
+                const got = res.stdout;
+                const pass = got === expected;
+                runHistory.append({
+                  kind: "run-test",
+                  language: activeLang,
+                  label: `Sample test #${idx + 1}`,
+                  passed: pass ? 1 : 0,
+                  total: 1,
+                  note: res.stderr ? `stderr: ${res.stderr.slice(0, 120)}` : undefined,
+                  cases: [{
+                    index: idx,
+                    pass,
+                    input: t.input,
+                    expected,
+                    got,
+                    diff: pass ? undefined : buildLineDiff(expected, got),
+                  }],
+                });
+              }}
             />
             <TestsTable
               title="Hidden tests"
@@ -917,6 +1076,32 @@ const ProblemEditor = () => {
               onChange={(t) => update("hidden_tests", t)}
               referenceSource={form.reference_solution[activeLang] ?? ""}
               referenceLang={activeLang}
+              onSaveRun={(idx, t, res) => {
+                const expected = (t.expected ?? "").trimEnd();
+                const got = res.stdout;
+                const pass = got === expected;
+                runHistory.append({
+                  kind: "run-test",
+                  language: activeLang,
+                  label: `Hidden test #${idx + 1}`,
+                  passed: pass ? 1 : 0,
+                  total: 1,
+                  note: res.stderr ? `stderr: ${res.stderr.slice(0, 120)}` : undefined,
+                  cases: [{
+                    index: idx,
+                    pass,
+                    input: t.input,
+                    expected,
+                    got,
+                    diff: pass ? undefined : buildLineDiff(expected, got),
+                  }],
+                });
+              }}
+            />
+            <RunHistoryPanel
+              entries={runHistory.entries}
+              onClear={runHistory.clear}
+              onRemove={runHistory.remove}
             />
           </div>
         </TabsContent>
@@ -1209,6 +1394,7 @@ const TestsTable = ({
   onChange,
   referenceSource,
   referenceLang,
+  onSaveRun,
 }: {
   title: string;
   subtitle?: string;
@@ -1216,6 +1402,11 @@ const TestsTable = ({
   onChange: (v: { input: string; expected: string }[]) => void;
   referenceSource?: string;
   referenceLang?: LangId;
+  onSaveRun?: (
+    idx: number,
+    test: { input: string; expected: string },
+    res: { stdout: string; stderr: string; ok: boolean; expected?: string },
+  ) => void;
 }) => (
   <Card className="space-y-3 p-4">
     <div className="flex flex-wrap items-center gap-2">
@@ -1277,12 +1468,14 @@ const TestsTable = ({
                 source={referenceSource ?? ""}
                 language={referenceLang}
                 stdin={t.input}
+                expected={t.expected}
                 label="Fill expected"
                 onResult={(out) => {
                   const next = [...tests];
                   next[i] = { ...t, expected: out };
                   onChange(next);
                 }}
+                onSavedRun={onSaveRun ? (res) => onSaveRun(i, t, res) : undefined}
               />
             )}
             <Button
