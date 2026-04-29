@@ -1029,6 +1029,13 @@ const ProblemEditor = () => {
               )
             }
           />
+          <div className="mt-4">
+            <RunHistoryPanel
+              entries={runHistory.entries}
+              onClear={runHistory.clear}
+              onRemove={runHistory.remove}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="tests">
@@ -1040,6 +1047,27 @@ const ProblemEditor = () => {
               onChange={(t) => update("sample_tests", t)}
               referenceSource={form.reference_solution[activeLang] ?? ""}
               referenceLang={activeLang}
+              onSaveRun={(idx, t, res) => {
+                const expected = (t.expected ?? "").trimEnd();
+                const got = res.stdout;
+                const pass = got === expected;
+                runHistory.append({
+                  kind: "run-test",
+                  language: activeLang,
+                  label: `Sample test #${idx + 1}`,
+                  passed: pass ? 1 : 0,
+                  total: 1,
+                  note: res.stderr ? `stderr: ${res.stderr.slice(0, 120)}` : undefined,
+                  cases: [{
+                    index: idx,
+                    pass,
+                    input: t.input,
+                    expected,
+                    got,
+                    diff: pass ? undefined : buildLineDiff(expected, got),
+                  }],
+                });
+              }}
             />
             <TestsTable
               title="Hidden tests"
@@ -1048,6 +1076,32 @@ const ProblemEditor = () => {
               onChange={(t) => update("hidden_tests", t)}
               referenceSource={form.reference_solution[activeLang] ?? ""}
               referenceLang={activeLang}
+              onSaveRun={(idx, t, res) => {
+                const expected = (t.expected ?? "").trimEnd();
+                const got = res.stdout;
+                const pass = got === expected;
+                runHistory.append({
+                  kind: "run-test",
+                  language: activeLang,
+                  label: `Hidden test #${idx + 1}`,
+                  passed: pass ? 1 : 0,
+                  total: 1,
+                  note: res.stderr ? `stderr: ${res.stderr.slice(0, 120)}` : undefined,
+                  cases: [{
+                    index: idx,
+                    pass,
+                    input: t.input,
+                    expected,
+                    got,
+                    diff: pass ? undefined : buildLineDiff(expected, got),
+                  }],
+                });
+              }}
+            />
+            <RunHistoryPanel
+              entries={runHistory.entries}
+              onClear={runHistory.clear}
+              onRemove={runHistory.remove}
             />
           </div>
         </TabsContent>
