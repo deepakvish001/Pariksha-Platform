@@ -2,9 +2,10 @@ import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar } from "lucide-react";
+import { Clock, Calendar, Sparkles, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PlanTask } from "@/hooks/useStudyPlan";
+import { getNextRecommendation } from "@/lib/adaptive/rerank";
 
 interface Props {
   tasks: PlanTask[];
