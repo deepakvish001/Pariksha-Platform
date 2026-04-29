@@ -452,17 +452,14 @@ const ProblemEditor = () => {
           </Badge>
         )}
       </div>
-      <Tabs defaultValue="basics">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)}>
         <TabsList className="flex flex-wrap h-auto">
-          <TabsTrigger value="basics">Basics</TabsTrigger>
-          <TabsTrigger value="statement">Statement</TabsTrigger>
-          <TabsTrigger value="examples">Examples</TabsTrigger>
-          <TabsTrigger value="constraints">Constraints &amp; Hints</TabsTrigger>
-          <TabsTrigger value="starter">Starter Code</TabsTrigger>
-          <TabsTrigger value="reference">Reference Solution</TabsTrigger>
-          <TabsTrigger value="tests">Tests</TabsTrigger>
-          <TabsTrigger value="sql">SQL Spec</TabsTrigger>
-          <TabsTrigger value="limits">Limits</TabsTrigger>
+          {(Object.keys(TAB_LABELS) as TabId[]).map((id) => (
+            <TabsTrigger key={id} value={id}>
+              {TAB_LABELS[id]}
+              <TabBadge status={report.sections[id].status} />
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value="basics">
