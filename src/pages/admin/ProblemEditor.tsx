@@ -891,6 +891,7 @@ const ProblemEditor = () => {
                 placeholder="1 <= n <= 10^5"
                 fieldPrefix="constraints"
                 highlightedField={highlightedField}
+                multiline
                 inline
               />
               <div>
@@ -918,9 +919,13 @@ const ProblemEditor = () => {
                 fieldPrefix="hints"
                 highlightedField={highlightedField}
                 numbered
+                multiline
                 inline
               />
             </Card>
+            <div className="md:col-span-2">
+              <HintsPreview hints={form.hints} />
+            </div>
           </div>
         </TabsContent>
 
