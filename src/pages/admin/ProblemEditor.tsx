@@ -1468,12 +1468,14 @@ const TestsTable = ({
                 source={referenceSource ?? ""}
                 language={referenceLang}
                 stdin={t.input}
+                expected={t.expected}
                 label="Fill expected"
                 onResult={(out) => {
                   const next = [...tests];
                   next[i] = { ...t, expected: out };
                   onChange(next);
                 }}
+                onSavedRun={onSaveRun ? (res) => onSaveRun(i, t, res) : undefined}
               />
             )}
             <Button
