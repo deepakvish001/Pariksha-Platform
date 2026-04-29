@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useNotifications, Notification } from "@/hooks/useNotifications";
 import { formatDistanceToNow, format } from "date-fns";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
