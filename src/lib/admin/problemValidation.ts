@@ -114,6 +114,28 @@ export const validateProblem = (form: FullProblemPayload): ValidationReport => {
       if (desc.length > 8000) r.warnings.push({ field: "description", message: "Description is very long (>8000 chars)" });
       if (hasTrailingWhitespace(form.description ?? ""))
         r.warnings.push({ field: "description", message: "Description has trailing whitespace on some lines" });
+
+      // Image audit: flag images missing alt text or hosted on non-storage origins.
+      const imgs = Array.from(
+        (form.description ?? "").matchAll(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g),
+      );
+      imgs.forEach((m) => {
+        const alt = (m[1] ?? "").trim();
+        const url = m[2] ?? "";
+        if (!alt) {
+          r.warnings.push({
+            field: "description",
+            message: `Image "${url.slice(0, 40)}…" has no alt text (hurts accessibility & SEO)`,
+          });
+        }
+        if (/^(http:\/\/localhost|http:\/\/127\.|blob:|data:)/i.test(url)) {
+          r.warnings.push({
+            field: "description",
+            message: `Image URL "${url.slice(0, 50)}" is local-only and will not load for learners`,
+          });
+        }
+      });
+
     }
     sections.statement = finalize(r);
   }
