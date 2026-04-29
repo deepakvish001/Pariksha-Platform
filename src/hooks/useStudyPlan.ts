@@ -375,6 +375,6 @@ export const useStudyPlan = () => {
   return {
     plan, tasks, loading, generating,
     generate, updateTaskStatus, moveTaskToDay, toggleLock, setActualMinutes, catchUp,
-    addAdhocTask, refresh,
+    addAdhocTask, bulkUpdateStatus, restoreStatuses, refresh,
   };
 };
