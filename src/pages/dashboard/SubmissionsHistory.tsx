@@ -869,3 +869,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
     </div>
   );
 }
+
+export default function SubmissionsHistory() {
+  return <SubmissionsAndRunsBody />;
+}
