@@ -25,8 +25,11 @@ export interface NextRecommendation {
   difficultyDelta: -1 | 0 | 1;
 }
 
+export type RecommendationMode = "adaptive" | "fixed";
+
 export const getNextRecommendation = (
-  tasks: PlanTask[]
+  tasks: PlanTask[],
+  mode: RecommendationMode = "adaptive"
 ): NextRecommendation | null => {
   if (tasks.length === 0) return null;
 
