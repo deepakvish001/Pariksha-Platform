@@ -61,7 +61,8 @@ import { VerdictBadge } from "@/components/coding/VerdictBadge";
 import { CodeExecutionError, useCodeRunner, type RunResult, type SubmitResult, type CaseResult } from "@/hooks/useCodeRunner";
 import { getExecLimitsForLang, formatLimits } from "@/lib/coding/executionLimits";
 
-import { Cpu } from "lucide-react";
+import { Cpu, Info } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useCodeDraft } from "@/hooks/useCodeDraft";
 import { useCodingSubmissions } from "@/hooks/useCodingSubmissions";
 import { useCodeRuns } from "@/hooks/useCodeRuns";
@@ -777,21 +778,58 @@ const CodingProblemDetail = () => {
               memKb: problem.memoryLimitKb,
             });
             return (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge
-                    variant="outline"
-                    className="hidden md:inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide cursor-help"
-                  >
-                    <Cpu className="h-3 w-3" />
-                    {`${(limits.cpuMs / 1000).toFixed(1)}s · ${Math.round(limits.memKb / 1024)}MB`}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  <p className="font-medium mb-1">Execution limits ({langInfo.label})</p>
-                  <p className="text-muted-foreground">{formatLimits(limits)}</p>
-                </TooltipContent>
-              </Tooltip>
+              <div className="hidden md:inline-flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide cursor-help"
+                    >
+                      <Cpu className="h-3 w-3" />
+                      {`${(limits.cpuMs / 1000).toFixed(1)}s · ${Math.round(limits.memKb / 1024)}MB`}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    <p className="font-medium mb-1">Execution limits ({langInfo.label})</p>
+                    <p className="text-muted-foreground">{formatLimits(limits)}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="What do these limits mean?"
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="bottom" align="end" className="w-80 text-xs space-y-2">
+                    <p className="text-sm font-semibold text-foreground">
+                      What do <span className="font-mono">{(limits.cpuMs / 1000).toFixed(1)}s · {Math.round(limits.memKb / 1024)}MB</span> mean?
+                    </p>
+                    <p className="text-muted-foreground">
+                      These are the <span className="font-medium text-foreground">execution limits</span> applied to your code when you Run or Submit it on this problem.
+                    </p>
+                    <ul className="space-y-1.5 text-muted-foreground">
+                      <li>
+                        <span className="font-mono text-foreground">{(limits.cpuMs / 1000).toFixed(1)}s CPU</span> — max time your code can spend doing work on a single test case. Exceed it and you'll see <span className="font-medium">Time Limit Exceeded</span>.
+                      </li>
+                      <li>
+                        <span className="font-mono text-foreground">{Math.round(limits.memKb / 1024)}MB memory</span> — max RAM your program can use. Exceed it and you'll see <span className="font-medium">Memory Limit Exceeded</span>.
+                      </li>
+                      <li>
+                        <span className="font-mono text-foreground">Wall {(Math.max(limits.wallMs, limits.cpuMs) / 1000).toFixed(1)}s</span> — total real-world time including I/O before the run is killed.
+                      </li>
+                    </ul>
+                    <p className="text-[11px] text-muted-foreground pt-1 border-t">
+                      Limits vary per language (e.g. Python and Java get a bit more time than C++). Switching the language updates these numbers automatically.
+                    </p>
+                  </PopoverContent>
+                </Popover>
+              </div>
             );
           })()}
           <Button
