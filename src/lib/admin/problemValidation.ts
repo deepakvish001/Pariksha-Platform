@@ -171,10 +171,31 @@ export const validateProblem = (form: FullProblemPayload): ValidationReport => {
         }
         if (trimmed.length > 200)
           r.warnings.push({ field: fid, message: `Constraint #${i + 1} is very long (>200 chars)` });
+        if (trimmed !== c)
+          r.warnings.push({ field: fid, message: `Constraint #${i + 1} has leading/trailing whitespace` });
         if (seen.has(trimmed))
           r.warnings.push({ field: fid, message: `Constraint #${i + 1} duplicates an earlier entry` });
         seen.add(trimmed);
         if (CONSTRAINT_HINT_RE.test(trimmed)) hasNumeric = true;
+
+        // Numeric-bound consistency: lower must be <= upper.
+        const m = trimmed.match(NUMERIC_RANGE_RE);
+        if (m) {
+          const lo = parseNumericLiteral(m[1]);
+          const hi = parseNumericLiteral(m[2]);
+          if (lo != null && hi != null && lo > hi) {
+            r.errors.push({
+              field: fid,
+              message: `Constraint #${i + 1}: lower bound ${m[1]} > upper bound ${m[2]}`,
+            });
+          }
+        }
+        // Catch a common formatting slip: mixing < and <= e.g. "1 < n <= 5".
+        if (/[^<>=]<\s*[A-Za-z_]/.test(trimmed) && /<=/.test(trimmed))
+          r.warnings.push({
+            field: fid,
+            message: `Constraint #${i + 1}: mixes "<" and "<=" — pick one form for clarity`,
+          });
       });
       if (!hasNumeric)
         r.warnings.push({ field: "constraints", message: "No numeric bounds detected (e.g. 1 <= n <= 10^5)" });
@@ -184,11 +205,29 @@ export const validateProblem = (form: FullProblemPayload): ValidationReport => {
     if (hints.length === 0) {
       r.warnings.push({ field: "hints", message: "No hints listed" });
     } else {
+      const seenHints = new Set<string>();
       hints.forEach((h, i) => {
-        if (!h.trim()) r.errors.push({ field: `hints[${i}]`, message: `Hint #${i + 1} is empty` });
-        else if (h.trim().length < 8)
-          r.warnings.push({ field: `hints[${i}]`, message: `Hint #${i + 1} is very short` });
+        const fid = `hints[${i}]`;
+        const trimmed = h.trim();
+        if (!trimmed) {
+          r.errors.push({ field: fid, message: `Hint #${i + 1} is empty` });
+          return;
+        }
+        if (trimmed.length < 8)
+          r.warnings.push({ field: fid, message: `Hint #${i + 1} is very short (<8 chars)` });
+        if (trimmed.length > 400)
+          r.warnings.push({ field: fid, message: `Hint #${i + 1} is too long (>400 chars) — split it up` });
+        if (h !== trimmed)
+          r.warnings.push({ field: fid, message: `Hint #${i + 1} has leading/trailing whitespace` });
+        if (/\n{3,}/.test(h))
+          r.warnings.push({ field: fid, message: `Hint #${i + 1} contains excessive blank lines` });
+        const norm = trimmed.toLowerCase();
+        if (seenHints.has(norm))
+          r.warnings.push({ field: fid, message: `Hint #${i + 1} duplicates an earlier hint` });
+        seenHints.add(norm);
       });
+      if (hints.length > 5)
+        r.warnings.push({ field: "hints", message: "More than 5 hints may over-spoil the problem" });
     }
     sections.constraints = finalize(r);
   }
