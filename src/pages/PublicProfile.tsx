@@ -337,6 +337,11 @@ const PublicProfile = () => {
 
   const isOwner = user?.id === profile.user_id;
 
+  // Owner sees the full editable DashboardProfile UI on their own /u/:username
+  if (isOwner) {
+    return <DashboardProfile />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
