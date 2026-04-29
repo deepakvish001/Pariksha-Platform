@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
+import DashboardProfile from "./DashboardProfile";
 import {
   User,
   Mail,
@@ -335,6 +336,11 @@ const PublicProfile = () => {
     : `Check out ${profile.full_name}'s profile on Byteskill. ${profile.occupation ?? ""} ${profile.location ? `from ${profile.location}` : ""}`.trim();
 
   const isOwner = user?.id === profile.user_id;
+
+  // Owner sees the full editable DashboardProfile UI on their own /u/:username
+  if (isOwner) {
+    return <DashboardProfile />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
