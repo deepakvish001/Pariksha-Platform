@@ -68,6 +68,7 @@ import { TabBadge } from "@/components/admin/editor/TabBadge";
 import { PublishChecklistDialog } from "@/components/admin/editor/PublishChecklistDialog";
 import { useFieldHighlight, fieldHighlightClass } from "@/hooks/useFieldHighlight";
 import { MarkdownToolbar } from "@/components/admin/editor/MarkdownToolbar";
+import { MarkdownEditor } from "@/components/admin/editor/MarkdownEditor";
 import { BulkTestsDialog } from "@/components/admin/editor/BulkTestsDialog";
 import { BulkExamplesDialog } from "@/components/admin/editor/BulkExamplesDialog";
 import { RunReferenceButton } from "@/components/admin/editor/RunReferenceButton";
