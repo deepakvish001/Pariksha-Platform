@@ -310,6 +310,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
             <Button
               type="button"
               size="sm"
+              variant={galleryOpen ? "secondary" : "outline"}
+              className="h-7 px-2"
+              onClick={() => setGalleryOpen((v) => !v)}
+              title="Show gallery of all uploaded images"
+            >
+              <Images className="mr-1 h-3.5 w-3.5" />
+              {galleryOpen ? "Hide gallery" : "Gallery"}
+            </Button>
+          )}
+          {!fullscreen && (
+            <Button
+              type="button"
+              size="sm"
               variant="outline"
               className="h-7 px-2"
               onClick={() => setFullscreen(true)}
