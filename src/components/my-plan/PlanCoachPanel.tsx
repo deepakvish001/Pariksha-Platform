@@ -515,11 +515,16 @@ export const PlanCoachPanel = ({
                         {m.actions.map((a) => {
                           const meta = ACTION_META[a.kind];
                           const Icon = meta.Icon;
-                          const isBusy = busyAction === `${m.id}:${a.task_id}`;
+                          const key = `${m.id}:${a.task_id}:${a.kind}`;
+                          const isBusy = busyKeys.has(key);
+                          const disabled = streaming || (anyBusy && !isBusy);
                           return (
                             <div
                               key={a.task_id + a.kind}
-                              className="rounded-lg border border-border/50 bg-background/60 px-2.5 py-2 flex items-start gap-2"
+                              className={cn(
+                                "rounded-lg border border-border/50 bg-background/60 px-2.5 py-2 flex items-start gap-2 transition-opacity",
+                                disabled && !isBusy && "opacity-50",
+                              )}
                             >
                               <div className="flex-1 min-w-0 space-y-0.5">
                                 <p className="text-xs font-medium truncate">{a.task_title}</p>
@@ -530,12 +535,13 @@ export const PlanCoachPanel = ({
                                 variant="secondary"
                                 className="h-7 px-2 text-xs shrink-0"
                                 onClick={() => runAction(m.id, a)}
-                                disabled={isBusy || streaming}
+                                disabled={isBusy || disabled}
+                                aria-busy={isBusy}
                               >
                                 {isBusy
-                                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                                  ? <Loader2 className="h-3 w-3 animate-spin mr-1" />
                                   : <Icon className="h-3 w-3 mr-1" />}
-                                {meta.label}
+                                {isBusy ? "Working…" : meta.label}
                               </Button>
                             </div>
                           );
