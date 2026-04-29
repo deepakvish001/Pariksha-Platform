@@ -35,6 +35,7 @@ import { PlanCoachPanel } from "@/components/my-plan/PlanCoachPanel";
 import { exportPlanToPdf } from "@/lib/my-plan/exportPlanPdf";
 import { downloadPlanIcs } from "@/lib/my-plan/exportPlanIcs";
 import { resolveTaskLink } from "@/lib/my-plan/taskLinks";
+import { usePlanActivityLog } from "@/hooks/usePlanActivityLog";
 import type { RecommendationMode } from "@/lib/adaptive/rerank";
 import { toast } from "@/hooks/use-toast";
 
@@ -54,8 +55,9 @@ const MyPlan = () => {
   const {
     plan, tasks, loading: planLoading, generating,
     generate, updateTaskStatus, moveTaskToDay, toggleLock, catchUp, addAdhocTask,
-    bulkUpdateStatus, restoreStatuses,
+    bulkUpdateStatus, restoreStatuses, bulkMoveToDay, restoreDays,
   } = useStudyPlan();
+  const { entries: activity, log: logActivity, clear: clearActivity } = usePlanActivityLog();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [recMode, setRecMode] = useState<RecommendationMode>(() => {
     if (typeof window === "undefined") return "adaptive";
@@ -221,6 +223,9 @@ const MyPlan = () => {
                 profile={profile}
                 onUpdateTaskStatus={updateTaskStatus}
                 onMoveTaskToDay={moveTaskToDay}
+                onBulkMoveToDay={bulkMoveToDay}
+                onRestoreDays={restoreDays}
+                onLogActivity={logActivity}
               />
             )}
             {profile && plan && (
@@ -366,7 +371,13 @@ const MyPlan = () => {
                 {plan && <ProgressAnalytics tasks={tasks} />}
               </div>
               <div className="space-y-4 sm:space-y-6">
-                {plan && <GoalProgressWidget tasks={tasks} />}
+                {plan && (
+                  <GoalProgressWidget
+                    tasks={tasks}
+                    activity={activity}
+                    onClearActivity={clearActivity}
+                  />
+                )}
                 {plan && (
                   <FocusTimerCard
                     tasks={tasks}
