@@ -504,7 +504,7 @@ const PublicProfile = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   {isOwner ? (
-                    <Link to="/dashboard/profile">
+                    <Link to={`/u/${profile.username}`}>
                       <Button size="sm" variant="outline" className="gap-1.5">
                         <Share2 className="h-3.5 w-3.5" /> Edit Profile
                       </Button>
