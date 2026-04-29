@@ -18,6 +18,7 @@ import {
   Code2,
   Sigma,
   Link2,
+  Ruler,
 } from "lucide-react";
 import { RefObject } from "react";
 import {
@@ -37,6 +38,8 @@ interface Props {
   onPickImageUpload?: () => void;
   /** Insert an image by URL (prompts for URL + alt). */
   onInsertImageUrl?: () => void;
+  /** Insert an image with explicit width/size (prompts for URL + width). */
+  onInsertImageWithSize?: () => void;
   uploading?: boolean;
 }
 
@@ -85,9 +88,10 @@ const insertBlock = (
   const start = el.selectionStart ?? value.length;
   const before = value.slice(0, start);
   const after = value.slice(start);
-  // Ensure the block sits on its own paragraph.
-  const lead = before.endsWith("\n\n") || before === "" ? "" : before.endsWith("\n") ? "\n" : "\n\n";
-  const trail = after.startsWith("\n\n") || after === "" ? "" : after.startsWith("\n") ? "\n" : "\n\n";
+  const lead =
+    before.endsWith("\n\n") || before === "" ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+  const trail =
+    after.startsWith("\n\n") || after === "" ? "" : after.startsWith("\n") ? "\n" : "\n\n";
   const inserted = lead + block + trail;
   onChange(before + inserted + after);
   requestAnimationFrame(() => {
@@ -109,6 +113,7 @@ export const MarkdownToolbar = ({
   onInsertExamples,
   onPickImageUpload,
   onInsertImageUrl,
+  onInsertImageWithSize,
   uploading,
 }: Props) => {
   const cmd = (fn: (el: HTMLTextAreaElement) => void) => () => {
@@ -118,59 +123,74 @@ export const MarkdownToolbar = ({
   };
 
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-1 rounded-md border bg-muted/20 p-1">
+    <div
+      className="mb-2 flex flex-wrap items-center gap-1 rounded-md border bg-muted/20 p-1"
+      role="toolbar"
+      aria-label="Markdown formatting"
+    >
       <Button
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Bold"
         title="Bold (⌘B)"
         onClick={cmd((el) => wrap(el, value, onChange, "**", "**", "bold"))}
       >
-        <Bold className="h-3.5 w-3.5" />
+        <Bold className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
       <Button
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Italic"
         title="Italic (⌘I)"
         onClick={cmd((el) => wrap(el, value, onChange, "*", "*", "italic"))}
       >
-        <Italic className="h-3.5 w-3.5" />
+        <Italic className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
       <Button
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Strikethrough"
         title="Strikethrough"
         onClick={cmd((el) => wrap(el, value, onChange, "~~", "~~", "strike"))}
       >
-        <Strikethrough className="h-3.5 w-3.5" />
+        <Strikethrough className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
       <Button
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Inline code"
         title="Inline code"
         onClick={cmd((el) => wrap(el, value, onChange, "`", "`", "code"))}
       >
-        <Code className="h-3.5 w-3.5" />
+        <Code className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
       <Button
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Insert code block"
         title="Code block"
         onClick={cmd((el) => insertBlock(el, value, onChange, "```text\nyour code here\n```"))}
       >
-        <Code2 className="h-3.5 w-3.5" />
+        <Code2 className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
 
       <Separator orientation="vertical" className="mx-1 h-5" />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" size="sm" variant="ghost" title="Heading">
-            <Heading2 className="h-3.5 w-3.5" />
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            aria-label="Insert heading"
+            title="Heading"
+          >
+            <Heading2 className="h-3.5 w-3.5" aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
@@ -190,55 +210,61 @@ export const MarkdownToolbar = ({
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Bulleted list"
         title="Bulleted list"
         onClick={cmd((el) => insertLine(el, value, onChange, "- "))}
       >
-        <List className="h-3.5 w-3.5" />
+        <List className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
       <Button
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Numbered list"
         title="Numbered list"
         onClick={cmd((el) => insertLine(el, value, onChange, "1. "))}
       >
-        <ListOrdered className="h-3.5 w-3.5" />
+        <ListOrdered className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
       <Button
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Task list"
         title="Task list"
         onClick={cmd((el) => insertLine(el, value, onChange, "- [ ] "))}
       >
-        <ListChecks className="h-3.5 w-3.5" />
+        <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
       <Button
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Quote block"
         title="Quote"
         onClick={cmd((el) => insertLine(el, value, onChange, "> "))}
       >
-        <Quote className="h-3.5 w-3.5" />
+        <Quote className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
       <Button
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Horizontal rule"
         title="Horizontal rule"
         onClick={cmd((el) => insertBlock(el, value, onChange, "---"))}
       >
-        <Minus className="h-3.5 w-3.5" />
+        <Minus className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
       <Button
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Insert table"
         title="Insert table"
         onClick={cmd((el) => insertBlock(el, value, onChange, TABLE_TEMPLATE))}
       >
-        <Table className="h-3.5 w-3.5" />
+        <Table className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
 
       <Separator orientation="vertical" className="mx-1 h-5" />
@@ -247,22 +273,24 @@ export const MarkdownToolbar = ({
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Insert link"
         title="Link (⌘K)"
         onClick={cmd((el) => wrap(el, value, onChange, "[", "](https://)", "link text"))}
       >
-        <LinkIcon className="h-3.5 w-3.5" />
+        <LinkIcon className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
       {onPickImageUpload && (
         <Button
           type="button"
           size="sm"
           variant="ghost"
+          aria-label="Upload image from device"
           title="Upload image (⌘⇧I)"
           onClick={onPickImageUpload}
           disabled={uploading}
         >
-          <ImageIcon className="h-3.5 w-3.5" />
-          {uploading ? <span className="ml-1 text-xs">…</span> : null}
+          <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          {uploading ? <span className="ml-1 text-xs" aria-live="polite">…</span> : null}
         </Button>
       )}
       {onInsertImageUrl && (
@@ -270,27 +298,47 @@ export const MarkdownToolbar = ({
           type="button"
           size="sm"
           variant="ghost"
+          aria-label="Insert image by URL"
           title="Insert image by URL"
           onClick={onInsertImageUrl}
         >
-          <Link2 className="h-3.5 w-3.5" />
+          <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
+        </Button>
+      )}
+      {onInsertImageWithSize && (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          aria-label="Insert image with width or size"
+          title="Insert image with size"
+          onClick={onInsertImageWithSize}
+        >
+          <Ruler className="h-3.5 w-3.5" aria-hidden="true" />
         </Button>
       )}
       <Button
         type="button"
         size="sm"
         variant="ghost"
+        aria-label="Inline math"
         title="Inline math"
         onClick={cmd((el) => wrap(el, value, onChange, "$", "$", "x^2"))}
       >
-        <Sigma className="h-3.5 w-3.5" />
+        <Sigma className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
 
       {onInsertExamples && (
         <>
           <Separator orientation="vertical" className="mx-1 h-5" />
-          <Button type="button" size="sm" variant="ghost" onClick={onInsertExamples}>
-            <Table className="mr-1 h-3.5 w-3.5" /> Insert examples
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            aria-label="Insert examples markdown"
+            onClick={onInsertExamples}
+          >
+            <Table className="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Insert examples
           </Button>
         </>
       )}
