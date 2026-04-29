@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,8 @@ import {
   Trash2,
   Plus,
   X,
+  Upload,
+  UploadCloud,
 } from "lucide-react";
 import {
   useProblemAssetGallery,
@@ -23,11 +25,47 @@ import { cn } from "@/lib/utils";
 interface Props {
   /** Insert markdown image syntax at the cursor of the editor. */
   onInsert: (markdown: string) => void;
+  /** Called when the user picks an image to insert — gives the host a chance
+   *  to prompt for alt text / width before writing markdown. */
+  onRequestInsert?: (image: GalleryImage) => void;
   /** Optional: bias matches toward this slug's folder. */
   currentSlug?: string;
   open: boolean;
   onClose: () => void;
+  /** Upload one or more files into the gallery. Refreshes the listing on success. */
+  onUploadFiles?: (files: FileList | File[]) => Promise<void> | void;
+  /** Whether an upload is currently in flight (used to disable the upload button). */
+  uploading?: boolean;
 }
+
+const FILTER_KEY = "admin.galleryPanel.filters.v1";
+
+interface PersistedFilters {
+  query: string;
+  folder: string;
+}
+
+const readFilters = (): PersistedFilters => {
+  try {
+    const raw = localStorage.getItem(FILTER_KEY);
+    if (!raw) return { query: "", folder: "" };
+    const parsed = JSON.parse(raw);
+    return {
+      query: typeof parsed?.query === "string" ? parsed.query : "",
+      folder: typeof parsed?.folder === "string" ? parsed.folder : "",
+    };
+  } catch {
+    return { query: "", folder: "" };
+  }
+};
+
+const writeFilters = (f: PersistedFilters) => {
+  try {
+    localStorage.setItem(FILTER_KEY, JSON.stringify(f));
+  } catch {
+    /* ignore */
+  }
+};
 
 const formatSize = (b?: number) => {
   if (!b) return "";
@@ -37,11 +75,31 @@ const formatSize = (b?: number) => {
 };
 
 /** Side panel listing every image already uploaded to the problem-assets
- *  bucket. Click a tile to insert it at the editor cursor. */
-export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Props) => {
+ *  bucket. Click a tile to insert it at the editor cursor. Supports drag-and-
+ *  drop uploads and a direct upload button. */
+export const ImageGalleryPanel = ({
+  onInsert,
+  onRequestInsert,
+  currentSlug,
+  open,
+  onClose,
+  onUploadFiles,
+  uploading,
+}: Props) => {
   const { images, loading, error, reload, setImages } = useProblemAssetGallery();
-  const [query, setQuery] = useState("");
-  const [folderFilter, setFolderFilter] = useState<string>("");
+  const initialFilters = useRef<PersistedFilters>(readFilters());
+  const [query, setQuery] = useState(initialFilters.current.query);
+  const [folderFilter, setFolderFilter] = useState<string>(
+    initialFilters.current.folder,
+  );
+  const [dragActive, setDragActive] = useState(false);
+  const dragCounter = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Persist filters as the user changes them.
+  useEffect(() => {
+    writeFilters({ query, folder: folderFilter });
+  }, [query, folderFilter]);
 
   const folders = useMemo(() => {
     const set = new Set<string>();
@@ -50,7 +108,6 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
       set.add(folder);
     });
     return Array.from(set).sort((a, b) => {
-      // Surface the current slug folder first.
       if (currentSlug && a === currentSlug) return -1;
       if (currentSlug && b === currentSlug) return 1;
       if (a === "drafts") return -1;
@@ -72,6 +129,10 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
   }, [images, query, folderFilter]);
 
   const insert = (img: GalleryImage) => {
+    if (onRequestInsert) {
+      onRequestInsert(img);
+      return;
+    }
     const alt = img.name.replace(/\.[^.]+$/, "");
     onInsert(`![${alt}](${img.publicUrl})`);
     toast({ title: "Inserted", description: img.name });
@@ -97,16 +158,73 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
     toast({ title: "Copied", description: "Image URL copied." });
   };
 
+  const handleFiles = async (files: FileList | File[]) => {
+    if (!onUploadFiles) return;
+    const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (!list.length) return;
+    await onUploadFiles(list);
+    // Refresh the gallery listing so the new asset appears immediately.
+    void reload();
+  };
+
+  const onDragEnter = (e: React.DragEvent) => {
+    if (!onUploadFiles) return;
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    dragCounter.current += 1;
+    setDragActive(true);
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    if (!onUploadFiles) return;
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    if (!onUploadFiles) return;
+    e.preventDefault();
+    dragCounter.current = Math.max(0, dragCounter.current - 1);
+    if (dragCounter.current === 0) setDragActive(false);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    if (!onUploadFiles) return;
+    e.preventDefault();
+    dragCounter.current = 0;
+    setDragActive(false);
+    const files = e.dataTransfer?.files;
+    if (files?.length) void handleFiles(files);
+  };
+
   if (!open) return null;
 
   return (
     <aside
       className={cn(
-        "flex flex-col rounded-md border bg-background",
+        "relative flex flex-col rounded-md border bg-background",
         "h-[600px] lg:h-auto lg:max-h-none",
+        dragActive && "ring-2 ring-primary ring-offset-2",
       )}
+      role="complementary"
       aria-label="Image gallery"
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
     >
+      {dragActive && (
+        <div
+          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center rounded-md bg-primary/10 backdrop-blur-sm"
+          aria-hidden="true"
+        >
+          <UploadCloud className="h-8 w-8 text-primary" />
+          <p className="mt-2 text-sm font-medium text-primary">
+            Drop to upload &amp; insert
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between border-b px-3 py-2">
         <Label className="flex items-center gap-1.5 text-sm font-medium">
           <Images className="h-4 w-4" /> Image gallery
@@ -115,11 +233,30 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
           </span>
         </Label>
         <div className="flex items-center gap-1">
+          {onUploadFiles && (
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              aria-label="Upload images to gallery"
+              title="Upload images"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!!uploading}
+            >
+              {uploading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Upload className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          )}
           <Button
             type="button"
             size="icon"
             variant="ghost"
             className="h-7 w-7"
+            aria-label="Refresh gallery"
             title="Refresh"
             onClick={() => void reload()}
             disabled={loading}
@@ -135,6 +272,7 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
             size="icon"
             variant="ghost"
             className="h-7 w-7"
+            aria-label="Hide gallery"
             title="Hide gallery"
             onClick={onClose}
           >
@@ -143,18 +281,37 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
         </div>
       </div>
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+        multiple
+        hidden
+        aria-hidden="true"
+        onChange={(e) => {
+          if (e.target.files?.length) {
+            void handleFiles(e.target.files);
+            e.target.value = "";
+          }
+        }}
+      />
+
       <div className="space-y-2 border-b p-2">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+          />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search filename or path…"
             className="h-8 pl-7 text-xs"
+            aria-label="Search gallery images"
           />
         </div>
         {folders.length > 1 && (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1" role="group" aria-label="Filter by folder">
             <button
               type="button"
               onClick={() => setFolderFilter("")}
@@ -164,6 +321,7 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
                   ? "border-primary bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-accent",
               )}
+              aria-pressed={!folderFilter}
             >
               All
             </button>
@@ -178,6 +336,7 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
                     ? "border-primary bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-accent",
                 )}
+                aria-pressed={folderFilter === f}
                 title={f === currentSlug ? "Current problem" : f}
               >
                 {f}
@@ -190,13 +349,16 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
 
       <div className="flex-1 overflow-auto p-2">
         {error && (
-          <p className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive"
+          >
             {error}
           </p>
         )}
         {!loading && filtered.length === 0 && !error && (
           <p className="rounded-md border border-dashed bg-muted/20 p-4 text-center text-xs text-muted-foreground">
-            No images match. Drop or paste images into the editor to upload.
+            No images match. Drop files here or use the upload button.
           </p>
         )}
         <div className="grid grid-cols-2 gap-2">
@@ -208,12 +370,13 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
               <button
                 type="button"
                 onClick={() => insert(img)}
-                className="block aspect-square w-full overflow-hidden"
+                className="block aspect-square w-full overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label={`Insert ${img.name}`}
                 title={`Insert ${img.name}`}
               >
                 <img
                   src={img.publicUrl}
-                  alt={img.name}
+                  alt=""
                   loading="lazy"
                   className="h-full w-full object-cover transition group-hover:scale-105"
                 />
@@ -224,12 +387,13 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
                   {img.path.split("/")[0]} · {formatSize(img.size)}
                 </p>
               </div>
-              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition group-hover:opacity-100">
+              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
                 <Button
                   type="button"
                   size="icon"
                   variant="secondary"
                   className="h-6 w-6"
+                  aria-label={`Insert ${img.name} at cursor`}
                   title="Insert at cursor"
                   onClick={() => insert(img)}
                 >
@@ -240,6 +404,7 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
                   size="icon"
                   variant="secondary"
                   className="h-6 w-6"
+                  aria-label={`Copy URL of ${img.name}`}
                   title="Copy URL"
                   onClick={() => copyUrl(img)}
                 >
@@ -250,6 +415,7 @@ export const ImageGalleryPanel = ({ onInsert, currentSlug, open, onClose }: Prop
                   size="icon"
                   variant="destructive"
                   className="h-6 w-6"
+                  aria-label={`Delete ${img.name}`}
                   title="Delete"
                   onClick={() => remove(img)}
                 >
