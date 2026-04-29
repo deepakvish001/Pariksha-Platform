@@ -735,21 +735,51 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
           ) : runs.length === 0 ? (
             <Card className="p-10 text-center space-y-3">
               <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <p className="font-medium">No runs match your filters</p>
-                <p className="text-sm text-muted-foreground">
-                  {hasActiveFilters
-                    ? "Try a wider date range or clear the search/language filter."
-                    : "Use “Run” in the editor to see your test runs here."}
-                </p>
+                {hasActiveFilters ? (
+                  <div className="text-sm text-muted-foreground space-y-1.5">
+                    <p>None of your runs match the current filters:</p>
+                    <ul className="text-xs inline-flex flex-wrap gap-x-3 gap-y-1 justify-center">
+                      {search && <li>• search “{search}”</li>}
+                      {language !== "all" && <li>• language = {language}</li>}
+                      {sort !== "newest" && (
+                        <li>• sort = {sort === "oldest" ? "oldest" : "best score"}</li>
+                      )}
+                      {(dateFrom || dateTo) && <li>• date {dateRangeLabel}</li>}
+                    </ul>
+                    <p className="text-xs">
+                      Note: verdict filter only affects submissions. Remove a chip above or clear individual filters below.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Use “Run” in the editor to see your test runs here.
+                  </p>
+                )}
               </div>
-              {hasActiveFilters && (
-                <div className="flex justify-center pt-1">
-                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
-                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset filters
+              <div className="flex flex-wrap justify-center gap-2 pt-1">
+                {search && (
+                  <Button variant="outline" size="sm" onClick={() => { setSearchInput(""); updateParams({ q: null, runPage: null }); }}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear search
                   </Button>
-                </div>
-              )}
+                )}
+                {language !== "all" && (
+                  <Button variant="outline" size="sm" onClick={() => updateParams({ lang: null, subPage: null, runPage: null })}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear language
+                  </Button>
+                )}
+                {(dateFrom || dateTo) && (
+                  <Button variant="outline" size="sm" onClick={() => setDateRange({ from: undefined, to: undefined })}>
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear dates
+                  </Button>
+                )}
+                {hasActiveFilters && (
+                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                    <FilterX className="h-3.5 w-3.5 mr-1" /> Reset all
+                  </Button>
+                )}
+              </div>
             </Card>
           ) : (
             <>
