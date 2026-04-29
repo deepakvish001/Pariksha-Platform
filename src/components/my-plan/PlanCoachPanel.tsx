@@ -7,11 +7,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Sparkles, Send, Square, RotateCcw, Bot, User as UserIcon,
   Flame, Play, CalendarClock, CalendarPlus, CheckCircle2, Loader2,
+  AlarmClock, Rocket,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { ToastAction } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useCoachChat, type CoachAction, type CoachContext } from "@/hooks/useCoachChat";
@@ -23,6 +26,9 @@ interface Props {
   profile: StudyProfile | null;
   onUpdateTaskStatus: (taskId: string, status: PlanTaskStatus) => Promise<void> | void;
   onMoveTaskToDay: (taskId: string, day: string) => Promise<void>;
+  onBulkMoveToDay?: (taskIds: string[], day: string) => Promise<Array<{ id: string; day_date: string }>>;
+  onRestoreDays?: (snapshot: Array<{ id: string; day_date: string }>) => Promise<void>;
+  onLogActivity?: (entry: { kind: "coach_action"; summary: string; detail?: string; count: number }) => void;
   trigger?: React.ReactNode;
 }
 
@@ -37,8 +43,8 @@ const tomorrowIsoFn = () => {
 const SUGGESTIONS = [
   "What should I do next right now?",
   "Summarize my upcoming streak and weak topics.",
-  "I have less time this week — what should I cut?",
-  "Make tomorrow easier on me.",
+  "Bulk-start the next 2-3 tasks for today.",
+  "Snooze my overdue tasks to tomorrow.",
 ];
 
 const ACTION_META: Record<CoachAction["kind"], { label: string; Icon: typeof Play }> = {
@@ -46,14 +52,20 @@ const ACTION_META: Record<CoachAction["kind"], { label: string; Icon: typeof Pla
   reschedule_today: { label: "Move to today", Icon: CalendarClock },
   reschedule_tomorrow: { label: "Move to tomorrow", Icon: CalendarPlus },
   mark_done: { label: "Mark done", Icon: CheckCircle2 },
+  snooze_24h: { label: "Snooze 24h", Icon: AlarmClock },
+  bulk_start_next: { label: "Start next batch", Icon: Rocket },
 };
 
-export const PlanCoachPanel = ({ tasks, profile, onUpdateTaskStatus, onMoveTaskToDay, trigger }: Props) => {
+export const PlanCoachPanel = ({
+  tasks, profile, onUpdateTaskStatus, onMoveTaskToDay,
+  onBulkMoveToDay, onRestoreDays, onLogActivity, trigger,
+}: Props) => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [busyKeys, setBusyKeys] = useState<Set<string>>(new Set());
   const { messages, streaming, error, send, reset, stop, consumeAction } = useCoachChat();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const anyBusy = busyKeys.size > 0;
 
   // --- Header summary (streak + top topics) ---
   const summary = useMemo(() => {
@@ -195,35 +207,156 @@ export const PlanCoachPanel = ({ tasks, profile, onUpdateTaskStatus, onMoveTaskT
     void send(text, context);
   };
 
-  const runAction = async (messageId: string, action: CoachAction) => {
-    const task = tasks.find((t) => t.id === action.task_id);
-    if (!task) {
-      toast({ title: "Task not found", description: "It may have been removed since the suggestion was made.", variant: "destructive" });
-      consumeAction(messageId, action.task_id);
+  const offerStatusUndo = (
+    snap: Array<{ id: string; status: PlanTaskStatus; completed_at: string | null }>,
+    label: string,
+  ) => {
+    toast({
+      title: label,
+      duration: 6000,
+      action: (
+        <ToastAction
+          altText="Undo"
+          onClick={async () => {
+            try {
+              await Promise.all(
+                snap.map((s) => onUpdateTaskStatus(s.id, s.status)),
+              );
+              toast({ title: "Undone", description: "Previous statuses restored." });
+            } catch (e) {
+              toast({
+                title: "Couldn't undo", variant: "destructive",
+                description: e instanceof Error ? e.message : "Unknown error",
+              });
+            }
+          }}
+        >
+          Undo
+        </ToastAction>
+      ),
+    });
+  };
+
+  const offerMoveUndo = (snap: Array<{ id: string; day_date: string }>, label: string) => {
+    if (!onRestoreDays) {
+      toast({ title: label, duration: 5000 });
       return;
     }
-    setBusyAction(`${messageId}:${action.task_id}`);
+    toast({
+      title: label,
+      duration: 6000,
+      action: (
+        <ToastAction
+          altText="Undo"
+          onClick={async () => {
+            try {
+              await onRestoreDays(snap);
+              toast({ title: "Undone", description: "Previous schedule restored." });
+            } catch (e) {
+              toast({
+                title: "Couldn't undo", variant: "destructive",
+                description: e instanceof Error ? e.message : "Unknown error",
+              });
+            }
+          }}
+        >
+          Undo
+        </ToastAction>
+      ),
+    });
+  };
+
+  const runAction = async (messageId: string, action: CoachAction) => {
+    const key = `${messageId}:${action.task_id}:${action.kind}`;
+    setBusyKeys((cur) => new Set(cur).add(key));
     try {
+      // Bulk start: handle a batch of task ids client-side.
+      if (action.kind === "bulk_start_next") {
+        const ids = (action.task_ids ?? []).filter((id) => tasks.some((t) => t.id === id));
+        if (ids.length === 0) {
+          toast({ title: "No tasks to start", description: "The suggestion referenced unknown tasks.", variant: "destructive" });
+          consumeAction(messageId, action.task_id);
+          return;
+        }
+        const today = todayIsoFn();
+        // Snapshot prior days for undo
+        const moveSnap: Array<{ id: string; day_date: string }> = tasks
+          .filter((t) => ids.includes(t.id) && t.day_date !== today)
+          .map((t) => ({ id: t.id, day_date: t.day_date }));
+        const idsNeedingMove = moveSnap.map((s) => s.id);
+        if (idsNeedingMove.length > 0 && onBulkMoveToDay) {
+          await onBulkMoveToDay(idsNeedingMove, today);
+        } else {
+          // Fallback: move one by one
+          for (const id of idsNeedingMove) await onMoveTaskToDay(id, today);
+        }
+        // Mark pending → in_progress (capture for undo)
+        const statusSnap: Array<{ id: string; status: PlanTaskStatus; completed_at: string | null }> = tasks
+          .filter((t) => ids.includes(t.id) && t.status === "pending")
+          .map((t) => ({ id: t.id, status: t.status, completed_at: t.completed_at }));
+        await Promise.all(statusSnap.map((s) => onUpdateTaskStatus(s.id, "in_progress")));
+
+        const summary = `Started ${ids.length} task${ids.length === 1 ? "" : "s"} for today`;
+        onLogActivity?.({ kind: "coach_action", summary, detail: action.reason, count: ids.length });
+
+        if (statusSnap.length > 0) {
+          offerStatusUndo(statusSnap, summary);
+        } else if (moveSnap.length > 0) {
+          offerMoveUndo(moveSnap, summary);
+        } else {
+          toast({ title: summary });
+        }
+        consumeAction(messageId, action.task_id);
+        return;
+      }
+
+      const task = tasks.find((t) => t.id === action.task_id);
+      if (!task) {
+        toast({ title: "Task not found", description: "It may have been removed since the suggestion was made.", variant: "destructive" });
+        consumeAction(messageId, action.task_id);
+        return;
+      }
+
       switch (action.kind) {
         case "start_today": {
-          if (task.day_date !== todayIsoFn()) await onMoveTaskToDay(task.id, todayIsoFn());
-          if (task.status === "pending") await onUpdateTaskStatus(task.id, "in_progress");
-          toast({ title: "Started", description: task.title });
+          const moveSnap = task.day_date !== todayIsoFn() ? [{ id: task.id, day_date: task.day_date }] : [];
+          if (moveSnap.length > 0) await onMoveTaskToDay(task.id, todayIsoFn());
+          const statusSnap = task.status === "pending"
+            ? [{ id: task.id, status: task.status, completed_at: task.completed_at }]
+            : [];
+          if (statusSnap.length > 0) await onUpdateTaskStatus(task.id, "in_progress");
+          const label = `Started: ${task.title}`;
+          onLogActivity?.({ kind: "coach_action", summary: label, detail: action.reason, count: 1 });
+          if (statusSnap.length > 0) offerStatusUndo(statusSnap, label);
+          else if (moveSnap.length > 0) offerMoveUndo(moveSnap, label);
+          else toast({ title: label });
           break;
         }
         case "reschedule_today": {
+          const snap = [{ id: task.id, day_date: task.day_date }];
           await onMoveTaskToDay(task.id, todayIsoFn());
-          toast({ title: "Moved to today", description: task.title });
+          const label = `Moved to today: ${task.title}`;
+          onLogActivity?.({ kind: "coach_action", summary: label, detail: action.reason, count: 1 });
+          offerMoveUndo(snap, label);
           break;
         }
-        case "reschedule_tomorrow": {
+        case "reschedule_tomorrow":
+        case "snooze_24h": {
+          const snap = [{ id: task.id, day_date: task.day_date }];
           await onMoveTaskToDay(task.id, tomorrowIsoFn());
-          toast({ title: "Moved to tomorrow", description: task.title });
+          const label = action.kind === "snooze_24h"
+            ? `Snoozed 24h: ${task.title}`
+            : `Moved to tomorrow: ${task.title}`;
+          onLogActivity?.({ kind: "coach_action", summary: label, detail: action.reason, count: 1 });
+          offerMoveUndo(snap, label);
           break;
         }
         case "mark_done": {
+          const snap = [{ id: task.id, status: task.status, completed_at: task.completed_at }];
           await onUpdateTaskStatus(task.id, "done");
-          toast({ title: "Marked done", description: task.title });
+          const label = `Marked done: ${task.title}`;
+          onLogActivity?.({ kind: "coach_action", summary: label, detail: action.reason, count: 1 });
+          offerStatusUndo(snap, label);
           break;
         }
       }
@@ -234,7 +367,11 @@ export const PlanCoachPanel = ({ tasks, profile, onUpdateTaskStatus, onMoveTaskT
         description: e instanceof Error ? e.message : "Unknown error",
       });
     } finally {
-      setBusyAction(null);
+      setBusyKeys((cur) => {
+        const next = new Set(cur);
+        next.delete(key);
+        return next;
+      });
     }
   };
 
@@ -277,16 +414,32 @@ export const PlanCoachPanel = ({ tasks, profile, onUpdateTaskStatus, onMoveTaskT
               </span>
             </div>
             {(summary.topStrong.length > 0 || summary.topWeak.length > 0) && (
-              <div className="flex flex-wrap items-center gap-1 text-[11px]">
-                {summary.topStrong.slice(0, 1).map((t) => (
-                  <Badge key={`s-${t.topic}`} variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30 h-5 px-1.5">
-                    {t.topic} {t.pct}%
-                  </Badge>
+              <div className="space-y-1.5 pt-0.5">
+                {summary.topStrong.slice(0, 2).map((t) => (
+                  <div key={`s-${t.topic}`} className="space-y-0.5">
+                    <div className="flex items-baseline justify-between gap-2 text-[11px]">
+                      <span className="truncate font-medium text-green-600 dark:text-green-400">
+                        ↑ {t.topic}
+                      </span>
+                      <span className="text-muted-foreground tabular-nums shrink-0">
+                        {t.done}/{t.total} · {t.pct}%
+                      </span>
+                    </div>
+                    <Progress value={t.pct} className="h-1 [&>div]:bg-green-500/70" />
+                  </div>
                 ))}
                 {summary.topWeak.slice(0, 2).map((t) => (
-                  <Badge key={`w-${t.topic}`} variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 h-5 px-1.5">
-                    {t.topic} {t.pct}%
-                  </Badge>
+                  <div key={`w-${t.topic}`} className="space-y-0.5">
+                    <div className="flex items-baseline justify-between gap-2 text-[11px]">
+                      <span className="truncate font-medium text-amber-600 dark:text-amber-400">
+                        ↓ {t.topic}
+                      </span>
+                      <span className="text-muted-foreground tabular-nums shrink-0">
+                        {t.done}/{t.total} · {t.pct}%
+                      </span>
+                    </div>
+                    <Progress value={t.pct} className="h-1 [&>div]:bg-amber-500/70" />
+                  </div>
                 ))}
               </div>
             )}
@@ -362,11 +515,16 @@ export const PlanCoachPanel = ({ tasks, profile, onUpdateTaskStatus, onMoveTaskT
                         {m.actions.map((a) => {
                           const meta = ACTION_META[a.kind];
                           const Icon = meta.Icon;
-                          const isBusy = busyAction === `${m.id}:${a.task_id}`;
+                          const key = `${m.id}:${a.task_id}:${a.kind}`;
+                          const isBusy = busyKeys.has(key);
+                          const disabled = streaming || (anyBusy && !isBusy);
                           return (
                             <div
                               key={a.task_id + a.kind}
-                              className="rounded-lg border border-border/50 bg-background/60 px-2.5 py-2 flex items-start gap-2"
+                              className={cn(
+                                "rounded-lg border border-border/50 bg-background/60 px-2.5 py-2 flex items-start gap-2 transition-opacity",
+                                disabled && !isBusy && "opacity-50",
+                              )}
                             >
                               <div className="flex-1 min-w-0 space-y-0.5">
                                 <p className="text-xs font-medium truncate">{a.task_title}</p>
@@ -377,12 +535,13 @@ export const PlanCoachPanel = ({ tasks, profile, onUpdateTaskStatus, onMoveTaskT
                                 variant="secondary"
                                 className="h-7 px-2 text-xs shrink-0"
                                 onClick={() => runAction(m.id, a)}
-                                disabled={isBusy || streaming}
+                                disabled={isBusy || disabled}
+                                aria-busy={isBusy}
                               >
                                 {isBusy
-                                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                                  ? <Loader2 className="h-3 w-3 animate-spin mr-1" />
                                   : <Icon className="h-3 w-3 mr-1" />}
-                                {meta.label}
+                                {isBusy ? "Working…" : meta.label}
                               </Button>
                             </div>
                           );

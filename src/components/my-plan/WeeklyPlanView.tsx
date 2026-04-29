@@ -30,6 +30,10 @@ interface Props {
   onRestore?: (
     snapshot: Array<{ id: string; status: PlanTaskStatus; completed_at: string | null }>
   ) => Promise<void>;
+  onLogActivity?: (entry: {
+    kind: "bulk_mark_done" | "bulk_mark_pending" | "bulk_undo_status";
+    summary: string; detail?: string; count: number;
+  }) => void;
 }
 
 const difficultyClass = (d: string) =>
@@ -143,7 +147,7 @@ const DroppableDay = ({ day, isToday, children, total, done, count, open, onTogg
   );
 };
 
-export const WeeklyPlanView = ({ tasks, onToggle, onMoveTask, onBulkUpdate, onRestore }: Props) => {
+export const WeeklyPlanView = ({ tasks, onToggle, onMoveTask, onBulkUpdate, onRestore, onLogActivity }: Props) => {
   const todayIso = todayIsoFn();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [activeTask, setActiveTask] = useState<PlanTask | null>(null);
@@ -228,6 +232,7 @@ export const WeeklyPlanView = ({ tasks, onToggle, onMoveTask, onBulkUpdate, onRe
                       tasks={dayTasks}
                       onBulkUpdate={onBulkUpdate}
                       onRestore={onRestore}
+                      onLogActivity={onLogActivity}
                     />
                   ) : undefined
                 }

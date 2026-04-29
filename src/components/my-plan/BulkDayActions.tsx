@@ -13,6 +13,13 @@ import { CheckCheck, Circle, MoreHorizontal, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { PlanTask, PlanTaskStatus } from "@/hooks/useStudyPlan";
 
+interface ActivityEntry {
+  kind: "bulk_mark_done" | "bulk_mark_pending" | "bulk_undo_status";
+  summary: string;
+  detail?: string;
+  count: number;
+}
+
 interface Props {
   day: string;
   tasks: PlanTask[];
@@ -23,6 +30,7 @@ interface Props {
   onRestore: (
     snapshot: Array<{ id: string; status: PlanTaskStatus; completed_at: string | null }>
   ) => Promise<void>;
+  onLogActivity?: (entry: ActivityEntry) => void;
 }
 
 const dayLabel = (iso: string, isToday: boolean) => {
@@ -35,7 +43,15 @@ const todayIsoFn = () => {
   const t = new Date(); t.setHours(0,0,0,0); return t.toISOString().slice(0,10);
 };
 
-export const BulkDayActions = ({ day, tasks, onBulkUpdate, onRestore }: Props) => {
+const STATUS_LABEL: Record<PlanTaskStatus, string> = {
+  pending: "pending",
+  in_progress: "in progress",
+  partial: "partial",
+  done: "done",
+  skipped: "skipped",
+};
+
+export const BulkDayActions = ({ day, tasks, onBulkUpdate, onRestore, onLogActivity }: Props) => {
   const [pendingAction, setPendingAction] = useState<PlanTaskStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const isToday = day === todayIsoFn();
@@ -49,7 +65,7 @@ export const BulkDayActions = ({ day, tasks, onBulkUpdate, onRestore }: Props) =
   const apply = async (status: PlanTaskStatus) => {
     const target = targetableFor(status);
     if (target.length === 0) {
-      toast({ title: "Nothing to update", description: `All tasks for ${dayLabel(day, isToday)} are already ${status}.` });
+      toast({ title: "Nothing to update", description: `All tasks for ${dayLabel(day, isToday)} are already ${STATUS_LABEL[status]}.` });
       setPendingAction(null);
       return;
     }
@@ -57,8 +73,15 @@ export const BulkDayActions = ({ day, tasks, onBulkUpdate, onRestore }: Props) =
     try {
       const snapshot = await onBulkUpdate(target.map((t) => t.id), status);
       const verb = status === "done" ? "marked done" : "marked pending";
+      const summary = `${target.length} task${target.length === 1 ? "" : "s"} ${verb}`;
+      onLogActivity?.({
+        kind: status === "done" ? "bulk_mark_done" : "bulk_mark_pending",
+        summary,
+        detail: `For ${dayLabel(day, isToday)}`,
+        count: target.length,
+      });
       toast({
-        title: `${target.length} task${target.length === 1 ? "" : "s"} ${verb}`,
+        title: summary,
         description: `For ${dayLabel(day, isToday)}.`,
         duration: 6000,
         action: (
@@ -67,6 +90,12 @@ export const BulkDayActions = ({ day, tasks, onBulkUpdate, onRestore }: Props) =
             onClick={async () => {
               try {
                 await onRestore(snapshot);
+                onLogActivity?.({
+                  kind: "bulk_undo_status",
+                  summary: `Undid ${verb} for ${target.length} task${target.length === 1 ? "" : "s"}`,
+                  detail: `For ${dayLabel(day, isToday)}`,
+                  count: target.length,
+                });
                 toast({ title: "Undone", description: "Previous statuses restored." });
               } catch (e) {
                 toast({
@@ -91,8 +120,14 @@ export const BulkDayActions = ({ day, tasks, onBulkUpdate, onRestore }: Props) =
     }
   };
 
-  const targetCount = pendingAction ? targetableFor(pendingAction).length : 0;
+  const target = pendingAction ? targetableFor(pendingAction) : [];
+  const targetCount = target.length;
   const verb = pendingAction === "done" ? "Mark all as done" : "Mark all as pending";
+
+  // Group target tasks by their current status for the review breakdown.
+  const breakdown: Array<{ status: PlanTaskStatus; count: number }> = (["pending", "in_progress", "partial", "done"] as PlanTaskStatus[])
+    .map((s) => ({ status: s, count: target.filter((t) => t.status === s).length }))
+    .filter((row) => row.count > 0);
 
   return (
     <>
@@ -123,9 +158,32 @@ export const BulkDayActions = ({ day, tasks, onBulkUpdate, onRestore }: Props) =
         <AlertDialogContent onClick={(e) => e.stopPropagation()}>
           <AlertDialogHeader>
             <AlertDialogTitle>{verb}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will update {targetCount} task{targetCount === 1 ? "" : "s"} for {dayLabel(day, isToday)}.
-              Skipped tasks aren't affected. You'll have a few seconds to undo.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>
+                  <span className="font-semibold tabular-nums">{targetCount}</span> task{targetCount === 1 ? "" : "s"} for{" "}
+                  <span className="font-medium">{dayLabel(day, isToday)}</span> will change.
+                </p>
+                {breakdown.length > 0 && pendingAction && (
+                  <div className="rounded-lg border border-border/40 bg-muted/30 p-2 space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                      Review changes
+                    </p>
+                    <ul className="space-y-1 text-xs">
+                      {breakdown.map((row) => (
+                        <li key={row.status} className="flex items-center justify-between">
+                          <span className="capitalize">
+                            {row.count} {STATUS_LABEL[row.status]} → {STATUS_LABEL[pendingAction]}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Skipped tasks aren't affected. You'll have a few seconds to undo.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -134,7 +192,7 @@ export const BulkDayActions = ({ day, tasks, onBulkUpdate, onRestore }: Props) =
               onClick={() => pendingAction && apply(pendingAction)}
               disabled={targetCount === 0}
             >
-              Confirm
+              Confirm ({targetCount})
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

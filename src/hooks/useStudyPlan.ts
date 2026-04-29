@@ -328,6 +328,51 @@ export const useStudyPlan = () => {
     []
   );
 
+  /** Snapshot of (id, day_date) for undoing moves. */
+  type DaySnapshot = Array<{ id: string; day_date: string }>;
+
+  /** Bulk move many tasks to a new day. Returns prior day_dates for undo. */
+  const bulkMoveToDay = useCallback(
+    async (taskIds: string[], newDay: string): Promise<DaySnapshot> => {
+      if (taskIds.length === 0) return [];
+      const previous: DaySnapshot = tasks
+        .filter((t) => taskIds.includes(t.id))
+        .map((t) => ({ id: t.id, day_date: t.day_date }));
+      setTasks((cur) =>
+        cur.map((t) => (taskIds.includes(t.id) ? { ...t, day_date: newDay } : t))
+      );
+      const { error } = await supabase
+        .from("user_study_plan_tasks")
+        .update({ day_date: newDay })
+        .in("id", taskIds);
+      if (error) { await refresh(); throw error; }
+      return previous;
+    },
+    [tasks, refresh]
+  );
+
+  /** Restore per-task day_date from a snapshot. */
+  const restoreDays = useCallback(async (snapshot: DaySnapshot) => {
+    if (snapshot.length === 0) return;
+    setTasks((cur) =>
+      cur.map((t) => {
+        const s = snapshot.find((x) => x.id === t.id);
+        return s ? { ...t, day_date: s.day_date } : t;
+      })
+    );
+    const byDay = new Map<string, string[]>();
+    for (const s of snapshot) {
+      const arr = byDay.get(s.day_date) ?? [];
+      arr.push(s.id);
+      byDay.set(s.day_date, arr);
+    }
+    await Promise.all(
+      Array.from(byDay.entries()).map(([day, ids]) =>
+        supabase.from("user_study_plan_tasks").update({ day_date: day }).in("id", ids)
+      )
+    );
+  }, []);
+
   /** Move all overdue (pending/in_progress) tasks to today and the next few days, respecting time budget. */
   const catchUp = useCallback(
     async (weekdayBudget: number, weekendBudget: number) => {
@@ -375,6 +420,6 @@ export const useStudyPlan = () => {
   return {
     plan, tasks, loading, generating,
     generate, updateTaskStatus, moveTaskToDay, toggleLock, setActualMinutes, catchUp,
-    addAdhocTask, bulkUpdateStatus, restoreStatuses, refresh,
+    addAdhocTask, bulkUpdateStatus, restoreStatuses, bulkMoveToDay, restoreDays, refresh,
   };
 };

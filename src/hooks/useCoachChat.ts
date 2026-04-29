@@ -6,13 +6,16 @@ export type CoachActionKind =
   | "start_today"
   | "reschedule_today"
   | "reschedule_tomorrow"
-  | "mark_done";
+  | "mark_done"
+  | "snooze_24h"
+  | "bulk_start_next";
 
 export interface CoachAction {
   task_id: string;
   task_title: string;
   kind: CoachActionKind;
   reason: string;
+  task_ids?: string[];
 }
 
 export interface CoachMessage {
