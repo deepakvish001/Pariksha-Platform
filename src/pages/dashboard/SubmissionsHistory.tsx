@@ -190,7 +190,7 @@ const CopyButton = ({ text, label }: { text: string; label?: string }) => {
   );
 };
 
-export default function SubmissionsHistory() {
+export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions" | "runs" } = {}) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -235,7 +235,7 @@ export default function SubmissionsHistory() {
   const language = searchParams.get("lang") ?? "all";
   const dateFrom = searchParams.get("from") ?? "";
   const dateTo = searchParams.get("to") ?? "";
-  const tab = searchParams.get("tab") ?? "submissions";
+  const tab = forcedTab ?? (searchParams.get("tab") ?? "submissions");
   const subPage = Math.max(1, parseInt(searchParams.get("subPage") ?? "1", 10) || 1);
   const runPage = Math.max(1, parseInt(searchParams.get("runPage") ?? "1", 10) || 1);
 
@@ -419,38 +419,27 @@ export default function SubmissionsHistory() {
     !!detailRunId;
 
   if (!user) {
-    return (
-      <div className="container max-w-4xl py-12">
-        <Card className="p-8 text-center">
-          <Code2 className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <h1 className="text-xl font-semibold mb-2">Sign in to view your history</h1>
-          <p className="text-muted-foreground mb-4">
-            Your submissions and runs are private to your account.
-          </p>
-          <Button asChild>
-            <Link to="/login">Sign in</Link>
-          </Button>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="container max-w-6xl py-6 sm:py-10 space-y-6">
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Submissions & Runs</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Your full coding history across all problems.
-          </p>
-        </div>
-        <Button asChild variant="outline" size="sm" className="gap-1.5">
-          <Link to="/library/problems/leaderboard">
-            <Trophy className="h-4 w-4" />
-            Global Leaderboard
-          </Link>
-        </Button>
-      </header>
+    <div className={forcedTab ? "space-y-4" : "container max-w-6xl py-6 sm:py-10 space-y-6"}>
+      {!forcedTab && (
+        <header className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Submissions & Runs</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Your full coding history across all problems.
+            </p>
+          </div>
+          <Button asChild variant="outline" size="sm" className="gap-1.5">
+            <Link to="/library/problems/leaderboard">
+              <Trophy className="h-4 w-4" />
+              Global Leaderboard
+            </Link>
+          </Button>
+        </header>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <Input
@@ -537,15 +526,17 @@ export default function SubmissionsHistory() {
         )}
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => updateParams({ tab: v === "submissions" ? null : v })}>
-        <TabsList>
-          <TabsTrigger value="submissions">
-            Submissions ({subTotal})
-          </TabsTrigger>
-          <TabsTrigger value="runs">
-            Runs ({runTotal})
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={tab} onValueChange={(v) => forcedTab ? undefined : updateParams({ tab: v === "submissions" ? null : v })}>
+        {!forcedTab && (
+          <TabsList>
+            <TabsTrigger value="submissions">
+              Submissions ({subTotal})
+            </TabsTrigger>
+            <TabsTrigger value="runs">
+              Runs ({runTotal})
+            </TabsTrigger>
+          </TabsList>
+        )}
 
         <TabsContent value="submissions" className="mt-4 space-y-2">
           {subsLoading ? (
@@ -877,4 +868,8 @@ export default function SubmissionsHistory() {
       </Sheet>
     </div>
   );
+}
+
+export default function SubmissionsHistory() {
+  return <SubmissionsAndRunsBody />;
 }

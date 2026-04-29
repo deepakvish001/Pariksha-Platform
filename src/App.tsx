@@ -18,6 +18,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import DashboardMatrix from "./pages/DashboardMatrix";
 import SubmissionsHistory from "./pages/dashboard/SubmissionsHistory";
+import Leaderboard from "./pages/dashboard/Leaderboard";
 import DashboardSheets from "./pages/DashboardSheets";
 
 import Settings from "./pages/Settings";
@@ -156,7 +157,8 @@ const App = () => (
                   <Route path="sheets" element={<DashboardSheets />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
                   
-                  <Route path="submissions" element={<SubmissionsHistory />} />
+                  <Route path="leaderboard" element={<Leaderboard />} />
+                  <Route path="submissions" element={<Leaderboard />} />
                   <Route path="roadmaps" element={<DashboardRoadmaps />} />
                   <Route path="roadmaps/compare" element={<DashboardRoadmapCompare />} />
                   {/* Legacy generic detail (kept reachable for older bookmarks) */}
