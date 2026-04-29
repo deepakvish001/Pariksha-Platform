@@ -161,24 +161,28 @@ const ProblemEditor = () => {
     try { localStorage.setItem(ACTIVE_TAB_KEY, activeTab); } catch {}
   }, [activeTab]);
 
-  // Restore localStorage draft for NEW problems on first mount.
+  // Restore localStorage draft on first mount (works for new + existing problems).
+  // For existing problems we wait until the loaded problem arrives so we can compare.
+  const draftLoadedRef = useRef(false);
   useEffect(() => {
-    if (!isNew) return;
+    if (draftLoadedRef.current) return;
+    if (!isNew && !loaded?.problem) return;
+    draftLoadedRef.current = true;
     try {
-      const raw = localStorage.getItem(DRAFT_KEY(undefined));
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.form) {
-          setForm(parsed.form);
-          setDraftRestoredAt(parsed.savedAt ?? null);
-        }
+      const raw = localStorage.getItem(DRAFT_KEY(slug));
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.form) {
+        setForm(parsed.form);
+        setDraftRestoredAt(parsed.savedAt ?? null);
+        setLastDraftSavedAt(parsed.savedAt ?? null);
+        setDirty(true);
       }
     } catch (_) {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isNew, loaded, slug]);
 
   useEffect(() => {
-    if (loaded?.problem) {
+    if (loaded?.problem && !draftLoadedRef.current) {
       const p = loaded.problem;
       setForm({
         slug: p.slug,
@@ -215,19 +219,61 @@ const ProblemEditor = () => {
     setDirty(true);
   };
 
-  // Autosave drafts to localStorage every 5 seconds while dirty (new problems only).
+  const discardDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY(slug)); } catch (_) {}
+    setDraftRestoredAt(null);
+    setLastDraftSavedAt(null);
+    draftLoadedRef.current = false;
+    if (loaded?.problem) {
+      const p = loaded.problem;
+      setForm({
+        slug: p.slug,
+        title: p.title,
+        difficulty: p.difficulty,
+        topics: p.topics ?? [],
+        description: p.description ?? "",
+        examples: Array.isArray(p.examples) && p.examples.length > 0 ? p.examples : [{ input: "", output: "" }],
+        constraints: p.constraints ?? [],
+        hints: p.hints ?? [],
+        cpu_time_limit_sec: Number(p.cpu_time_limit_sec ?? 2),
+        memory_limit_kb: p.memory_limit_kb ?? 256000,
+        is_published: !!p.is_published,
+        starter_code: loaded.starter_code ?? {},
+        reference_solution: loaded.reference_solution ?? {},
+        sample_tests: loaded.sample_tests ?? [],
+        hidden_tests: loaded.hidden_tests ?? [],
+        sql_spec: loaded.sql_spec
+          ? {
+              schema_sql: loaded.sql_spec.schema_sql ?? "",
+              seed_sql: loaded.sql_spec.seed_sql ?? "",
+              reference_query: loaded.sql_spec.reference_query ?? "",
+              order_matters: !!loaded.sql_spec.order_matters,
+              starter: loaded.sql_spec.starter ?? "",
+            }
+          : null,
+      });
+    } else {
+      setForm(emptyPayload());
+    }
+    setDirty(false);
+    toast({ title: "Draft discarded" });
+  };
+
+  // Autosave drafts to localStorage every 3 seconds while dirty (any problem).
   useEffect(() => {
-    if (!isNew || !dirty) return;
+    if (!dirty) return;
     const id = window.setTimeout(() => {
       try {
+        const savedAt = new Date().toISOString();
         localStorage.setItem(
-          DRAFT_KEY(undefined),
-          JSON.stringify({ form, savedAt: new Date().toISOString() }),
+          DRAFT_KEY(slug),
+          JSON.stringify({ form, savedAt }),
         );
+        setLastDraftSavedAt(savedAt);
       } catch (_) {}
-    }, 5000);
+    }, 3000);
     return () => window.clearTimeout(id);
-  }, [form, dirty, isNew]);
+  }, [form, dirty, slug]);
 
   // Block route/window unload while dirty.
   useEffect(() => {
