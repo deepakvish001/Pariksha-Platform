@@ -1296,6 +1296,7 @@ const ListEditor = ({
   inline,
   fieldPrefix,
   highlightedField,
+  multiline,
 }: {
   title: string;
   items: string[];
@@ -1307,11 +1308,40 @@ const ListEditor = ({
    *  exposes data-field="<prefix>[i]" and gets the highlight ring. */
   fieldPrefix?: string;
   highlightedField?: string | null;
+  /** Use a textarea instead of an input for inline editing (preserves newlines). */
+  multiline?: boolean;
 }) => {
   const [val, setVal] = useState("");
   const [editing, setEditing] = useState<{ idx: number; value: string } | null>(null);
   const Wrapper: any = inline ? "div" : Card;
   const groupId = `${fieldPrefix ?? title.toLowerCase()}-listeditor`;
+
+  // When the validation flash targets one of our rows, automatically open it
+  // for editing so the admin can fix the failing content in-place.
+  useEffect(() => {
+    if (!fieldPrefix || !highlightedField) return;
+    const m = highlightedField.match(/^([^\[]+)\[(\d+)\]$/);
+    if (!m || m[1] !== fieldPrefix) return;
+    const idx = Number(m[2]);
+    if (!Number.isFinite(idx) || idx < 0 || idx >= items.length) return;
+    setEditing((prev) => (prev?.idx === idx ? prev : { idx, value: items[idx] }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightedField, fieldPrefix]);
+
+  const commitEditing = () => {
+    if (!editing) return;
+    const v = editing.value.replace(/[ \t]+$/gm, "").replace(/\s+$/g, "");
+    if (v) {
+      const next = [...items];
+      next[editing.idx] = v;
+      onChange(next);
+    } else {
+      // empty value removes the row
+      onChange(items.filter((_, x) => x !== editing.idx));
+    }
+    setEditing(null);
+  };
+
   return (
     <Wrapper className={inline ? "space-y-2" : "space-y-2 p-4"} data-field={fieldPrefix} id={groupId}>
       <Label>{title}</Label>
@@ -1349,42 +1379,50 @@ const ListEditor = ({
             <li
               key={i}
               data-field={fid}
-              className={`flex items-center justify-between gap-2 rounded-md bg-muted px-3 py-1.5 text-sm ${
+              className={`flex items-start justify-between gap-2 rounded-md bg-muted px-3 py-1.5 text-sm ${
                 fid ? fieldHighlightClass(fid, highlightedField ?? null) : ""
               } ${highlighted ? "border border-destructive/50" : ""}`}
             >
               {isEditing ? (
-                <Input
-                  autoFocus
-                  value={editing!.value}
-                  onChange={(e) => setEditing({ idx: i, value: e.target.value })}
-                  onBlur={() => {
-                    const v = editing!.value.trim();
-                    if (v) {
-                      const next = [...items];
-                      next[i] = v;
-                      onChange(next);
-                    }
-                    setEditing(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                    if (e.key === "Escape") setEditing(null);
-                  }}
-                  className="h-7 text-sm"
-                />
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <Textarea
+                    autoFocus
+                    rows={multiline ? 3 : 1}
+                    value={editing!.value}
+                    onChange={(e) => setEditing({ idx: i, value: e.target.value })}
+                    onBlur={commitEditing}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        setEditing(null);
+                      }
+                      // Cmd/Ctrl+Enter saves; Enter alone inserts a newline
+                      // when multi-line, otherwise saves.
+                      if (e.key === "Enter") {
+                        if (e.metaKey || e.ctrlKey || !multiline) {
+                          e.preventDefault();
+                          (e.target as HTMLTextAreaElement).blur();
+                        }
+                      }
+                    }}
+                    className="min-h-[36px] resize-y font-mono text-xs leading-relaxed"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    {multiline ? "Enter for newline · " : ""}⌘/Ctrl+Enter to save · Esc to cancel · empty = delete
+                  </p>
+                </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => setEditing({ idx: i, value: it })}
-                  className="min-w-0 flex-1 truncate text-left hover:underline"
+                  className="min-w-0 flex-1 whitespace-pre-wrap break-words text-left hover:underline"
                   title="Click to edit"
                 >
                   {numbered && <span className="mr-2 text-xs text-muted-foreground">Hint {i + 1}</span>}
                   {it}
                 </button>
               )}
-              <div className="flex items-center gap-1">
+              <div className="flex shrink-0 items-center gap-1">
                 {numbered && (
                   <>
                     <Button variant="ghost" size="icon" disabled={i === 0} onClick={() => {
