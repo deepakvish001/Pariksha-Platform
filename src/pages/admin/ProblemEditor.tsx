@@ -1394,6 +1394,7 @@ const TestsTable = ({
   onChange,
   referenceSource,
   referenceLang,
+  onSaveRun,
 }: {
   title: string;
   subtitle?: string;
@@ -1401,6 +1402,11 @@ const TestsTable = ({
   onChange: (v: { input: string; expected: string }[]) => void;
   referenceSource?: string;
   referenceLang?: LangId;
+  onSaveRun?: (
+    idx: number,
+    test: { input: string; expected: string },
+    res: { stdout: string; stderr: string; ok: boolean; expected?: string },
+  ) => void;
 }) => (
   <Card className="space-y-3 p-4">
     <div className="flex flex-wrap items-center gap-2">
