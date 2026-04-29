@@ -31,6 +31,7 @@ import { DailyCheckInDialog } from "@/components/my-plan/DailyCheckInDialog";
 import { CatchUpButton } from "@/components/my-plan/CatchUpButton";
 import { GoalProgressWidget } from "@/components/my-plan/GoalProgressWidget";
 import { AddAdhocTaskDialog } from "@/components/my-plan/AddAdhocTaskDialog";
+import { PlanCoachPanel } from "@/components/my-plan/PlanCoachPanel";
 import { exportPlanToPdf } from "@/lib/my-plan/exportPlanPdf";
 import { downloadPlanIcs } from "@/lib/my-plan/exportPlanIcs";
 import { resolveTaskLink } from "@/lib/my-plan/taskLinks";
@@ -53,6 +54,7 @@ const MyPlan = () => {
   const {
     plan, tasks, loading: planLoading, generating,
     generate, updateTaskStatus, moveTaskToDay, toggleLock, catchUp, addAdhocTask,
+    bulkUpdateStatus, restoreStatuses,
   } = useStudyPlan();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [recMode, setRecMode] = useState<RecommendationMode>(() => {
@@ -214,6 +216,9 @@ const MyPlan = () => {
               <AddAdhocTaskDialog onAdd={addAdhocTask} />
             )}
             {profile && plan && (
+              <PlanCoachPanel tasks={tasks} profile={profile} />
+            )}
+            {profile && plan && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -348,6 +353,8 @@ const MyPlan = () => {
                     tasks={tasks}
                     onToggle={updateTaskStatus}
                     onMoveTask={moveTaskToDay}
+                    onBulkUpdate={bulkUpdateStatus}
+                    onRestore={restoreStatuses}
                   />
                 )}
                 {plan && <StreakHistoryChart tasks={tasks} />}
