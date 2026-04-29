@@ -190,7 +190,7 @@ const CopyButton = ({ text, label }: { text: string; label?: string }) => {
   );
 };
 
-export default function SubmissionsHistory() {
+export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions" | "runs" } = {}) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
