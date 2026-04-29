@@ -215,15 +215,34 @@ const AdminProblemsList = () => {
                           <Pencil className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Duplicate as draft"
-                        disabled={duplicate.isPending}
-                        onClick={() => duplicate.mutate(p.slug)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Duplicate as draft"
+                            disabled={duplicate.isPending}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Duplicate "{p.title}"?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Creates an unpublished draft copy with all starter code,
+                              tests, and reference solutions. The new slug will be
+                              auto-suffixed with <code>-copy</code>.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => duplicate.mutate(p.slug)}>
+                              Create draft copy
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon" title="Delete">

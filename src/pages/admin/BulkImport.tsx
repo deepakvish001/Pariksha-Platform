@@ -213,10 +213,12 @@ const BulkImport = () => {
     // A re-uploadable JSON: keeps every row, fills missing required fields with
     // safe defaults so the admin can finish editing externally instead of
     // starting over. Valid rows pass through unchanged.
+    let fixedCount = 0;
+    let stillBroken = 0;
     const corrected = rows.map((r) => {
       if (r.ok) return r.data;
       const raw = r.raw && typeof r.raw === "object" ? r.raw : {};
-      return {
+      const candidate = {
         slug: raw.slug || `__fix_me_row_${r.index + 1}`,
         title: raw.title || "(missing — please fill in)",
         difficulty: ["easy", "medium", "hard"].includes(raw.difficulty)
@@ -243,11 +245,62 @@ const BulkImport = () => {
         sample_tests: Array.isArray(raw.sample_tests) ? raw.sample_tests : [],
         hidden_tests: Array.isArray(raw.hidden_tests) ? raw.hidden_tests : [],
         sql_spec: raw.sql_spec ?? null,
-        // Inline hint to the admin about what was wrong on this row.
-        __issues: r.issues ?? [],
+      };
+      // Re-validate the corrected row against the schema.
+      const verify = ProblemSchema.safeParse(candidate);
+      if (verify.success) {
+        fixedCount++;
+        return verify.data;
+      }
+      stillBroken++;
+      return {
+        ...candidate,
+        __issues: verify.error.issues.map((i) => ({
+          path: i.path.join(".") || "(root)",
+          message: i.message,
+        })),
       };
     });
     downloadJson(corrected, "bulk-import-corrected.json");
+    toast({
+      title: "Corrected JSON downloaded",
+      description:
+        stillBroken === 0
+          ? `${fixedCount} row${fixedCount === 1 ? "" : "s"} auto-fixed and now match the schema.`
+          : `${fixedCount} fixed · ${stillBroken} still need manual edits (see __issues).`,
+    });
+  };
+
+  const downloadErrorsCsv = () => {
+    const escape = (val: unknown) => {
+      const s = val == null ? "" : String(val);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = ["row", "slug", "title", "issue_path", "issue_message"];
+    const lines: string[] = [header.join(",")];
+    rows
+      .filter((r) => !r.ok)
+      .forEach((r) => {
+        const issues = r.issues && r.issues.length > 0
+          ? r.issues
+          : [{ path: "(root)", message: r.error ?? "Invalid row" }];
+        issues.forEach((iss) => {
+          lines.push(
+            [
+              r.index + 1,
+              escape(r.raw?.slug ?? ""),
+              escape(r.raw?.title ?? ""),
+              escape(iss.path),
+              escape(iss.message),
+            ].join(","),
+          );
+        });
+      });
+    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "bulk-import-errors.csv";
+    a.click();
   };
 
   return (
@@ -302,6 +355,9 @@ const BulkImport = () => {
                 <>
                   <Button variant="outline" size="sm" onClick={downloadReport}>
                     <FileJson className="mr-2 h-4 w-4" /> Report
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadErrorsCsv}>
+                    <FileJson className="mr-2 h-4 w-4" /> Errors CSV
                   </Button>
                   <Button variant="outline" size="sm" onClick={downloadCorrected}>
                     <FileJson className="mr-2 h-4 w-4" /> Corrected JSON

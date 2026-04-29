@@ -127,9 +127,39 @@ export const useTogglePublish = () => {
         .update({ is_published: publish })
         .eq("slug", slug);
       if (error) throw error;
+      // Best-effort audit log entry
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const actor = auth.user?.id;
+        if (actor) {
+          await supabase.from("admin_audit_log").insert({
+            actor_id: actor,
+            action: publish ? "publish" : "unpublish",
+            entity_type: "coding_problem",
+            entity_slug: slug,
+            diff: { is_published: publish },
+          });
+        }
+      } catch (_) {}
+      return { slug, publish };
     },
-    onSuccess: () => {
+    onSuccess: ({ slug, publish }) => {
       qc.invalidateQueries({ queryKey: ["admin-problems"] });
+      qc.invalidateQueries({ queryKey: ["admin-problem", slug] });
+      qc.invalidateQueries({ queryKey: ["admin-audit-log"] });
+      toast({
+        title: publish ? "Published" : "Unpublished",
+        description: publish
+          ? `"${slug}" is now live for learners.`
+          : `"${slug}" is hidden from the library.`,
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Update failed",
+        description: err?.message ?? "Unknown error",
+        variant: "destructive",
+      });
     },
   });
 };
