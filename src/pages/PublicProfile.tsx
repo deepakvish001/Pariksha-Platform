@@ -339,7 +339,7 @@ const PublicProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div>
       <Helmet>
         <title>{profileTitle}</title>
         <meta name="description" content={profileDescription} />
