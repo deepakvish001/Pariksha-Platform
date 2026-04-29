@@ -5,6 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const FERMION_KEY = Deno.env.get("FERMION_RAPIDAPI_KEY") ?? "";
 
 const FERMION_HOST = "fermion-online-compiler.p.rapidapi.com";
@@ -301,9 +302,32 @@ Deno.serve(async (req) => {
       return respond<SubmitResult>({ ok: false, error: "Invalid source_code", diagnostics: { error_stage: "validation" } });
     if (typeof language_id !== "number" || typeof language !== "string")
       return respond<SubmitResult>({ ok: false, error: "Invalid language", diagnostics: { error_stage: "validation" } });
-    if (!problem_slug || !Array.isArray(tests) || tests.length === 0)
+    if (!problem_slug)
+      return respond<SubmitResult>({ ok: false, error: "problem_slug required", diagnostics: { error_stage: "validation" } });
+
+    // Prefer DB-stored hidden tests (zero-trust): fetch via service role and
+    // override any client-supplied tests when the problem exists in DB.
+    let effectiveTests: TestCase[] = Array.isArray(tests) ? (tests as TestCase[]) : [];
+    if (SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: dbTests } = await admin
+          .from("coding_problem_tests")
+          .select("input,expected,ord")
+          .eq("problem_slug", problem_slug)
+          .eq("kind", "hidden")
+          .order("ord", { ascending: true });
+        if (dbTests && dbTests.length > 0) {
+          effectiveTests = dbTests.map((t: any) => ({ input: t.input ?? "", expected: t.expected ?? "" }));
+        }
+      } catch (_) {
+        // Fallback to client tests on DB error.
+      }
+    }
+
+    if (effectiveTests.length === 0)
       return respond<SubmitResult>({ ok: false, error: "tests required", diagnostics: { error_stage: "validation" } });
-    if (tests.length > 30)
+    if (effectiveTests.length > 30)
       return respond<SubmitResult>({ ok: false, error: "Too many tests", diagnostics: { error_stage: "validation" } });
 
     const fermionLang = judge0ToFermion(language_id);
@@ -314,7 +338,7 @@ Deno.serve(async (req) => {
     const { cpuMs, wallMs, memKb } = limits;
 
     // Submit all cases as a single batch, then poll.
-    const taskIds = await submitBatch(fermionLang, source_code, tests as TestCase[], cpuMs, wallMs, memKb);
+    const taskIds = await submitBatch(fermionLang, source_code, effectiveTests, cpuMs, wallMs, memKb);
     const results = await pollBatch(taskIds);
 
     let passed = 0;
@@ -343,8 +367,8 @@ Deno.serve(async (req) => {
       }
     };
 
-    for (let i = 0; i < tests.length; i++) {
-      const t = tests[i] as TestCase;
+    for (let i = 0; i < effectiveTests.length; i++) {
+      const t = effectiveTests[i];
       const r = results.get(taskIds[i]);
       if (!r) {
         if (!firstFailureSeen) { verdict = "Internal Error"; stderrCombined = "Missing result for test case"; firstFailureSeen = true; }
@@ -452,7 +476,7 @@ Deno.serve(async (req) => {
         runtime_ms: runtimeMs,
         memory_kb: maxMemory,
         passed_tests: passed,
-        total_tests: tests.length,
+        total_tests: effectiveTests.length,
         failing_case: failingCase,
         stderr: stderrCombined || null,
         is_submission: true,
@@ -485,7 +509,7 @@ Deno.serve(async (req) => {
       data: {
         verdict,
         passed,
-        total: tests.length,
+        total: effectiveTests.length,
         runtime_ms: runtimeMs,
         memory_kb: maxMemory,
         failing_case: failingCase,

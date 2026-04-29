@@ -3,11 +3,12 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileJson, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Upload, FileJson, CheckCircle2, AlertTriangle, Database } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { CODING_PROBLEMS } from "@/data/codingProblemsData";
 
 const ProblemSchema = z.object({
   slug: z.string().min(1).max(120),
@@ -112,6 +113,50 @@ const BulkImport = () => {
     a.click();
   };
 
+  const seedFromStatic = () => {
+    const mapped = CODING_PROBLEMS.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      difficulty: p.difficulty.toLowerCase() as "easy" | "medium" | "hard",
+      topics: p.topics ?? [],
+      description: p.description ?? "",
+      examples: (p.examples ?? []).map((e) => ({
+        input: e.input,
+        output: e.output,
+        explanation: e.explanation,
+      })),
+      constraints: p.constraints ?? [],
+      hints: p.hints ?? [],
+      cpu_time_limit_sec: p.cpuTimeLimitSec ?? 2,
+      memory_limit_kb: p.memoryLimitKb ?? 256000,
+      is_published: true,
+      starter_code: (p.starterCode ?? {}) as Record<string, string>,
+      reference_solution: (p.referenceSolution ?? {}) as Record<string, string>,
+      sample_tests: (p.sampleTests ?? []).map((t) => ({ input: t.input, expected: t.expected })),
+      hidden_tests: (p.hiddenTests ?? []).map((t) => ({ input: t.input, expected: t.expected })),
+      sql_spec: p.sql
+        ? {
+            schema_sql: p.sql.schema ?? "",
+            seed_sql: p.sql.seed ?? "",
+            reference_query: p.sql.referenceQuery ?? "",
+            order_matters: !!p.sql.orderMatters,
+            starter: p.sql.starter ?? "",
+          }
+        : null,
+    }));
+    const next: Row[] = mapped.map((raw) => {
+      const r = ProblemSchema.safeParse(raw);
+      return r.success
+        ? { ok: true, data: r.data, raw }
+        : { ok: false, error: r.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "), raw };
+    });
+    setRows(next);
+    toast({
+      title: "Loaded static seed",
+      description: `${next.filter((r) => r.ok).length}/${next.length} problems ready to import.`,
+    });
+  };
+
   const validCount = rows.filter((r) => r.ok).length;
   const invalidCount = rows.length - validCount;
 
@@ -119,9 +164,14 @@ const BulkImport = () => {
     <AdminShell>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Bulk Import</h1>
-        <Button variant="outline" onClick={downloadTemplate}>
-          <FileJson className="mr-2 h-4 w-4" /> Download template
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={seedFromStatic}>
+            <Database className="mr-2 h-4 w-4" /> Load static seed ({CODING_PROBLEMS.length})
+          </Button>
+          <Button variant="outline" onClick={downloadTemplate}>
+            <FileJson className="mr-2 h-4 w-4" /> Download template
+          </Button>
+        </div>
       </div>
 
       <Card className="p-6">
