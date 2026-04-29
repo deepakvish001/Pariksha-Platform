@@ -1242,6 +1242,8 @@ const ProblemEditor = () => {
               <div>
                 <Label>CPU time limit (seconds)</Label>
                 <Input
+                  data-field="cpu_time_limit_sec"
+                  className={fieldHighlightClass("cpu_time_limit_sec", highlightedField)}
                   type="number"
                   step="0.5"
                   value={form.cpu_time_limit_sec}
@@ -1253,6 +1255,8 @@ const ProblemEditor = () => {
               <div>
                 <Label>Memory limit (KB)</Label>
                 <Input
+                  data-field="memory_limit_kb"
+                  className={fieldHighlightClass("memory_limit_kb", highlightedField)}
                   type="number"
                   value={form.memory_limit_kb}
                   onChange={(e) => update("memory_limit_kb", Number(e.target.value))}
