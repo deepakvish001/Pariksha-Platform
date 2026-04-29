@@ -164,9 +164,14 @@ const BulkImport = () => {
     <AdminShell>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Bulk Import</h1>
-        <Button variant="outline" onClick={downloadTemplate}>
-          <FileJson className="mr-2 h-4 w-4" /> Download template
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={seedFromStatic}>
+            <Database className="mr-2 h-4 w-4" /> Load static seed ({CODING_PROBLEMS.length})
+          </Button>
+          <Button variant="outline" onClick={downloadTemplate}>
+            <FileJson className="mr-2 h-4 w-4" /> Download template
+          </Button>
+        </div>
       </div>
 
       <Card className="p-6">
