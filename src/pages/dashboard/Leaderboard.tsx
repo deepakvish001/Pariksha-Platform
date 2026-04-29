@@ -92,11 +92,11 @@ export default function Leaderboard() {
         </TabsContent>
 
         <TabsContent value="submissions" className="mt-4">
-          {user ? <SubmissionsAndRunsBody forcedTab="submissions" /> : <AuthGate feature="submissions" />}
+          {user ? <SubmissionsAndRunsBody forcedTab="submissions" /> : <AuthGate feature="submissions" returnTo={returnTo} />}
         </TabsContent>
 
         <TabsContent value="runs" className="mt-4">
-          {user ? <SubmissionsAndRunsBody forcedTab="runs" /> : <AuthGate feature="runs" />}
+          {user ? <SubmissionsAndRunsBody forcedTab="runs" /> : <AuthGate feature="runs" returnTo={returnTo} />}
         </TabsContent>
       </Tabs>
     </div>
