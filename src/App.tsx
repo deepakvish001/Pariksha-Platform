@@ -90,6 +90,12 @@ import Resources from "./pages/platform/Resources";
 import Collections from "./pages/platform/Collections";
 
 import PublicProfile from "./pages/PublicProfile";
+import { AdminRoute } from "@/components/AdminRoute";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminProblemsList from "./pages/admin/AdminProblemsList";
+import ProblemEditor from "./pages/admin/ProblemEditor";
+import BulkImport from "./pages/admin/BulkImport";
+import AuditLog from "./pages/admin/AuditLog";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
