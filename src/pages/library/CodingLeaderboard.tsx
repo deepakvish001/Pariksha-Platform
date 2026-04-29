@@ -40,6 +40,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
@@ -670,6 +671,14 @@ export default function CodingLeaderboard() {
     [rows, minScore],
   );
 
+  // Dynamic upper bound for the min-score slider — keep it sensible relative
+  // to actual data. Round up to nearest 50 for nicer ticks.
+  const scoreSliderMax = useMemo(() => {
+    const top = rows.reduce((m, r) => Math.max(m, Math.round(r.weighted_score)), 0);
+    const padded = Math.max(top, minScore, 50);
+    return Math.ceil(padded / 50) * 50;
+  }, [rows, minScore]);
+
   const podium = useMemo(
     () => (page === 1 && !search && !difficulty ? filteredRows.slice(0, 3) : []),
     [filteredRows, page, search, difficulty],
@@ -918,11 +927,27 @@ export default function CodingLeaderboard() {
               </FilterPill>
             </div>
 
-            <div className="ml-auto flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <Label htmlFor="min-score" className="text-xs text-muted-foreground">
+            <div className="ml-auto flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="min-score" className="text-xs text-muted-foreground shrink-0">
                   Min score
                 </Label>
+                <Slider
+                  aria-label="Minimum weighted score slider"
+                  value={[minScore]}
+                  min={0}
+                  max={Math.max(100, scoreSliderMax)}
+                  step={1}
+                  onValueChange={(v) => {
+                    const n = v[0] ?? 0;
+                    setMinScoreInput(n > 0 ? String(n) : "");
+                  }}
+                  onValueCommit={(v) => {
+                    const n = v[0] ?? 0;
+                    updateParams({ minScore: n > 0 ? String(n) : null }, { resetPage: true });
+                  }}
+                  className="w-32"
+                />
                 <Input
                   id="min-score"
                   type="number"
@@ -942,6 +967,19 @@ export default function CodingLeaderboard() {
                   className="h-8 w-20 text-xs"
                   aria-label="Minimum weighted score"
                 />
+                {minScore > 0 && (
+                  <button
+                    type="button"
+                    aria-label="Clear minimum score filter"
+                    onClick={() => {
+                      setMinScoreInput("");
+                      updateParams({ minScore: null }, { resetPage: true });
+                    }}
+                    className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-muted-foreground/20 text-muted-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
 
               <Tooltip>
@@ -988,6 +1026,56 @@ export default function CodingLeaderboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Results count summary — updates live with chips/filters */}
+        <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-muted-foreground">
+          <p aria-live="polite">
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Loading results…
+              </span>
+            ) : (
+              <>
+                <span className="font-semibold text-foreground tabular-nums">
+                  {filteredRows.length}
+                </span>{" "}
+                {filteredRows.length === 1 ? "solver" : "solvers"} on this page
+                {minScore > 0 && (
+                  <span className="opacity-80"> · score ≥ {minScore}</span>
+                )}
+                {difficulty && (
+                  <span className="opacity-80"> · {difficulty} only</span>
+                )}
+                {search && (
+                  <span className="opacity-80"> · matching “{search}”</span>
+                )}
+                {minScore > 0 && filteredRows.length < rows.length && (
+                  <span className="opacity-70">
+                    {" "}({rows.length - filteredRows.length} hidden by min score)
+                  </span>
+                )}
+              </>
+            )}
+          </p>
+          {(minScore > 0 || difficulty || search) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => {
+                setMinScoreInput("");
+                setSearchInput("");
+                updateParams(
+                  { diff: null, q: null, minScore: null },
+                  { resetPage: true },
+                );
+              }}
+            >
+              <X className="h-3 w-3 mr-1" /> Clear filters
+            </Button>
+          )}
+        </div>
 
         {/* Your current rank card */}
         {user && (
