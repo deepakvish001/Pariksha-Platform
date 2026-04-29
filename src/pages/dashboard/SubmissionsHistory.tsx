@@ -547,6 +547,83 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
         )}
       </div>
 
+      {/* Active filter chips — one-click removal */}
+      {(search || verdict !== "all" || language !== "all" || sort !== "newest" || dateFrom || dateTo) && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground mr-1">Active filters:</span>
+          {search && (
+            <Badge variant="secondary" className="gap-1 pr-1">
+              <span className="text-[11px]">Search: “{search}”</span>
+              <button
+                type="button"
+                aria-label="Clear search filter"
+                onClick={() => {
+                  setSearchInput("");
+                  updateParams({ q: null, subPage: null, runPage: null });
+                }}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {verdict !== "all" && (
+            <Badge variant="secondary" className="gap-1 pr-1">
+              <span className="text-[11px]">Verdict: {verdict}</span>
+              <button
+                type="button"
+                aria-label="Clear verdict filter"
+                onClick={() => updateParams({ verdict: null, subPage: null })}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {language !== "all" && (
+            <Badge variant="secondary" className="gap-1 pr-1">
+              <span className="text-[11px]">Language: {language}</span>
+              <button
+                type="button"
+                aria-label="Clear language filter"
+                onClick={() => updateParams({ lang: null, subPage: null, runPage: null })}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {sort !== "newest" && (
+            <Badge variant="secondary" className="gap-1 pr-1">
+              <span className="text-[11px]">
+                Sort: {sort === "oldest" ? "Oldest first" : "Best score"}
+              </span>
+              <button
+                type="button"
+                aria-label="Reset sort to newest"
+                onClick={() => updateParams({ sort: null, subPage: null, runPage: null })}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {(dateFrom || dateTo) && (
+            <Badge variant="secondary" className="gap-1 pr-1">
+              <span className="text-[11px]">Date: {dateRangeLabel}</span>
+              <button
+                type="button"
+                aria-label="Clear date range filter"
+                onClick={() => setDateRange({ from: undefined, to: undefined })}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+        </div>
+      )}
+
       <Tabs value={tab} onValueChange={(v) => forcedTab ? undefined : updateParams({ tab: v === "submissions" ? null : v })}>
         {!forcedTab && (
           <TabsList>
