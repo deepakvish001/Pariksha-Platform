@@ -163,7 +163,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       <div
         className={cn(
           "grid gap-3",
-          mode === "split" ? "lg:grid-cols-2" : "grid-cols-1",
+          galleryOpen
+            ? mode === "split"
+              ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_280px]"
+              : "lg:grid-cols-[minmax(0,1fr)_280px]"
+            : mode === "split"
+              ? "lg:grid-cols-2"
+              : "grid-cols-1",
         )}
       >
         {(mode === "edit" || mode === "split") && (
@@ -233,6 +239,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
               <MarkdownPreview source={value} />
             </div>
           </div>
+        )}
+
+        {galleryOpen && (
+          <ImageGalleryPanel
+            open={galleryOpen}
+            onClose={() => setGalleryOpen(false)}
+            currentSlug={slug}
+            onInsert={(md) => insertAtCursor(md)}
+          />
         )}
       </div>
     );
