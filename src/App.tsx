@@ -114,6 +114,9 @@ import LibraryCuration from "./pages/admin/LibraryCuration";
 import RoadmapsManager from "./pages/admin/RoadmapsManager";
 import SupportInbox from "./pages/admin/SupportInbox";
 import SecurityCenter from "./pages/admin/SecurityCenter";
+import AchievementsAdmin from "./pages/admin/AchievementsAdmin";
+import LeaderboardsAdmin from "./pages/admin/LeaderboardsAdmin";
+import GamificationRules from "./pages/admin/GamificationRules";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
@@ -321,6 +324,9 @@ const App = () => (
                   <Route path="roadmaps" element={<RoadmapsManager />} />
                   <Route path="support" element={<SupportInbox />} />
                   <Route path="security" element={<SecurityCenter />} />
+                  <Route path="achievements" element={<AchievementsAdmin />} />
+                  <Route path="leaderboards" element={<LeaderboardsAdmin />} />
+                  <Route path="gamification" element={<GamificationRules />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
