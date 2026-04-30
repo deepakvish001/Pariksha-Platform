@@ -76,6 +76,8 @@ const SettingsAndFlags = () => {
           <pre>{JSON.stringify(settings, null, 2)}</pre>
         </div>
       </Card>
+
+      <FlagRegistryCard />
     </AdminShell>
   );
 };
