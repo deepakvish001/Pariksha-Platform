@@ -9,7 +9,7 @@ import {
   useUpsertRoadmapOverride,
   useSetFeaturedRoadmap,
 } from "@/hooks/admin/useRoadmapOverrides";
-import { roadmapsData } from "@/data/roadmapsData";
+import { roadmapTrees } from "@/data/roadmapTreesData";
 
 export default function RoadmapsManager() {
   const { data: overrides, isLoading } = useRoadmapOverrides();
@@ -24,7 +24,7 @@ export default function RoadmapsManager() {
     return m;
   }, [overrides]);
 
-  const list = (roadmapsData ?? []) as any[];
+  const list = (roadmapTrees ?? []) as any[];
 
   return (
     <AdminShell>
