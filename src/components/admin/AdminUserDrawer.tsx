@@ -199,3 +199,88 @@ export const AdminUserDrawer = ({ userId, open, onOpenChange }: Props) => {
     </Sheet>
   );
 };
+
+const UserNotifPanel = ({ userId }: { userId: string }) => {
+  const { data = [], isLoading } = useAdminNotifications(userId, null, 25);
+  const send = useSendAdminNotification();
+  const force = useForceLogout();
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+
+  return (
+    <div className="space-y-2">
+      <Card className="space-y-2 p-3">
+        <p className="text-xs font-medium">Send notification</p>
+        <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="h-8 text-xs" />
+        <Input placeholder="Message" value={message} onChange={(e) => setMessage(e.target.value)} className="h-8 text-xs" />
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            disabled={!title || !message || send.isPending}
+            onClick={() => { send.mutate({ userId, title, message }); setTitle(""); setMessage(""); }}
+          ><Send className="h-3 w-3 mr-1" />Send</Button>
+          <Button size="sm" variant="outline" className="ml-auto" onClick={() => force.mutate({ userId, reason: "admin" })}>
+            <LogOut className="h-3 w-3 mr-1" />Force logout
+          </Button>
+        </div>
+      </Card>
+      {isLoading ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : data.length === 0 ? (
+        <p className="text-muted-foreground">No notifications.</p>
+      ) : (
+        data.map((n: any) => (
+          <div key={n.id} className="border-b border-border/30 py-1">
+            <p className="font-medium">{n.title} <span className="text-muted-foreground">· {n.type}</span></p>
+            <p className="text-muted-foreground truncate">{n.message}</p>
+            <p className="text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString()}{n.read ? " · read" : ""}</p>
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
+
+const UserQuizPanel = ({ userId }: { userId: string }) => {
+  const { data = [], isLoading } = useAdminQuizAttempts(userId, null, 25);
+  const reset = useResetSrs();
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" onClick={() => reset.mutate({ userId })} disabled={reset.isPending}>
+          Reset SRS
+        </Button>
+      </div>
+      {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> :
+        data.length === 0 ? <p className="text-muted-foreground">No attempts.</p> :
+        data.map((a: any) => (
+          <div key={a.id} className="flex justify-between border-b border-border/30 py-1">
+            <span className="truncate">{a.quiz_type} · {a.category ?? "all"} · {a.score}/{a.total_questions}</span>
+            <span className="text-muted-foreground">{new Date(a.completed_at).toLocaleDateString()}</span>
+          </div>
+        ))}
+    </div>
+  );
+};
+
+const UserConversationsPanel = ({ userId }: { userId: string }) => {
+  const { data = [], isLoading } = useAdminConversations(userId, 25);
+  const purge = usePurgeConversations();
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-end">
+        <Button size="sm" variant="destructive" onClick={() => purge.mutate(userId)} disabled={purge.isPending}>
+          <Trash2 className="h-3 w-3 mr-1" />Purge all
+        </Button>
+      </div>
+      {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> :
+        data.length === 0 ? <p className="text-muted-foreground">No conversations.</p> :
+        data.map((c: any) => (
+          <div key={c.id} className="flex justify-between border-b border-border/30 py-1">
+            <span className="truncate">{c.title ?? "Untitled"}</span>
+            <span className="text-muted-foreground">{new Date(c.updated_at ?? c.created_at).toLocaleDateString()}</span>
+          </div>
+        ))}
+    </div>
+  );
+};
