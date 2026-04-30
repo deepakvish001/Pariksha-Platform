@@ -72,7 +72,7 @@ const ResumesAdmin = () => {
                 {(list.data ?? []).map((r: any) => (
                   <tr key={r.id} className="border-b border-border/30">
                     <td className="px-2 py-2 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</td>
-                    <td className="px-2 py-2">{r.full_name || r.user_id.slice(0, 8)}</td>
+                    <td className="px-2 py-2"><button className="text-primary hover:underline" onClick={() => adminUserDrawer.show(r.user_id)}>{r.full_name || r.user_id.slice(0, 8)}</button></td>
                     <td className="px-2 py-2 truncate max-w-[280px]">{r.file_name}</td>
                     <td className="px-2 py-2 text-right">{r.overall_score ?? "—"}</td>
                     <td className="px-2 py-2 text-right">{r.ats_score ?? "—"}</td>

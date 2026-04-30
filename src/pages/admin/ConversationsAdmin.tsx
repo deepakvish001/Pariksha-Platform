@@ -45,7 +45,7 @@ const ConversationsAdmin = () => {
           <div className="flex flex-wrap gap-2">
             {s.top_users.map((t: any, i: number) => (
               <div key={i} className="rounded-md border border-border/50 px-2 py-1 text-xs">
-                {t.full_name || t.user_id?.slice(0, 8)} <span className="text-muted-foreground">· {t.conv_count}</span>
+                <button className="text-primary hover:underline" onClick={() => t.user_id && adminUserDrawer.show(t.user_id)}>{t.full_name || t.user_id?.slice(0, 8)}</button> <span className="text-muted-foreground">· {t.conv_count}</span>
               </div>
             ))}
           </div>
@@ -79,7 +79,7 @@ const ConversationsAdmin = () => {
                 {(list.data ?? []).map((c: any) => (
                   <tr key={c.id} className="border-b border-border/30">
                     <td className="px-2 py-2 text-xs text-muted-foreground">{new Date(c.updated_at).toLocaleString()}</td>
-                    <td className="px-2 py-2">{c.full_name || c.user_id.slice(0, 8)}</td>
+                    <td className="px-2 py-2"><button className="text-primary hover:underline" onClick={() => adminUserDrawer.show(c.user_id)}>{c.full_name || c.user_id.slice(0, 8)}</button></td>
                     <td className="px-2 py-2 truncate max-w-[420px]">{c.title || <span className="text-muted-foreground">Untitled</span>}</td>
                     <td className="px-2 py-2 text-right">{c.message_count}</td>
                   </tr>

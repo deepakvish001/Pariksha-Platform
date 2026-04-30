@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2, RotateCcw, Brain } from "lucide-react";
 import { AdminUserPicker } from "@/components/admin/AdminUserPicker";
+import { adminUserDrawer } from "@/hooks/admin/useAdminUserDrawerStore";
 import type { AdminUserHit } from "@/hooks/admin/useAdminUserSearch";
 import {
   useAdminQuizAttempts,

@@ -82,7 +82,7 @@ const SubmissionsAdmin = () => {
                 {(list.data ?? []).map((s: any) => (
                   <tr key={s.id} className="border-b border-border/30">
                     <td className="px-2 py-2 text-xs text-muted-foreground">{new Date(s.created_at).toLocaleString()}</td>
-                    <td className="px-2 py-2">{s.full_name || s.user_id.slice(0, 8)}</td>
+                    <td className="px-2 py-2"><button className="text-primary hover:underline" onClick={() => adminUserDrawer.show(s.user_id)}>{s.full_name || s.user_id.slice(0, 8)}</button></td>
                     <td className="px-2 py-2 font-mono text-xs">{s.problem_slug}</td>
                     <td className="px-2 py-2">{s.language}</td>
                     <td className="px-2 py-2">

@@ -82,7 +82,7 @@ const NotificationsAdmin = () => {
                 {(list.data ?? []).map((n: any) => (
                   <tr key={n.id} className="border-b border-border/30">
                     <td className="px-2 py-2 text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString()}</td>
-                    <td className="px-2 py-2">{n.full_name || n.username || n.user_id.slice(0, 8)}</td>
+                    <td className="px-2 py-2"><button className="text-primary hover:underline" onClick={() => adminUserDrawer.show(n.user_id)}>{n.full_name || n.username || n.user_id.slice(0, 8)}</button></td>
                     <td className="px-2 py-2"><Badge variant="outline">{n.type}</Badge></td>
                     <td className="px-2 py-2">{n.title}</td>
                     <td className="px-2 py-2">{n.read ? "✓" : "—"}</td>
@@ -112,7 +112,7 @@ const NotificationsAdmin = () => {
               <tbody>
                 {(subs.data ?? []).map((s: any) => (
                   <tr key={s.id} className="border-b border-border/30">
-                    <td className="px-2 py-2">{s.full_name || s.user_id.slice(0, 8)}</td>
+                    <td className="px-2 py-2"><button className="text-primary hover:underline" onClick={() => adminUserDrawer.show(s.user_id)}>{s.full_name || s.user_id.slice(0, 8)}</button></td>
                     <td className="px-2 py-2 font-mono text-[10px] truncate max-w-[420px]">{s.endpoint}</td>
                     <td className="px-2 py-2">{s.is_active ? "✓" : "—"}</td>
                     <td className="px-2 py-2 text-xs text-muted-foreground">{new Date(s.created_at).toLocaleString()}</td>
