@@ -32,7 +32,6 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   useAchievementStats,
   useRecomputeAchievements,
-  useAdminUserDetail,
 } from "@/hooks/admin/useAdminEngagement";
 import { useBulkAchievementMutation } from "@/hooks/admin/useBulkAchievement";
 import { AdminUserMultiPicker } from "@/components/admin/AdminUserMultiPicker";
@@ -477,8 +476,5 @@ const AchievementsAdmin = () => {
     </AdminShell>
   );
 };
-
-// keep import to satisfy tree-shaking warnings about unused detail hook
-void useAdminUserDetail;
 
 export default AchievementsAdmin;
