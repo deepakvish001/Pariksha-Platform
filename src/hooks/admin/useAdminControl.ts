@@ -348,6 +348,44 @@ export const exportAdminSubmissions = async (days = 30, limit = 10000) => {
   return data ?? [];
 };
 
+// ───────── System health
+export const useSystemHealth = () =>
+  useQuery({
+    queryKey: ["admin-system-health"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)("admin_system_health");
+      if (error) throw error;
+      return (data ?? {}) as Record<string, any>;
+    },
+    refetchInterval: 30_000,
+  });
+
+// ───────── Cron jobs
+export const useAdminCronJobs = () =>
+  useQuery({
+    queryKey: ["admin-cron-jobs"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)("admin_list_cron_jobs");
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        jobid: number; jobname: string; schedule: string; command: string;
+        active: boolean; last_run_started_at: string | null;
+        last_status: string | null; last_return_message: string | null;
+      }>;
+    },
+  });
+
+// ───────── Storage stats
+export const useAdminStorageStats = () =>
+  useQuery({
+    queryKey: ["admin-storage-stats"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)("admin_storage_stats");
+      if (error) throw error;
+      return (data ?? []) as Array<{ bucket_id: string; object_count: number; total_bytes: number }>;
+    },
+  });
+
 // ───────── Edge function logs (proxy)
 export const useEdgeLogs = (functionName: string | null, enabled = true) =>
   useQuery({
