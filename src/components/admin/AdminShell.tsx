@@ -5,7 +5,7 @@ import {
   Settings as SettingsIcon, Database, Activity, Download, HeartPulse, Clock,
   ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { useAdminSidebarBadges } from "@/hooks/admin/useAdminSidebarBadges";
 
 interface NavItem {
   to: string;
@@ -63,10 +64,27 @@ const GROUPS: NavGroup[] = [
   ]},
 ];
 
+const Badge = ({ count, tone = "default" }: { count: number; tone?: "default" | "alert" }) => {
+  if (!count) return null;
+  return (
+    <span
+      className={cn(
+        "ml-auto inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none",
+        tone === "alert"
+          ? "bg-destructive text-destructive-foreground"
+          : "bg-primary/15 text-primary"
+      )}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+};
+
 const AdminSidebar = () => {
   const { pathname } = useLocation();
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
+  const { state, isMobile, setOpenMobile } = useSidebar();
+  const collapsed = state === "collapsed" && !isMobile;
+  const { data: badges } = useAdminSidebarBadges();
 
   const isActive = (to: string, end?: boolean) =>
     end ? pathname === to : pathname === to || pathname.startsWith(to + "/");
@@ -76,6 +94,33 @@ const AdminSidebar = () => {
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUPS.map((g) => [g.label, true]))
   );
+
+  // Auto-expand the active group on route change.
+  useEffect(() => {
+    setOpenMap((prev) => {
+      const next = { ...prev };
+      for (const g of GROUPS) {
+        if (groupHasActive(g)) next[g.label] = true;
+      }
+      return next;
+    });
+    // close mobile drawer after navigation
+    if (isMobile) setOpenMobile(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // Compute aggregated group badges (sum of item badges in that group).
+  const groupBadgeCount = (g: NavGroup) =>
+    g.items.reduce((acc, i) => acc + (badges?.[i.to as keyof typeof badges] ?? 0), 0);
+
+  // Scroll active item into view on route change.
+  const activeRef = useRef<HTMLAnchorElement | null>(null);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      activeRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [pathname]);
 
   return (
     <Sidebar collapsible="icon">
@@ -90,27 +135,28 @@ const AdminSidebar = () => {
         {GROUPS.map((group) => {
           const hasActive = groupHasActive(group);
           const open = collapsed ? true : (openMap[group.label] ?? true);
+          const groupCount = groupBadgeCount(group);
 
           return (
             <Collapsible
               key={group.label}
               open={open}
               onOpenChange={(v) => setOpenMap((m) => ({ ...m, [group.label]: v }))}
-              className="group/collap"
             >
               <SidebarGroup className="py-1">
                 {!collapsed && (
                   <CollapsibleTrigger asChild>
                     <SidebarGroupLabel
                       className={cn(
-                        "flex cursor-pointer items-center justify-between rounded-md px-2 text-[11px] font-semibold uppercase tracking-wide hover:bg-muted/40",
+                        "flex h-7 cursor-pointer items-center gap-2 rounded-md px-2 text-[11px] font-semibold uppercase tracking-wide hover:bg-muted/40",
                         hasActive ? "text-primary" : "text-muted-foreground/70"
                       )}
                     >
                       <span>{group.label}</span>
+                      {groupCount > 0 && !open && <Badge count={groupCount} />}
                       <ChevronDown
                         className={cn(
-                          "h-3.5 w-3.5 transition-transform duration-200",
+                          "ml-auto h-3.5 w-3.5 transition-transform duration-200",
                           open ? "rotate-0" : "-rotate-90"
                         )}
                       />
@@ -118,18 +164,28 @@ const AdminSidebar = () => {
                   </CollapsibleTrigger>
                 )}
 
-                <CollapsibleContent
-                  className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
-                >
+                <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                   <SidebarGroupContent>
                     <SidebarMenu>
                       {group.items.map((item) => {
                         const Icon = item.icon;
                         const active = isActive(item.to, item.end);
+                        const itemCount = badges?.[item.to as keyof typeof badges] ?? 0;
+                        const tone: "default" | "alert" =
+                          item.to === "/admin/reports" || item.to === "/admin/system-health"
+                            ? "alert"
+                            : "default";
                         return (
                           <SidebarMenuItem key={item.to}>
-                            <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
+                            <SidebarMenuButton
+                              asChild
+                              isActive={active}
+                              tooltip={
+                                itemCount ? `${item.label} (${itemCount})` : item.label
+                              }
+                            >
                               <NavLink
+                                ref={active ? (activeRef as any) : undefined}
                                 to={item.to}
                                 end={item.end}
                                 className={cn(
@@ -139,8 +195,23 @@ const AdminSidebar = () => {
                                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                 )}
                               >
-                                <Icon className="h-4 w-4 shrink-0" />
-                                {!collapsed && <span className="truncate">{item.label}</span>}
+                                <span className="relative flex shrink-0 items-center">
+                                  <Icon className="h-4 w-4" />
+                                  {collapsed && itemCount > 0 && (
+                                    <span
+                                      className={cn(
+                                        "absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full ring-2 ring-sidebar",
+                                        tone === "alert" ? "bg-destructive" : "bg-primary"
+                                      )}
+                                    />
+                                  )}
+                                </span>
+                                {!collapsed && (
+                                  <>
+                                    <span className="truncate">{item.label}</span>
+                                    <Badge count={itemCount} tone={tone} />
+                                  </>
+                                )}
                               </NavLink>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
