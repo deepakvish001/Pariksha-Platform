@@ -6,10 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Plus, Minus, Award, Trash2, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Minus, Award, Trash2, ExternalLink, Send, LogOut } from "lucide-react";
 import {
   useAdminUserDetail, useAdjustXp, useGrantAchievement, useRevokeAchievement,
 } from "@/hooks/admin/useAdminEngagement";
+import {
+  useAdminNotifications, useSendAdminNotification,
+  useAdminQuizAttempts, useResetSrs,
+  useAdminConversations, usePurgeConversations,
+  useForceLogout,
+} from "@/hooks/admin/useAdminCoverage";
 import { Link } from "react-router-dom";
 
 interface Props {
