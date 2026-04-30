@@ -6,8 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { usePlatformSettings, useSetSetting } from "@/hooks/admin/useAdminControl";
-import { Settings as SettingsIcon, Plus } from "lucide-react";
+import { useFlagRegistry, useUpsertFlagRegistry } from "@/hooks/admin/useAdminCoverage";
+import { Settings as SettingsIcon, Plus, FlaskConical } from "lucide-react";
 
 const KNOWN_FLAGS: { key: string; label: string; description: string }[] = [
   { key: "maintenance_mode", label: "Maintenance mode", description: "Show a maintenance banner site-wide." },
