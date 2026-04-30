@@ -79,10 +79,13 @@ export const AdminUserDrawer = ({ userId, open, onOpenChange }: Props) => {
             </div>
 
             <Tabs defaultValue="xp">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="xp">XP</TabsTrigger>
-                <TabsTrigger value="ach">Achievements</TabsTrigger>
-                <TabsTrigger value="subs">Submissions</TabsTrigger>
+                <TabsTrigger value="ach">Ach</TabsTrigger>
+                <TabsTrigger value="subs">Subs</TabsTrigger>
+                <TabsTrigger value="quiz">Quiz</TabsTrigger>
+                <TabsTrigger value="notif">Notif</TabsTrigger>
+                <TabsTrigger value="conv">Chats</TabsTrigger>
                 <TabsTrigger value="audit">Audit</TabsTrigger>
               </TabsList>
 
