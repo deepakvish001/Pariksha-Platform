@@ -282,3 +282,83 @@ export const useDeleteAIContent = () => {
     onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
 };
+
+// ───────── Filtered Audit Log
+export interface AuditFilters {
+  actor?: string | null;
+  action?: string | null;
+  entityType?: string | null;
+  from?: string | null;
+  to?: string | null;
+  limit?: number;
+  offset?: number;
+}
+
+export const useFilteredAuditLog = (filters: AuditFilters) =>
+  useQuery({
+    queryKey: ["admin-audit-filtered", filters],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)("admin_list_audit_log", {
+        _actor: filters.actor || null,
+        _action: filters.action || null,
+        _entity_type: filters.entityType || null,
+        _from: filters.from || null,
+        _to: filters.to || null,
+        _limit: filters.limit ?? 100,
+        _offset: filters.offset ?? 0,
+      });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        actor_id: string | null;
+        actor_name: string;
+        action: string;
+        entity_type: string | null;
+        entity_slug: string | null;
+        diff: any;
+        created_at: string;
+        total_count: number;
+      }>;
+    },
+  });
+
+export const useAuditEntityTypes = () =>
+  useQuery({
+    queryKey: ["admin-audit-entity-types"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)("admin_audit_entity_types");
+      if (error) throw error;
+      return (data ?? []).map((r: any) => r.entity_type as string);
+    },
+  });
+
+// ───────── Exports
+export const exportAdminUsers = async (limit = 5000) => {
+  const { data, error } = await (supabase.rpc as any)("admin_export_users", { _limit: limit });
+  if (error) throw error;
+  return data ?? [];
+};
+
+export const exportAdminSubmissions = async (days = 30, limit = 10000) => {
+  const { data, error } = await (supabase.rpc as any)("admin_export_submissions", {
+    _days: days,
+    _limit: limit,
+  });
+  if (error) throw error;
+  return data ?? [];
+};
+
+// ───────── Edge function logs (proxy)
+export const useEdgeLogs = (functionName: string | null, enabled = true) =>
+  useQuery({
+    queryKey: ["admin-edge-logs", functionName],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("admin-edge-logs", {
+        body: { functionName, limit: 100 },
+      });
+      if (error) throw error;
+      return data as { data?: any[]; warning?: string; error?: string };
+    },
+  });
+
