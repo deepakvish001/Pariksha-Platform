@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Eye, EyeOff, Mail, Search } from "lucide-react";
 import { useAdminOutreach, useAdminOutreachStats, useSetOutreachHidden } from "@/hooks/admin/useAdminCoverage";
+import { adminUserDrawer } from "@/hooks/admin/useAdminUserDrawerStore";
 
 const OutreachAdmin = () => {
   const [q, setQ] = useState("");
