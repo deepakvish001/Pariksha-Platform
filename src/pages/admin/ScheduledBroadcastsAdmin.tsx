@@ -13,6 +13,8 @@ import {
   useCancelScheduledBroadcast,
 } from "@/hooks/admin/useAdminCoverage";
 
+import { supabase } from "@/integrations/supabase/client";
+
 const ScheduledBroadcastsAdmin = () => {
   const list = useScheduledBroadcasts(false);
   const schedule = useScheduleBroadcast();
@@ -20,17 +22,49 @@ const ScheduledBroadcastsAdmin = () => {
 
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [minXp, setMinXp] = useState<string>("");
+  const [role, setRole] = useState<string>("");
+  const [previewCount, setPreviewCount] = useState<number | null>(null);
+  const [previewing, setPreviewing] = useState(false);
   const [when, setWhen] = useState<string>(() => {
     const d = new Date(Date.now() + 60 * 60 * 1000);
     d.setMilliseconds(0); d.setSeconds(0);
-    return d.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+    return d.toISOString().slice(0, 16);
   });
+
+  const buildFilter = () => {
+    const f: Record<string, unknown> = {};
+    if (minXp.trim() && !Number.isNaN(Number(minXp))) f.min_xp = Number(minXp);
+    if (role.trim()) f.role = role.trim();
+    return f;
+  };
+
+  const preview = async () => {
+    setPreviewing(true);
+    try {
+      const f = buildFilter();
+      let q = supabase.from("profiles").select("user_id", { count: "exact", head: true });
+      if (typeof f.min_xp === "number") q = q.gte("total_xp", f.min_xp);
+      if (f.role === "admin") {
+        const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+        const ids = (roles ?? []).map((r: any) => r.user_id);
+        if (!ids.length) { setPreviewCount(0); return; }
+        q = q.in("user_id", ids);
+      }
+      const { count } = await q;
+      setPreviewCount(count ?? 0);
+    } finally { setPreviewing(false); }
+  };
 
   const submit = () => {
     if (!title.trim() || !message.trim()) return;
     schedule.mutate(
-      { title: title.trim(), message: message.trim(), scheduledFor: new Date(when).toISOString() },
-      { onSuccess: () => { setTitle(""); setMessage(""); } },
+      {
+        title: title.trim(), message: message.trim(),
+        scheduledFor: new Date(when).toISOString(),
+        targetFilter: buildFilter(),
+      },
+      { onSuccess: () => { setTitle(""); setMessage(""); setPreviewCount(null); } },
     );
   };
 
