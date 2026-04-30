@@ -5,7 +5,7 @@ import {
   Settings as SettingsIcon, Database, Activity, Download, HeartPulse, Clock,
   ChevronDown, Star, Library, Map as MapIcon, Inbox, ShieldAlert,
   Award, Trophy, Gamepad2,
-  Bell, Brain, FileText, Code2, MessageSquare, Mail, Share2, Send,
+  Bell, Brain, FileText, Code2, MessageSquare, Mail, Share2, Send, LogOut,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
