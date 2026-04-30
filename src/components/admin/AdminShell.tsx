@@ -39,6 +39,8 @@ const GROUPS: NavGroup[] = [
   ]},
   { label: "System", items: [
     { to: "/admin/audit", label: "Audit Log", icon: ScrollText },
+    { to: "/admin/edge-logs", label: "Edge Logs", icon: Activity },
+    { to: "/admin/exports", label: "Exports", icon: Download },
   ]},
 ];
 
