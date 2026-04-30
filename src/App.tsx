@@ -295,10 +295,7 @@ const App = () => (
                   }
                 />
 
-                {/* Under Construction page for locked features */}
-                <Route path="/under-construction" element={<PublicDashboardWrapper />}>
-                  <Route index element={<UnderConstruction />} />
-                </Route>
+
 
                 {/* Admin routes - admin role required. AdminShell provides its own sidebar/layout. */}
                 <Route
