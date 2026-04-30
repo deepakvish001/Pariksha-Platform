@@ -3,7 +3,11 @@ import { useCallback, useEffect, useState } from "react";
 const STORAGE_KEY = "admin:badge-prefs:v1";
 const SEEN_KEY = "admin:badge-seen:v1";
 
-export type BadgeKey = "/admin/reports" | "/admin/ai-content" | "/admin/system-health";
+export type BadgeKey =
+  | "/admin/reports"
+  | "/admin/ai-content"
+  | "/admin/system-health"
+  | "/admin/support";
 
 export interface BadgePrefs {
   enabled: Record<BadgeKey, boolean>;
@@ -15,6 +19,7 @@ export const DEFAULT_PREFS: BadgePrefs = {
     "/admin/reports": true,
     "/admin/ai-content": true,
     "/admin/system-health": true,
+    "/admin/support": true,
   },
   refreshSeconds: 60,
 };
@@ -89,6 +94,7 @@ export const useAdminBadgeSeen = () => {
       "/admin/reports": now,
       "/admin/ai-content": now,
       "/admin/system-health": now,
+      "/admin/support": now,
     };
     localStorage.setItem(SEEN_KEY, JSON.stringify(next));
     setSeen(next);

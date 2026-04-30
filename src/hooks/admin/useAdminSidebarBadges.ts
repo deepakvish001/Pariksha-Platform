@@ -21,11 +21,21 @@ export const useAdminSidebarBadges = () => {
       const reportsEnabled = prefs.enabled["/admin/reports"];
       const aiEnabled = prefs.enabled["/admin/ai-content"];
       const healthEnabled = prefs.enabled["/admin/system-health"];
+      const supportEnabled = prefs.enabled["/admin/support"];
 
       const sinceReports = seen["/admin/reports"];
       const sinceAI = seen["/admin/ai-content"];
+      const sinceSupport = seen["/admin/support"];
 
-      const [reportsTotal, reportsUnseen, aiTotal, aiUnseen, healthRes] = await Promise.all([
+      const [
+        reportsTotal,
+        reportsUnseen,
+        aiTotal,
+        aiUnseen,
+        healthRes,
+        supportTotal,
+        supportUnseen,
+      ] = await Promise.all([
         reportsEnabled
           ? supabase.from("content_reports").select("id", { count: "exact", head: true }).eq("status", "open")
           : Promise.resolve({ count: 0 } as any),
@@ -49,12 +59,27 @@ export const useAdminSidebarBadges = () => {
               .gt("created_at", sinceAI)
           : Promise.resolve({ count: null } as any),
         healthEnabled ? (supabase.rpc as any)("admin_system_health") : Promise.resolve({ data: {} }),
+        supportEnabled
+          ? supabase
+              .from("support_messages")
+              .select("id", { count: "exact", head: true })
+              .eq("status", "open")
+          : Promise.resolve({ count: 0 } as any),
+        supportEnabled && sinceSupport
+          ? supabase
+              .from("support_messages")
+              .select("id", { count: "exact", head: true })
+              .eq("status", "open")
+              .gt("created_at", sinceSupport)
+          : Promise.resolve({ count: null } as any),
       ]);
 
       const rTotal = reportsTotal.count ?? 0;
       const rUnseen = reportsUnseen.count ?? rTotal;
       const aTotal = aiTotal.count ?? 0;
       const aUnseen = aiUnseen.count ?? aTotal;
+      const sTotal = supportTotal.count ?? 0;
+      const sUnseen = supportUnseen.count ?? sTotal;
       const health = (healthRes.data ?? {}) as Record<string, number>;
       const hAlert = healthEnabled && (rTotal > 0 || (health.submissions_24h ?? 0) === 0) ? 1 : 0;
 
@@ -73,6 +98,11 @@ export const useAdminSidebarBadges = () => {
           total: hAlert,
           unseen: hAlert,
           hint: hAlert ? "Needs attention" : "All systems normal",
+        },
+        "/admin/support": {
+          total: sTotal,
+          unseen: sUnseen,
+          hint: sTotal === 0 ? "Inbox empty" : `${sTotal} open ticket${sTotal === 1 ? "" : "s"}`,
         },
       };
     },

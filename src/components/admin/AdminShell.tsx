@@ -3,7 +3,7 @@ import {
   Shield, FileCode2, Upload, ScrollText, LayoutGrid, History,
   Users, KeyRound, Sparkles, CalendarClock, Megaphone, Flag,
   Settings as SettingsIcon, Database, Activity, Download, HeartPulse, Clock,
-  ChevronDown,
+  ChevronDown, Star, Library, Map as MapIcon, Inbox, ShieldAlert,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -46,6 +46,9 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/problems/import", label: "Bulk Import", icon: Upload },
     { to: "/admin/publish-history", label: "Publish History", icon: History },
     { to: "/admin/ai-content", label: "AI Content", icon: Sparkles },
+    { to: "/admin/featured", label: "Featured / Staff Picks", icon: Star },
+    { to: "/admin/library-curation", label: "Library Curation", icon: Library },
+    { to: "/admin/roadmaps", label: "Roadmaps Manager", icon: MapIcon },
   ]},
   { label: "People", items: [
     { to: "/admin/users", label: "Users", icon: Users },
@@ -56,9 +59,15 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/daily-challenge", label: "Daily Challenge", icon: CalendarClock },
     { to: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
   ]},
+  { label: "Communications", items: [
+    { to: "/admin/support", label: "Support Inbox", icon: Inbox },
+  ]},
   { label: "Platform", items: [
     { to: "/admin/settings", label: "Settings & Flags", icon: SettingsIcon },
     { to: "/admin/storage", label: "Storage", icon: Database },
+  ]},
+  { label: "Security", items: [
+    { to: "/admin/security", label: "Security Center", icon: ShieldAlert },
   ]},
   { label: "System", items: [
     { to: "/admin/system-health", label: "System Health", icon: HeartPulse },
@@ -69,7 +78,7 @@ const GROUPS: NavGroup[] = [
   ]},
 ];
 
-const TRACKED: BadgeKey[] = ["/admin/reports", "/admin/ai-content", "/admin/system-health"];
+const TRACKED: BadgeKey[] = ["/admin/reports", "/admin/ai-content", "/admin/system-health", "/admin/support"];
 
 const Badge = ({ count, tone = "default" }: { count: number; tone?: "default" | "alert" }) => {
   if (!count) return null;
