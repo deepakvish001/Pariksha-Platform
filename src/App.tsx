@@ -125,6 +125,7 @@ import ConversationsAdmin from "./pages/admin/ConversationsAdmin";
 import OutreachAdmin from "./pages/admin/OutreachAdmin";
 import FoldersAdmin from "./pages/admin/FoldersAdmin";
 import ScheduledBroadcastsAdmin from "./pages/admin/ScheduledBroadcastsAdmin";
+import SessionsAdmin from "./pages/admin/SessionsAdmin";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
@@ -343,6 +344,7 @@ const App = () => (
                   <Route path="outreach" element={<OutreachAdmin />} />
                   <Route path="folders" element={<FoldersAdmin />} />
                   <Route path="scheduled-broadcasts" element={<ScheduledBroadcastsAdmin />} />
+                  <Route path="sessions" element={<SessionsAdmin />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
