@@ -283,7 +283,7 @@ const AdminSidebar = () => {
 export const AdminShell = ({ children }: { children: React.ReactNode }) => {
   return (
     <SidebarProvider>
-      <div className="flex min-h-[calc(100vh-4rem)] w-full">
+      <div className="flex min-h-screen w-full">
         <AdminSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="sticky top-0 z-10 flex h-11 items-center gap-2 border-b border-border/40 bg-background/80 px-3 backdrop-blur">
