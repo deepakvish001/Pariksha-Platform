@@ -171,6 +171,18 @@ export const AdminUserDrawer = ({ userId, open, onOpenChange }: Props) => {
                 ))}
               </TabsContent>
 
+              <TabsContent value="quiz" className="space-y-2 text-xs">
+                <UserQuizPanel userId={userId!} />
+              </TabsContent>
+
+              <TabsContent value="notif" className="space-y-2 text-xs">
+                <UserNotifPanel userId={userId!} />
+              </TabsContent>
+
+              <TabsContent value="conv" className="space-y-2 text-xs">
+                <UserConversationsPanel userId={userId!} />
+              </TabsContent>
+
               <TabsContent value="audit" className="space-y-1 text-xs">
                 {data.audit_actions.length === 0 && <p className="text-muted-foreground">No admin actions by this user.</p>}
                 {data.audit_actions.map((a) => (
