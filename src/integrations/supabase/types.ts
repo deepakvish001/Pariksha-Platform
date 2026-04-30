@@ -2403,6 +2403,18 @@ export type Database = {
       }
     }
     Functions: {
+      admin_achievement_stats: {
+        Args: never
+        Returns: {
+          achievement_id: string
+          earned_count: number
+          last_earned: string
+        }[]
+      }
+      admin_adjust_xp: {
+        Args: { _amount: number; _reason: string; _user_id: string }
+        Returns: undefined
+      }
       admin_audit_entity_types: {
         Args: never
         Returns: {
@@ -2449,7 +2461,9 @@ export type Database = {
           username: string
         }[]
       }
+      admin_force_snapshot_leaderboard: { Args: never; Returns: number }
       admin_get_full_problem: { Args: { _slug: string }; Returns: Json }
+      admin_get_gamification_rules: { Args: never; Returns: Json }
       admin_grant_achievement: {
         Args: { _achievement_id: string; _user_id: string }
         Returns: undefined
@@ -2460,6 +2474,19 @@ export type Database = {
           _user_id: string
         }
         Returns: undefined
+      }
+      admin_leaderboard_top: {
+        Args: { _limit?: number; _window?: string }
+        Returns: {
+          avatar_url: string
+          current_level: number
+          full_name: string
+          leaderboard_hidden: boolean
+          total_xp: number
+          user_id: string
+          username: string
+          xp_this_week: number
+        }[]
       }
       admin_list_audit_log: {
         Args: {
@@ -2530,6 +2557,10 @@ export type Database = {
         Args: { _id: string; _new_status: string }
         Returns: undefined
       }
+      admin_revoke_achievement: {
+        Args: { _achievement_id: string; _user_id: string }
+        Returns: undefined
+      }
       admin_revoke_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2544,6 +2575,10 @@ export type Database = {
       }
       admin_set_ai_content_visibility: {
         Args: { _id: string; _is_public: boolean }
+        Returns: undefined
+      }
+      admin_set_leaderboard_hidden: {
+        Args: { _hidden: boolean; _user_id: string }
         Returns: undefined
       }
       admin_set_setting: {
@@ -2579,6 +2614,7 @@ export type Database = {
         }[]
       }
       admin_unsuspend_user: { Args: { _user_id: string }; Returns: undefined }
+      admin_user_detail: { Args: { _user_id: string }; Returns: Json }
       audit_daily_completions: { Args: never; Returns: Json }
       audit_daily_completions_all: { Args: never; Returns: Json }
       award_xp: {

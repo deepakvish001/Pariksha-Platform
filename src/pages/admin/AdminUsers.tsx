@@ -8,10 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   useAdminUsers, useGrantRole, useRevokeRole, useSuspendUser, useUnsuspendUser,
 } from "@/hooks/admin/useAdminControl";
-import { ShieldCheck, ShieldOff, Ban, RotateCcw, Search, Loader2 } from "lucide-react";
+import { ShieldCheck, ShieldOff, Ban, RotateCcw, Search, Loader2, UserCog } from "lucide-react";
+import { AdminUserDrawer } from "@/components/admin/AdminUserDrawer";
 
 const AdminUsers = () => {
   const [search, setSearch] = useState("");
+  const [drawerUser, setDrawerUser] = useState<string | null>(null);
   const { data: users = [], isLoading } = useAdminUsers(search);
   const grant = useGrantRole();
   const revoke = useRevokeRole();
@@ -91,6 +93,9 @@ const AdminUsers = () => {
                       </td>
                       <td className="px-2 py-3">
                         <div className="flex justify-end gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => setDrawerUser(u.user_id)} title="Open detail">
+                            <UserCog className="h-3.5 w-3.5" />
+                          </Button>
                           <Button size="sm" variant="outline"
                             onClick={() => isAdmin
                               ? revoke.mutate({ userId: u.user_id, role: "admin" })
@@ -130,6 +135,12 @@ const AdminUsers = () => {
           </div>
         )}
       </Card>
+
+      <AdminUserDrawer
+        userId={drawerUser}
+        open={!!drawerUser}
+        onOpenChange={(o) => !o && setDrawerUser(null)}
+      />
     </AdminShell>
   );
 };

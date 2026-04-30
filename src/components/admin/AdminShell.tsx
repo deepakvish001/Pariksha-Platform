@@ -4,6 +4,7 @@ import {
   Users, KeyRound, Sparkles, CalendarClock, Megaphone, Flag,
   Settings as SettingsIcon, Database, Activity, Download, HeartPulse, Clock,
   ChevronDown, Star, Library, Map as MapIcon, Inbox, ShieldAlert,
+  Award, Trophy, Gamepad2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -58,6 +59,9 @@ const GROUPS: NavGroup[] = [
   { label: "Engagement", items: [
     { to: "/admin/daily-challenge", label: "Daily Challenge", icon: CalendarClock },
     { to: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
+    { to: "/admin/achievements", label: "Achievements", icon: Award },
+    { to: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
+    { to: "/admin/gamification", label: "Gamification Rules", icon: Gamepad2 },
   ]},
   { label: "Communications", items: [
     { to: "/admin/support", label: "Support Inbox", icon: Inbox },
