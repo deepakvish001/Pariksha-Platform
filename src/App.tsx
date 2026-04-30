@@ -307,6 +307,8 @@ const App = () => (
                   <Route path="reports" element={<Reports />} />
                   <Route path="settings" element={<SettingsAndFlags />} />
                   <Route path="storage" element={<StorageBrowser />} />
+                  <Route path="edge-logs" element={<EdgeLogs />} />
+                  <Route path="exports" element={<Exports />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
