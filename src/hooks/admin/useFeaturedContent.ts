@@ -28,11 +28,10 @@ export const useFeaturedContent = () =>
 export const useUpsertFeatured = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (row: Partial<FeaturedRow> & { slot: string }) => {
-      const { error } = await supabase.from("featured_content").upsert({
-        ...row,
-        updated_at: new Date().toISOString(),
-      });
+    mutationFn: async (row: Partial<FeaturedRow> & { slot: string; target_type: string; target_id: string }) => {
+      const { error } = await supabase
+        .from("featured_content")
+        .upsert({ ...row, updated_at: new Date().toISOString() } as any);
       if (error) throw error;
     },
     onSuccess: () => {
