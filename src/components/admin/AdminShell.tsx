@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import { useAdminSidebarBadges, BadgeDetail } from "@/hooks/admin/useAdminSidebarBadges";
 import { BadgeKey } from "@/hooks/admin/useAdminBadgePrefs";
 import { AdminBadgeSettings } from "./AdminBadgeSettings";
+import { AdminUserDrawer } from "./AdminUserDrawer";
+import { adminUserDrawer, useAdminUserDrawerStore } from "@/hooks/admin/useAdminUserDrawerStore";
 
 interface NavItem {
   to: string;
