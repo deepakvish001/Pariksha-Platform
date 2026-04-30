@@ -306,6 +306,7 @@ const AdminSidebar = () => {
 };
 
 export const AdminShell = ({ children }: { children: React.ReactNode }) => {
+  const drawer = useAdminUserDrawerStore();
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
@@ -318,6 +319,11 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
           <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">{children}</main>
         </SidebarInset>
       </div>
+      <AdminUserDrawer
+        userId={drawer.userId}
+        open={drawer.open}
+        onOpenChange={(v) => adminUserDrawer.setOpen(v)}
+      />
     </SidebarProvider>
   );
 };
