@@ -44,6 +44,35 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_daily_challenge_schedule: {
+        Row: {
+          challenge_date: string
+          created_at: string
+          problem_slug: string
+          set_by: string | null
+        }
+        Insert: {
+          challenge_date: string
+          created_at?: string
+          problem_slug: string
+          set_by?: string | null
+        }
+        Update: {
+          challenge_date?: string
+          created_at?: string
+          problem_slug?: string
+          set_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_daily_challenge_schedule_problem_slug_fkey"
+            columns: ["problem_slug"]
+            isOneToOne: false
+            referencedRelation: "coding_problems"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       ai_content_likes: {
         Row: {
           content_id: string
@@ -571,6 +600,42 @@ export type Database = {
         }
         Relationships: []
       }
+      content_reports: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason: string
+          reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -760,6 +825,27 @@ export type Database = {
           id?: string
           template_id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -1525,6 +1611,7 @@ export type Database = {
           instagram_url: string | null
           interested_features: string[] | null
           interests: string[] | null
+          is_suspended: boolean
           last_xp_reset_at: string | null
           leetcode_url: string | null
           linkedin_url: string | null
@@ -1550,6 +1637,8 @@ export type Database = {
           srs_intervals: number[] | null
           srs_mastery_threshold: number | null
           study_year: Database["public"]["Enums"]["study_year"] | null
+          suspended_at: string | null
+          suspended_reason: string | null
           target_goal: string | null
           theme_preference: string | null
           total_xp: number | null
@@ -1585,6 +1674,7 @@ export type Database = {
           instagram_url?: string | null
           interested_features?: string[] | null
           interests?: string[] | null
+          is_suspended?: boolean
           last_xp_reset_at?: string | null
           leetcode_url?: string | null
           linkedin_url?: string | null
@@ -1610,6 +1700,8 @@ export type Database = {
           srs_intervals?: number[] | null
           srs_mastery_threshold?: number | null
           study_year?: Database["public"]["Enums"]["study_year"] | null
+          suspended_at?: string | null
+          suspended_reason?: string | null
           target_goal?: string | null
           theme_preference?: string | null
           total_xp?: number | null
@@ -1645,6 +1737,7 @@ export type Database = {
           instagram_url?: string | null
           interested_features?: string[] | null
           interests?: string[] | null
+          is_suspended?: boolean
           last_xp_reset_at?: string | null
           leetcode_url?: string | null
           linkedin_url?: string | null
@@ -1670,6 +1763,8 @@ export type Database = {
           srs_intervals?: number[] | null
           srs_mastery_threshold?: number | null
           study_year?: Database["public"]["Enums"]["study_year"] | null
+          suspended_at?: string | null
+          suspended_reason?: string | null
           target_goal?: string | null
           theme_preference?: string | null
           total_xp?: number | null
@@ -2185,8 +2280,85 @@ export type Database = {
       }
     }
     Functions: {
+      admin_broadcast_notification: {
+        Args: {
+          _audience: Json
+          _data?: Json
+          _message: string
+          _title: string
+        }
+        Returns: number
+      }
+      admin_dashboard_kpis: { Args: never; Returns: Json }
+      admin_delete_ai_content: { Args: { _id: string }; Returns: undefined }
       admin_get_full_problem: { Args: { _slug: string }; Returns: Json }
+      admin_grant_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      admin_list_users: {
+        Args: { _limit?: number; _offset?: number; _search?: string }
+        Returns: {
+          avatar_url: string
+          current_level: number
+          email: string
+          full_name: string
+          is_suspended: boolean
+          joined_at: string
+          last_active_at: string
+          roles: string[]
+          total_xp: number
+          user_id: string
+          username: string
+        }[]
+      }
+      admin_resolve_report: {
+        Args: { _id: string; _new_status: string }
+        Returns: undefined
+      }
+      admin_revoke_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: undefined
+      }
       admin_save_problem: { Args: { payload: Json }; Returns: Json }
+      admin_schedule_daily_challenge: {
+        Args: { _date: string; _slug: string }
+        Returns: undefined
+      }
+      admin_set_ai_content_visibility: {
+        Args: { _id: string; _is_public: boolean }
+        Returns: undefined
+      }
+      admin_set_setting: {
+        Args: { _key: string; _value: Json }
+        Returns: undefined
+      }
+      admin_suspend_user: {
+        Args: { _reason: string; _user_id: string }
+        Returns: undefined
+      }
+      admin_trend_signups: {
+        Args: { _days?: number }
+        Returns: {
+          day: string
+          signups: number
+        }[]
+      }
+      admin_trend_submissions: {
+        Args: { _days?: number }
+        Returns: {
+          accepted: number
+          day: string
+          total: number
+        }[]
+      }
+      admin_unsuspend_user: { Args: { _user_id: string }; Returns: undefined }
       audit_daily_completions: { Args: never; Returns: Json }
       audit_daily_completions_all: { Args: never; Returns: Json }
       award_xp: {
