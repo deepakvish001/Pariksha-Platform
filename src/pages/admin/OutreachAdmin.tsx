@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Eye, EyeOff, Mail, Search } from "lucide-react";
 import { useAdminOutreach, useAdminOutreachStats, useSetOutreachHidden } from "@/hooks/admin/useAdminCoverage";
+import { adminUserDrawer } from "@/hooks/admin/useAdminUserDrawerStore";
 
 const OutreachAdmin = () => {
   const [q, setQ] = useState("");
@@ -59,7 +60,7 @@ const OutreachAdmin = () => {
                 {(list.data ?? []).map((t: any) => (
                   <tr key={t.id} className="border-b border-border/30">
                     <td className="px-2 py-2 truncate max-w-[300px]">{t.title}</td>
-                    <td className="px-2 py-2">{t.full_name || t.user_id.slice(0, 8)}</td>
+                    <td className="px-2 py-2"><button className="text-primary hover:underline" onClick={() => adminUserDrawer.show(t.user_id)}>{t.full_name || t.user_id.slice(0, 8)}</button></td>
                     <td className="px-2 py-2"><Badge variant="outline">{t.platform}</Badge></td>
                     <td className="px-2 py-2 text-xs text-muted-foreground">{t.category}</td>
                     <td className="px-2 py-2 text-right">{t.copies}</td>
