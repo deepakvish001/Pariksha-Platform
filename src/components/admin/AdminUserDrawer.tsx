@@ -6,10 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, Plus, Minus, Award, Trash2, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Minus, Award, Trash2, ExternalLink, Send, LogOut } from "lucide-react";
 import {
   useAdminUserDetail, useAdjustXp, useGrantAchievement, useRevokeAchievement,
 } from "@/hooks/admin/useAdminEngagement";
+import {
+  useAdminNotifications, useSendAdminNotification,
+  useAdminQuizAttempts, useResetSrs,
+  useAdminConversations, usePurgeConversations,
+  useForceLogout,
+} from "@/hooks/admin/useAdminCoverage";
 import { Link } from "react-router-dom";
 
 interface Props {
@@ -73,10 +79,13 @@ export const AdminUserDrawer = ({ userId, open, onOpenChange }: Props) => {
             </div>
 
             <Tabs defaultValue="xp">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="xp">XP</TabsTrigger>
-                <TabsTrigger value="ach">Achievements</TabsTrigger>
-                <TabsTrigger value="subs">Submissions</TabsTrigger>
+                <TabsTrigger value="ach">Ach</TabsTrigger>
+                <TabsTrigger value="subs">Subs</TabsTrigger>
+                <TabsTrigger value="quiz">Quiz</TabsTrigger>
+                <TabsTrigger value="notif">Notif</TabsTrigger>
+                <TabsTrigger value="conv">Chats</TabsTrigger>
                 <TabsTrigger value="audit">Audit</TabsTrigger>
               </TabsList>
 
@@ -162,6 +171,18 @@ export const AdminUserDrawer = ({ userId, open, onOpenChange }: Props) => {
                 ))}
               </TabsContent>
 
+              <TabsContent value="quiz" className="space-y-2 text-xs">
+                <UserQuizPanel userId={userId!} />
+              </TabsContent>
+
+              <TabsContent value="notif" className="space-y-2 text-xs">
+                <UserNotifPanel userId={userId!} />
+              </TabsContent>
+
+              <TabsContent value="conv" className="space-y-2 text-xs">
+                <UserConversationsPanel userId={userId!} />
+              </TabsContent>
+
               <TabsContent value="audit" className="space-y-1 text-xs">
                 {data.audit_actions.length === 0 && <p className="text-muted-foreground">No admin actions by this user.</p>}
                 {data.audit_actions.map((a) => (
@@ -176,5 +197,90 @@ export const AdminUserDrawer = ({ userId, open, onOpenChange }: Props) => {
         )}
       </SheetContent>
     </Sheet>
+  );
+};
+
+const UserNotifPanel = ({ userId }: { userId: string }) => {
+  const { data = [], isLoading } = useAdminNotifications(userId, null, 25);
+  const send = useSendAdminNotification();
+  const force = useForceLogout();
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+
+  return (
+    <div className="space-y-2">
+      <Card className="space-y-2 p-3">
+        <p className="text-xs font-medium">Send notification</p>
+        <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="h-8 text-xs" />
+        <Input placeholder="Message" value={message} onChange={(e) => setMessage(e.target.value)} className="h-8 text-xs" />
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            disabled={!title || !message || send.isPending}
+            onClick={() => { send.mutate({ userId, title, message }); setTitle(""); setMessage(""); }}
+          ><Send className="h-3 w-3 mr-1" />Send</Button>
+          <Button size="sm" variant="outline" className="ml-auto" onClick={() => force.mutate({ userId, reason: "admin" })}>
+            <LogOut className="h-3 w-3 mr-1" />Force logout
+          </Button>
+        </div>
+      </Card>
+      {isLoading ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : data.length === 0 ? (
+        <p className="text-muted-foreground">No notifications.</p>
+      ) : (
+        data.map((n: any) => (
+          <div key={n.id} className="border-b border-border/30 py-1">
+            <p className="font-medium">{n.title} <span className="text-muted-foreground">· {n.type}</span></p>
+            <p className="text-muted-foreground truncate">{n.message}</p>
+            <p className="text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString()}{n.read ? " · read" : ""}</p>
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
+
+const UserQuizPanel = ({ userId }: { userId: string }) => {
+  const { data = [], isLoading } = useAdminQuizAttempts(userId, null, 25);
+  const reset = useResetSrs();
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" onClick={() => reset.mutate({ userId })} disabled={reset.isPending}>
+          Reset SRS
+        </Button>
+      </div>
+      {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> :
+        data.length === 0 ? <p className="text-muted-foreground">No attempts.</p> :
+        data.map((a: any) => (
+          <div key={a.id} className="flex justify-between border-b border-border/30 py-1">
+            <span className="truncate">{a.quiz_type} · {a.category ?? "all"} · {a.score}/{a.total_questions}</span>
+            <span className="text-muted-foreground">{new Date(a.completed_at).toLocaleDateString()}</span>
+          </div>
+        ))}
+    </div>
+  );
+};
+
+const UserConversationsPanel = ({ userId }: { userId: string }) => {
+  const { data = [], isLoading } = useAdminConversations(userId, 25);
+  const purge = usePurgeConversations();
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-end">
+        <Button size="sm" variant="destructive" onClick={() => purge.mutate(userId)} disabled={purge.isPending}>
+          <Trash2 className="h-3 w-3 mr-1" />Purge all
+        </Button>
+      </div>
+      {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> :
+        data.length === 0 ? <p className="text-muted-foreground">No conversations.</p> :
+        data.map((c: any) => (
+          <div key={c.id} className="flex justify-between border-b border-border/30 py-1">
+            <span className="truncate">{c.title ?? "Untitled"}</span>
+            <span className="text-muted-foreground">{new Date(c.updated_at ?? c.created_at).toLocaleDateString()}</span>
+          </div>
+        ))}
+    </div>
   );
 };

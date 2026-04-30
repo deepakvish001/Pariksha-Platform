@@ -279,3 +279,69 @@ export const usePurgeAudit = () => {
     onError: fail,
   });
 };
+
+// ───────── Feature flag registry (typed schemas + rollout %)
+export const useFlagRegistry = () =>
+  useQuery({
+    queryKey: ["admin-flag-registry"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("admin_feature_flag_registry" as any)
+        .select("*")
+        .order("key");
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+export const useUpsertFlagRegistry = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { key: string; type: string; schema?: any; description?: string; rolloutPct?: number }) => {
+      const { error } = await rpc("admin_flag_registry_upsert", {
+        _key: vars.key, _type: vars.type, _schema: vars.schema ?? {},
+        _description: vars.description ?? null, _rollout_pct: vars.rolloutPct ?? 100,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-flag-registry"] }); ok("Flag saved"); },
+    onError: fail,
+  });
+};
+
+// ───────── Support canned replies
+export const useCannedReplies = () =>
+  useQuery({
+    queryKey: ["admin-canned-replies"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("support_canned_replies" as any)
+        .select("*")
+        .order("label");
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+export const useUpsertCannedReply = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { id?: string | null; label: string; body: string }) => {
+      const { error } = await rpc("admin_canned_reply_upsert", {
+        _id: vars.id ?? null, _label: vars.label, _body: vars.body,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-canned-replies"] }); ok("Canned reply saved"); },
+    onError: fail,
+  });
+};
+
+export const useDeleteCannedReply = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => { const { error } = await rpc("admin_canned_reply_delete", { _id: id }); if (error) throw error; },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-canned-replies"] }); ok("Deleted"); },
+    onError: fail,
+  });
+};

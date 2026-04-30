@@ -6,8 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { usePlatformSettings, useSetSetting } from "@/hooks/admin/useAdminControl";
-import { Settings as SettingsIcon, Plus } from "lucide-react";
+import { useFlagRegistry, useUpsertFlagRegistry } from "@/hooks/admin/useAdminCoverage";
+import { Settings as SettingsIcon, Plus, FlaskConical } from "lucide-react";
 
 const KNOWN_FLAGS: { key: string; label: string; description: string }[] = [
   { key: "maintenance_mode", label: "Maintenance mode", description: "Show a maintenance banner site-wide." },
@@ -74,6 +76,8 @@ const SettingsAndFlags = () => {
           <pre>{JSON.stringify(settings, null, 2)}</pre>
         </div>
       </Card>
+
+      <FlagRegistryCard />
     </AdminShell>
   );
 };
@@ -90,3 +94,70 @@ const BannerEditor = ({ initial, onSave }: { initial: string; onSave: (text: str
 };
 
 export default SettingsAndFlags;
+
+const FlagRegistryCard = () => {
+  const { data: flags = [] } = useFlagRegistry();
+  const upsert = useUpsertFlagRegistry();
+  const [key, setKey] = useState("");
+  const [type, setType] = useState("boolean");
+  const [description, setDescription] = useState("");
+  const [rolloutPct, setRolloutPct] = useState(100);
+  const [schemaText, setSchemaText] = useState("{}");
+
+  const submit = () => {
+    if (!key.trim()) return;
+    let parsed: any = {};
+    try { parsed = JSON.parse(schemaText || "{}"); } catch { alert("Invalid schema JSON"); return; }
+    upsert.mutate(
+      { key: key.trim(), type, description, rolloutPct, schema: parsed },
+      { onSuccess: () => { setKey(""); setDescription(""); setRolloutPct(100); setSchemaText("{}"); } },
+    );
+  };
+
+  return (
+    <Card className="mt-4 p-4">
+      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+        <FlaskConical className="h-4 w-4" /> Feature Flag Registry
+      </h2>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Declare typed flag schemas and rollout percentages. Use with platform settings above.
+      </p>
+
+      <div className="grid gap-2 sm:grid-cols-[1fr_140px_120px_auto]">
+        <Input placeholder="key (e.g. ai_generation_enabled)" value={key} onChange={(e) => setKey(e.target.value)} />
+        <Input placeholder="type" value={type} onChange={(e) => setType(e.target.value)} />
+        <Input type="number" min={0} max={100} value={rolloutPct} onChange={(e) => setRolloutPct(Number(e.target.value))} />
+        <Button onClick={submit} disabled={!key || upsert.isPending}><Plus className="mr-1 h-4 w-4" /> Save</Button>
+      </div>
+      <Input className="mt-2" placeholder="description" value={description} onChange={(e) => setDescription(e.target.value)} />
+      <Textarea className="mt-2 font-mono text-xs" rows={3} placeholder='JSON schema (e.g. {"type":"boolean"})' value={schemaText} onChange={(e) => setSchemaText(e.target.value)} />
+
+      <div className="mt-4 space-y-1.5">
+        {flags.length === 0 && <p className="text-xs text-muted-foreground">No flags registered yet.</p>}
+        {flags.map((f) => (
+          <div key={f.key} className="flex items-start justify-between gap-3 rounded-md border border-border/40 px-3 py-2 text-xs">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-medium">{f.key}</span>
+                <Badge variant="outline">{f.type}</Badge>
+                <Badge variant="secondary">{f.rollout_pct}%</Badge>
+              </div>
+              {f.description && <p className="mt-0.5 text-muted-foreground">{f.description}</p>}
+              {f.schema && Object.keys(f.schema || {}).length > 0 && (
+                <pre className="mt-1 overflow-auto rounded bg-muted/30 p-1.5 text-[10px]">{JSON.stringify(f.schema, null, 2)}</pre>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setKey(f.key); setType(f.type); setDescription(f.description ?? "");
+                setRolloutPct(f.rollout_pct); setSchemaText(JSON.stringify(f.schema ?? {}, null, 2));
+              }}
+            >Edit</Button>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
