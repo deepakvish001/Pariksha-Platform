@@ -139,7 +139,7 @@ const ScheduledBroadcastsAdmin = () => {
                       <td className="px-2 py-2">
                         <Badge variant={status === "sent" ? "default" : status === "pending" ? "secondary" : "outline"}>{status}</Badge>
                       </td>
-                      <td className="px-2 py-2 text-right">{b.recipient_count ?? "—"}</td>
+                      <td className="px-2 py-2 text-right">{b.recipients_count ?? "—"}</td>
                       <td className="px-2 py-2 text-right">
                         {status === "pending" && (
                           <Button size="sm" variant="ghost" onClick={() => cancel.mutate(b.id)} disabled={cancel.isPending}>
