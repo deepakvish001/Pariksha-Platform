@@ -123,9 +123,12 @@ export default function SupportInbox() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      Reply (saved to record)
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Reply (saved to record)
+                      </label>
+                      <CannedRepliesPicker onPick={(body) => setReply((r) => (r ? `${r}\n\n${body}` : body))} />
+                    </div>
                     <Textarea
                       value={reply}
                       onChange={(e) => setReply(e.target.value)}
