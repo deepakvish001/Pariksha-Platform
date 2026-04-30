@@ -109,6 +109,11 @@ import EdgeLogs from "./pages/admin/EdgeLogs";
 import Exports from "./pages/admin/Exports";
 import SystemHealth from "./pages/admin/SystemHealth";
 import CronJobs from "./pages/admin/CronJobs";
+import FeaturedContent from "./pages/admin/FeaturedContent";
+import LibraryCuration from "./pages/admin/LibraryCuration";
+import RoadmapsManager from "./pages/admin/RoadmapsManager";
+import SupportInbox from "./pages/admin/SupportInbox";
+import SecurityCenter from "./pages/admin/SecurityCenter";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
@@ -311,6 +316,11 @@ const App = () => (
                   <Route path="exports" element={<Exports />} />
                   <Route path="system-health" element={<SystemHealth />} />
                   <Route path="cron-jobs" element={<CronJobs />} />
+                  <Route path="featured" element={<FeaturedContent />} />
+                  <Route path="library-curation" element={<LibraryCuration />} />
+                  <Route path="roadmaps" element={<RoadmapsManager />} />
+                  <Route path="support" element={<SupportInbox />} />
+                  <Route path="security" element={<SecurityCenter />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
