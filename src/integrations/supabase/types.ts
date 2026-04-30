@@ -2356,6 +2356,19 @@ export type Database = {
           total_count: number
         }[]
       }
+      admin_list_cron_jobs: {
+        Args: never
+        Returns: {
+          active: boolean
+          command: string
+          jobid: number
+          jobname: string
+          last_return_message: string
+          last_run_started_at: string
+          last_status: string
+          schedule: string
+        }[]
+      }
       admin_list_users: {
         Args: { _limit?: number; _offset?: number; _search?: string }
         Returns: {
@@ -2396,10 +2409,19 @@ export type Database = {
         Args: { _key: string; _value: Json }
         Returns: undefined
       }
+      admin_storage_stats: {
+        Args: never
+        Returns: {
+          bucket_id: string
+          object_count: number
+          total_bytes: number
+        }[]
+      }
       admin_suspend_user: {
         Args: { _reason: string; _user_id: string }
         Returns: undefined
       }
+      admin_system_health: { Args: never; Returns: Json }
       admin_trend_signups: {
         Args: { _days?: number }
         Returns: {
