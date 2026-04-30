@@ -286,13 +286,13 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AdminSidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <SidebarInset className="min-w-0 flex-1">
           <div className="sticky top-0 z-10 flex h-11 items-center gap-2 border-b border-border/40 bg-background/80 px-3 backdrop-blur">
             <SidebarTrigger />
             <span className="text-xs text-muted-foreground">Admin</span>
           </div>
           <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">{children}</main>
-        </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );
