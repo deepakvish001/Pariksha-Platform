@@ -1375,6 +1375,7 @@ export type Database = {
           id: string
           message: string
           recipient_count: number | null
+          recipients_count: number
           scheduled_for: string
           sent_at: string | null
           target_filter: Json
@@ -1388,6 +1389,7 @@ export type Database = {
           id?: string
           message: string
           recipient_count?: number | null
+          recipients_count?: number
           scheduled_for: string
           sent_at?: string | null
           target_filter?: Json
@@ -1401,6 +1403,7 @@ export type Database = {
           id?: string
           message?: string
           recipient_count?: number | null
+          recipients_count?: number
           scheduled_for?: string
           sent_at?: string | null
           target_filter?: Json
@@ -2856,6 +2859,7 @@ export type Database = {
           id: string
           message: string
           recipient_count: number | null
+          recipients_count: number
           scheduled_for: string
           sent_at: string | null
           target_filter: Json
