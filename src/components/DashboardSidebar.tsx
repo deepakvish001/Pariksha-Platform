@@ -1,60 +1,24 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
+import { motion } from "framer-motion";
+import {
   LayoutGrid,
   FileSpreadsheet,
   User,
   LogOut,
   LogIn,
-  ChevronRight,
-  ChevronDown,
-  Layers,
-  Building2,
-  Users,
-  MessageSquare,
-  Code2,
-  Database,
-  FileText,
-  HelpCircle,
   Trophy,
-  BookOpen,
-  Cpu,
-  Network,
-  Search,
-  List,
-  Map,
-  FileCheck,
-  FileSearch,
-  Send,
-  Activity,
-  Sparkles,
-  FolderOpen,
-  TrendingUp,
   Settings,
-  Bell,
   Sun,
   Moon,
   Monitor,
   Home,
-  TrendingUp as ProgressIcon,
-  GraduationCap,
-  Briefcase,
-  Wrench,
   PanelLeftClose,
   PanelLeft,
-  Brain,
-  Target,
-  Compass,
-  ClipboardList,
-  Star,
-  UsersRound,
-  MessageCircle,
   Route,
-  Lock,
   Terminal,
-  History as HistoryIcon,
   Shield,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -72,7 +36,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
@@ -80,11 +43,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,7 +53,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import NotificationBell from "@/components/NotificationBell";
 import BrandLogo from "@/components/BrandLogo";
