@@ -105,6 +105,8 @@ import Broadcast from "./pages/admin/Broadcast";
 import Reports from "./pages/admin/Reports";
 import SettingsAndFlags from "./pages/admin/SettingsAndFlags";
 import StorageBrowser from "./pages/admin/StorageBrowser";
+import EdgeLogs from "./pages/admin/EdgeLogs";
+import Exports from "./pages/admin/Exports";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
