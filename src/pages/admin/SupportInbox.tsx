@@ -10,12 +10,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Inbox, Loader2, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Inbox, Loader2, Trash2, Plus, MessageSquareQuote } from "lucide-react";
 import {
   useSupportMessages,
   useUpdateSupportMessage,
   useDeleteSupportMessage,
 } from "@/hooks/admin/useSupportInbox";
+import {
+  useCannedReplies, useUpsertCannedReply, useDeleteCannedReply,
+} from "@/hooks/admin/useAdminCoverage";
 import { formatDistanceToNow } from "date-fns";
 
 export default function SupportInbox() {
