@@ -711,6 +711,60 @@ export type Database = {
         }
         Relationships: []
       }
+      featured_content: {
+        Row: {
+          ends_at: string | null
+          slot: string
+          starts_at: string | null
+          target_id: string
+          target_type: string
+          updated_at: string
+          updated_by: string | null
+          weight: number
+        }
+        Insert: {
+          ends_at?: string | null
+          slot: string
+          starts_at?: string | null
+          target_id: string
+          target_type: string
+          updated_at?: string
+          updated_by?: string | null
+          weight?: number
+        }
+        Update: {
+          ends_at?: string | null
+          slot?: string
+          starts_at?: string | null
+          target_id?: string
+          target_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          weight?: number
+        }
+        Relationships: []
+      }
+      library_hidden_items: {
+        Row: {
+          category: string
+          hidden_at: string
+          hidden_by: string | null
+          item_id: string
+        }
+        Insert: {
+          category: string
+          hidden_at?: string
+          hidden_by?: string | null
+          item_id: string
+        }
+        Update: {
+          category?: string
+          hidden_at?: string
+          hidden_by?: string | null
+          item_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1175,6 +1229,33 @@ export type Database = {
         }
         Relationships: []
       }
+      roadmap_overrides: {
+        Row: {
+          is_featured: boolean
+          is_published: boolean
+          roadmap_id: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          is_featured?: boolean
+          is_published?: boolean
+          roadmap_id: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          is_featured?: boolean
+          is_published?: boolean
+          roadmap_id?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       shared_folders: {
         Row: {
           allow_copy: boolean
@@ -1246,6 +1327,45 @@ export type Database = {
           target_questions?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      support_messages: {
+        Row: {
+          body: string
+          created_at: string
+          email: string
+          id: string
+          replied_at: string | null
+          replied_by: string | null
+          reply_body: string | null
+          status: string
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          email: string
+          id?: string
+          replied_at?: string | null
+          replied_by?: string | null
+          reply_body?: string | null
+          status?: string
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          email?: string
+          id?: string
+          replied_at?: string | null
+          replied_by?: string | null
+          reply_body?: string | null
+          status?: string
+          subject?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1613,6 +1733,7 @@ export type Database = {
           interests: string[] | null
           is_suspended: boolean
           last_xp_reset_at: string | null
+          leaderboard_hidden: boolean
           leetcode_url: string | null
           linkedin_url: string | null
           location: string | null
@@ -1676,6 +1797,7 @@ export type Database = {
           interests?: string[] | null
           is_suspended?: boolean
           last_xp_reset_at?: string | null
+          leaderboard_hidden?: boolean
           leetcode_url?: string | null
           linkedin_url?: string | null
           location?: string | null
@@ -1739,6 +1861,7 @@ export type Database = {
           interests?: string[] | null
           is_suspended?: boolean
           last_xp_reset_at?: string | null
+          leaderboard_hidden?: boolean
           leetcode_url?: string | null
           linkedin_url?: string | null
           location?: string | null
@@ -2327,6 +2450,10 @@ export type Database = {
         }[]
       }
       admin_get_full_problem: { Args: { _slug: string }; Returns: Json }
+      admin_grant_achievement: {
+        Args: { _achievement_id: string; _user_id: string }
+        Returns: undefined
+      }
       admin_grant_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2384,6 +2511,20 @@ export type Database = {
           user_id: string
           username: string
         }[]
+      }
+      admin_recent_auth_events: {
+        Args: { _limit?: number }
+        Returns: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: string
+          payload: Json
+        }[]
+      }
+      admin_recompute_achievements: {
+        Args: { _user_id: string }
+        Returns: number
       }
       admin_resolve_report: {
         Args: { _id: string; _new_status: string }
