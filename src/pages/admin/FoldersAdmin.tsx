@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Share2, X } from "lucide-react";
 import { useAdminSharedFolders, useRevokeShare } from "@/hooks/admin/useAdminCoverage";
+import { adminUserDrawer } from "@/hooks/admin/useAdminUserDrawerStore";
 
 const FoldersAdmin = () => {
   const list = useAdminSharedFolders(200);
