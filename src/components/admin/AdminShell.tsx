@@ -5,6 +5,7 @@ import {
   Settings as SettingsIcon, Database, Activity, Download, HeartPulse, Clock,
   ChevronDown, Star, Library, Map as MapIcon, Inbox, ShieldAlert,
   Award, Trophy, Gamepad2,
+  Bell, Brain, FileText, Code2, MessageSquare, Mail, Share2, Send,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -59,11 +60,21 @@ const GROUPS: NavGroup[] = [
   { label: "Engagement", items: [
     { to: "/admin/daily-challenge", label: "Daily Challenge", icon: CalendarClock },
     { to: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
+    { to: "/admin/scheduled-broadcasts", label: "Scheduled Broadcasts", icon: Send },
     { to: "/admin/achievements", label: "Achievements", icon: Award },
     { to: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
     { to: "/admin/gamification", label: "Gamification Rules", icon: Gamepad2 },
   ]},
+  { label: "User Activity", items: [
+    { to: "/admin/quizzes", label: "Quizzes & SRS", icon: Brain },
+    { to: "/admin/submissions", label: "Code Submissions", icon: Code2 },
+    { to: "/admin/resumes", label: "Resumes", icon: FileText },
+    { to: "/admin/conversations", label: "AI Conversations", icon: MessageSquare },
+    { to: "/admin/outreach", label: "Cold Outreach", icon: Mail },
+    { to: "/admin/folders", label: "Shared Folders", icon: Share2 },
+  ]},
   { label: "Communications", items: [
+    { to: "/admin/notifications", label: "Notifications", icon: Bell },
     { to: "/admin/support", label: "Support Inbox", icon: Inbox },
   ]},
   { label: "Platform", items: [
