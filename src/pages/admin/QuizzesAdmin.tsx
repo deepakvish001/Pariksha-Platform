@@ -87,7 +87,7 @@ const QuizzesAdmin = () => {
                 {(attempts.data ?? []).map((q: any) => (
                   <tr key={q.id} className="border-b border-border/30">
                     <td className="px-2 py-2 text-xs text-muted-foreground">{new Date(q.completed_at).toLocaleString()}</td>
-                    <td className="px-2 py-2">{q.full_name || q.user_id.slice(0, 8)}</td>
+                    <td className="px-2 py-2"><button className="text-primary hover:underline" onClick={() => adminUserDrawer.show(q.user_id)}>{q.full_name || q.user_id.slice(0, 8)}</button></td>
                     <td className="px-2 py-2"><Badge variant="outline">{q.quiz_type}</Badge></td>
                     <td className="px-2 py-2">{q.category}</td>
                     <td className="px-2 py-2 text-right">{q.score}/{q.total_questions}</td>
