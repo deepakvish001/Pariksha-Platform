@@ -1,170 +1,141 @@
 ## Goal
 
-Today's admin covers coding problems, users, roles, AI content moderation, daily challenge, broadcast, reports, settings/flags, storage, audit log, edge logs, exports, system health, and cron jobs.
+Make the Admin Control Center a true single pane of glass: every user-facing feature on Byteskill must be observable, configurable, and actionable from `/admin` with full CRUD/audit coverage.
 
-To make Byteskill **fully manageable from /admin**, we'll add 11 new surfaces that close the remaining gaps: curated content, gamification rules, communications, user-support tooling, and security visibility.
+## Current state — what already exists
 
-## New admin pages (grouped into existing sidebar)
-
-```text
-Content
-├── Featured / Staff Picks         (NEW) — curate landing + community gallery
-├── Library Curation               (NEW) — toggle DSA / SQL / Aptitude / Interview Q visibility
-└── Roadmaps Manager               (NEW) — publish/unpublish roadmaps, set "Featured" roadmap
-
-Engagement
-├── Achievements Manager           (NEW) — toggle, recompute, manually award
-├── Leaderboards Admin             (NEW) — hide users, force-snapshot, reset weekly
-└── Gamification Rules             (NEW) — XP weights, level thresholds, streak-freeze policy
-
-People
-├── User Detail Drawer (upgrade)   — activity timeline, XP history, suspend, impersonate-readonly
-└── Support Inbox                  (NEW) — contact form / feedback queue with reply-via-email
-
-Communications
-├── Email Templates                (NEW) — edit subject/body for digest, SRS reminder, etc.
-└── Notification Preferences Admin (NEW) — global defaults + per-user override
-
-Security
-└── Security Center                (NEW) — failed-login attempts, role grants, suspicious activity feed
+```
+ADMIN ROUTE                      STATUS                                NOTES
+/admin                           ✓ working                             KPIs, trends
+/admin/problems + /editor        ✓ working                             CRUD + tests + bulk
+/admin/problems/import           ✓ working
+/admin/publish-history           ✓ working
+/admin/ai-content                ✓ working                             toggle public, delete
+/admin/featured                  ✓ working                             slot CRUD
+/admin/library-curation          ✓ working                             hide/unhide
+/admin/roadmaps                  ✓ working                             publish/feature/order
+/admin/users                     ✓ working                             search, drawer, XP, ban
+/admin/roles                     ✓ working                             grant/revoke
+/admin/reports                   ✓ working                             resolve content reports
+/admin/daily-challenge           ✓ working                             schedule
+/admin/broadcast                 ✓ working                             send to all
+/admin/achievements              ✓ working (just hardened)             bulk + diff modal
+/admin/leaderboards              ✓ working                             hide/snapshot
+/admin/gamification              ✓ working                             validated + history
+/admin/support                   ✓ working                             inbox
+/admin/settings                  ✓ working                             flag CRUD
+/admin/storage                   ✓ working                             list/delete files
+/admin/security                  ✓ working                             auth events
+/admin/system-health             ✓ working
+/admin/cron-jobs                 ✓ working                             read-only
+/admin/audit                     ✓ working                             filterable
+/admin/edge-logs                 ✓ working                             tail
+/admin/exports                   ✓ working                             CSV
 ```
 
-## Per-page scope
+## Coverage gaps (user-facing features with NO admin control today)
 
-### 1. Featured / Staff Picks
-- Pick AI content + roadmaps + problems to feature on landing & community.
-- Backed by new `featured_content (slot text PK, target_type, target_id, weight, starts_at, ends_at)`.
+1. **Notifications** — `notifications` + `push_subscriptions` tables: no admin view, no per-user inspection, no template/digest controls.
+2. **Quizzes & SRS** — `quiz_results`, `quiz_question_responses`, `quiz_spaced_repetition`: no global stats view, no ability to delete malformed sessions or reset SRS for a user.
+3. **Resume system** — `resume_analyses`, `resume_downloads`, `resume_favorites`: zero admin visibility (cost & abuse risk for AI scoring).
+4. **Cold Outreach** — `outreach_custom_templates`, `outreach_favorites`, `outreach_usage`: no curation of user templates or usage analytics.
+5. **Folders & sharing** — `user_folders`, `shared_folders`: no way to revoke a public share link or audit shared content.
+6. **Daily challenge** — completions table + opt-in leaderboard exist, but `/admin/daily-challenge` only schedules; no completion/leaderboard inspection or unschedule.
+7. **Coding submissions** — `code_submissions`, `code_runs`, `code_drafts`: no admin viewer (judge debugging, abuse hunting).
+8. **Conversations / chat** — `conversations`, `chat_messages` (Byteskill AI): no usage stats, no per-user purge.
+9. **Email & deliverability** — Resend used by edge functions, but nothing in admin shows queue / bounces / failures.
+10. **Realtime channels & cache** — no kill-switch / TanStack invalidation broadcast.
+11. **User drawer gaps** — drawer shows XP/achievements/audit but not: notifications, quiz history, resume uploads, conversations, force-logout.
+12. **Daily challenge & broadcast scheduling** — broadcasts are immediate only; no scheduled/recurring broadcasts and no targeting (e.g., "all users with XP > N").
+13. **Bulk role ops** — roles page is one-by-one; no CSV import, no bulk grant.
+14. **Audit log retention & export** — no purge, no scheduled export.
+15. **Feature flags UX** — current flag editor is a raw JSON textarea; no typed schema, no environment-scoped toggles, no rollout %.
+16. **Support inbox** — no canned replies, no assignment, no SLA timer.
 
-### 2. Library Curation
-- Master switches per category (DSA, SQL, Aptitude, Interview, CS Subjects, Notes) using `platform_settings` keys (`library.<cat>.enabled`).
-- Hide individual hard-coded questions via new `library_hidden_items (category, item_id)`.
+Plus a verification pass on all "✓ working" pages to confirm hooks aren't stubs and RPCs return real data.
 
-### 3. Roadmaps Manager
-- Reads `roadmapsData`/`roadmapTreesData`; admin can toggle `is_published` per roadmap (new table `roadmap_overrides (roadmap_id PK, is_published, is_featured, sort_order)`).
-- "Featured roadmap" slot drives the homepage card.
+## What we'll build
 
-### 4. Achievements Manager
-- Table view of all achievement IDs (from code) joined with `user_achievements` counts.
-- Actions: hide achievement (`platform_settings` key), recompute for a user (calls existing achievement-evaluation RPC), manually grant via `admin_grant_achievement(_user_id,_id)`.
+### A. New admin sections (7 new pages)
 
-### 5. Leaderboards Admin
-- Tabs: XP, Coding, Streak, Daily Challenge.
-- Actions: hide user from leaderboards (new column `user_profiles_extended.leaderboard_hidden`), force snapshot (`snapshot_my_coding_leaderboard_rank` batched), reset weekly bucket.
-
-### 6. Gamification Rules
-- Form editor for XP weights (quiz pass, problem solved by difficulty, streak day, daily challenge).
-- Stored in `platform_settings` key `gamification.rules` (jsonb); read by `useXPSystem`.
-- Includes streak-freeze daily cap and level threshold table.
-
-### 7. User Detail Drawer (upgrade)
-- Click any user in `AdminUsers` to open a drawer with: profile summary, activity timeline (`user_activity_log`), XP history, role badges, completion stats.
-- Inline actions: grant/revoke role, suspend/unsuspend, reset XP, "view as" (read-only impersonation that opens public profile in new tab), delete account (cascades).
-
-### 8. Support Inbox
-- New `support_messages (id, user_id nullable, email, subject, body, status, created_at, replied_at, replied_by)`.
-- Queue with filters; "Reply" launches `mailto:` or sends via existing `send-notification-email` edge function.
-- Public submit endpoint reused from existing contact form (will wire it to insert here).
-
-### 9. Email Templates
-- Editable subject/body for the 6 existing transactional emails (weekly digest, SRS reminder, study reminder, velocity reminder, quiz summary, resume score).
-- Stored in `platform_settings` keys `email.<name>.{subject,body,enabled}`; each edge function reads via helper before falling back to baked-in copy.
-
-### 10. Notification Preferences Admin
-- Read/write defaults (everyone) + per-user overrides via existing `notification_preferences` table.
-- Switch board: weekly digest, SRS reminders, achievements, broadcast pushes.
-
-### 11. Security Center
-- Read-only feed: recent role grants/revokes (from `admin_audit_log`), suspended users, recent failed logins (from auth schema via SECURITY DEFINER RPC `admin_recent_auth_events(_limit)`), users with abnormal activity (>N submissions/min via window query).
-- Quick actions: revoke session, force-suspend.
-
-## Technical details
-
-### Database migration (one file)
-
-```sql
--- Featured content
-create table public.featured_content (
-  slot text primary key,
-  target_type text not null,
-  target_id text not null,
-  weight int not null default 0,
-  starts_at timestamptz,
-  ends_at timestamptz,
-  updated_by uuid references auth.users(id),
-  updated_at timestamptz not null default now()
-);
-
--- Library hidden items
-create table public.library_hidden_items (
-  category text not null,
-  item_id text not null,
-  hidden_at timestamptz not null default now(),
-  primary key (category, item_id)
-);
-
--- Roadmap overrides
-create table public.roadmap_overrides (
-  roadmap_id text primary key,
-  is_published boolean not null default true,
-  is_featured boolean not null default false,
-  sort_order int not null default 0,
-  updated_at timestamptz not null default now()
-);
-
--- Support inbox
-create table public.support_messages (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete set null,
-  email text not null,
-  subject text not null,
-  body text not null,
-  status text not null default 'open',
-  created_at timestamptz not null default now(),
-  replied_at timestamptz,
-  replied_by uuid references auth.users(id)
-);
-
--- Leaderboard hide flag
-alter table public.user_profiles_extended
-  add column if not exists leaderboard_hidden boolean not null default false;
-
--- All new tables: enable RLS + admin-write / public-read where appropriate
--- (mirrors patterns in platform_settings / content_reports)
+```
+/admin/notifications        — global notification log, per-user filter, resend, push-subscription audit, broadcast templates
+/admin/quizzes              — quiz attempts table (filterable), top categories, accuracy distribution, reset SRS, delete attempt
+/admin/resumes              — analyses + downloads + favorites; per-user usage; delete file from storage on row delete
+/admin/outreach             — user-created templates list (search, hide, delete), top templates by copies, weekly trend
+/admin/folders              — folders + shared_folders; revoke share link, force-private, view contents
+/admin/submissions          — code_submissions feed + per-problem acceptance, per-user history, rerun a submission
+/admin/conversations        — chat usage stats, per-user purge, top topics
+/admin/email                — Resend deliverability dashboard via edge function (sent, delivered, bounced, complaints), test send
+/admin/realtime             — list active realtime channels, broadcast cache-invalidation event, force-logout target user
 ```
 
-### New RPCs (SECURITY DEFINER, gated by `has_role(_, 'admin')`)
-- `admin_grant_achievement(_user_id, _achievement_id)`
-- `admin_recompute_achievements(_user_id)`
-- `admin_recent_auth_events(_limit int)` — reads `auth.audit_log_entries`
-- `admin_force_snapshot_leaderboard(_window text)` — batches `snapshot_my_coding_leaderboard_rank`
-- `admin_reply_support(_message_id, _body)` — marks resolved + invokes email
+### B. Enhancements to existing sections
 
-### Edge functions
-- `admin-reply-support` — wraps RPC + Resend (reuses existing secret).
-- Update existing 6 email functions to read subject/body from `platform_settings` first.
+- **AdminUserDrawer**: add tabs for Notifications · Quizzes · Resumes · Conversations · Sessions, plus a "Force logout" and "Send DM notification" button.
+- **Daily Challenge**: add list of past challenges + completion counts, unschedule, opt-in leaderboard preview.
+- **Broadcast**: schedule for later (`scheduled_broadcasts` table), targeting filters (role, min XP, registered after), draft/preview, send test to admin first.
+- **Roles**: bulk grant/revoke via CSV/multi-user picker, recently-changed audit strip.
+- **Audit Log**: retention slider (auto-purge >N days), download filtered slice.
+- **Feature Flags**: typed registry (boolean / number / json) + per-key inline editor with validation, rollout percentage.
+- **Support Inbox**: assign-to-admin, status workflow (open → in_progress → resolved), canned replies stored in `support_canned_replies`.
+- **Storage**: rename + move + signed-URL preview for non-public buckets.
+- **Reports**: bulk resolve, attach action note that auto-creates an audit row, "ban reporter" guardrail.
+- **System Health**: edge function uptime per-name, recent error count, DB connection count.
+- **Achievements**: import/export catalog as JSON.
+- **Leaderboards**: rebuild snapshot for a date range, recompute weekly XP.
 
-### Frontend
-- New pages under `src/pages/admin/`: `FeaturedContent.tsx`, `LibraryCuration.tsx`, `RoadmapsManager.tsx`, `AchievementsAdmin.tsx`, `LeaderboardsAdmin.tsx`, `GamificationRules.tsx`, `SupportInbox.tsx`, `EmailTemplates.tsx`, `NotificationPrefsAdmin.tsx`, `SecurityCenter.tsx`.
-- Upgrade `AdminUsers.tsx` with a `<UserDrawer/>` (Sheet component) for inline actions.
-- New hooks: `useFeaturedContent`, `useLibraryCuration`, `useRoadmapOverrides`, `useAdminAchievements`, `useLeaderboardsAdmin`, `useGamificationRules`, `useSupportInbox`, `useEmailTemplates`, `useNotificationPrefsAdmin`, `useSecurityCenter`.
-- Extend `AdminShell.tsx` `GROUPS` with the new items + add a new "Communications" and "Security" group.
-- Extend `useAdminSidebarBadges` to include support inbox open count and security alerts.
+### C. Cross-cutting infra
 
-### Reuse
-- `react-query` for caching, existing `toast`, `Sheet`, `Tabs`, `recharts`, `react-day-picker`.
-- All actions audit-logged via `admin_audit_log`.
+- **Single `admin_*` RPC family** for any new mutation (admin-only, audited).
+- **Audit auto-write** trigger wrapper: every new admin RPC inserts to `admin_audit_log` with a structured `diff`.
+- **Server-side validation**: zod-shaped JSON checks in the same shape as `gamificationRules.ts` (extracted to `src/lib/admin/`).
+- **Realtime invalidation**: a `admin_broadcast_invalidate` RPC that emits a Supabase realtime payload consumed by a global QueryClient listener.
+- **Admin-only edge functions**: `admin-email-stats` (Resend API), `admin-resend-broadcast` (Resend send), `admin-rerun-submission`, `admin-process-scheduled-broadcasts` (cron).
 
-## Step-by-step build order
+## Database changes (one migration)
 
-1. Migration: new tables + columns + admin RPCs.
-2. Sidebar: regroup with Communications + Security; wire all 11 new routes in `App.tsx`.
-3. Content trio: Featured / Library Curation / Roadmaps Manager.
-4. Engagement trio: Achievements / Leaderboards / Gamification Rules.
-5. People upgrade: User Detail Drawer in `AdminUsers`.
-6. Communications: Support Inbox + Email Templates + Notification Prefs Admin (+ edge function changes).
-7. Security Center.
-8. Smoke test every RPC for `has_role` gating + audit entries.
+```
+TABLE scheduled_broadcasts(id, title, message, target_filter jsonb, scheduled_for, sent_at, created_by)
+TABLE support_canned_replies(id, label, body, created_by)
+TABLE admin_feature_flag_registry(key PK, type text, schema jsonb, description, rollout_pct)
+TABLE admin_session_invalidations(id, user_id, reason, created_by, created_at)   -- forces logout
+ALTER  notifications ADD COLUMN sent_by_admin uuid NULL
+ENABLE pg_cron job: process-scheduled-broadcasts every minute
+```
 
-## Notes
-- I'll ship after each numbered step so you can review incrementally.
-- Recommend approving and starting with **Steps 1–3** (migration + sidebar + Content trio), since those unlock the biggest day-to-day curation wins.
+Plus ~25 new SECURITY DEFINER RPCs (`admin_list_notifications`, `admin_resend_notification`, `admin_purge_user_conversations`, `admin_force_logout`, `admin_email_stats`, `admin_revoke_share`, `admin_delete_quiz_attempt`, `admin_reset_srs`, `admin_list_resumes`, `admin_delete_resume`, `admin_list_outreach`, `admin_hide_outreach_template`, `admin_list_folders`, `admin_list_submissions`, `admin_rerun_submission`, `admin_list_conversations`, `admin_chat_usage_stats`, `admin_schedule_broadcast`, `admin_cancel_scheduled_broadcast`, `admin_canned_reply_*`, `admin_flag_registry_*`, `admin_purge_audit_older_than`, `admin_storage_rename`, `admin_storage_move`, `admin_export_achievements`, `admin_import_achievements`).
+
+All follow the hardened pattern: `EXECUTE` granted only to `authenticated`, `has_role(auth.uid(),'admin')` enforced inside, every mutation writes to `admin_audit_log`.
+
+## Verification pass — done as part of the work
+
+For every existing admin page, an automated walkthrough:
+
+1. Page renders without console errors as admin.
+2. Page is forbidden for non-admin (RLS + UI gate).
+3. Each button triggers the expected RPC and an audit row appears.
+4. Network tab shows no 4xx beyond explicit forbidden test.
+5. Add a row to `mem://features/admin/control-center` listing each section's verified date.
+
+A `docs/admin-coverage.md` matrix will list every user-facing feature, its admin route, and the verified actions (view / edit / delete / audit).
+
+## Suggested execution order (to keep PRs reviewable)
+
+1. Migration + new RPCs + audit wrapper (DB only).
+2. AdminUserDrawer expansion (highest leverage).
+3. Notifications + Email + Realtime pages (ops critical).
+4. Quizzes + Resumes + Submissions + Conversations + Outreach + Folders pages.
+5. Enhancements to Broadcast (scheduling), Flags (registry), Roles (bulk), Support (canned replies), Reports (bulk).
+6. Verification walkthrough + coverage doc + memory update.
+
+## Out of scope / explicit non-goals
+
+- Multi-tenant / org-level admin (single global admin role only).
+- Self-serve developer API keys.
+- Stripe/Paddle billing dashboards (no payments enabled yet).
+- Rewriting the existing admin pages that already work — only enhancements listed above.
+
+## Open question (will ask after approval if unclear)
+
+Do you want **scheduled broadcasts** to support recurring sends (e.g., weekly digest) on day 1, or only one-shot scheduled? Defaults to one-shot to keep scope tight. whichever will be good as a brand.,

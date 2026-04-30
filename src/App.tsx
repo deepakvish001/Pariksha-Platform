@@ -117,6 +117,14 @@ import SecurityCenter from "./pages/admin/SecurityCenter";
 import AchievementsAdmin from "./pages/admin/AchievementsAdmin";
 import LeaderboardsAdmin from "./pages/admin/LeaderboardsAdmin";
 import GamificationRules from "./pages/admin/GamificationRules";
+import NotificationsAdmin from "./pages/admin/NotificationsAdmin";
+import QuizzesAdmin from "./pages/admin/QuizzesAdmin";
+import ResumesAdmin from "./pages/admin/ResumesAdmin";
+import SubmissionsAdmin from "./pages/admin/SubmissionsAdmin";
+import ConversationsAdmin from "./pages/admin/ConversationsAdmin";
+import OutreachAdmin from "./pages/admin/OutreachAdmin";
+import FoldersAdmin from "./pages/admin/FoldersAdmin";
+import ScheduledBroadcastsAdmin from "./pages/admin/ScheduledBroadcastsAdmin";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
@@ -327,6 +335,14 @@ const App = () => (
                   <Route path="achievements" element={<AchievementsAdmin />} />
                   <Route path="leaderboards" element={<LeaderboardsAdmin />} />
                   <Route path="gamification" element={<GamificationRules />} />
+                  <Route path="notifications" element={<NotificationsAdmin />} />
+                  <Route path="quizzes" element={<QuizzesAdmin />} />
+                  <Route path="resumes" element={<ResumesAdmin />} />
+                  <Route path="submissions" element={<SubmissionsAdmin />} />
+                  <Route path="conversations" element={<ConversationsAdmin />} />
+                  <Route path="outreach" element={<OutreachAdmin />} />
+                  <Route path="folders" element={<FoldersAdmin />} />
+                  <Route path="scheduled-broadcasts" element={<ScheduledBroadcastsAdmin />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

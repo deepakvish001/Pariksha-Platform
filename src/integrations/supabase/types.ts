@@ -73,6 +73,84 @@ export type Database = {
           },
         ]
       }
+      admin_feature_flag_registry: {
+        Row: {
+          description: string | null
+          key: string
+          rollout_pct: number
+          schema: Json
+          type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          rollout_pct?: number
+          schema?: Json
+          type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          rollout_pct?: number
+          schema?: Json
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      admin_outreach_hidden: {
+        Row: {
+          hidden_at: string
+          hidden_by: string | null
+          reason: string | null
+          template_id: string
+        }
+        Insert: {
+          hidden_at?: string
+          hidden_by?: string | null
+          reason?: string | null
+          template_id: string
+        }
+        Update: {
+          hidden_at?: string
+          hidden_by?: string | null
+          reason?: string | null
+          template_id?: string
+        }
+        Relationships: []
+      }
+      admin_session_invalidations: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_content_likes: {
         Row: {
           content_id: string
@@ -802,6 +880,7 @@ export type Database = {
           id: string
           message: string
           read: boolean
+          sent_by_admin: string | null
           title: string
           type: string
           user_id: string
@@ -812,6 +891,7 @@ export type Database = {
           id?: string
           message: string
           read?: boolean
+          sent_by_admin?: string | null
           title: string
           type: string
           user_id: string
@@ -822,6 +902,7 @@ export type Database = {
           id?: string
           message?: string
           read?: boolean
+          sent_by_admin?: string | null
           title?: string
           type?: string
           user_id?: string
@@ -1286,6 +1367,48 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_broadcasts: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+          message: string
+          recipient_count: number | null
+          scheduled_for: string
+          sent_at: string | null
+          target_filter: Json
+          title: string
+          type: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          message: string
+          recipient_count?: number | null
+          scheduled_for: string
+          sent_at?: string | null
+          target_filter?: Json
+          title: string
+          type?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          message?: string
+          recipient_count?: number | null
+          scheduled_for?: string
+          sent_at?: string | null
+          target_filter?: Json
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       shared_folders: {
         Row: {
           allow_copy: boolean
@@ -1357,6 +1480,33 @@ export type Database = {
           target_questions?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      support_canned_replies: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2433,6 +2583,16 @@ export type Database = {
       }
     }
     Functions: {
+      _admin_audit: {
+        Args: {
+          _action: string
+          _diff?: Json
+          _entity_slug: string
+          _entity_type: string
+        }
+        Returns: undefined
+      }
+      acknowledge_logout: { Args: never; Returns: undefined }
       admin_achievement_stats: {
         Args: never
         Returns: {
@@ -2460,8 +2620,23 @@ export type Database = {
         }
         Returns: number
       }
+      admin_cancel_scheduled_broadcast: {
+        Args: { _id: string }
+        Returns: undefined
+      }
+      admin_canned_reply_delete: { Args: { _id: string }; Returns: undefined }
+      admin_canned_reply_upsert: {
+        Args: { _body: string; _id: string; _label: string }
+        Returns: string
+      }
+      admin_chat_usage: { Args: never; Returns: Json }
       admin_dashboard_kpis: { Args: never; Returns: Json }
       admin_delete_ai_content: { Args: { _id: string }; Returns: undefined }
+      admin_delete_quiz_attempt: {
+        Args: { _attempt_id: string }
+        Returns: undefined
+      }
+      admin_delete_resume: { Args: { _id: string }; Returns: string }
       admin_export_submissions: {
         Args: { _days?: number; _limit?: number }
         Returns: {
@@ -2490,6 +2665,20 @@ export type Database = {
           user_id: string
           username: string
         }[]
+      }
+      admin_flag_registry_upsert: {
+        Args: {
+          _description: string
+          _key: string
+          _rollout_pct: number
+          _schema: Json
+          _type: string
+        }
+        Returns: undefined
+      }
+      admin_force_logout: {
+        Args: { _reason?: string; _user_id: string }
+        Returns: string
       }
       admin_force_snapshot_leaderboard: { Args: never; Returns: number }
       admin_gamification_history: {
@@ -2553,6 +2742,17 @@ export type Database = {
           total_count: number
         }[]
       }
+      admin_list_conversations: {
+        Args: { _limit?: number; _offset?: number; _user_id?: string }
+        Returns: {
+          full_name: string
+          id: string
+          message_count: number
+          title: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       admin_list_cron_jobs: {
         Args: never
         Returns: {
@@ -2564,6 +2764,146 @@ export type Database = {
           last_run_started_at: string
           last_status: string
           schedule: string
+        }[]
+      }
+      admin_list_notifications: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _type?: string
+          _user_id?: string
+        }
+        Returns: {
+          created_at: string
+          data: Json
+          full_name: string
+          id: string
+          message: string
+          read: boolean
+          sent_by_admin: string
+          title: string
+          type: string
+          user_id: string
+          username: string
+        }[]
+      }
+      admin_list_outreach_templates: {
+        Args: { _limit?: number; _offset?: number; _q?: string }
+        Returns: {
+          category: string
+          copies: number
+          created_at: string
+          full_name: string
+          hidden: boolean
+          id: string
+          platform: string
+          title: string
+          user_id: string
+        }[]
+      }
+      admin_list_push_subscriptions: {
+        Args: { _limit?: number; _user_id?: string }
+        Returns: {
+          created_at: string
+          endpoint: string
+          full_name: string
+          id: string
+          is_active: boolean
+          user_id: string
+        }[]
+      }
+      admin_list_quiz_attempts: {
+        Args: {
+          _category?: string
+          _limit?: number
+          _offset?: number
+          _user_id?: string
+        }
+        Returns: {
+          accuracy: number
+          category: string
+          completed_at: string
+          difficulty: string
+          full_name: string
+          id: string
+          quiz_type: string
+          score: number
+          total_questions: number
+          total_time_seconds: number
+          user_id: string
+          username: string
+        }[]
+      }
+      admin_list_resumes: {
+        Args: { _limit?: number; _offset?: number; _user_id?: string }
+        Returns: {
+          ats_score: number
+          created_at: string
+          file_name: string
+          file_url: string
+          full_name: string
+          id: string
+          overall_score: number
+          user_id: string
+        }[]
+      }
+      admin_list_scheduled_broadcasts: {
+        Args: { _only_pending?: boolean }
+        Returns: {
+          cancelled_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+          message: string
+          recipient_count: number | null
+          scheduled_for: string
+          sent_at: string | null
+          target_filter: Json
+          title: string
+          type: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "scheduled_broadcasts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_list_shared_folders: {
+        Args: { _limit?: number; _offset?: number }
+        Returns: {
+          allow_copy: boolean
+          created_at: string
+          expires_at: string
+          folder_id: string
+          folder_name: string
+          id: string
+          is_public: boolean
+          owner_name: string
+          owner_user_id: string
+          share_code: string
+        }[]
+      }
+      admin_list_submissions: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _problem_slug?: string
+          _user_id?: string
+          _verdict?: string
+        }
+        Returns: {
+          created_at: string
+          full_name: string
+          id: string
+          language: string
+          memory_kb: number
+          passed_tests: number
+          problem_slug: string
+          runtime_ms: number
+          total_tests: number
+          user_id: string
+          verdict: string
         }[]
       }
       admin_list_users: {
@@ -2582,6 +2922,31 @@ export type Database = {
           username: string
         }[]
       }
+      admin_outreach_stats: { Args: never; Returns: Json }
+      admin_problem_acceptance: {
+        Args: { _limit?: number }
+        Returns: {
+          acceptance: number
+          accepted: number
+          problem_slug: string
+          total: number
+        }[]
+      }
+      admin_purge_audit_older_than: { Args: { _days: number }; Returns: number }
+      admin_purge_user_conversations: {
+        Args: { _user_id: string }
+        Returns: number
+      }
+      admin_quiz_overview: {
+        Args: never
+        Returns: {
+          attempts: number
+          avg_accuracy: number
+          avg_time_sec: number
+          category: string
+          quiz_type: string
+        }[]
+      }
       admin_recent_auth_events: {
         Args: { _limit?: number }
         Returns: {
@@ -2596,10 +2961,15 @@ export type Database = {
         Args: { _user_id: string }
         Returns: number
       }
+      admin_reset_srs: {
+        Args: { _category?: string; _user_id: string }
+        Returns: number
+      }
       admin_resolve_report: {
         Args: { _id: string; _new_status: string }
         Returns: undefined
       }
+      admin_resume_stats: { Args: never; Returns: Json }
       admin_revoke_achievement: {
         Args: { _achievement_id: string; _user_id: string }
         Returns: undefined
@@ -2611,7 +2981,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_revoke_share: { Args: { _share_id: string }; Returns: undefined }
       admin_save_problem: { Args: { payload: Json }; Returns: Json }
+      admin_schedule_broadcast: {
+        Args: {
+          _message: string
+          _scheduled_for: string
+          _target_filter: Json
+          _title: string
+          _type: string
+        }
+        Returns: string
+      }
       admin_schedule_daily_challenge: {
         Args: { _date: string; _slug: string }
         Returns: undefined
@@ -2625,6 +3006,16 @@ export type Database = {
           username: string
         }[]
       }
+      admin_send_notification: {
+        Args: {
+          _data?: Json
+          _message: string
+          _title: string
+          _type?: string
+          _user_id: string
+        }
+        Returns: string
+      }
       admin_set_ai_content_visibility: {
         Args: { _id: string; _is_public: boolean }
         Returns: undefined
@@ -2635,6 +3026,10 @@ export type Database = {
       }
       admin_set_leaderboard_hidden: {
         Args: { _hidden: boolean; _user_id: string }
+        Returns: undefined
+      }
+      admin_set_outreach_hidden: {
+        Args: { _hidden: boolean; _reason?: string; _template_id: string }
         Returns: undefined
       }
       admin_set_setting: {
@@ -2649,6 +3044,7 @@ export type Database = {
           total_bytes: number
         }[]
       }
+      admin_submission_detail: { Args: { _id: string }; Returns: Json }
       admin_suspend_user: {
         Args: { _reason: string; _user_id: string }
         Returns: undefined
@@ -2828,6 +3224,7 @@ export type Database = {
         Returns: boolean
       }
       snapshot_my_coding_leaderboard_rank: { Args: never; Returns: Json }
+      user_pending_logout: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
