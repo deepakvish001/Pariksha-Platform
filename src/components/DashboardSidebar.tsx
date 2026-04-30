@@ -116,110 +116,11 @@ const homeNavItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
-// Active (unlocked) routes
-const ACTIVE_ROUTES = new Set([
-  "/dashboard",
-  "/dashboard/my-plan",
-  "/dashboard/sheets",
-  "/dashboard/roadmaps",
-  "/dashboard/roadmap/fullstack",
-  PROFILE_SENTINEL,
-  "/dashboard/leaderboard",
-  "/dashboard/submissions",
-  "/settings",
-  "/library/problems",
-  "/admin",
-]);
-
-const isRouteLocked = (url: string) => !ACTIVE_ROUTES.has(url.split("?")[0]);
-
-// AI Tools section - "Byteskill AI" features
-const createWithAIItems = [
-  { title: "Plan", url: "/platform/ai/generate?type=plan", icon: ClipboardList },
-  { title: "Course", url: "/platform/ai/generate?type=course", icon: BookOpen },
-  { title: "Guide", url: "/platform/ai/generate?type=guide", icon: FileText },
-  { title: "Roadmap", url: "/platform/ai/generate?type=roadmap", icon: Map },
-  { title: "Quiz", url: "/platform/ai/generate?type=quiz", icon: HelpCircle },
-];
-
-const myAILearningItems = [
-  { title: "Plans", url: "/platform/ai/my-plans", icon: ClipboardList },
-  { title: "Courses", url: "/platform/ai/my-courses", icon: BookOpen },
-  { title: "Guides", url: "/platform/ai/my-guides", icon: FileText },
-  { title: "Roadmaps", url: "/platform/ai/my-roadmaps", icon: Map },
-  { title: "Quizzes", url: "/platform/ai/my-quizzes", icon: HelpCircle },
-];
-
-const aiChatItems = [
-  { title: "Ask AI Tutor", url: "/platform/ai", icon: Sparkles },
-  { title: "Roadmap Chat", url: "/platform/ai/roadmap-chat", icon: Route },
-];
-
-const aiCommunityItems = [
-  { title: "Staff Picks", url: "/platform/ai/staff-picks", icon: Star },
-  { title: "Community", url: "/platform/ai/community", icon: UsersRound },
-];
-
-// My Learning section - organized learning progression
-const fundamentalsItems = [
-  { title: "Overview", url: "/fundamentals", icon: TrendingUp },
-  { title: "Language", url: "/fundamentals/language", icon: Code2 },
-  { title: "OOPs Concepts", url: "/fundamentals/oops", icon: FolderOpen },
-];
-
-const practiceItems = [
-  { title: "DSA Questions", url: "/library/dsa", icon: Code2 },
-  { title: "SQL Questions", url: "/library/sql", icon: Database },
-  { title: "Aptitude Questions", url: "/library/aptitude", icon: HelpCircle },
-  { title: "Core CS Subjects", url: "/library/cs", icon: Cpu },
-  { title: "Interview Questions", url: "/library/interview", icon: MessageSquare },
-];
-
-const quizItems = [
-  { title: "Quiz", url: "/library/quiz", icon: Layers },
-  { title: "Quiz History", url: "/library/quiz-history", icon: Activity },
-];
-
-const systemDesignItems = [
-  { title: "Overview", url: "/system-design", icon: Layers },
-  { title: "High Level Design", url: "/system-design/hld", icon: Network },
-  { title: "Low Level Design", url: "/system-design/lld", icon: LayoutGrid },
-];
-
-const roadmapItems = [
-  { title: "Roadmap", url: "/research/roadmap", icon: Map },
-];
-
-// Career section - Job search & preparation
-const companyItems = [
-  { title: "Position Wise", url: "/library/positions", icon: Layers },
-  { title: "Company Wise", url: "/library/companies", icon: Building2 },
-  { title: "Mass Recruitment", url: "/library/recruitment", icon: Users },
-];
-
-const resumeItems = [
-  { title: "Resume Templates", url: "/research/resume", icon: FileCheck },
-  { title: "Resume Analyser", url: "/research/analyser", icon: FileSearch },
-];
-
-const jobSearchItems = [
-  { title: "Job Portals", url: "/research/jobs", icon: List },
-  { title: "Cold DMs / Emails", url: "/research/outreach", icon: Send },
-];
-
-// Resources & Tools
-const resourceItems = [
-  { title: "Resources", url: "/platform/resources", icon: BookOpen },
-  { title: "Collections", url: "/platform/collections", icon: FolderOpen },
-  { title: "Handwritten Notes", url: "/library/notes", icon: FileText },
-];
-
-// Progress & Profile section
-const progressNavItems = [
-  { title: "My Activity", url: "/research/activity", icon: Activity },
-  { title: "Achievements", url: "/dashboard/achievements", icon: Trophy },
-  { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
-];
+interface NavItem {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
 
 interface NavItem {
   title: string;
