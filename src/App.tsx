@@ -107,6 +107,8 @@ import SettingsAndFlags from "./pages/admin/SettingsAndFlags";
 import StorageBrowser from "./pages/admin/StorageBrowser";
 import EdgeLogs from "./pages/admin/EdgeLogs";
 import Exports from "./pages/admin/Exports";
+import SystemHealth from "./pages/admin/SystemHealth";
+import CronJobs from "./pages/admin/CronJobs";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
@@ -309,6 +311,8 @@ const App = () => (
                   <Route path="storage" element={<StorageBrowser />} />
                   <Route path="edge-logs" element={<EdgeLogs />} />
                   <Route path="exports" element={<Exports />} />
+                  <Route path="system-health" element={<SystemHealth />} />
+                  <Route path="cron-jobs" element={<CronJobs />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
