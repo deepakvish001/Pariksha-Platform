@@ -9,11 +9,10 @@ import {
   useAdminUsers, useGrantRole, useRevokeRole, useSuspendUser, useUnsuspendUser,
 } from "@/hooks/admin/useAdminControl";
 import { ShieldCheck, ShieldOff, Ban, RotateCcw, Search, Loader2, UserCog } from "lucide-react";
-import { AdminUserDrawer } from "@/components/admin/AdminUserDrawer";
+import { adminUserDrawer } from "@/hooks/admin/useAdminUserDrawerStore";
 
 const AdminUsers = () => {
   const [search, setSearch] = useState("");
-  const [drawerUser, setDrawerUser] = useState<string | null>(null);
   const { data: users = [], isLoading } = useAdminUsers(search);
   const grant = useGrantRole();
   const revoke = useRevokeRole();
