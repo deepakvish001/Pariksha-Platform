@@ -37,7 +37,7 @@ const FoldersAdmin = () => {
                 {(list.data ?? []).map((s: any) => (
                   <tr key={s.id} className="border-b border-border/30">
                     <td className="px-2 py-2">{s.folder_name || <span className="text-muted-foreground">—</span>}</td>
-                    <td className="px-2 py-2">{s.owner_name || s.owner_user_id?.slice(0, 8)}</td>
+                    <td className="px-2 py-2"><button className="text-primary hover:underline" onClick={() => s.owner_user_id && adminUserDrawer.show(s.owner_user_id)}>{s.owner_name || s.owner_user_id?.slice(0, 8)}</button></td>
                     <td className="px-2 py-2 font-mono text-xs">{s.share_code}</td>
                     <td className="px-2 py-2">{s.is_public ? <Badge>public</Badge> : "—"}</td>
                     <td className="px-2 py-2">{s.allow_copy ? "✓" : "—"}</td>
