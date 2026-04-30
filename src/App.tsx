@@ -28,7 +28,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
-import UnderConstruction from "./components/UnderConstruction";
+
 import SheetDetail from "./pages/SheetDetail";
 import FullStackRoadmap from "./pages/FullStackRoadmap";
 import DashboardRoadmaps from "./pages/DashboardRoadmaps";
@@ -295,10 +295,7 @@ const App = () => (
                   }
                 />
 
-                {/* Under Construction page for locked features */}
-                <Route path="/under-construction" element={<PublicDashboardWrapper />}>
-                  <Route index element={<UnderConstruction />} />
-                </Route>
+
 
                 {/* Admin routes - admin role required. AdminShell provides its own sidebar/layout. */}
                 <Route

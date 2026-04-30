@@ -1,60 +1,24 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
+import { motion } from "framer-motion";
+import {
   LayoutGrid,
   FileSpreadsheet,
   User,
   LogOut,
   LogIn,
-  ChevronRight,
-  ChevronDown,
-  Layers,
-  Building2,
-  Users,
-  MessageSquare,
-  Code2,
-  Database,
-  FileText,
-  HelpCircle,
   Trophy,
-  BookOpen,
-  Cpu,
-  Network,
-  Search,
-  List,
-  Map,
-  FileCheck,
-  FileSearch,
-  Send,
-  Activity,
-  Sparkles,
-  FolderOpen,
-  TrendingUp,
   Settings,
-  Bell,
   Sun,
   Moon,
   Monitor,
   Home,
-  TrendingUp as ProgressIcon,
-  GraduationCap,
-  Briefcase,
-  Wrench,
   PanelLeftClose,
   PanelLeft,
-  Brain,
-  Target,
-  Compass,
-  ClipboardList,
-  Star,
-  UsersRound,
-  MessageCircle,
   Route,
-  Lock,
   Terminal,
-  History as HistoryIcon,
   Shield,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -72,7 +36,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
@@ -80,11 +43,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,8 +53,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import NotificationBell from "@/components/NotificationBell";
 import BrandLogo from "@/components/BrandLogo";
 import { GuestSidebarTooltip } from "@/components/GuestSidebarTooltip";
@@ -116,233 +74,17 @@ const homeNavItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
-// Active (unlocked) routes
-const ACTIVE_ROUTES = new Set([
-  "/dashboard",
-  "/dashboard/my-plan",
-  "/dashboard/sheets",
-  "/dashboard/roadmaps",
-  "/dashboard/roadmap/fullstack",
-  PROFILE_SENTINEL,
-  "/dashboard/leaderboard",
-  "/dashboard/submissions",
-  "/settings",
-  "/library/problems",
-  "/admin",
-]);
-
-const isRouteLocked = (url: string) => !ACTIVE_ROUTES.has(url.split("?")[0]);
-
-// AI Tools section - "Byteskill AI" features
-const createWithAIItems = [
-  { title: "Plan", url: "/platform/ai/generate?type=plan", icon: ClipboardList },
-  { title: "Course", url: "/platform/ai/generate?type=course", icon: BookOpen },
-  { title: "Guide", url: "/platform/ai/generate?type=guide", icon: FileText },
-  { title: "Roadmap", url: "/platform/ai/generate?type=roadmap", icon: Map },
-  { title: "Quiz", url: "/platform/ai/generate?type=quiz", icon: HelpCircle },
-];
-
-const myAILearningItems = [
-  { title: "Plans", url: "/platform/ai/my-plans", icon: ClipboardList },
-  { title: "Courses", url: "/platform/ai/my-courses", icon: BookOpen },
-  { title: "Guides", url: "/platform/ai/my-guides", icon: FileText },
-  { title: "Roadmaps", url: "/platform/ai/my-roadmaps", icon: Map },
-  { title: "Quizzes", url: "/platform/ai/my-quizzes", icon: HelpCircle },
-];
-
-const aiChatItems = [
-  { title: "Ask AI Tutor", url: "/platform/ai", icon: Sparkles },
-  { title: "Roadmap Chat", url: "/platform/ai/roadmap-chat", icon: Route },
-];
-
-const aiCommunityItems = [
-  { title: "Staff Picks", url: "/platform/ai/staff-picks", icon: Star },
-  { title: "Community", url: "/platform/ai/community", icon: UsersRound },
-];
-
-// My Learning section - organized learning progression
-const fundamentalsItems = [
-  { title: "Overview", url: "/fundamentals", icon: TrendingUp },
-  { title: "Language", url: "/fundamentals/language", icon: Code2 },
-  { title: "OOPs Concepts", url: "/fundamentals/oops", icon: FolderOpen },
-];
-
-const practiceItems = [
-  { title: "DSA Questions", url: "/library/dsa", icon: Code2 },
-  { title: "SQL Questions", url: "/library/sql", icon: Database },
-  { title: "Aptitude Questions", url: "/library/aptitude", icon: HelpCircle },
-  { title: "Core CS Subjects", url: "/library/cs", icon: Cpu },
-  { title: "Interview Questions", url: "/library/interview", icon: MessageSquare },
-];
-
-const quizItems = [
-  { title: "Quiz", url: "/library/quiz", icon: Layers },
-  { title: "Quiz History", url: "/library/quiz-history", icon: Activity },
-];
-
-const systemDesignItems = [
-  { title: "Overview", url: "/system-design", icon: Layers },
-  { title: "High Level Design", url: "/system-design/hld", icon: Network },
-  { title: "Low Level Design", url: "/system-design/lld", icon: LayoutGrid },
-];
-
-const roadmapItems = [
-  { title: "Roadmap", url: "/research/roadmap", icon: Map },
-];
-
-// Career section - Job search & preparation
-const companyItems = [
-  { title: "Position Wise", url: "/library/positions", icon: Layers },
-  { title: "Company Wise", url: "/library/companies", icon: Building2 },
-  { title: "Mass Recruitment", url: "/library/recruitment", icon: Users },
-];
-
-const resumeItems = [
-  { title: "Resume Templates", url: "/research/resume", icon: FileCheck },
-  { title: "Resume Analyser", url: "/research/analyser", icon: FileSearch },
-];
-
-const jobSearchItems = [
-  { title: "Job Portals", url: "/research/jobs", icon: List },
-  { title: "Cold DMs / Emails", url: "/research/outreach", icon: Send },
-];
-
-// Resources & Tools
-const resourceItems = [
-  { title: "Resources", url: "/platform/resources", icon: BookOpen },
-  { title: "Collections", url: "/platform/collections", icon: FolderOpen },
-  { title: "Handwritten Notes", url: "/library/notes", icon: FileText },
-];
-
-// Progress & Profile section
-const progressNavItems = [
-  { title: "My Activity", url: "/research/activity", icon: Activity },
-  { title: "Achievements", url: "/dashboard/achievements", icon: Trophy },
-  { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
-];
-
 interface NavItem {
   title: string;
   url: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
-interface CollapsibleGroupProps {
+interface NavItem {
   title: string;
-  items: NavItem[];
-  groupIcon?: React.ComponentType<{ className?: string }>;
-  iconColor?: string;
-  defaultOpen?: boolean;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
 }
-
-
-const CollapsibleGroup = ({ title, items, groupIcon, iconColor = "text-muted-foreground", defaultOpen = false }: CollapsibleGroupProps) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const location = useLocation();
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
-
-  const isActiveGroup = items.some(item => location.pathname === item.url);
-
-  // Use provided groupIcon or fall back to first item's icon
-  const GroupIcon = groupIcon || items[0]?.icon;
-
-  if (isCollapsed) {
-    // When collapsed, show a dropdown with group items
-    return (
-      <SidebarMenuItem className="flex justify-center">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <SidebarMenuButton
-              tooltip={title}
-              className={cn(
-                "transition-all duration-200 hover:scale-105 justify-center h-10 w-10 mx-auto rounded-lg",
-                isActiveGroup && "bg-sidebar-accent text-sidebar-accent-foreground"
-              )}
-            >
-              {GroupIcon && (
-                <div className="relative flex items-center justify-center">
-                  <GroupIcon className={cn("h-4 w-4 shrink-0", iconColor)} />
-                  {isActiveGroup && (
-                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary animate-pulse" />
-                  )}
-                </div>
-              )}
-            </SidebarMenuButton>
-          </TooltipTrigger>
-          <TooltipContent side="right" align="start" className="p-0 w-48">
-            <div className="py-2">
-              <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
-              {items.map((item) => {
-                const locked = isRouteLocked(item.url);
-                return (
-                <Link
-                  key={item.title}
-                  to={locked ? "/under-construction" : item.url}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors",
-                    locked && "opacity-50",
-                    location.pathname === item.url && "bg-accent text-accent-foreground font-medium"
-                  )}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  <span className="flex-1">{item.title}</span>
-                  {locked && <Lock className="h-3 w-3 text-muted-foreground" />}
-                </Link>
-                );
-              })}
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </SidebarMenuItem>
-    );
-  }
-
-  return (
-    <Collapsible open={isOpen || isActiveGroup} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger asChild>
-        <button
-          className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 rounded-md transition-all duration-200 group"
-        >
-          <div className="flex items-center gap-2 group-hover:translate-x-0.5 transition-transform duration-200">
-            {GroupIcon && <GroupIcon className={cn("h-4 w-4 shrink-0", iconColor)} />}
-            <span>{title}</span>
-          </div>
-          <span className="transition-transform duration-200">
-            {isOpen || isActiveGroup ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5" />
-            )}
-          </span>
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-1">
-        {items.map((item) => {
-          const locked = isRouteLocked(item.url);
-          return (
-          <SidebarMenuItem key={item.title}>
-            <GuestSidebarTooltip url={item.url}>
-              <SidebarMenuButton
-                asChild
-                isActive={location.pathname === item.url}
-                tooltip={item.title}
-                className={cn("transition-all duration-200 hover:translate-x-0.5 group/item", locked && "opacity-50")}
-              >
-                <Link to={locked ? "/under-construction" : item.url} className="pl-8">
-                  <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/item:scale-110" />
-                  <span className="flex-1">{item.title}</span>
-                  {locked && <Lock className="h-3 w-3 text-muted-foreground" />}
-                </Link>
-              </SidebarMenuButton>
-            </GuestSidebarTooltip>
-          </SidebarMenuItem>
-          );
-        })}
-      </CollapsibleContent>
-    </Collapsible>
-  );
-};
 
 
 
@@ -597,276 +339,6 @@ export function DashboardSidebar() {
           </SidebarGroup>
 
 
-          {/* Byteskill AI Section */}
-          <SidebarGroup className="space-y-1">
-            {!isCollapsed && (
-              <div className="flex items-center gap-2 px-3 py-1.5">
-                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-primary/10">
-                  <Sparkles className="h-3 w-3 text-primary" />
-                </div>
-                <p className="text-[10px] font-semibold text-primary/80 uppercase tracking-widest">
-                  Byteskill AI
-                </p>
-              </div>
-            )}
-            {isCollapsed && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center justify-center py-1">
-                    <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-                      <Sparkles className="h-3 w-3 text-primary" />
-                    </div>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">Byteskill AI</TooltipContent>
-              </Tooltip>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                <CollapsibleGroup title="Create with AI" items={createWithAIItems} groupIcon={Sparkles} iconColor="text-primary" />
-                <CollapsibleGroup title="My Learning" items={myAILearningItems} groupIcon={GraduationCap} iconColor="text-primary" />
-                {aiChatItems.map((item) => {
-                  const locked = isRouteLocked(item.url);
-                  return (
-                  <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                    <SidebarMenuButton
-                      asChild
-                      isActive={location.pathname === item.url}
-                      tooltip={item.title}
-                      className={cn("transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg", locked && "opacity-50")}
-                    >
-                      <Link to={locked ? "/under-construction" : item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
-                        <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
-                        <span className="group-data-[collapsible=icon]:hidden flex-1">{item.title}</span>
-                        {locked && <Lock className="h-3 w-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  );
-                })}
-                {aiCommunityItems.map((item) => {
-                  const locked = isRouteLocked(item.url);
-                  return (
-                  <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                    <SidebarMenuButton
-                      asChild
-                      isActive={location.pathname === item.url}
-                      tooltip={item.title}
-                      className={cn("transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg", locked && "opacity-50")}
-                    >
-                      <Link to={locked ? "/under-construction" : item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
-                        <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
-                        <span className="group-data-[collapsible=icon]:hidden flex-1">{item.title}</span>
-                        {locked && <Lock className="h-3 w-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
-
-          {/* My Learning Section */}
-          <SidebarGroup className="space-y-1">
-            {!isCollapsed && (
-              <div className="flex items-center gap-2 px-3 py-1.5">
-                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-blue-500/10">
-                  <GraduationCap className="h-3 w-3 text-blue-500" />
-                </div>
-                <p className="text-[10px] font-semibold text-blue-500/80 uppercase tracking-widest">
-                  My Learning
-                </p>
-              </div>
-            )}
-            {isCollapsed && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center justify-center py-1">
-                    <div className="w-6 h-6 rounded-md bg-blue-500/10 flex items-center justify-center">
-                      <GraduationCap className="h-3 w-3 text-blue-500" />
-                    </div>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">My Learning</TooltipContent>
-              </Tooltip>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                <CollapsibleGroup title="Fundamentals" items={fundamentalsItems} groupIcon={BookOpen} iconColor="text-blue-500" />
-                <CollapsibleGroup title="Practice" items={practiceItems} groupIcon={Target} iconColor="text-blue-400" />
-                <CollapsibleGroup title="Quizzes" items={quizItems} groupIcon={Brain} iconColor="text-blue-300" />
-                <CollapsibleGroup title="System Design" items={systemDesignItems} groupIcon={Network} iconColor="text-blue-500" />
-                <CollapsibleGroup title="Roadmaps" items={roadmapItems} groupIcon={Compass} iconColor="text-blue-400" />
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
-
-          {/* Career Section */}
-          <SidebarGroup className="space-y-1">
-            {!isCollapsed && (
-              <div className="flex items-center gap-2 px-3 py-1.5">
-                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-purple-500/10">
-                  <Briefcase className="h-3 w-3 text-purple-500" />
-                </div>
-                <p className="text-[10px] font-semibold text-purple-500/80 uppercase tracking-widest">
-                  Career
-                </p>
-              </div>
-            )}
-            {isCollapsed && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center justify-center py-1">
-                    <div className="w-6 h-6 rounded-md bg-purple-500/10 flex items-center justify-center">
-                      <Briefcase className="h-3 w-3 text-purple-500" />
-                    </div>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">Career</TooltipContent>
-              </Tooltip>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                <CollapsibleGroup title="Companies" items={companyItems} groupIcon={Building2} iconColor="text-purple-500" />
-                <CollapsibleGroup title="Resume" items={resumeItems} groupIcon={FileCheck} iconColor="text-purple-400" />
-                <CollapsibleGroup title="Job Search" items={jobSearchItems} groupIcon={Search} iconColor="text-purple-300" />
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
-
-          {/* Resources & Tools */}
-          <SidebarGroup className="space-y-1">
-            {!isCollapsed && (
-              <div className="flex items-center gap-2 px-3 py-1.5">
-                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-amber-500/10">
-                  <Wrench className="h-3 w-3 text-amber-500" />
-                </div>
-                <p className="text-[10px] font-semibold text-amber-500/80 uppercase tracking-widest">
-                  Resources
-                </p>
-              </div>
-            )}
-            {isCollapsed && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center justify-center py-1">
-                    <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center">
-                      <Wrench className="h-3 w-3 text-amber-500" />
-                    </div>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">Resources</TooltipContent>
-              </Tooltip>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                {resourceItems.map((item) => {
-                  const locked = isRouteLocked(item.url);
-                  return (
-                  <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                    <SidebarMenuButton
-                      asChild
-                      isActive={location.pathname === item.url}
-                      tooltip={item.title}
-                      className={cn("transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg", locked && "opacity-50")}
-                    >
-                      <Link to={locked ? "/under-construction" : item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
-                        <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
-                        <span className="group-data-[collapsible=icon]:hidden flex-1">{item.title}</span>
-                        {locked && <Lock className="h-3 w-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          {!isGuest && (
-          <>
-          <SidebarSeparator className="my-3 group-data-[collapsible=icon]:my-2" />
-
-          {/* Progress & Profile Section - only for logged-in users */}
-          <SidebarGroup className="space-y-1">
-            {!isCollapsed && (
-              <div className="flex items-center gap-2 px-3 py-1.5">
-                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-emerald-500/10">
-                  <ProgressIcon className="h-3 w-3 text-emerald-500" />
-                </div>
-                <p className="text-[10px] font-semibold text-emerald-500/80 uppercase tracking-widest">
-                  Account
-                </p>
-              </div>
-            )}
-            {isCollapsed && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center justify-center py-1">
-                    <div className="w-6 h-6 rounded-md bg-emerald-500/10 flex items-center justify-center">
-                      <ProgressIcon className="h-3 w-3 text-emerald-500" />
-                    </div>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">Account</TooltipContent>
-              </Tooltip>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
-                {progressNavItems.map((item) => {
-                  const locked = isRouteLocked(item.url);
-                  return (
-                  <SidebarMenuItem key={item.title} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                    <SidebarMenuButton
-                      asChild
-                      isActive={location.pathname === item.url}
-                      tooltip={item.title}
-                      className={cn("transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg", locked && "opacity-50")}
-                    >
-                      <Link to={locked ? "/under-construction" : item.url} className="group-data-[collapsible=icon]:justify-center pl-4">
-                        <div className="relative">
-                          <motion.div
-                            animate={item.title === "Notifications" && shouldShakeBell ? {
-                              rotate: [0, -15, 15, -10, 10, -5, 5, 0],
-                            } : {}}
-                            transition={{ duration: 0.5, ease: "easeInOut" }}
-                          >
-                            <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
-                          </motion.div>
-                          <AnimatePresence>
-                            {item.title === "Notifications" && unreadCount > 0 && (
-                              <motion.span
-                                key={unreadCount}
-                                initial={{ scale: 0.5, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.5, opacity: 0 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                                className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground"
-                              >
-                                {unreadCount > 9 ? "9+" : unreadCount}
-                              </motion.span>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                        <span className="group-data-[collapsible=icon]:hidden flex-1">{item.title}</span>
-                        {locked && <Lock className="h-3 w-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-          </>
-          )}
         </SidebarContent>
 
         {/* Footer with User Profile and Sign Out / Guest Sign In */}
