@@ -134,12 +134,6 @@ const AdminUsers = () => {
           </div>
         )}
       </Card>
-
-      <AdminUserDrawer
-        userId={drawerUser}
-        open={!!drawerUser}
-        onOpenChange={(o) => !o && setDrawerUser(null)}
-      />
     </AdminShell>
   );
 };
