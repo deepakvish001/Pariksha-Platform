@@ -91,10 +91,27 @@ const ScheduledBroadcastsAdmin = () => {
           <Label className="text-xs">Message</Label>
           <Textarea className="mt-1" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
         </div>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <div>
+            <Label className="text-xs">Min total XP (optional)</Label>
+            <Input className="mt-1" type="number" min={0} value={minXp} onChange={(e) => { setMinXp(e.target.value); setPreviewCount(null); }} placeholder="e.g. 500" />
+          </div>
+          <div>
+            <Label className="text-xs">Role (optional)</Label>
+            <Input className="mt-1" value={role} onChange={(e) => { setRole(e.target.value); setPreviewCount(null); }} placeholder="e.g. admin" />
+          </div>
+          <div className="flex items-end gap-2">
+            <Button size="sm" variant="outline" onClick={preview} disabled={previewing}>
+              {previewing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : null}
+              Preview targets
+            </Button>
+            {previewCount !== null && <span className="text-xs text-muted-foreground">~{previewCount} recipients</span>}
+          </div>
+        </div>
         <Button size="sm" className="mt-3" onClick={submit} disabled={!title.trim() || !message.trim() || schedule.isPending}>
           <CalendarClock className="h-3.5 w-3.5 mr-1" /> Schedule
         </Button>
-        <p className="mt-2 text-xs text-muted-foreground">Note: a worker (cron-driven edge function) is required to actually deliver scheduled broadcasts.</p>
+        <p className="mt-2 text-xs text-muted-foreground">A cron-driven worker delivers due broadcasts every minute.</p>
       </Card>
 
       <Card className="p-4">
