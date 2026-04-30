@@ -184,7 +184,72 @@ export default function SupportInbox() {
             </CardContent>
           </Card>
         </div>
+
+        <CannedRepliesManager />
       </div>
     </AdminShell>
+  );
+}
+
+function CannedRepliesPicker({ onPick }: { onPick: (body: string) => void }) {
+  const { data = [] } = useCannedReplies();
+  if (!data.length) return null;
+  return (
+    <Select onValueChange={(id) => { const r = data.find((x: any) => x.id === id); if (r) onPick(r.body); }}>
+      <SelectTrigger className="h-7 w-44 text-xs">
+        <SelectValue placeholder="Insert canned reply…" />
+      </SelectTrigger>
+      <SelectContent>
+        {data.map((r: any) => (
+          <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function CannedRepliesManager() {
+  const { data = [] } = useCannedReplies();
+  const upsert = useUpsertCannedReply();
+  const del = useDeleteCannedReply();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [label, setLabel] = useState("");
+  const [body, setBody] = useState("");
+
+  const reset = () => { setEditingId(null); setLabel(""); setBody(""); };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <MessageSquareQuote className="h-4 w-4" /> Canned Replies
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid gap-2 sm:grid-cols-[200px_1fr_auto_auto]">
+          <Input placeholder="Label" value={label} onChange={(e) => setLabel(e.target.value)} />
+          <Input placeholder="Body" value={body} onChange={(e) => setBody(e.target.value)} />
+          <Button
+            size="sm"
+            disabled={!label || !body || upsert.isPending}
+            onClick={() => upsert.mutate({ id: editingId, label, body }, { onSuccess: reset })}
+          ><Plus className="mr-1 h-3 w-3" />{editingId ? "Update" : "Add"}</Button>
+          {editingId && <Button size="sm" variant="ghost" onClick={reset}>Cancel</Button>}
+        </div>
+        <div className="space-y-1.5">
+          {data.length === 0 && <p className="text-xs text-muted-foreground">No canned replies yet.</p>}
+          {data.map((r: any) => (
+            <div key={r.id} className="flex items-center justify-between gap-2 rounded-md border border-border/40 px-3 py-2 text-xs">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{r.label}</p>
+                <p className="truncate text-muted-foreground">{r.body}</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => { setEditingId(r.id); setLabel(r.label); setBody(r.body); }}>Edit</Button>
+              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => del.mutate(r.id)}><Trash2 className="h-3 w-3" /></Button>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
