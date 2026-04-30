@@ -744,6 +744,36 @@ export type Database = {
         }
         Relationships: []
       }
+      gamification_rule_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_value: Json
+          note: string | null
+          old_value: Json | null
+          rule_key: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_value: Json
+          note?: string | null
+          old_value?: Json | null
+          rule_key: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_value?: Json
+          note?: string | null
+          old_value?: Json | null
+          rule_key?: string
+        }
+        Relationships: []
+      }
       library_hidden_items: {
         Row: {
           category: string
@@ -2462,6 +2492,19 @@ export type Database = {
         }[]
       }
       admin_force_snapshot_leaderboard: { Args: never; Returns: number }
+      admin_gamification_history: {
+        Args: { _key?: string; _limit?: number }
+        Returns: {
+          actor_name: string
+          changed_at: string
+          changed_by: string
+          id: string
+          new_value: Json
+          note: string
+          old_value: Json
+          rule_key: string
+        }[]
+      }
       admin_get_full_problem: { Args: { _slug: string }; Returns: Json }
       admin_get_gamification_rules: { Args: never; Returns: Json }
       admin_grant_achievement: {
@@ -2573,8 +2616,21 @@ export type Database = {
         Args: { _date: string; _slug: string }
         Returns: undefined
       }
+      admin_search_users: {
+        Args: { _limit?: number; _q: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          user_id: string
+          username: string
+        }[]
+      }
       admin_set_ai_content_visibility: {
         Args: { _id: string; _is_public: boolean }
+        Returns: undefined
+      }
+      admin_set_gamification_rule: {
+        Args: { _key: string; _note?: string; _value: Json }
         Returns: undefined
       }
       admin_set_leaderboard_hidden: {
