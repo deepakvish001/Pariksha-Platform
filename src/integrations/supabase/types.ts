@@ -2280,6 +2280,12 @@ export type Database = {
       }
     }
     Functions: {
+      admin_audit_entity_types: {
+        Args: never
+        Returns: {
+          entity_type: string
+        }[]
+      }
       admin_broadcast_notification: {
         Args: {
           _audience: Json
@@ -2291,6 +2297,35 @@ export type Database = {
       }
       admin_dashboard_kpis: { Args: never; Returns: Json }
       admin_delete_ai_content: { Args: { _id: string }; Returns: undefined }
+      admin_export_submissions: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          created_at: string
+          id: string
+          is_submission: boolean
+          language: string
+          memory_kb: number
+          problem_slug: string
+          runtime_ms: number
+          user_id: string
+          verdict: string
+        }[]
+      }
+      admin_export_users: {
+        Args: { _limit?: number }
+        Returns: {
+          current_level: number
+          email: string
+          full_name: string
+          is_suspended: boolean
+          joined_at: string
+          last_active_at: string
+          roles: string
+          total_xp: number
+          user_id: string
+          username: string
+        }[]
+      }
       admin_get_full_problem: { Args: { _slug: string }; Returns: Json }
       admin_grant_role: {
         Args: {
@@ -2298,6 +2333,28 @@ export type Database = {
           _user_id: string
         }
         Returns: undefined
+      }
+      admin_list_audit_log: {
+        Args: {
+          _action?: string
+          _actor?: string
+          _entity_type?: string
+          _from?: string
+          _limit?: number
+          _offset?: number
+          _to?: string
+        }
+        Returns: {
+          action: string
+          actor_id: string
+          actor_name: string
+          created_at: string
+          diff: Json
+          entity_slug: string
+          entity_type: string
+          id: string
+          total_count: number
+        }[]
       }
       admin_list_users: {
         Args: { _limit?: number; _offset?: number; _search?: string }
