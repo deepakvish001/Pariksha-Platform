@@ -105,6 +105,8 @@ import Broadcast from "./pages/admin/Broadcast";
 import Reports from "./pages/admin/Reports";
 import SettingsAndFlags from "./pages/admin/SettingsAndFlags";
 import StorageBrowser from "./pages/admin/StorageBrowser";
+import EdgeLogs from "./pages/admin/EdgeLogs";
+import Exports from "./pages/admin/Exports";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
@@ -305,6 +307,8 @@ const App = () => (
                   <Route path="reports" element={<Reports />} />
                   <Route path="settings" element={<SettingsAndFlags />} />
                   <Route path="storage" element={<StorageBrowser />} />
+                  <Route path="edge-logs" element={<EdgeLogs />} />
+                  <Route path="exports" element={<Exports />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

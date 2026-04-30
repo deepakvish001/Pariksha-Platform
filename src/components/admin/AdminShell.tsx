@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   Shield, FileCode2, Upload, ScrollText, LayoutGrid, History,
   Users, KeyRound, Sparkles, CalendarClock, Megaphone, Flag,
-  Settings as SettingsIcon, Database,
+  Settings as SettingsIcon, Database, Activity, Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +39,8 @@ const GROUPS: NavGroup[] = [
   ]},
   { label: "System", items: [
     { to: "/admin/audit", label: "Audit Log", icon: ScrollText },
+    { to: "/admin/edge-logs", label: "Edge Logs", icon: Activity },
+    { to: "/admin/exports", label: "Exports", icon: Download },
   ]},
 ];
 
