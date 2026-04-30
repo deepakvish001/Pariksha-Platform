@@ -283,14 +283,12 @@ const App = () => (
                   <Route index element={<UnderConstruction />} />
                 </Route>
 
-                {/* Admin routes - admin role required */}
+                {/* Admin routes - admin role required. AdminShell provides its own sidebar/layout. */}
                 <Route
                   path="/admin"
                   element={
                     <AdminRoute>
-                      <DashboardLayout>
-                        <Outlet />
-                      </DashboardLayout>
+                      <Outlet />
                     </AdminRoute>
                   }
                 >
