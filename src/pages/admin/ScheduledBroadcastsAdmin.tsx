@@ -13,6 +13,8 @@ import {
   useCancelScheduledBroadcast,
 } from "@/hooks/admin/useAdminCoverage";
 
+import { supabase } from "@/integrations/supabase/client";
+
 const ScheduledBroadcastsAdmin = () => {
   const list = useScheduledBroadcasts(false);
   const schedule = useScheduleBroadcast();
@@ -20,17 +22,49 @@ const ScheduledBroadcastsAdmin = () => {
 
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [minXp, setMinXp] = useState<string>("");
+  const [role, setRole] = useState<string>("");
+  const [previewCount, setPreviewCount] = useState<number | null>(null);
+  const [previewing, setPreviewing] = useState(false);
   const [when, setWhen] = useState<string>(() => {
     const d = new Date(Date.now() + 60 * 60 * 1000);
     d.setMilliseconds(0); d.setSeconds(0);
-    return d.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+    return d.toISOString().slice(0, 16);
   });
+
+  const buildFilter = () => {
+    const f: Record<string, unknown> = {};
+    if (minXp.trim() && !Number.isNaN(Number(minXp))) f.min_xp = Number(minXp);
+    if (role.trim()) f.role = role.trim();
+    return f;
+  };
+
+  const preview = async () => {
+    setPreviewing(true);
+    try {
+      const f = buildFilter();
+      let q = supabase.from("profiles").select("user_id", { count: "exact", head: true });
+      if (typeof f.min_xp === "number") q = q.gte("total_xp", f.min_xp);
+      if (f.role === "admin") {
+        const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+        const ids = (roles ?? []).map((r: any) => r.user_id);
+        if (!ids.length) { setPreviewCount(0); return; }
+        q = q.in("user_id", ids);
+      }
+      const { count } = await q;
+      setPreviewCount(count ?? 0);
+    } finally { setPreviewing(false); }
+  };
 
   const submit = () => {
     if (!title.trim() || !message.trim()) return;
     schedule.mutate(
-      { title: title.trim(), message: message.trim(), scheduledFor: new Date(when).toISOString() },
-      { onSuccess: () => { setTitle(""); setMessage(""); } },
+      {
+        title: title.trim(), message: message.trim(),
+        scheduledFor: new Date(when).toISOString(),
+        targetFilter: buildFilter(),
+      },
+      { onSuccess: () => { setTitle(""); setMessage(""); setPreviewCount(null); } },
     );
   };
 
@@ -57,10 +91,27 @@ const ScheduledBroadcastsAdmin = () => {
           <Label className="text-xs">Message</Label>
           <Textarea className="mt-1" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
         </div>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <div>
+            <Label className="text-xs">Min total XP (optional)</Label>
+            <Input className="mt-1" type="number" min={0} value={minXp} onChange={(e) => { setMinXp(e.target.value); setPreviewCount(null); }} placeholder="e.g. 500" />
+          </div>
+          <div>
+            <Label className="text-xs">Role (optional)</Label>
+            <Input className="mt-1" value={role} onChange={(e) => { setRole(e.target.value); setPreviewCount(null); }} placeholder="e.g. admin" />
+          </div>
+          <div className="flex items-end gap-2">
+            <Button size="sm" variant="outline" onClick={preview} disabled={previewing}>
+              {previewing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : null}
+              Preview targets
+            </Button>
+            {previewCount !== null && <span className="text-xs text-muted-foreground">~{previewCount} recipients</span>}
+          </div>
+        </div>
         <Button size="sm" className="mt-3" onClick={submit} disabled={!title.trim() || !message.trim() || schedule.isPending}>
           <CalendarClock className="h-3.5 w-3.5 mr-1" /> Schedule
         </Button>
-        <p className="mt-2 text-xs text-muted-foreground">Note: a worker (cron-driven edge function) is required to actually deliver scheduled broadcasts.</p>
+        <p className="mt-2 text-xs text-muted-foreground">A cron-driven worker delivers due broadcasts every minute.</p>
       </Card>
 
       <Card className="p-4">
@@ -88,7 +139,7 @@ const ScheduledBroadcastsAdmin = () => {
                       <td className="px-2 py-2">
                         <Badge variant={status === "sent" ? "default" : status === "pending" ? "secondary" : "outline"}>{status}</Badge>
                       </td>
-                      <td className="px-2 py-2 text-right">{b.recipient_count ?? "—"}</td>
+                      <td className="px-2 py-2 text-right">{b.recipients_count ?? "—"}</td>
                       <td className="px-2 py-2 text-right">
                         {status === "pending" && (
                           <Button size="sm" variant="ghost" onClick={() => cancel.mutate(b.id)} disabled={cancel.isPending}>

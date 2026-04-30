@@ -5,7 +5,7 @@ import {
   Settings as SettingsIcon, Database, Activity, Download, HeartPulse, Clock,
   ChevronDown, Star, Library, Map as MapIcon, Inbox, ShieldAlert,
   Award, Trophy, Gamepad2,
-  Bell, Brain, FileText, Code2, MessageSquare, Mail, Share2, Send,
+  Bell, Brain, FileText, Code2, MessageSquare, Mail, Share2, Send, LogOut,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import { useAdminSidebarBadges, BadgeDetail } from "@/hooks/admin/useAdminSidebarBadges";
 import { BadgeKey } from "@/hooks/admin/useAdminBadgePrefs";
 import { AdminBadgeSettings } from "./AdminBadgeSettings";
+import { AdminUserDrawer } from "./AdminUserDrawer";
+import { adminUserDrawer, useAdminUserDrawerStore } from "@/hooks/admin/useAdminUserDrawerStore";
 
 interface NavItem {
   to: string;
@@ -83,6 +85,7 @@ const GROUPS: NavGroup[] = [
   ]},
   { label: "Security", items: [
     { to: "/admin/security", label: "Security Center", icon: ShieldAlert },
+    { to: "/admin/sessions", label: "Sessions", icon: LogOut },
   ]},
   { label: "System", items: [
     { to: "/admin/system-health", label: "System Health", icon: HeartPulse },
@@ -306,6 +309,7 @@ const AdminSidebar = () => {
 };
 
 export const AdminShell = ({ children }: { children: React.ReactNode }) => {
+  const drawer = useAdminUserDrawerStore();
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
@@ -318,6 +322,11 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
           <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">{children}</main>
         </SidebarInset>
       </div>
+      <AdminUserDrawer
+        userId={drawer.userId}
+        open={drawer.open}
+        onOpenChange={(v) => adminUserDrawer.setOpen(v)}
+      />
     </SidebarProvider>
   );
 };
