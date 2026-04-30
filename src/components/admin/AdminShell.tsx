@@ -85,6 +85,7 @@ const GROUPS: NavGroup[] = [
   ]},
   { label: "Security", items: [
     { to: "/admin/security", label: "Security Center", icon: ShieldAlert },
+    { to: "/admin/sessions", label: "Sessions", icon: LogOut },
   ]},
   { label: "System", items: [
     { to: "/admin/system-health", label: "System Health", icon: HeartPulse },
