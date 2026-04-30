@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   Shield, FileCode2, Upload, ScrollText, LayoutGrid, History,
   Users, KeyRound, Sparkles, CalendarClock, Megaphone, Flag,
-  Settings as SettingsIcon, Database,
+  Settings as SettingsIcon, Database, Activity, Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
