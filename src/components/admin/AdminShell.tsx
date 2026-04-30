@@ -21,8 +21,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useAdminSidebarBadges } from "@/hooks/admin/useAdminSidebarBadges";
+import { useAdminSidebarBadges, BadgeDetail } from "@/hooks/admin/useAdminSidebarBadges";
+import { BadgeKey } from "@/hooks/admin/useAdminBadgePrefs";
+import { AdminBadgeSettings } from "./AdminBadgeSettings";
 
 interface NavItem {
   to: string;
@@ -64,6 +68,8 @@ const GROUPS: NavGroup[] = [
   ]},
 ];
 
+const TRACKED: BadgeKey[] = ["/admin/reports", "/admin/ai-content", "/admin/system-health"];
+
 const Badge = ({ count, tone = "default" }: { count: number; tone?: "default" | "alert" }) => {
   if (!count) return null;
   return (
@@ -84,7 +90,8 @@ const AdminSidebar = () => {
   const { pathname } = useLocation();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
-  const { data: badges } = useAdminSidebarBadges();
+
+  const { data: badges, isLoading: badgesLoading, markSeen, clearAll } = useAdminSidebarBadges();
 
   const isActive = (to: string, end?: boolean) =>
     end ? pathname === to : pathname === to || pathname.startsWith(to + "/");
@@ -95,25 +102,29 @@ const AdminSidebar = () => {
     Object.fromEntries(GROUPS.map((g) => [g.label, true]))
   );
 
-  // Auto-expand the active group on route change.
+  // Auto-expand active group + close mobile drawer + flash key
+  const [flashKey, setFlashKey] = useState(0);
   useEffect(() => {
     setOpenMap((prev) => {
       const next = { ...prev };
-      for (const g of GROUPS) {
-        if (groupHasActive(g)) next[g.label] = true;
-      }
+      for (const g of GROUPS) if (groupHasActive(g)) next[g.label] = true;
       return next;
     });
-    // close mobile drawer after navigation
+    setFlashKey((k) => k + 1);
     if (isMobile) setOpenMobile(false);
+
+    // mark-as-read for tracked routes when visited
+    const matched = TRACKED.find((t) => isActive(t));
+    if (matched) markSeen(matched);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // Compute aggregated group badges (sum of item badges in that group).
   const groupBadgeCount = (g: NavGroup) =>
-    g.items.reduce((acc, i) => acc + (badges?.[i.to as keyof typeof badges] ?? 0), 0);
+    g.items.reduce((acc, i) => {
+      const det = badges?.[i.to as BadgeKey];
+      return acc + (det?.unseen ?? 0);
+    }, 0);
 
-  // Scroll active item into view on route change.
   const activeRef = useRef<HTMLAnchorElement | null>(null);
   useEffect(() => {
     const t = setTimeout(() => {
@@ -124,107 +135,147 @@ const AdminSidebar = () => {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-border/40 px-3 py-3">
+      <SidebarHeader className="border-b border-border/40 px-3 py-2">
         <div className="flex items-center gap-2">
           <Shield className="h-5 w-5 text-primary shrink-0" />
-          {!collapsed && <span className="text-sm font-semibold">Admin Console</span>}
+          {!collapsed && (
+            <>
+              <span className="text-sm font-semibold">Admin Console</span>
+              <span className="ml-auto">
+                <AdminBadgeSettings onMarkAllRead={clearAll} />
+              </span>
+            </>
+          )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="gap-0">
-        {GROUPS.map((group) => {
-          const hasActive = groupHasActive(group);
-          const open = collapsed ? true : (openMap[group.label] ?? true);
-          const groupCount = groupBadgeCount(group);
+      <TooltipProvider delayDuration={250}>
+        <SidebarContent className="gap-0">
+          {GROUPS.map((group) => {
+            const hasActive = groupHasActive(group);
+            const open = collapsed ? true : (openMap[group.label] ?? true);
+            const groupCount = groupBadgeCount(group);
 
-          return (
-            <Collapsible
-              key={group.label}
-              open={open}
-              onOpenChange={(v) => setOpenMap((m) => ({ ...m, [group.label]: v }))}
-            >
-              <SidebarGroup className="py-1">
-                {!collapsed && (
-                  <CollapsibleTrigger asChild>
-                    <SidebarGroupLabel
-                      className={cn(
-                        "flex h-7 cursor-pointer items-center gap-2 rounded-md px-2 text-[11px] font-semibold uppercase tracking-wide hover:bg-muted/40",
-                        hasActive ? "text-primary" : "text-muted-foreground/70"
-                      )}
-                    >
-                      <span>{group.label}</span>
-                      {groupCount > 0 && !open && <Badge count={groupCount} />}
-                      <ChevronDown
+            return (
+              <Collapsible
+                key={group.label}
+                open={open}
+                onOpenChange={(v) => setOpenMap((m) => ({ ...m, [group.label]: v }))}
+              >
+                <SidebarGroup className="py-1">
+                  {!collapsed && (
+                    <CollapsibleTrigger asChild>
+                      <SidebarGroupLabel
                         className={cn(
-                          "ml-auto h-3.5 w-3.5 transition-transform duration-200",
-                          open ? "rotate-0" : "-rotate-90"
+                          "flex h-7 cursor-pointer items-center gap-2 rounded-md px-2 text-[11px] font-semibold uppercase tracking-wide hover:bg-muted/40",
+                          hasActive ? "text-primary" : "text-muted-foreground/70"
                         )}
-                      />
-                    </SidebarGroupLabel>
-                  </CollapsibleTrigger>
-                )}
+                      >
+                        <span>{group.label}</span>
+                        {groupCount > 0 && !open && <Badge count={groupCount} />}
+                        <ChevronDown
+                          className={cn(
+                            "ml-auto h-3.5 w-3.5 transition-transform duration-200",
+                            open ? "rotate-0" : "-rotate-90"
+                          )}
+                        />
+                      </SidebarGroupLabel>
+                    </CollapsibleTrigger>
+                  )}
 
-                <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {group.items.map((item) => {
-                        const Icon = item.icon;
-                        const active = isActive(item.to, item.end);
-                        const itemCount = badges?.[item.to as keyof typeof badges] ?? 0;
-                        const tone: "default" | "alert" =
-                          item.to === "/admin/reports" || item.to === "/admin/system-health"
-                            ? "alert"
-                            : "default";
-                        return (
-                          <SidebarMenuItem key={item.to}>
-                            <SidebarMenuButton
-                              asChild
-                              isActive={active}
-                              tooltip={
-                                itemCount ? `${item.label} (${itemCount})` : item.label
-                              }
+                  <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {group.items.map((item) => {
+                          const Icon = item.icon;
+                          const active = isActive(item.to, item.end);
+                          const detail: BadgeDetail | undefined = badges?.[item.to as BadgeKey];
+                          const tracked = (TRACKED as string[]).includes(item.to);
+                          const showSkeleton = tracked && badgesLoading && !detail;
+                          const unseen = detail?.unseen ?? 0;
+                          const total = detail?.total ?? 0;
+                          const tone: "default" | "alert" =
+                            item.to === "/admin/reports" || item.to === "/admin/system-health"
+                              ? "alert"
+                              : "default";
+
+                          const linkEl = (
+                            <NavLink
+                              ref={active ? (activeRef as any) : undefined}
+                              to={item.to}
+                              end={item.end}
+                              key={`${item.to}-${active ? flashKey : "x"}`}
+                              className={cn(
+                                "flex items-center gap-2 rounded-md transition-colors",
+                                active
+                                  ? "bg-primary/10 text-primary font-medium admin-nav-flash"
+                                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                              )}
                             >
-                              <NavLink
-                                ref={active ? (activeRef as any) : undefined}
-                                to={item.to}
-                                end={item.end}
-                                className={cn(
-                                  "flex items-center gap-2 rounded-md transition-colors",
-                                  active
-                                    ? "bg-primary/10 text-primary font-medium"
-                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                              <span className="relative flex shrink-0 items-center">
+                                <Icon className="h-4 w-4" />
+                                {collapsed && unseen > 0 && (
+                                  <span
+                                    className={cn(
+                                      "absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full ring-2 ring-sidebar",
+                                      tone === "alert" ? "bg-destructive" : "bg-primary"
+                                    )}
+                                  />
                                 )}
-                              >
-                                <span className="relative flex shrink-0 items-center">
-                                  <Icon className="h-4 w-4" />
-                                  {collapsed && itemCount > 0 && (
-                                    <span
-                                      className={cn(
-                                        "absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full ring-2 ring-sidebar",
-                                        tone === "alert" ? "bg-destructive" : "bg-primary"
-                                      )}
-                                    />
+                              </span>
+                              {!collapsed && (
+                                <>
+                                  <span className="truncate">{item.label}</span>
+                                  {showSkeleton ? (
+                                    <Skeleton className="ml-auto h-4 w-6 rounded-full" />
+                                  ) : (
+                                    <Badge count={unseen} tone={tone} />
                                   )}
-                                </span>
-                                {!collapsed && (
-                                  <>
-                                    <span className="truncate">{item.label}</span>
-                                    <Badge count={itemCount} tone={tone} />
-                                  </>
+                                </>
+                              )}
+                            </NavLink>
+                          );
+
+                          return (
+                            <SidebarMenuItem key={item.to}>
+                              <SidebarMenuButton asChild isActive={active}>
+                                {tracked ? (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
+                                    <TooltipContent side="right" className="text-xs">
+                                      <div className="font-medium">{item.label}</div>
+                                      {showSkeleton ? (
+                                        <div className="text-muted-foreground">Loading…</div>
+                                      ) : (
+                                        <>
+                                          <div className="text-muted-foreground">
+                                            {detail?.hint}
+                                          </div>
+                                          {unseen > 0 && unseen !== total && (
+                                            <div className="text-muted-foreground">
+                                              {unseen} new since last visit
+                                            </div>
+                                          )}
+                                        </>
+                                      )}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                ) : (
+                                  linkEl
                                 )}
-                              </NavLink>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        );
-                      })}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </CollapsibleContent>
-              </SidebarGroup>
-            </Collapsible>
-          );
-        })}
-      </SidebarContent>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          );
+                        })}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
+            );
+          })}
+        </SidebarContent>
+      </TooltipProvider>
     </Sidebar>
   );
 };

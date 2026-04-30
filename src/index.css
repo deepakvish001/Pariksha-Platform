@@ -335,3 +335,12 @@
     transform: scale(1.02);
   }
 }
+
+@layer utilities {
+  @keyframes admin-nav-flash {
+    0%   { background-color: hsl(var(--primary) / 0.35); }
+    60%  { background-color: hsl(var(--primary) / 0.18); }
+    100% { background-color: hsl(var(--primary) / 0.10); }
+  }
+  .admin-nav-flash { animation: admin-nav-flash 1.4s ease-out; }
+}
