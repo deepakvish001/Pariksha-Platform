@@ -3,18 +3,17 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Keeps every admin-* React Query cache live.
+ * Lightweight admin sync — event-driven, NOT polling.
  *
  * Strategy:
- *  1. Aggressive auto-refetch: every 10s invalidate all queries whose key starts
- *     with "admin", "platform-settings", "dcs", or "support-". This guarantees
- *     freshness for the dozens of admin pages without needing to enable Postgres
- *     realtime publication on every table.
- *  2. Refetch immediately when the tab regains focus.
- *  3. Listen to a lightweight broadcast channel so any admin action performed in
- *     another tab triggers an instant refresh here.
+ *  - React Query cache (staleTime 60s) serves pages instantly from memory; no
+ *    refetch on navigation, mount, or window focus. Pages feel instant.
+ *  - When ANOTHER admin tab performs a write, it calls `broadcastAdminChange()`
+ *    which sends a Supabase broadcast. All other tabs receive it and refetch
+ *    ONLY the currently-mounted (active) admin queries — not every cached
+ *    query in memory. This avoids the loading-flicker storm.
  *
- * Mount once (inside AdminShell) — covers every admin page.
+ * Mounted once in AdminShell.
  */
 export const useAdminRealtimeSync = () => {
   const qc = useQueryClient();
@@ -22,8 +21,11 @@ export const useAdminRealtimeSync = () => {
   useEffect(() => {
     const ADMIN_PREFIXES = ["admin", "platform-settings", "dcs", "support-"];
 
-    const refreshAll = () => {
+    const refreshActive = () => {
       qc.invalidateQueries({
+        // Only invalidate queries that have active observers (mounted components).
+        // Everything else stays cached and serves instantly when revisited.
+        type: "active",
         predicate: (q) => {
           const k = q.queryKey?.[0];
           return typeof k === "string" && ADMIN_PREFIXES.some((p) => k.startsWith(p));
@@ -31,28 +33,12 @@ export const useAdminRealtimeSync = () => {
       });
     };
 
-    // 1. Poll every 10s
-    const interval = window.setInterval(refreshAll, 10_000);
-
-    // 2. Refresh on tab focus / visibility change
-    const onFocus = () => refreshAll();
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") refreshAll();
-    };
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVisibility);
-
-    // 3. Cross-tab realtime broadcast — any admin can publish "changed" and
-    //    every other admin tab refreshes instantly.
     const channel = supabase
       .channel("admin-realtime-sync", { config: { broadcast: { self: false } } })
-      .on("broadcast", { event: "changed" }, refreshAll)
+      .on("broadcast", { event: "changed" }, refreshActive)
       .subscribe();
 
     return () => {
-      window.clearInterval(interval);
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVisibility);
       supabase.removeChannel(channel);
     };
   }, [qc]);

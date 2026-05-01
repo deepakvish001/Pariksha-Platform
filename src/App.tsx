@@ -131,7 +131,18 @@ import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
 import NotificationPreferences from "./pages/NotificationPreferences";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Cache aggressively — show data instantly from cache, refetch silently in background.
+      staleTime: 60_000,           // 1 min: data is "fresh" → no refetch on mount/navigation
+      gcTime: 10 * 60_000,         // 10 min: keep cached pages around when navigating away
+      refetchOnWindowFocus: false, // don't refetch on tab focus
+      refetchOnReconnect: "always",
+      retry: 1,
+    },
+  },
+});
 
 // Protected layout - requires login + onboarding
 const ProtectedDashboardWrapper = () => (
