@@ -4,21 +4,57 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAdminUsers, useRevokeRole } from "@/hooks/admin/useAdminControl";
-import { useMemo } from "react";
+import { broadcastAdminChange } from "@/hooks/admin/useAdminRealtimeSync";
+import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ShieldOff } from "lucide-react";
+import { ShieldOff, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminRoles = () => {
-  const { data: users = [] } = useAdminUsers("", 500);
+  const qc = useQueryClient();
+  const { data: users = [], refetch, isFetching } = useAdminUsers("", 500);
   const revoke = useRevokeRole();
+
+  // Always refetch when the page is mounted so newly granted/revoked roles
+  // (including changes made elsewhere) are visible without manual refresh.
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // Subscribe to realtime changes on user_roles → refetch + notify other admin tabs.
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-roles-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_roles" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["admin-users"] });
+          broadcastAdminChange();
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
+
   const privileged = useMemo(
     () => users.filter((u) => u.roles?.some((r) => r === "admin" || r === "moderator")),
     [users],
   );
 
+
   return (
     <AdminShell>
-      <h1 className="mb-1 text-2xl font-bold">Roles & Permissions</h1>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold">Roles & Permissions</h1>
+        <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={`mr-1 h-3 w-3 ${isFetching ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
+      </div>
       <p className="mb-4 text-sm text-muted-foreground">
         Privileged users in the platform. Use the <Link to="/admin/users" className="underline">Users</Link> page to grant roles.
       </p>
