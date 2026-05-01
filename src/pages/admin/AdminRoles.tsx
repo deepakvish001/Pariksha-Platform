@@ -4,17 +4,47 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAdminUsers, useRevokeRole } from "@/hooks/admin/useAdminControl";
-import { useMemo } from "react";
+import { broadcastAdminChange } from "@/hooks/admin/useAdminRealtimeSync";
+import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ShieldOff } from "lucide-react";
+import { ShieldOff, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminRoles = () => {
-  const { data: users = [] } = useAdminUsers("", 500);
+  const qc = useQueryClient();
+  const { data: users = [], refetch, isFetching } = useAdminUsers("", 500);
   const revoke = useRevokeRole();
+
+  // Always refetch when the page is mounted so newly granted/revoked roles
+  // (including changes made elsewhere) are visible without manual refresh.
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // Subscribe to realtime changes on user_roles → refetch + notify other admin tabs.
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-roles-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_roles" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["admin-users"] });
+          broadcastAdminChange();
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
+
   const privileged = useMemo(
     () => users.filter((u) => u.roles?.some((r) => r === "admin" || r === "moderator")),
     [users],
   );
+
 
   return (
     <AdminShell>
