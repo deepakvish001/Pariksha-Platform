@@ -2804,6 +2804,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_public_tables: {
+        Args: never
+        Returns: {
+          policy_count: number
+          rls_enabled: boolean
+          table_name: string
+        }[]
+      }
       admin_list_push_subscriptions: {
         Args: { _limit?: number; _user_id?: string }
         Returns: {
@@ -2910,6 +2918,17 @@ export type Database = {
           verdict: string
         }[]
       }
+      admin_list_table_policies: {
+        Args: { _table: string }
+        Returns: {
+          check_expr: string
+          command: string
+          permissive: string
+          policy_name: string
+          roles: string[]
+          using_expr: string
+        }[]
+      }
       admin_list_users: {
         Args: { _limit?: number; _offset?: number; _search?: string }
         Returns: {
@@ -2986,6 +3005,22 @@ export type Database = {
         Returns: undefined
       }
       admin_revoke_share: { Args: { _share_id: string }; Returns: undefined }
+      admin_role_audit: {
+        Args: { _action?: string; _limit?: number; _user_id?: string }
+        Returns: {
+          action: string
+          actor_email: string
+          actor_id: string
+          actor_name: string
+          created_at: string
+          diff: Json
+          id: string
+          role: string
+          target_email: string
+          target_name: string
+          target_user_id: string
+        }[]
+      }
       admin_save_problem: { Args: { payload: Json }; Returns: Json }
       admin_schedule_broadcast: {
         Args: {
@@ -3231,7 +3266,7 @@ export type Database = {
       user_pending_logout: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "owner"
       study_year:
         | "1st Year"
         | "2nd Year"
@@ -3367,7 +3402,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "owner"],
       study_year: [
         "1st Year",
         "2nd Year",

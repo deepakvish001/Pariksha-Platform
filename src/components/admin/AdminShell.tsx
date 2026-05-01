@@ -59,6 +59,7 @@ const GROUPS: NavGroup[] = [
   { label: "People", items: [
     { to: "/admin/users", label: "Users", icon: Users },
     { to: "/admin/roles", label: "Roles", icon: KeyRound },
+    { to: "/admin/rls-tester", label: "RLS Tester", icon: ShieldAlert },
     { to: "/admin/reports", label: "Reports", icon: Flag },
   ]},
   { label: "Engagement", items: [
