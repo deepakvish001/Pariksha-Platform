@@ -312,14 +312,25 @@ const AdminSidebar = () => {
 
 export const AdminShell = ({ children }: { children: React.ReactNode }) => {
   const drawer = useAdminUserDrawerStore();
+  useAdminRealtimeSync();
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AdminSidebar />
         <SidebarInset className="min-w-0 flex-1">
-          <div className="sticky top-0 z-10 flex h-11 items-center gap-2 border-b border-border/40 bg-background/80 px-3 backdrop-blur">
-            <SidebarTrigger />
-            <span className="text-xs text-muted-foreground">Admin</span>
+          <div className="sticky top-0 z-10 flex h-11 items-center justify-between gap-2 border-b border-border/40 bg-background/80 px-3 backdrop-blur">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger />
+              <span className="text-xs text-muted-foreground">Admin</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-500">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              <Radio className="h-3 w-3" />
+              <span className="hidden sm:inline">Live</span>
+            </div>
           </div>
           <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">{children}</main>
         </SidebarInset>
