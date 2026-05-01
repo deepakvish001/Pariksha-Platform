@@ -1,6 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+
+export type AppRole = "owner" | "admin" | "moderator" | "user";
 
 // ───────── Dashboard
 export const useAdminKpis = () =>
@@ -51,6 +53,9 @@ export interface AdminUserRow {
 export const useAdminUsers = (search = "", limit = 50, offset = 0) =>
   useQuery({
     queryKey: ["admin-users", search, limit, offset],
+    // Keep previous data on refetch / realtime invalidation so the table
+    // never flashes a loading state — new data simply replaces old in place.
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_users", {
         _search: search.trim() || null,
@@ -64,35 +69,73 @@ export const useAdminUsers = (search = "", limit = 50, offset = 0) =>
 
 const invalidateUsers = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ["admin-users"] });
+  qc.invalidateQueries({ queryKey: ["admin-role-audit"] });
+};
+
+// Optimistically mutate every cached admin-users list to add/remove a role for one user.
+const patchRoleInCache = (
+  qc: ReturnType<typeof useQueryClient>,
+  userId: string,
+  role: AppRole,
+  op: "add" | "remove",
+) => {
+  qc.setQueriesData<AdminUserRow[]>({ queryKey: ["admin-users"] }, (old) => {
+    if (!old) return old;
+    return old.map((u) =>
+      u.user_id !== userId
+        ? u
+        : {
+            ...u,
+            roles:
+              op === "add"
+                ? Array.from(new Set([...(u.roles ?? []), role]))
+                : (u.roles ?? []).filter((r) => r !== role),
+          },
+    );
+  });
 };
 
 export const useGrantRole = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "moderator" | "user" }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
       const { error } = await supabase.rpc("admin_grant_role", { _user_id: userId, _role: role });
       if (error) throw error;
     },
-    onSuccess: () => {
-      invalidateUsers(qc);
-      toast({ title: "Role granted" });
+    onMutate: async ({ userId, role }) => {
+      await qc.cancelQueries({ queryKey: ["admin-users"] });
+      const snapshot = qc.getQueriesData<AdminUserRow[]>({ queryKey: ["admin-users"] });
+      patchRoleInCache(qc, userId, role, "add");
+      return { snapshot };
     },
-    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+    onError: (e: any, _vars, ctx) => {
+      ctx?.snapshot?.forEach(([key, data]) => qc.setQueryData(key, data));
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
+    },
+    onSuccess: () => toast({ title: "Role granted" }),
+    onSettled: () => invalidateUsers(qc),
   });
 };
 
 export const useRevokeRole = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "moderator" | "user" }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
       const { error } = await supabase.rpc("admin_revoke_role", { _user_id: userId, _role: role });
       if (error) throw error;
     },
-    onSuccess: () => {
-      invalidateUsers(qc);
-      toast({ title: "Role revoked" });
+    onMutate: async ({ userId, role }) => {
+      await qc.cancelQueries({ queryKey: ["admin-users"] });
+      const snapshot = qc.getQueriesData<AdminUserRow[]>({ queryKey: ["admin-users"] });
+      patchRoleInCache(qc, userId, role, "remove");
+      return { snapshot };
     },
-    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+    onError: (e: any, _vars, ctx) => {
+      ctx?.snapshot?.forEach(([key, data]) => qc.setQueryData(key, data));
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
+    },
+    onSuccess: () => toast({ title: "Role revoked" }),
+    onSettled: () => invalidateUsers(qc),
   });
 };
 
