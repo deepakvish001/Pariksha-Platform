@@ -32,6 +32,8 @@ import { BadgeKey } from "@/hooks/admin/useAdminBadgePrefs";
 import { AdminBadgeSettings } from "./AdminBadgeSettings";
 import { AdminUserDrawer } from "./AdminUserDrawer";
 import { adminUserDrawer, useAdminUserDrawerStore } from "@/hooks/admin/useAdminUserDrawerStore";
+import { useAdminRealtimeSync } from "@/hooks/admin/useAdminRealtimeSync";
+import { Radio } from "lucide-react";
 
 interface NavItem {
   to: string;
