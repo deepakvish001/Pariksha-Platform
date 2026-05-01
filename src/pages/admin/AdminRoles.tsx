@@ -48,7 +48,13 @@ const AdminRoles = () => {
 
   return (
     <AdminShell>
-      <h1 className="mb-1 text-2xl font-bold">Roles & Permissions</h1>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold">Roles & Permissions</h1>
+        <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={`mr-1 h-3 w-3 ${isFetching ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
+      </div>
       <p className="mb-4 text-sm text-muted-foreground">
         Privileged users in the platform. Use the <Link to="/admin/users" className="underline">Users</Link> page to grant roles.
       </p>
