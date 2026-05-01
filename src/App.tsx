@@ -99,6 +99,7 @@ import AuditLog from "./pages/admin/AuditLog";
 import PublishHistory from "./pages/admin/PublishHistory";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminRoles from "./pages/admin/AdminRoles";
+import RlsTester from "./pages/admin/RlsTester";
 import AIContentModeration from "./pages/admin/AIContentModeration";
 import DailyChallengeAdmin from "./pages/admin/DailyChallengeAdmin";
 import Broadcast from "./pages/admin/Broadcast";
@@ -326,6 +327,7 @@ const App = () => (
                   <Route path="publish-history" element={<PublishHistory />} />
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="roles" element={<AdminRoles />} />
+                  <Route path="rls-tester" element={<RlsTester />} />
                   <Route path="ai-content" element={<AIContentModeration />} />
                   <Route path="daily-challenge" element={<DailyChallengeAdmin />} />
                   <Route path="broadcast" element={<Broadcast />} />
