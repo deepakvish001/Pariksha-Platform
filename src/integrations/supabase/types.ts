@@ -3231,7 +3231,7 @@ export type Database = {
       user_pending_logout: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "owner"
       study_year:
         | "1st Year"
         | "2nd Year"
@@ -3367,7 +3367,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "owner"],
       study_year: [
         "1st Year",
         "2nd Year",
