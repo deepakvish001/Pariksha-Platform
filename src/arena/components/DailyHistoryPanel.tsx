@@ -25,7 +25,7 @@ function fmtTime(sec: number | null) {
 export function DailyHistoryPanel() {
   const { user } = useAuth();
   const streak = useArenaStreak(user?.id);
-  const { history, loading } = useDailyHistory(30);
+  const { history, loading, loadingMore, hasMore, loadMore } = useDailyHistory(30);
 
   const completed = history.filter((h) => h.solved).length;
   const totalXp = history.reduce((acc, h) => acc + (h.xp_awarded || 0), 0);
@@ -68,39 +68,51 @@ export function DailyHistoryPanel() {
           No daily challenges yet. Today is a great day to start!
         </p>
       ) : (
-        <ul className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
-          {history.map((h, i) => (
-            <motion.li
-              key={h.challenge_date}
-              initial={{ opacity: 0, x: -4 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: Math.min(i, 10) * 0.02 }}
-              className="flex items-center gap-3 rounded-md border border-border/60 bg-card/30 px-3 py-2"
-              data-testid={`history-row-${h.challenge_date}`}
-            >
-              {h.solved ? (
-                <CheckCircle2 className="h-4 w-4 text-lime-400 shrink-0" />
-              ) : (
-                <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 text-xs">
-                  <Calendar className="h-3 w-3 text-muted-foreground" />
-                  <span className="font-mono">{fmtDate(h.challenge_date)}</span>
-                  <span className="truncate text-muted-foreground">
-                    {h.problem_title ?? h.problem_slug}
-                  </span>
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="text-[11px] font-mono">{fmtTime(h.solve_time_sec)}</div>
-                {h.xp_awarded > 0 && (
-                  <div className="text-[10px] text-primary">+{h.xp_awarded} XP</div>
+        <>
+          <ul className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
+            {history.map((h, i) => (
+              <motion.li
+                key={h.challenge_date}
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: Math.min(i, 10) * 0.02 }}
+                className="flex items-center gap-3 rounded-md border border-border/60 bg-card/30 px-3 py-2"
+                data-testid={`history-row-${h.challenge_date}`}
+              >
+                {h.solved ? (
+                  <CheckCircle2 className="h-4 w-4 text-lime-400 shrink-0" />
+                ) : (
+                  <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
                 )}
-              </div>
-            </motion.li>
-          ))}
-        </ul>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-mono">{fmtDate(h.challenge_date)}</span>
+                    <span className="truncate text-muted-foreground">
+                      {h.problem_title ?? h.problem_slug}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-[11px] font-mono">{fmtTime(h.solve_time_sec)}</div>
+                  {h.xp_awarded > 0 && (
+                    <div className="text-[10px] text-primary">+{h.xp_awarded} XP</div>
+                  )}
+                </div>
+              </motion.li>
+            ))}
+          </ul>
+          {hasMore && (
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              data-testid="history-load-more"
+              className="w-full rounded-md border border-border/60 bg-card/30 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition disabled:opacity-50"
+            >
+              {loadingMore ? "Loading…" : "View More"}
+            </button>
+          )}
+        </>
       )}
     </GlassPanel>
   );

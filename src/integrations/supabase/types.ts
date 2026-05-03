@@ -348,6 +348,30 @@ export type Database = {
           },
         ]
       }
+      arena_notification_prefs: {
+        Row: {
+          daily_reminder: boolean
+          last_reminded_date: string | null
+          reminder_hour_utc: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          daily_reminder?: boolean
+          last_reminded_date?: string | null
+          reminder_hour_utc?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          daily_reminder?: boolean
+          last_reminded_date?: string | null
+          reminder_hour_utc?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       arena_quests_catalog: {
         Row: {
           code: string
@@ -3899,18 +3923,31 @@ export type Database = {
           solved: boolean
         }[]
       }
-      arena_get_daily_history: {
-        Args: { _days?: number }
-        Returns: {
-          attempted_at: string
-          challenge_date: string
-          problem_slug: string
-          problem_title: string
-          solve_time_sec: number
-          solved: boolean
-          xp_awarded: number
-        }[]
-      }
+      arena_get_daily_history:
+        | {
+            Args: { _days?: number }
+            Returns: {
+              attempted_at: string
+              challenge_date: string
+              problem_slug: string
+              problem_title: string
+              solve_time_sec: number
+              solved: boolean
+              xp_awarded: number
+            }[]
+          }
+        | {
+            Args: { _days?: number; _offset?: number }
+            Returns: {
+              attempted_at: string
+              challenge_date: string
+              problem_slug: string
+              problem_title: string
+              solve_time_sec: number
+              solved: boolean
+              xp_awarded: number
+            }[]
+          }
       arena_pick_daily_problem: { Args: { _for_date: string }; Returns: string }
       arena_record_quest_progress: {
         Args: { _amount?: number; _kind: string }
