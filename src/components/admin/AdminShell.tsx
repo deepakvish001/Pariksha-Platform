@@ -398,7 +398,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
       <SidebarHeader className="border-b border-border/40 px-2 py-3">
         <div className={cn("flex items-center gap-2.5", collapsed && "justify-center")}>
           <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/60 shadow-sm shadow-primary/20">
-            <Shield className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
+            <Shield className="h-4 w-4 text-primary-foreground" />
           </div>
           {!collapsed && (
             <>
