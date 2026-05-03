@@ -179,6 +179,9 @@ const CodingProblemDetail = () => {
   const [executionErrorDetails, setExecutionErrorDetails] = useState<boolean>(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  // Inline contest-submission error banner (shown above the editor when a
+  // contest-context submission is rejected by the server).
+  const [contestError, setContestError] = useState<string | null>(null);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
   const editorRef = useRef<MonacoEditorHandle>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
