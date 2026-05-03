@@ -32,10 +32,10 @@ const ContestDetail = () => {
   if (isLoading) return <Skeleton className="mx-auto mt-10 h-96 w-full max-w-5xl" />;
   if (!contest) return <div className="p-8 text-center text-muted-foreground">Contest not found.</div>;
 
+  const lifecycle = lifecycleStatus(contest);
   const isRegistered = myReg?.status === "registered";
   const canSeeProblems = clock.phase === "live" || clock.phase === "ended";
-  const canRegister =
-    contest.status === "published" || (contest.status === "live" && clock.phase !== "ended");
+  const canRegister = lifecycle === "active" && clock.phase !== "ended";
 
   const onRegister = () => {
     if (!user) return navigate("/login");
