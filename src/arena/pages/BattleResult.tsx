@@ -6,8 +6,9 @@ import type { Battle, BattleSubmission } from "../types";
 import { GlassPanel } from "../components/GlassPanel";
 import { NeonButton } from "../components/NeonButton";
 import { motion } from "framer-motion";
-import { Trophy, Skull, Equal, AlertTriangle, Loader2, RefreshCw } from "lucide-react";
+import { Trophy, Skull, Equal, AlertTriangle, Loader2, RefreshCw, Flame, Sparkles } from "lucide-react";
 import { createCodeRoom } from "../hooks";
+import { tickArenaStreak, completeDailyChallenge, useDailyChallenge } from "../dailyLoop";
 
 export default function BattleResult() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,9 @@ export default function BattleResult() {
   const [subs, setSubs] = useState<BattleSubmission[]>([]);
   const [rematchState, setRematchState] = useState<"idle" | "loading" | "error">("idle");
   const [rematchError, setRematchError] = useState<string | null>(null);
+  const [streakInfo, setStreakInfo] = useState<{ current: number; used_freeze: boolean } | null>(null);
+  const [dailyXp, setDailyXp] = useState<number | null>(null);
+  const { data: dailyChallenge } = useDailyChallenge();
 
   async function handleRematch() {
     if (!battle) return;
@@ -40,10 +44,39 @@ export default function BattleResult() {
     (async () => {
       const { data: b } = await supabase.from("battles" as never).select("*").eq("id", id).maybeSingle();
       const { data: s } = await supabase.from("battle_submissions" as never).select("*").eq("battle_id", id).order("created_at");
-      setBattle(b as Battle | null);
+      const battleRow = b as Battle | null;
+      setBattle(battleRow);
       setSubs((s as BattleSubmission[]) ?? []);
+
+      if (!battleRow || !user?.id) return;
+
+      // Tick the player's daily Arena streak (idempotent per day)
+      try {
+        const tick = await tickArenaStreak();
+        setStreakInfo({ current: tick.current, used_freeze: tick.used_freeze });
+      } catch {
+        /* non-blocking */
+      }
+
+      // If the battle's problem is today's daily challenge AND the player won
+      // (winner) or solved it (any accepted submission), award the bonus XP.
+      const todaySlug = dailyChallenge?.problem_slug;
+      const playerSolved = (s as BattleSubmission[] | null ?? []).some(
+        (sub) => sub.user_id === user.id && sub.verdict === "accepted",
+      );
+      if (todaySlug && battleRow.problem_slug === todaySlug && playerSolved && !dailyChallenge?.solved) {
+        const startedAt = battleRow.started_at ? new Date(battleRow.started_at).getTime() : Date.now();
+        const endedAt = battleRow.ended_at ? new Date(battleRow.ended_at).getTime() : Date.now();
+        const elapsed = Math.max(1, Math.round((endedAt - startedAt) / 1000));
+        try {
+          const res = await completeDailyChallenge(battleRow.id, elapsed);
+          if (res.ok && res.xp) setDailyXp(res.xp);
+        } catch {
+          /* non-blocking */
+        }
+      }
     })();
-  }, [id]);
+  }, [id, user?.id, dailyChallenge?.problem_slug, dailyChallenge?.solved]);
 
   if (!battle) return null;
 
@@ -79,6 +112,32 @@ export default function BattleResult() {
           <p className="mt-2 text-sm text-muted-foreground">{battle.end_reason}</p>
         </GlassPanel>
       </motion.div>
+
+      {(streakInfo || dailyXp) && (
+        <div className="grid gap-3 md:grid-cols-2" data-testid="rewards-row">
+          {streakInfo && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+              <GlassPanel glow={streakInfo.current >= 3 ? "lime" : "cyan"} className="p-4 text-center">
+                <Flame className="h-7 w-7 mx-auto text-orange-400" />
+                <p className="mt-1 text-2xl font-black">{streakInfo.current} day{streakInfo.current === 1 ? "" : "s"}</p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Arena Streak</p>
+                {streakInfo.used_freeze && (
+                  <p className="mt-1 text-[10px] text-primary">Freeze used to save your streak</p>
+                )}
+              </GlassPanel>
+            </motion.div>
+          )}
+          {dailyXp && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <GlassPanel glow="magenta" className="p-4 text-center" data-testid="daily-xp-banner">
+                <Sparkles className="h-7 w-7 mx-auto text-primary" />
+                <p className="mt-1 text-2xl font-black text-primary">+{dailyXp} XP</p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Daily Challenge Bonus</p>
+              </GlassPanel>
+            </motion.div>
+          )}
+        </div>
+      )}
 
       <GlassPanel className="p-4">
         <h3 className="text-xs uppercase tracking-wider text-primary/80 mb-2">Submissions ({subs.length})</h3>

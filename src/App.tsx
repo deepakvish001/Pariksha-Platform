@@ -103,6 +103,7 @@ import ArenaHistory from "@/arena/pages/ArenaHistory";
 import ArenaRoom from "@/arena/pages/ArenaRoom";
 import ArenaJoinCode from "@/arena/pages/ArenaJoinCode";
 import AdminArena from "@/arena/pages/AdminArena";
+import ArenaDaily from "@/arena/pages/ArenaDaily";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProblemsList from "./pages/admin/AdminProblemsList";
 import ProblemEditor from "./pages/admin/ProblemEditor";
@@ -388,6 +389,7 @@ const App = () => (
                   <Route path="history" element={<ArenaHistory />} />
                   <Route path="room/:code" element={<ArenaRoom />} />
                   <Route path="join/:code" element={<ArenaJoinCode />} />
+                  <Route path="daily" element={<ArenaDaily />} />
                 </Route>
                 <Route path="/admin/arena" element={<AdminRoute><AdminArena /></AdminRoute>} />
 
