@@ -204,4 +204,41 @@ describe("BattleResult (Rematch)", () => {
       expect(navigateMock).toHaveBeenCalledWith("/arena/room/REMTCH", { state: { inviteId: "inv-9" } });
     });
   });
+
+  it("shows retry UI when rematch RPC fails, then succeeds on retry", async () => {
+    fromSelect.mockImplementation(() => ({
+      eq: () => ({
+        maybeSingle: () => Promise.resolve({
+          data: {
+            id: "b-1", player_a: "user-1", player_b: "user-2",
+            winner_id: "user-1", end_reason: "solved",
+            elo_a_before: 1000, elo_a_after: 1015,
+            problem_slug: "two-sum", difficulty: "medium", duration_sec: 900,
+          },
+        }),
+        order: () => Promise.resolve({ data: [] }),
+      }),
+    }));
+    rpcMock.mockResolvedValueOnce({ data: null, error: { message: "network down" } });
+
+    renderWithRouter(<BattleResult />, "/arena/result/b-1");
+    const btn = await screen.findByRole("button", { name: /rematch/i });
+    fireEvent.click(btn);
+
+    await waitFor(() => expect(screen.getByTestId("rematch-error")).toBeInTheDocument());
+    expect(screen.getByText(/rematch failed/i)).toBeInTheDocument();
+    expect(screen.getByText(/network down/)).toBeInTheDocument();
+
+    // Button should now offer a retry affordance instead of navigating away.
+    const retryBtn = screen.getByRole("button", { name: /retry rematch/i });
+    expect(retryBtn).toBeInTheDocument();
+    expect(navigateMock).not.toHaveBeenCalledWith(expect.stringMatching(/\/arena\/room\//), expect.anything());
+
+    rpcMock.mockResolvedValueOnce({ data: [{ invite_id: "inv-9", code: "REMTCH" }], error: null });
+    fireEvent.click(retryBtn);
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/arena/room/REMTCH", { state: { inviteId: "inv-9" } });
+    });
+  });
 });
+

@@ -16,20 +16,23 @@ export default function ArenaRoom() {
   const [resolvedInviteId, setResolvedInviteId] = useState<string | undefined>(inviteId);
   const [copied, setCopied] = useState(false);
   const [problemTitle, setProblemTitle] = useState<string>("");
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   // If user reloaded the page, look up the invite by code (only the host can read it via RLS).
   useEffect(() => {
-    if (resolvedInviteId || !code) return;
+    if (!code) return;
     (async () => {
       const { data } = await supabase
         .from("battle_invites" as never)
-        .select("id,problem_slug")
+        .select("id,problem_slug,expires_at")
         .eq("code", code.toUpperCase())
         .eq("status", "pending")
         .maybeSingle();
-      const row = data as { id: string; problem_slug: string | null } | null;
+      const row = data as { id: string; problem_slug: string | null; expires_at: string | null } | null;
       if (row) {
-        setResolvedInviteId(row.id);
+        if (!resolvedInviteId) setResolvedInviteId(row.id);
+        if (row.expires_at) setExpiresAt(new Date(row.expires_at).getTime());
         if (row.problem_slug) {
           const { data: p } = await supabase.from("coding_problems").select("title").eq("slug", row.problem_slug).maybeSingle();
           setProblemTitle(p?.title ?? row.problem_slug);
@@ -37,6 +40,18 @@ export default function ArenaRoom() {
       }
     })();
   }, [code, resolvedInviteId]);
+
+  // Tick every second for countdown
+  useEffect(() => {
+    if (!expiresAt) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [expiresAt]);
+
+  const remainingMs = expiresAt ? Math.max(0, expiresAt - now) : null;
+  const expired = remainingMs === 0;
+  const mm = remainingMs != null ? Math.floor(remainingMs / 60000) : 0;
+  const ss = remainingMs != null ? Math.floor((remainingMs % 60000) / 1000) : 0;
 
   useInviteWatcher(resolvedInviteId, (battleId) => {
     toast.success("Opponent joined!");
@@ -95,7 +110,18 @@ export default function ArenaRoom() {
           <X className="h-4 w-4 mr-2" /> Cancel Room
         </Button>
 
-        <p className="text-xs text-muted-foreground/70">Code expires in 10 minutes</p>
+        {remainingMs != null ? (
+          <p
+            className={`text-xs font-mono ${expired ? "text-destructive" : remainingMs < 60_000 ? "text-destructive" : "text-muted-foreground/70"}`}
+            data-testid="room-countdown"
+          >
+            {expired
+              ? "Code expired — create a new room"
+              : `Code expires in ${mm}:${ss.toString().padStart(2, "0")}`}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground/70">Code expires in 10 minutes</p>
+        )}
       </GlassPanel>
     </div>
   );
