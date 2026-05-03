@@ -42,6 +42,7 @@ const today = () => new Date().toISOString().slice(0, 10);
  * and CSV export for offline analysis.
  */
 export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string }) {
+  const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [date, setDate] = useState(initialDate ?? today());
   const [rangeMode, setRangeMode] = useState(false);
   const [from, setFrom] = useState(initialDate ?? today());
@@ -51,6 +52,7 @@ export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string
   const [claimers, setClaimers] = useState<Claimer[]>([]);
   const [loading, setLoading] = useState(false);
   const [rolling, setRolling] = useState(false);
+  const [detail, setDetail] = useState<{ userId: string; date: string; name: string | null } | null>(null);
 
   async function loadSingle() {
     setLoading(true);
