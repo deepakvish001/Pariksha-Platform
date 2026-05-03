@@ -123,6 +123,19 @@ const ContestDetail = () => {
           <Stat icon={Trophy} label="Problems" value={String(problems.length)} />
         </div>
 
+        {user && (
+          <SecureContestGate
+            contestId={contest.id}
+            contestSlug={contest.slug}
+            honorAccepted={honorAccepted}
+            onHonorAccepted={() => setHonorAccepted(true)}
+            hasStarted={clock.phase === "live" || clock.phase === "ended"}
+            hasEnded={clock.phase === "ended"}
+            isRegistered={isRegistered}
+            isDisqualified={isDisqualified}
+          />
+        )}
+
         <Tabs defaultValue="overview" className="w-full">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
