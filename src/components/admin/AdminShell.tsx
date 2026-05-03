@@ -280,7 +280,6 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
               "h-4 w-4 transition-transform",
               active ? "scale-110" : "group-hover/item:scale-105"
             )}
-            strokeWidth={active ? 2.25 : 1.75}
           />
           {collapsed && unseen > 0 && (
             <span
