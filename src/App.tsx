@@ -252,6 +252,13 @@ const App = () => (
                   <Route path="problems/:slug" element={<CodingProblemDetail />} />
                 </Route>
 
+                {/* Contests - public */}
+                <Route path="/contests" element={<PublicDashboardWrapper />}>
+                  <Route index element={<ContestsList />} />
+                  <Route path=":slug" element={<ContestDetail />} />
+                  <Route path=":slug/leaderboard" element={<ContestLeaderboard />} />
+                </Route>
+
                 {/* Fundamentals routes - public */}
                 <Route path="/fundamentals" element={<PublicDashboardWrapper />}>
                   <Route index element={<FundamentalsOverview />} />
