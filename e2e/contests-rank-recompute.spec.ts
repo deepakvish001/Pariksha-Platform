@@ -17,6 +17,12 @@ test("leaderboard rows are sorted by rank ascending", async ({ page }) => {
   }
   await link.click();
 
+  // Wait for the "updating…" indicator (rendered while react-query is
+  // re-fetching after a realtime invalidation) to disappear before sampling
+  // the rendered ranks. This guarantees we read the post-recomputation order.
+  const updating = page.getByText(/updating…/i);
+  await updating.waitFor({ state: "hidden", timeout: 15_000 }).catch(() => {});
+
   const rows = page.locator("tbody tr");
   const count = await rows.count();
   if (count < 2) test.skip(true, "Not enough rows to validate ordering");

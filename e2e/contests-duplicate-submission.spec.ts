@@ -33,16 +33,26 @@ test("duplicate or invalid contest submission shows inline error and blocks subm
   // Second submit attempt should be blocked by validate_contest_submission.
   await submit.click().catch(() => {});
 
-  const banner = page.locator("[role='alert']").filter({
-    hasText: /submission blocked|already|duplicate|closed|registered|contest/i,
-  });
-
-  // Either the banner appears (blocked path), or a destructive toast shows.
-  const toast = page.getByText(/submission blocked|already submitted|duplicate|not registered/i);
+  // Exact server messages from validate_contest_submission. We accept any of
+  // the duplicate / unauthorized variants but assert the literal strings —
+  // not a loose regex — so a server-side message regression fails the test.
+  const exactMessages = [
+    "You already solved this problem",
+    "Register for the contest before submitting",
+    "Sign in to submit",
+    "Contest has ended",
+    "Contest is not active",
+  ];
+  const matcher = new RegExp(exactMessages.map((m) => m.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"));
+  const banner = page.locator("[role='alert']").filter({ hasText: matcher });
+  const toast = page.getByText(matcher);
 
   await expect(banner.or(toast).first()).toBeVisible({ timeout: 10_000 }).catch(async () => {
     test.skip(true, "Could not trigger a duplicate-submission state without auth");
   });
+
+  // The submit action must not have produced an "accepted" confirmation.
+  await expect(page.getByText(/^accepted$|submission successful/i)).toHaveCount(0);
 });
 
 test("inline error banner is dismissible after a blocked submission", async ({ page }) => {
