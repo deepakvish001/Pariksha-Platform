@@ -93,6 +93,18 @@ const ContestDetail = () => {
           </div>
         </div>
 
+        {(register.error || withdraw.error) && (
+          <Alert variant="destructive" data-testid="contest-action-error">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>
+              {register.error ? "Couldn't register" : "Couldn't withdraw"}
+            </AlertTitle>
+            <AlertDescription>
+              {(register.error as Error)?.message ?? (withdraw.error as Error)?.message}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid gap-3 md:grid-cols-4">
           <Stat icon={CalendarDays} label="Starts" value={fmtDate(contest.starts_at)} />
           <Stat icon={CalendarDays} label="Ends" value={fmtDate(contest.ends_at)} />
