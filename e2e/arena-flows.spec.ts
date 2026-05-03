@@ -42,6 +42,49 @@ test.describe("Arena · Join by Code (deep link)", () => {
     const error = page.locator("[data-testid^='join-error-']");
     await expect(error).toBeVisible({ timeout: 10_000 });
   });
+
+  test("countdown turns red near expiry and surfaces 'create a new room' messaging on expiry", async ({ page }) => {
+    // Bypass auth gating: stub Supabase RPC responses so the peek + join logic
+    // runs entirely against deterministic fake data.
+    const peekExpiresAt = new Date(Date.now() + 30_000).toISOString(); // 30s ahead
+    await page.route(/\/rest\/v1\/rpc\/battle_peek_code/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([{
+          expires_at: peekExpiresAt,
+          problem_slug: "two-sum",
+          difficulty: "medium",
+          duration_sec: 900,
+          status: "pending",
+        }]),
+      });
+    });
+    // Block the actual join attempt so the page stays on the join screen.
+    await page.route(/\/rest\/v1\/rpc\/battle_join_code/, async (route) => {
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "auth required", code: "PGRST301" }),
+      });
+    });
+
+    await page.goto("/arena/join/ABC123");
+
+    const countdown = page.getByTestId("join-countdown");
+    await expect(countdown).toBeVisible({ timeout: 10_000 });
+    await expect(countdown).toHaveClass(/text-destructive/);
+    await expect(countdown).toContainText(/Expires in 0:\d{2}/);
+
+    // Force the local clock past expiry via the documented ?now= override.
+    const future = Date.now() + 60_000;
+    await page.goto(`/arena/join/ABC123?now=${future}`);
+
+    const expired = page.getByTestId("join-expired").or(page.getByTestId("join-error-expired"));
+    await expect(expired).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/create a new room/i)).toBeVisible();
+    await expect(page.getByTestId("join-disabled")).toBeDisabled();
+  });
 });
 
 test.describe("Arena · Quick Match queue", () => {

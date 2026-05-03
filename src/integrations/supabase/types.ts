@@ -3693,6 +3693,16 @@ export type Database = {
         }
         Returns: string
       }
+      battle_peek_code: {
+        Args: { _code: string }
+        Returns: {
+          difficulty: Database["public"]["Enums"]["battle_difficulty"]
+          duration_sec: number
+          expires_at: string
+          problem_slug: string
+          status: string
+        }[]
+      }
       calc_elo_delta: {
         Args: { _k?: number; _loser_elo: number; _winner_elo: number }
         Returns: number

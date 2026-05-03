@@ -54,6 +54,22 @@ export async function joinByCode(code: string): Promise<string> {
   return data as string;
 }
 
+export type CodePeek = {
+  expires_at: string;
+  problem_slug: string | null;
+  difficulty: string;
+  duration_sec: number;
+  status: string;
+};
+
+export async function peekCode(code: string): Promise<CodePeek | null> {
+  const { data, error } = await supabase.rpc("battle_peek_code" as never, { _code: code.trim().toUpperCase() } as never);
+  if (error) throw error;
+  if (!data) return null;
+  const row = Array.isArray(data) ? (data[0] as CodePeek) : (data as unknown as CodePeek);
+  return row ?? null;
+}
+
 export function useInviteWatcher(inviteId: string | undefined, onAccepted: (battleId: string) => void) {
   useEffect(() => {
     if (!inviteId) return;

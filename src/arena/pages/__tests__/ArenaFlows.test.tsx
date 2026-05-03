@@ -127,6 +127,26 @@ describe("ArenaQueue (Quick Match)", () => {
 
 // =========================================================
 describe("ArenaJoinCode (deep link)", () => {
+  // Helper: future-dated peek with given offset (ms from "now")
+  const peekFuture = (offsetMs = 5 * 60_000) => ({
+    data: [{
+      expires_at: new Date(Date.now() + offsetMs).toISOString(),
+      problem_slug: "two-sum", difficulty: "medium", duration_sec: 900, status: "pending",
+    }],
+    error: null,
+  });
+  const peekExpired = () => ({
+    data: [{
+      expires_at: new Date(Date.now() - 60_000).toISOString(),
+      problem_slug: "two-sum", difficulty: "medium", duration_sec: 900, status: "pending",
+    }],
+    error: null,
+  });
+
+  function dispatch(map: Record<string, unknown>) {
+    rpcMock.mockImplementation((name: string) => Promise.resolve(map[name] ?? { data: null, error: { message: "unhandled rpc" } }));
+  }
+
   it("rejects malformed codes with explicit validation", async () => {
     renderWithRouter(<ArenaJoinCode />, "/arena/join/bad");
     expect(await screen.findByTestId("join-invalid")).toBeInTheDocument();
@@ -134,27 +154,63 @@ describe("ArenaJoinCode (deep link)", () => {
   });
 
   it("auto-joins valid code and navigates to battle", async () => {
-    rpcMock.mockResolvedValue({ data: "battle-77", error: null });
+    dispatch({
+      battle_peek_code: peekFuture(),
+      battle_join_code: { data: "battle-77", error: null },
+    });
     renderWithRouter(<ArenaJoinCode />, "/arena/join/ABC123");
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/arena/battle/battle-77", { replace: true }));
   });
 
   it("shows expiry messaging when RPC reports expired code", async () => {
-    rpcMock.mockResolvedValue({ data: null, error: { message: "Invite has expired" } });
+    dispatch({
+      battle_peek_code: peekFuture(),
+      battle_join_code: { data: null, error: { message: "Invite has expired" } },
+    });
     renderWithRouter(<ArenaJoinCode />, "/arena/join/ABC123");
     expect(await screen.findByTestId("join-error-expired")).toBeInTheDocument();
     expect(screen.getByText(/Room code expired/i)).toBeInTheDocument();
-    // Expired errors should NOT show retry
+    // Expired errors should NOT show retry, and the join button should be disabled
     expect(screen.queryByRole("button", { name: /try again/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId("join-disabled")).toBeDisabled();
   });
 
   it("shows not-found error with retry option", async () => {
-    rpcMock.mockResolvedValue({ data: null, error: { message: "Invite not found" } });
+    dispatch({
+      battle_peek_code: { data: null, error: { message: "invalid code" } },
+    });
     renderWithRouter(<ArenaJoinCode />, "/arena/join/ZZZ999");
     expect(await screen.findByTestId("join-error-notfound")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
   });
+
+  it("renders countdown derived from peek and turns red near expiry", async () => {
+    dispatch({
+      battle_peek_code: peekFuture(30_000), // 30s left
+      battle_join_code: new Promise(() => {}), // never resolves → stays in joining state
+    });
+    renderWithRouter(<ArenaJoinCode />, "/arena/join/ABC123");
+    const cd = await screen.findByTestId("join-countdown");
+    expect(cd.textContent).toMatch(/Expires in 0:\d{2}/);
+    expect(cd.className).toMatch(/text-destructive/);
+  });
+
+  it("disables join and shows expiry UI when the room expires while on the page", async () => {
+    dispatch({
+      battle_peek_code: peekFuture(2_000), // expires almost immediately
+      battle_join_code: new Promise(() => {}),
+    });
+    renderWithRouter(<ArenaJoinCode />, "/arena/join/ABC123");
+    await screen.findByTestId("join-countdown");
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(3_000); });
+
+    await waitFor(() => expect(screen.getByTestId("join-error-expired")).toBeInTheDocument());
+    expect(screen.getByText(/Room code expired/i)).toBeInTheDocument();
+    expect(screen.getByTestId("join-disabled")).toBeDisabled();
+  });
 });
+
 
 // =========================================================
 describe("ArenaRoom (waiting room realtime)", () => {
