@@ -178,12 +178,12 @@ const ProblemEditor = () => {
   useEffect(() => {
     if (draftLoadedRef.current) return;
     if (!isNew && !loaded?.problem) return;
-    draftLoadedRef.current = true;
     try {
       const raw = localStorage.getItem(DRAFT_KEY(slug));
       if (!raw) return;
       const parsed = JSON.parse(raw);
       if (parsed?.form) {
+        draftLoadedRef.current = true;
         setForm(parsed.form);
         setDraftRestoredAt(parsed.savedAt ?? null);
         setLastDraftSavedAt(parsed.savedAt ?? null);
