@@ -126,17 +126,64 @@ export interface DailyHistoryEntry {
   attempted_at: string | null;
 }
 
-export function useDailyHistory(days = 30) {
+export function useDailyHistory(pageSize = 30) {
   const [history, setHistory] = useState<DailyHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await rpc("arena_get_daily_history", { _days: days });
-    if (!error && Array.isArray(data)) setHistory(data as DailyHistoryEntry[]);
-    setLoading(false);
-  }, [days]);
+  const loadPage = useCallback(async (offset: number, append: boolean) => {
+    if (append) setLoadingMore(true); else setLoading(true);
+    const { data, error } = await rpc("arena_get_daily_history", { _days: pageSize, _offset: offset });
+    const rows = (!error && Array.isArray(data) ? (data as DailyHistoryEntry[]) : []);
+    setHasMore(rows.length === pageSize);
+    setHistory((prev) => append ? [...prev, ...rows] : rows);
+    if (append) setLoadingMore(false); else setLoading(false);
+  }, [pageSize]);
+
+  const refresh = useCallback(() => loadPage(0, false), [loadPage]);
+  const loadMore = useCallback(() => loadPage(history.length, true), [loadPage, history.length]);
 
   useEffect(() => { refresh(); }, [refresh]);
-  return { history, loading, refresh };
+  return { history, loading, loadingMore, hasMore, refresh, loadMore };
+}
+
+export interface ArenaNotificationPrefs {
+  user_id: string;
+  daily_reminder: boolean;
+  reminder_hour_utc: number;
+  last_reminded_date: string | null;
+}
+
+export function useArenaNotificationPrefs(userId: string | undefined) {
+  const [prefs, setPrefs] = useState<ArenaNotificationPrefs | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from as any)("arena_notification_prefs")
+      .select("*").eq("user_id", userId).maybeSingle();
+    setPrefs((data as ArenaNotificationPrefs) ?? {
+      user_id: userId, daily_reminder: false, reminder_hour_utc: 14, last_reminded_date: null,
+    });
+    setLoading(false);
+  }, [userId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const save = useCallback(async (patch: Partial<ArenaNotificationPrefs>) => {
+    if (!userId) return;
+    const next = { ...(prefs ?? { user_id: userId, daily_reminder: false, reminder_hour_utc: 14, last_reminded_date: null }), ...patch };
+    setPrefs(next);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from as any)("arena_notification_prefs").upsert({
+      user_id: userId,
+      daily_reminder: next.daily_reminder,
+      reminder_hour_utc: next.reminder_hour_utc,
+    });
+  }, [userId, prefs]);
+
+  return { prefs, loading, save };
 }
