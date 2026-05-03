@@ -68,9 +68,13 @@ export default function ArenaFriends() {
   const [loadingPage, setLoadingPage] = useState(false);
   const [page, setPage] = useState(0);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
+  const [blockedProfiles, setBlockedProfiles] = useState<
+    Array<{ user_id: string; full_name: string | null; avatar_url: string | null }>
+  >([]);
 
   const [filters, setFilters] = useState<Filters>(loadFilters());
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<"elo" | "battles" | "newest" | "mutual">("elo");
 
   const [reportTarget, setReportTarget] = useState<ArenaUser | null>(null);
   const [reportReason, setReportReason] = useState("Inappropriate behavior");
