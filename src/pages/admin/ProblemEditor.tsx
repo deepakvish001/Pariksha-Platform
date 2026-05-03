@@ -128,7 +128,7 @@ const ProblemEditor = () => {
   const { slug } = useParams();
   const isNew = !slug;
   const nav = useNavigate();
-  const { data: loaded, isLoading } = useAdminProblem(slug);
+  const { data: loaded, isLoading, error: loadError } = useAdminProblem(slug);
   const save = useSaveProblem();
   const { data: lastPublishEvent } = useLastPublishEvent(slug);
   const [form, setForm] = useState<FullProblemPayload>(emptyPayload());
