@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAdminProblems } from "@/hooks/useAdminProblems";
 import { useDailyChallengeSchedule, useScheduleDailyChallenge } from "@/hooks/admin/useAdminControl";
 import { CalendarClock } from "lucide-react";
+import { DailyChallengeReviewCard } from "@/components/admin/DailyChallengeReviewCard";
 
 const days = (n: number) => {
   const out: string[] = [];
