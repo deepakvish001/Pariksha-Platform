@@ -303,7 +303,10 @@ const AdminSidebar = () => {
                       <SidebarMenu>
                         {group.items.map((item) => {
                           const Icon = item.icon;
-                          const active = isActive(item.to, item.end);
+                          const active = isActive(item.to, item.end, item.match);
+                          const subItems = resolveDynamicChildren(item, pathname);
+                          const subActive = subItems.some((s) => isActive(s.to, s.end, s.match));
+                          const showSubNav = !collapsed && subItems.length > 0 && (active || subActive);
                           const detail: BadgeDetail | undefined = badges?.[item.to as BadgeKey];
                           const tracked = (TRACKED as string[]).includes(item.to);
                           const showSkeleton = tracked && badgesLoading && !detail;
