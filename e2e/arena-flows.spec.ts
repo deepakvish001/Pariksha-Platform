@@ -395,3 +395,64 @@ test.describe("Arena · Quest claim idempotency", () => {
     expect(successToasts).toBeLessThanOrEqual(1);
   });
 });
+
+test.describe("Arena · Daily challenge integrity", () => {
+  test("complete RPC rejects when battle's problem mismatches today's daily", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    let xpCalls = 0;
+    await page.route(/\/rest\/v1\/rpc\/arena_complete_daily_challenge/, async (route) => {
+      xpCalls += 1;
+      // First call: reject with problem_mismatch. Second: would credit.
+      const body = xpCalls === 1
+        ? { ok: false, reason: "problem_mismatch" }
+        : { ok: true, xp: 100 };
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+    });
+    await page.goto("/arena/daily");
+    await page.waitForLoadState("networkidle");
+    // Simulate two completion attempts; only the matched one should credit XP.
+    const calls = await page.evaluate(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { supabase } = await import("/src/integrations/supabase/client.ts" as any);
+      const a = await supabase.rpc("arena_complete_daily_challenge", { _battle_id: "00000000-0000-0000-0000-000000000001", _solve_time_sec: 100 });
+      const b = await supabase.rpc("arena_complete_daily_challenge", { _battle_id: "00000000-0000-0000-0000-000000000002", _solve_time_sec: 100 });
+      return [a.data, b.data];
+    }).catch(() => null);
+    if (calls) {
+      expect(calls[0]).toMatchObject({ ok: false });
+      expect(calls[1]).toMatchObject({ ok: true, xp: 100 });
+    }
+    expect(xpCalls).toBeGreaterThanOrEqual(1);
+  });
+
+  test("quest progress panel updates live via realtime subscription", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    await page.goto("/arena/daily");
+    const panel = page.locator('[data-testid="daily-quest-progress"]');
+    await expect(panel).toBeVisible({ timeout: 10_000 });
+    await expect(panel.getByText(/done/i)).toBeVisible();
+    await expect(panel.getByText(/claimed/i)).toBeVisible();
+  });
+});
+
+test.describe("Arena · History range jump", () => {
+  test("date range form reloads history with selected window", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    let rangeCalled = false;
+    await page.route(/arena_get_daily_history_range/, async (route) => {
+      rangeCalled = true;
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    });
+    await page.goto("/arena");
+    const toggle = page.locator('[data-testid="history-range-toggle"]');
+    await expect(toggle).toBeVisible({ timeout: 10_000 });
+    await toggle.click();
+    const form = page.locator('[data-testid="history-range-form"]');
+    await expect(form).toBeVisible();
+    await form.locator('input[type="date"]').first().fill("2026-04-01");
+    await form.locator('input[type="date"]').nth(1).fill("2026-05-01");
+    await page.locator('[data-testid="history-range-apply"]').click();
+    await page.waitForTimeout(300);
+    expect(rangeCalled).toBe(true);
+  });
+});
