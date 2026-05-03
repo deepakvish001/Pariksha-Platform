@@ -13,7 +13,7 @@ export const NeonButton = forwardRef<HTMLButtonElement, ButtonProps & { tone?: "
       <Button
         ref={ref}
         className={cn(
-          "relative overflow-hidden bg-gradient-to-r text-white font-bold tracking-wide border-0",
+          "relative overflow-hidden bg-gradient-to-r text-foreground font-bold tracking-wide border-0",
           "hover:scale-[1.02] active:scale-95 transition-transform",
           tones[tone],
           className,

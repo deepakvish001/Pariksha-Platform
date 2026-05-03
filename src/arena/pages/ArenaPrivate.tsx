@@ -46,13 +46,13 @@ export default function ArenaPrivate() {
     <div className="space-y-4 max-w-2xl mx-auto">
       <GlassPanel glow="magenta" className="p-4"><h1 className="text-xl font-black">Private Match</h1></GlassPanel>
       <GlassPanel className="p-4 space-y-3">
-        <label className="text-xs uppercase text-cyan-300/80">Opponent</label>
-        <select value={opponent} onChange={(e) => setOpponent(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded p-2 text-sm">
+        <label className="text-xs uppercase text-primary/80">Opponent</label>
+        <select value={opponent} onChange={(e) => setOpponent(e.target.value)} className="w-full bg-card/60 border border-border rounded p-2 text-sm">
           <option value="">— select friend —</option>
           {friends.map((f) => <option key={f.user_id} value={f.user_id}>{f.full_name ?? "Player"}</option>)}
         </select>
-        <label className="text-xs uppercase text-cyan-300/80">Problem</label>
-        <select value={problemSlug} onChange={(e) => setProblemSlug(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded p-2 text-sm">
+        <label className="text-xs uppercase text-primary/80">Problem</label>
+        <select value={problemSlug} onChange={(e) => setProblemSlug(e.target.value)} className="w-full bg-card/60 border border-border rounded p-2 text-sm">
           <option value="">— select problem —</option>
           {problems.map((p) => <option key={p.slug} value={p.slug}>{p.title}</option>)}
         </select>
@@ -62,7 +62,7 @@ export default function ArenaPrivate() {
         <GlassPanel glow="cyan" className="p-4 space-y-2">
           <div className="text-xs uppercase">Incoming Invites</div>
           {invites.map((i) => (
-            <div key={i.id} className="flex items-center gap-3 rounded border border-white/10 p-2">
+            <div key={i.id} className="flex items-center gap-3 rounded border border-border p-2">
               <span className="flex-1 text-sm">{i.problem_slug}</span>
               <NeonButton size="sm" tone="lime" onClick={() => accept(i.id)}>Accept</NeonButton>
             </div>

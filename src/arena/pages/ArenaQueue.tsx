@@ -37,8 +37,8 @@ export default function ArenaQueue() {
   return (
     <GlassPanel glow="cyan" className="p-8 max-w-md mx-auto text-center">
       <MatchmakingOrb />
-      <p className="font-mono text-2xl text-cyan-300">{Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")}</p>
-      <p className="text-xs text-white/50 mt-2">Expanding search radius...</p>
+      <p className="font-mono text-2xl text-primary">{Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")}</p>
+      <p className="text-xs text-muted-foreground mt-2">Expanding search radius...</p>
       <Button variant="ghost" className="mt-6" onClick={cancel}>Cancel</Button>
     </GlassPanel>
   );

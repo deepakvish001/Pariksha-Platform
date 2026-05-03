@@ -144,7 +144,7 @@ export default function BattleRoom() {
     <div className="space-y-3">
       <GlassPanel className="p-3 flex items-center gap-4">
         <BattleTimer endsAt={battle.ends_at} onExpire={onTimerExpire} />
-        <div className="text-xs uppercase text-white/50">{battle.difficulty} · {battle.topic || "any"}</div>
+        <div className="text-xs uppercase text-muted-foreground">{battle.difficulty} · {battle.topic || "any"}</div>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={forfeit} className="text-red-400 hover:text-red-300">
             <Flag className="h-4 w-4 mr-1" /> Forfeit
@@ -163,19 +163,19 @@ export default function BattleRoom() {
               <div className="prose prose-invert prose-sm mt-3 max-w-none whitespace-pre-wrap">{problem.description}</div>
               {problem.examples?.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <div className="text-xs uppercase text-cyan-300/80">Examples</div>
+                  <div className="text-xs uppercase text-primary/80">Examples</div>
                   {problem.examples.map((e, i) => (
-                    <div key={i} className="rounded-md border border-white/10 bg-black/40 p-2 text-xs font-mono">
-                      <div><span className="text-white/50">Input:</span> {e.input}</div>
-                      <div><span className="text-white/50">Output:</span> {e.output}</div>
+                    <div key={i} className="rounded-md border border-border bg-card/60 p-2 text-xs font-mono">
+                      <div><span className="text-muted-foreground">Input:</span> {e.input}</div>
+                      <div><span className="text-muted-foreground">Output:</span> {e.output}</div>
                     </div>
                   ))}
                 </div>
               )}
               {problem.constraints?.length > 0 && (
                 <div className="mt-4">
-                  <div className="text-xs uppercase text-cyan-300/80 mb-1">Constraints</div>
-                  <ul className="text-xs space-y-1 text-white/70">
+                  <div className="text-xs uppercase text-primary/80 mb-1">Constraints</div>
+                  <ul className="text-xs space-y-1 text-foreground/70">
                     {problem.constraints.map((c, i) => <li key={i}>• {c}</li>)}
                   </ul>
                 </div>
@@ -190,7 +190,7 @@ export default function BattleRoom() {
             <select
               value={lang.key}
               onChange={(e) => setLang(LANG_OPTIONS.find((l) => l.key === e.target.value)!)}
-              className="bg-black/40 border border-white/10 rounded px-2 py-1 text-xs"
+              className="bg-card/60 border border-border rounded px-2 py-1 text-xs"
             >
               {LANG_OPTIONS.map((l) => <option key={l.key} value={l.key}>{l.label}</option>)}
             </select>
@@ -209,8 +209,8 @@ export default function BattleRoom() {
             </div>
           </GlassPanel>
           <GlassPanel className="p-3 max-h-32 overflow-y-auto">
-            <div className="text-[10px] uppercase text-white/40 mb-1">Console</div>
-            <pre className="text-xs whitespace-pre-wrap font-mono text-white/80">{output || "Run your code to see output."}</pre>
+            <div className="text-[10px] uppercase text-muted-foreground/60 mb-1">Console</div>
+            <pre className="text-xs whitespace-pre-wrap font-mono text-foreground/80">{output || "Run your code to see output."}</pre>
           </GlassPanel>
         </div>
 
@@ -227,19 +227,19 @@ export default function BattleRoom() {
             />
           )}
           <GlassPanel glow="cyan" className="p-4 space-y-2">
-            <div className="text-xs uppercase text-cyan-300/80">You</div>
+            <div className="text-xs uppercase text-primary/80">You</div>
             <div className="font-mono text-sm">{myPassed} / {myTotal || (problem?.sampleTests.length ?? 0)} passed</div>
           </GlassPanel>
           <GlassPanel className="p-3 max-h-64 overflow-y-auto">
-            <div className="text-[10px] uppercase text-white/40 mb-2">Live Feed</div>
+            <div className="text-[10px] uppercase text-muted-foreground/60 mb-2">Live Feed</div>
             <ul className="space-y-1 text-xs">
               {events.slice(-12).reverse().map((e) => (
-                <li key={e.id} className="text-white/60">
-                  <span className="text-cyan-300">{e.kind}</span>{" "}
+                <li key={e.id} className="text-muted-foreground">
+                  <span className="text-primary">{e.kind}</span>{" "}
                   {e.kind === "submit" || e.kind === "test_run" ? `${(e.payload as { passed?: number }).passed}/${(e.payload as { total?: number }).total}` : ""}
                 </li>
               ))}
-              {events.length === 0 && <li className="text-white/30">Waiting for action...</li>}
+              {events.length === 0 && <li className="text-muted-foreground/50">Waiting for action...</li>}
             </ul>
           </GlassPanel>
         </div>

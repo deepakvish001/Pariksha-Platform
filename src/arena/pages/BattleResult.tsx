@@ -41,9 +41,9 @@ export default function BattleResult() {
           {won ? (
             <Trophy className="h-20 w-20 mx-auto text-lime-400" style={{ filter: "drop-shadow(0 0 20px rgba(132,204,22,0.7))" }} />
           ) : draw ? (
-            <Equal className="h-20 w-20 mx-auto text-cyan-400" />
+            <Equal className="h-20 w-20 mx-auto text-primary" />
           ) : (
-            <Skull className="h-20 w-20 mx-auto text-fuchsia-400" />
+            <Skull className="h-20 w-20 mx-auto text-accent-foreground" />
           )}
           <h1 className="mt-4 text-5xl font-black">
             {won ? "VICTORY" : draw ? "DRAW" : "DEFEAT"}
@@ -56,23 +56,23 @@ export default function BattleResult() {
               {myDelta > 0 ? "+" : ""}{myDelta} Elo
             </motion.div>
           )}
-          <p className="mt-2 text-sm text-white/50">{battle.end_reason}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{battle.end_reason}</p>
         </GlassPanel>
       </motion.div>
 
       <GlassPanel className="p-4">
-        <h3 className="text-xs uppercase tracking-wider text-cyan-300/80 mb-2">Submissions ({subs.length})</h3>
+        <h3 className="text-xs uppercase tracking-wider text-primary/80 mb-2">Submissions ({subs.length})</h3>
         <ul className="space-y-2 text-sm">
           {subs.map((s) => (
-            <li key={s.id} className="flex items-center gap-3 rounded border border-white/10 bg-black/30 p-2">
+            <li key={s.id} className="flex items-center gap-3 rounded border border-border bg-card/40 p-2">
               <span className={`text-xs font-mono px-2 py-0.5 rounded ${s.verdict === "accepted" ? "bg-lime-500/20 text-lime-300" : "bg-red-500/20 text-red-300"}`}>{s.verdict}</span>
-              <span className="text-xs text-white/60">{s.passed}/{s.total} · {s.language}</span>
-              <span className={`ml-auto text-xs ${s.user_id === user?.id ? "text-cyan-300" : "text-fuchsia-300"}`}>
+              <span className="text-xs text-muted-foreground">{s.passed}/{s.total} · {s.language}</span>
+              <span className={`ml-auto text-xs ${s.user_id === user?.id ? "text-primary" : "text-accent-foreground"}`}>
                 {s.user_id === user?.id ? "You" : "Opponent"}
               </span>
             </li>
           ))}
-          {subs.length === 0 && <li className="text-xs text-white/40">No submissions recorded.</li>}
+          {subs.length === 0 && <li className="text-xs text-muted-foreground/60">No submissions recorded.</li>}
         </ul>
       </GlassPanel>
 
