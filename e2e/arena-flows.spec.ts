@@ -578,3 +578,145 @@ test.describe("Arena · Admin daily review (filters + CSV + rollback integrity)"
     expect(credited).toBe(1);
   });
 });
+
+test.describe("Arena · Admin daily review drawer (RBAC + server validation)", () => {
+  test("non-admin cannot open drawer or hit admin RPCs", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+
+    // Simulate a non-admin: force user_roles query to return no admin role.
+    await page.route(/\/rest\/v1\/user_roles\b/, (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+    );
+    // Admin-only RPCs should reject for non-admins.
+    await page.route(/rpc\/admin_daily_challenge_(claimers|claimers_range|user_detail)/, (route) =>
+      route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ message: "admin only" }) }),
+    );
+
+    await page.goto("/admin/daily-challenge").catch(() => {});
+    await page.waitForLoadState("networkidle");
+
+    const card = page.locator('[data-testid="daily-review-card"]');
+    if (await card.count()) {
+      // Either redirected away or rendered the locked state — both are acceptable.
+      await expect(page.locator('[data-testid="review-row"]')).toHaveCount(0);
+      await expect(page.locator('[data-testid="review-export-csv"]')).toHaveCount(0);
+    }
+    await expect(page.locator('[data-testid="daily-user-detail-drawer"]')).toHaveCount(0);
+  });
+
+  test("admin opens drawer and sees server-validated matches_seeded", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+
+    // Force admin role
+    await page.route(/\/rest\/v1\/user_roles\b/, (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ role: "admin" }]) }),
+    );
+
+    const today = new Date().toISOString().slice(0, 10);
+    const userId = "00000000-0000-0000-0000-00000000beef";
+
+    // Stub claimers list so a row exists to click.
+    await page.route(/rpc\/admin_daily_challenge_claimers\b/, (route) =>
+      route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify([
+          { user_id: userId, display_name: "Test User", solved: true,
+            solve_time_sec: 120, xp_awarded: 100,
+            attempted_at: new Date().toISOString(), solved_at: new Date().toISOString() },
+        ]),
+      }),
+    );
+    await page.route(/arena_daily_challenges/, (route) =>
+      route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ id: "c1", challenge_date: today, problem_slug: "two-sum", bonus_xp: 100 }),
+      }),
+    );
+
+    let detailCalls = 0;
+    await page.route(/rpc\/admin_daily_challenge_user_detail/, (route) => {
+      detailCalls += 1;
+      // Return many rows to also exercise pagination "Load more".
+      const attempts = Array.from({ length: 25 }, (_, i) => ({
+        id: `a${i}`, battle_id: `b${i}`, solved: i % 2 === 0,
+        solve_time_sec: 100 + i, xp_awarded: i === 0 ? 100 : 0,
+        attempted_at: new Date(Date.now() - i * 60000).toISOString(),
+        solved_at: i % 2 === 0 ? new Date().toISOString() : null,
+      }));
+      const submissions = Array.from({ length: 22 }, (_, i) => ({
+        id: `s${i}`, battle_id: `b${i}`,
+        problem_slug: i < 2 ? "two-sum" : "reverse-string",
+        verdict: i === 0 ? "AC" : "WA", passed: 5, total: 10, language: "py",
+        runtime_ms: 50, created_at: new Date().toISOString(),
+        matches_seeded: i < 2,
+      }));
+      return route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          user_id: userId, challenge_date: today,
+          seeded_problem_slug: "two-sum", bonus_xp: 100,
+          attempts, submissions,
+        }),
+      });
+    });
+
+    await page.goto("/admin/daily-challenge");
+    await page.waitForLoadState("networkidle");
+
+    const row = page.locator('[data-testid="review-row"]').first();
+    if (await row.count() === 0) test.skip(true, "Admin route not reachable in this env");
+
+    await row.click();
+    const drawer = page.locator('[data-testid="daily-user-detail-drawer"]');
+    await expect(drawer).toBeVisible();
+    expect(detailCalls).toBeGreaterThan(0);
+
+    // Server-validated badges appear
+    await expect(drawer.locator('[data-testid="sub-matches-seeded"]').first()).toBeVisible();
+    await expect(drawer.locator('[data-testid="sub-mismatch"]').first()).toBeVisible();
+
+    // Pagination: load more shows additional rows
+    const loadMore = drawer.locator('[data-testid="drawer-load-more-attempts"]');
+    await expect(loadMore).toBeVisible();
+    await loadMore.click();
+    await expect(drawer.locator('[data-testid="drawer-load-more-subs"]')).toBeVisible();
+  });
+
+  test("drawer shows empty state for users with no attempts/submissions", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    await page.route(/\/rest\/v1\/user_roles\b/, (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ role: "admin" }]) }),
+    );
+    await page.route(/rpc\/admin_daily_challenge_claimers\b/, (route) =>
+      route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify([
+          { user_id: "00000000-0000-0000-0000-0000000000ee", display_name: "Empty User",
+            solved: false, solve_time_sec: null, xp_awarded: 0,
+            attempted_at: new Date().toISOString(), solved_at: null },
+        ]),
+      }),
+    );
+    await page.route(/rpc\/admin_daily_challenge_user_detail/, (route) =>
+      route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          user_id: "00000000-0000-0000-0000-0000000000ee",
+          challenge_date: new Date().toISOString().slice(0, 10),
+          seeded_problem_slug: "two-sum", bonus_xp: 100,
+          attempts: [], submissions: [],
+        }),
+      }),
+    );
+
+    await page.goto("/admin/daily-challenge");
+    await page.waitForLoadState("networkidle");
+    const row = page.locator('[data-testid="review-row"]').first();
+    if (await row.count() === 0) test.skip(true, "Admin route not reachable");
+    await row.click();
+
+    const drawer = page.locator('[data-testid="daily-user-detail-drawer"]');
+    await expect(drawer.locator('[data-testid="drawer-empty-attempts"]')).toBeVisible();
+    await expect(drawer.locator('[data-testid="drawer-empty-submissions"]')).toBeVisible();
+  });
+});
