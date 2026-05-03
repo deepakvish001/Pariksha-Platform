@@ -260,6 +260,219 @@ export type Database = {
         }
         Relationships: []
       }
+      arena_daily_attempts: {
+        Row: {
+          attempted_at: string
+          battle_id: string | null
+          challenge_date: string
+          challenge_id: string
+          id: string
+          solve_time_sec: number | null
+          solved: boolean
+          solved_at: string | null
+          user_id: string
+          xp_awarded: number
+        }
+        Insert: {
+          attempted_at?: string
+          battle_id?: string | null
+          challenge_date: string
+          challenge_id: string
+          id?: string
+          solve_time_sec?: number | null
+          solved?: boolean
+          solved_at?: string | null
+          user_id: string
+          xp_awarded?: number
+        }
+        Update: {
+          attempted_at?: string
+          battle_id?: string | null
+          challenge_date?: string
+          challenge_id?: string
+          id?: string
+          solve_time_sec?: number | null
+          solved?: boolean
+          solved_at?: string | null
+          user_id?: string
+          xp_awarded?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arena_daily_attempts_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "arena_daily_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      arena_daily_challenges: {
+        Row: {
+          bonus_xp: number
+          challenge_date: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          problem_slug: string
+          updated_at: string
+        }
+        Insert: {
+          bonus_xp?: number
+          challenge_date: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          problem_slug: string
+          updated_at?: string
+        }
+        Update: {
+          bonus_xp?: number
+          challenge_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          problem_slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arena_daily_challenges_problem_slug_fkey"
+            columns: ["problem_slug"]
+            isOneToOne: false
+            referencedRelation: "coding_problems"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      arena_quests_catalog: {
+        Row: {
+          code: string
+          created_at: string
+          description: string
+          difficulty: string
+          id: string
+          is_active: boolean
+          kind: string
+          target: number
+          title: string
+          weight: number
+          xp_reward: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description: string
+          difficulty?: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          target?: number
+          title: string
+          weight?: number
+          xp_reward?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string
+          difficulty?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          target?: number
+          title?: string
+          weight?: number
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      arena_streaks: {
+        Row: {
+          current_streak: number
+          freeze_week_start: string | null
+          freezes_remaining: number
+          last_active_date: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          freeze_week_start?: string | null
+          freezes_remaining?: number
+          last_active_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          freeze_week_start?: string | null
+          freezes_remaining?: number
+          last_active_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      arena_user_daily_quests: {
+        Row: {
+          claimed: boolean
+          claimed_at: string | null
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          progress: number
+          quest_date: string
+          quest_id: string
+          target: number
+          user_id: string
+          xp_reward: number
+        }
+        Insert: {
+          claimed?: boolean
+          claimed_at?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          progress?: number
+          quest_date: string
+          quest_id: string
+          target: number
+          user_id: string
+          xp_reward?: number
+        }
+        Update: {
+          claimed?: boolean
+          claimed_at?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          progress?: number
+          quest_date?: string
+          quest_id?: string
+          target?: number
+          user_id?: string
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arena_user_daily_quests_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "arena_quests_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       battle_achievements: {
         Row: {
           achievement_key: string
@@ -3645,6 +3858,52 @@ export type Database = {
       }
       admin_unsuspend_user: { Args: { _user_id: string }; Returns: undefined }
       admin_user_detail: { Args: { _user_id: string }; Returns: Json }
+      arena_claim_quest: { Args: { _user_quest_id: string }; Returns: Json }
+      arena_complete_daily_challenge: {
+        Args: { _battle_id: string; _solve_time_sec: number }
+        Returns: Json
+      }
+      arena_ensure_daily_quests: {
+        Args: never
+        Returns: {
+          claimed: boolean
+          claimed_at: string | null
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          progress: number
+          quest_date: string
+          quest_id: string
+          target: number
+          user_id: string
+          xp_reward: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "arena_user_daily_quests"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      arena_get_daily_challenge: {
+        Args: never
+        Returns: {
+          attempted: boolean
+          bonus_xp: number
+          challenge_date: string
+          challenge_id: string
+          global_solves: number
+          problem_slug: string
+          solve_time_sec: number
+          solved: boolean
+        }[]
+      }
+      arena_record_quest_progress: {
+        Args: { _amount?: number; _kind: string }
+        Returns: undefined
+      }
+      arena_tick_streak: { Args: never; Returns: Json }
       attach_problem_to_contest: {
         Args: { _contest_id: string; _problem_slug: string }
         Returns: Json
