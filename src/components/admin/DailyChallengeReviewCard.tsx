@@ -290,7 +290,13 @@ export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string
               <p className="text-xs text-muted-foreground">No rows match the current filter.</p>
             ) : (
               filtered.map((c, i) => (
-                <div key={`${c.user_id}-${c.challenge_date ?? date}-${i}`} className="flex items-center justify-between rounded border border-border/40 px-2 py-1.5 text-xs">
+                <button
+                  type="button"
+                  key={`${c.user_id}-${c.challenge_date ?? date}-${i}`}
+                  onClick={() => setDetail({ userId: c.user_id, date: c.challenge_date ?? date, name: c.display_name })}
+                  className="w-full flex items-center justify-between rounded border border-border/40 px-2 py-1.5 text-xs text-left hover:bg-accent/50 transition-colors"
+                  data-testid="review-row"
+                >
                   <span className="truncate">
                     {rangeMode && (
                       <span className="font-mono text-muted-foreground mr-2">{(c.challenge_date ?? "").slice(5)}</span>
@@ -309,12 +315,19 @@ export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string
                       </span>
                     )}
                   </div>
-                </div>
+                </button>
               ))
             )}
           </div>
         </>
       )}
+      <DailyChallengeUserDetailDrawer
+        open={!!detail}
+        onOpenChange={(v) => !v && setDetail(null)}
+        userId={detail?.userId ?? null}
+        date={detail?.date ?? null}
+        displayName={detail?.name}
+      />
     </Card>
   );
 }
