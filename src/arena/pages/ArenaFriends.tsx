@@ -783,12 +783,26 @@ export default function ArenaFriends() {
 
       {blockedIds.size > 0 && (
         <GlassPanel className="p-4 space-y-2">
-          <div className="text-xs uppercase text-primary/80">Blocked ({blockedIds.size})</div>
-          {Array.from(blockedIds).map((id) => (
-            <div key={id} className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground truncate">{id}</span>
-              <Button size="sm" variant="ghost" onClick={() => unblockUser(id)}>
-                Unblock
+          <div className="flex items-center justify-between">
+            <div className="text-xs uppercase text-primary/80 flex items-center gap-2">
+              <Ban className="h-3.5 w-3.5" /> Blocked players ({blockedIds.size})
+            </div>
+            <span className="text-[10px] text-muted-foreground">
+              Blocked users can't message, challenge, or send requests
+            </span>
+          </div>
+          {blockedProfiles.map((b) => (
+            <div
+              key={b.user_id}
+              className="flex items-center gap-3 rounded-lg border border-border/60 bg-background/30 p-2"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={b.avatar_url ?? undefined} />
+                <AvatarFallback>{(b.full_name ?? "?").slice(0, 2)}</AvatarFallback>
+              </Avatar>
+              <span className="flex-1 truncate text-sm">{b.full_name ?? "Unknown player"}</span>
+              <Button size="sm" variant="outline" onClick={() => unblockUser(b.user_id)}>
+                <RotateCcw className="h-3.5 w-3.5 mr-1" /> Unblock
               </Button>
             </div>
           ))}
