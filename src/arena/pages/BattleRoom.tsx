@@ -185,7 +185,7 @@ export default function BattleRoom() {
         </GlassPanel>
 
         {/* Editor */}
-        <div className="space-y-2">
+        <div className="space-y-2 min-w-0">
           <GlassPanel className="p-2 flex items-center gap-2">
             <select
               value={lang.key}
