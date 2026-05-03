@@ -13,10 +13,10 @@ export function MatchmakingOrb({ label = "Searching for opponent" }: { label?: s
           />
         ))}
         <motion.div
-          className="absolute inset-6 rounded-full bg-gradient-to-br from-cyan-400 to-fuchsia-500"
+          className="absolute inset-6 rounded-full bg-gradient-orange"
           animate={{ rotate: 360, scale: [1, 1.05, 1] }}
           transition={{ rotate: { duration: 8, repeat: Infinity, ease: "linear" }, scale: { duration: 2, repeat: Infinity } }}
-          style={{ boxShadow: "0 0 60px rgba(34,211,238,0.6), inset 0 0 40px rgba(217,70,239,0.4)" }}
+          style={{ boxShadow: "0 0 60px hsl(var(--primary) / 0.6)" }}
         />
         <div className="absolute inset-12 rounded-full bg-card/80 backdrop-blur" />
       </div>

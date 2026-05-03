@@ -16,8 +16,8 @@ export function BattleTimer({ endsAt, onExpire }: { endsAt: string | null; onExp
   }
   return (
     <div
-      className={`font-mono text-2xl font-bold tabular-nums ${danger ? "text-red-400 animate-pulse" : "text-primary"}`}
-      style={{ textShadow: danger ? "0 0 10px rgba(239,68,68,0.6)" : "0 0 10px rgba(34,211,238,0.5)" }}
+      className={`font-mono text-2xl font-bold tabular-nums ${danger ? "text-destructive animate-pulse" : "text-primary"}`}
+      style={{ textShadow: danger ? "0 0 10px hsl(var(--destructive) / 0.6)" : "0 0 10px hsl(var(--primary) / 0.5)" }}
     >
       {mm.toString().padStart(2, "0")}:{ss.toString().padStart(2, "0")}
     </div>
