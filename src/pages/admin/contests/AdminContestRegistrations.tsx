@@ -56,9 +56,16 @@ const AdminContestRegistrations = () => {
             <h1 className="text-2xl font-bold">Registrations</h1>
             <p className="text-sm text-muted-foreground">{contest?.title}</p>
           </div>
-          <Badge className="gap-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-            <Radio className="h-3 w-3 animate-pulse" /> Live
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Link to={`/admin/contests/${id}/proctor`}>
+              <Button size="sm" variant="outline">
+                <ShieldAlert className="mr-2 h-4 w-4" /> Proctor review
+              </Button>
+            </Link>
+            <Badge className="gap-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <Radio className="h-3 w-3 animate-pulse" /> Live
+            </Badge>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
