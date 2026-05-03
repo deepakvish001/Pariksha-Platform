@@ -202,8 +202,9 @@ const AdminContestProctor = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           {[
+            { label: "Active sessions", value: sessionsQuery.data?.length ?? 0 },
             { label: "Total events", value: stats.total },
             { label: "Unique offenders", value: stats.offenders },
             { label: "Flagged events", value: stats.flagged },
