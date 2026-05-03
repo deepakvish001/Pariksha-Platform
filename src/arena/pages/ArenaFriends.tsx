@@ -327,6 +327,7 @@ export default function ArenaFriends() {
   // Challenge
   async function openChallenge(target: ArenaUser) {
     setChallengeTarget(target);
+    setChallengeStep("setup");
     if (problems.length === 0) {
       const { data } = await supabase
         .from("coding_problems")
@@ -342,16 +343,19 @@ export default function ArenaFriends() {
       toast.error("Pick a problem");
       return;
     }
+    setChallengeSending(true);
     const { error } = await supabase.rpc("battle_create_private" as never, {
       _to_user: challengeTarget.user_id,
       _problem_slug: challengeProblem,
       _difficulty: challengeDifficulty,
       _duration: challengeDuration,
     } as never);
+    setChallengeSending(false);
     if (error) toast.error(error.message);
     else {
       toast.success("Challenge invite sent");
       setChallengeTarget(null);
+      setChallengeStep("setup");
     }
   }
 
