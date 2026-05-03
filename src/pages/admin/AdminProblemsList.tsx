@@ -223,15 +223,41 @@ const AdminProblemsList = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Switch
-                      checked={p.is_published}
-                      onCheckedChange={(v) =>
-                        toggle.mutate({ slug: p.slug, publish: v })
-                      }
-                    />
+                    <TooltipProvider delayDuration={150}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => toggle.mutate({ slug: p.slug, publish: !p.is_published })}
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                              p.is_published
+                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
+                                : "border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20"
+                            }`}
+                          >
+                            {p.is_published ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                            {p.is_published ? "Public" : "Private"}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {p.is_published
+                            ? "Visible in the user library. Click to make Private."
+                            : "Visible only in the admin panel and to contestants if attached to an active contest. Click to publish."}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <AddProblemToContestDialog
+                        problemSlug={p.slug}
+                        problemTitle={p.title}
+                        trigger={
+                          <Button variant="ghost" size="icon" title="Add to contest">
+                            <Trophy className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
                       <Button asChild variant="ghost" size="icon" title="Edit">
                         <Link to={`/admin/problems/${p.slug}/edit`}>
                           <Pencil className="h-4 w-4" />
