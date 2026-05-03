@@ -694,11 +694,15 @@ export default function ArenaFriends() {
                           <Clock className="h-3 w-3" /> {p.total_battles} battles
                         </span>
                       )}
-                      {(p.mutualCount ?? 0) > 0 && (
+                      {(p.mutualCount ?? 0) > 0 ? (
                         <span className="inline-flex items-center gap-1 text-cyan-400">
                           <Users className="h-3 w-3" /> {p.mutualCount} mutual
                         </span>
-                      )}
+                      ) : mutualLoading && myFriendIds.length > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-muted-foreground/60 animate-pulse">
+                          <Users className="h-3 w-3" /> mutual…
+                        </span>
+                      ) : null}
                     </div>
                   </div>
 
