@@ -405,23 +405,84 @@ export default function ArenaFriends() {
   const outgoing = list.filter((f) => f.requester_id === user?.id && f.status === "pending");
   const friends = list.filter((f) => f.status === "accepted");
 
+  const myFriendIds = useMemo(
+    () =>
+      friends
+        .map((f) => (f.requester_id === user?.id ? f.addressee_id : f.requester_id))
+        .filter(Boolean),
+    [friends, user],
+  );
+
+  // Mutual friends count: number of MY friends who are also friends with target user
+  const [mutualMap, setMutualMap] = useState<Map<string, number>>(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user || arenaUsers.length === 0 || myFriendIds.length === 0) {
+        setMutualMap(new Map());
+        return;
+      }
+      const targetIds = arenaUsers.map((u) => u.user_id);
+      // Friendships where (requester in myFriends AND addressee in targets) or vice versa, status accepted
+      const { data } = await supabase
+        .from("friendships" as never)
+        .select("requester_id,addressee_id,status")
+        .eq("status", "accepted")
+        .or(
+          `and(requester_id.in.(${myFriendIds.join(",")}),addressee_id.in.(${targetIds.join(",")})),and(addressee_id.in.(${myFriendIds.join(",")}),requester_id.in.(${targetIds.join(",")}))`,
+        );
+      if (cancelled) return;
+      const counts = new Map<string, number>();
+      const myFriendSet = new Set(myFriendIds);
+      const targetSet = new Set(targetIds);
+      for (const r of (data ?? []) as Array<{ requester_id: string; addressee_id: string }>) {
+        let target: string | null = null;
+        if (myFriendSet.has(r.requester_id) && targetSet.has(r.addressee_id)) target = r.addressee_id;
+        else if (myFriendSet.has(r.addressee_id) && targetSet.has(r.requester_id)) target = r.requester_id;
+        if (target) counts.set(target, (counts.get(target) ?? 0) + 1);
+      }
+      setMutualMap(counts);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, arenaUsers, myFriendIds]);
+
   const relationByUser = useMemo(() => {
-    const m = new Map<string, { state: "friends" | "incoming" | "outgoing" | "none"; record?: Friend }>();
+    const m = new Map<string, { state: "friends" | "incoming" | "outgoing" | "rejected" | "none"; record?: Friend }>();
     for (const f of list) {
       const otherId = f.requester_id === user?.id ? f.addressee_id : f.requester_id;
       if (f.status === "accepted") m.set(otherId, { state: "friends", record: f });
       else if (f.status === "pending" && f.addressee_id === user?.id) m.set(otherId, { state: "incoming", record: f });
       else if (f.status === "pending" && f.requester_id === user?.id) m.set(otherId, { state: "outgoing", record: f });
+      else if (f.status === "blocked" && f.requester_id === user?.id) m.set(otherId, { state: "rejected", record: f });
     }
     return m;
   }, [list, user]);
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return arenaUsers
+    const arr = arenaUsers
       .filter((u) => !blockedIds.has(u.user_id))
-      .filter((u) => (q ? (u.full_name ?? "").toLowerCase().includes(q) : true));
-  }, [arenaUsers, search, blockedIds]);
+      .filter((u) =>
+        q
+          ? (u.full_name ?? "").toLowerCase().includes(q) ||
+            (u.username ?? "").toLowerCase().includes(q)
+          : true,
+      )
+      .map((u) => ({ ...u, mutualCount: mutualMap.get(u.user_id) ?? 0 }));
+    arr.sort((a, b) => {
+      if (sortBy === "elo") return (b.elo ?? -1) - (a.elo ?? -1);
+      if (sortBy === "battles") return (b.total_battles ?? -1) - (a.total_battles ?? -1);
+      if (sortBy === "mutual") return (b.mutualCount ?? 0) - (a.mutualCount ?? 0);
+      // newest
+      const at = a.created_at ? Date.parse(a.created_at) : 0;
+      const bt = b.created_at ? Date.parse(b.created_at) : 0;
+      return bt - at;
+    });
+    return arr;
+  }, [arenaUsers, search, blockedIds, sortBy, mutualMap]);
+
 
   const filtersDirty =
     filters.eloMin !== DEFAULT_FILTERS.eloMin ||
