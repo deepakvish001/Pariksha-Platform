@@ -19,6 +19,13 @@ import {
   Terminal,
   Shield,
   Sparkles,
+  Swords,
+  Gamepad2,
+  Calendar,
+  Users,
+  Lock,
+  History,
+  Target,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -73,6 +80,18 @@ const homeNavItems = [
   { title: "Leaderboard", url: "/dashboard/leaderboard", icon: Trophy },
   { title: "Profile", url: PROFILE_SENTINEL, icon: User },
   { title: "Settings", url: "/settings", icon: Settings },
+];
+
+// Battle Arena section - Gamified prep modes
+const arenaNavItems = [
+  { title: "Arena Hub", url: "/arena", icon: Swords },
+  { title: "Solo Practice", url: "/arena/solo", icon: Target },
+  { title: "Daily Challenge", url: "/arena/daily", icon: Calendar },
+  { title: "Quick Match", url: "/arena/queue", icon: Gamepad2 },
+  { title: "Private Rooms", url: "/arena/private", icon: Lock },
+  { title: "Friends", url: "/arena/friends", icon: Users },
+  { title: "Rankings", url: "/arena/leaderboard", icon: Trophy },
+  { title: "Match History", url: "/arena/history", icon: History },
 ];
 
 interface NavItem {
@@ -339,7 +358,62 @@ export function DashboardSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-
+          {/* Battle Arena Section */}
+          <SidebarGroup className="space-y-1 mt-2">
+            {!isCollapsed && (
+              <div className="flex items-center gap-2 px-3 py-1.5">
+                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-primary/10">
+                  <Swords className="h-3 w-3 text-primary" />
+                </div>
+                <p className="text-[10px] font-semibold text-primary/80 uppercase tracking-widest">
+                  Battle Arena
+                </p>
+              </div>
+            )}
+            {isCollapsed && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center py-1">
+                    <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                      <Swords className="h-3 w-3 text-primary" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">Battle Arena</TooltipContent>
+              </Tooltip>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1 group-data-[collapsible=icon]:space-y-2">
+                {arenaNavItems.map((item) => {
+                  const isActive =
+                    item.url === "/arena"
+                      ? location.pathname === "/arena"
+                      : location.pathname.startsWith(item.url);
+                  return (
+                    <SidebarMenuItem
+                      key={item.title}
+                      className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center"
+                    >
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.title}
+                        size="lg"
+                        className="transition-all duration-200 hover:translate-x-0.5 group/nav group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg"
+                      >
+                        <Link to={item.url} className="group-data-[collapsible=icon]:justify-center">
+                          <item.icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                          <span className="font-medium group-data-[collapsible=icon]:hidden">
+                            {item.title}
+                          </span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         </SidebarContent>
 
         {/* Footer with User Profile and Sign Out / Guest Sign In */}
