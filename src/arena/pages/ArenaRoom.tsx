@@ -110,7 +110,18 @@ export default function ArenaRoom() {
           <X className="h-4 w-4 mr-2" /> Cancel Room
         </Button>
 
-        <p className="text-xs text-muted-foreground/70">Code expires in 10 minutes</p>
+        {remainingMs != null ? (
+          <p
+            className={`text-xs font-mono ${expired ? "text-destructive" : remainingMs < 60_000 ? "text-destructive" : "text-muted-foreground/70"}`}
+            data-testid="room-countdown"
+          >
+            {expired
+              ? "Code expired — create a new room"
+              : `Code expires in ${mm}:${ss.toString().padStart(2, "0")}`}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground/70">Code expires in 10 minutes</p>
+        )}
       </GlassPanel>
     </div>
   );
