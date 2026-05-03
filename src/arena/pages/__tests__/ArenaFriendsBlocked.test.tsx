@@ -56,9 +56,10 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-// Avoid ResizeObserver from Radix Slider
+// Avoid ResizeObserver/IntersectionObserver from Radix and infinite-scroll
 class ROStub { observe() {} unobserve() {} disconnect() {} }
 (globalThis as unknown as { ResizeObserver: typeof ROStub }).ResizeObserver = ROStub;
+(globalThis as unknown as { IntersectionObserver: typeof ROStub }).IntersectionObserver = ROStub;
 
 import ArenaFriends from "../ArenaFriends";
 
