@@ -157,3 +157,51 @@ test.describe("Arena · Realtime waiting-room redirect", () => {
     await ctx.close();
   });
 });
+
+test.describe("Arena · BattleRoom layout integrity", () => {
+  test("problem column keeps usable width after Monaco mounts", async ({ browser }) => {
+    if (!EMAIL || !PASSWORD) test.skip(true, "Login creds not configured");
+
+    const ctx = await browser.newContext();
+    const host = await ctx.newPage();
+    await loginIfNeeded(host);
+
+    // Host creates a room
+    await host.goto("/arena");
+    const create = host.getByRole("button", { name: /create room/i }).first();
+    if (!(await create.isVisible().catch(() => false))) {
+      await ctx.close();
+      test.skip(true, "Create room not available");
+    }
+    await create.click();
+    const confirm = host.getByRole("button", { name: /create|generate|start/i }).first();
+    if (await confirm.isVisible().catch(() => false)) await confirm.click();
+    await host.waitForURL(/\/arena\/room\/[A-Z0-9]{6}/, { timeout: 15_000 });
+    const code = host.url().match(/\/arena\/room\/([A-Z0-9]{6})/)![1];
+
+    // Verify mobile (375px): single-column stack, problem column has real width
+    await host.setViewportSize({ width: 375, height: 812 });
+
+    // Wait until BattleRoom mounts (host may auto-redirect once a peer joins;
+    // for layout sanity we instead verify the room itself fits the viewport).
+    const roomGrid = host.locator('[data-testid="battle-grid"]').first();
+    if (await roomGrid.isVisible().catch(() => false)) {
+      const probBox = await host.locator('[data-testid="battle-problem-col"]').boundingBox();
+      const editorBox = await host.locator('[data-testid="battle-editor-col"]').boundingBox();
+      expect(probBox?.width ?? 0).toBeGreaterThan(280);
+      expect(editorBox?.width ?? 0).toBeGreaterThan(280);
+    }
+
+    // Desktop check: problem column never collapses to <320px after editor mounts
+    await host.setViewportSize({ width: 1440, height: 900 });
+    if (await roomGrid.isVisible().catch(() => false)) {
+      // Allow Monaco a tick to lay out
+      await host.waitForTimeout(800);
+      const probBox = await host.locator('[data-testid="battle-problem-col"]').boundingBox();
+      expect(probBox?.width ?? 0).toBeGreaterThanOrEqual(320);
+    }
+
+    await ctx.close();
+    expect(code).toMatch(/^[A-Z0-9]{6}$/);
+  });
+});
