@@ -29,6 +29,7 @@ import {
 import { Plus, Search, Trash2, Pencil, Copy, X, Globe, Lock, Trophy } from "lucide-react";
 import { AddProblemToContestDialog } from "@/components/admin/AddProblemToContestDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -223,29 +224,72 @@ const AdminProblemsList = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <TooltipProvider delayDuration={150}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={() => toggle.mutate({ slug: p.slug, publish: !p.is_published })}
-                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
-                              p.is_published
-                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
-                                : "border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20"
-                            }`}
+                    <AlertDialog>
+                      <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertDialogTrigger asChild>
+                              <button
+                                type="button"
+                                data-testid={`visibility-toggle-${p.slug}`}
+                                data-state={p.is_published ? "public" : "private"}
+                                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                                  p.is_published
+                                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
+                                    : "border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20"
+                                }`}
+                              >
+                                {p.is_published ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                                {p.is_published ? "Public" : "Private"}
+                              </button>
+                            </AlertDialogTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {p.is_published
+                              ? "Visible in the user library. Click to make Private."
+                              : "Visible only in the admin panel and to contestants if attached to an active contest. Click to publish."}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {p.is_published ? `Make "${p.title}" Private?` : `Publish "${p.title}" to library?`}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {p.is_published
+                              ? "Learners will no longer see this problem in the public library. It stays visible to admins and to registered contestants if attached to a live contest."
+                              : "This makes the problem visible to all learners in /library/problems."}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            data-testid={`visibility-confirm-${p.slug}`}
+                            onClick={() => {
+                              const next = !p.is_published;
+                              toggle.mutate(
+                                { slug: p.slug, publish: next },
+                                {
+                                  onSuccess: () => {
+                                    toast(next ? "Published to library" : "Made Private", {
+                                      description: `"${p.title}" — ${next ? "visible to learners" : "hidden from the library"}.`,
+                                      duration: 6000,
+                                      action: {
+                                        label: "Undo",
+                                        onClick: () => toggle.mutate({ slug: p.slug, publish: !next }),
+                                      },
+                                    });
+                                  },
+                                },
+                              );
+                            }}
                           >
-                            {p.is_published ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                            {p.is_published ? "Public" : "Private"}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {p.is_published
-                            ? "Visible in the user library. Click to make Private."
-                            : "Visible only in the admin panel and to contestants if attached to an active contest. Click to publish."}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                            {p.is_published ? "Make Private" : "Publish"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
