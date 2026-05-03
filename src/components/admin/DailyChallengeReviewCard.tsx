@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, Loader2, RotateCcw, Trophy, Users } from "lucide-react";
+import { Download, Loader2, Lock, RotateCcw, Trophy, Users } from "lucide-react";
 import { toCSV, downloadCSV } from "@/lib/admin/csv";
+import { useUserRole } from "@/hooks/useUserRole";
+import { DailyChallengeUserDetailDrawer } from "./DailyChallengeUserDetailDrawer";
 
 interface Claimer {
   challenge_date?: string;
@@ -40,6 +42,7 @@ const today = () => new Date().toISOString().slice(0, 10);
  * and CSV export for offline analysis.
  */
 export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string }) {
+  const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [date, setDate] = useState(initialDate ?? today());
   const [rangeMode, setRangeMode] = useState(false);
   const [from, setFrom] = useState(initialDate ?? today());
@@ -49,6 +52,7 @@ export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string
   const [claimers, setClaimers] = useState<Claimer[]>([]);
   const [loading, setLoading] = useState(false);
   const [rolling, setRolling] = useState(false);
+  const [detail, setDetail] = useState<{ userId: string; date: string; name: string | null } | null>(null);
 
   async function loadSingle() {
     setLoading(true);
@@ -90,10 +94,11 @@ export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string
   }
 
   useEffect(() => {
+    if (!isAdmin) return;
     if (rangeMode) loadRange();
     else loadSingle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, rangeMode]);
+  }, [date, rangeMode, isAdmin]);
 
   const filtered = useMemo(() => {
     switch (filter) {
@@ -149,6 +154,21 @@ export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string
   }
 
   const solvedCount = claimers.filter((c) => c.solved).length;
+
+  if (roleLoading) {
+    return (
+      <Card className="p-4 flex items-center gap-2 text-xs text-muted-foreground" data-testid="daily-review-card">
+        <Loader2 className="h-4 w-4 animate-spin" /> Checking access…
+      </Card>
+    );
+  }
+  if (!isAdmin) {
+    return (
+      <Card className="p-4 flex items-center gap-2 text-xs text-muted-foreground" data-testid="daily-review-card">
+        <Lock className="h-4 w-4" /> Admin access required to view Daily Review filters and exports.
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-4 space-y-3" data-testid="daily-review-card">
@@ -270,7 +290,13 @@ export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string
               <p className="text-xs text-muted-foreground">No rows match the current filter.</p>
             ) : (
               filtered.map((c, i) => (
-                <div key={`${c.user_id}-${c.challenge_date ?? date}-${i}`} className="flex items-center justify-between rounded border border-border/40 px-2 py-1.5 text-xs">
+                <button
+                  type="button"
+                  key={`${c.user_id}-${c.challenge_date ?? date}-${i}`}
+                  onClick={() => setDetail({ userId: c.user_id, date: c.challenge_date ?? date, name: c.display_name })}
+                  className="w-full flex items-center justify-between rounded border border-border/40 px-2 py-1.5 text-xs text-left hover:bg-accent/50 transition-colors"
+                  data-testid="review-row"
+                >
                   <span className="truncate">
                     {rangeMode && (
                       <span className="font-mono text-muted-foreground mr-2">{(c.challenge_date ?? "").slice(5)}</span>
@@ -289,12 +315,19 @@ export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string
                       </span>
                     )}
                   </div>
-                </div>
+                </button>
               ))
             )}
           </div>
         </>
       )}
+      <DailyChallengeUserDetailDrawer
+        open={!!detail}
+        onOpenChange={(v) => !v && setDetail(null)}
+        userId={detail?.userId ?? null}
+        date={detail?.date ?? null}
+        displayName={detail?.name}
+      />
     </Card>
   );
 }

@@ -3436,6 +3436,10 @@ export type Database = {
           xp_awarded: number
         }[]
       }
+      admin_daily_challenge_user_detail: {
+        Args: { _date: string; _user_id: string }
+        Returns: Json
+      }
       admin_dashboard_kpis: { Args: never; Returns: Json }
       admin_delete_ai_content: { Args: { _id: string }; Returns: undefined }
       admin_delete_quiz_attempt: {
