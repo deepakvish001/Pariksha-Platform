@@ -4,11 +4,11 @@ import {
   Users, KeyRound, Sparkles, CalendarClock, Megaphone, Flag,
   Settings as SettingsIcon, Database, HeartPulse, Clock,
   ChevronDown, Star, Map as MapIcon, Inbox, ShieldAlert,
-  Award, Trophy, Search, Command as CommandIcon, X, ChevronRight, Pin,
+  Award, Trophy, Command as CommandIcon, ChevronRight, Pin,
   Bell, Brain, Code2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
+
 import { Button } from "@/components/ui/button";
 import { AdminCommandPalette } from "./AdminCommandPalette";
 import { useAdminSidebarPrefs } from "@/hooks/admin/useAdminSidebarPrefs";
@@ -198,24 +198,11 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
 
   const { data: badges, isLoading: badgesLoading, markSeen, clearAll } = useAdminSidebarBadges();
   const prefs = useAdminSidebarPrefs(pathname);
-  const [filter, setFilter] = useState("");
 
   const isActive = (to: string, end?: boolean, match?: (p: string) => boolean) => {
     if (match) return match(pathname);
     return end ? pathname === to : pathname === to || pathname.startsWith(to + "/");
   };
-
-  const matchesFilter = (item: NavItem) =>
-    !filter.trim() ||
-    item.label.toLowerCase().includes(filter.trim().toLowerCase());
-
-  const visibleGroups = useMemo(() => {
-    if (!filter.trim()) return GROUPS;
-    return GROUPS
-      .map((g) => ({ ...g, items: g.items.filter(matchesFilter) }))
-      .filter((g) => g.items.length > 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
 
   const flatItems = useMemo(() => GROUPS.flatMap((g) => g.items), []);
   const findItem = (to: string) => flatItems.find((i) => i.to === to);
@@ -415,47 +402,12 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
             </>
           )}
         </div>
-        {!collapsed && (
-          <>
-            <button
-              type="button"
-              onClick={onOpenPalette}
-              className="mt-2 flex w-full items-center gap-2 rounded-md border border-border/50 bg-muted/30 px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/60"
-            >
-              <CommandIcon className="h-3.5 w-3.5" />
-              <span>Quick jump…</span>
-              <kbd className="ml-auto rounded border border-border/50 bg-background px-1 text-[10px] font-mono">
-                ⌘K
-              </kbd>
-            </button>
-            <div className="relative mt-2">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                onKeyDown={(e) => e.key === "Escape" && setFilter("")}
-                placeholder="Filter…"
-                className="h-7 pl-7 pr-7 text-xs"
-              />
-              {filter && (
-                <button
-                  type="button"
-                  onClick={() => setFilter("")}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-muted"
-                  aria-label="Clear"
-                >
-                  <X className="h-3 w-3 text-muted-foreground" />
-                </button>
-              )}
-            </div>
-          </>
-        )}
       </SidebarHeader>
 
       <TooltipProvider delayDuration={250}>
         <SidebarContent className="gap-0">
           {/* Pinned section */}
-          {!filter && pinnedItems.length > 0 && (
+          {pinnedItems.length > 0 && (
             <SidebarGroup className="py-1">
               {!collapsed && (
                 <SidebarGroupLabel className="flex h-7 items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
@@ -471,10 +423,10 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
             </SidebarGroup>
           )}
 
-          {visibleGroups.map((group) => {
+          {GROUPS.map((group) => {
             const hasActive = groupHasActive(group);
             const persistedOpen = prefs.openGroups[group.label];
-            const open = collapsed || !!filter ? true : (persistedOpen ?? true);
+            const open = collapsed ? true : (persistedOpen ?? true);
             const groupCount = groupBadgeCount(group);
 
             return (
@@ -515,12 +467,6 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
               </Collapsible>
             );
           })}
-
-          {filter && visibleGroups.length === 0 && !collapsed && (
-            <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-              No matches for “{filter}”.
-            </div>
-          )}
         </SidebarContent>
       </TooltipProvider>
     </Sidebar>
