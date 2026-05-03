@@ -115,3 +115,28 @@ export async function claimQuest(userQuestId: string) {
   if (error) throw error;
   return data as { ok: boolean; xp?: number; already_claimed?: boolean };
 }
+
+export interface DailyHistoryEntry {
+  challenge_date: string;
+  problem_slug: string;
+  problem_title: string | null;
+  solved: boolean;
+  solve_time_sec: number | null;
+  xp_awarded: number;
+  attempted_at: string | null;
+}
+
+export function useDailyHistory(days = 30) {
+  const [history, setHistory] = useState<DailyHistoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await rpc("arena_get_daily_history", { _days: days });
+    if (!error && Array.isArray(data)) setHistory(data as DailyHistoryEntry[]);
+    setLoading(false);
+  }, [days]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  return { history, loading, refresh };
+}
