@@ -434,6 +434,7 @@ const CodingProblemDetail = () => {
           .eq("slug", contestSlug)
           .maybeSingle();
         if (cancelled || !contestRow?.id) return;
+        setContestId(contestRow.id);
         const { data: check } = await supabase.rpc("validate_contest_submission", {
           _contest_id: contestRow.id,
           _problem_slug: problem.slug,
