@@ -120,9 +120,24 @@ export default function ArenaJoinCode() {
     );
   }
 
+  // While we're auto-joining, render an invisible skeleton matching the
+  // BattleRoom grid so the browser pre-allocates the column widths and the
+  // visible card stays centered without causing a layout jolt on transition.
   return (
-    <div className="max-w-md mx-auto">
-      <GlassPanel glow={error || expired ? "magenta" : "cyan"} className="p-8 text-center space-y-4">
+    <div className="relative">
+      {(joining || peeking) && !error && !expired && (
+        <div
+          aria-hidden
+          data-testid="join-skeleton"
+          className="pointer-events-none invisible absolute inset-0 grid gap-3 grid-cols-1 xl:grid-cols-[minmax(320px,28rem)_minmax(0,1fr)_minmax(280px,20rem)]"
+        >
+          <div className="min-w-0 xl:min-w-[320px] h-[75vh]" />
+          <div className="min-w-0 h-[75vh]" />
+          <div className="h-[75vh]" />
+        </div>
+      )}
+      <div className="max-w-md mx-auto relative">
+        <GlassPanel glow={error || expired ? "magenta" : "cyan"} className="p-8 text-center space-y-4">
         <h1 className="text-2xl font-black">Joining Room</h1>
         <div className="font-mono text-3xl tracking-[0.3em] gradient-text" data-testid="join-code">{normalized}</div>
 
@@ -194,6 +209,7 @@ export default function ArenaJoinCode() {
           </div>
         )}
       </GlassPanel>
+      </div>
     </div>
   );
 }
