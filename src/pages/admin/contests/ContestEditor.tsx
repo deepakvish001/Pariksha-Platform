@@ -20,7 +20,7 @@ const ContestEditor = () => {
   const navigate = useNavigate();
   const isNew = !id;
   const { data: existing, isLoading } = useAdminContest(id);
-  const { data: existingProblems = [] } = useAdminContestProblems(id);
+  const { data: existingProblems } = useAdminContestProblems(id);
   const save = useSaveContest();
   const saveProblems = useSetContestProblems();
 
@@ -48,6 +48,7 @@ const ContestEditor = () => {
   }, [existing]);
 
   useEffect(() => {
+    if (!existingProblems) return;
     setProblems(existingProblems.map((p) => ({ problem_slug: p.problem_slug, order_index: p.order_index, points: p.points })));
   }, [existingProblems]);
 
