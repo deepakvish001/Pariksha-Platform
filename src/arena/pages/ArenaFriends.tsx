@@ -24,14 +24,17 @@ interface Friend {
   requester_id: string;
   addressee_id: string;
   status: string;
-  profile?: { full_name: string | null; avatar_url: string | null; user_id: string } | null;
+  profile?: { full_name: string | null; avatar_url: string | null; user_id: string; username?: string | null } | null;
 }
 interface ArenaUser {
   user_id: string;
   full_name: string | null;
+  username?: string | null;
   avatar_url: string | null;
   elo: number | null;
   total_battles: number | null;
+  created_at?: string | null;
+  mutualCount?: number;
 }
 
 const PAGE_SIZE = 40;
@@ -65,9 +68,13 @@ export default function ArenaFriends() {
   const [loadingPage, setLoadingPage] = useState(false);
   const [page, setPage] = useState(0);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
+  const [blockedProfiles, setBlockedProfiles] = useState<
+    Array<{ user_id: string; full_name: string | null; avatar_url: string | null }>
+  >([]);
 
   const [filters, setFilters] = useState<Filters>(loadFilters());
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<"elo" | "battles" | "newest" | "mutual">("elo");
 
   const [reportTarget, setReportTarget] = useState<ArenaUser | null>(null);
   const [reportReason, setReportReason] = useState("Inappropriate behavior");
@@ -122,7 +129,22 @@ export default function ArenaFriends() {
       .from("user_blocks" as never)
       .select("blocked_id")
       .eq("blocker_id", user.id);
-    setBlockedIds(new Set(((data ?? []) as Array<{ blocked_id: string }>).map((r) => r.blocked_id)));
+    const ids = ((data ?? []) as Array<{ blocked_id: string }>).map((r) => r.blocked_id);
+    setBlockedIds(new Set(ids));
+    if (ids.length) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id,full_name,avatar_url")
+        .in("user_id", ids);
+      setBlockedProfiles(
+        ids.map((id) => {
+          const p = (profs ?? []).find((x) => x.user_id === id);
+          return { user_id: id, full_name: p?.full_name ?? null, avatar_url: p?.avatar_url ?? null };
+        }),
+      );
+    } else {
+      setBlockedProfiles([]);
+    }
   }, [user]);
 
   // Load all users with pagination (everyone, not just arena-rated)
@@ -136,21 +158,23 @@ export default function ArenaFriends() {
 
         const { data: profs } = await supabase
           .from("profiles")
-          .select("user_id,full_name,avatar_url")
+          .select("user_id,full_name,avatar_url,created_at")
           .order("created_at", { ascending: false })
           .range(from, to);
 
         const profRows = ((profs ?? []) as Array<{
-          user_id: string; full_name: string | null; avatar_url: string | null;
+          user_id: string; full_name: string | null; avatar_url: string | null; created_at: string | null;
         }>).filter((p) => p.user_id !== user?.id);
         const newHasMore = (profs?.length ?? 0) === PAGE_SIZE;
 
         let merged: ArenaUser[] = profRows.map((p) => ({
           user_id: p.user_id,
           full_name: p.full_name,
+          username: null,
           avatar_url: p.avatar_url,
           elo: null,
           total_battles: null,
+          created_at: p.created_at,
         }));
 
         if (profRows.length) {
@@ -381,23 +405,84 @@ export default function ArenaFriends() {
   const outgoing = list.filter((f) => f.requester_id === user?.id && f.status === "pending");
   const friends = list.filter((f) => f.status === "accepted");
 
+  const myFriendIds = useMemo(
+    () =>
+      friends
+        .map((f) => (f.requester_id === user?.id ? f.addressee_id : f.requester_id))
+        .filter(Boolean),
+    [friends, user],
+  );
+
+  // Mutual friends count: number of MY friends who are also friends with target user
+  const [mutualMap, setMutualMap] = useState<Map<string, number>>(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user || arenaUsers.length === 0 || myFriendIds.length === 0) {
+        setMutualMap(new Map());
+        return;
+      }
+      const targetIds = arenaUsers.map((u) => u.user_id);
+      // Friendships where (requester in myFriends AND addressee in targets) or vice versa, status accepted
+      const { data } = await supabase
+        .from("friendships" as never)
+        .select("requester_id,addressee_id,status")
+        .eq("status", "accepted")
+        .or(
+          `and(requester_id.in.(${myFriendIds.join(",")}),addressee_id.in.(${targetIds.join(",")})),and(addressee_id.in.(${myFriendIds.join(",")}),requester_id.in.(${targetIds.join(",")}))`,
+        );
+      if (cancelled) return;
+      const counts = new Map<string, number>();
+      const myFriendSet = new Set(myFriendIds);
+      const targetSet = new Set(targetIds);
+      for (const r of (data ?? []) as Array<{ requester_id: string; addressee_id: string }>) {
+        let target: string | null = null;
+        if (myFriendSet.has(r.requester_id) && targetSet.has(r.addressee_id)) target = r.addressee_id;
+        else if (myFriendSet.has(r.addressee_id) && targetSet.has(r.requester_id)) target = r.requester_id;
+        if (target) counts.set(target, (counts.get(target) ?? 0) + 1);
+      }
+      setMutualMap(counts);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, arenaUsers, myFriendIds]);
+
   const relationByUser = useMemo(() => {
-    const m = new Map<string, { state: "friends" | "incoming" | "outgoing" | "none"; record?: Friend }>();
+    const m = new Map<string, { state: "friends" | "incoming" | "outgoing" | "rejected" | "none"; record?: Friend }>();
     for (const f of list) {
       const otherId = f.requester_id === user?.id ? f.addressee_id : f.requester_id;
       if (f.status === "accepted") m.set(otherId, { state: "friends", record: f });
       else if (f.status === "pending" && f.addressee_id === user?.id) m.set(otherId, { state: "incoming", record: f });
       else if (f.status === "pending" && f.requester_id === user?.id) m.set(otherId, { state: "outgoing", record: f });
+      else if (f.status === "blocked" && f.requester_id === user?.id) m.set(otherId, { state: "rejected", record: f });
     }
     return m;
   }, [list, user]);
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return arenaUsers
+    const arr = arenaUsers
       .filter((u) => !blockedIds.has(u.user_id))
-      .filter((u) => (q ? (u.full_name ?? "").toLowerCase().includes(q) : true));
-  }, [arenaUsers, search, blockedIds]);
+      .filter((u) =>
+        q
+          ? (u.full_name ?? "").toLowerCase().includes(q) ||
+            (u.username ?? "").toLowerCase().includes(q)
+          : true,
+      )
+      .map((u) => ({ ...u, mutualCount: mutualMap.get(u.user_id) ?? 0 }));
+    arr.sort((a, b) => {
+      if (sortBy === "elo") return (b.elo ?? -1) - (a.elo ?? -1);
+      if (sortBy === "battles") return (b.total_battles ?? -1) - (a.total_battles ?? -1);
+      if (sortBy === "mutual") return (b.mutualCount ?? 0) - (a.mutualCount ?? 0);
+      // newest
+      const at = a.created_at ? Date.parse(a.created_at) : 0;
+      const bt = b.created_at ? Date.parse(b.created_at) : 0;
+      return bt - at;
+    });
+    return arr;
+  }, [arenaUsers, search, blockedIds, sortBy, mutualMap]);
+
 
   const filtersDirty =
     filters.eloMin !== DEFAULT_FILTERS.eloMin ||
@@ -452,7 +537,18 @@ export default function ArenaFriends() {
       <GlassPanel className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="text-xs uppercase text-primary/80">All players</div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              className="bg-card/60 border border-border rounded px-2 py-1 text-xs"
+              title="Sort by"
+            >
+              <option value="elo">Sort: Elo</option>
+              <option value="battles">Sort: Battles</option>
+              <option value="newest">Sort: Newest</option>
+              <option value="mutual">Sort: Mutual friends</option>
+            </select>
             <Button
               size="sm"
               variant={showFilters || filtersDirty ? "default" : "outline"}
@@ -470,7 +566,7 @@ export default function ArenaFriends() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search players by name"
+              placeholder="Search players by name or username"
               className="pl-8"
             />
           </div>
@@ -533,8 +629,13 @@ export default function ArenaFriends() {
                     <AvatarFallback>{(p.full_name ?? "?").slice(0, 2)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="truncate font-medium text-sm">{p.full_name ?? "Anonymous"}</div>
-                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                    <div className="truncate font-medium text-sm">
+                      {p.full_name ?? "Anonymous"}
+                      {p.username && (
+                        <span className="text-[11px] text-muted-foreground/70 ml-1">@{p.username}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
                       {p.elo != null && (
                         <span className="inline-flex items-center gap-1">
                           <Trophy className="h-3 w-3" /> {p.elo} Elo
@@ -545,17 +646,29 @@ export default function ArenaFriends() {
                           <Clock className="h-3 w-3" /> {p.total_battles} battles
                         </span>
                       )}
+                      {(p.mutualCount ?? 0) > 0 && (
+                        <span className="inline-flex items-center gap-1 text-cyan-400">
+                          <Users className="h-3 w-3" /> {p.mutualCount} mutual
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap justify-end">
                     {rel?.state === "friends" && (
-                      <span className="text-[11px] text-lime-400 inline-flex items-center gap-1">
-                        <Check className="h-3 w-3" /> Friends
+                      <span className="text-[11px] text-lime-400 inline-flex items-center gap-1 rounded-full border border-lime-400/30 px-2 py-0.5">
+                        <Check className="h-3 w-3" /> Accepted
                       </span>
                     )}
                     {rel?.state === "outgoing" && (
-                      <span className="text-[11px] text-muted-foreground">Requested</span>
+                      <span className="text-[11px] text-amber-400 inline-flex items-center gap-1 rounded-full border border-amber-400/30 px-2 py-0.5">
+                        <Clock className="h-3 w-3" /> Pending
+                      </span>
+                    )}
+                    {rel?.state === "rejected" && (
+                      <span className="text-[11px] text-red-400 inline-flex items-center gap-1 rounded-full border border-red-400/30 px-2 py-0.5">
+                        <X className="h-3 w-3" /> Rejected
+                      </span>
                     )}
                     {rel?.state === "incoming" && rel.record && (
                       <>
@@ -670,12 +783,26 @@ export default function ArenaFriends() {
 
       {blockedIds.size > 0 && (
         <GlassPanel className="p-4 space-y-2">
-          <div className="text-xs uppercase text-primary/80">Blocked ({blockedIds.size})</div>
-          {Array.from(blockedIds).map((id) => (
-            <div key={id} className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground truncate">{id}</span>
-              <Button size="sm" variant="ghost" onClick={() => unblockUser(id)}>
-                Unblock
+          <div className="flex items-center justify-between">
+            <div className="text-xs uppercase text-primary/80 flex items-center gap-2">
+              <Ban className="h-3.5 w-3.5" /> Blocked players ({blockedIds.size})
+            </div>
+            <span className="text-[10px] text-muted-foreground">
+              Blocked users can't message, challenge, or send requests
+            </span>
+          </div>
+          {blockedProfiles.map((b) => (
+            <div
+              key={b.user_id}
+              className="flex items-center gap-3 rounded-lg border border-border/60 bg-background/30 p-2"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={b.avatar_url ?? undefined} />
+                <AvatarFallback>{(b.full_name ?? "?").slice(0, 2)}</AvatarFallback>
+              </Avatar>
+              <span className="flex-1 truncate text-sm">{b.full_name ?? "Unknown player"}</span>
+              <Button size="sm" variant="outline" onClick={() => unblockUser(b.user_id)}>
+                <RotateCcw className="h-3.5 w-3.5 mr-1" /> Unblock
               </Button>
             </div>
           ))}
