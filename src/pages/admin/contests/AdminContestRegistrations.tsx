@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { AdminShell } from "@/components/admin/AdminShell";
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useAdminContest, useAdminContestRegistrations, useUpdateRegistrationStatus, useDeleteRegistration } from "@/hooks/admin/useAdminContests";
@@ -44,7 +45,7 @@ const AdminContestRegistrations = () => {
   };
 
   return (
-    <>
+    <AdminShell>
       <Helmet><title>Registrations | Admin</title></Helmet>
       <div className="space-y-6 p-6">
         <Link to="/admin/contests" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -132,7 +133,7 @@ const AdminContestRegistrations = () => {
           )}
         </Card>
       </div>
-    </>
+    </AdminShell>
   );
 };
 

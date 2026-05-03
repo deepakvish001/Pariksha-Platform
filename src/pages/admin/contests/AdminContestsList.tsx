@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { AdminShell } from "@/components/admin/AdminShell";
 import { Helmet } from "react-helmet-async";
 import { useAdminContests, useDeleteContest } from "@/hooks/admin/useAdminContests";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ const AdminContestsList = () => {
   const del = useDeleteContest();
 
   return (
-    <>
+    <AdminShell>
       <Helmet><title>Contests | Admin</title></Helmet>
       <div className="space-y-6 p-6">
         <header className="flex items-center justify-between">
@@ -96,7 +97,7 @@ const AdminContestsList = () => {
           )}
         </Card>
       </div>
-    </>
+    </AdminShell>
   );
 };
 
