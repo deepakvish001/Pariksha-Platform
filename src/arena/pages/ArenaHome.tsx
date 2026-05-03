@@ -164,7 +164,7 @@ export default function ArenaHome() {
       {/* PLAY MODES */}
       <section className="space-y-3">
         <SectionHeader icon={Swords} title="Play Now" subtitle="Choose how you want to battle" />
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
           {/* Quick Match */}
           <GlassPanel className="p-5 space-y-4 flex flex-col">
             <ModeHeader icon={Zap} title="Quick Match" desc="Get matched at your Elo" />
