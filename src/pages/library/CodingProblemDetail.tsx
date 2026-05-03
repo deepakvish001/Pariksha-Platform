@@ -411,6 +411,63 @@ const CodingProblemDetail = () => {
     restoredFailedRef.current = true;
   }, [submissions, slug, lastFailedId, searchParams]);
 
+  // Contest pre-validation: when the page is opened in the context of a
+  // contest (?contest=<slug>), call validate_contest_submission on mount so
+  // the Submit button is disabled (with the server's reason) for closed /
+  // unregistered / disqualified states — before the user even clicks.
+  useEffect(() => {
+    const contestSlug = searchParams.get("contest");
+    if (!contestSlug || !problem?.slug) {
+      setContestSubmitBlocked(false);
+      setContestError(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: contestRow } = await supabase
+          .from("contests")
+          .select("id")
+          .eq("slug", contestSlug)
+          .maybeSingle();
+        if (cancelled || !contestRow?.id) return;
+        const { data: check } = await supabase.rpc("validate_contest_submission", {
+          _contest_id: contestRow.id,
+          _problem_slug: problem.slug,
+        });
+        if (cancelled) return;
+        const v = check as { ok: boolean; message?: string; code?: string } | null;
+        // Only hard-block for terminal/contest-state failures. Auth-required
+        // is handled by the existing login flow and shouldn't permanently
+        // disable Submit.
+        const blockingCodes = new Set([
+          "closed",
+          "not_active",
+          "not_started",
+          "not_registered",
+          "withdrawn",
+          "disqualified",
+          "already_solved",
+          "invalid_problem",
+          "not_found",
+        ]);
+        if (v && !v.ok && v.code && blockingCodes.has(v.code)) {
+          setContestSubmitBlocked(true);
+          setContestError(v.message ?? "Cannot submit to this contest right now.");
+        } else {
+          setContestSubmitBlocked(false);
+        }
+      } catch {
+        // Network/RPC errors should not permanently block — let the click
+        // handler surface the failure with full context.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, problem?.slug]);
+
   // Derived per-problem stats
   const problemStats = useMemo(() => {
     const attempts = submissions.length;
