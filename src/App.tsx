@@ -96,37 +96,30 @@ import AdminProblemsList from "./pages/admin/AdminProblemsList";
 import ProblemEditor from "./pages/admin/ProblemEditor";
 import BulkImport from "./pages/admin/BulkImport";
 import AuditLog from "./pages/admin/AuditLog";
-import PublishHistory from "./pages/admin/PublishHistory";
+
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminRoles from "./pages/admin/AdminRoles";
-import RlsTester from "./pages/admin/RlsTester";
+
 import AIContentModeration from "./pages/admin/AIContentModeration";
 import DailyChallengeAdmin from "./pages/admin/DailyChallengeAdmin";
 import Broadcast from "./pages/admin/Broadcast";
 import Reports from "./pages/admin/Reports";
 import SettingsAndFlags from "./pages/admin/SettingsAndFlags";
 import StorageBrowser from "./pages/admin/StorageBrowser";
-import EdgeLogs from "./pages/admin/EdgeLogs";
-import Exports from "./pages/admin/Exports";
 import SystemHealth from "./pages/admin/SystemHealth";
 import CronJobs from "./pages/admin/CronJobs";
 import FeaturedContent from "./pages/admin/FeaturedContent";
-import LibraryCuration from "./pages/admin/LibraryCuration";
+
 import RoadmapsManager from "./pages/admin/RoadmapsManager";
 import SupportInbox from "./pages/admin/SupportInbox";
 import SecurityCenter from "./pages/admin/SecurityCenter";
 import AchievementsAdmin from "./pages/admin/AchievementsAdmin";
 import LeaderboardsAdmin from "./pages/admin/LeaderboardsAdmin";
-import GamificationRules from "./pages/admin/GamificationRules";
+
 import NotificationsAdmin from "./pages/admin/NotificationsAdmin";
 import QuizzesAdmin from "./pages/admin/QuizzesAdmin";
-import ResumesAdmin from "./pages/admin/ResumesAdmin";
+
 import SubmissionsAdmin from "./pages/admin/SubmissionsAdmin";
-import ConversationsAdmin from "./pages/admin/ConversationsAdmin";
-import OutreachAdmin from "./pages/admin/OutreachAdmin";
-import FoldersAdmin from "./pages/admin/FoldersAdmin";
-import ScheduledBroadcastsAdmin from "./pages/admin/ScheduledBroadcastsAdmin";
-import SessionsAdmin from "./pages/admin/SessionsAdmin";
 import SharedFolder from "./pages/SharedFolder";
 import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
@@ -340,37 +333,30 @@ const App = () => (
                   <Route path="problems/import" element={<BulkImport />} />
                   <Route path="problems/:slug/edit" element={<ProblemEditor />} />
                   <Route path="audit" element={<AuditLog />} />
-                  <Route path="publish-history" element={<PublishHistory />} />
+                  
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="roles" element={<AdminRoles />} />
-                  <Route path="rls-tester" element={<RlsTester />} />
+                  
                   <Route path="ai-content" element={<AIContentModeration />} />
                   <Route path="daily-challenge" element={<DailyChallengeAdmin />} />
                   <Route path="broadcast" element={<Broadcast />} />
                   <Route path="reports" element={<Reports />} />
                   <Route path="settings" element={<SettingsAndFlags />} />
                   <Route path="storage" element={<StorageBrowser />} />
-                  <Route path="edge-logs" element={<EdgeLogs />} />
-                  <Route path="exports" element={<Exports />} />
                   <Route path="system-health" element={<SystemHealth />} />
                   <Route path="cron-jobs" element={<CronJobs />} />
                   <Route path="featured" element={<FeaturedContent />} />
-                  <Route path="library-curation" element={<LibraryCuration />} />
+                  
                   <Route path="roadmaps" element={<RoadmapsManager />} />
                   <Route path="support" element={<SupportInbox />} />
                   <Route path="security" element={<SecurityCenter />} />
                   <Route path="achievements" element={<AchievementsAdmin />} />
                   <Route path="leaderboards" element={<LeaderboardsAdmin />} />
-                  <Route path="gamification" element={<GamificationRules />} />
+                  
                   <Route path="notifications" element={<NotificationsAdmin />} />
                   <Route path="quizzes" element={<QuizzesAdmin />} />
-                  <Route path="resumes" element={<ResumesAdmin />} />
+                  
                   <Route path="submissions" element={<SubmissionsAdmin />} />
-                  <Route path="conversations" element={<ConversationsAdmin />} />
-                  <Route path="outreach" element={<OutreachAdmin />} />
-                  <Route path="folders" element={<FoldersAdmin />} />
-                  <Route path="scheduled-broadcasts" element={<ScheduledBroadcastsAdmin />} />
-                  <Route path="sessions" element={<SessionsAdmin />} />
                   <Route path="contests" element={<AdminContestsList />} />
                   <Route path="contests/new" element={<ContestEditor />} />
                   <Route path="contests/:id/edit" element={<ContestEditor />} />
