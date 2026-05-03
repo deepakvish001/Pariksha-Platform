@@ -454,6 +454,7 @@ const CodingProblemDetail = () => {
           "already_solved",
           "invalid_problem",
           "not_found",
+          "no_active_session",
         ]);
         if (v && !v.ok && v.code && blockingCodes.has(v.code)) {
           setContestSubmitBlocked(true);
