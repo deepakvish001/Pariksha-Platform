@@ -28,10 +28,20 @@ export const AddProblemToContestDialog = ({ problemSlug, problemTitle, trigger }
   const { data: contests = [], isLoading } = useAdminContests();
   const attach = useAttachProblemToContest();
 
+  const ELIGIBLE_STATUSES = ["draft", "published", "live"] as const;
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    contests.forEach((c) => {
+      counts[c.status] = (counts[c.status] ?? 0) + 1;
+    });
+    return counts;
+  }, [contests]);
+
   const eligible = useMemo(
     () =>
       contests
-        .filter((c) => ["draft", "published", "live"].includes(c.status))
+        .filter((c) => (ELIGIBLE_STATUSES as readonly string[]).includes(c.status))
         .filter((c) => {
           if (!search) return true;
           const q = search.toLowerCase();
