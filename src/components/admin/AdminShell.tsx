@@ -536,28 +536,76 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
 export const AdminShell = ({ children }: { children: React.ReactNode }) => {
   const drawer = useAdminUserDrawerStore();
   useAdminRealtimeSync();
+  const { pathname } = useLocation();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const prefs = useAdminSidebarPrefs(pathname);
+  const crumbs = useAdminBreadcrumb(pathname, GROUPS);
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AdminSidebar />
+        <AdminSidebar onOpenPalette={() => setPaletteOpen(true)} />
         <SidebarInset className="min-w-0 flex-1">
           <div className="sticky top-0 z-10 flex h-11 items-center justify-between gap-2 border-b border-border/40 bg-background/80 px-3 backdrop-blur">
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <SidebarTrigger />
-              <span className="text-xs text-muted-foreground">Admin</span>
+              <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                {crumbs.map((c, i) => (
+                  <span key={`${c.label}-${i}`} className="flex min-w-0 items-center gap-1">
+                    {i > 0 && <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />}
+                    {c.to && i < crumbs.length - 1 ? (
+                      <Link to={c.to} className="truncate hover:text-foreground">
+                        {c.label}
+                      </Link>
+                    ) : (
+                      <span className={cn("truncate", i === crumbs.length - 1 && "font-medium text-foreground")}>
+                        {c.label}
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </nav>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-500">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              </span>
-              <Radio className="h-3 w-3" />
-              <span className="hidden sm:inline">Live</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPaletteOpen(true)}
+                className="hidden h-7 gap-1.5 px-2 text-[11px] text-muted-foreground sm:inline-flex"
+              >
+                <CommandIcon className="h-3 w-3" />
+                <span>Jump</span>
+                <kbd className="rounded border border-border/50 bg-muted px-1 text-[10px] font-mono">⌘K</kbd>
+              </Button>
+              <Tooltip>
+                <TooltipProvider>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-500">
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                      </span>
+                      <Radio className="h-3 w-3" />
+                      <span className="hidden sm:inline">Live</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Realtime admin sync is active
+                  </TooltipContent>
+                </TooltipProvider>
+              </Tooltip>
             </div>
           </div>
           <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">{children}</main>
         </SidebarInset>
       </div>
+      <AdminCommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        groups={GROUPS}
+        pinned={prefs.pinned}
+        recent={prefs.recent}
+      />
       <AdminUserDrawer
         userId={drawer.userId}
         open={drawer.open}
