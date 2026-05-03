@@ -7,6 +7,7 @@ import { useAdminProblems } from "@/hooks/useAdminProblems";
 import { useDailyChallengeSchedule, useScheduleDailyChallenge } from "@/hooks/admin/useAdminControl";
 import { CalendarClock } from "lucide-react";
 import { DailyChallengeReviewCard } from "@/components/admin/DailyChallengeReviewCard";
+import { DailyReviewAuditCard } from "@/components/admin/DailyReviewAuditCard";
 
 const days = (n: number) => {
   const out: string[] = [];
@@ -77,8 +78,9 @@ const DailyChallengeAdmin = () => {
         </Card>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <DailyChallengeReviewCard />
+        <DailyReviewAuditCard />
       </div>
     </AdminShell>
   );
