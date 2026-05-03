@@ -103,6 +103,7 @@ import ArenaHistory from "@/arena/pages/ArenaHistory";
 import ArenaRoom from "@/arena/pages/ArenaRoom";
 import ArenaJoinCode from "@/arena/pages/ArenaJoinCode";
 import AdminArena from "@/arena/pages/AdminArena";
+import ArenaDaily from "@/arena/pages/ArenaDaily";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProblemsList from "./pages/admin/AdminProblemsList";
 import ProblemEditor from "./pages/admin/ProblemEditor";
