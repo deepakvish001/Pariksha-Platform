@@ -132,6 +132,15 @@ import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
 import NotificationPreferences from "./pages/NotificationPreferences";
 
+// Contests
+import ContestsList from "./pages/contests/ContestsList";
+import ContestDetail from "./pages/contests/ContestDetail";
+import ContestLeaderboard from "./pages/contests/ContestLeaderboard";
+import AdminContestsList from "./pages/admin/contests/AdminContestsList";
+import ContestEditor from "./pages/admin/contests/ContestEditor";
+import AdminContestRegistrations from "./pages/admin/contests/AdminContestRegistrations";
+import AdminContestLeaderboard from "./pages/admin/contests/AdminContestLeaderboard";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -241,6 +250,13 @@ const App = () => (
                   <Route path="problems/weekly" element={<DailyChallengeWeekly />} />
                   <Route path="problems/leaderboard" element={<CodingLeaderboard />} />
                   <Route path="problems/:slug" element={<CodingProblemDetail />} />
+                </Route>
+
+                {/* Contests - public */}
+                <Route path="/contests" element={<PublicDashboardWrapper />}>
+                  <Route index element={<ContestsList />} />
+                  <Route path=":slug" element={<ContestDetail />} />
+                  <Route path=":slug/leaderboard" element={<ContestLeaderboard />} />
                 </Route>
 
                 {/* Fundamentals routes - public */}
@@ -355,6 +371,11 @@ const App = () => (
                   <Route path="folders" element={<FoldersAdmin />} />
                   <Route path="scheduled-broadcasts" element={<ScheduledBroadcastsAdmin />} />
                   <Route path="sessions" element={<SessionsAdmin />} />
+                  <Route path="contests" element={<AdminContestsList />} />
+                  <Route path="contests/new" element={<ContestEditor />} />
+                  <Route path="contests/:id/edit" element={<ContestEditor />} />
+                  <Route path="contests/:id/registrations" element={<AdminContestRegistrations />} />
+                  <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
