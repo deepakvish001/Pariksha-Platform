@@ -4,7 +4,7 @@ import {
   Users, KeyRound, Sparkles, CalendarClock, Megaphone, Flag,
   Settings as SettingsIcon, Database, HeartPulse, Clock,
   ChevronDown, Star, Map as MapIcon, Inbox, ShieldAlert,
-  Award, Trophy, Search, Command as CommandIcon, X, ChevronRight, Pin,
+  Award, Trophy, Command as CommandIcon, ChevronRight, Pin,
   Bell, Brain, Code2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
