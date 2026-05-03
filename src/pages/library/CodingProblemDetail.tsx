@@ -782,6 +782,23 @@ const CodingProblemDetail = () => {
         <meta name="description" content={problem.description.slice(0, 155)} />
       </Helmet>
 
+      {contestError && (
+        <div
+          data-testid="contest-submit-error"
+          role="alert"
+          className="border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive flex items-center justify-between gap-3"
+        >
+          <span><strong className="font-semibold">Submission blocked:</strong> {contestError}</span>
+          <button
+            onClick={() => setContestError(null)}
+            className="text-destructive/70 hover:text-destructive text-xs underline"
+            aria-label="Dismiss"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Top toolbar */}
       <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
         <div className="flex items-center gap-3 min-w-0">
