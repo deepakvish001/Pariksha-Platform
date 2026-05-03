@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { DailyChallengeCard } from "../components/DailyChallengeCard";
 import { DailyQuestsPanel } from "../components/DailyQuestsPanel";
+import { DailyHistoryPanel } from "../components/DailyHistoryPanel";
 
 export default function ArenaHome() {
   const navigate = useNavigate();
@@ -197,7 +198,10 @@ export default function ArenaHome() {
         </GlassPanel>
       </div>
 
-      <DailyQuestsPanel />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <DailyQuestsPanel />
+        <DailyHistoryPanel />
+      </div>
     </div>
   );
 }

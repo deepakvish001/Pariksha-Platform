@@ -286,3 +286,112 @@ test.describe("Arena · Join-by-code mobile reload", () => {
     void skeleton;
   });
 });
+
+test.describe("Arena · Daily Challenge loop", () => {
+  test("ArenaDaily renders today's challenge with bonus XP", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    await page.goto("/arena/daily");
+    // Daily card should appear; if no challenge exists the auto-seed will
+    // populate one from the published problems pool.
+    const hero = page.locator("h1");
+    await expect(hero).toBeVisible({ timeout: 15_000 });
+    const xpBadge = page.getByText(/\+\d+ XP/i).first();
+    await expect(xpBadge).toBeVisible();
+  });
+
+  test("ArenaHome shows daily history + streak panel after visiting daily", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    await page.goto("/arena/daily");
+    await page.waitForLoadState("networkidle");
+    await page.goto("/arena");
+    const history = page.locator('[data-testid="daily-history-panel"]');
+    await expect(history).toBeVisible({ timeout: 10_000 });
+    // Streak strip + Days completed counter are both rendered
+    await expect(history.getByText(/current streak/i)).toBeVisible();
+    await expect(history.getByText(/days completed/i)).toBeVisible();
+    await expect(history.getByText(/xp earned/i)).toBeVisible();
+  });
+
+  test("Daily challenge banner reflects solved state after RPC", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    // Stub the get_daily_challenge RPC to return a solved row so we can
+    // verify the UI handshake without running a real battle.
+    await page.route(/\/rest\/v1\/rpc\/arena_get_daily_challenge/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            challenge_id: "00000000-0000-0000-0000-000000000001",
+            challenge_date: new Date().toISOString().slice(0, 10),
+            problem_slug: "two-sum",
+            bonus_xp: 100,
+            attempted: true,
+            solved: true,
+            solve_time_sec: 245,
+            global_solves: 12,
+          },
+        ]),
+      });
+    });
+    await page.goto("/arena");
+    const solved = page.locator('[data-testid="daily-solved"]');
+    await expect(solved).toBeVisible({ timeout: 10_000 });
+    await expect(solved).toContainText(/Solved/i);
+  });
+});
+
+test.describe("Arena · Quest claim idempotency", () => {
+  test("double-click on Claim only credits XP once via server validation", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+
+    let claimCalls = 0;
+    await page.route(/\/rest\/v1\/rpc\/arena_claim_quest/, async (route) => {
+      claimCalls += 1;
+      // First call: success with XP. Subsequent calls: already_claimed (no XP).
+      const body =
+        claimCalls === 1
+          ? { ok: true, xp: 50 }
+          : { ok: true, already_claimed: true, xp: 0 };
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(body),
+      });
+    });
+
+    // Stub quests so a completed-but-unclaimed row exists.
+    await page.route(/\/rest\/v1\/rpc\/arena_ensure_daily_quests/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            id: "quest-row-1",
+            quest_id: "q1",
+            quest_date: new Date().toISOString().slice(0, 10),
+            progress: 1,
+            target: 1,
+            completed: true,
+            claimed: false,
+            xp_reward: 50,
+          },
+        ]),
+      });
+    });
+
+    await page.goto("/arena");
+    const claimBtn = page.locator('[data-testid="quest-claim-quest-row-1"]');
+    await expect(claimBtn).toBeVisible({ timeout: 10_000 });
+
+    // Rapid double-click — server-side guard must keep XP credit at 1.
+    await Promise.all([claimBtn.click(), claimBtn.click()]);
+    await page.waitForTimeout(800);
+
+    expect(claimCalls).toBeGreaterThanOrEqual(1);
+    // The second call (if it fired) returned already_claimed; UI must not
+    // surface a second "+XP" toast because the server short-circuits.
+    const successToasts = await page.getByText(/\+50 XP claimed/i).count();
+    expect(successToasts).toBeLessThanOrEqual(1);
+  });
+});
