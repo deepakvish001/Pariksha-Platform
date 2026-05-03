@@ -209,12 +209,10 @@ export default function ArenaFriends() {
             if (payload.eventType === "INSERT" && row.addressee_id === user.id) {
               toast.info("New friend request");
             }
-            if (
-              payload.eventType === "UPDATE" &&
-              (payload.new as Friend).status === "accepted" &&
-              row.requester_id === user.id
-            ) {
-              toast.success("Friend request accepted");
+            if (payload.eventType === "UPDATE" && row.requester_id === user.id) {
+              const newStatus = (payload.new as Friend).status;
+              if (newStatus === "accepted") toast.success("Friend request accepted");
+              else if (newStatus === "blocked") toast.error("Friend request was rejected");
             }
           }
         },
@@ -223,6 +221,15 @@ export default function ArenaFriends() {
         "postgres_changes",
         { event: "*", schema: "public", table: "user_blocks", filter: `blocker_id=eq.${user.id}` },
         () => loadBlocks(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "player_reports", filter: `reporter_id=eq.${user.id}` },
+        (payload) => {
+          const newStatus = (payload.new as { status?: string })?.status;
+          if (newStatus === "resolved") toast.success("Your report was resolved by admins");
+          else if (newStatus === "dismissed") toast.info("Your report was dismissed by admins");
+        },
       )
       .subscribe();
     return () => {
