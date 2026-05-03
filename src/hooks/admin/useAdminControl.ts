@@ -375,21 +375,6 @@ export const useAuditEntityTypes = () =>
     },
   });
 
-// ───────── Exports
-export const exportAdminUsers = async (limit = 5000) => {
-  const { data, error } = await (supabase.rpc as any)("admin_export_users", { _limit: limit });
-  if (error) throw error;
-  return data ?? [];
-};
-
-export const exportAdminSubmissions = async (days = 30, limit = 10000) => {
-  const { data, error } = await (supabase.rpc as any)("admin_export_submissions", {
-    _days: days,
-    _limit: limit,
-  });
-  if (error) throw error;
-  return data ?? [];
-};
 
 // ───────── System health
 export const useSystemHealth = () =>
@@ -429,17 +414,4 @@ export const useAdminStorageStats = () =>
     },
   });
 
-// ───────── Edge function logs (proxy)
-export const useEdgeLogs = (functionName: string | null, enabled = true) =>
-  useQuery({
-    queryKey: ["admin-edge-logs", functionName],
-    enabled,
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("admin-edge-logs", {
-        body: { functionName, limit: 100 },
-      });
-      if (error) throw error;
-      return data as { data?: any[]; warning?: string; error?: string };
-    },
-  });
 
