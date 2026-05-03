@@ -764,18 +764,43 @@ export default function ArenaFriends() {
                       </>
                     )}
                     {(!rel || rel.state === "none") && (
-                      <NeonButton size="sm" onClick={() => addFriend(p.user_id)}>
-                        <UserPlus className="h-3 w-3 mr-1" /> Add
-                      </NeonButton>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span data-testid={`add-wrap-${p.user_id}`}>
+                            <NeonButton
+                              size="sm"
+                              onClick={() => addFriend(p.user_id)}
+                              disabled={blockedIds.has(p.user_id)}
+                              aria-disabled={blockedIds.has(p.user_id)}
+                            >
+                              <UserPlus className="h-3 w-3 mr-1" /> Add
+                            </NeonButton>
+                          </span>
+                        </TooltipTrigger>
+                        {blockedIds.has(p.user_id) && (
+                          <TooltipContent>{BLOCKED_GATE_COPY}</TooltipContent>
+                        )}
+                      </Tooltip>
                     )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openChallenge(p)}
-                      title="Challenge"
-                    >
-                      <Swords className="h-3.5 w-3.5" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span data-testid={`challenge-wrap-${p.user_id}`}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openChallenge(p)}
+                            title="Challenge"
+                            disabled={blockedIds.has(p.user_id)}
+                            aria-disabled={blockedIds.has(p.user_id)}
+                          >
+                            <Swords className="h-3.5 w-3.5" />
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {blockedIds.has(p.user_id) && (
+                        <TooltipContent>{BLOCKED_CHALLENGE_COPY}</TooltipContent>
+                      )}
+                    </Tooltip>
                     <Button
                       size="sm"
                       variant="ghost"
