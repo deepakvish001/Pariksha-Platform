@@ -423,10 +423,10 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
             </SidebarGroup>
           )}
 
-          {visibleGroups.map((group) => {
+          {GROUPS.map((group) => {
             const hasActive = groupHasActive(group);
             const persistedOpen = prefs.openGroups[group.label];
-            const open = collapsed || !!filter ? true : (persistedOpen ?? true);
+            const open = collapsed ? true : (persistedOpen ?? true);
             const groupCount = groupBadgeCount(group);
 
             return (
