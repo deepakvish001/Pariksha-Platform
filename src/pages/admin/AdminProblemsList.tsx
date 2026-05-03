@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { AlertTriangle } from "lucide-react";
 import {
   useAdminProblems,
   useDeleteProblem,
@@ -59,6 +62,17 @@ const AdminProblemsList = () => {
   const toggle = useTogglePublish();
   const duplicate = useDuplicateProblem();
 
+  const { data: contestCount = null } = useQuery({
+    queryKey: ["admin", "contests", "count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("contests")
+        .select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const allTopics = useMemo(() => {
     const s = new Set<string>();
     problems.forEach((p) => (p.topics ?? []).forEach((t) => s.add(t)));
@@ -100,6 +114,23 @@ const AdminProblemsList = () => {
           </Link>
         </Button>
       </div>
+
+      {contestCount === 0 && (
+        <div className="mb-4 flex flex-wrap items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+          <div className="flex-1">
+            <p className="font-medium text-amber-600 dark:text-amber-400">
+              No contests exist yet
+            </p>
+            <p className="text-xs text-muted-foreground">
+              The “Add to contest” action (<Trophy className="inline h-3 w-3" />) will appear empty until you create one.
+            </p>
+          </div>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/admin/contests/new">Create contest</Link>
+          </Button>
+        </div>
+      )}
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {[
