@@ -103,8 +103,8 @@ const AdminProblemsList = () => {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {[
           { key: "all", label: `All ${problems.length}` },
-          { key: "published", label: `Published ${problems.filter((p) => p.is_published).length}` },
-          { key: "draft", label: `Drafts ${problems.filter((p) => !p.is_published).length}` },
+          { key: "published", label: `Public ${problems.filter((p) => p.is_published).length}` },
+          { key: "draft", label: `Private ${problems.filter((p) => !p.is_published).length}` },
         ].map((c) => (
           <button
             key={c.key}
