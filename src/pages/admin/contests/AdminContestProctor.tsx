@@ -221,6 +221,7 @@ const AdminContestProctor = () => {
           <TabsList>
             <TabsTrigger value="violations"><ShieldAlert className="mr-2 h-4 w-4" />Violations</TabsTrigger>
             <TabsTrigger value="snapshots"><Camera className="mr-2 h-4 w-4" />Webcam snapshots</TabsTrigger>
+            <TabsTrigger value="sessions">Active sessions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="violations" className="space-y-3">
