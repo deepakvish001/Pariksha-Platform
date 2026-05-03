@@ -3421,6 +3421,21 @@ export type Database = {
           xp_awarded: number
         }[]
       }
+      admin_daily_challenge_claimers_range: {
+        Args: { _from: string; _to: string }
+        Returns: {
+          attempted_at: string
+          challenge_date: string
+          claimed: boolean
+          display_name: string
+          problem_slug: string
+          solve_time_sec: number
+          solved: boolean
+          solved_at: string
+          user_id: string
+          xp_awarded: number
+        }[]
+      }
       admin_dashboard_kpis: { Args: never; Returns: Json }
       admin_delete_ai_content: { Args: { _id: string }; Returns: undefined }
       admin_delete_quiz_attempt: {
