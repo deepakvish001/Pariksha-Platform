@@ -15,6 +15,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
@@ -43,6 +46,10 @@ interface ArenaUser {
 
 const PAGE_SIZE = 40;
 const FILTERS_KEY = "arena:friends:filters:v1";
+const BLOCKED_GATE_COPY = "Unblock this player first to send a request";
+const BLOCKED_CHALLENGE_COPY = "You've blocked this player. Unblock them first to challenge.";
+const MUTUAL_TTL_MS = 60_000;
+const MUTUAL_DEBOUNCE_MS = 200;
 
 interface Filters {
   eloMin: number;
@@ -306,7 +313,7 @@ export default function ArenaFriends() {
   async function addFriend(uid: string) {
     if (!user) return;
     if (blockedIds.has(uid)) {
-      toast.error("Unblock this player first to send a request");
+      toast.error(BLOCKED_GATE_COPY);
       return;
     }
     const { error } = await supabase
@@ -387,7 +394,7 @@ export default function ArenaFriends() {
   // Challenge
   async function openChallenge(target: ArenaUser) {
     if (blockedIds.has(target.user_id)) {
-      toast.error("You've blocked this player. Unblock them first to challenge.");
+      toast.error(BLOCKED_CHALLENGE_COPY);
       return;
     }
     setChallengeTarget(target);
@@ -439,33 +446,50 @@ export default function ArenaFriends() {
   // Cached per (mySignature, target_id) so sorts/searches don't re-fetch.
   const [mutualMap, setMutualMap] = useState<Map<string, number>>(new Map());
   const [mutualLoading, setMutualLoading] = useState(false);
-  const mutualCacheRef = useRef<{ sig: string; counts: Map<string, number> }>({
-    sig: "",
-    counts: new Map(),
-  });
+  // Cache: per (mySig) → map of target_id → { count, fetchedAt }
+  const mutualCacheRef = useRef<{
+    sig: string;
+    counts: Map<string, { count: number; fetchedAt: number }>;
+  }>({ sig: "", counts: new Map() });
   const mySig = useMemo(
     () => [...myFriendIds].sort().join(","),
     [myFriendIds],
   );
+  // Invalidate cache when blocked list changes (so unblocked users re-fetch)
+  const blockedSig = useMemo(
+    () => [...blockedIds].sort().join(","),
+    [blockedIds],
+  );
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      if (!user || arenaUsers.length === 0 || myFriendIds.length === 0) {
-        setMutualMap(new Map());
-        return;
-      }
-      // Invalidate cache when my friend set changes
-      if (mutualCacheRef.current.sig !== mySig) {
-        mutualCacheRef.current = { sig: mySig, counts: new Map() };
-      }
-      const cached = mutualCacheRef.current.counts;
-      const targetIds = arenaUsers.map((u) => u.user_id);
-      const uncached = targetIds.filter((id) => !cached.has(id));
+    if (!user || arenaUsers.length === 0 || myFriendIds.length === 0) {
+      setMutualMap((prev) => (prev.size === 0 ? prev : new Map()));
+      return;
+    }
+    // Invalidate when my friend set changes
+    if (mutualCacheRef.current.sig !== mySig) {
+      mutualCacheRef.current = { sig: mySig, counts: new Map() };
+    }
+    const cache = mutualCacheRef.current.counts;
+    const now = Date.now();
+    // Drop stale entries (older than TTL) so counts refresh as friendships change
+    for (const [k, v] of cache) {
+      if (now - v.fetchedAt > MUTUAL_TTL_MS) cache.delete(k);
+    }
 
-      // Show cached results immediately so UI stays responsive on sort/search
-      setMutualMap(new Map(cached));
-      if (uncached.length === 0) return;
+    // Show cached results immediately so UI stays responsive on sort/search/filter
+    const initialMap = new Map<string, number>();
+    for (const [k, v] of cache) initialMap.set(k, v.count);
+    setMutualMap(initialMap);
 
+    const targetIds = arenaUsers
+      .filter((u) => !blockedIds.has(u.user_id))
+      .map((u) => u.user_id);
+    const uncached = targetIds.filter((id) => !cache.has(id));
+    if (uncached.length === 0) return;
+
+    // Debounce so quickly-changing filters/sorts/blocked sets don't flicker spinner
+    const handle = setTimeout(async () => {
       setMutualLoading(true);
       try {
         const { data } = await supabase
@@ -478,23 +502,30 @@ export default function ArenaFriends() {
         if (cancelled) return;
         const myFriendSet = new Set(myFriendIds);
         const targetSet = new Set(uncached);
+        const ts = Date.now();
         // Initialize zero so we don't refetch the same ids
-        for (const id of uncached) cached.set(id, 0);
+        for (const id of uncached) cache.set(id, { count: 0, fetchedAt: ts });
         for (const r of (data ?? []) as Array<{ requester_id: string; addressee_id: string }>) {
           let target: string | null = null;
           if (myFriendSet.has(r.requester_id) && targetSet.has(r.addressee_id)) target = r.addressee_id;
           else if (myFriendSet.has(r.addressee_id) && targetSet.has(r.requester_id)) target = r.requester_id;
-          if (target) cached.set(target, (cached.get(target) ?? 0) + 1);
+          if (target) {
+            const cur = cache.get(target);
+            cache.set(target, { count: (cur?.count ?? 0) + 1, fetchedAt: ts });
+          }
         }
-        setMutualMap(new Map(cached));
+        const next = new Map<string, number>();
+        for (const [k, v] of cache) next.set(k, v.count);
+        setMutualMap(next);
       } finally {
         if (!cancelled) setMutualLoading(false);
       }
-    })();
+    }, MUTUAL_DEBOUNCE_MS);
     return () => {
       cancelled = true;
+      clearTimeout(handle);
     };
-  }, [user, arenaUsers, myFriendIds, mySig]);
+  }, [user, arenaUsers, myFriendIds, mySig, blockedSig, sortBy, search]);
 
   const relationByUser = useMemo(() => {
     const m = new Map<string, { state: "friends" | "incoming" | "outgoing" | "rejected" | "none"; record?: Friend }>();
@@ -538,7 +569,8 @@ export default function ArenaFriends() {
     filters.minBattles !== DEFAULT_FILTERS.minBattles;
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto">
+    <TooltipProvider delayDuration={200}>
+    <div className="space-y-4 max-w-4xl mx-auto" data-testid="arena-friends-root">
       <GlassPanel glow="cyan" className="p-4 flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl font-black flex items-center gap-2">
@@ -733,18 +765,43 @@ export default function ArenaFriends() {
                       </>
                     )}
                     {(!rel || rel.state === "none") && (
-                      <NeonButton size="sm" onClick={() => addFriend(p.user_id)}>
-                        <UserPlus className="h-3 w-3 mr-1" /> Add
-                      </NeonButton>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span data-testid={`add-wrap-${p.user_id}`}>
+                            <NeonButton
+                              size="sm"
+                              onClick={() => addFriend(p.user_id)}
+                              disabled={blockedIds.has(p.user_id)}
+                              aria-disabled={blockedIds.has(p.user_id)}
+                            >
+                              <UserPlus className="h-3 w-3 mr-1" /> Add
+                            </NeonButton>
+                          </span>
+                        </TooltipTrigger>
+                        {blockedIds.has(p.user_id) && (
+                          <TooltipContent>{BLOCKED_GATE_COPY}</TooltipContent>
+                        )}
+                      </Tooltip>
                     )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openChallenge(p)}
-                      title="Challenge"
-                    >
-                      <Swords className="h-3.5 w-3.5" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span data-testid={`challenge-wrap-${p.user_id}`}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openChallenge(p)}
+                            title="Challenge"
+                            disabled={blockedIds.has(p.user_id)}
+                            aria-disabled={blockedIds.has(p.user_id)}
+                          >
+                            <Swords className="h-3.5 w-3.5" />
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {blockedIds.has(p.user_id) && (
+                        <TooltipContent>{BLOCKED_CHALLENGE_COPY}</TooltipContent>
+                      )}
+                    </Tooltip>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -1093,5 +1150,6 @@ export default function ArenaFriends() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </TooltipProvider>
   );
 }
