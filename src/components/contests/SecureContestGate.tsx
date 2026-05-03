@@ -55,11 +55,9 @@ export default function SecureContestGate({
   const active = useActiveContestSession(contestId);
 
   // Bubble session state up so the parent can gate the Problems tab.
-  // (Effect-free derived call keeps logic local.)
-  if (onSessionChange) {
-    // microtask isn't necessary; render is fine because parent stores in state
-    queueMicrotask(() => onSessionChange(active.hasActive));
-  }
+  useEffect(() => {
+    onSessionChange?.(active.hasActive);
+  }, [active.hasActive, onSessionChange]);
 
   if (!isRegistered) {
     return (
