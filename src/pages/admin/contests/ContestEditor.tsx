@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, ArrowLeft, GripVertical } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 
 type Problem = { problem_slug: string; order_index: number; points: number };
 
