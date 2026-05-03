@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, Loader2, RotateCcw, Trophy, Users } from "lucide-react";
+import { Download, Loader2, Lock, RotateCcw, Trophy, Users } from "lucide-react";
 import { toCSV, downloadCSV } from "@/lib/admin/csv";
+import { useUserRole } from "@/hooks/useUserRole";
+import { DailyChallengeUserDetailDrawer } from "./DailyChallengeUserDetailDrawer";
 
 interface Claimer {
   challenge_date?: string;
