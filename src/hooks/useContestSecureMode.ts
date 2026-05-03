@@ -24,6 +24,7 @@ export interface SecureModeState {
 }
 
 const SNAPSHOT_INTERVAL_MS = 60_000;
+const HEARTBEAT_INTERVAL_MS = 20_000;
 const FLAG_THRESHOLD = 3;
 const DQ_THRESHOLD = 5;
 
