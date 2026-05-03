@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Trash2, Radio } from "lucide-react";
+import { ArrowLeft, Download, Trash2, Radio, ShieldAlert } from "lucide-react";
 
 const AdminContestRegistrations = () => {
   const { id } = useParams();
