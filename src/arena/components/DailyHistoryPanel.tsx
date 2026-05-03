@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { Calendar, CheckCircle2, Circle, Flame, History, Loader2, Trophy } from "lucide-react";
+import { Calendar, CheckCircle2, Circle, Filter, Flame, History, Loader2, RefreshCw, Trophy, X } from "lucide-react";
+import { useState } from "react";
 import { GlassPanel } from "./GlassPanel";
 import { useDailyHistory } from "../dailyLoop";
 import { useArenaStreak } from "../dailyLoop";
@@ -25,19 +26,74 @@ function fmtTime(sec: number | null) {
 export function DailyHistoryPanel() {
   const { user } = useAuth();
   const streak = useArenaStreak(user?.id);
-  const { history, loading, loadingMore, hasMore, loadMore } = useDailyHistory(30);
+  const { history, loading, loadingMore, hasMore, loadMore, refresh, loadRange } = useDailyHistory(30);
+  const [showRange, setShowRange] = useState(false);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [rangeActive, setRangeActive] = useState(false);
 
   const completed = history.filter((h) => h.solved).length;
   const totalXp = history.reduce((acc, h) => acc + (h.xp_awarded || 0), 0);
 
   return (
     <GlassPanel className="p-5 space-y-4" data-testid="daily-history-panel">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
           <History className="h-4 w-4" /> Daily Challenge History
         </h3>
-        <span className="text-[10px] text-muted-foreground uppercase">last 30 days</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-muted-foreground uppercase">
+            {rangeActive ? `${from} → ${to}` : "last 30 days"}
+          </span>
+          <button
+            onClick={() => setShowRange((v) => !v)}
+            className="rounded border border-border/60 p-1 text-muted-foreground hover:text-foreground"
+            data-testid="history-range-toggle"
+            aria-label="Filter by date range"
+          >
+            <Filter className="h-3 w-3" />
+          </button>
+          {rangeActive && (
+            <button
+              onClick={() => { setRangeActive(false); setShowRange(false); refresh(); }}
+              className="rounded border border-border/60 p-1 text-muted-foreground hover:text-foreground"
+              aria-label="Clear date range"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
       </div>
+      {showRange && (
+        <div className="flex items-center gap-2 rounded-md border border-border/60 bg-card/40 p-2" data-testid="history-range-form">
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="h-7 flex-1 rounded border border-border bg-card/60 px-2 text-xs"
+          />
+          <span className="text-xs text-muted-foreground">→</span>
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="h-7 flex-1 rounded border border-border bg-card/60 px-2 text-xs"
+          />
+          <button
+            onClick={async () => {
+              if (!from || !to) return;
+              await loadRange(from, to);
+              setRangeActive(true);
+              setShowRange(false);
+            }}
+            disabled={!from || !to || loading}
+            className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
+            data-testid="history-range-apply"
+          >
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />} Go
+          </button>
+        </div>
+      )}
 
       {/* Stat strip */}
       <div className="grid grid-cols-3 gap-2">
