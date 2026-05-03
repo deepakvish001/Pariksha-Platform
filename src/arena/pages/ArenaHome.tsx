@@ -196,6 +196,8 @@ export default function ArenaHome() {
           </div>
         </GlassPanel>
       </div>
+
+      <DailyQuestsPanel />
     </div>
   );
 }
