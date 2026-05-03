@@ -1,113 +1,84 @@
-# Plan: Solo Gaming Arena
+# Conduct Contest in Secure Mode
 
-A single-player, time-pressured practice mode under `/arena/solo` that mimics the stress of real interviews, online assessments (OAs), and coding contests. Built on top of the existing Arena infrastructure (problems, XP engine, daily loop, leaderboard) — no new code editor; reuse what battle rooms already have.
+The secure mode primitives (honor code RPC, session RPC, violation logging, webcam snapshots, admin proctor review) already exist. This plan stitches them into the actual participant journey so a contest can be conducted end-to-end with lockdown enforced from registration to submission.
 
 ## Goals
 
-- Train students under realistic time pressure (no opponent required, available 24/7).
-- Three flavors mapped to real-world formats: Interview, Assessment, Contest.
-- Strong gamification: streaks, XP, ranks, badges, daily quests, leaderboard.
-- Anti-cheat-aware (focus loss, paste tracking, server-validated scoring).
+1. A registered participant cannot see contest problems until they have started a Secure Session.
+2. Lockdown (fullscreen, anti-paste, tab-blur, webcam) is active on the **problem-solving page**, not just the contest detail page.
+3. Only one device can hold an active session; opening a second device kicks the first.
+4. Disqualification immediately blocks submissions and hides problems.
+5. Participants get a clear pre-start lobby with a live countdown, and a "background apps" reminder checklist.
 
-## Three Solo Modes
-
-1. **Interview Sim (1 problem, 30–45 min)**
-   - Picks 1 problem at chosen difficulty/topic.
-   - Phases: 5 min "understand & clarify" (hints locked) → coding → final 5 min "explain" prompt.
-   - Scoring: correctness + time bonus + first-try bonus.
-
-2. **Assessment Mode (3–5 problems, 60–90 min, fixed budget)**
-   - Mixed difficulty (Easy + Medium + Hard) like Hackerrank/Codility OAs.
-   - One global timer; partial credit per problem; no going back unless time remains.
-   - Final report card: per-problem time, attempts, score, percentile vs cohort.
-
-3. **Contest Mode (5 problems, 90 min, scheduled or on-demand)**
-   - ICPC-style scoring: points + penalty per wrong submit + penalty time.
-   - Live solo leaderboard for that contest instance (compared to all who took it).
-   - "Virtual contest" replays of past contests.
-
-## Gamification Layer
-
-- **Solo Rating (Elo-like)**: separate `solo_rating` per mode; visible on profile.
-- **Tiers**: Bronze → Silver → Gold → Platinum → Diamond → Grandmaster.
-- **Daily Solo Quests** (rotating): "Finish 1 Interview Sim under 25 min", "Score 80%+ on an Assessment", "Solve 1 Hard with 0 wrong submits". Hooks into existing daily quest table.
-- **Streaks**: separate `solo_streak` (days with ≥1 completed solo session). Streak freeze reuses existing recovery system.
-- **XP rewards**: scaled by mode, difficulty, score, and time bonus. Server-side via existing XP transaction RPC.
-- **Badges**: "First Blood" (sub-10-min solve), "Iron Nerves" (Hard with 0 paste events), "Marathoner" (3 contests in a week), "Comeback" (+200 rating in 7 days).
-- **Power-ups (earned, not bought)**: 1 hint, 1 testcase reveal, 1 timer pause (interview only) — limited per week.
-
-## Pressure & Realism Mechanics
-
-- Visible countdown with color escalation (green → amber → red at <5 min).
-- Auto-submit on timeout; no late saves.
-- "Focus mode": hides sidebar/notifications; warns on tab switch (count tracked, shown in report).
-- Paste counter and large-paste detection logged per submission.
-- Post-session report: timeline (read → first compile → first AC), wrong-submit graph, percentile.
-
-## Data Model (new tables)
+## Participant journey
 
 ```text
-solo_sessions
-  id, user_id, mode (interview|assessment|contest), status, started_at,
-  ends_at, completed_at, score, max_score, rating_delta, focus_lost_count,
-  paste_count, config jsonb (problem_slugs[], difficulty, duration_s)
-
-solo_session_problems
-  session_id, problem_slug, ord, awarded_score, attempts, wrong_submits,
-  first_ac_at, time_to_ac_s
-
-solo_ratings
-  user_id, mode, rating, peak_rating, games_played, tier
-
-solo_contests        -- for scheduled/virtual contests
-  id, slug, title, problem_slugs[], duration_s, starts_at, ends_at,
-  is_virtual, created_by
-
-solo_contest_entries
-  contest_id, user_id, started_at, finished_at, score, penalty_s, rank
+Register (before start) ──► Honor code accepted ──► Lobby + countdown
+        │                                               │
+        ▼                                               ▼
+   start_secure_session RPC ◄── "Start Secure Session" button (live phase)
+        │                            (requests webcam + fullscreen)
+        ▼
+   Secure HUD on contest page ──► Open problem ──► SecureProblemShell
+        │                                              │
+        ▼                                              ▼
+   Violations logged in real time            Submit only allowed while
+   (>=3 flag, >=5 auto-DQ via RPC)           session.is_active = true
 ```
 
-All tables RLS-locked: users read/write only their own rows; admins read all. Contest definitions readable by all authenticated users.
+## Changes
 
-## Server-Side Logic (Edge Functions / RPCs)
+### 1. Gate problems behind an active secure session
+- `ContestDetail.tsx` Problems tab: replace the `canSeeProblems` check with `canSeeProblems && hasActiveSecureSession`. If contest is live, registered, and no active session, show a CTA card "Start Secure Session to view problems" that scrolls to the gate.
+- Pass an `onSessionStarted` callback from the gate up to `ContestDetail` so the tab updates without a refetch.
 
-- `solo_start_session(mode, config)` → picks problems server-side (anti-cheat), creates session row, returns sanitized payload (no test answers).
-- `solo_submit(session_id, problem_slug, code)` → reuses existing judge pipeline; updates `solo_session_problems`; returns verdict only.
-- `solo_finalize(session_id)` → computes score, applies Elo-like rating delta, awards XP via existing transaction, updates streak, evaluates badge unlocks, writes audit log.
-- `solo_leaderboard(mode, range)` → top-N by rating; cached.
-- `solo_contest_register / solo_contest_start / solo_contest_finalize`.
+### 2. Lobby with live countdown
+- New `ContestLobby` block rendered by `SecureContestGate` when honor code is accepted but `phase !== "live"`.
+- Shows: countdown to `starts_at`, registered participant count, a "Pre-flight checklist" (close other apps, single monitor, charge laptop, quiet room) with a confirm checkbox before "Start Secure Session" becomes enabled at T-0.
 
-Rate-limited; all scoring server-validated. No client-trusted timers — server stores `ends_at` and rejects submissions after it.
+### 3. Single active session enforcement (client side)
+- New `useActiveContestSession(contestId)` hook subscribes via Supabase realtime to `contest_sessions` filtered by `contest_id` + `user_id`.
+- When a row's `is_active` flips to `false` (server-side invalidation triggered by another device starting), the current device:
+  - Stops webcam tracks, exits fullscreen.
+  - Logs `session_invalidated` violation locally (already a typed enum value).
+  - Shows blocking dialog "Session ended on another device" with link back to the contest page.
 
-## UI / Routes
+### 4. Secure problem solver shell
+- New wrapper `SecureProblemShell` mounted on `/library/problems/:slug` when the URL has `?contest=<slug>`:
+  - Reads contest by slug, verifies `phase === "live"`, registration is `registered`, not disqualified, and an active session row exists. Otherwise redirects back to the contest page with a toast.
+  - Mounts `useContestSecureMode(contestId, true)` so paste/copy/contextmenu/tab-blur/fullscreen-exit listeners fire on the editor too.
+  - Renders the floating Secure HUD in the corner (violations/5, fullscreen/proctor badges).
+  - Disables the existing submit button when `disqualified || !sessionId` and shows the same gating tooltip pattern used on Friends.
+- The submit handler additionally calls a new `contest_can_submit(_contest_id)` RPC that returns false when DQ'd, withdrawn, or no active session — this is the server-side guard so a savvy user cannot bypass the UI.
 
-- `/arena/solo` — landing: 3 mode cards, current rating per mode, streak, today's quests, "Resume session" if active.
-- `/arena/solo/interview/new`, `/assessment/new`, `/contest` (list) → config sheet (topic, difficulty, duration) → confirm.
-- `/arena/solo/session/:id` — runner: timer header, problem panel, reused code editor from battle room, submit panel, focus-mode toggle.
-- `/arena/solo/session/:id/report` — post-session report card with shareable image (reuse achievement social card generator).
-- `/arena/solo/leaderboard` — switch tabs Interview / Assessment / Contest; week/month/all-time.
-- `/arena/solo/contests` — upcoming, live, past (virtual replay).
-- Sidebar/Arena nav: add **Solo** entry next to Daily.
+### 5. "Close background apps" guidance
+True OS-level enforcement is not possible from a browser, so we use the strongest available signals:
+- Pre-flight checklist item the user must tick.
+- Live HUD warns when `navigator.userActivation.isActive` is false for too long, when `screen.isExtended === true` (multiple monitors), and when `navigator.getBattery()` reports `< 25%`. Each is logged once per session as a `meta` field on a soft `warn` violation.
 
-## Integration Points (reuse)
+### 6. Server additions
+- New SQL function `public.contest_can_submit(_contest_id uuid) returns boolean` — checks active session + registration status. Used by the problem submit edge function (or RPC) before accepting a submission tied to a contest.
+- Extend `contest_start_secure_session` to accept `_screen` JSON (resolution, dpr, monitors) and persist it on `contest_sessions.user_agent`/new `device_meta jsonb` column for admin review.
+- Trigger on `contest_registrations.disqualified_at` change → set all that user's `contest_sessions.is_active = false` so the realtime hook above kicks them out instantly.
 
-- Code editor + judge: `ArenaRoom` runner.
-- XP + streak engine: existing transaction RPC + recovery system.
-- Daily quests table: add `solo_*` quest keys.
-- Leaderboard component: parameterize by source (`battles` | `solo`).
-- Achievements: extend tier system with solo-specific badges.
-- Admin: extend Admin Control Center with a "Solo Contests" manager (create/edit, pick problems, schedule).
+### 7. Admin "Conduct" controls
+- On `AdminContestRegistrations.tsx`: add a "Force end session" action per row that updates `contest_sessions` (admin RLS already exists). Useful for support cases.
+- On `AdminContestProctor.tsx`: add a small live counter "X active sessions now" computed from `contest_sessions` where `is_active`.
 
-## Rollout Phases
+## Files to add / edit
 
-1. **MVP**: tables + RLS, `solo_start/submit/finalize`, Interview Sim only, runner page, basic report, sidebar entry.
-2. **Assessment mode** + multi-problem runner + percentile in report.
-3. **Solo rating + leaderboard + tiers + badges**.
-4. **Contest mode** (on-demand + scheduled + virtual replay) + admin manager.
-5. **Daily Solo Quests** + power-ups + focus/paste analytics surfaced in report.
+- new `src/components/contests/ContestLobby.tsx`
+- new `src/components/contests/SecureProblemShell.tsx`
+- new `src/hooks/useActiveContestSession.ts`
+- edit `src/components/contests/SecureContestGate.tsx` — render lobby, expose `onSessionStarted`, surface session-invalidated dialog.
+- edit `src/hooks/useContestSecureMode.ts` — emit `sessionInvalidated`, capture device meta, soft warns for multi-monitor/low-battery.
+- edit `src/pages/contests/ContestDetail.tsx` — gate Problems tab, hook session state up.
+- edit `src/pages/library/CodingProblemDetail.tsx` (or current problem detail file) — wrap in `SecureProblemShell` when `?contest=` query is present, route submit through `contest_can_submit`.
+- edit `src/pages/admin/contests/AdminContestRegistrations.tsx` and `AdminContestProctor.tsx` — force-end + active count.
+- one migration: `contest_can_submit` RPC, `contest_sessions.device_meta` column, DQ → invalidate-sessions trigger.
 
-## Out of Scope
+## Out of scope
 
-- Real-time multiplayer (already covered by Arena battles).
-- Voice/AI mock-interviewer (separate future track).
-- Paid power-ups (earned only).
+- True OS-level app blocking (browser cannot enforce).
+- Native desktop proctor app.
+- Secondary identity verification (ID upload) — can be a follow-up.
