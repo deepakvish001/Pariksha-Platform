@@ -94,10 +94,11 @@ export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string
   }
 
   useEffect(() => {
+    if (!isAdmin) return;
     if (rangeMode) loadRange();
     else loadSingle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, rangeMode]);
+  }, [date, rangeMode, isAdmin]);
 
   const filtered = useMemo(() => {
     switch (filter) {
