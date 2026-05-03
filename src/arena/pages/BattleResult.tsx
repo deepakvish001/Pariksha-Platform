@@ -76,9 +76,22 @@ export default function BattleResult() {
         </ul>
       </GlassPanel>
 
-      <div className="flex gap-3 justify-center">
-        <NeonButton onClick={() => navigate("/arena")}>Play Again</NeonButton>
-        <Link to="/arena/leaderboard"><NeonButton tone="magenta">Leaderboard</NeonButton></Link>
+      <div className="flex flex-wrap gap-3 justify-center">
+        <NeonButton onClick={async () => {
+          try {
+            const { createCodeRoom } = await import("../hooks");
+            const { invite_id, code } = await createCodeRoom({
+              problemSlug: battle.problem_slug,
+              difficulty: battle.difficulty,
+              duration: battle.duration_sec,
+            });
+            navigate(`/arena/room/${code}`, { state: { inviteId: invite_id } });
+          } catch (e) {
+            navigate("/arena");
+          }
+        }}>Rematch</NeonButton>
+        <NeonButton onClick={() => navigate("/arena")}>Back to Arena</NeonButton>
+        <Link to="/arena/leaderboard"><NeonButton>Leaderboard</NeonButton></Link>
       </div>
     </div>
   );
