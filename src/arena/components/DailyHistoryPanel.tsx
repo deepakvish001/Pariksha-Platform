@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { Calendar, CheckCircle2, Circle, Flame, History, Loader2, Trophy } from "lucide-react";
+import { Calendar, CheckCircle2, Circle, Filter, Flame, History, Loader2, RefreshCw, Trophy, X } from "lucide-react";
+import { useState } from "react";
 import { GlassPanel } from "./GlassPanel";
 import { useDailyHistory } from "../dailyLoop";
 import { useArenaStreak } from "../dailyLoop";
