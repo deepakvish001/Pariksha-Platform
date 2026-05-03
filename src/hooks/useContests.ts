@@ -201,6 +201,21 @@ export const useRegisterForContest = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ contestId, inviteCode }: { contestId: string; inviteCode?: string }) => {
+      // Client-side preflight: fetch contest and verify it's in an active lifecycle.
+      const { data: c, error: cErr } = await supabase
+        .from("contests")
+        .select("status, starts_at, ends_at, registration_closes_at")
+        .eq("id", contestId)
+        .maybeSingle();
+      if (cErr) throw cErr;
+      if (!c) throw new Error("Contest not found");
+      const life = lifecycleStatus(c as any);
+      if (life !== "active") {
+        throw new Error(life === "closed" ? "Contest has ended" : "Contest is not open for registration");
+      }
+      if (c.registration_closes_at && new Date(c.registration_closes_at).getTime() < Date.now()) {
+        throw new Error("Registration window closed");
+      }
       const { data, error } = await supabase.rpc("register_for_contest", {
         _contest_id: contestId,
         _invite_code: inviteCode ?? null,
@@ -222,6 +237,15 @@ export const useWithdrawFromContest = () => {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (contestId: string) => {
+      // Cannot withdraw from a closed contest.
+      const { data: c } = await supabase
+        .from("contests")
+        .select("status, starts_at, ends_at")
+        .eq("id", contestId)
+        .maybeSingle();
+      if (c && lifecycleStatus(c as any) === "closed") {
+        throw new Error("Cannot withdraw from a closed contest");
+      }
       const { error } = await supabase
         .from("contest_registrations")
         .delete()
