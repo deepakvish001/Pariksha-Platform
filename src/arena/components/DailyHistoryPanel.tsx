@@ -26,7 +26,11 @@ function fmtTime(sec: number | null) {
 export function DailyHistoryPanel() {
   const { user } = useAuth();
   const streak = useArenaStreak(user?.id);
-  const { history, loading, loadingMore, hasMore, loadMore } = useDailyHistory(30);
+  const { history, loading, loadingMore, hasMore, loadMore, refresh, loadRange } = useDailyHistory(30);
+  const [showRange, setShowRange] = useState(false);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [rangeActive, setRangeActive] = useState(false);
 
   const completed = history.filter((h) => h.solved).length;
   const totalXp = history.reduce((acc, h) => acc + (h.xp_awarded || 0), 0);
