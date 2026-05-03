@@ -123,6 +123,9 @@ export default function ArenaDaily() {
         </div>
       )}
 
+      <DailyQuestProgress />
+      <DailyReminderCard />
+
       <div className="text-center">
         <button
           onClick={() => navigate("/arena")}
