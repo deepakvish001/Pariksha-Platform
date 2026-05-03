@@ -138,19 +138,19 @@ export default function ArenaFriends() {
 
         const { data: profs } = await supabase
           .from("profiles")
-          .select("user_id,full_name,username,avatar_url,created_at")
+          .select("user_id,full_name,avatar_url,created_at")
           .order("created_at", { ascending: false })
           .range(from, to);
 
         const profRows = ((profs ?? []) as Array<{
-          user_id: string; full_name: string | null; username: string | null; avatar_url: string | null; created_at: string | null;
+          user_id: string; full_name: string | null; avatar_url: string | null; created_at: string | null;
         }>).filter((p) => p.user_id !== user?.id);
         const newHasMore = (profs?.length ?? 0) === PAGE_SIZE;
 
         let merged: ArenaUser[] = profRows.map((p) => ({
           user_id: p.user_id,
           full_name: p.full_name,
-          username: p.username,
+          username: null,
           avatar_url: p.avatar_url,
           elo: null,
           total_battles: null,
