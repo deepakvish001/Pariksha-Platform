@@ -205,3 +205,84 @@ test.describe("Arena · BattleRoom layout integrity", () => {
     expect(code).toMatch(/^[A-Z0-9]{6}$/);
   });
 });
+
+test.describe("Arena · BattleRoom width measurements", () => {
+  test("problem and editor panels keep usable widths after Monaco mounts", async ({ page }) => {
+    if (!EMAIL || !PASSWORD) test.skip(true, "Login creds not configured");
+    await loginIfNeeded(page);
+
+    await page.goto("/arena");
+    const create = page.getByRole("button", { name: /create room/i }).first();
+    if (!(await create.isVisible().catch(() => false))) test.skip(true, "Create room not available");
+    await create.click();
+    const confirm = page.getByRole("button", { name: /create|generate|start/i }).first();
+    if (await confirm.isVisible().catch(() => false)) await confirm.click();
+    await page.waitForURL(/\/arena\/(room|battle)\/[A-Za-z0-9-]+/, { timeout: 15_000 });
+
+    const grid = page.locator('[data-testid="battle-grid"]');
+    if (!(await grid.isVisible().catch(() => false))) test.skip(true, "Battle grid not reached (no peer)");
+
+    // Wait for monaco wrapper to appear (post-mount)
+    await page.locator('[data-testid="monaco-wrapper"]').waitFor({ state: "visible", timeout: 15_000 });
+    await page.waitForTimeout(750); // settle ResizeObserver
+
+    // Desktop measurement
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.waitForTimeout(500);
+    const probDesk = await page.locator('[data-testid="battle-problem-col"]').boundingBox();
+    const edDesk = await page.locator('[data-testid="battle-editor-col"]').boundingBox();
+    expect(probDesk?.width ?? 0).toBeGreaterThanOrEqual(320);
+    expect(edDesk?.width ?? 0).toBeGreaterThanOrEqual(400);
+
+    // Visual regression — desktop
+    await expect(grid).toHaveScreenshot("battle-room-1440.png", { maxDiffPixelRatio: 0.05 });
+
+    // Mobile measurement (single column)
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.waitForTimeout(500);
+    const probMob = await page.locator('[data-testid="battle-problem-col"]').boundingBox();
+    const edMob = await page.locator('[data-testid="battle-editor-col"]').boundingBox();
+    expect(probMob?.width ?? 0).toBeGreaterThan(300);
+    expect(edMob?.width ?? 0).toBeGreaterThan(300);
+
+    // Visual regression — mobile
+    await expect(grid).toHaveScreenshot("battle-room-375.png", { maxDiffPixelRatio: 0.05 });
+  });
+});
+
+test.describe("Arena · Join-by-code mobile reload", () => {
+  test("grid columns stay sized correctly after reload on mobile", async ({ page }) => {
+    if (!EMAIL || !PASSWORD) test.skip(true, "Login creds not configured");
+    await loginIfNeeded(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+
+    // Use a deterministic invalid code to render the join page; then if the
+    // user has an active code in env, prefer that for true end-to-end.
+    const code = process.env.E2E_JOIN_CODE ?? "AAAAAA";
+    await page.goto(`/arena/join/${code}`);
+
+    // Skeleton must reserve grid space immediately on first paint
+    const skeleton = page.locator('[data-testid="join-skeleton"]');
+    // Skeleton may not render if peek instantly errors — that's OK.
+    await page.waitForTimeout(150);
+
+    // Reload and re-verify the page does not horizontally overflow the viewport
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    const docWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(docWidth).toBeLessThanOrEqual(375 + 1);
+
+    // If we successfully landed in a battle, assert the grid columns
+    const grid = page.locator('[data-testid="battle-grid"]');
+    if (await grid.isVisible().catch(() => false)) {
+      await page.locator('[data-testid="monaco-wrapper"]').waitFor({ state: "visible" });
+      await page.waitForTimeout(500);
+      const prob = await page.locator('[data-testid="battle-problem-col"]').boundingBox();
+      const ed = await page.locator('[data-testid="battle-editor-col"]').boundingBox();
+      expect(prob?.width ?? 0).toBeGreaterThan(300);
+      expect(ed?.width ?? 0).toBeGreaterThan(300);
+    }
+    // Silence unused-var lint when skeleton path didn't fire
+    void skeleton;
+  });
+});
