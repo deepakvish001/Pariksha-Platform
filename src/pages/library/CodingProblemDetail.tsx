@@ -691,6 +691,7 @@ const CodingProblemDetail = () => {
 
     // If submitting in the context of a contest, validate server-side first so
     // we surface clear errors (not registered, contest closed, already solved, etc.)
+    setContestError(null);
     const contestSlug = searchParams.get("contest");
     if (contestSlug) {
       try {
@@ -708,20 +709,16 @@ const CodingProblemDetail = () => {
           if (checkErr) throw checkErr;
           const v = check as { ok: boolean; message?: string; code?: string } | null;
           if (v && !v.ok) {
-            toast({
-              title: "Submission blocked",
-              description: v.message ?? "Cannot submit to this contest right now.",
-              variant: "destructive",
-            });
+            const msg = v.message ?? "Cannot submit to this contest right now.";
+            setContestError(msg);
+            toast({ title: "Submission blocked", description: msg, variant: "destructive" });
             return;
           }
         }
       } catch (err) {
-        toast({
-          title: "Contest validation failed",
-          description: (err as Error).message,
-          variant: "destructive",
-        });
+        const msg = (err as Error).message;
+        setContestError(msg);
+        toast({ title: "Contest validation failed", description: msg, variant: "destructive" });
         return;
       }
     }
