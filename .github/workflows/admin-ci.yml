@@ -1,0 +1,64 @@
+name: Admin CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/pages/admin/**"
+      - "src/components/admin/**"
+      - "src/hooks/admin/**"
+      - "src/App.tsx"
+      - "scripts/check-admin-hygiene.mjs"
+      - ".github/workflows/admin-ci.yml"
+      - "package.json"
+      - "tsconfig*.json"
+  pull_request:
+    paths:
+      - "src/pages/admin/**"
+      - "src/components/admin/**"
+      - "src/hooks/admin/**"
+      - "src/App.tsx"
+      - "scripts/check-admin-hygiene.mjs"
+      - ".github/workflows/admin-ci.yml"
+      - "package.json"
+      - "tsconfig*.json"
+
+jobs:
+  admin-checks:
+    name: Type-check, build & admin hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # 1. Strict TypeScript check (fails on any TS error in the admin area
+      #    or anywhere it depends on).
+      - name: TypeScript type-check
+        run: npx tsc --noEmit
+
+      # 2. Admin hygiene: orphan pages, broken routes, dead sidebar links.
+      - name: Admin hygiene
+        run: node scripts/check-admin-hygiene.mjs
+
+      # 3. ESLint, scoped to admin code, with unused-imports promoted to errors.
+      - name: ESLint (admin, no-unused-vars as error)
+        run: |
+          npx eslint \
+            --no-error-on-unmatched-pattern \
+            --rule '{"@typescript-eslint/no-unused-vars":["error",{"argsIgnorePattern":"^_","varsIgnorePattern":"^_"}]}' \
+            "src/pages/admin/**/*.{ts,tsx}" \
+            "src/components/admin/**/*.{ts,tsx}" \
+            "src/hooks/admin/**/*.{ts,tsx}"
+
+      # 4. Production build must succeed end-to-end.
+      - name: Production build
+        run: npm run build
