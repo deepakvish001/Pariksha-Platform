@@ -1,125 +1,156 @@
-## Byteskill Battle Arena — Real-Time 1v1 Coding Battles
+## Goal
 
-A full multiplayer layer on top of the existing problems/exec/auth stack. Built with the project's current tools (React + Vite + TS, Supabase, Tailwind, Framer Motion, Zustand) — not Next.js (project is Vite/React). All UI follows the existing deep-black + glassmorphism aesthetic with added neon battle accents.
+Round out the Arena into a complete end-to-end multiplayer flow with two clear ways to play with a specific person:
 
-### 1. Database (Supabase migrations)
+1. **Find Match by Code** — host generates a room code, opponent joins with that code (no friendship required).
+2. **Join Through Code** — single input box on the Arena home to instantly enter a room code.
 
-New tables, all with strict RLS:
+Plus polish the existing Quick Match queue, Private Invites, and Battle Result flows so the loop feels finished.
 
-- `battle_queue` — `user_id`, `topic`, `difficulty`, `elo`, `joined_at`, `status` (waiting/matched/cancelled). RLS: user CRUD own row; admin read.
-- `battles` — `id`, `player_a`, `player_b`, `problem_slug`, `topic`, `difficulty`, `status` (pending/live/ended/abandoned), `started_at`, `ends_at`, `duration_sec`, `winner_id`, `end_reason`, `is_private`, `invite_code`, `elo_a_before/after`, `elo_b_before/after`. RLS: participants + admin.
-- `battle_events` — append-only realtime feed: `battle_id`, `user_id`, `kind` (typing/test_run/submit/passed_tests/finished/forfeit), `payload jsonb`, `created_at`. RLS: participants insert own; participants read.
-- `battle_submissions` — links to existing `code_submissions`, plus `battle_id`, `passed`, `runtime_ms`, `score`. RLS: participants read; owner insert.
-- `player_ratings` — `user_id` PK, `elo` (default 1000), `peak_elo`, `wins`, `losses`, `draws`, `current_streak`, `best_streak`, `updated_at`. RLS: public read, system write.
-- `battle_achievements` — `user_id`, `achievement_key`, `earned_at`. Public read.
-- `friendships` — `requester_id`, `addressee_id`, `status` (pending/accepted/blocked). RLS: both parties.
-- `battle_invites` — `from_user`, `to_user`, `battle_id`, `status`, `expires_at`. RLS: sender + recipient.
-- `battle_notifications` — reuses existing `notifications` table with new `type` values (`battle_invite`, `battle_result`, `friend_request`, `rank_up`).
+---
 
-SQL functions (SECURITY DEFINER):
-- `match_make(_user, _topic, _difficulty)` — atomic queue scan, picks closest-Elo opponent (±100 → ±300 widening), creates `battles` row, deletes both queue rows, returns battle id.
-- `start_battle(_battle_id)` — sets status=live, starts timer.
-- `finish_battle(_battle_id, _winner, _reason)` — locks battle, computes Elo delta (K=32, classic formula), updates `player_ratings`, awards achievements, inserts notifications.
-- `create_private_battle(_problem_slug, _opponent, _duration)` — invite flow.
-- `accept_friend(_id)` / `reject_friend(_id)`.
+## What gets built
 
-Realtime: enable publication on `battles`, `battle_events`, `battle_queue`, `battle_invites`, `friendships`, `battle_notifications`.
+### 1. Database — room codes (migration)
 
-### 2. Edge Functions
+Add a public-room-code mechanism on top of the existing `battle_invites` table (already has `invite_code` column on `battles`, but invites use IDs only).
 
-- `battle-matchmake` — wraps `match_make` RPC with rate-limit + telemetry.
-- `battle-grade` — called on submit: runs hidden tests via existing `submit-code` path, records `battle_submissions`, emits `battle_event`, calls `finish_battle` if win condition met (all tests pass first).
-- `battle-tick` — cron (pg_cron, every 30s) ends expired battles, applies forfeit Elo if one player solved more tests.
-- `battle-elo-recompute` — admin manual fix tool.
+- Add column `battle_invites.code text unique` (6-char uppercase alphanumeric).
+- New RPC `battle_create_code(_problem_slug text, _difficulty, _duration int)` — creates a "code invite" with `to_user = NULL` allowed (relax NOT NULL → make `to_user` nullable on `battle_invites`), returns `{ invite_id, code }`. Code expires in 10 minutes.
+- New RPC `battle_join_code(_code text)` — looks up pending invite by code, sets `to_user = auth.uid()`, then performs the same logic as `battle_accept_invite` (creates `battles` row, marks invite accepted), returns the new `battle_id`.
+- RLS update on `battle_invites`: allow SELECT of pending code-invites by code lookup (we'll do this via the RPC `security definer`, so policies stay strict — no public reads).
+- Index on `battle_invites(code) where status='pending'`.
 
-### 3. Frontend routes (React Router)
+### 2. Arena Home — three CTAs
 
-- `/arena` — landing: rank card, Quick Match CTA, topic picker, recent battles, top players.
-- `/arena/queue` — animated searching state, ETA, cancel.
-- `/arena/battle/:id` — the battle room (see §4).
-- `/arena/result/:id` — post-match recap: diff of submissions, Elo delta animation, share card.
-- `/arena/leaderboard` — global + topic filters, time windows, friends-only toggle.
-- `/arena/profile/:username` — stats, recent battles, achievement showcase, "Challenge" button.
-- `/arena/friends` — requests, list, online status.
-- `/arena/private` — create/join private room via code.
-- `/admin/arena` — admin analytics: active battles, queue depth, MMR distribution, abuse flags, force-end controls.
-
-All gated by existing `ProtectedRoute`; admin route by `AdminRoute`.
-
-### 4. Battle Room UI (`/arena/battle/:id`)
+Restructure `ArenaHome.tsx` into three side-by-side action cards under the hero:
 
 ```text
-┌─ Header: timer (synced) · topic · difficulty · forfeit ─┐
-├─────────────┬────────────────────┬──────────────────────┤
-│ Problem     │ Monaco Editor      │ Opponent panel       │
-│ statement   │ (you)              │ - avatar + Elo       │
-│ examples    │ run / submit       │ - live test progress │
-│ constraints │ language picker    │ - typing pulse       │
-│             │                    │ - last verdict       │
-└─────────────┴────────────────────┴──────────────────────┘
-         Bottom: console output · test results
+┌──────────────┬──────────────┬──────────────┐
+│ Quick Match  │ Create Room  │ Join by Code │
+│ (Elo queue)  │ (get a code) │ (enter code) │
+└──────────────┴──────────────┴──────────────┘
 ```
 
-- Synced timer: server `ends_at` is source of truth; client interpolates.
-- Opponent progress: throttled `battle_events` (typing every 2s, test runs on submit only — never code contents).
-- Win condition: first to pass all hidden tests; ties broken by submission time; expiry → most tests passed wins.
-- Live "first blood", "comeback", "clutch" toast effects.
+- **Quick Match**: existing topic + difficulty selector → `joinQueue` → `/arena/queue`.
+- **Create Room**: pick problem (searchable select) + difficulty + duration (5/10/15 min) → calls `battle_create_code` → opens a "Waiting Room" modal showing the big code, copy button, share link `/arena/join/:code`, and live status. When opponent joins, auto-navigates both to `/arena/battle/:id`.
+- **Join by Code**: 6-char input (auto-uppercase, monospace) + Join button → `battle_join_code` → navigates to battle. Errors (expired/invalid/self-join) shown inline.
 
-### 5. State management (Zustand)
+### 3. New routes
 
-- `useBattleStore` — current battle, timer offset, opponent state, event log.
-- `useQueueStore` — queue status, elapsed, matched battle id.
-- `useFriendsStore` — list + presence (Supabase Presence channel `arena-online`).
-- `useArenaProfileStore` — cached rank/stats.
+- `/arena/room/:code` — Host waiting room (subscribes to `battle_invites` by id; on `status='accepted'` redirects to `/arena/battle/:battle_id`). Cancel button deletes invite.
+- `/arena/join/:code` — Auto-fills code field and triggers join (for shared links). Shows confirm screen with problem title + difficulty before joining.
 
-Reusable components: `<GlassPanel>`, `<NeonButton>`, `<EloBadge>`, `<RankProgressBar>`, `<BattleTimer>`, `<OpponentCard>`, `<EventTicker>`, `<AchievementToast>`, `<MatchmakingOrb>` (animated framer-motion orb during search).
+### 4. Quick Match queue polish (`ArenaQueue.tsx`)
 
-### 6. Design system additions
+- Show selected topic/difficulty chips at top.
+- Auto-retry matchmake every 5s while waiting (calls `battle_matchmake` again so two players who arrive seconds apart get paired).
+- "Cancel" deletes from `battle_queue` and returns to `/arena`.
+- Estimated wait text based on `elapsed`.
 
-- New CSS vars in `index.css`: `--neon-cyan #22d3ee`, `--neon-magenta #d946ef`, `--neon-lime #84cc16`, gradient utilities `bg-arena-grid`, `shadow-neon`.
-- Animated SVG grid background, scanline overlay, particle burst on victory.
-- All within existing dark theme — toggleable via `arena-mode` class scoped to `/arena/*`.
+### 5. Private Invites tab cleanup (`ArenaPrivate.tsx`)
 
-### 7. Achievements (seeded)
+- Keep friend-based invite flow but add a second tab inside the page: **Friend Invite** | **Room Code** (mirrors home Create Room).
+- Show outgoing invites with status (pending/accepted/expired) and a Cancel action.
+- Incoming invites already render — add problem title (join `coding_problems` by slug) and difficulty badge.
 
-First Blood, Win Streak 3/5/10, Topic Master (10 wins in topic), Speed Demon (<5min win), Comeback King, Underdog (beat +200 Elo), Centurion (100 battles), Ranked: Bronze/Silver/Gold/Platinum/Diamond/Master tiers.
+### 6. Battle Result page touch-up (`BattleResult.tsx`)
 
-### 8. Security
+- "Rematch" button → creates a new code-room with same problem/difficulty pre-selected, navigates to `/arena/room/:code`.
+- "Back to Arena" + "View Leaderboard" buttons.
 
-- All RPCs `SECURITY DEFINER` with `auth.uid()` checks; no client trusts opponent code.
-- RLS denies reading opponent's `source_code` until battle ends.
-- Rate limits on queue join (1/5s) and invite send (10/min) via edge function in-memory + DB check.
-- Anti-cheat: server validates submission against hidden tests; Monaco paste-detector flags >500 char single paste into `battle_events` (admin review only).
-- Forfeit on tab-close detected via `visibilitychange` + heartbeat (3 missed = forfeit).
+### 7. Hooks (`src/arena/hooks.ts`)
 
-### 9. Admin analytics
+Add:
+- `createCodeRoom({ problemSlug, difficulty, duration })` → calls `battle_create_code`.
+- `joinByCode(code)` → calls `battle_join_code`, throws on error.
+- `useInviteWatcher(inviteId)` — realtime subscription on `battle_invites` row; fires `onAccepted(battleId)`.
 
-`/admin/arena` cards: live battles count, queue depth by topic, avg match time, Elo histogram (recharts), top abusers (forfeit rate), recent ended battles table with replay link, force-end and Elo-revert actions, all logged to `admin_audit_log`.
+---
 
-### 10. Performance & scalability
+## Technical details
 
-- Single Realtime channel per battle (`battle:{id}`) carrying events; presence channel `arena-online` for friends.
-- Debounced typing events (max 1/2s); diff-based test progress (only changed counts).
-- Queue matching server-side via single RPC — no client polling.
-- Indexes: `battle_queue(topic, difficulty, elo)`, `battles(status, started_at)`, `battle_events(battle_id, created_at)`.
-- React Query for leaderboards/profile with 30s stale time.
+**Migration sketch**
+```sql
+alter table public.battle_invites
+  alter column to_user drop not null,
+  add column code text;
 
-### 11. Tests
+create unique index battle_invites_code_pending_idx
+  on public.battle_invites(code) where status = 'pending';
 
-- Vitest unit tests for Elo math, match-make widening, win-condition resolver.
-- Playwright e2e: queue → match → submit → result flow with two browser contexts.
+create or replace function public.battle_create_code(
+  _problem_slug text, _difficulty public.battle_difficulty, _duration int default 900
+) returns table(invite_id uuid, code text)
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); c text; new_id uuid;
+begin
+  if me is null then raise exception 'auth required'; end if;
+  -- 6-char code, retry on collision
+  for i in 1..5 loop
+    c := upper(substr(md5(random()::text || clock_timestamp()::text), 1, 6));
+    begin
+      insert into public.battle_invites(from_user, to_user, problem_slug, difficulty, duration_sec, code, expires_at)
+      values (me, null, _problem_slug, _difficulty, _duration, c, now() + interval '10 minutes')
+      returning id into new_id;
+      return query select new_id, c;
+      return;
+    exception when unique_violation then continue;
+    end;
+  end loop;
+  raise exception 'could not allocate code';
+end $$;
 
-### 12. Rollout order
+create or replace function public.battle_join_code(_code text)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare i record; new_battle uuid; ea int; eb int;
+begin
+  if auth.uid() is null then raise exception 'auth required'; end if;
+  select * into i from public.battle_invites
+    where code = upper(_code) and status='pending' for update;
+  if not found then raise exception 'invalid code'; end if;
+  if i.expires_at < now() then raise exception 'code expired'; end if;
+  if i.from_user = auth.uid() then raise exception 'cannot join your own room'; end if;
 
-1. Migrations + RPCs + RLS.
-2. Edge functions + cron.
-3. Zustand stores + Supabase realtime hooks.
-4. Arena landing, queue, battle room, result.
-5. Leaderboard, profile, friends, private rooms.
-6. Achievements + notifications wiring.
-7. Admin analytics.
-8. Polish: animations, sound fx (optional toggle), tests.
+  perform public.ensure_player_rating(i.from_user);
+  perform public.ensure_player_rating(auth.uid());
+  select elo into ea from public.player_ratings where user_id = i.from_user;
+  select elo into eb from public.player_ratings where user_id = auth.uid();
 
-### Open decisions
+  insert into public.battles(player_a, player_b, problem_slug, difficulty, status, duration_sec,
+    started_at, ends_at, is_private, elo_a_before, elo_b_before)
+  values (i.from_user, auth.uid(), i.problem_slug, i.difficulty, 'live', i.duration_sec,
+    now(), now() + (i.duration_sec || ' seconds')::interval, true, ea, eb)
+  returning id into new_battle;
 
-I'll default to: classic Elo K=32, 5/15/30-min duration options (default 15), Quick Match across difficulties within ±1 tier, friends use Supabase Presence (no extra service), sounds off by default. Tell me if you want different defaults before I switch to build mode.
+  update public.battle_invites
+    set status='accepted', battle_id=new_battle, to_user=auth.uid()
+    where id = i.id;
+  return new_battle;
+end $$;
+
+revoke execute on function public.battle_create_code(text, public.battle_difficulty, int) from public, anon;
+revoke execute on function public.battle_join_code(text) from public, anon;
+grant execute on function public.battle_create_code(text, public.battle_difficulty, int) to authenticated;
+grant execute on function public.battle_join_code(text) to authenticated;
+```
+
+**Files**
+- New migration `supabase/migrations/<ts>_arena_room_codes.sql`
+- Edit `src/arena/hooks.ts` — add `createCodeRoom`, `joinByCode`, `useInviteWatcher`
+- Edit `src/arena/pages/ArenaHome.tsx` — three CTAs layout
+- New `src/arena/pages/ArenaRoom.tsx` — host waiting room
+- New `src/arena/pages/ArenaJoinCode.tsx` — auto-join via shared link
+- Edit `src/arena/pages/ArenaQueue.tsx` — auto-retry, chips
+- Edit `src/arena/pages/ArenaPrivate.tsx` — tabs + outgoing invite list
+- Edit `src/arena/pages/BattleResult.tsx` — rematch CTA
+- Edit `src/App.tsx` — register `/arena/room/:code` and `/arena/join/:code`
+
+**Realtime**
+Existing `battle_invites` table is already in `supabase_realtime` publication, so the host's waiting room will receive `UPDATE` events when the invite flips to `accepted`.
+
+---
+
+## Out of scope
+- Spectator mode, chat in battle room, ranked seasons (existing memory shows these are not requested now).
+- No changes to existing matchmaking/Elo math — only additive RPCs.
