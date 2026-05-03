@@ -51,10 +51,10 @@ vi.mock("framer-motion", () => ({
   motion: new Proxy({}, { get: () => (props: Record<string, unknown>) => <div {...props} /> }),
 }));
 
-import ArenaQueue from "./ArenaQueue";
-import ArenaJoinCode from "./ArenaJoinCode";
-import ArenaRoom from "./ArenaRoom";
-import BattleResult from "./BattleResult";
+import ArenaQueue from "../ArenaQueue";
+import ArenaJoinCode from "../ArenaJoinCode";
+import ArenaRoom from "../ArenaRoom";
+import BattleResult from "../BattleResult";
 
 beforeEach(() => {
   vi.useFakeTimers();
