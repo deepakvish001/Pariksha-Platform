@@ -386,6 +386,10 @@ export default function ArenaFriends() {
 
   // Challenge
   async function openChallenge(target: ArenaUser) {
+    if (blockedIds.has(target.user_id)) {
+      toast.error("You've blocked this player. Unblock them first to challenge.");
+      return;
+    }
     setChallengeTarget(target);
     setChallengeStep("setup");
     if (problems.length === 0) {
