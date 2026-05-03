@@ -1,85 +1,62 @@
-# Private problem library + "Add to contest" workflow
+# Admin sidebar polish — make it scan better and feel standard
 
-## Current state
+The sidebar already has groups, sub-nav, badges, and tooltips. With 40+ items across 9 groups it's still slow to scan. The plan focuses on **findability**, **persistence**, and **a header that grounds you in the page** — the parts where the current shell falls short of "standard admin console" expectations.
 
-- `coding_problems.is_published` defaults to `false`, and RLS already blocks non-admins from seeing draft problems. So new problems are *already* private to the admin panel — but the admin UI calls them "Drafts" and the contest editor only lets admins attach **published** problems, which makes the workflow feel incomplete.
-- `contest_problems` RLS only exposes problems to the public after `contests.status` becomes `live`/`ended`, but it still relies on `coding_problems` SELECT, which blocks drafts for non-admins. So a draft problem attached to a contest is invisible even to registered contestants once the contest goes live.
+## What changes (UX)
 
-## Goal
+### 1. Inline filter + ⌘K command palette
 
-1. Make it explicit that any new problem is **Private (admin-only)** until published.
-2. From the admin problems list, give two one-click actions per row:
-   - **Publish** → makes it visible in the user library.
-   - **Add to contest** → opens a picker of admin contests (draft / upcoming / live) and attaches the problem (even if it's still private).
-3. Make sure draft problems attached to a live contest are visible to **registered contestants** (and only them), so admins can run "contest-only" problems that never appear in the public library.
+- Add a small **Search** input pinned to the top of the sidebar (under the header). Typing filters every group/item by label in real time; non-matching groups collapse and hide their label, matching items are highlighted. ESC clears.
+- Add a global **⌘K / Ctrl+K command palette** (`cmdk` already shipped via shadcn) that lists every nav item, grouped, with icon + keyboard hints. Opens from anywhere in `/admin/*`. Hitting Enter navigates. Includes recent + pinned at the top.
+- Header gets a `⌘K` chip next to the breadcrumb so the shortcut is discoverable.
 
-## UX changes
+### 2. Pinned + Recent groups (persisted)
 
-### `/admin/problems` list
+- Each item in the sidebar gets a **star icon** on hover that toggles "Pinned". Pinned items render in a **Pinned** group at the very top of the sidebar (also surfaced in ⌘K).
+- A **Recent** section (last 5 visited admin routes) sits between Pinned and the regular groups. Both lists persist to `localStorage` per user.
+- "Mark all read" lives in the header dropdown; "Reset pinned" / "Reset recent" added there too.
 
-- Replace the "Published" toggle column with a **Visibility** badge column:
-  - `Private` (amber) — `is_published = false`
-  - `Public` (emerald) — `is_published = true`
-  - Tooltip on `Private`: "Visible only in the admin panel and to contestants if attached to an active contest."
-- Add per-row actions next to Edit / Duplicate:
-  - **Publish to library** (only for `Private`) → toggles `is_published = true` after a confirm dialog.
-  - **Add to contest** → opens a `Dialog` listing all admin contests in `draft`, `published`, or `live` status with a search box. Selecting one inserts a `contest_problems` row at the end of the contest's order with default `points = 100`. Toast: "Added to <Contest title>". If the problem is already attached, show "Already in this contest" inline and disable the row.
-- Keep the existing filter chips, but rename **Drafts** → **Private** and **Published** → **Public**.
+### 3. Persist group open/close + remember last view
 
-### `/admin/contests/:id/edit` — Problems section
+- Currently `openMap` is initialised every mount (always open). Persist it to `localStorage("admin:sidebar:groups")` so an admin who collapses **System** keeps it collapsed across reloads.
+- Persist `Sidebar` collapse state (icon-rail vs full) the same way.
 
-- Drop the `is_published = true` filter on the picker. Show all problems and tag each with a small `Private` or `Public` badge so the admin knows what they're attaching.
-- Inline helper text under the picker: "Private problems remain hidden from the library but become visible to registered contestants while this contest is live."
+### 4. Group hygiene
 
-### `/admin/problems/new` and editor
+- Reduce visual noise without losing items by **merging small adjacent groups**:
+  - **Communications** → fold into **Engagement** (Notifications, Support move there).
+  - **Security** → fold into **People** (Security Center, Sessions move there as a sub-nav under "Roles").
+  - Keep **System** and **Platform** distinct — they're operationally different.
+- Add a thin **separator line** (1px, `border-border/40`) between groups, plus a small "section number" hint when the sidebar is in icon-rail mode so groups still read.
+- Show the **group badge count even when the group is open** (currently only when closed), placed before the chevron.
 
-- New problems already start as `is_published = false`. Add a one-line banner at the top of the editor for new/unsaved problems: "This problem will be saved as Private. You can publish it or attach it to a contest from the problems list."
+### 5. Header / breadcrumb upgrade
 
-## Backend changes
+- Replace the static "Admin" label in the top bar with a **dynamic breadcrumb** derived from the nav config, e.g. `Admin › Engagement › Contests › Edit`. Each crumb is a link.
+- Add a right-side **shortcut chip row**: `⌘K` (palette), `g h` (go to dashboard), `[` / `]` (prev/next group). Wire the keyboard shortcuts in a small hook.
+- Keep the `Live` indicator and add a tooltip that explains it.
 
-### Migration: relax draft visibility for active-contest problems
+### 6. Better tooltips for every item
 
-Add a SELECT policy on `coding_problems` (and the supporting `coding_problem_tests`, `coding_problem_starter_code`, `coding_problem_sql_specs`) that allows reads when:
+- Today only "tracked" routes get tooltips. When the sidebar is collapsed, **every** item should show a tooltip with the label + (if any) badge count + last-visited timestamp.
+- When expanded, badge tooltips show "X new since last visit · Y total".
 
-```text
-EXISTS (
-  SELECT 1
-  FROM contest_problems cp
-  JOIN contests c ON c.id = cp.contest_id
-  JOIN contest_registrations r
-    ON r.contest_id = c.id AND r.user_id = auth.uid() AND r.status = 'registered'
-  WHERE cp.problem_slug = coding_problems.slug
-    AND c.status = 'live'
-    AND now() BETWEEN c.starts_at AND c.ends_at
-)
-```
+### 7. Visual polish (small but standard)
 
-This keeps the library "private by default" rule intact while letting registered contestants run/submit a draft attached to their live contest. Admins keep their existing `has_role` policy.
+- Slimmer rail in collapsed mode (`w-12` instead of default), icons centred.
+- Active item gets a 2px left accent bar in addition to the tinted background — a familiar pattern from Linear/Notion/Stripe admins.
+- Sub-nav indent uses a true tree connector (┌ └) instead of a flat border line.
 
-Same predicate is added to `coding_problem_tests` (sample tests only), `coding_problem_starter_code`, and `coding_problem_sql_specs` so editor + run/submit work end-to-end during the contest.
+## What changes (code)
 
-### Migration: helper RPC `attach_problem_to_contest(_problem_slug text, _contest_id uuid)`
-
-- `SECURITY DEFINER`, admin-only.
-- Validates the slug exists and the contest is owned by the platform (any admin can attach).
-- Inserts into `contest_problems` with `order_index = COALESCE(max(order_index)+1, 0)` and `points = 100`. Idempotent: returns existing row if already attached.
-- Returns `{ok, contest_id, problem_slug, order_index, already_attached}`.
-
-The new "Add to contest" dialog calls this RPC instead of doing the math client-side.
-
-## Files to add / edit
-
-- **migrations**
-  - `add_contest_visibility_for_drafts.sql` — new SELECT policies on the four problem tables.
-  - `attach_problem_to_contest_rpc.sql` — RPC + grant to `authenticated`.
-- **src/pages/admin/AdminProblemsList.tsx** — visibility badge column, Publish + Add-to-contest actions, rename filter chips.
-- **src/components/admin/AddProblemToContestDialog.tsx** *(new)* — searchable list of admin contests, calls the RPC, invalidates `["admin", "contests", id, "problems"]`.
-- **src/pages/admin/contests/ContestEditor.tsx** — drop `is_published = true` filter, render Private/Public badges in the picker, add helper copy.
-- **src/pages/admin/ProblemEditor.tsx** — banner for new problems explaining the Private default.
-- **src/hooks/admin/useAdminContests.ts** — add `useAttachProblemToContest()` mutation that wraps the RPC.
+- **`src/components/admin/AdminShell.tsx`** — add `SidebarSearch` slot, breadcrumb header, persisted group state, pinned/recent rendering, keyboard shortcut listener.
+- **`src/components/admin/AdminCommandPalette.tsx`** *(new)* — cmdk-based palette wired to `GROUPS` plus pinned/recent.
+- **`src/hooks/admin/useAdminSidebarPrefs.ts`** *(new)* — localStorage-backed reader/writer for `pinned`, `recent`, `openGroups`, `collapsed`.
+- **`src/hooks/admin/useAdminBreadcrumb.ts`** *(new)* — given pathname, walks `GROUPS` + dynamic children to build crumb segments.
+- **No backend changes.** Pinned/recent stay client-side per device — keeps it instant and avoids polluting RLS.
 
 ## Out of scope
 
-- No changes to `/library/problems` user UI — RLS keeps drafts hidden there.
-- No changes to contest scoring, leaderboard, or registration flow.
-- No bulk "Add to contest" or multi-select on the problems list (can be a follow-up).
+- No reorganisation of admin **routes** themselves. Only sidebar grouping/visuals.
+- No new permissions or RBAC tiers.
+- Not touching mobile FAB or guest sidebar — admin shell only.
