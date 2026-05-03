@@ -569,7 +569,8 @@ export default function ArenaFriends() {
     filters.minBattles !== DEFAULT_FILTERS.minBattles;
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto">
+    <TooltipProvider delayDuration={200}>
+    <div className="space-y-4 max-w-4xl mx-auto" data-testid="arena-friends-root">
       <GlassPanel glow="cyan" className="p-4 flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl font-black flex items-center gap-2">
