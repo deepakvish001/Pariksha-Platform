@@ -2226,6 +2226,146 @@ export type Database = {
           },
         ]
       }
+      solo_ratings: {
+        Row: {
+          games_played: number
+          mode: string
+          peak_rating: number
+          rating: number
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          games_played?: number
+          mode: string
+          peak_rating?: number
+          rating?: number
+          tier?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          games_played?: number
+          mode?: string
+          peak_rating?: number
+          rating?: number
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      solo_session_problems: {
+        Row: {
+          attempts: number
+          awarded_score: number
+          created_at: string
+          first_ac_at: string | null
+          id: string
+          ord: number
+          problem_slug: string
+          session_id: string
+          time_to_ac_sec: number | null
+          user_id: string
+          wrong_submits: number
+        }
+        Insert: {
+          attempts?: number
+          awarded_score?: number
+          created_at?: string
+          first_ac_at?: string | null
+          id?: string
+          ord?: number
+          problem_slug: string
+          session_id: string
+          time_to_ac_sec?: number | null
+          user_id: string
+          wrong_submits?: number
+        }
+        Update: {
+          attempts?: number
+          awarded_score?: number
+          created_at?: string
+          first_ac_at?: string | null
+          id?: string
+          ord?: number
+          problem_slug?: string
+          session_id?: string
+          time_to_ac_sec?: number | null
+          user_id?: string
+          wrong_submits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solo_session_problems_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "solo_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solo_sessions: {
+        Row: {
+          completed_at: string | null
+          config: Json
+          created_at: string
+          difficulty: string
+          duration_sec: number
+          ends_at: string
+          focus_lost_count: number
+          id: string
+          max_score: number
+          mode: string
+          paste_count: number
+          rating_delta: number
+          score: number
+          started_at: string
+          status: string
+          user_id: string
+          xp_awarded: number
+        }
+        Insert: {
+          completed_at?: string | null
+          config?: Json
+          created_at?: string
+          difficulty?: string
+          duration_sec: number
+          ends_at: string
+          focus_lost_count?: number
+          id?: string
+          max_score?: number
+          mode: string
+          paste_count?: number
+          rating_delta?: number
+          score?: number
+          started_at?: string
+          status?: string
+          user_id: string
+          xp_awarded?: number
+        }
+        Update: {
+          completed_at?: string | null
+          config?: Json
+          created_at?: string
+          difficulty?: string
+          duration_sec?: number
+          ends_at?: string
+          focus_lost_count?: number
+          id?: string
+          max_score?: number
+          mode?: string
+          paste_count?: number
+          rating_delta?: number
+          score?: number
+          started_at?: string
+          status?: string
+          user_id?: string
+          xp_awarded?: number
+        }
+        Relationships: []
+      }
       study_plan_goals: {
         Row: {
           category: string
@@ -4234,6 +4374,20 @@ export type Database = {
         Returns: string
       }
       snapshot_my_coding_leaderboard_rank: { Args: never; Returns: Json }
+      solo_finalize_session: { Args: { _session_id: string }; Returns: Json }
+      solo_record_attempt: {
+        Args: {
+          _problem_slug: string
+          _session_id: string
+          _solved: boolean
+          _verdict?: string
+        }
+        Returns: undefined
+      }
+      solo_start_session: {
+        Args: { _difficulty?: string; _duration_sec?: number; _mode: string }
+        Returns: string
+      }
       user_pending_logout: { Args: { _user_id: string }; Returns: boolean }
       validate_contest_submission: {
         Args: { _contest_id: string; _problem_slug: string }
