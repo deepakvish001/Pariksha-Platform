@@ -313,7 +313,7 @@ export default function ArenaFriends() {
   async function addFriend(uid: string) {
     if (!user) return;
     if (blockedIds.has(uid)) {
-      toast.error("Unblock this player first to send a request");
+      toast.error(BLOCKED_GATE_COPY);
       return;
     }
     const { error } = await supabase
