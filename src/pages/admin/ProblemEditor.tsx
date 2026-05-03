@@ -534,7 +534,9 @@ const ProblemEditor = () => {
           <p className="mt-0.5 text-xs text-muted-foreground">
             {form.is_published
               ? "Visible to all learners. Edits save as drafts here until you press Save."
-              : "Fill in the details, then press Publish above to make this problem live. Save your changes first."}
+              : isNew
+                ? "New problems save as Private. After saving you can publish them to the library or attach them to a contest from the Problems list."
+                : "Private — visible only to admins and to registered contestants while attached to a live contest. Press Publish above to make it live in the library."}
           </p>
         </div>
         {dirty && (

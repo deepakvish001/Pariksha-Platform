@@ -250,6 +250,30 @@ export const useDeleteRegistration = () => {
   });
 };
 
+export const useAttachProblemToContest = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ problemSlug, contestId }: { problemSlug: string; contestId: string }) => {
+      const { data, error } = await supabase.rpc("attach_problem_to_contest" as any, {
+        _problem_slug: problemSlug,
+        _contest_id: contestId,
+      });
+      if (error) throw error;
+      return data as { ok: boolean; already_attached: boolean; contest_id: string; problem_slug: string; order_index: number };
+    },
+    onSuccess: (data, vars) => {
+      qc.invalidateQueries({ queryKey: ["admin-contest-problems", vars.contestId] });
+      qc.invalidateQueries({ queryKey: ["contest-problems", vars.contestId] });
+      if (data?.already_attached) {
+        toast.message("Already in this contest");
+      } else {
+        toast.success("Added to contest");
+      }
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to add to contest"),
+  });
+};
+
 export const useRecomputeLeaderboard = () => {
   return useMutation({
     mutationFn: async (contestId: string) => {

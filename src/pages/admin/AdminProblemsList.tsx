@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+
 import {
   Select,
   SelectContent,
@@ -26,7 +26,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Trash2, Pencil, Copy, X } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Copy, X, Globe, Lock, Trophy } from "lucide-react";
+import { AddProblemToContestDialog } from "@/components/admin/AddProblemToContestDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -101,8 +103,8 @@ const AdminProblemsList = () => {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {[
           { key: "all", label: `All ${problems.length}` },
-          { key: "published", label: `Published ${problems.filter((p) => p.is_published).length}` },
-          { key: "draft", label: `Drafts ${problems.filter((p) => !p.is_published).length}` },
+          { key: "published", label: `Public ${problems.filter((p) => p.is_published).length}` },
+          { key: "draft", label: `Private ${problems.filter((p) => !p.is_published).length}` },
         ].map((c) => (
           <button
             key={c.key}
@@ -153,13 +155,13 @@ const AdminProblemsList = () => {
           </SelectContent>
         </Select>
         <Select value={published} onValueChange={setPublished}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Visibility" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All status</SelectItem>
-            <SelectItem value="published">Published</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="all">All visibility</SelectItem>
+            <SelectItem value="published">Public (in library)</SelectItem>
+            <SelectItem value="draft">Private (admin only)</SelectItem>
           </SelectContent>
         </Select>
         {filtersActive && (
@@ -177,7 +179,7 @@ const AdminProblemsList = () => {
               <TableHead className="hidden md:table-cell">Slug</TableHead>
               <TableHead>Difficulty</TableHead>
               <TableHead className="hidden lg:table-cell">Topics</TableHead>
-              <TableHead>Published</TableHead>
+              <TableHead>Visibility</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -221,15 +223,41 @@ const AdminProblemsList = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Switch
-                      checked={p.is_published}
-                      onCheckedChange={(v) =>
-                        toggle.mutate({ slug: p.slug, publish: v })
-                      }
-                    />
+                    <TooltipProvider delayDuration={150}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => toggle.mutate({ slug: p.slug, publish: !p.is_published })}
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                              p.is_published
+                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
+                                : "border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20"
+                            }`}
+                          >
+                            {p.is_published ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                            {p.is_published ? "Public" : "Private"}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {p.is_published
+                            ? "Visible in the user library. Click to make Private."
+                            : "Visible only in the admin panel and to contestants if attached to an active contest. Click to publish."}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <AddProblemToContestDialog
+                        problemSlug={p.slug}
+                        problemTitle={p.title}
+                        trigger={
+                          <Button variant="ghost" size="icon" title="Add to contest">
+                            <Trophy className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
                       <Button asChild variant="ghost" size="icon" title="Edit">
                         <Link to={`/admin/problems/${p.slug}/edit`}>
                           <Pencil className="h-4 w-4" />
