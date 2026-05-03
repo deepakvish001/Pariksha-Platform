@@ -39,7 +39,12 @@ const ContestDetail = () => {
   const lifecycle = lifecycleStatus(contest);
   const isRegistered = myReg?.status === "registered";
   const canSeeProblems = clock.phase === "live" || clock.phase === "ended";
-  const canRegister = lifecycle === "active" && clock.phase !== "ended";
+  // Secure Mode: registration closes at start time (enforced by trigger too)
+  const canRegister = lifecycle === "active" && clock.phase === "upcoming";
+  const isDisqualified = (myReg as { status?: string } | undefined)?.status === "disqualified";
+  const honorAcceptedInitial = !!(myReg as { honor_code_accepted_at?: string | null } | undefined)?.honor_code_accepted_at;
+  const [honorAccepted, setHonorAccepted] = useReactState(honorAcceptedInitial);
+  useEffect(() => { setHonorAccepted(honorAcceptedInitial); }, [honorAcceptedInitial]);
 
   const onRegister = () => {
     if (!user) return navigate("/login");
