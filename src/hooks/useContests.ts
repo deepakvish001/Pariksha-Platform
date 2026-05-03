@@ -53,6 +53,22 @@ export const deriveStatus = (c: Contest): Contest["status"] => {
   return "ended";
 };
 
+/**
+ * Maps the internal status (draft/published/live/ended/archived) to the
+ * canonical lifecycle the UI exposes: draft / active / closed.
+ *  - draft   → not visible, not joinable (draft + archived)
+ *  - active  → visible & accepting registrations or running (published, live)
+ *  - closed  → ended, read-only
+ */
+export type ContestLifecycle = "draft" | "active" | "closed";
+export const lifecycleStatus = (c: Pick<Contest, "status" | "starts_at" | "ends_at">): ContestLifecycle => {
+  if (c.status === "draft" || c.status === "archived") return "draft";
+  const now = Date.now();
+  const e = new Date(c.ends_at).getTime();
+  if (c.status === "ended" || now > e) return "closed";
+  return "active";
+};
+
 export const useContests = () => {
   const qc = useQueryClient();
 
