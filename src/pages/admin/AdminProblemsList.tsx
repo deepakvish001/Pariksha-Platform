@@ -155,13 +155,13 @@ const AdminProblemsList = () => {
           </SelectContent>
         </Select>
         <Select value={published} onValueChange={setPublished}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Visibility" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All status</SelectItem>
-            <SelectItem value="published">Published</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="all">All visibility</SelectItem>
+            <SelectItem value="published">Public (in library)</SelectItem>
+            <SelectItem value="draft">Private (admin only)</SelectItem>
           </SelectContent>
         </Select>
         {filtersActive && (
