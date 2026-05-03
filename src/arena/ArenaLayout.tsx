@@ -23,9 +23,7 @@ export function ArenaLayout() {
               <SidebarTrigger />
               <NavLink to="/arena" className="flex items-center gap-2 font-bold tracking-wide">
                 <Swords className="h-5 w-5 text-primary" />
-                <span className="bg-gradient-to-r from-primary to-orange-400 bg-clip-text text-transparent">
-                  BATTLE ARENA
-                </span>
+                <span className="gradient-text">BATTLE ARENA</span>
               </NavLink>
               <nav className="flex items-center gap-1 ml-2 overflow-x-auto">
                 {NAV.map(({ to, label, icon: Icon, end }) => (

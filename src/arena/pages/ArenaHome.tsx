@@ -41,8 +41,8 @@ export default function ArenaHome() {
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <GlassPanel glow="cyan" className="p-8 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.2),transparent_60%)]" />
-          <h1 className="relative text-5xl font-black tracking-tight bg-gradient-to-br from-white via-cyan-200 to-fuchsia-300 bg-clip-text text-transparent">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,hsl(var(--primary)/0.2),transparent_60%)]" />
+          <h1 className="relative text-5xl font-black tracking-tight gradient-text">
             Enter the Arena
           </h1>
           <p className="relative mt-2 text-muted-foreground">1v1 real-time coding battles · Earn Elo · Climb the ladder</p>
@@ -50,7 +50,7 @@ export default function ArenaHome() {
             <div className="relative mt-4 flex items-center justify-center gap-3">
               <EloBadge elo={rating.elo} />
               <span className="text-xs text-muted-foreground">
-                {rating.wins}W · {rating.losses}L · {rating.current_streak > 0 ? `🔥 ${rating.current_streak}` : ""}
+                {rating.wins}W · {rating.losses}L {rating.current_streak > 0 ? `· 🔥 ${rating.current_streak}` : ""}
               </span>
             </div>
           )}
@@ -97,18 +97,18 @@ export default function ArenaHome() {
         </GlassPanel>
 
         <GlassPanel glow="magenta" className="p-5 space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-accent-foreground flex items-center gap-2">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
             <Target className="h-4 w-4" /> Other Modes
           </h2>
-          <button onClick={() => navigate("/arena/private")} className="block w-full rounded-md border border-border p-3 text-left hover:border-fuchsia-400/50 transition">
+          <button onClick={() => navigate("/arena/private")} className="block w-full rounded-md border border-border p-3 text-left hover:border-primary/50 hover:bg-muted/30 transition">
             <div className="font-bold">Private Match</div>
             <div className="text-xs text-muted-foreground">Challenge a friend</div>
           </button>
-          <button onClick={() => navigate("/arena/leaderboard")} className="block w-full rounded-md border border-border p-3 text-left hover:border-primary/50 transition">
-            <div className="font-bold flex items-center gap-2"><Flame className="h-4 w-4 text-orange-400" /> Leaderboard</div>
+          <button onClick={() => navigate("/arena/leaderboard")} className="block w-full rounded-md border border-border p-3 text-left hover:border-primary/50 hover:bg-muted/30 transition">
+            <div className="font-bold flex items-center gap-2"><Flame className="h-4 w-4 text-primary" /> Leaderboard</div>
             <div className="text-xs text-muted-foreground">Top 100 players</div>
           </button>
-          <button onClick={() => navigate("/arena/history")} className="block w-full rounded-md border border-border p-3 text-left hover:border-lime-400/50 transition">
+          <button onClick={() => navigate("/arena/history")} className="block w-full rounded-md border border-border p-3 text-left hover:border-primary/50 hover:bg-muted/30 transition">
             <div className="font-bold">My Battle History</div>
             <div className="text-xs text-muted-foreground">Recent matches & replays</div>
           </button>

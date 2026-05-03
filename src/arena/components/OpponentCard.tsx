@@ -19,13 +19,13 @@ export function OpponentCard({ name, avatarUrl, elo, passed, total, typing }: Op
     <GlassPanel glow="magenta" className="p-4 space-y-3">
       <div className="flex items-center gap-3">
         <div className="relative">
-          <Avatar className="h-12 w-12 ring-2 ring-fuchsia-400/50">
+          <Avatar className="h-12 w-12 ring-2 ring-primary/50">
             <AvatarImage src={avatarUrl ?? undefined} />
             <AvatarFallback>{name.slice(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
           {typing && (
             <motion.span
-              className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-lime-400"
+              className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-500"
               animate={{ scale: [1, 1.4, 1], opacity: [1, 0.5, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
             />
