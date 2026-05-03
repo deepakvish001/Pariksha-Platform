@@ -135,38 +135,28 @@ const GROUPS: NavGroup[] = [
   { label: "Content", items: [
     { to: "/admin/problems", label: "Coding Problems", icon: FileCode2 },
     { to: "/admin/problems/import", label: "Bulk Import", icon: Upload },
-    { to: "/admin/publish-history", label: "Publish History", icon: History },
     { to: "/admin/ai-content", label: "AI Content", icon: Sparkles },
     { to: "/admin/featured", label: "Featured / Staff Picks", icon: Star },
-    { to: "/admin/library-curation", label: "Library Curation", icon: Library },
     { to: "/admin/roadmaps", label: "Roadmaps Manager", icon: MapIcon },
   ]},
   { label: "People", items: [
     { to: "/admin/users", label: "Users", icon: Users },
     { to: "/admin/roles", label: "Roles", icon: KeyRound },
-    { to: "/admin/rls-tester", label: "RLS Tester", icon: ShieldAlert },
     { to: "/admin/reports", label: "Reports", icon: Flag },
     { to: "/admin/security", label: "Security Center", icon: ShieldAlert },
-    { to: "/admin/sessions", label: "Sessions", icon: LogOut },
   ]},
   { label: "Engagement", items: [
     { to: "/admin/daily-challenge", label: "Daily Challenge", icon: CalendarClock },
     { to: "/admin/contests", label: "Contests", icon: Trophy },
     { to: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
-    { to: "/admin/scheduled-broadcasts", label: "Scheduled Broadcasts", icon: Send },
     { to: "/admin/achievements", label: "Achievements", icon: Award },
     { to: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
-    { to: "/admin/gamification", label: "Gamification Rules", icon: Gamepad2 },
     { to: "/admin/notifications", label: "Notifications", icon: Bell },
     { to: "/admin/support", label: "Support Inbox", icon: Inbox },
   ]},
   { label: "User Activity", items: [
     { to: "/admin/quizzes", label: "Quizzes & SRS", icon: Brain },
     { to: "/admin/submissions", label: "Code Submissions", icon: Code2 },
-    { to: "/admin/resumes", label: "Resumes", icon: FileText },
-    { to: "/admin/conversations", label: "AI Conversations", icon: MessageSquare },
-    { to: "/admin/outreach", label: "Cold Outreach", icon: Mail },
-    { to: "/admin/folders", label: "Shared Folders", icon: Share2 },
   ]},
   { label: "Platform", items: [
     { to: "/admin/settings", label: "Settings & Flags", icon: SettingsIcon },
@@ -176,8 +166,6 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/system-health", label: "System Health", icon: HeartPulse },
     { to: "/admin/cron-jobs", label: "Scheduled Jobs", icon: Clock },
     { to: "/admin/audit", label: "Audit Log", icon: ScrollText },
-    { to: "/admin/edge-logs", label: "Edge Logs", icon: Activity },
-    { to: "/admin/exports", label: "Exports", icon: Download },
   ]},
 ];
 
