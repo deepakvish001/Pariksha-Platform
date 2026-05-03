@@ -68,6 +68,9 @@ const ContestDetail = () => {
               <Badge variant="outline" className="uppercase">{lifecycle}</Badge>
               <Badge variant="outline" className="uppercase opacity-70">{clock.phase}</Badge>
               <Badge variant="outline" className="capitalize">{contest.scoring_mode}</Badge>
+              <Badge variant="outline" className="border-primary/40 text-primary">
+                <ShieldCheck className="mr-1 h-3 w-3" /> Secure Mode
+              </Badge>
               {contest.visibility === "private" && <Badge variant="outline"><Lock className="mr-1 h-3 w-3" />Private</Badge>}
             </div>
             <h1 className="text-3xl font-bold tracking-tight">{contest.title}</h1>
