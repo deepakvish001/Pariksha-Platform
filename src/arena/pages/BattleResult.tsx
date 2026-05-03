@@ -96,23 +96,30 @@ export default function BattleResult() {
         </ul>
       </GlassPanel>
 
-      <div className="flex flex-wrap gap-3 justify-center">
-        <NeonButton onClick={async () => {
-          try {
-            const { createCodeRoom } = await import("../hooks");
-            const { invite_id, code } = await createCodeRoom({
-              problemSlug: battle.problem_slug,
-              difficulty: battle.difficulty,
-              duration: battle.duration_sec,
-            });
-            navigate(`/arena/room/${code}`, { state: { inviteId: invite_id } });
-          } catch (e) {
-            navigate("/arena");
-          }
-        }}>Rematch</NeonButton>
+      <div className="flex flex-wrap gap-3 justify-center" data-testid="rematch-actions">
+        <NeonButton onClick={handleRematch} disabled={rematchState === "loading"}>
+          {rematchState === "loading" ? (
+            <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Creating…</span>
+          ) : rematchState === "error" ? (
+            <span className="inline-flex items-center gap-2"><RefreshCw className="h-4 w-4" /> Retry Rematch</span>
+          ) : "Rematch"}
+        </NeonButton>
         <NeonButton onClick={() => navigate("/arena")}>Back to Arena</NeonButton>
         <Link to="/arena/leaderboard"><NeonButton>Leaderboard</NeonButton></Link>
       </div>
+
+      {rematchState === "error" && (
+        <GlassPanel glow="magenta" className="p-4 text-center" data-testid="rematch-error">
+          <div className="flex flex-col items-center gap-2">
+            <AlertTriangle className="h-6 w-6 text-destructive" />
+            <p className="text-sm font-bold text-destructive">Rematch failed</p>
+            <p className="text-xs text-muted-foreground break-words max-w-md">{rematchError}</p>
+          </div>
+        </GlassPanel>
+      )}
+    </div>
+  );
+}
     </div>
   );
 }
