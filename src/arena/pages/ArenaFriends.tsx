@@ -249,11 +249,17 @@ export default function ArenaFriends() {
   // Friendship actions
   async function addFriend(uid: string) {
     if (!user) return;
+    if (blockedIds.has(uid)) {
+      toast.error("Unblock this player first to send a request");
+      return;
+    }
     const { error } = await supabase
       .from("friendships" as never)
       .insert({ requester_id: user.id, addressee_id: uid } as never);
-    if (error) toast.error(error.message);
-    else toast.success("Friend request sent");
+    if (error) {
+      if (/block/i.test(error.message)) toast.error("Cannot send: one of you has blocked the other");
+      else toast.error(error.message);
+    } else toast.success("Friend request sent");
   }
   async function respond(f: Friend, accept: boolean) {
     const { error } = await supabase
@@ -736,6 +742,15 @@ export default function ArenaFriends() {
                   <option value={1800}>30 min</option>
                 </select>
               </div>
+            </div>
+
+            {/* Match summary */}
+            <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-xs space-y-1.5">
+              <div className="text-[10px] uppercase text-muted-foreground">Match setup</div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Problem</span><span className="font-medium truncate ml-2">{problems.find((p) => p.slug === challengeProblem)?.title ?? "— not selected —"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Difficulty</span><span className="font-medium capitalize">{challengeDifficulty}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Time limit</span><span className="font-medium">{Math.round(challengeDuration / 60)} min</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Mode</span><span className="font-medium">Private 1v1 (invite-only)</span></div>
             </div>
           </div>
           <DialogFooter className="gap-2">

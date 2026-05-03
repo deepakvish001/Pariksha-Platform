@@ -1792,30 +1792,39 @@ export type Database = {
       }
       player_reports: {
         Row: {
+          admin_notes: string | null
           created_at: string
           details: string | null
           id: string
           reason: string
           reported_id: string
           reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
           status: string
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string
           details?: string | null
           id?: string
           reason: string
           reported_id: string
           reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
           status?: string
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string
           details?: string | null
           id?: string
           reason?: string
           reported_id?: string
           reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
           status?: string
         }
         Relationships: []

@@ -120,6 +120,7 @@ import AIContentModeration from "./pages/admin/AIContentModeration";
 import DailyChallengeAdmin from "./pages/admin/DailyChallengeAdmin";
 import Broadcast from "./pages/admin/Broadcast";
 import Reports from "./pages/admin/Reports";
+import ArenaModeration from "./pages/admin/ArenaModeration";
 import SettingsAndFlags from "./pages/admin/SettingsAndFlags";
 import StorageBrowser from "./pages/admin/StorageBrowser";
 import SystemHealth from "./pages/admin/SystemHealth";
@@ -357,6 +358,7 @@ const App = () => (
                   <Route path="daily-challenge" element={<DailyChallengeAdmin />} />
                   <Route path="broadcast" element={<Broadcast />} />
                   <Route path="reports" element={<Reports />} />
+                  <Route path="arena-moderation" element={<ArenaModeration />} />
                   <Route path="settings" element={<SettingsAndFlags />} />
                   <Route path="storage" element={<StorageBrowser />} />
                   <Route path="system-health" element={<SystemHealth />} />
