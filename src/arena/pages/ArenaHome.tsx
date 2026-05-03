@@ -15,17 +15,44 @@ import { DailyChallengeCard } from "../components/DailyChallengeCard";
 import { DailyQuestsPanel } from "../components/DailyQuestsPanel";
 import { DailyHistoryPanel } from "../components/DailyHistoryPanel";
 
+const PREFS_KEY = "arena:home:prefs:v1";
+type ArenaPrefs = {
+  topic: string | null;
+  difficulty: BattleDifficulty;
+  roomDifficulty: BattleDifficulty;
+  roomDuration: number;
+  roomProblem: string;
+};
+const DEFAULT_PREFS: ArenaPrefs = {
+  topic: null,
+  difficulty: "medium",
+  roomDifficulty: "medium",
+  roomDuration: 900,
+  roomProblem: "",
+};
+function loadPrefs(): ArenaPrefs {
+  if (typeof window === "undefined") return DEFAULT_PREFS;
+  try {
+    const raw = window.localStorage.getItem(PREFS_KEY);
+    if (!raw) return DEFAULT_PREFS;
+    return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_PREFS;
+  }
+}
+
 export default function ArenaHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { rating, loading } = useMyRating(user?.id);
-  const [topic, setTopic] = useState<string | null>(null);
-  const [difficulty, setDifficulty] = useState<BattleDifficulty>("medium");
+  const initial = loadPrefs();
+  const [topic, setTopic] = useState<string | null>(initial.topic);
+  const [difficulty, setDifficulty] = useState<BattleDifficulty>(initial.difficulty);
   const [searching, setSearching] = useState(false);
 
-  const [roomDifficulty, setRoomDifficulty] = useState<BattleDifficulty>("medium");
-  const [roomDuration, setRoomDuration] = useState(900);
-  const [roomProblem, setRoomProblem] = useState("");
+  const [roomDifficulty, setRoomDifficulty] = useState<BattleDifficulty>(initial.roomDifficulty);
+  const [roomDuration, setRoomDuration] = useState(initial.roomDuration);
+  const [roomProblem, setRoomProblem] = useState(initial.roomProblem);
   const [problems, setProblems] = useState<Array<{ slug: string; title: string; difficulty: string }>>([]);
   const [creating, setCreating] = useState(false);
 
@@ -33,6 +60,15 @@ export default function ArenaHome() {
   const [joining, setJoining] = useState(false);
 
   useEffect(() => { if (user?.id) ensureRating(user.id); }, [user?.id]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({ topic, difficulty, roomDifficulty, roomDuration, roomProblem }),
+      );
+    } catch { /* ignore quota */ }
+  }, [topic, difficulty, roomDifficulty, roomDuration, roomProblem]);
 
   useEffect(() => {
     (async () => {
@@ -89,23 +125,23 @@ export default function ArenaHome() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* HERO */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <GlassPanel glow="cyan" className="p-8 sm:p-10 relative overflow-hidden">
+        <GlassPanel glow="cyan" className="p-5 sm:p-8 md:p-10 relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_0%,hsl(var(--primary)/0.25),transparent_60%)]" />
-          <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
+          <div className="relative grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                 <Swords className="h-3.5 w-3.5" /> Battle Arena
               </div>
-              <h1 className="mt-3 text-4xl sm:text-5xl font-black tracking-tight gradient-text">Enter the Arena</h1>
+              <h1 className="mt-3 text-3xl sm:text-4xl md:text-5xl font-black tracking-tight gradient-text">Enter the Arena</h1>
               <p className="mt-2 text-sm sm:text-base text-muted-foreground max-w-xl">
                 1v1 real-time coding battles · Earn Elo · Climb the ladder
               </p>
             </div>
             {rating && (
-              <div className="flex items-center gap-4 rounded-xl border border-border bg-card/40 p-4 backdrop-blur">
+              <div className="flex items-center gap-4 rounded-xl border border-border bg-card/40 p-3 sm:p-4 backdrop-blur w-full md:w-auto">
                 <EloBadge elo={rating.elo} />
                 <div className="text-xs">
                   <div className="font-semibold text-foreground">{rating.wins}W · {rating.losses}L</div>
@@ -128,7 +164,7 @@ export default function ArenaHome() {
       {/* PLAY MODES */}
       <section className="space-y-3">
         <SectionHeader icon={Swords} title="Play Now" subtitle="Choose how you want to battle" />
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
           {/* Quick Match */}
           <GlassPanel className="p-5 space-y-4 flex flex-col">
             <ModeHeader icon={Zap} title="Quick Match" desc="Get matched at your Elo" />
@@ -220,7 +256,7 @@ export default function ArenaHome() {
       {/* EXPLORE */}
       <section className="space-y-3">
         <SectionHeader icon={Flame} title="Explore" subtitle="Other ways to compete and improve" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           {shortcuts.map((s) => (
             <button
               key={s.to}
@@ -243,7 +279,7 @@ export default function ArenaHome() {
       {/* PROGRESS */}
       <section className="space-y-3">
         <SectionHeader icon={Trophy} title="Your Progress" subtitle="Quests and recent activity" />
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
           <DailyQuestsPanel />
           <DailyHistoryPanel />
         </div>
