@@ -349,7 +349,22 @@ const ProblemEditor = () => {
       constraints: form.constraints.filter(Boolean),
       hints: form.hints.filter(Boolean),
     };
-    await save.mutateAsync(cleaned);
+    try {
+      await save.mutateAsync(cleaned);
+    } catch (err: any) {
+      // Surface exact server / validation error
+      const code = err?.code ? ` [${err.code}]` : "";
+      const details = err?.details ?? err?.hint ?? "";
+      const message = err?.message ?? "Unknown error";
+      toast({
+        title: `Save failed${code}`,
+        description: details ? `${message} — ${details}` : message,
+        variant: "destructive",
+      });
+      // Also log full error for debugging
+      console.error("[ProblemEditor] Save failed", err);
+      return;
+    }
     setDirty(false);
     try {
       localStorage.removeItem(DRAFT_KEY(slug));
