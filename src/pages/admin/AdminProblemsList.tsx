@@ -179,7 +179,7 @@ const AdminProblemsList = () => {
               <TableHead className="hidden md:table-cell">Slug</TableHead>
               <TableHead>Difficulty</TableHead>
               <TableHead className="hidden lg:table-cell">Topics</TableHead>
-              <TableHead>Published</TableHead>
+              <TableHead>Visibility</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
