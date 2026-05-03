@@ -1,13 +1,18 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   Shield, FileCode2, Upload, ScrollText, LayoutGrid, History,
   Users, KeyRound, Sparkles, CalendarClock, Megaphone, Flag,
   Settings as SettingsIcon, Database, Activity, Download, HeartPulse, Clock,
   ChevronDown, Star, Library, Map as MapIcon, Inbox, ShieldAlert,
-  Award, Trophy, Gamepad2,
+  Award, Trophy, Gamepad2, Search, Command as CommandIcon, X, ChevronRight, Pin,
   Bell, Brain, FileText, Code2, MessageSquare, Mail, Share2, Send, LogOut,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { AdminCommandPalette } from "./AdminCommandPalette";
+import { useAdminSidebarPrefs } from "@/hooks/admin/useAdminSidebarPrefs";
+import { useAdminBreadcrumb } from "@/hooks/admin/useAdminBreadcrumb";
 import {
   Sidebar,
   SidebarContent,
