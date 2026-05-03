@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Flag, ShieldAlert, Check, X, Ban } from "lucide-react";
+import { Flag, ShieldAlert, Check, X, Ban, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 type ReportStatus = "pending" | "resolved" | "dismissed";
 interface PlayerReport {
@@ -35,64 +36,140 @@ interface ProfileRow {
   avatar_url: string | null;
 }
 
+const PAGE_SIZE = 20;
+const REASONS = [
+  "All",
+  "Inappropriate behavior",
+  "Cheating / unfair play",
+  "Harassment",
+  "Spam",
+  "Impersonation",
+  "Other",
+];
+
 export default function ArenaModeration() {
   const { user } = useAuth();
   const [tab, setTab] = useState<"reports" | "blocks">("reports");
   const [statusTab, setStatusTab] = useState<ReportStatus>("pending");
+
   const [reports, setReports] = useState<PlayerReport[]>([]);
   const [blocks, setBlocks] = useState<BlockRow[]>([]);
   const [profiles, setProfiles] = useState<Map<string, ProfileRow>>(new Map());
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
-  async function loadProfilesFor(ids: string[]) {
-    const missing = ids.filter((id) => id && !profiles.has(id));
-    if (missing.length === 0) return;
+  // Search + pagination state
+  const [search, setSearch] = useState("");
+  const [reasonFilter, setReasonFilter] = useState<string>("All");
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+
+  const loadProfilesFor = useCallback(
+    async (ids: string[]) => {
+      const missing = Array.from(new Set(ids.filter((id) => id && !profiles.has(id))));
+      if (missing.length === 0) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id,full_name,avatar_url")
+        .in("user_id", missing);
+      setProfiles((prev) => {
+        const next = new Map(prev);
+        for (const p of data ?? []) next.set(p.user_id, p as ProfileRow);
+        return next;
+      });
+    },
+    [profiles],
+  );
+
+  // Resolve search query to a list of user_ids that match
+  async function resolveSearchUserIds(): Promise<string[] | null> {
+    const q = search.trim();
+    if (!q) return null;
     const { data } = await supabase
       .from("profiles")
-      .select("user_id,full_name,avatar_url")
-      .in("user_id", missing);
-    setProfiles((prev) => {
-      const next = new Map(prev);
-      for (const p of data ?? []) next.set(p.user_id, p as ProfileRow);
-      return next;
-    });
+      .select("user_id")
+      .ilike("full_name", `%${q}%`)
+      .limit(50);
+    return (data ?? []).map((r) => r.user_id);
   }
 
-  async function loadReports() {
+  const loadReports = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("player_reports" as never)
-      .select("*")
-      .eq("status", statusTab)
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (error) toast.error(error.message);
-    const rows = (data ?? []) as PlayerReport[];
-    setReports(rows);
-    await loadProfilesFor(rows.flatMap((r) => [r.reporter_id, r.reported_id]));
-    setLoading(false);
-  }
+    try {
+      const matchIds = await resolveSearchUserIds();
+      let query = supabase
+        .from("player_reports" as never)
+        .select("*", { count: "exact" })
+        .eq("status", statusTab);
 
-  async function loadBlocks() {
+      if (reasonFilter !== "All") query = query.eq("reason", reasonFilter);
+      if (matchIds) {
+        if (matchIds.length === 0) {
+          setReports([]);
+          setTotal(0);
+          setLoading(false);
+          return;
+        }
+        const list = matchIds.join(",");
+        query = query.or(`reported_id.in.(${list}),reporter_id.in.(${list})`);
+      }
+
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data, count, error } = await query
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      if (error) toast.error(error.message);
+      const rows = (data ?? []) as PlayerReport[];
+      setReports(rows);
+      setTotal(count ?? 0);
+      await loadProfilesFor(rows.flatMap((r) => [r.reporter_id, r.reported_id]));
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusTab, reasonFilter, search, page]);
+
+  const loadBlocks = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("user_blocks" as never)
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (error) toast.error(error.message);
-    const rows = (data ?? []) as BlockRow[];
-    setBlocks(rows);
-    await loadProfilesFor(rows.flatMap((r) => [r.blocker_id, r.blocked_id]));
-    setLoading(false);
-  }
+    try {
+      const matchIds = await resolveSearchUserIds();
+      let query = supabase.from("user_blocks" as never).select("*", { count: "exact" });
+      if (matchIds) {
+        if (matchIds.length === 0) {
+          setBlocks([]);
+          setTotal(0);
+          setLoading(false);
+          return;
+        }
+        const list = matchIds.join(",");
+        query = query.or(`blocker_id.in.(${list}),blocked_id.in.(${list})`);
+      }
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data, count, error } = await query
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      if (error) toast.error(error.message);
+      const rows = (data ?? []) as BlockRow[];
+      setBlocks(rows);
+      setTotal(count ?? 0);
+      await loadProfilesFor(rows.flatMap((r) => [r.blocker_id, r.blocked_id]));
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, page]);
+
+  // Reset to page 0 when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [tab, statusTab, reasonFilter, search]);
 
   useEffect(() => {
     if (tab === "reports") loadReports();
     else loadBlocks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, statusTab]);
+  }, [tab, loadReports, loadBlocks]);
 
   async function resolveReport(r: PlayerReport, status: "resolved" | "dismissed") {
     if (!user) return;
@@ -116,11 +193,35 @@ export default function ArenaModeration() {
     return profiles.get(id);
   }
 
-  const counts = useMemo(
-    () => ({
-      pending: reports.filter((r) => r.status === "pending").length,
-    }),
-    [reports],
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const showingFrom = total === 0 ? 0 : page * PAGE_SIZE + 1;
+  const showingTo = Math.min(total, (page + 1) * PAGE_SIZE);
+
+  const Pager = useMemo(
+    () => (
+      <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
+        <span>
+          {total === 0 ? "0" : `${showingFrom}–${showingTo}`} of {total}
+        </span>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0 || loading}>
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </Button>
+          <span>
+            Page {page + 1} / {totalPages}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1 || loading}
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+    ),
+    [page, totalPages, total, loading, showingFrom, showingTo],
   );
 
   return (
@@ -144,11 +245,37 @@ export default function ArenaModeration() {
         </TabsList>
       </Tabs>
 
+      {/* Shared search */}
+      <div className="mt-3 flex gap-2 flex-wrap items-center">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search by user name (reporter, reported, blocker, blocked)…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        {tab === "reports" && (
+          <select
+            value={reasonFilter}
+            onChange={(e) => setReasonFilter(e.target.value)}
+            className="bg-card/60 border border-border rounded p-2 text-sm"
+          >
+            {REASONS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
       {tab === "reports" && (
         <>
           <Tabs value={statusTab} onValueChange={(v) => setStatusTab(v as ReportStatus)} className="mt-3">
             <TabsList>
-              <TabsTrigger value="pending">Pending {counts.pending > 0 && `(${counts.pending})`}</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
               <TabsTrigger value="resolved">Resolved</TabsTrigger>
               <TabsTrigger value="dismissed">Dismissed</TabsTrigger>
             </TabsList>
@@ -157,7 +284,7 @@ export default function ArenaModeration() {
           <Card className="mt-4 p-4 space-y-3">
             {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
             {!loading && reports.length === 0 && (
-              <p className="text-sm text-muted-foreground/60">No {statusTab} reports.</p>
+              <p className="text-sm text-muted-foreground/60">No matching {statusTab} reports.</p>
             )}
             {reports.map((r) => {
               const reporter = profileFor(r.reporter_id);
@@ -231,6 +358,7 @@ export default function ArenaModeration() {
                 </div>
               );
             })}
+            {Pager}
           </Card>
         </>
       )}
@@ -239,7 +367,7 @@ export default function ArenaModeration() {
         <Card className="mt-4 p-4 space-y-2">
           {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
           {!loading && blocks.length === 0 && (
-            <p className="text-sm text-muted-foreground/60">No blocks recorded.</p>
+            <p className="text-sm text-muted-foreground/60">No matching blocks.</p>
           )}
           {blocks.map((b) => {
             const blocker = profileFor(b.blocker_id);
@@ -270,6 +398,7 @@ export default function ArenaModeration() {
               </div>
             );
           })}
+          {Pager}
         </Card>
       )}
     </AdminShell>
