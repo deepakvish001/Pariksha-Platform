@@ -7,6 +7,8 @@ import { useDailyChallenge } from "../dailyLoop";
 import { joinQueue, createCodeRoom } from "../hooks";
 import { Loader2, Calendar, Users, Trophy, Hash } from "lucide-react";
 import { toast } from "sonner";
+import { DailyReminderCard } from "../components/DailyReminderCard";
+import { DailyQuestProgress } from "../components/DailyQuestProgress";
 
 /**
  * Daily challenge launcher.
