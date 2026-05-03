@@ -187,7 +187,7 @@ describe("ArenaJoinCode (deep link)", () => {
   it("renders countdown derived from peek and turns red near expiry", async () => {
     dispatch({
       battle_peek_code: peekFuture(30_000), // 30s left
-      battle_join_code: { data: null, error: { message: "boom" } }, // prevent auto-redirect
+      battle_join_code: new Promise(() => {}), // never resolves → stays in joining state
     });
     renderWithRouter(<ArenaJoinCode />, "/arena/join/ABC123");
     const cd = await screen.findByTestId("join-countdown");
@@ -198,7 +198,7 @@ describe("ArenaJoinCode (deep link)", () => {
   it("disables join and shows expiry UI when the room expires while on the page", async () => {
     dispatch({
       battle_peek_code: peekFuture(2_000), // expires almost immediately
-      battle_join_code: { data: null, error: { message: "boom" } },
+      battle_join_code: new Promise(() => {}),
     });
     renderWithRouter(<ArenaJoinCode />, "/arena/join/ABC123");
     await screen.findByTestId("join-countdown");
