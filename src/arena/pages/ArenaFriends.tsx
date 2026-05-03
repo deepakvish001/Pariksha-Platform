@@ -1066,6 +1066,32 @@ export default function ArenaFriends() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Unblock confirmation */}
+      <AlertDialog open={!!unblockTarget} onOpenChange={(o) => !o && setUnblockTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Unblock {unblockTarget?.full_name ?? "this player"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              They'll be able to send you friend requests, challenge you to matches, and appear in your discovery list again. You can re-block them at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const t = unblockTarget;
+                setUnblockTarget(null);
+                if (t) await unblockUser(t.user_id);
+              }}
+            >
+              Unblock
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
