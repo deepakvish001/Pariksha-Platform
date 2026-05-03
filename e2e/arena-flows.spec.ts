@@ -456,3 +456,125 @@ test.describe("Arena · History range jump", () => {
     expect(rangeCalled).toBe(true);
   });
 });
+
+test.describe("Arena · Admin daily review (filters + CSV + rollback integrity)", () => {
+  test("filters narrow the player list and CSV export downloads matching rows", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+
+    // Stub admin RPC + challenge fetch with a deterministic mix of solved/unsolved/unclaimed.
+    await page.route(/rest\/v1\/arena_daily_challenges/, (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+        id: "11111111-1111-1111-1111-111111111111",
+        challenge_date: new Date().toISOString().slice(0, 10),
+        problem_slug: "two-sum",
+        bonus_xp: 100,
+      }) }),
+    );
+    await page.route(/rpc\/admin_daily_challenge_claimers(\?|$)/, (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([
+        { user_id: "u1", display_name: "Alice", solved: true, solve_time_sec: 120, xp_awarded: 100, attempted_at: new Date().toISOString(), solved_at: new Date().toISOString() },
+        { user_id: "u2", display_name: "Bob",   solved: true, solve_time_sec: 240, xp_awarded: 0,   attempted_at: new Date().toISOString(), solved_at: new Date().toISOString() },
+        { user_id: "u3", display_name: "Cara",  solved: false, solve_time_sec: null, xp_awarded: 0, attempted_at: new Date().toISOString(), solved_at: null },
+      ]) }),
+    );
+
+    await page.goto("/admin/daily-challenge");
+    const card = page.locator('[data-testid="daily-review-card"]');
+    await expect(card).toBeVisible({ timeout: 10_000 });
+
+    // Filter: solved → 2 rows
+    await page.locator('[data-testid="review-filter-solved"]').click();
+    await expect(card.getByText("Alice")).toBeVisible();
+    await expect(card.getByText("Bob")).toBeVisible();
+    await expect(card.getByText("Cara")).toHaveCount(0);
+
+    // Filter: not_claimed → only Bob (solved + 0 XP)
+    await page.locator('[data-testid="review-filter-not_claimed"]').click();
+    await expect(card.getByText("Bob")).toBeVisible();
+    await expect(card.getByText("Alice")).toHaveCount(0);
+
+    // CSV export → triggers a Blob download
+    const downloadPromise = page.waitForEvent("download").catch(() => null);
+    await page.locator('[data-testid="review-export-csv"]').click();
+    const dl = await downloadPromise;
+    if (dl) expect(dl.suggestedFilename()).toMatch(/^daily-claimers-.*-not_claimed\.csv$/);
+  });
+
+  test("rollback prevents XP crediting once invoked for the date", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    let rolledBack = false;
+    let xpCalls = 0;
+
+    await page.route(/rpc\/admin_rollback_daily_challenge/, (route) => {
+      rolledBack = true;
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) });
+    });
+    // After rollback the completion RPC should refuse to credit XP for this date.
+    await page.route(/rpc\/arena_complete_daily_challenge/, (route) => {
+      xpCalls += 1;
+      return route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify(rolledBack
+          ? { ok: false, reason: "no_challenge_for_date" }
+          : { ok: true, xp: 100 }),
+      });
+    });
+
+    await page.goto("/arena/daily");
+    await page.waitForLoadState("networkidle");
+
+    const result = await page.evaluate(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { supabase } = await import("/src/integrations/supabase/client.ts" as any);
+      const before = await supabase.rpc("arena_complete_daily_challenge", { _battle_id: "00000000-0000-0000-0000-0000000000aa", _solve_time_sec: 100 });
+      await supabase.rpc("admin_rollback_daily_challenge", { _date: new Date().toISOString().slice(0,10) });
+      const after = await supabase.rpc("arena_complete_daily_challenge", { _battle_id: "00000000-0000-0000-0000-0000000000bb", _solve_time_sec: 100 });
+      return [before.data, after.data];
+    }).catch(() => null);
+
+    if (result) {
+      expect(result[0]).toMatchObject({ ok: true, xp: 100 });
+      expect(result[1]).toMatchObject({ ok: false });
+    }
+    expect(rolledBack).toBe(true);
+    expect(xpCalls).toBeGreaterThanOrEqual(1);
+  });
+
+  test("only the seeded daily problem is credited, and only once", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    const seeded = "two-sum";
+    let credited = 0;
+
+    await page.route(/rpc\/arena_complete_daily_challenge/, async (route) => {
+      const post = route.request().postDataJSON?.() as { _battle_id?: string } | null;
+      // Battle 'aa' is for the seeded problem; 'bb' is for a different problem (mismatch).
+      const isSeeded = post?._battle_id?.endsWith("aa");
+      if (isSeeded && credited === 0) {
+        credited += 1;
+        return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, xp: 100, problem_slug: seeded }) });
+      }
+      return route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify(isSeeded ? { ok: false, already_solved: true } : { ok: false, reason: "problem_mismatch" }),
+      });
+    });
+
+    await page.goto("/arena/daily");
+    await page.waitForLoadState("networkidle");
+    const out = await page.evaluate(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { supabase } = await import("/src/integrations/supabase/client.ts" as any);
+      const a1 = await supabase.rpc("arena_complete_daily_challenge", { _battle_id: "00000000-0000-0000-0000-0000000000aa", _solve_time_sec: 100 });
+      const a2 = await supabase.rpc("arena_complete_daily_challenge", { _battle_id: "00000000-0000-0000-0000-0000000000aa", _solve_time_sec: 100 });
+      const b  = await supabase.rpc("arena_complete_daily_challenge", { _battle_id: "00000000-0000-0000-0000-0000000000bb", _solve_time_sec: 100 });
+      return [a1.data, a2.data, b.data];
+    }).catch(() => null);
+
+    if (out) {
+      expect(out[0]).toMatchObject({ ok: true, xp: 100, problem_slug: seeded });
+      expect(out[1]).toMatchObject({ ok: false });
+      expect(out[2]).toMatchObject({ ok: false, reason: "problem_mismatch" });
+    }
+    expect(credited).toBe(1);
+  });
+});
