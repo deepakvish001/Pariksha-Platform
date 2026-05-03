@@ -152,9 +152,15 @@ export default function BattleRoom() {
         </div>
       </GlassPanel>
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_minmax(0,1.6fr)_300px]">
+      <div
+        data-testid="battle-grid"
+        className="grid gap-3 grid-cols-1 xl:grid-cols-[minmax(320px,28rem)_minmax(0,1fr)_minmax(280px,20rem)]"
+      >
         {/* Problem */}
-        <GlassPanel className="p-4 max-h-[75vh] overflow-y-auto min-w-0">
+        <GlassPanel
+          data-testid="battle-problem-col"
+          className="p-4 max-h-[75vh] overflow-y-auto min-w-0 xl:min-w-[320px]"
+        >
           {problemLoading || !problem ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
@@ -185,8 +191,8 @@ export default function BattleRoom() {
         </GlassPanel>
 
         {/* Editor */}
-        <div className="space-y-2 min-w-0">
-          <GlassPanel className="p-2 flex items-center gap-2">
+        <div data-testid="battle-editor-col" className="space-y-2 min-w-0 w-full">
+          <GlassPanel className="p-2 flex items-center gap-2 flex-wrap">
             <select
               value={lang.key}
               onChange={(e) => setLang(LANG_OPTIONS.find((l) => l.key === e.target.value)!)}
@@ -203,8 +209,8 @@ export default function BattleRoom() {
               </NeonButton>
             </div>
           </GlassPanel>
-          <GlassPanel className="overflow-hidden">
-            <div className="h-[55vh]">
+          <GlassPanel className="overflow-hidden min-w-0">
+            <div className="h-[45vh] md:h-[55vh] w-full min-w-0">
               <MonacoEditor value={code} onChange={onCodeChange} language={lang.key === "cpp" ? "cpp" : lang.key} />
             </div>
           </GlassPanel>
