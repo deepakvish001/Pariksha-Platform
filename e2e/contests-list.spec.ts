@@ -24,4 +24,20 @@ test.describe("Contests list", () => {
     // Lifecycle badge (draft/active/closed) should always render.
     await expect(page.locator("text=/^(draft|active|closed)$/i").first()).toBeVisible();
   });
+
+  test("section headings reflect lifecycle of contests shown", async ({ page }) => {
+    await page.goto("/contests");
+    const sectionHeadings = page.getByRole("heading", {
+      name: /live now|upcoming|past contests/i,
+    });
+    const count = await sectionHeadings.count();
+    if (count === 0) test.skip(true, "No contests in this environment");
+
+    // Each section heading must be one of the expected lifecycle labels.
+    for (let i = 0; i < count; i++) {
+      const text = (await sectionHeadings.nth(i).textContent())?.trim().toLowerCase() ?? "";
+      expect(text).toMatch(/^(live now|upcoming|past contests)$/);
+    }
+  });
 });
+

@@ -179,6 +179,9 @@ const CodingProblemDetail = () => {
   const [executionErrorDetails, setExecutionErrorDetails] = useState<boolean>(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  // Inline contest-submission error banner (shown above the editor when a
+  // contest-context submission is rejected by the server).
+  const [contestError, setContestError] = useState<string | null>(null);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
   const editorRef = useRef<MonacoEditorHandle>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
@@ -688,6 +691,7 @@ const CodingProblemDetail = () => {
 
     // If submitting in the context of a contest, validate server-side first so
     // we surface clear errors (not registered, contest closed, already solved, etc.)
+    setContestError(null);
     const contestSlug = searchParams.get("contest");
     if (contestSlug) {
       try {
@@ -705,20 +709,16 @@ const CodingProblemDetail = () => {
           if (checkErr) throw checkErr;
           const v = check as { ok: boolean; message?: string; code?: string } | null;
           if (v && !v.ok) {
-            toast({
-              title: "Submission blocked",
-              description: v.message ?? "Cannot submit to this contest right now.",
-              variant: "destructive",
-            });
+            const msg = v.message ?? "Cannot submit to this contest right now.";
+            setContestError(msg);
+            toast({ title: "Submission blocked", description: msg, variant: "destructive" });
             return;
           }
         }
       } catch (err) {
-        toast({
-          title: "Contest validation failed",
-          description: (err as Error).message,
-          variant: "destructive",
-        });
+        const msg = (err as Error).message;
+        setContestError(msg);
+        toast({ title: "Contest validation failed", description: msg, variant: "destructive" });
         return;
       }
     }
@@ -781,6 +781,23 @@ const CodingProblemDetail = () => {
         <title>{problem.title} — Coding Problem | Byteskill</title>
         <meta name="description" content={problem.description.slice(0, 155)} />
       </Helmet>
+
+      {contestError && (
+        <div
+          data-testid="contest-submit-error"
+          role="alert"
+          className="border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive flex items-center justify-between gap-3"
+        >
+          <span><strong className="font-semibold">Submission blocked:</strong> {contestError}</span>
+          <button
+            onClick={() => setContestError(null)}
+            className="text-destructive/70 hover:text-destructive text-xs underline"
+            aria-label="Dismiss"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Top toolbar */}
       <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
