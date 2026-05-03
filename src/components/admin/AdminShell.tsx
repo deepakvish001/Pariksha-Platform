@@ -322,6 +322,7 @@ const AdminSidebar = () => {
                               ref={active ? (activeRef as any) : undefined}
                               to={item.to}
                               end={item.end}
+                              data-testid={item.testId ?? `admin-nav-${item.to.replace(/^\/admin\/?/, "") || "dashboard"}`}
                               key={`${item.to}-${active ? flashKey : "x"}`}
                               className={cn(
                                 "flex items-center gap-2 rounded-md transition-colors",
@@ -356,7 +357,7 @@ const AdminSidebar = () => {
 
                           return (
                             <SidebarMenuItem key={item.to}>
-                              <SidebarMenuButton asChild isActive={active}>
+                              <SidebarMenuButton asChild isActive={active || subActive}>
                                 {tracked ? (
                                   <Tooltip>
                                     <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
@@ -382,6 +383,36 @@ const AdminSidebar = () => {
                                   linkEl
                                 )}
                               </SidebarMenuButton>
+
+                              {showSubNav && (
+                                <ul
+                                  data-testid={`admin-subnav-${item.to.replace(/^\/admin\/?/, "")}`}
+                                  className="mt-1 ml-6 flex flex-col gap-0.5 border-l border-border/40 pl-2"
+                                >
+                                  {subItems.map((sub) => {
+                                    const SubIcon = sub.icon;
+                                    const subOn = isActive(sub.to, sub.end, sub.match);
+                                    return (
+                                      <li key={sub.to}>
+                                        <NavLink
+                                          to={sub.to}
+                                          end={sub.end}
+                                          data-testid={sub.testId}
+                                          className={cn(
+                                            "flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors",
+                                            subOn
+                                              ? "bg-primary/10 text-primary font-medium"
+                                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                                          )}
+                                        >
+                                          <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                                          <span className="truncate">{sub.label}</span>
+                                        </NavLink>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
                             </SidebarMenuItem>
                           );
                         })}
