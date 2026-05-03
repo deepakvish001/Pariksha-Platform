@@ -39,18 +39,22 @@ const adminPageFiles = walk(ADMIN_PAGES_DIR);
 const orphans = [];
 for (const file of adminPageFiles) {
   const rel = relative(SRC, file).replace(/\\/g, "/").replace(/\.(tsx|ts)$/, "");
-  // Look for any import from "@/<rel>" or "./<...>" matching this path.
+  // Aliased import: @/pages/admin/Foo or @/pages/admin/contests/Bar
   const aliasNeedle = `@/${rel}`;
-  const baseName = rel.split("/").pop();
+  // Relative import from App.tsx etc: ./pages/admin/Foo or ./pages/admin/contests/Bar
+  const relativeNeedle = `./${rel}`;
   let referenced = false;
   for (const [other, src] of allSource) {
     if (other === file) continue;
-    if (src.includes(aliasNeedle)) { referenced = true; break; }
-    // Relative import patterns like "./pages/admin/Foo" from App.tsx
     if (
-      src.includes(`pages/admin/${baseName}"`) ||
-      src.includes(`pages/admin/${baseName}'`)
-    ) { referenced = true; break; }
+      src.includes(`"${aliasNeedle}"`) ||
+      src.includes(`'${aliasNeedle}'`) ||
+      src.includes(`"${relativeNeedle}"`) ||
+      src.includes(`'${relativeNeedle}'`)
+    ) {
+      referenced = true;
+      break;
+    }
   }
   if (!referenced) {
     orphans.push(relative(ROOT, file));
