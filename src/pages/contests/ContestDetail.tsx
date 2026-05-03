@@ -56,7 +56,8 @@ const ContestDetail = () => {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="uppercase">{clock.phase}</Badge>
+              <Badge variant="outline" className="uppercase">{lifecycle}</Badge>
+              <Badge variant="outline" className="uppercase opacity-70">{clock.phase}</Badge>
               <Badge variant="outline" className="capitalize">{contest.scoring_mode}</Badge>
               {contest.visibility === "private" && <Badge variant="outline"><Lock className="mr-1 h-3 w-3" />Private</Badge>}
             </div>
