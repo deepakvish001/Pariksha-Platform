@@ -788,7 +788,10 @@ const CodingProblemDetail = () => {
           role="alert"
           className="border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive flex items-center justify-between gap-3"
         >
-          <span><strong className="font-semibold">Submission blocked:</strong> {contestError}</span>
+          <span>
+            <strong className="font-semibold">Submission blocked:</strong>{" "}
+            <span data-testid="contest-submit-error-message">{contestError}</span>
+          </span>
           <button
             data-testid="contest-submit-error-dismiss"
             onClick={() => setContestError(null)}
