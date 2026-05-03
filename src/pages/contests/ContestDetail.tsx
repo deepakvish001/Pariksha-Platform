@@ -11,9 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CalendarDays, Trophy, Users, ArrowRight, Lock, Check, AlertCircle } from "lucide-react";
+import { CalendarDays, Trophy, Users, ArrowRight, Lock, Check, AlertCircle, ShieldCheck } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import SecureContestGate from "@/components/contests/SecureContestGate";
+import { useEffect, useState as useReactState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const fmtDate = (s: string) => new Date(s).toLocaleString();
 
