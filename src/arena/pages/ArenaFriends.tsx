@@ -61,13 +61,13 @@ export default function ArenaFriends() {
         <h1 className="text-xl font-black">Friends</h1>
       </GlassPanel>
       <GlassPanel className="p-4 space-y-3">
-        <div className="text-xs uppercase text-cyan-300/80">Find players</div>
+        <div className="text-xs uppercase text-primary/80">Find players</div>
         <div className="flex gap-2">
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name" onKeyDown={(e) => e.key === "Enter" && searchUsers()} />
           <Button onClick={searchUsers}><Search className="h-4 w-4" /></Button>
         </div>
         {results.map((r) => (
-          <div key={r.user_id} className="flex items-center gap-3 rounded border border-white/10 p-2">
+          <div key={r.user_id} className="flex items-center gap-3 rounded border border-border p-2">
             <Avatar className="h-8 w-8"><AvatarImage src={r.avatar_url ?? undefined} /><AvatarFallback>{(r.full_name ?? "?").slice(0, 2)}</AvatarFallback></Avatar>
             <span className="flex-1">{r.full_name ?? "Anonymous"}</span>
             <NeonButton size="sm" onClick={() => addFriend(r.user_id)}><UserPlus className="h-3 w-3 mr-1" /> Add</NeonButton>
@@ -76,7 +76,7 @@ export default function ArenaFriends() {
       </GlassPanel>
       {incoming.length > 0 && (
         <GlassPanel glow="magenta" className="p-4 space-y-2">
-          <div className="text-xs uppercase text-fuchsia-300/80">Incoming requests</div>
+          <div className="text-xs uppercase text-accent-foreground/80">Incoming requests</div>
           {incoming.map((f) => (
             <div key={f.id} className="flex items-center gap-3">
               <Avatar className="h-8 w-8"><AvatarImage src={f.profile?.avatar_url ?? undefined} /><AvatarFallback>{(f.profile?.full_name ?? "?").slice(0, 2)}</AvatarFallback></Avatar>
@@ -88,20 +88,20 @@ export default function ArenaFriends() {
         </GlassPanel>
       )}
       <GlassPanel className="p-4 space-y-2">
-        <div className="text-xs uppercase text-cyan-300/80">Friends ({friends.length})</div>
-        {friends.length === 0 && <div className="text-sm text-white/40">No friends yet.</div>}
+        <div className="text-xs uppercase text-primary/80">Friends ({friends.length})</div>
+        {friends.length === 0 && <div className="text-sm text-muted-foreground/60">No friends yet.</div>}
         {friends.map((f) => (
           <div key={f.id} className="flex items-center gap-3">
             <Avatar className="h-8 w-8"><AvatarImage src={f.profile?.avatar_url ?? undefined} /><AvatarFallback>{(f.profile?.full_name ?? "?").slice(0, 2)}</AvatarFallback></Avatar>
             <span className="flex-1">{f.profile?.full_name ?? "Player"}</span>
-            <Button size="sm" variant="ghost" onClick={() => remove(f)} className="text-white/40 hover:text-red-400">Remove</Button>
+            <Button size="sm" variant="ghost" onClick={() => remove(f)} className="text-muted-foreground/60 hover:text-red-400">Remove</Button>
           </div>
         ))}
         {outgoing.length > 0 && (
-          <div className="pt-3 border-t border-white/10">
-            <div className="text-[10px] uppercase text-white/40 mb-1">Pending sent</div>
+          <div className="pt-3 border-t border-border">
+            <div className="text-[10px] uppercase text-muted-foreground/60 mb-1">Pending sent</div>
             {outgoing.map((f) => (
-              <div key={f.id} className="flex items-center gap-3 text-sm text-white/50">
+              <div key={f.id} className="flex items-center gap-3 text-sm text-muted-foreground">
                 <span>{f.profile?.full_name ?? "Player"}</span>
                 <span className="ml-auto text-xs">waiting...</span>
               </div>

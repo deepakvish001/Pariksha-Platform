@@ -27,7 +27,7 @@ export default function AdminArena() {
       <div className="grid gap-4 md:grid-cols-4">
         {cards.map((c) => (
           <GlassPanel key={c.label} glow={c.glow} className="p-5">
-            <div className="text-xs uppercase text-white/50">{c.label}</div>
+            <div className="text-xs uppercase text-muted-foreground">{c.label}</div>
             <div className="text-3xl font-black mt-2">{c.value}</div>
           </GlassPanel>
         ))}

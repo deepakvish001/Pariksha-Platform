@@ -45,11 +45,11 @@ export default function ArenaHome() {
           <h1 className="relative text-5xl font-black tracking-tight bg-gradient-to-br from-white via-cyan-200 to-fuchsia-300 bg-clip-text text-transparent">
             Enter the Arena
           </h1>
-          <p className="relative mt-2 text-white/60">1v1 real-time coding battles · Earn Elo · Climb the ladder</p>
+          <p className="relative mt-2 text-muted-foreground">1v1 real-time coding battles · Earn Elo · Climb the ladder</p>
           {rating && (
             <div className="relative mt-4 flex items-center justify-center gap-3">
               <EloBadge elo={rating.elo} />
-              <span className="text-xs text-white/50">
+              <span className="text-xs text-muted-foreground">
                 {rating.wins}W · {rating.losses}L · {rating.current_streak > 0 ? `🔥 ${rating.current_streak}` : ""}
               </span>
             </div>
@@ -59,18 +59,18 @@ export default function ArenaHome() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <GlassPanel className="p-5 md:col-span-2 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
             <Zap className="h-4 w-4" /> Quick Match
           </h2>
           <div>
-            <label className="text-xs text-white/50 uppercase">Difficulty</label>
+            <label className="text-xs text-muted-foreground uppercase">Difficulty</label>
             <div className="mt-2 flex gap-2">
               {(["easy", "medium", "hard"] as BattleDifficulty[]).map((d) => (
                 <button
                   key={d}
                   onClick={() => setDifficulty(d)}
                   className={`flex-1 rounded-md border px-3 py-2 text-sm capitalize transition ${
-                    difficulty === d ? "border-cyan-400 bg-cyan-400/10 text-cyan-300" : "border-white/10 text-white/60 hover:text-white"
+                    difficulty === d ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {d}
@@ -79,13 +79,13 @@ export default function ArenaHome() {
             </div>
           </div>
           <div>
-            <label className="text-xs text-white/50 uppercase">Topic (optional)</label>
+            <label className="text-xs text-muted-foreground uppercase">Topic (optional)</label>
             <div className="mt-2 flex flex-wrap gap-2">
-              <button onClick={() => setTopic(null)} className={`rounded-full border px-3 py-1 text-xs ${topic === null ? "border-cyan-400 text-cyan-300" : "border-white/10 text-white/50"}`}>
+              <button onClick={() => setTopic(null)} className={`rounded-full border px-3 py-1 text-xs ${topic === null ? "border-primary text-primary" : "border-border text-muted-foreground"}`}>
                 Any
               </button>
               {TOPICS.map((t) => (
-                <button key={t} onClick={() => setTopic(t)} className={`rounded-full border px-3 py-1 text-xs capitalize ${topic === t ? "border-cyan-400 text-cyan-300" : "border-white/10 text-white/50 hover:text-white"}`}>
+                <button key={t} onClick={() => setTopic(t)} className={`rounded-full border px-3 py-1 text-xs capitalize ${topic === t ? "border-primary text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
                   {t.replace("-", " ")}
                 </button>
               ))}
@@ -97,20 +97,20 @@ export default function ArenaHome() {
         </GlassPanel>
 
         <GlassPanel glow="magenta" className="p-5 space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-fuchsia-300 flex items-center gap-2">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-accent-foreground flex items-center gap-2">
             <Target className="h-4 w-4" /> Other Modes
           </h2>
-          <button onClick={() => navigate("/arena/private")} className="block w-full rounded-md border border-white/10 p-3 text-left hover:border-fuchsia-400/50 transition">
+          <button onClick={() => navigate("/arena/private")} className="block w-full rounded-md border border-border p-3 text-left hover:border-fuchsia-400/50 transition">
             <div className="font-bold">Private Match</div>
-            <div className="text-xs text-white/50">Challenge a friend</div>
+            <div className="text-xs text-muted-foreground">Challenge a friend</div>
           </button>
-          <button onClick={() => navigate("/arena/leaderboard")} className="block w-full rounded-md border border-white/10 p-3 text-left hover:border-cyan-400/50 transition">
+          <button onClick={() => navigate("/arena/leaderboard")} className="block w-full rounded-md border border-border p-3 text-left hover:border-primary/50 transition">
             <div className="font-bold flex items-center gap-2"><Flame className="h-4 w-4 text-orange-400" /> Leaderboard</div>
-            <div className="text-xs text-white/50">Top 100 players</div>
+            <div className="text-xs text-muted-foreground">Top 100 players</div>
           </button>
-          <button onClick={() => navigate("/arena/history")} className="block w-full rounded-md border border-white/10 p-3 text-left hover:border-lime-400/50 transition">
+          <button onClick={() => navigate("/arena/history")} className="block w-full rounded-md border border-border p-3 text-left hover:border-lime-400/50 transition">
             <div className="font-bold">My Battle History</div>
-            <div className="text-xs text-white/50">Recent matches & replays</div>
+            <div className="text-xs text-muted-foreground">Recent matches & replays</div>
           </button>
         </GlassPanel>
       </div>
