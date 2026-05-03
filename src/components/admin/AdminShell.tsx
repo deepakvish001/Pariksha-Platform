@@ -577,8 +577,8 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
                 <span>Jump</span>
                 <kbd className="rounded border border-border/50 bg-muted px-1 text-[10px] font-mono">⌘K</kbd>
               </Button>
-              <Tooltip>
-                <TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-500">
                       <span className="relative flex h-2 w-2">
@@ -592,8 +592,8 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
                   <TooltipContent side="bottom" className="text-xs">
                     Realtime admin sync is active
                   </TooltipContent>
-                </TooltipProvider>
-              </Tooltip>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
           <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">{children}</main>
