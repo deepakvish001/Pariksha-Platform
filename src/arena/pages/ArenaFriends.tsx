@@ -451,7 +451,7 @@ export default function ArenaFriends() {
 
       <GlassPanel className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="text-xs uppercase text-primary/80">Arena players</div>
+          <div className="text-xs uppercase text-primary/80">All players</div>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
