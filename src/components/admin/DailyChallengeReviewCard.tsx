@@ -155,6 +155,21 @@ export function DailyChallengeReviewCard({ initialDate }: { initialDate?: string
 
   const solvedCount = claimers.filter((c) => c.solved).length;
 
+  if (roleLoading) {
+    return (
+      <Card className="p-4 flex items-center gap-2 text-xs text-muted-foreground" data-testid="daily-review-card">
+        <Loader2 className="h-4 w-4 animate-spin" /> Checking access…
+      </Card>
+    );
+  }
+  if (!isAdmin) {
+    return (
+      <Card className="p-4 flex items-center gap-2 text-xs text-muted-foreground" data-testid="daily-review-card">
+        <Lock className="h-4 w-4" /> Admin access required to view Daily Review filters and exports.
+      </Card>
+    );
+  }
+
   return (
     <Card className="p-4 space-y-3" data-testid="daily-review-card">
       <div className="flex items-center justify-between gap-2 flex-wrap">
