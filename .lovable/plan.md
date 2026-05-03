@@ -1,81 +1,113 @@
-# Arena · Engagement Expansion Plan
+# Plan: Solo Gaming Arena
 
-Today the Arena ships Quick Match, Create-Room codes, Friends, Leaderboard, History, Rematch, and basic Elo. To make it feel like a *destination* students return to daily, this plan layers progression, social pressure, content variety, and live spectacle on top of the existing battle engine.
+A single-player, time-pressured practice mode under `/arena/solo` that mimics the stress of real interviews, online assessments (OAs), and coding contests. Built on top of the existing Arena infrastructure (problems, XP engine, daily loop, leaderboard) — no new code editor; reuse what battle rooms already have.
 
-The features are grouped into five tracks, ordered by impact-vs-effort. Each phase is independently shippable.
+## Goals
 
----
+- Train students under realistic time pressure (no opponent required, available 24/7).
+- Three flavors mapped to real-world formats: Interview, Assessment, Contest.
+- Strong gamification: streaks, XP, ranks, badges, daily quests, leaderboard.
+- Anti-cheat-aware (focus loss, paste tracking, server-validated scoring).
 
-## Phase 1 · Daily Habit Loop  (highest ROI)
+## Three Solo Modes
 
-Goal: give every student a reason to open Arena every day.
+1. **Interview Sim (1 problem, 30–45 min)**
+   - Picks 1 problem at chosen difficulty/topic.
+   - Phases: 5 min "understand & clarify" (hints locked) → coding → final 5 min "explain" prompt.
+   - Scoring: correctness + time bonus + first-try bonus.
 
-1. **Daily Challenge Battle** — One curated problem per day, same for every player globally. Solving it inside the daily window awards bonus XP + a streak point. Surface a "Today's Challenge" card on `ArenaHome` and a global completion counter ("4,217 students solved today").
-2. **Arena Streaks** — Track consecutive days with at least one battle. Show flame icon in header, milestone rewards at 3 / 7 / 30 / 100 days, optional Streak Freeze (1 per week) reusing the existing streak-recovery primitive.
-3. **Daily Quests** — 3 rotating micro-goals (e.g. "Win 1 Easy", "Submit in <5 min", "Beat someone +50 Elo"). Tracked server-side, claimable for XP.
-4. **Result-screen XP & loot reveal** — Animated XP bar fill, level-up burst, loot card (avatar frame / banner / title) on `BattleResult`.
+2. **Assessment Mode (3–5 problems, 60–90 min, fixed budget)**
+   - Mixed difficulty (Easy + Medium + Hard) like Hackerrank/Codility OAs.
+   - One global timer; partial credit per problem; no going back unless time remains.
+   - Final report card: per-problem time, attempts, score, percentile vs cohort.
 
-## Phase 2 · Progression & Identity
+3. **Contest Mode (5 problems, 90 min, scheduled or on-demand)**
+   - ICPC-style scoring: points + penalty per wrong submit + penalty time.
+   - Live solo leaderboard for that contest instance (compared to all who took it).
+   - "Virtual contest" replays of past contests.
 
-Goal: turn Elo from a number into a story players feel proud of.
+## Gamification Layer
 
-1. **Ranked Tiers + Seasons** — Bronze → Silver → Gold → Platinum → Diamond → Master, each split into divisions. Visible tier badge replaces raw Elo on profiles, leaderboards, opponent cards. Seasons reset every 6 weeks; previous season's peak tier is permanently displayed.
-2. **Promotion / Demotion Series** — Best-of-3 mini-series at tier boundaries with dedicated "Promo" UI for tension.
-3. **Profile Showcase** — A `/u/:username/arena` panel (extends existing public profiles) showing tier, win rate, favorite language, longest streak, recent battles, and equippable cosmetics earned.
-4. **Cosmetic Unlocks** — Avatar frames, name colors, victory banners, code-editor themes earned by tier, streaks, achievements. Pure cosmetic — no pay-to-win.
+- **Solo Rating (Elo-like)**: separate `solo_rating` per mode; visible on profile.
+- **Tiers**: Bronze → Silver → Gold → Platinum → Diamond → Grandmaster.
+- **Daily Solo Quests** (rotating): "Finish 1 Interview Sim under 25 min", "Score 80%+ on an Assessment", "Solve 1 Hard with 0 wrong submits". Hooks into existing daily quest table.
+- **Streaks**: separate `solo_streak` (days with ≥1 completed solo session). Streak freeze reuses existing recovery system.
+- **XP rewards**: scaled by mode, difficulty, score, and time bonus. Server-side via existing XP transaction RPC.
+- **Badges**: "First Blood" (sub-10-min solve), "Iron Nerves" (Hard with 0 paste events), "Marathoner" (3 contests in a week), "Comeback" (+200 rating in 7 days).
+- **Power-ups (earned, not bought)**: 1 hint, 1 testcase reveal, 1 timer pause (interview only) — limited per week.
 
-## Phase 3 · Live Social Energy
+## Pressure & Realism Mechanics
 
-Goal: make the Arena feel inhabited, not empty.
+- Visible countdown with color escalation (green → amber → red at <5 min).
+- Auto-submit on timeout; no late saves.
+- "Focus mode": hides sidebar/notifications; warns on tab switch (count tracked, shown in report).
+- Paste counter and large-paste detection logged per submission.
+- Post-session report: timeline (read → first compile → first AC), wrong-submit graph, percentile.
 
-1. **Spectator Mode** — Read-only `/arena/watch/:battleId` route with redacted code, live test progress, both players' typing indicators. Linkable from leaderboard ("watch live"). Drives FOMO.
-2. **Live Lobby Feed** — Ticker on `ArenaHome` showing recent finishes ("@anya beat @raj 3-0 in 4:12"), top-of-leaderboard climbs, daily-challenge solves.
-3. **Quick Reactions / Emotes** — During battle, send a curated emote (5-6 options: GG, GLHF, 🔥, 🤯, 👏). Server-rate-limited, shown briefly on opponent card. Toxicity-safe by being closed-set.
-4. **Post-match Compliments** — "GG" button on result screen sends a positive-only signal that becomes a public profile counter ("Received 142 GGs").
+## Data Model (new tables)
 
-## Phase 4 · Game Modes & Content Variety
+```text
+solo_sessions
+  id, user_id, mode (interview|assessment|contest), status, started_at,
+  ends_at, completed_at, score, max_score, rating_delta, focus_lost_count,
+  paste_count, config jsonb (problem_slugs[], difficulty, duration_s)
 
-Goal: keep the Arena from feeling like one repeating game.
+solo_session_problems
+  session_id, problem_slug, ord, awarded_score, attempts, wrong_submits,
+  first_ac_at, time_to_ac_s
 
-1. **Game Mode Picker** on Quick Match:
-   - **Classic** (current) — full problem, fastest correct submission wins.
-   - **Speed** — Easy-only, 5-min timer, first to pass all tests.
-   - **Bug Hunt** — Pre-written buggy code, fix to pass tests fastest.
-   - **Optimize** — Both pass; lower runtime/memory wins.
-   - **Blind** — Description only; no example inputs.
-2. **3v3 Squad Battles** — Friends queue together, sum of points across 3 problems decides winner. Powerful viral hook for college groups.
-3. **Tournaments** — Scheduled bracket events ("Sunday Sprint, 8 PM"), 16/32/64 players, single-elimination, auto-advance. Reuses existing `contests` table where possible.
-4. **Topic-Targeted Match** — Choose Arrays / DP / Graphs / Strings; matchmaker pairs you with someone who picked the same topic. Doubles as practice for upcoming interviews.
+solo_ratings
+  user_id, mode, rating, peak_rating, games_played, tier
 
-## Phase 5 · Coach & Carry
+solo_contests        -- for scheduled/virtual contests
+  id, slug, title, problem_slugs[], duration_s, starts_at, ends_at,
+  is_virtual, created_by
 
-Goal: convert Arena from entertainment into measurable interview prep.
+solo_contest_entries
+  contest_id, user_id, started_at, finished_at, score, penalty_s, rank
+```
 
-1. **Post-match AI Review** — One-click "Explain my solution" + "Show me opponent's approach (after match)" using existing Lovable AI gateway. Highlights complexity, edge cases missed, and a cleaner refactor.
-2. **Weakness Heatmap** — Aggregate battle outcomes by topic/difficulty into a `/arena/insights` page. "You lose 70% of Graph battles — drill it" with deep link to library.
-3. **Friend Challenge Notifications** — In-app + email push: "@deepak just beat your high score, can you reclaim it?"
-4. **Shareable Replay Cards** — Auto-generated branded image of a victory (problem, time, opponent, tier change) for WhatsApp / LinkedIn. Mirrors existing achievement social cards.
+All tables RLS-locked: users read/write only their own rows; admins read all. Contest definitions readable by all authenticated users.
 
----
+## Server-Side Logic (Edge Functions / RPCs)
 
-## Cross-cutting UX polish
+- `solo_start_session(mode, config)` → picks problems server-side (anti-cheat), creates session row, returns sanitized payload (no test answers).
+- `solo_submit(session_id, problem_slug, code)` → reuses existing judge pipeline; updates `solo_session_problems`; returns verdict only.
+- `solo_finalize(session_id)` → computes score, applies Elo-like rating delta, awards XP via existing transaction, updates streak, evaluates badge unlocks, writes audit log.
+- `solo_leaderboard(mode, range)` → top-N by rating; cached.
+- `solo_contest_register / solo_contest_start / solo_contest_finalize`.
 
-- **Onboarding tour for first-time Arena visit** (3 steps: Quick Match, Daily Challenge, Friends) — boosts D1 retention.
-- **Sound + haptic feedback** for queue match-found, test passing, victory — opt-out in settings.
-- **Mobile-first revisit** of `BattleRoom` toolbar (tabs for Problem / Editor / Opponent on <md screens) — current grid stacks, tabs are denser.
-- **Anti-cheat scaffolding** — paste detection, rapid-submit throttle, foreign-tab focus loss flagged for review (visible only to admins).
+Rate-limited; all scoring server-validated. No client-trusted timers — server stores `ends_at` and rejects submissions after it.
 
----
+## UI / Routes
 
-## Suggested Build Order
+- `/arena/solo` — landing: 3 mode cards, current rating per mode, streak, today's quests, "Resume session" if active.
+- `/arena/solo/interview/new`, `/assessment/new`, `/contest` (list) → config sheet (topic, difficulty, duration) → confirm.
+- `/arena/solo/session/:id` — runner: timer header, problem panel, reused code editor from battle room, submit panel, focus-mode toggle.
+- `/arena/solo/session/:id/report` — post-session report card with shareable image (reuse achievement social card generator).
+- `/arena/solo/leaderboard` — switch tabs Interview / Assessment / Contest; week/month/all-time.
+- `/arena/solo/contests` — upcoming, live, past (virtual replay).
+- Sidebar/Arena nav: add **Solo** entry next to Daily.
 
-Ship Phase 1 first (1–2 weeks of work, immediate DAU lift), then Phase 2 (gives Phase 1 rewards meaning), then alternate Phase 3 and Phase 4 sprints based on which metric is weakest (session length vs. session frequency). Phase 5 is the long-tail "students stay because they're learning" layer.
+## Integration Points (reuse)
 
-## Technical Notes (for implementer)
+- Code editor + judge: `ArenaRoom` runner.
+- XP + streak engine: existing transaction RPC + recovery system.
+- Daily quests table: add `solo_*` quest keys.
+- Leaderboard component: parameterize by source (`battles` | `solo`).
+- Achievements: extend tier system with solo-specific badges.
+- Admin: extend Admin Control Center with a "Solo Contests" manager (create/edit, pick problems, schedule).
 
-- New tables: `arena_daily_challenges`, `arena_quests`, `arena_quest_progress`, `arena_seasons`, `arena_tier_history`, `arena_emotes_log`, `arena_squads`, `arena_tournaments`, `arena_tournament_matches`, `arena_cosmetics`, `user_arena_cosmetics`. Strict RLS on every table.
-- New RPCs: `claim_daily_challenge`, `claim_quest`, `start_promo_series`, `cast_arena_vote_emote`, `compute_season_tier`. Server-side authoritative — never trust client.
-- Reuse: existing `battle_*` RPCs, `user_xp` ledger, `user_streaks`, public `profiles`, `contests`, achievement social-card edge function, Lovable AI gateway for post-match review.
-- Realtime: extend the existing `battle_events` channel with new event kinds (`emote`, `spectator_join`); add a new global `arena_lobby` channel for ticker.
-- Edge functions: `arena-daily-rotation` (cron-scheduled via pg_cron), `arena-tournament-runner`, `arena-replay-card` (renders OG image), `arena-ai-review`.
-- Routes to add: `/arena/daily`, `/arena/quests`, `/arena/watch/:id`, `/arena/squads`, `/arena/tournaments`, `/arena/insights`, `/arena/cosmetics`.
+## Rollout Phases
+
+1. **MVP**: tables + RLS, `solo_start/submit/finalize`, Interview Sim only, runner page, basic report, sidebar entry.
+2. **Assessment mode** + multi-problem runner + percentile in report.
+3. **Solo rating + leaderboard + tiers + badges**.
+4. **Contest mode** (on-demand + scheduled + virtual replay) + admin manager.
+5. **Daily Solo Quests** + power-ups + focus/paste analytics surfaced in report.
+
+## Out of Scope
+
+- Real-time multiplayer (already covered by Arena battles).
+- Voice/AI mock-interviewer (separate future track).
+- Paid power-ups (earned only).

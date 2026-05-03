@@ -104,6 +104,9 @@ import ArenaRoom from "@/arena/pages/ArenaRoom";
 import ArenaJoinCode from "@/arena/pages/ArenaJoinCode";
 import AdminArena from "@/arena/pages/AdminArena";
 import ArenaDaily from "@/arena/pages/ArenaDaily";
+import ArenaSolo from "@/arena/pages/ArenaSolo";
+import ArenaSoloSession from "@/arena/pages/ArenaSoloSession";
+import ArenaSoloReport from "@/arena/pages/ArenaSoloReport";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProblemsList from "./pages/admin/AdminProblemsList";
 import ProblemEditor from "./pages/admin/ProblemEditor";
@@ -390,6 +393,9 @@ const App = () => (
                   <Route path="room/:code" element={<ArenaRoom />} />
                   <Route path="join/:code" element={<ArenaJoinCode />} />
                   <Route path="daily" element={<ArenaDaily />} />
+                  <Route path="solo" element={<ArenaSolo />} />
+                  <Route path="solo/session/:id" element={<ArenaSoloSession />} />
+                  <Route path="solo/session/:id/report" element={<ArenaSoloReport />} />
                 </Route>
                 <Route path="/admin/arena" element={<AdminRoute><AdminArena /></AdminRoute>} />
 
