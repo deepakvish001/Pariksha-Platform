@@ -260,22 +260,27 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         data-testid={item.testId ?? `admin-nav-${item.to.replace(/^\/admin\/?/, "") || "dashboard"}`}
         key={`${item.to}-${active ? flashKey : "x"}`}
         className={cn(
-          "group/item relative flex items-center gap-2 rounded-md pr-1 transition-colors",
+          "group/item relative flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-all duration-150",
           active
-            ? "bg-primary/10 text-primary font-medium admin-nav-flash"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "bg-primary/10 text-primary font-medium shadow-sm shadow-primary/5 admin-nav-flash"
+            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         )}
       >
         {/* Left accent bar */}
         <span
           aria-hidden
           className={cn(
-            "absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-r-full transition-all",
-            active ? "bg-primary opacity-100" : "opacity-0"
+            "absolute -left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full transition-all duration-200",
+            active ? "bg-primary opacity-100 scale-y-100" : "opacity-0 scale-y-0"
           )}
         />
-        <span className="relative flex shrink-0 items-center pl-2">
-          <Icon className="h-4 w-4" />
+        <span className="relative flex shrink-0 items-center">
+          <Icon
+            className={cn(
+              "h-4 w-4 transition-transform",
+              active ? "scale-110" : "group-hover/item:scale-105"
+            )}
+          />
           {collapsed && unseen > 0 && (
             <span
               className={cn(
@@ -287,7 +292,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         </span>
         {!collapsed && (
           <>
-            <span className="truncate">{item.label}</span>
+            <span className="truncate text-[13px]">{item.label}</span>
             <span className="ml-auto flex items-center gap-1">
               {showSkeleton ? (
                 <Skeleton className="h-4 w-6 rounded-full" />
@@ -389,13 +394,18 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
   };
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-border/40 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary shrink-0" />
+    <Sidebar collapsible="icon" className="border-r border-border/40 bg-gradient-to-b from-sidebar to-sidebar/95">
+      <SidebarHeader className="border-b border-border/40 px-2 py-3">
+        <div className={cn("flex items-center gap-2.5", collapsed && "justify-center")}>
+          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/60 shadow-sm shadow-primary/20">
+            <Shield className="h-4 w-4 text-primary-foreground" />
+          </div>
           {!collapsed && (
             <>
-              <span className="text-sm font-semibold">Admin</span>
+              <div className="flex min-w-0 flex-col leading-tight">
+                <span className="text-sm font-semibold tracking-tight">Admin Console</span>
+                <span className="text-[10px] text-muted-foreground">Platform control center</span>
+              </div>
               <span className="ml-auto">
                 <AdminBadgeSettings onMarkAllRead={clearAll} />
               </span>
