@@ -44,10 +44,39 @@ export default function BattleResult() {
     (async () => {
       const { data: b } = await supabase.from("battles" as never).select("*").eq("id", id).maybeSingle();
       const { data: s } = await supabase.from("battle_submissions" as never).select("*").eq("battle_id", id).order("created_at");
-      setBattle(b as Battle | null);
+      const battleRow = b as Battle | null;
+      setBattle(battleRow);
       setSubs((s as BattleSubmission[]) ?? []);
+
+      if (!battleRow || !user?.id) return;
+
+      // Tick the player's daily Arena streak (idempotent per day)
+      try {
+        const tick = await tickArenaStreak();
+        setStreakInfo({ current: tick.current, used_freeze: tick.used_freeze });
+      } catch {
+        /* non-blocking */
+      }
+
+      // If the battle's problem is today's daily challenge AND the player won
+      // (winner) or solved it (any accepted submission), award the bonus XP.
+      const todaySlug = dailyChallenge?.problem_slug;
+      const playerSolved = (s as BattleSubmission[] | null ?? []).some(
+        (sub) => sub.user_id === user.id && sub.verdict === "accepted",
+      );
+      if (todaySlug && battleRow.problem_slug === todaySlug && playerSolved && !dailyChallenge?.solved) {
+        const startedAt = battleRow.started_at ? new Date(battleRow.started_at).getTime() : Date.now();
+        const endedAt = battleRow.ended_at ? new Date(battleRow.ended_at).getTime() : Date.now();
+        const elapsed = Math.max(1, Math.round((endedAt - startedAt) / 1000));
+        try {
+          const res = await completeDailyChallenge(battleRow.id, elapsed);
+          if (res.ok && res.xp) setDailyXp(res.xp);
+        } catch {
+          /* non-blocking */
+        }
+      }
     })();
-  }, [id]);
+  }, [id, user?.id, dailyChallenge?.problem_slug, dailyChallenge?.solved]);
 
   if (!battle) return null;
 
