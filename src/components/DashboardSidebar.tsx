@@ -82,6 +82,18 @@ const homeNavItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
+// Battle Arena section - Gamified prep modes
+const arenaNavItems = [
+  { title: "Arena Hub", url: "/arena", icon: Swords },
+  { title: "Solo Practice", url: "/arena/solo", icon: Target },
+  { title: "Daily Challenge", url: "/arena/daily", icon: Calendar },
+  { title: "Quick Match", url: "/arena/queue", icon: Gamepad2 },
+  { title: "Private Rooms", url: "/arena/private", icon: Lock },
+  { title: "Friends", url: "/arena/friends", icon: Users },
+  { title: "Rankings", url: "/arena/leaderboard", icon: Trophy },
+  { title: "Match History", url: "/arena/history", icon: History },
+];
+
 interface NavItem {
   title: string;
   url: string;
