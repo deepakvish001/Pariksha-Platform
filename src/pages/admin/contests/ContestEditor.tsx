@@ -194,12 +194,24 @@ const ContestEditor = () => {
           )}
           <div className="space-y-2 pt-2">
             <Input placeholder="Search problems to add..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <p className="text-xs text-muted-foreground">
+              Private problems remain hidden from the library but become visible to registered contestants while this contest is live.
+            </p>
             {search && (
               <Card className="max-h-60 overflow-y-auto p-2">
                 {filteredProblems.slice(0, 20).map((p) => (
                   <button key={p.slug} onClick={() => { addProblem(p.slug); setSearch(""); }}
                           className="flex w-full items-center gap-2 rounded p-2 text-left text-sm hover:bg-muted/50">
-                    <Plus className="h-3 w-3" /> <span className="font-mono text-xs">{p.slug}</span> — {p.title}
+                    <Plus className="h-3 w-3" />
+                    <span className="font-mono text-xs">{p.slug}</span>
+                    <span className="flex-1 truncate">— {p.title}</span>
+                    <span className={`rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${
+                      p.is_published
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+                        : "border-amber-500/30 bg-amber-500/10 text-amber-500"
+                    }`}>
+                      {p.is_published ? "Public" : "Private"}
+                    </span>
                   </button>
                 ))}
                 {filteredProblems.length === 0 && <p className="p-2 text-sm text-muted-foreground">No matches.</p>}
