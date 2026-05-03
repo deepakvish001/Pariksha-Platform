@@ -60,9 +60,6 @@ const AdminRoles = () => {
       <div className="mb-1 flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Roles & Permissions</h1>
         <div className="flex items-center gap-2">
-          <Link to="/admin/rls-tester" className="text-xs text-primary underline-offset-4 hover:underline">
-            Open RLS Tester
-          </Link>
           <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={cn("mr-1 h-3 w-3", isFetching && "animate-spin")} />
             Refresh
