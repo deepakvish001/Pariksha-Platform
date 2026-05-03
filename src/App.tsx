@@ -393,6 +393,9 @@ const App = () => (
                   <Route path="room/:code" element={<ArenaRoom />} />
                   <Route path="join/:code" element={<ArenaJoinCode />} />
                   <Route path="daily" element={<ArenaDaily />} />
+                  <Route path="solo" element={<ArenaSolo />} />
+                  <Route path="solo/session/:id" element={<ArenaSoloSession />} />
+                  <Route path="solo/session/:id/report" element={<ArenaSoloReport />} />
                 </Route>
                 <Route path="/admin/arena" element={<AdminRoute><AdminArena /></AdminRoute>} />
 
