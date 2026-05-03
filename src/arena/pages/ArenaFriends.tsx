@@ -24,14 +24,16 @@ interface Friend {
   requester_id: string;
   addressee_id: string;
   status: string;
-  profile?: { full_name: string | null; avatar_url: string | null; user_id: string } | null;
+  profile?: { full_name: string | null; avatar_url: string | null; user_id: string; username?: string | null } | null;
 }
 interface ArenaUser {
   user_id: string;
   full_name: string | null;
+  username: string | null;
   avatar_url: string | null;
   elo: number | null;
   total_battles: number | null;
+  created_at?: string | null;
 }
 
 const PAGE_SIZE = 40;
