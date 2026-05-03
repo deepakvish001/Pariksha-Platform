@@ -18,7 +18,8 @@ const fmtPenalty = (sec: number) => {
 const AdminContestLeaderboard = () => {
   const { id } = useParams();
   const { data: contest } = useAdminContest(id);
-  const { data: rows = [], isLoading } = useContestLeaderboard(id);
+  const { data, isLoading } = useContestLeaderboard(id, 1, 200);
+  const rows = data?.rows ?? [];
   const recompute = useRecomputeLeaderboard();
 
   return (

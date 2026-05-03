@@ -685,6 +685,44 @@ const CodingProblemDetail = () => {
     // directly from the editor so we capture freshly-formatted code (React
     // state may not have flushed yet).
     const sourceToSubmit = lintCleaned ?? editorRef.current?.getValue() ?? code;
+
+    // If submitting in the context of a contest, validate server-side first so
+    // we surface clear errors (not registered, contest closed, already solved, etc.)
+    const contestSlug = searchParams.get("contest");
+    if (contestSlug) {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: contestRow } = await supabase
+          .from("contests")
+          .select("id")
+          .eq("slug", contestSlug)
+          .maybeSingle();
+        if (contestRow?.id) {
+          const { data: check, error: checkErr } = await supabase.rpc(
+            "validate_contest_submission",
+            { _contest_id: contestRow.id, _problem_slug: problem.slug },
+          );
+          if (checkErr) throw checkErr;
+          const v = check as { ok: boolean; message?: string; code?: string } | null;
+          if (v && !v.ok) {
+            toast({
+              title: "Submission blocked",
+              description: v.message ?? "Cannot submit to this contest right now.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        toast({
+          title: "Contest validation failed",
+          description: (err as Error).message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     try {
       const result = await submit({
         source_code: sourceToSubmit,

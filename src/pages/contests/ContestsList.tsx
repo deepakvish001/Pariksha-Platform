@@ -1,19 +1,20 @@
 import { Helmet } from "react-helmet-async";
-import { useContests } from "@/hooks/useContests";
+import { useContests, lifecycleStatus } from "@/hooks/useContests";
 import { ContestCard } from "@/components/contests/ContestCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy } from "lucide-react";
 
 const ContestsList = () => {
   const { data: contests, isLoading } = useContests();
-  const visible = (contests ?? []).filter((c) => c.status !== "draft" && c.status !== "archived");
+  // Only show contests that have moved past draft.
+  const visible = (contests ?? []).filter((c) => lifecycleStatus(c) !== "draft");
 
   const live = visible.filter((c) => {
     const now = Date.now();
     return now >= new Date(c.starts_at).getTime() && now <= new Date(c.ends_at).getTime();
   });
   const upcoming = visible.filter((c) => Date.now() < new Date(c.starts_at).getTime());
-  const past = visible.filter((c) => Date.now() > new Date(c.ends_at).getTime());
+  const past = visible.filter((c) => lifecycleStatus(c) === "closed");
 
   return (
     <>

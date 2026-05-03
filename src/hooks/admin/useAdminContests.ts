@@ -97,8 +97,20 @@ export const useSaveContest = () => {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (payload: Partial<Contest> & { id?: string }) => {
+      // Client-side guard: enforce sane status + time invariants before hitting the DB.
+      if (payload.starts_at && payload.ends_at && new Date(payload.starts_at) >= new Date(payload.ends_at)) {
+        throw new Error("Contest start must be before end");
+      }
       if (payload.id) {
         const { id, ...rest } = payload;
+        const { data: existing } = await supabase
+          .from("contests")
+          .select("status")
+          .eq("id", id)
+          .maybeSingle();
+        if (existing?.status === "ended" && rest.status && rest.status !== "ended" && rest.status !== "archived") {
+          throw new Error("Cannot reopen a closed contest");
+        }
         const { data, error } = await supabase
           .from("contests")
           .update(rest)

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { useContest, useContestProblems, useMyRegistration, useRegisterForContest, useWithdrawFromContest, useContestRegistrations } from "@/hooks/useContests";
+import { useContest, useContestProblems, useMyRegistration, useRegisterForContest, useWithdrawFromContest, useContestRegistrations, lifecycleStatus } from "@/hooks/useContests";
 import { useContestClock } from "@/hooks/useContestClock";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -32,10 +32,10 @@ const ContestDetail = () => {
   if (isLoading) return <Skeleton className="mx-auto mt-10 h-96 w-full max-w-5xl" />;
   if (!contest) return <div className="p-8 text-center text-muted-foreground">Contest not found.</div>;
 
+  const lifecycle = lifecycleStatus(contest);
   const isRegistered = myReg?.status === "registered";
   const canSeeProblems = clock.phase === "live" || clock.phase === "ended";
-  const canRegister =
-    contest.status === "published" || (contest.status === "live" && clock.phase !== "ended");
+  const canRegister = lifecycle === "active" && clock.phase !== "ended";
 
   const onRegister = () => {
     if (!user) return navigate("/login");
@@ -56,7 +56,8 @@ const ContestDetail = () => {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="uppercase">{clock.phase}</Badge>
+              <Badge variant="outline" className="uppercase">{lifecycle}</Badge>
+              <Badge variant="outline" className="uppercase opacity-70">{clock.phase}</Badge>
               <Badge variant="outline" className="capitalize">{contest.scoring_mode}</Badge>
               {contest.visibility === "private" && <Badge variant="outline"><Lock className="mr-1 h-3 w-3" />Private</Badge>}
             </div>
