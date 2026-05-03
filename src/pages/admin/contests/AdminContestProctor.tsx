@@ -97,6 +97,33 @@ const AdminContestProctor = () => {
     },
   });
 
+  type SessionRow = { id: string; user_id: string; started_at: string; user_agent: string | null; full_name?: string | null };
+  const sessionsQuery = useQuery({
+    queryKey: ["admin-contest-active-sessions", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contest_sessions")
+        .select("id, user_id, started_at, user_agent")
+        .eq("contest_id", id!)
+        .eq("is_active", true)
+        .order("started_at", { ascending: false });
+      if (error) throw error;
+      const userIds = Array.from(new Set((data ?? []).map((r: any) => r.user_id)));
+      const { data: profiles } = userIds.length
+        ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
+        : { data: [] as any[] };
+      const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+      return (data ?? []).map((s: any) => ({ ...s, full_name: nameMap.get(s.user_id) ?? null })) as SessionRow[];
+    },
+  });
+
+  const forceEndSession = async (sessionId: string) => {
+    const { error } = await supabase.rpc("contest_force_end_session" as never, { _session_id: sessionId } as never);
+    if (error) toast.error(error.message);
+    else { toast.success("Session ended"); sessionsQuery.refetch(); }
+  };
+
   // Realtime updates
   useEffect(() => {
     if (!id) return;
