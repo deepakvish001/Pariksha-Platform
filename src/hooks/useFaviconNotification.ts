@@ -22,7 +22,7 @@ export const useFaviconNotification = () => {
 
     if (!originalImageRef.current) {
       originalImageRef.current = new Image();
-      originalImageRef.current.crossOrigin = "anonymous";
+      // Do NOT set crossOrigin for same-origin favicons — it can mark the image as broken.
       originalImageRef.current.src = ORIGINAL_FAVICON;
     }
 
@@ -33,13 +33,18 @@ export const useFaviconNotification = () => {
   const drawFavicon = useCallback((count: number, isPulsing: boolean = false) => {
     const { canvas, image } = setupCanvas();
     const ctx = canvas.getContext("2d");
-    if (!ctx || !image.complete) return;
+    // Bail out if the image hasn't successfully decoded yet.
+    if (!ctx || !image.complete || image.naturalWidth === 0) return;
 
     // Clear canvas
     ctx.clearRect(0, 0, 32, 32);
 
-    // Draw original favicon
-    ctx.drawImage(image, 0, 0, 32, 32);
+    // Draw original favicon (guard against broken-state races).
+    try {
+      ctx.drawImage(image, 0, 0, 32, 32);
+    } catch {
+      return;
+    }
 
     if (count > 0) {
       // Draw notification badge
