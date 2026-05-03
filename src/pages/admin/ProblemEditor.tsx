@@ -379,7 +379,48 @@ const ProblemEditor = () => {
   if (!isNew && isLoading) {
     return (
       <AdminShell>
-        <p className="text-muted-foreground">Loading…</p>
+        <div className="mx-auto max-w-3xl space-y-3 p-6">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading problem “{slug}”…
+          </div>
+          <div className="h-8 w-1/2 animate-pulse rounded bg-muted" />
+          <div className="h-32 w-full animate-pulse rounded bg-muted" />
+          <div className="h-32 w-full animate-pulse rounded bg-muted" />
+        </div>
+      </AdminShell>
+    );
+  }
+
+  if (!isNew && (loadError || (!isLoading && !loaded?.problem))) {
+    const isNotFound =
+      !loadError &&
+      !loaded?.problem;
+    return (
+      <AdminShell>
+        <div className="mx-auto max-w-xl rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center">
+          <AlertCircle className="mx-auto mb-2 h-6 w-6 text-destructive" />
+          <h2 className="text-lg font-semibold">
+            {isNotFound ? "Problem not found" : "Couldn’t load problem"}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {isNotFound ? (
+              <>
+                No problem exists with slug <code className="rounded bg-muted px-1">{slug}</code>.
+                It may have been deleted or renamed.
+              </>
+            ) : (
+              <>{(loadError as Error)?.message ?? "An unexpected error occurred."}</>
+            )}
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            <Button variant="outline" onClick={() => nav("/admin/problems")}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to problems
+            </Button>
+            {!isNotFound && (
+              <Button onClick={() => window.location.reload()}>Retry</Button>
+            )}
+          </div>
+        </div>
       </AdminShell>
     );
   }
