@@ -26,7 +26,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Trash2, Pencil, Copy, X } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, Copy, X, Globe, Lock, Trophy } from "lucide-react";
+import { AddProblemToContestDialog } from "@/components/admin/AddProblemToContestDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
