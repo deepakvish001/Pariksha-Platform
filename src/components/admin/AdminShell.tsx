@@ -39,9 +39,89 @@ interface NavItem {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  /**
+   * When true, the item is only "active" for an exact pathname match.
+   * When false/undefined, the item is also active for any pathname that
+   * starts with `to + "/"`. This default keeps overlapping routes (e.g.
+   * `/admin/contests` vs `/admin/contests/new`) correctly highlighted on
+   * the parent item; pair with `end: true` on a child if you want the
+   * parent to deactivate when a child is selected.
+   */
   end?: boolean;
+  /**
+   * Optional custom predicate to override the default isActive logic.
+   * Receives the current pathname and returns whether this item should be
+   * highlighted. Useful for routes with dynamic segments.
+   */
+  match?: (pathname: string) => boolean;
+  /**
+   * Optional sub-navigation. Rendered indented beneath the parent only when
+   * the parent (or any sub-item) is active. Sub-items follow the same
+   * `end` / `match` rules as top-level items.
+   */
+  children?: NavItem[];
+  /**
+   * Stable test selector hook for Playwright assertions.
+   */
+  testId?: string;
 }
 interface NavGroup { label: string; items: NavItem[] }
+
+/**
+ * Resolve a sidebar item's children dynamically from the current pathname.
+ * Keeps nested sub-nav highlighting accurate even when route ids change
+ * (e.g. /admin/contests/:id/edit, /registrations, /leaderboard).
+ */
+function resolveDynamicChildren(item: NavItem, pathname: string): NavItem[] {
+  if (item.to === "/admin/contests") {
+    const base: NavItem[] = [
+      {
+        to: "/admin/contests",
+        label: "All contests",
+        icon: Trophy,
+        end: true,
+        testId: "admin-nav-contests-all",
+      },
+      {
+        to: "/admin/contests/new",
+        label: "New contest",
+        icon: Sparkles,
+        end: true,
+        testId: "admin-nav-contests-new",
+      },
+    ];
+    // /admin/contests/:id(/edit|/registrations|/leaderboard)
+    const m = pathname.match(/^\/admin\/contests\/([^/]+)(?:\/(edit|registrations|leaderboard))?\/?$/);
+    if (m && m[1] !== "new") {
+      const id = m[1];
+      base.push(
+        {
+          to: `/admin/contests/${id}/edit`,
+          label: "Edit contest",
+          icon: SettingsIcon,
+          end: true,
+          testId: "admin-nav-contests-edit",
+        },
+        {
+          to: `/admin/contests/${id}/registrations`,
+          label: "Registrations",
+          icon: Users,
+          end: true,
+          testId: "admin-nav-contests-registrations",
+        },
+        {
+          to: `/admin/contests/${id}/leaderboard`,
+          label: "Leaderboard",
+          icon: Trophy,
+          end: true,
+          testId: "admin-nav-contests-leaderboard",
+        },
+      );
+    }
+    return base;
+  }
+  return item.children ?? [];
+}
 
 const GROUPS: NavGroup[] = [
   { label: "Overview", items: [
@@ -125,10 +205,13 @@ const AdminSidebar = () => {
 
   const { data: badges, isLoading: badgesLoading, markSeen, clearAll } = useAdminSidebarBadges();
 
-  const isActive = (to: string, end?: boolean) =>
-    end ? pathname === to : pathname === to || pathname.startsWith(to + "/");
+  const isActive = (to: string, end?: boolean, match?: (p: string) => boolean) => {
+    if (match) return match(pathname);
+    return end ? pathname === to : pathname === to || pathname.startsWith(to + "/");
+  };
 
-  const groupHasActive = (g: NavGroup) => g.items.some((i) => isActive(i.to, i.end));
+  const groupHasActive = (g: NavGroup) =>
+    g.items.some((i) => isActive(i.to, i.end, i.match));
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUPS.map((g) => [g.label, true]))
@@ -220,7 +303,10 @@ const AdminSidebar = () => {
                       <SidebarMenu>
                         {group.items.map((item) => {
                           const Icon = item.icon;
-                          const active = isActive(item.to, item.end);
+                          const active = isActive(item.to, item.end, item.match);
+                          const subItems = resolveDynamicChildren(item, pathname);
+                          const subActive = subItems.some((s) => isActive(s.to, s.end, s.match));
+                          const showSubNav = !collapsed && subItems.length > 0 && (active || subActive);
                           const detail: BadgeDetail | undefined = badges?.[item.to as BadgeKey];
                           const tracked = (TRACKED as string[]).includes(item.to);
                           const showSkeleton = tracked && badgesLoading && !detail;
@@ -236,6 +322,7 @@ const AdminSidebar = () => {
                               ref={active ? (activeRef as any) : undefined}
                               to={item.to}
                               end={item.end}
+                              data-testid={item.testId ?? `admin-nav-${item.to.replace(/^\/admin\/?/, "") || "dashboard"}`}
                               key={`${item.to}-${active ? flashKey : "x"}`}
                               className={cn(
                                 "flex items-center gap-2 rounded-md transition-colors",
@@ -270,7 +357,7 @@ const AdminSidebar = () => {
 
                           return (
                             <SidebarMenuItem key={item.to}>
-                              <SidebarMenuButton asChild isActive={active}>
+                              <SidebarMenuButton asChild isActive={active || subActive}>
                                 {tracked ? (
                                   <Tooltip>
                                     <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
@@ -296,6 +383,36 @@ const AdminSidebar = () => {
                                   linkEl
                                 )}
                               </SidebarMenuButton>
+
+                              {showSubNav && (
+                                <ul
+                                  data-testid={`admin-subnav-${item.to.replace(/^\/admin\/?/, "")}`}
+                                  className="mt-1 ml-6 flex flex-col gap-0.5 border-l border-border/40 pl-2"
+                                >
+                                  {subItems.map((sub) => {
+                                    const SubIcon = sub.icon;
+                                    const subOn = isActive(sub.to, sub.end, sub.match);
+                                    return (
+                                      <li key={sub.to}>
+                                        <NavLink
+                                          to={sub.to}
+                                          end={sub.end}
+                                          data-testid={sub.testId}
+                                          className={cn(
+                                            "flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors",
+                                            subOn
+                                              ? "bg-primary/10 text-primary font-medium"
+                                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                                          )}
+                                        >
+                                          <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                                          <span className="truncate">{sub.label}</span>
+                                        </NavLink>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
                             </SidebarMenuItem>
                           );
                         })}
