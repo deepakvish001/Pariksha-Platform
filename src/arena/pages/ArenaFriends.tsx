@@ -725,6 +725,29 @@ export default function ArenaFriends() {
 
           {challengeStep === "setup" ? (
             <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Room type</Label>
+                  <select
+                    value={challengeRoomType}
+                    onChange={(e) => setChallengeRoomType(e.target.value as "private" | "public")}
+                    className="w-full bg-card/60 border border-border rounded p-2 text-sm mt-1"
+                  >
+                    <option value="private">Private (invite-only)</option>
+                    <option value="public">Public (joinable)</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Room name</Label>
+                  <Input
+                    value={challengeRoomName}
+                    onChange={(e) => setChallengeRoomName(e.target.value)}
+                    placeholder="e.g. Friday Showdown"
+                    maxLength={40}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
               <div>
                 <Label className="text-xs">Problem</Label>
                 <select
@@ -735,6 +758,19 @@ export default function ArenaFriends() {
                   <option value="">— select a problem —</option>
                   {problems.map((p) => (
                     <option key={p.slug} value={p.slug}>{p.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs">Topic (optional)</Label>
+                <select
+                  value={challengeTopic}
+                  onChange={(e) => setChallengeTopic(e.target.value)}
+                  className="w-full bg-card/60 border border-border rounded p-2 text-sm mt-1"
+                >
+                  <option value="">Any topic</option>
+                  {["arrays","strings","hash-table","two-pointers","binary-search","dp","graphs","trees","greedy","math"].map((t) => (
+                    <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
               </div>
@@ -752,7 +788,7 @@ export default function ArenaFriends() {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs">Duration</Label>
+                  <Label className="text-xs">Time limit</Label>
                   <select
                     value={challengeDuration}
                     onChange={(e) => setChallengeDuration(Number(e.target.value))}
@@ -779,11 +815,16 @@ export default function ArenaFriends() {
                 </div>
               </div>
               <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-sm space-y-2">
+                <div className="text-[10px] uppercase text-muted-foreground">Room settings</div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Room type</span><span className="font-medium capitalize">{challengeRoomType}{challengeRoomType === "private" ? " (invite-only)" : " (joinable)"}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">Room name</span><span className="font-medium truncate ml-2">{challengeRoomName.trim() || "— untitled —"}</span></div>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-sm space-y-2">
                 <div className="text-[10px] uppercase text-muted-foreground">Match setup</div>
                 <div className="flex justify-between gap-2"><span className="text-muted-foreground">Problem</span><span className="font-medium truncate ml-2">{problems.find((p) => p.slug === challengeProblem)?.title ?? "— not selected —"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Topic</span><span className="font-medium">{challengeTopic || "Any"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Difficulty</span><span className="font-medium capitalize">{challengeDifficulty}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Time limit</span><span className="font-medium">{Math.round(challengeDuration / 60)} min</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Mode</span><span className="font-medium">Private 1v1 (invite-only)</span></div>
               </div>
             </div>
           )}
