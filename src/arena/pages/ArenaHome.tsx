@@ -99,7 +99,10 @@ export default function ArenaHome() {
         </GlassPanel>
       </motion.div>
 
-      {/* Three primary modes */}
+      {/* Daily habit loop */}
+      <DailyChallengeCard />
+
+      {/* Three primary modes + daily quests */}
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Quick Match */}
         <GlassPanel className="p-5 space-y-4">
