@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { useAdminContests, useAttachProblemToContest } from "@/hooks/admin/useAdminContests";
 
@@ -63,8 +64,13 @@ export const AddProblemToContestDialog = ({ problemSlug, problemTitle, trigger }
           {isLoading ? (
             <div className="p-4 text-center text-sm text-muted-foreground">Loading contests…</div>
           ) : eligible.length === 0 ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              No eligible contests. Create one in Contests → New.
+            <div className="flex flex-col items-center gap-2 p-6 text-center text-sm text-muted-foreground">
+              <p>No eligible contests yet.</p>
+              <Button asChild size="sm" variant="outline" onClick={() => setOpen(false)}>
+                <Link to="/admin/contests/new">
+                  <Plus className="mr-1 h-3 w-3" /> Create a contest
+                </Link>
+              </Button>
             </div>
           ) : (
             eligible.map((c) => (
