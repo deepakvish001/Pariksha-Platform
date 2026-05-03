@@ -319,6 +319,7 @@ export type Database = {
       battle_invites: {
         Row: {
           battle_id: string | null
+          code: string | null
           created_at: string
           difficulty: Database["public"]["Enums"]["battle_difficulty"]
           duration_sec: number
@@ -327,10 +328,11 @@ export type Database = {
           id: string
           problem_slug: string | null
           status: string
-          to_user: string
+          to_user: string | null
         }
         Insert: {
           battle_id?: string | null
+          code?: string | null
           created_at?: string
           difficulty?: Database["public"]["Enums"]["battle_difficulty"]
           duration_sec?: number
@@ -339,10 +341,11 @@ export type Database = {
           id?: string
           problem_slug?: string | null
           status?: string
-          to_user: string
+          to_user?: string | null
         }
         Update: {
           battle_id?: string | null
+          code?: string | null
           created_at?: string
           difficulty?: Database["public"]["Enums"]["battle_difficulty"]
           duration_sec?: number
@@ -351,7 +354,7 @@ export type Database = {
           id?: string
           problem_slug?: string | null
           status?: string
-          to_user?: string
+          to_user?: string | null
         }
         Relationships: [
           {
@@ -3658,6 +3661,17 @@ export type Database = {
         Returns: Json
       }
       battle_accept_invite: { Args: { _invite: string }; Returns: string }
+      battle_create_code: {
+        Args: {
+          _difficulty: Database["public"]["Enums"]["battle_difficulty"]
+          _duration?: number
+          _problem_slug: string
+        }
+        Returns: {
+          code: string
+          invite_id: string
+        }[]
+      }
       battle_create_private: {
         Args: {
           _difficulty: Database["public"]["Enums"]["battle_difficulty"]
@@ -3671,6 +3685,7 @@ export type Database = {
         Args: { _battle_id: string; _reason: string; _winner: string }
         Returns: undefined
       }
+      battle_join_code: { Args: { _code: string }; Returns: string }
       battle_matchmake: {
         Args: {
           _difficulty: Database["public"]["Enums"]["battle_difficulty"]
