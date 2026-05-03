@@ -144,8 +144,17 @@ export function useDailyHistory(pageSize = 30) {
   const refresh = useCallback(() => loadPage(0, false), [loadPage]);
   const loadMore = useCallback(() => loadPage(history.length, true), [loadPage, history.length]);
 
+  const loadRange = useCallback(async (from: string, to: string) => {
+    setLoading(true);
+    const { data, error } = await rpc("arena_get_daily_history_range", { _from: from, _to: to });
+    const rows = (!error && Array.isArray(data) ? (data as DailyHistoryEntry[]) : []);
+    setHistory(rows);
+    setHasMore(false); // Range mode: pagination disabled until refresh
+    setLoading(false);
+  }, []);
+
   useEffect(() => { refresh(); }, [refresh]);
-  return { history, loading, loadingMore, hasMore, refresh, loadMore };
+  return { history, loading, loadingMore, hasMore, refresh, loadMore, loadRange };
 }
 
 export interface ArenaNotificationPrefs {
