@@ -76,6 +76,10 @@ const DailyChallengeAdmin = () => {
           </div>
         </Card>
       </div>
+
+      <div className="mt-4">
+        <DailyChallengeReviewCard />
+      </div>
     </AdminShell>
   );
 };
