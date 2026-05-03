@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useContest, useContestProblems, useMyRegistration, useRegisterForContest, useWithdrawFromContest, useContestRegistrations, lifecycleStatus } from "@/hooks/useContests";
