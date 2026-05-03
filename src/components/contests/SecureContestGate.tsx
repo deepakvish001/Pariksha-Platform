@@ -6,35 +6,60 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useContestSecureMode } from "@/hooks/useContestSecureMode";
+import { useActiveContestSession } from "@/hooks/useActiveContestSession";
 import { ShieldCheck, Eye, Maximize2, Camera, Ban, AlertTriangle, Lock } from "lucide-react";
 import { toast } from "sonner";
+import ContestLobby from "./ContestLobby";
 
 interface Props {
   contestId: string;
   contestSlug: string;
+  startsAt: string;
+  registeredCount: number;
   honorAccepted: boolean;
   onHonorAccepted: () => void;
   hasStarted: boolean;
   hasEnded: boolean;
   isRegistered: boolean;
   isDisqualified: boolean;
+  onSessionChange?: (hasActive: boolean) => void;
 }
 
 export default function SecureContestGate({
   contestId,
   contestSlug,
+  startsAt,
+  registeredCount,
   honorAccepted,
   onHonorAccepted,
   hasStarted,
   hasEnded,
   isRegistered,
   isDisqualified,
+  onSessionChange,
 }: Props) {
   const navigate = useNavigate();
   const [agreed, setAgreed] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [checklistReady, setChecklistReady] = useState(false);
   const secure = useContestSecureMode(contestId, !!honorAccepted && hasStarted && !hasEnded);
+  const active = useActiveContestSession(contestId);
+
+  // Bubble session state up so the parent can gate the Problems tab.
+  // (Effect-free derived call keeps logic local.)
+  if (onSessionChange) {
+    // microtask isn't necessary; render is fine because parent stores in state
+    queueMicrotask(() => onSessionChange(active.hasActive));
+  }
 
   if (!isRegistered) {
     return (
@@ -108,17 +133,16 @@ export default function SecureContestGate({
   // Pre-start lobby (waiting for contest to begin)
   if (!hasStarted) {
     return (
-      <Card className="border-emerald-500/30 bg-emerald-500/5 p-4 text-sm">
-        <div className="flex items-center gap-2 text-emerald-300">
-          <ShieldCheck className="h-4 w-4" />
-          Honor code accepted. The secure session opens automatically when the contest starts.
-        </div>
-      </Card>
+      <ContestLobby
+        startsAt={startsAt}
+        registeredCount={registeredCount}
+        onChecklistComplete={setChecklistReady}
+      />
     );
   }
 
   // Start secure session
-  if (!secure.sessionId) {
+  if (!secure.sessionId && !active.hasActive) {
     return (
       <Card className="space-y-4 border-primary/30 bg-primary/5 p-5">
         <div className="flex items-center gap-2">
@@ -128,9 +152,14 @@ export default function SecureContestGate({
         <p className="text-sm text-muted-foreground">
           The contest is live. Press start to enable lockdown, request your webcam, and enter fullscreen.
         </p>
+        {!checklistReady && (
+          <p className="text-xs text-amber-300">
+            Tip: tick every item in the pre-flight checklist below for the best experience.
+          </p>
+        )}
         {secure.startError && (
           <Alert variant="destructive">
-            <AlertCircleIcon />
+            <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Could not start session</AlertTitle>
             <AlertDescription>{secure.startError}</AlertDescription>
           </Alert>
@@ -152,33 +181,50 @@ export default function SecureContestGate({
   // Live secure HUD
   const violationsLeft = Math.max(0, 5 - secure.violationCount);
   return (
-    <Card className="space-y-3 border-emerald-500/30 bg-emerald-500/5 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-emerald-400" />
-          <span className="text-sm font-medium">Secure session active</span>
+    <>
+      <Card className="space-y-3 border-emerald-500/30 bg-emerald-500/5 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            <span className="text-sm font-medium">Secure session active</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className={secure.fullscreen ? "border-emerald-400/40 text-emerald-300" : "border-amber-400/40 text-amber-300"}>
+              <Maximize2 className="mr-1 h-3 w-3" /> {secure.fullscreen ? "Fullscreen" : "Not fullscreen"}
+            </Badge>
+            <Badge variant="outline" className={secure.webcamReady ? "border-emerald-400/40 text-emerald-300" : "border-amber-400/40 text-amber-300"}>
+              <Camera className="mr-1 h-3 w-3" /> {secure.webcamReady ? "Proctor on" : "No webcam"}
+            </Badge>
+            <Badge variant="outline" className={secure.flagged ? "border-red-400/50 text-red-300" : "border-border"}>
+              <AlertTriangle className="mr-1 h-3 w-3" /> {secure.violationCount}/5 violations · {violationsLeft} left
+            </Badge>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className={secure.fullscreen ? "border-emerald-400/40 text-emerald-300" : "border-amber-400/40 text-amber-300"}>
-            <Maximize2 className="mr-1 h-3 w-3" /> {secure.fullscreen ? "Fullscreen" : "Not fullscreen"}
-          </Badge>
-          <Badge variant="outline" className={secure.webcamReady ? "border-emerald-400/40 text-emerald-300" : "border-amber-400/40 text-amber-300"}>
-            <Camera className="mr-1 h-3 w-3" /> {secure.webcamReady ? "Proctor on" : "No webcam"}
-          </Badge>
-          <Badge variant="outline" className={secure.flagged ? "border-red-400/50 text-red-300" : "border-border"}>
-            <AlertTriangle className="mr-1 h-3 w-3" /> {secure.violationCount}/5 violations · {violationsLeft} left
-          </Badge>
-        </div>
-      </div>
-      {!secure.fullscreen && (
-        <Button size="sm" variant="outline" onClick={secure.enterFullscreen}>
-          Re-enter fullscreen
-        </Button>
-      )}
-      <Button size="sm" onClick={() => navigate(`/contests/${contestSlug}`)}>
-        Open problems
-      </Button>
-    </Card>
+        {!secure.fullscreen && (
+          <Button size="sm" variant="outline" onClick={secure.enterFullscreen}>
+            Re-enter fullscreen
+          </Button>
+        )}
+      </Card>
+
+      <Dialog
+        open={active.invalidatedJustNow}
+        onOpenChange={(o) => { if (!o) active.acknowledgeInvalidation(); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Secure session ended</DialogTitle>
+            <DialogDescription>
+              Your secure session for this contest was ended — either you signed in from another device, an admin
+              ended it, or you were disqualified. Reload the page to start a new session if you are still eligible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => navigate(`/contests/${contestSlug}`)}>Back to contest</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -188,5 +234,3 @@ const Rule = ({ icon: Icon, text }: { icon: React.ElementType; text: string }) =
     <span>{text}</span>
   </li>
 );
-
-const AlertCircleIcon = () => <AlertTriangle className="h-4 w-4" />;
