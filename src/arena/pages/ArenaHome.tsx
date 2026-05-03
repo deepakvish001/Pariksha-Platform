@@ -15,17 +15,44 @@ import { DailyChallengeCard } from "../components/DailyChallengeCard";
 import { DailyQuestsPanel } from "../components/DailyQuestsPanel";
 import { DailyHistoryPanel } from "../components/DailyHistoryPanel";
 
+const PREFS_KEY = "arena:home:prefs:v1";
+type ArenaPrefs = {
+  topic: string | null;
+  difficulty: BattleDifficulty;
+  roomDifficulty: BattleDifficulty;
+  roomDuration: number;
+  roomProblem: string;
+};
+const DEFAULT_PREFS: ArenaPrefs = {
+  topic: null,
+  difficulty: "medium",
+  roomDifficulty: "medium",
+  roomDuration: 900,
+  roomProblem: "",
+};
+function loadPrefs(): ArenaPrefs {
+  if (typeof window === "undefined") return DEFAULT_PREFS;
+  try {
+    const raw = window.localStorage.getItem(PREFS_KEY);
+    if (!raw) return DEFAULT_PREFS;
+    return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_PREFS;
+  }
+}
+
 export default function ArenaHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { rating, loading } = useMyRating(user?.id);
-  const [topic, setTopic] = useState<string | null>(null);
-  const [difficulty, setDifficulty] = useState<BattleDifficulty>("medium");
+  const initial = loadPrefs();
+  const [topic, setTopic] = useState<string | null>(initial.topic);
+  const [difficulty, setDifficulty] = useState<BattleDifficulty>(initial.difficulty);
   const [searching, setSearching] = useState(false);
 
-  const [roomDifficulty, setRoomDifficulty] = useState<BattleDifficulty>("medium");
-  const [roomDuration, setRoomDuration] = useState(900);
-  const [roomProblem, setRoomProblem] = useState("");
+  const [roomDifficulty, setRoomDifficulty] = useState<BattleDifficulty>(initial.roomDifficulty);
+  const [roomDuration, setRoomDuration] = useState(initial.roomDuration);
+  const [roomProblem, setRoomProblem] = useState(initial.roomProblem);
   const [problems, setProblems] = useState<Array<{ slug: string; title: string; difficulty: string }>>([]);
   const [creating, setCreating] = useState(false);
 
@@ -33,6 +60,15 @@ export default function ArenaHome() {
   const [joining, setJoining] = useState(false);
 
   useEffect(() => { if (user?.id) ensureRating(user.id); }, [user?.id]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({ topic, difficulty, roomDifficulty, roomDuration, roomProblem }),
+      );
+    } catch { /* ignore quota */ }
+  }, [topic, difficulty, roomDifficulty, roomDuration, roomProblem]);
 
   useEffect(() => {
     (async () => {
