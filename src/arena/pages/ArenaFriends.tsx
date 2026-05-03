@@ -249,11 +249,17 @@ export default function ArenaFriends() {
   // Friendship actions
   async function addFriend(uid: string) {
     if (!user) return;
+    if (blockedIds.has(uid)) {
+      toast.error("Unblock this player first to send a request");
+      return;
+    }
     const { error } = await supabase
       .from("friendships" as never)
       .insert({ requester_id: user.id, addressee_id: uid } as never);
-    if (error) toast.error(error.message);
-    else toast.success("Friend request sent");
+    if (error) {
+      if (/block/i.test(error.message)) toast.error("Cannot send: one of you has blocked the other");
+      else toast.error(error.message);
+    } else toast.success("Friend request sent");
   }
   async function respond(f: Friend, accept: boolean) {
     const { error } = await supabase
