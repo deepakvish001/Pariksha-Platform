@@ -1150,5 +1150,6 @@ export default function ArenaFriends() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </TooltipProvider>
   );
 }
