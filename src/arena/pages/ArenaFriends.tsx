@@ -83,6 +83,7 @@ export default function ArenaFriends() {
   const [reportTarget, setReportTarget] = useState<ArenaUser | null>(null);
   const [reportReason, setReportReason] = useState("Inappropriate behavior");
   const [reportDetails, setReportDetails] = useState("");
+  const [unblockTarget, setUnblockTarget] = useState<{ user_id: string; full_name: string | null } | null>(null);
 
   const [challengeTarget, setChallengeTarget] = useState<ArenaUser | null>(null);
   const [problems, setProblems] = useState<Array<{ slug: string; title: string }>>([]);
