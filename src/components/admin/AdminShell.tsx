@@ -415,41 +415,6 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
             </>
           )}
         </div>
-        {!collapsed && (
-          <>
-            <button
-              type="button"
-              onClick={onOpenPalette}
-              className="mt-2 flex w-full items-center gap-2 rounded-md border border-border/50 bg-muted/30 px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/60"
-            >
-              <CommandIcon className="h-3.5 w-3.5" />
-              <span>Quick jump…</span>
-              <kbd className="ml-auto rounded border border-border/50 bg-background px-1 text-[10px] font-mono">
-                ⌘K
-              </kbd>
-            </button>
-            <div className="relative mt-2">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                onKeyDown={(e) => e.key === "Escape" && setFilter("")}
-                placeholder="Filter…"
-                className="h-7 pl-7 pr-7 text-xs"
-              />
-              {filter && (
-                <button
-                  type="button"
-                  onClick={() => setFilter("")}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-muted"
-                  aria-label="Clear"
-                >
-                  <X className="h-3 w-3 text-muted-foreground" />
-                </button>
-              )}
-            </div>
-          </>
-        )}
       </SidebarHeader>
 
       <TooltipProvider delayDuration={250}>
