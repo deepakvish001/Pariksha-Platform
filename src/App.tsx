@@ -150,6 +150,7 @@ import AdminContestsList from "./pages/admin/contests/AdminContestsList";
 import ContestEditor from "./pages/admin/contests/ContestEditor";
 import AdminContestRegistrations from "./pages/admin/contests/AdminContestRegistrations";
 import AdminContestLeaderboard from "./pages/admin/contests/AdminContestLeaderboard";
+import AdminContestProctor from "./pages/admin/contests/AdminContestProctor";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -380,6 +381,7 @@ const App = () => (
                   <Route path="contests/:id/edit" element={<ContestEditor />} />
                   <Route path="contests/:id/registrations" element={<AdminContestRegistrations />} />
                   <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
+                  <Route path="contests/:id/proctor" element={<AdminContestProctor />} />
                 </Route>
 
                 {/* Arena - 1v1 battles */}
