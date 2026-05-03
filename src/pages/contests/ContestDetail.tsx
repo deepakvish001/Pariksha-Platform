@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useContest, useContestProblems, useMyRegistration, useRegisterForContest, useWithdrawFromContest, useContestRegistrations, lifecycleStatus } from "@/hooks/useContests";
@@ -11,9 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CalendarDays, Trophy, Users, ArrowRight, Lock, Check, AlertCircle } from "lucide-react";
+import { CalendarDays, Trophy, Users, ArrowRight, Lock, Check, AlertCircle, ShieldCheck } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import SecureContestGate from "@/components/contests/SecureContestGate";
+import { useState as useReactState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const fmtDate = (s: string) => new Date(s).toLocaleString();
 
@@ -36,7 +39,12 @@ const ContestDetail = () => {
   const lifecycle = lifecycleStatus(contest);
   const isRegistered = myReg?.status === "registered";
   const canSeeProblems = clock.phase === "live" || clock.phase === "ended";
-  const canRegister = lifecycle === "active" && clock.phase !== "ended";
+  // Secure Mode: registration closes at start time (enforced by trigger too)
+  const canRegister = lifecycle === "active" && clock.phase === "upcoming";
+  const isDisqualified = (myReg as { status?: string } | undefined)?.status === "disqualified";
+  const honorAcceptedInitial = !!(myReg as { honor_code_accepted_at?: string | null } | undefined)?.honor_code_accepted_at;
+  const [honorAccepted, setHonorAccepted] = useReactState(honorAcceptedInitial);
+  useEffect(() => { setHonorAccepted(honorAcceptedInitial); }, [honorAcceptedInitial]);
 
   const onRegister = () => {
     if (!user) return navigate("/login");
@@ -60,6 +68,9 @@ const ContestDetail = () => {
               <Badge variant="outline" className="uppercase">{lifecycle}</Badge>
               <Badge variant="outline" className="uppercase opacity-70">{clock.phase}</Badge>
               <Badge variant="outline" className="capitalize">{contest.scoring_mode}</Badge>
+              <Badge variant="outline" className="border-primary/40 text-primary">
+                <ShieldCheck className="mr-1 h-3 w-3" /> Secure Mode
+              </Badge>
               {contest.visibility === "private" && <Badge variant="outline"><Lock className="mr-1 h-3 w-3" />Private</Badge>}
             </div>
             <h1 className="text-3xl font-bold tracking-tight">{contest.title}</h1>
@@ -111,6 +122,19 @@ const ContestDetail = () => {
           <Stat icon={Users} label="Registered" value={String(registrations.filter(r => r.status === "registered").length)} />
           <Stat icon={Trophy} label="Problems" value={String(problems.length)} />
         </div>
+
+        {user && (
+          <SecureContestGate
+            contestId={contest.id}
+            contestSlug={contest.slug}
+            honorAccepted={honorAccepted}
+            onHonorAccepted={() => setHonorAccepted(true)}
+            hasStarted={clock.phase === "live" || clock.phase === "ended"}
+            hasEnded={clock.phase === "ended"}
+            isRegistered={isRegistered}
+            isDisqualified={isDisqualified}
+          />
+        )}
 
         <Tabs defaultValue="overview" className="w-full">
           <TabsList>
