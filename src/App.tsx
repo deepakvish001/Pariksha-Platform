@@ -132,6 +132,15 @@ import Achievements from "./pages/Achievements";
 import NotificationCenter from "./pages/NotificationCenter";
 import NotificationPreferences from "./pages/NotificationPreferences";
 
+// Contests
+import ContestsList from "./pages/contests/ContestsList";
+import ContestDetail from "./pages/contests/ContestDetail";
+import ContestLeaderboard from "./pages/contests/ContestLeaderboard";
+import AdminContestsList from "./pages/admin/contests/AdminContestsList";
+import ContestEditor from "./pages/admin/contests/ContestEditor";
+import AdminContestRegistrations from "./pages/admin/contests/AdminContestRegistrations";
+import AdminContestLeaderboard from "./pages/admin/contests/AdminContestLeaderboard";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
