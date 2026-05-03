@@ -44,6 +44,7 @@ const ContestDetail = () => {
   const isDisqualified = (myReg as { status?: string } | undefined)?.status === "disqualified";
   const honorAcceptedInitial = !!(myReg as { honor_code_accepted_at?: string | null } | undefined)?.honor_code_accepted_at;
   const [honorAccepted, setHonorAccepted] = useReactState(honorAcceptedInitial);
+  const [hasActiveSession, setHasActiveSession] = useReactState(false);
   useEffect(() => { setHonorAccepted(honorAcceptedInitial); }, [honorAcceptedInitial]);
 
   const onRegister = () => {
