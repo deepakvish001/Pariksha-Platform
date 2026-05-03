@@ -186,6 +186,7 @@ const CodingProblemDetail = () => {
   // cannot submit (e.g. contest closed, not registered), disable Submit so
   // the action is blocked before click — not just on the click handler.
   const [contestSubmitBlocked, setContestSubmitBlocked] = useState(false);
+  const [contestId, setContestId] = useState<string | null>(null);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
   const editorRef = useRef<MonacoEditorHandle>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
