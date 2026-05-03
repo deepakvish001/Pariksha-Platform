@@ -3504,6 +3504,21 @@ export type Database = {
           rule_key: string
         }[]
       }
+      admin_get_daily_review_audit: {
+        Args: { _limit?: number; _offset?: number }
+        Returns: {
+          actor_id: string
+          actor_name: string
+          attempt_count: number
+          challenge_date: string
+          created_at: string
+          id: string
+          inspected_user_id: string
+          inspected_user_name: string
+          seeded_problem_slug: string
+          submission_count: number
+        }[]
+      }
       admin_get_full_problem: { Args: { _slug: string }; Returns: Json }
       admin_get_gamification_rules: { Args: never; Returns: Json }
       admin_grant_achievement: {
