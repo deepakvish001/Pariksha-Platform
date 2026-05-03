@@ -389,13 +389,18 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
   };
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-border/40 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary shrink-0" />
+    <Sidebar collapsible="icon" className="border-r border-border/40 bg-gradient-to-b from-sidebar to-sidebar/95">
+      <SidebarHeader className="border-b border-border/40 px-2 py-3">
+        <div className={cn("flex items-center gap-2.5", collapsed && "justify-center")}>
+          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/60 shadow-sm shadow-primary/20">
+            <Shield className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
+          </div>
           {!collapsed && (
             <>
-              <span className="text-sm font-semibold">Admin</span>
+              <div className="flex min-w-0 flex-col leading-tight">
+                <span className="text-sm font-semibold tracking-tight">Admin Console</span>
+                <span className="text-[10px] text-muted-foreground">Platform control center</span>
+              </div>
               <span className="ml-auto">
                 <AdminBadgeSettings onMarkAllRead={clearAll} />
               </span>
