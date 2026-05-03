@@ -3344,6 +3344,10 @@ export type Database = {
         }
         Returns: number
       }
+      contest_effective_status: {
+        Args: { _contest_id: string }
+        Returns: string
+      }
       get_coding_leaderboard:
         | {
             Args: {
@@ -3493,6 +3497,10 @@ export type Database = {
       }
       snapshot_my_coding_leaderboard_rank: { Args: never; Returns: Json }
       user_pending_logout: { Args: { _user_id: string }; Returns: boolean }
+      validate_contest_submission: {
+        Args: { _contest_id: string; _problem_slug: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "owner"
