@@ -62,6 +62,17 @@ const AdminProblemsList = () => {
   const toggle = useTogglePublish();
   const duplicate = useDuplicateProblem();
 
+  const { data: contestCount = null } = useQuery({
+    queryKey: ["admin", "contests", "count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("contests")
+        .select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const allTopics = useMemo(() => {
     const s = new Set<string>();
     problems.forEach((p) => (p.topics ?? []).forEach((t) => s.add(t)));
