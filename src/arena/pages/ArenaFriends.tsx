@@ -737,6 +737,15 @@ export default function ArenaFriends() {
                 </select>
               </div>
             </div>
+
+            {/* Match summary */}
+            <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-xs space-y-1.5">
+              <div className="text-[10px] uppercase text-muted-foreground">Match setup</div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Problem</span><span className="font-medium truncate ml-2">{problems.find((p) => p.slug === challengeProblem)?.title ?? "— not selected —"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Difficulty</span><span className="font-medium capitalize">{challengeDifficulty}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Time limit</span><span className="font-medium">{Math.round(challengeDuration / 60)} min</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Mode</span><span className="font-medium">Private 1v1 (invite-only)</span></div>
+            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="ghost" onClick={() => setChallengeTarget(null)}>Cancel</Button>
