@@ -11,6 +11,8 @@ import { motion } from "framer-motion";
 import { Swords, Zap, KeyRound, Hash, Flame, Users, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { DailyChallengeCard } from "../components/DailyChallengeCard";
+import { DailyQuestsPanel } from "../components/DailyQuestsPanel";
 
 export default function ArenaHome() {
   const navigate = useNavigate();
