@@ -150,6 +150,7 @@ import AdminContestsList from "./pages/admin/contests/AdminContestsList";
 import ContestEditor from "./pages/admin/contests/ContestEditor";
 import AdminContestRegistrations from "./pages/admin/contests/AdminContestRegistrations";
 import AdminContestLeaderboard from "./pages/admin/contests/AdminContestLeaderboard";
+import AdminContestProctor from "./pages/admin/contests/AdminContestProctor";
 
 const queryClient = new QueryClient({
   defaultOptions: {
