@@ -46,6 +46,10 @@ interface ArenaUser {
 
 const PAGE_SIZE = 40;
 const FILTERS_KEY = "arena:friends:filters:v1";
+const BLOCKED_GATE_COPY = "Unblock this player first to send a request";
+const BLOCKED_CHALLENGE_COPY = "You've blocked this player. Unblock them first to challenge.";
+const MUTUAL_TTL_MS = 60_000;
+const MUTUAL_DEBOUNCE_MS = 200;
 
 interface Filters {
   eloMin: number;
