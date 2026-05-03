@@ -853,7 +853,11 @@ export default function ArenaFriends() {
                 <AvatarFallback>{(b.full_name ?? "?").slice(0, 2)}</AvatarFallback>
               </Avatar>
               <span className="flex-1 truncate text-sm">{b.full_name ?? "Unknown player"}</span>
-              <Button size="sm" variant="outline" onClick={() => unblockUser(b.user_id)}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setUnblockTarget({ user_id: b.user_id, full_name: b.full_name })}
+              >
                 <RotateCcw className="h-3.5 w-3.5 mr-1" /> Unblock
               </Button>
             </div>
