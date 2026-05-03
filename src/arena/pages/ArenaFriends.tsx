@@ -341,12 +341,25 @@ export default function ArenaFriends() {
   }
   async function unblockUser(uid: string) {
     if (!user) return;
-    await supabase
+    const { error } = await supabase
       .from("user_blocks" as never)
       .delete()
       .eq("blocker_id", user.id)
       .eq("blocked_id", uid);
-    toast.success("Unblocked");
+    if (error) {
+      toast.error(error.message || "Could not unblock player");
+      return;
+    }
+    const name = blockedProfiles.find((b) => b.user_id === uid)?.full_name ?? "Player";
+    toast.success(`${name} unblocked`, {
+      description: "You can now send friend requests and challenges to this player.",
+    });
+    setBlockedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(uid);
+      return next;
+    });
+    setBlockedProfiles((prev) => prev.filter((b) => b.user_id !== uid));
   }
 
   // Report
