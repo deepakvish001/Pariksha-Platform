@@ -381,6 +381,7 @@ const App = () => (
                   <Route path="contests/:id/edit" element={<ContestEditor />} />
                   <Route path="contests/:id/registrations" element={<AdminContestRegistrations />} />
                   <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
+                  <Route path="contests/:id/proctor" element={<AdminContestProctor />} />
                 </Route>
 
                 {/* Arena - 1v1 battles */}
