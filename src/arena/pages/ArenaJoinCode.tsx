@@ -209,6 +209,7 @@ export default function ArenaJoinCode() {
           </div>
         )}
       </GlassPanel>
+      </div>
     </div>
   );
 }
