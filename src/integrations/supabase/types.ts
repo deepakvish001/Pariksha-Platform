@@ -3409,6 +3409,18 @@ export type Database = {
         Returns: string
       }
       admin_chat_usage: { Args: never; Returns: Json }
+      admin_daily_challenge_claimers: {
+        Args: { _date: string }
+        Returns: {
+          attempted_at: string
+          display_name: string
+          solve_time_sec: number
+          solved: boolean
+          solved_at: string
+          user_id: string
+          xp_awarded: number
+        }[]
+      }
       admin_dashboard_kpis: { Args: never; Returns: Json }
       admin_delete_ai_content: { Args: { _id: string }; Returns: undefined }
       admin_delete_quiz_attempt: {
@@ -3797,6 +3809,7 @@ export type Database = {
           target_user_id: string
         }[]
       }
+      admin_rollback_daily_challenge: { Args: { _date: string }; Returns: Json }
       admin_save_problem: { Args: { payload: Json }; Returns: Json }
       admin_schedule_broadcast: {
         Args: {
