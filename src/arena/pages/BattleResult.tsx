@@ -120,6 +120,4 @@ export default function BattleResult() {
     </div>
   );
 }
-    </div>
-  );
-}
+
