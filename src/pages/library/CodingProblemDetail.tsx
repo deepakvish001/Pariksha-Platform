@@ -182,6 +182,10 @@ const CodingProblemDetail = () => {
   // Inline contest-submission error banner (shown above the editor when a
   // contest-context submission is rejected by the server).
   const [contestError, setContestError] = useState<string | null>(null);
+  // Hard-block flag: when a contest pre-check (on mount) determines the user
+  // cannot submit (e.g. contest closed, not registered), disable Submit so
+  // the action is blocked before click — not just on the click handler.
+  const [contestSubmitBlocked, setContestSubmitBlocked] = useState(false);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
   const editorRef = useRef<MonacoEditorHandle>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
@@ -406,6 +410,63 @@ const CodingProblemDetail = () => {
     setTimelineScrollKey((k) => k + 1);
     restoredFailedRef.current = true;
   }, [submissions, slug, lastFailedId, searchParams]);
+
+  // Contest pre-validation: when the page is opened in the context of a
+  // contest (?contest=<slug>), call validate_contest_submission on mount so
+  // the Submit button is disabled (with the server's reason) for closed /
+  // unregistered / disqualified states — before the user even clicks.
+  useEffect(() => {
+    const contestSlug = searchParams.get("contest");
+    if (!contestSlug || !problem?.slug) {
+      setContestSubmitBlocked(false);
+      setContestError(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: contestRow } = await supabase
+          .from("contests")
+          .select("id")
+          .eq("slug", contestSlug)
+          .maybeSingle();
+        if (cancelled || !contestRow?.id) return;
+        const { data: check } = await supabase.rpc("validate_contest_submission", {
+          _contest_id: contestRow.id,
+          _problem_slug: problem.slug,
+        });
+        if (cancelled) return;
+        const v = check as { ok: boolean; message?: string; code?: string } | null;
+        // Only hard-block for terminal/contest-state failures. Auth-required
+        // is handled by the existing login flow and shouldn't permanently
+        // disable Submit.
+        const blockingCodes = new Set([
+          "closed",
+          "not_active",
+          "not_started",
+          "not_registered",
+          "withdrawn",
+          "disqualified",
+          "already_solved",
+          "invalid_problem",
+          "not_found",
+        ]);
+        if (v && !v.ok && v.code && blockingCodes.has(v.code)) {
+          setContestSubmitBlocked(true);
+          setContestError(v.message ?? "Cannot submit to this contest right now.");
+        } else {
+          setContestSubmitBlocked(false);
+        }
+      } catch {
+        // Network/RPC errors should not permanently block — let the click
+        // handler surface the failure with full context.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, problem?.slug]);
 
   // Derived per-problem stats
   const problemStats = useMemo(() => {
@@ -788,8 +849,12 @@ const CodingProblemDetail = () => {
           role="alert"
           className="border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive flex items-center justify-between gap-3"
         >
-          <span><strong className="font-semibold">Submission blocked:</strong> {contestError}</span>
+          <span>
+            <strong className="font-semibold">Submission blocked:</strong>{" "}
+            <span data-testid="contest-submit-error-message">{contestError}</span>
+          </span>
           <button
+            data-testid="contest-submit-error-dismiss"
             onClick={() => setContestError(null)}
             className="text-destructive/70 hover:text-destructive text-xs underline"
             aria-label="Dismiss"
@@ -922,11 +987,16 @@ const CodingProblemDetail = () => {
             <span className="hidden sm:inline">Run</span>
           </Button>
           <Button
+            data-testid="contest-submit-button"
             onClick={handleSubmit}
-            disabled={isRunning || isSubmitting}
+            disabled={isRunning || isSubmitting || contestSubmitBlocked}
             size="sm"
             className="gap-1.5"
-            title="Submit solution (Ctrl/Cmd+Shift+Enter)"
+            title={
+              contestSubmitBlocked
+                ? contestError ?? "Submission is blocked for this contest"
+                : "Submit solution (Ctrl/Cmd+Shift+Enter)"
+            }
           >
             {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             Submit

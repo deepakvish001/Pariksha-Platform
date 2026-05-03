@@ -1,26 +1,27 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * Submitting to a CLOSED contest must surface the exact server message from
- * `validate_contest_submission` ("Contest has ended") and block the submit.
+ * Closed-contest submission must be blocked at the UI level: the Submit
+ * button is rendered with `disabled` (not just rejected on click) and the
+ * inline error banner shows the exact server message ("Contest has ended").
  *
- * We look for a contest section labeled "Past" / "Ended" / "Closed" on the
- * /contests list. If none exists in the current environment we skip — the
- * assertion logic still runs as soon as a closed contest is seeded.
+ * Looks for a contest in the "Past" / "Ended" / "Closed" group on /contests.
+ * Skips cleanly when no closed contest is seeded in the environment.
  */
-test("submitting to a closed contest is blocked with the server message", async ({ page }) => {
+test("closed contest disables Submit and shows the server's 'Contest has ended' message", async ({ page }) => {
   await page.goto("/contests");
 
-  // Find a closed/past contest card. The list groups contests by lifecycle.
-  const pastSection = page.getByRole("heading", { name: /past|ended|closed/i }).first();
-  if (!(await pastSection.isVisible().catch(() => false))) {
-    test.skip(true, "No closed contests in this environment");
+  const pastHeading = page.getByRole("heading", { name: /past|ended|closed/i }).first();
+  if (!(await pastHeading.isVisible().catch(() => false))) {
+    test.skip(true, "No closed contests available in this environment");
   }
-  const closedCard = pastSection.locator("xpath=following::a[contains(@href, '/contests/')]").first();
-  if (!(await closedCard.isVisible().catch(() => false))) {
+  const closedLink = pastHeading
+    .locator("xpath=following::a[contains(@href, '/contests/')]")
+    .first();
+  if (!(await closedLink.isVisible().catch(() => false))) {
     test.skip(true, "Closed section has no contest links");
   }
-  await closedCard.click();
+  await closedLink.click();
 
   const problemLink = page.locator("a[href*='/library/problems/']").first();
   if (!(await problemLink.isVisible().catch(() => false))) {
@@ -28,18 +29,19 @@ test("submitting to a closed contest is blocked with the server message", async 
   }
   await problemLink.click();
 
-  const submit = page.getByRole("button", { name: /^submit/i }).first();
-  if (!(await submit.isVisible().catch(() => false))) {
-    test.skip(true, "Submit button not visible (likely auth-gated)");
-  }
+  const submit = page.locator("[data-testid='contest-submit-button']");
+  await expect(submit).toBeVisible({ timeout: 10_000 });
 
-  await submit.click().catch(() => {});
+  // Pre-validation runs on mount; wait for the Submit button to enter the
+  // disabled state because the contest is closed.
+  await expect(submit).toBeDisabled({ timeout: 10_000 });
 
-  // Exact message from validate_contest_submission for the `closed` code.
-  const banner = page.locator("[role='alert']").filter({ hasText: /Contest has ended/i });
-  const toast = page.getByText(/Contest has ended/i);
-  await expect(banner.or(toast).first()).toBeVisible({ timeout: 10_000 });
+  // Inline banner must carry the exact server message for the `closed` code.
+  const message = page.locator("[data-testid='contest-submit-error-message']");
+  await expect(message).toHaveText(/Contest has ended/i, { timeout: 10_000 });
 
-  // Submit must not have triggered a navigation to a "submission accepted" UI.
-  await expect(page.getByText(/accepted|submission successful/i)).toHaveCount(0);
+  // Force a click anyway — disabled buttons should not trigger a submission
+  // and no "accepted" confirmation should appear.
+  await submit.click({ force: true }).catch(() => {});
+  await expect(page.getByText(/^accepted$|submission successful/i)).toHaveCount(0);
 });
