@@ -11,6 +11,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
@@ -79,6 +83,7 @@ export default function ArenaFriends() {
   const [reportTarget, setReportTarget] = useState<ArenaUser | null>(null);
   const [reportReason, setReportReason] = useState("Inappropriate behavior");
   const [reportDetails, setReportDetails] = useState("");
+  const [unblockTarget, setUnblockTarget] = useState<{ user_id: string; full_name: string | null } | null>(null);
 
   const [challengeTarget, setChallengeTarget] = useState<ArenaUser | null>(null);
   const [problems, setProblems] = useState<Array<{ slug: string; title: string }>>([]);
@@ -341,12 +346,25 @@ export default function ArenaFriends() {
   }
   async function unblockUser(uid: string) {
     if (!user) return;
-    await supabase
+    const { error } = await supabase
       .from("user_blocks" as never)
       .delete()
       .eq("blocker_id", user.id)
       .eq("blocked_id", uid);
-    toast.success("Unblocked");
+    if (error) {
+      toast.error(error.message || "Could not unblock player");
+      return;
+    }
+    const name = blockedProfiles.find((b) => b.user_id === uid)?.full_name ?? "Player";
+    toast.success(`${name} unblocked`, {
+      description: "You can now send friend requests and challenges to this player.",
+    });
+    setBlockedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(uid);
+      return next;
+    });
+    setBlockedProfiles((prev) => prev.filter((b) => b.user_id !== uid));
   }
 
   // Report
@@ -368,6 +386,10 @@ export default function ArenaFriends() {
 
   // Challenge
   async function openChallenge(target: ArenaUser) {
+    if (blockedIds.has(target.user_id)) {
+      toast.error("You've blocked this player. Unblock them first to challenge.");
+      return;
+    }
     setChallengeTarget(target);
     setChallengeStep("setup");
     if (problems.length === 0) {
@@ -414,7 +436,17 @@ export default function ArenaFriends() {
   );
 
   // Mutual friends count: number of MY friends who are also friends with target user
+  // Cached per (mySignature, target_id) so sorts/searches don't re-fetch.
   const [mutualMap, setMutualMap] = useState<Map<string, number>>(new Map());
+  const [mutualLoading, setMutualLoading] = useState(false);
+  const mutualCacheRef = useRef<{ sig: string; counts: Map<string, number> }>({
+    sig: "",
+    counts: new Map(),
+  });
+  const mySig = useMemo(
+    () => [...myFriendIds].sort().join(","),
+    [myFriendIds],
+  );
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -422,31 +454,47 @@ export default function ArenaFriends() {
         setMutualMap(new Map());
         return;
       }
-      const targetIds = arenaUsers.map((u) => u.user_id);
-      // Friendships where (requester in myFriends AND addressee in targets) or vice versa, status accepted
-      const { data } = await supabase
-        .from("friendships" as never)
-        .select("requester_id,addressee_id,status")
-        .eq("status", "accepted")
-        .or(
-          `and(requester_id.in.(${myFriendIds.join(",")}),addressee_id.in.(${targetIds.join(",")})),and(addressee_id.in.(${myFriendIds.join(",")}),requester_id.in.(${targetIds.join(",")}))`,
-        );
-      if (cancelled) return;
-      const counts = new Map<string, number>();
-      const myFriendSet = new Set(myFriendIds);
-      const targetSet = new Set(targetIds);
-      for (const r of (data ?? []) as Array<{ requester_id: string; addressee_id: string }>) {
-        let target: string | null = null;
-        if (myFriendSet.has(r.requester_id) && targetSet.has(r.addressee_id)) target = r.addressee_id;
-        else if (myFriendSet.has(r.addressee_id) && targetSet.has(r.requester_id)) target = r.requester_id;
-        if (target) counts.set(target, (counts.get(target) ?? 0) + 1);
+      // Invalidate cache when my friend set changes
+      if (mutualCacheRef.current.sig !== mySig) {
+        mutualCacheRef.current = { sig: mySig, counts: new Map() };
       }
-      setMutualMap(counts);
+      const cached = mutualCacheRef.current.counts;
+      const targetIds = arenaUsers.map((u) => u.user_id);
+      const uncached = targetIds.filter((id) => !cached.has(id));
+
+      // Show cached results immediately so UI stays responsive on sort/search
+      setMutualMap(new Map(cached));
+      if (uncached.length === 0) return;
+
+      setMutualLoading(true);
+      try {
+        const { data } = await supabase
+          .from("friendships" as never)
+          .select("requester_id,addressee_id,status")
+          .eq("status", "accepted")
+          .or(
+            `and(requester_id.in.(${myFriendIds.join(",")}),addressee_id.in.(${uncached.join(",")})),and(addressee_id.in.(${myFriendIds.join(",")}),requester_id.in.(${uncached.join(",")}))`,
+          );
+        if (cancelled) return;
+        const myFriendSet = new Set(myFriendIds);
+        const targetSet = new Set(uncached);
+        // Initialize zero so we don't refetch the same ids
+        for (const id of uncached) cached.set(id, 0);
+        for (const r of (data ?? []) as Array<{ requester_id: string; addressee_id: string }>) {
+          let target: string | null = null;
+          if (myFriendSet.has(r.requester_id) && targetSet.has(r.addressee_id)) target = r.addressee_id;
+          else if (myFriendSet.has(r.addressee_id) && targetSet.has(r.requester_id)) target = r.requester_id;
+          if (target) cached.set(target, (cached.get(target) ?? 0) + 1);
+        }
+        setMutualMap(new Map(cached));
+      } finally {
+        if (!cancelled) setMutualLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [user, arenaUsers, myFriendIds]);
+  }, [user, arenaUsers, myFriendIds, mySig]);
 
   const relationByUser = useMemo(() => {
     const m = new Map<string, { state: "friends" | "incoming" | "outgoing" | "rejected" | "none"; record?: Friend }>();
@@ -646,11 +694,15 @@ export default function ArenaFriends() {
                           <Clock className="h-3 w-3" /> {p.total_battles} battles
                         </span>
                       )}
-                      {(p.mutualCount ?? 0) > 0 && (
+                      {(p.mutualCount ?? 0) > 0 ? (
                         <span className="inline-flex items-center gap-1 text-cyan-400">
                           <Users className="h-3 w-3" /> {p.mutualCount} mutual
                         </span>
-                      )}
+                      ) : mutualLoading && myFriendIds.length > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-muted-foreground/60 animate-pulse">
+                          <Users className="h-3 w-3" /> mutual…
+                        </span>
+                      ) : null}
                     </div>
                   </div>
 
@@ -801,7 +853,11 @@ export default function ArenaFriends() {
                 <AvatarFallback>{(b.full_name ?? "?").slice(0, 2)}</AvatarFallback>
               </Avatar>
               <span className="flex-1 truncate text-sm">{b.full_name ?? "Unknown player"}</span>
-              <Button size="sm" variant="outline" onClick={() => unblockUser(b.user_id)}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setUnblockTarget({ user_id: b.user_id, full_name: b.full_name })}
+              >
                 <RotateCcw className="h-3.5 w-3.5 mr-1" /> Unblock
               </Button>
             </div>
@@ -1010,6 +1066,32 @@ export default function ArenaFriends() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Unblock confirmation */}
+      <AlertDialog open={!!unblockTarget} onOpenChange={(o) => !o && setUnblockTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Unblock {unblockTarget?.full_name ?? "this player"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              They'll be able to send you friend requests, challenge you to matches, and appear in your discovery list again. You can re-block them at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const t = unblockTarget;
+                setUnblockTarget(null);
+                if (t) await unblockUser(t.user_id);
+              }}
+            >
+              Unblock
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
