@@ -32,7 +32,7 @@ const ContestEditor = () => {
     max_participants: null, scoring_mode: "icpc", penalty_minutes: 10,
   });
   const [problems, setProblems] = useState<Problem[]>([]);
-  const [allProblems, setAllProblems] = useState<{ slug: string; title: string }[]>([]);
+  const [allProblems, setAllProblems] = useState<{ slug: string; title: string; is_published: boolean }[]>([]);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
