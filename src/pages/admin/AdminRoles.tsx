@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAdminUsers, useRevokeRole } from "@/hooks/admin/useAdminControl";
 import { broadcastAdminChange } from "@/hooks/admin/useAdminRealtimeSync";
 import { useEffect, useMemo } from "react";
-
+import { Link } from "react-router-dom";
 import { ShieldOff, RefreshCw, Crown, Shield, Sparkles } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
