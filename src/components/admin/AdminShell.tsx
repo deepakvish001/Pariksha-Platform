@@ -8,7 +8,7 @@ import {
   Bell, Brain, Code2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
+
 import { Button } from "@/components/ui/button";
 import { AdminCommandPalette } from "./AdminCommandPalette";
 import { useAdminSidebarPrefs } from "@/hooks/admin/useAdminSidebarPrefs";
