@@ -191,8 +191,8 @@ export default function BattleRoom() {
         </GlassPanel>
 
         {/* Editor */}
-        <div className="space-y-2 min-w-0">
-          <GlassPanel className="p-2 flex items-center gap-2">
+        <div data-testid="battle-editor-col" className="space-y-2 min-w-0 w-full">
+          <GlassPanel className="p-2 flex items-center gap-2 flex-wrap">
             <select
               value={lang.key}
               onChange={(e) => setLang(LANG_OPTIONS.find((l) => l.key === e.target.value)!)}
@@ -209,8 +209,8 @@ export default function BattleRoom() {
               </NeonButton>
             </div>
           </GlassPanel>
-          <GlassPanel className="overflow-hidden">
-            <div className="h-[55vh]">
+          <GlassPanel className="overflow-hidden min-w-0">
+            <div className="h-[45vh] md:h-[55vh] w-full min-w-0">
               <MonacoEditor value={code} onChange={onCodeChange} language={lang.key === "cpp" ? "cpp" : lang.key} />
             </div>
           </GlassPanel>
