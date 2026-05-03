@@ -414,7 +414,17 @@ export default function ArenaFriends() {
   );
 
   // Mutual friends count: number of MY friends who are also friends with target user
+  // Cached per (mySignature, target_id) so sorts/searches don't re-fetch.
   const [mutualMap, setMutualMap] = useState<Map<string, number>>(new Map());
+  const [mutualLoading, setMutualLoading] = useState(false);
+  const mutualCacheRef = useRef<{ sig: string; counts: Map<string, number> }>({
+    sig: "",
+    counts: new Map(),
+  });
+  const mySig = useMemo(
+    () => [...myFriendIds].sort().join(","),
+    [myFriendIds],
+  );
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -422,31 +432,47 @@ export default function ArenaFriends() {
         setMutualMap(new Map());
         return;
       }
-      const targetIds = arenaUsers.map((u) => u.user_id);
-      // Friendships where (requester in myFriends AND addressee in targets) or vice versa, status accepted
-      const { data } = await supabase
-        .from("friendships" as never)
-        .select("requester_id,addressee_id,status")
-        .eq("status", "accepted")
-        .or(
-          `and(requester_id.in.(${myFriendIds.join(",")}),addressee_id.in.(${targetIds.join(",")})),and(addressee_id.in.(${myFriendIds.join(",")}),requester_id.in.(${targetIds.join(",")}))`,
-        );
-      if (cancelled) return;
-      const counts = new Map<string, number>();
-      const myFriendSet = new Set(myFriendIds);
-      const targetSet = new Set(targetIds);
-      for (const r of (data ?? []) as Array<{ requester_id: string; addressee_id: string }>) {
-        let target: string | null = null;
-        if (myFriendSet.has(r.requester_id) && targetSet.has(r.addressee_id)) target = r.addressee_id;
-        else if (myFriendSet.has(r.addressee_id) && targetSet.has(r.requester_id)) target = r.requester_id;
-        if (target) counts.set(target, (counts.get(target) ?? 0) + 1);
+      // Invalidate cache when my friend set changes
+      if (mutualCacheRef.current.sig !== mySig) {
+        mutualCacheRef.current = { sig: mySig, counts: new Map() };
       }
-      setMutualMap(counts);
+      const cached = mutualCacheRef.current.counts;
+      const targetIds = arenaUsers.map((u) => u.user_id);
+      const uncached = targetIds.filter((id) => !cached.has(id));
+
+      // Show cached results immediately so UI stays responsive on sort/search
+      setMutualMap(new Map(cached));
+      if (uncached.length === 0) return;
+
+      setMutualLoading(true);
+      try {
+        const { data } = await supabase
+          .from("friendships" as never)
+          .select("requester_id,addressee_id,status")
+          .eq("status", "accepted")
+          .or(
+            `and(requester_id.in.(${myFriendIds.join(",")}),addressee_id.in.(${uncached.join(",")})),and(addressee_id.in.(${myFriendIds.join(",")}),requester_id.in.(${uncached.join(",")}))`,
+          );
+        if (cancelled) return;
+        const myFriendSet = new Set(myFriendIds);
+        const targetSet = new Set(uncached);
+        // Initialize zero so we don't refetch the same ids
+        for (const id of uncached) cached.set(id, 0);
+        for (const r of (data ?? []) as Array<{ requester_id: string; addressee_id: string }>) {
+          let target: string | null = null;
+          if (myFriendSet.has(r.requester_id) && targetSet.has(r.addressee_id)) target = r.addressee_id;
+          else if (myFriendSet.has(r.addressee_id) && targetSet.has(r.requester_id)) target = r.requester_id;
+          if (target) cached.set(target, (cached.get(target) ?? 0) + 1);
+        }
+        setMutualMap(new Map(cached));
+      } finally {
+        if (!cancelled) setMutualLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [user, arenaUsers, myFriendIds]);
+  }, [user, arenaUsers, myFriendIds, mySig]);
 
   const relationByUser = useMemo(() => {
     const m = new Map<string, { state: "friends" | "incoming" | "outgoing" | "rejected" | "none"; record?: Friend }>();
