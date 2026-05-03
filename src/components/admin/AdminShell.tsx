@@ -1,11 +1,11 @@
 import { NavLink, useLocation, Link } from "react-router-dom";
 import {
-  Shield, FileCode2, Upload, ScrollText, LayoutGrid, History,
+  Shield, FileCode2, Upload, ScrollText, LayoutGrid,
   Users, KeyRound, Sparkles, CalendarClock, Megaphone, Flag,
-  Settings as SettingsIcon, Database, Activity, Download, HeartPulse, Clock,
-  ChevronDown, Star, Library, Map as MapIcon, Inbox, ShieldAlert,
-  Award, Trophy, Gamepad2, Search, Command as CommandIcon, X, ChevronRight, Pin,
-  Bell, Brain, FileText, Code2, MessageSquare, Mail, Share2, Send, LogOut,
+  Settings as SettingsIcon, Database, HeartPulse, Clock,
+  ChevronDown, Star, Map as MapIcon, Inbox, ShieldAlert,
+  Award, Trophy, Search, Command as CommandIcon, X, ChevronRight, Pin,
+  Bell, Brain, Code2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
