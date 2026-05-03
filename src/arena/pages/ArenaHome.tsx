@@ -198,7 +198,10 @@ export default function ArenaHome() {
         </GlassPanel>
       </div>
 
-      <DailyQuestsPanel />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <DailyQuestsPanel />
+        <DailyHistoryPanel />
+      </div>
     </div>
   );
 }
