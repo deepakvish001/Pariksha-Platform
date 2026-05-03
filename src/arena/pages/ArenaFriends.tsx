@@ -537,7 +537,18 @@ export default function ArenaFriends() {
       <GlassPanel className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="text-xs uppercase text-primary/80">All players</div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              className="bg-card/60 border border-border rounded px-2 py-1 text-xs"
+              title="Sort by"
+            >
+              <option value="elo">Sort: Elo</option>
+              <option value="battles">Sort: Battles</option>
+              <option value="newest">Sort: Newest</option>
+              <option value="mutual">Sort: Mutual friends</option>
+            </select>
             <Button
               size="sm"
               variant={showFilters || filtersDirty ? "default" : "outline"}
@@ -555,7 +566,7 @@ export default function ArenaFriends() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search players by name"
+              placeholder="Search players by name or username"
               className="pl-8"
             />
           </div>
