@@ -78,8 +78,9 @@ const DailyChallengeAdmin = () => {
         </Card>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <DailyChallengeReviewCard />
+        <DailyReviewAuditCard />
       </div>
     </AdminShell>
   );
