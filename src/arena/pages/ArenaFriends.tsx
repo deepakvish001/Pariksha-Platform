@@ -129,7 +129,22 @@ export default function ArenaFriends() {
       .from("user_blocks" as never)
       .select("blocked_id")
       .eq("blocker_id", user.id);
-    setBlockedIds(new Set(((data ?? []) as Array<{ blocked_id: string }>).map((r) => r.blocked_id)));
+    const ids = ((data ?? []) as Array<{ blocked_id: string }>).map((r) => r.blocked_id);
+    setBlockedIds(new Set(ids));
+    if (ids.length) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id,full_name,avatar_url")
+        .in("user_id", ids);
+      setBlockedProfiles(
+        ids.map((id) => {
+          const p = (profs ?? []).find((x) => x.user_id === id);
+          return { user_id: id, full_name: p?.full_name ?? null, avatar_url: p?.avatar_url ?? null };
+        }),
+      );
+    } else {
+      setBlockedProfiles([]);
+    }
   }, [user]);
 
   // Load all users with pagination (everyone, not just arena-rated)
