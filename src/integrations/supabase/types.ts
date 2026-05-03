@@ -3327,6 +3327,10 @@ export type Database = {
       }
       admin_unsuspend_user: { Args: { _user_id: string }; Returns: undefined }
       admin_user_detail: { Args: { _user_id: string }; Returns: Json }
+      attach_problem_to_contest: {
+        Args: { _contest_id: string; _problem_slug: string }
+        Returns: Json
+      }
       audit_daily_completions: { Args: never; Returns: Json }
       audit_daily_completions_all: { Args: never; Returns: Json }
       award_xp: {

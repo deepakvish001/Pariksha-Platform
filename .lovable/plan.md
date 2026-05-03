@@ -1,145 +1,85 @@
-## Coding Contests — End-to-End Plan
+# Private problem library + "Add to contest" workflow
 
-Build a complete **Contests** system: admins create timed contests with selected coding problems, users register/join, submit solutions during the window, and a live leaderboard ranks participants. Includes an admin registrations management page.
+## Current state
 
----
+- `coding_problems.is_published` defaults to `false`, and RLS already blocks non-admins from seeing draft problems. So new problems are *already* private to the admin panel — but the admin UI calls them "Drafts" and the contest editor only lets admins attach **published** problems, which makes the workflow feel incomplete.
+- `contest_problems` RLS only exposes problems to the public after `contests.status` becomes `live`/`ended`, but it still relies on `coding_problems` SELECT, which blocks drafts for non-admins. So a draft problem attached to a contest is invisible even to registered contestants once the contest goes live.
 
-### 1. Database (new tables)
+## Goal
+
+1. Make it explicit that any new problem is **Private (admin-only)** until published.
+2. From the admin problems list, give two one-click actions per row:
+   - **Publish** → makes it visible in the user library.
+   - **Add to contest** → opens a picker of admin contests (draft / upcoming / live) and attaches the problem (even if it's still private).
+3. Make sure draft problems attached to a live contest are visible to **registered contestants** (and only them), so admins can run "contest-only" problems that never appear in the public library.
+
+## UX changes
+
+### `/admin/problems` list
+
+- Replace the "Published" toggle column with a **Visibility** badge column:
+  - `Private` (amber) — `is_published = false`
+  - `Public` (emerald) — `is_published = true`
+  - Tooltip on `Private`: "Visible only in the admin panel and to contestants if attached to an active contest."
+- Add per-row actions next to Edit / Duplicate:
+  - **Publish to library** (only for `Private`) → toggles `is_published = true` after a confirm dialog.
+  - **Add to contest** → opens a `Dialog` listing all admin contests in `draft`, `published`, or `live` status with a search box. Selecting one inserts a `contest_problems` row at the end of the contest's order with default `points = 100`. Toast: "Added to <Contest title>". If the problem is already attached, show "Already in this contest" inline and disable the row.
+- Keep the existing filter chips, but rename **Drafts** → **Private** and **Published** → **Public**.
+
+### `/admin/contests/:id/edit` — Problems section
+
+- Drop the `is_published = true` filter on the picker. Show all problems and tag each with a small `Private` or `Public` badge so the admin knows what they're attaching.
+- Inline helper text under the picker: "Private problems remain hidden from the library but become visible to registered contestants while this contest is live."
+
+### `/admin/problems/new` and editor
+
+- New problems already start as `is_published = false`. Add a one-line banner at the top of the editor for new/unsaved problems: "This problem will be saved as Private. You can publish it or attach it to a contest from the problems list."
+
+## Backend changes
+
+### Migration: relax draft visibility for active-contest problems
+
+Add a SELECT policy on `coding_problems` (and the supporting `coding_problem_tests`, `coding_problem_starter_code`, `coding_problem_sql_specs`) that allows reads when:
 
 ```text
-contests
-  id, slug, title, description, banner_url,
-  starts_at, ends_at, registration_opens_at, registration_closes_at,
-  status (draft|published|live|ended|archived — derived view also exposed),
-  visibility (public|unlisted|private),
-  max_participants (nullable), rules_md,
-  scoring_mode (icpc|ioi|points), penalty_minutes (default 10),
-  created_by, created_at, updated_at
-
-contest_problems            (which problems belong to a contest)
-  contest_id, problem_slug, order_index, points (default 100), PK(contest_id, problem_slug)
-
-contest_registrations
-  id, contest_id, user_id, registered_at, status (registered|disqualified|withdrawn),
-  display_name, team_name (optional), UNIQUE(contest_id, user_id)
-
-contest_submissions          (mirror of code_submissions filtered to contest window)
-  id, contest_id, user_id, problem_slug, submission_id (FK code_submissions),
-  verdict, points_awarded, penalty_seconds, submitted_at
-
-contest_leaderboard_cache    (materialized snapshot, refreshed via trigger + cron)
-  contest_id, user_id, rank, total_points, total_penalty_seconds,
-  problems_solved, last_solve_at, updated_at, PK(contest_id, user_id)
+EXISTS (
+  SELECT 1
+  FROM contest_problems cp
+  JOIN contests c ON c.id = cp.contest_id
+  JOIN contest_registrations r
+    ON r.contest_id = c.id AND r.user_id = auth.uid() AND r.status = 'registered'
+  WHERE cp.problem_slug = coding_problems.slug
+    AND c.status = 'live'
+    AND now() BETWEEN c.starts_at AND c.ends_at
+)
 ```
 
-**RLS**
-- `contests`: public SELECT where `visibility='public' AND status IN ('published','live','ended')`; admins ALL.
-- `contest_problems`: public SELECT joined with visible contests; admins ALL.
-- `contest_registrations`: user SELECT/INSERT/DELETE own row; admins ALL.
-- `contest_submissions`: user SELECT own + public SELECT after `ends_at`; INSERT via SECURITY DEFINER function; admins ALL.
-- `contest_leaderboard_cache`: public SELECT for visible contests; writes only via trigger/function.
+This keeps the library "private by default" rule intact while letting registered contestants run/submit a draft attached to their live contest. Admins keep their existing `has_role` policy.
 
-**Functions / triggers**
-- `register_for_contest(contest_id)` — validates window, capacity, visibility.
-- `record_contest_submission()` — trigger on `code_submissions` INSERT: if user is registered and submission is inside contest window, mirror into `contest_submissions` and recompute that user's leaderboard row.
-- `recompute_contest_leaderboard(contest_id)` — recalculates ranks, called from trigger (single user) and a `pg_cron` job every minute for live contests.
-- `has_role(..., 'owner')` already grants admin via existing logic.
+Same predicate is added to `coding_problem_tests` (sample tests only), `coding_problem_starter_code`, and `coding_problem_sql_specs` so editor + run/submit work end-to-end during the contest.
 
-**Realtime**: enable `REPLICA IDENTITY FULL` and add `contests`, `contest_registrations`, `contest_leaderboard_cache`, `contest_submissions` to `supabase_realtime` publication.
+### Migration: helper RPC `attach_problem_to_contest(_problem_slug text, _contest_id uuid)`
 
----
+- `SECURITY DEFINER`, admin-only.
+- Validates the slug exists and the contest is owned by the platform (any admin can attach).
+- Inserts into `contest_problems` with `order_index = COALESCE(max(order_index)+1, 0)` and `points = 100`. Idempotent: returns existing row if already attached.
+- Returns `{ok, contest_id, problem_slug, order_index, already_attached}`.
 
-### 2. User-facing pages (under `/contests`)
+The new "Add to contest" dialog calls this RPC instead of doing the math client-side.
 
-| Route | Purpose |
-|---|---|
-| `/contests` | List of upcoming / live / past contests with status pills and countdowns. |
-| `/contests/:slug` | Overview: rules, problem count (problems hidden until start), prize, **Register / Joined** button. |
-| `/contests/:slug/problems` | Problem list (only after start, only for registered users). Reuses existing `CodingProblemDetail` with a `contestId` query param. |
-| `/contests/:slug/leaderboard` | Live leaderboard with realtime updates, your-rank pinned row, filter by registered users. |
-| `/contests/:slug/my-submissions` | Your contest submissions and verdicts. |
+## Files to add / edit
 
-**Behavior**
-- Countdown timers (starts in / ends in) using a single `useContestClock` hook.
-- Submissions made on contest problems during the window are auto-attributed (no separate submit button).
-- Guests see overview + leaderboard; register prompts login.
+- **migrations**
+  - `add_contest_visibility_for_drafts.sql` — new SELECT policies on the four problem tables.
+  - `attach_problem_to_contest_rpc.sql` — RPC + grant to `authenticated`.
+- **src/pages/admin/AdminProblemsList.tsx** — visibility badge column, Publish + Add-to-contest actions, rename filter chips.
+- **src/components/admin/AddProblemToContestDialog.tsx** *(new)* — searchable list of admin contests, calls the RPC, invalidates `["admin", "contests", id, "problems"]`.
+- **src/pages/admin/contests/ContestEditor.tsx** — drop `is_published = true` filter, render Private/Public badges in the picker, add helper copy.
+- **src/pages/admin/ProblemEditor.tsx** — banner for new problems explaining the Private default.
+- **src/hooks/admin/useAdminContests.ts** — add `useAttachProblemToContest()` mutation that wraps the RPC.
 
----
+## Out of scope
 
-### 3. Admin pages (under `/admin/contests`)
-
-| Route | Purpose |
-|---|---|
-| `/admin/contests` | Table of all contests with status, dates, registrations count, quick actions (publish, end, archive, delete). |
-| `/admin/contests/new` and `/admin/contests/:id/edit` | Form: metadata, dates, visibility, scoring mode, banner upload, **problem picker** (search published problems, drag-reorder, set points). |
-| `/admin/contests/:id/registrations` | Registrations table: user, registered at, status, score, solved count. Bulk disqualify / remove / export CSV. Search + filter. |
-| `/admin/contests/:id/leaderboard` | Admin view of leaderboard with recompute button and submission drill-down. |
-| `/admin/contests/:id/submissions` | All submissions in the contest window with verdict filters. |
-
-**Sidebar**: add a "Contests" group in `AdminShell` with the four entries above.
-
-**Audit**: every create/update/publish/end/disqualify writes to `admin_audit_log` (existing table).
-
----
-
-### 4. Realtime + caching strategy (matches existing admin pattern)
-
-- React Query with `keepPreviousData`, `staleTime: 60s` (already configured globally).
-- Per-page Supabase channel subscriptions invalidate only the relevant queries:
-  - Contests list ⇐ `contests` changes.
-  - Registrations page ⇐ `contest_registrations` filtered by `contest_id`.
-  - Leaderboard ⇐ `contest_leaderboard_cache` filtered by `contest_id`.
-- Optimistic UI for register / withdraw / admin disqualify (same pattern as `useGrantRole`).
-- Reuse `useAdminRealtimeSync` broadcast so all admin tabs stay in sync.
-
----
-
-### 5. Files to create
-
-**Hooks**
-- `src/hooks/useContests.ts` — list, detail, register, withdraw, my registration.
-- `src/hooks/useContestLeaderboard.ts` — realtime leaderboard.
-- `src/hooks/useContestClock.ts` — shared countdown.
-- `src/hooks/admin/useAdminContests.ts` — CRUD + publish/end.
-- `src/hooks/admin/useAdminContestRegistrations.ts` — list, disqualify, export.
-
-**Pages (user)**
-- `src/pages/contests/ContestsList.tsx`
-- `src/pages/contests/ContestDetail.tsx`
-- `src/pages/contests/ContestProblems.tsx`
-- `src/pages/contests/ContestLeaderboard.tsx`
-- `src/pages/contests/MyContestSubmissions.tsx`
-
-**Pages (admin)**
-- `src/pages/admin/contests/AdminContestsList.tsx`
-- `src/pages/admin/contests/ContestEditor.tsx` (new + edit)
-- `src/pages/admin/contests/AdminContestRegistrations.tsx`
-- `src/pages/admin/contests/AdminContestLeaderboard.tsx`
-- `src/pages/admin/contests/AdminContestSubmissions.tsx`
-
-**Components**
-- `src/components/contests/ContestCard.tsx`, `CountdownPill.tsx`, `LeaderboardTable.tsx`, `ProblemPicker.tsx` (admin), `RegisterButton.tsx`.
-
-**Routing**
-- Update `src/App.tsx` to register all `/contests/*` (PublicDashboardWrapper) and `/admin/contests/*` (AdminRoute) routes.
-- Update `src/components/admin/AdminShell.tsx` sidebar with "Contests" group.
-
-**Migrations**
-- `supabase/migrations/<ts>_contests_schema.sql` — tables, RLS, functions, triggers, realtime publication, pg_cron job.
-
----
-
-### 6. Edge cases handled
-- Registration closes when capacity reached or `registration_closes_at` passes.
-- Submissions outside `[starts_at, ends_at]` are NOT counted toward contest.
-- Private contests require an invite code (stored on contest, validated in `register_for_contest`).
-- Tie-breaking: total_points DESC, total_penalty ASC, last_solve_at ASC.
-- `owner` role inherits admin access automatically (existing `has_role`).
-
----
-
-### Open questions (defaults assumed; tell me to change)
-1. **Scoring**: default ICPC-style (solved + penalty). Want IOI partial scoring or pure points instead?
-2. **Teams**: solo only for v1 (team_name kept as cosmetic). Add real teams later?
-3. **Problem visibility**: hidden until contest starts. OK, or show titles before start?
-4. **Public profile leaderboard freeze**: public leaderboard locks 1 hour before end (common in CP). Include this?
+- No changes to `/library/problems` user UI — RLS keeps drafts hidden there.
+- No changes to contest scoring, leaderboard, or registration flow.
+- No bulk "Add to contest" or multi-select on the problems list (can be a follow-up).
