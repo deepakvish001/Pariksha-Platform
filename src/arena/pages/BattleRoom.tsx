@@ -160,7 +160,7 @@ export default function BattleRoom() {
           ) : (
             <>
               <h2 className="text-xl font-bold">{problem.title}</h2>
-              <div className="prose prose-invert prose-sm mt-3 max-w-none whitespace-pre-wrap">{problem.description}</div>
+              <div className="prose prose-invert prose-sm mt-3 max-w-none whitespace-pre-wrap break-words">{problem.description}</div>
               {problem.examples?.length > 0 && (
                 <div className="mt-4 space-y-2">
                   <div className="text-xs uppercase text-primary/80">Examples</div>
