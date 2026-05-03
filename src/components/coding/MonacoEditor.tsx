@@ -1,6 +1,6 @@
 import Editor, { OnMount } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
-import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 type IStandaloneCodeEditor = Parameters<OnMount>[0];
 
 interface MonacoEditorProps {
@@ -16,6 +16,7 @@ export interface MonacoEditorHandle {
   format: () => Promise<void>;
   focus: () => void;
   getValue: () => string;
+  relayout: () => void;
 }
 
 export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
@@ -25,6 +26,21 @@ export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
   ) => {
     const { resolvedTheme } = useTheme();
     const editorRef = useRef<IStandaloneCodeEditor | null>(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+
+    const relayout = useCallback(() => {
+      const ed = editorRef.current;
+      const el = containerRef.current;
+      if (!ed || !el) return;
+      // Force monaco to use 0x0 first so it picks up the parent's actual size,
+      // then snap to the real container box. This avoids the editor pinning a
+      // stale width that starves adjacent grid columns.
+      ed.layout({ width: 0, height: 0 });
+      requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        ed.layout({ width: rect.width, height: rect.height });
+      });
+    }, []);
 
     const handleMount: OnMount = useCallback((ed) => {
       editorRef.current = ed;
@@ -38,7 +54,21 @@ export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
         roundedSelection: true,
         padding: { top: 12, bottom: 12 },
       });
-    }, []);
+      // Initial layout once mounted into the live grid
+      requestAnimationFrame(() => relayout());
+    }, [relayout]);
+
+    // ResizeObserver on the wrapper — covers the case where the parent grid
+    // template changes (e.g. peer join → BattleRoom mounts → siblings appear).
+    useEffect(() => {
+      const el = containerRef.current;
+      if (!el || typeof ResizeObserver === "undefined") return;
+      const ro = new ResizeObserver(() => relayout());
+      ro.observe(el);
+      const onWin = () => relayout();
+      window.addEventListener("resize", onWin);
+      return () => { ro.disconnect(); window.removeEventListener("resize", onWin); };
+    }, [relayout]);
 
     useImperativeHandle(ref, () => ({
       format: async () => {
@@ -49,29 +79,33 @@ export const MonacoEditor = forwardRef<MonacoEditorHandle, MonacoEditorProps>(
       },
       focus: () => editorRef.current?.focus(),
       getValue: () => editorRef.current?.getValue() ?? "",
+      relayout,
     }));
 
     return (
-      <Editor
-        height={height}
-        value={value}
-        onChange={(v) => onChange(v ?? "")}
-        language={language}
-        theme={resolvedTheme === "dark" ? "vs-dark" : "vs-light"}
-        onMount={handleMount}
-        options={{
-          readOnly,
-          wordWrap: "on",
-          smoothScrolling: true,
-          cursorBlinking: "smooth",
-          fontSize,
-        }}
-        loading={
-          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-            Loading editor…
-          </div>
-        }
-      />
+      <div ref={containerRef} className="w-full h-full min-w-0" data-testid="monaco-wrapper">
+        <Editor
+          height={height}
+          width="100%"
+          value={value}
+          onChange={(v) => onChange(v ?? "")}
+          language={language}
+          theme={resolvedTheme === "dark" ? "vs-dark" : "vs-light"}
+          onMount={handleMount}
+          options={{
+            readOnly,
+            wordWrap: "on",
+            smoothScrolling: true,
+            cursorBlinking: "smooth",
+            fontSize,
+          }}
+          loading={
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+              Loading editor…
+            </div>
+          }
+        />
+      </div>
     );
   },
 );
