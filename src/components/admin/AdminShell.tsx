@@ -335,32 +335,38 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
       </NavLink>
     );
 
+    const button = (
+      <SidebarMenuButton asChild isActive={active || subActive}>
+        {linkEl}
+      </SidebarMenuButton>
+    );
+
+    const wrapped = tracked && !opts?.pinnedRow ? (
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent side="right" className="text-xs">
+          <div className="font-medium">{item.label}</div>
+          {showSkeleton ? (
+            <div className="text-muted-foreground">Loading…</div>
+          ) : (
+            <div className="text-muted-foreground">{detail?.hint}</div>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    ) : collapsed ? (
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent side="right" className="text-xs">
+          {item.label}
+        </TooltipContent>
+      </Tooltip>
+    ) : (
+      button
+    );
+
     return (
       <SidebarMenuItem key={`${opts?.pinnedRow ? "pin-" : ""}${item.to}`}>
-        <SidebarMenuButton asChild isActive={active || subActive}>
-          {tracked && !opts?.pinnedRow ? (
-            <Tooltip>
-              <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">
-                <div className="font-medium">{item.label}</div>
-                {showSkeleton ? (
-                  <div className="text-muted-foreground">Loading…</div>
-                ) : (
-                  <div className="text-muted-foreground">{detail?.hint}</div>
-                )}
-              </TooltipContent>
-            </Tooltip>
-          ) : collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">
-                {item.label}
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            linkEl
-          )}
-        </SidebarMenuButton>
+        {wrapped}
 
         {showSubNav && (
           <ul

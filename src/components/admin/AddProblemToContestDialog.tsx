@@ -28,10 +28,20 @@ export const AddProblemToContestDialog = ({ problemSlug, problemTitle, trigger }
   const { data: contests = [], isLoading } = useAdminContests();
   const attach = useAttachProblemToContest();
 
+  const ELIGIBLE_STATUSES = ["draft", "published", "live"] as const;
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    contests.forEach((c) => {
+      counts[c.status] = (counts[c.status] ?? 0) + 1;
+    });
+    return counts;
+  }, [contests]);
+
   const eligible = useMemo(
     () =>
       contests
-        .filter((c) => ["draft", "published", "live"].includes(c.status))
+        .filter((c) => (ELIGIBLE_STATUSES as readonly string[]).includes(c.status))
         .filter((c) => {
           if (!search) return true;
           const q = search.toLowerCase();
@@ -51,6 +61,42 @@ export const AddProblemToContestDialog = ({ problemSlug, problemTitle, trigger }
             Private problems become visible to registered contestants while the contest is live.
           </DialogDescription>
         </DialogHeader>
+        <details className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs">
+          <summary className="cursor-pointer select-none font-medium text-muted-foreground">
+            Eligible contests debug ({eligible.length} of {contests.length} shown)
+          </summary>
+          <div className="mt-2 space-y-1.5">
+            <div>
+              <span className="text-muted-foreground">Eligible statuses:</span>{" "}
+              {ELIGIBLE_STATUSES.map((s) => (
+                <Badge key={s} variant="outline" className="mr-1 text-[10px]">
+                  {s}
+                </Badge>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              <span className="text-muted-foreground">All status counts:</span>
+              {Object.keys(statusCounts).length === 0 ? (
+                <span className="italic text-muted-foreground">no contests in DB</span>
+              ) : (
+                Object.entries(statusCounts).map(([s, n]) => (
+                  <Badge
+                    key={s}
+                    className={`text-[10px] ${STATUS_VARIANT[s] ?? "bg-muted"}`}
+                  >
+                    {s}: {n}
+                  </Badge>
+                ))
+              )}
+            </div>
+            {contests.length > 0 && eligible.length === 0 && (
+              <p className="text-amber-500">
+                Contests exist but none have status draft/published/live (likely all
+                ended or cancelled).
+              </p>
+            )}
+          </div>
+        </details>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
