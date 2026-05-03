@@ -629,8 +629,13 @@ export default function ArenaFriends() {
                     <AvatarFallback>{(p.full_name ?? "?").slice(0, 2)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="truncate font-medium text-sm">{p.full_name ?? "Anonymous"}</div>
-                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                    <div className="truncate font-medium text-sm">
+                      {p.full_name ?? "Anonymous"}
+                      {p.username && (
+                        <span className="text-[11px] text-muted-foreground/70 ml-1">@{p.username}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
                       {p.elo != null && (
                         <span className="inline-flex items-center gap-1">
                           <Trophy className="h-3 w-3" /> {p.elo} Elo
@@ -641,17 +646,29 @@ export default function ArenaFriends() {
                           <Clock className="h-3 w-3" /> {p.total_battles} battles
                         </span>
                       )}
+                      {(p.mutualCount ?? 0) > 0 && (
+                        <span className="inline-flex items-center gap-1 text-cyan-400">
+                          <Users className="h-3 w-3" /> {p.mutualCount} mutual
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap justify-end">
                     {rel?.state === "friends" && (
-                      <span className="text-[11px] text-lime-400 inline-flex items-center gap-1">
-                        <Check className="h-3 w-3" /> Friends
+                      <span className="text-[11px] text-lime-400 inline-flex items-center gap-1 rounded-full border border-lime-400/30 px-2 py-0.5">
+                        <Check className="h-3 w-3" /> Accepted
                       </span>
                     )}
                     {rel?.state === "outgoing" && (
-                      <span className="text-[11px] text-muted-foreground">Requested</span>
+                      <span className="text-[11px] text-amber-400 inline-flex items-center gap-1 rounded-full border border-amber-400/30 px-2 py-0.5">
+                        <Clock className="h-3 w-3" /> Pending
+                      </span>
+                    )}
+                    {rel?.state === "rejected" && (
+                      <span className="text-[11px] text-red-400 inline-flex items-center gap-1 rounded-full border border-red-400/30 px-2 py-0.5">
+                        <X className="h-3 w-3" /> Rejected
+                      </span>
                     )}
                     {rel?.state === "incoming" && rel.record && (
                       <>
