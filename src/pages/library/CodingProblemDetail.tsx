@@ -790,6 +790,7 @@ const CodingProblemDetail = () => {
         >
           <span><strong className="font-semibold">Submission blocked:</strong> {contestError}</span>
           <button
+            data-testid="contest-submit-error-dismiss"
             onClick={() => setContestError(null)}
             className="text-destructive/70 hover:text-destructive text-xs underline"
             aria-label="Dismiss"
