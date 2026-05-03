@@ -146,6 +146,8 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/roles", label: "Roles", icon: KeyRound },
     { to: "/admin/rls-tester", label: "RLS Tester", icon: ShieldAlert },
     { to: "/admin/reports", label: "Reports", icon: Flag },
+    { to: "/admin/security", label: "Security Center", icon: ShieldAlert },
+    { to: "/admin/sessions", label: "Sessions", icon: LogOut },
   ]},
   { label: "Engagement", items: [
     { to: "/admin/daily-challenge", label: "Daily Challenge", icon: CalendarClock },
@@ -155,6 +157,8 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/achievements", label: "Achievements", icon: Award },
     { to: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
     { to: "/admin/gamification", label: "Gamification Rules", icon: Gamepad2 },
+    { to: "/admin/notifications", label: "Notifications", icon: Bell },
+    { to: "/admin/support", label: "Support Inbox", icon: Inbox },
   ]},
   { label: "User Activity", items: [
     { to: "/admin/quizzes", label: "Quizzes & SRS", icon: Brain },
@@ -164,17 +168,9 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/outreach", label: "Cold Outreach", icon: Mail },
     { to: "/admin/folders", label: "Shared Folders", icon: Share2 },
   ]},
-  { label: "Communications", items: [
-    { to: "/admin/notifications", label: "Notifications", icon: Bell },
-    { to: "/admin/support", label: "Support Inbox", icon: Inbox },
-  ]},
   { label: "Platform", items: [
     { to: "/admin/settings", label: "Settings & Flags", icon: SettingsIcon },
     { to: "/admin/storage", label: "Storage", icon: Database },
-  ]},
-  { label: "Security", items: [
-    { to: "/admin/security", label: "Security Center", icon: ShieldAlert },
-    { to: "/admin/sessions", label: "Sessions", icon: LogOut },
   ]},
   { label: "System", items: [
     { to: "/admin/system-health", label: "System Health", icon: HeartPulse },
