@@ -260,6 +260,255 @@ export type Database = {
         }
         Relationships: []
       }
+      battle_achievements: {
+        Row: {
+          achievement_key: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          achievement_key: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          achievement_key?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      battle_events: {
+        Row: {
+          battle_id: string
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          user_id: string
+        }
+        Insert: {
+          battle_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          user_id: string
+        }
+        Update: {
+          battle_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_events_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battle_invites: {
+        Row: {
+          battle_id: string | null
+          created_at: string
+          difficulty: Database["public"]["Enums"]["battle_difficulty"]
+          duration_sec: number
+          expires_at: string
+          from_user: string
+          id: string
+          problem_slug: string | null
+          status: string
+          to_user: string
+        }
+        Insert: {
+          battle_id?: string | null
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["battle_difficulty"]
+          duration_sec?: number
+          expires_at?: string
+          from_user: string
+          id?: string
+          problem_slug?: string | null
+          status?: string
+          to_user: string
+        }
+        Update: {
+          battle_id?: string | null
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["battle_difficulty"]
+          duration_sec?: number
+          expires_at?: string
+          from_user?: string
+          id?: string
+          problem_slug?: string | null
+          status?: string
+          to_user?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_invites_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battle_queue: {
+        Row: {
+          difficulty: Database["public"]["Enums"]["battle_difficulty"]
+          elo: number
+          id: string
+          joined_at: string
+          status: string
+          topic: string | null
+          user_id: string
+        }
+        Insert: {
+          difficulty?: Database["public"]["Enums"]["battle_difficulty"]
+          elo?: number
+          id?: string
+          joined_at?: string
+          status?: string
+          topic?: string | null
+          user_id: string
+        }
+        Update: {
+          difficulty?: Database["public"]["Enums"]["battle_difficulty"]
+          elo?: number
+          id?: string
+          joined_at?: string
+          status?: string
+          topic?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      battle_submissions: {
+        Row: {
+          battle_id: string
+          created_at: string
+          id: string
+          language: string
+          passed: number
+          runtime_ms: number | null
+          source_code: string
+          total: number
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          battle_id: string
+          created_at?: string
+          id?: string
+          language: string
+          passed?: number
+          runtime_ms?: number | null
+          source_code: string
+          total?: number
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          battle_id?: string
+          created_at?: string
+          id?: string
+          language?: string
+          passed?: number
+          runtime_ms?: number | null
+          source_code?: string
+          total?: number
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_submissions_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battles: {
+        Row: {
+          created_at: string
+          difficulty: Database["public"]["Enums"]["battle_difficulty"]
+          duration_sec: number
+          elo_a_after: number | null
+          elo_a_before: number | null
+          elo_b_after: number | null
+          elo_b_before: number | null
+          end_reason: string | null
+          ended_at: string | null
+          ends_at: string | null
+          id: string
+          invite_code: string | null
+          is_private: boolean
+          player_a: string
+          player_b: string
+          problem_slug: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["battle_status"]
+          topic: string | null
+          winner_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["battle_difficulty"]
+          duration_sec?: number
+          elo_a_after?: number | null
+          elo_a_before?: number | null
+          elo_b_after?: number | null
+          elo_b_before?: number | null
+          end_reason?: string | null
+          ended_at?: string | null
+          ends_at?: string | null
+          id?: string
+          invite_code?: string | null
+          is_private?: boolean
+          player_a: string
+          player_b: string
+          problem_slug: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["battle_status"]
+          topic?: string | null
+          winner_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["battle_difficulty"]
+          duration_sec?: number
+          elo_a_after?: number | null
+          elo_a_before?: number | null
+          elo_b_after?: number | null
+          elo_b_before?: number | null
+          end_reason?: string | null
+          ended_at?: string | null
+          ends_at?: string | null
+          id?: string
+          invite_code?: string | null
+          is_private?: boolean
+          player_a?: string
+          player_b?: string
+          problem_slug?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["battle_status"]
+          topic?: string | null
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string
@@ -1043,6 +1292,33 @@ export type Database = {
         }
         Relationships: []
       }
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: Database["public"]["Enums"]["friendship_status"]
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gamification_rule_history: {
         Row: {
           changed_at: string
@@ -1232,6 +1508,45 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value?: Json
+        }
+        Relationships: []
+      }
+      player_ratings: {
+        Row: {
+          best_streak: number
+          current_streak: number
+          draws: number
+          elo: number
+          losses: number
+          peak_elo: number
+          total_battles: number
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          best_streak?: number
+          current_streak?: number
+          draws?: number
+          elo?: number
+          losses?: number
+          peak_elo?: number
+          total_battles?: number
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          best_streak?: number
+          current_streak?: number
+          draws?: number
+          elo?: number
+          losses?: number
+          peak_elo?: number
+          total_battles?: number
+          updated_at?: string
+          user_id?: string
+          wins?: number
         }
         Relationships: []
       }
@@ -3342,6 +3657,31 @@ export type Database = {
         }
         Returns: Json
       }
+      battle_accept_invite: { Args: { _invite: string }; Returns: string }
+      battle_create_private: {
+        Args: {
+          _difficulty: Database["public"]["Enums"]["battle_difficulty"]
+          _duration?: number
+          _problem_slug: string
+          _to_user: string
+        }
+        Returns: string
+      }
+      battle_finish: {
+        Args: { _battle_id: string; _reason: string; _winner: string }
+        Returns: undefined
+      }
+      battle_matchmake: {
+        Args: {
+          _difficulty: Database["public"]["Enums"]["battle_difficulty"]
+          _topic: string
+        }
+        Returns: string
+      }
+      calc_elo_delta: {
+        Args: { _k?: number; _loser_elo: number; _winner_elo: number }
+        Returns: number
+      }
       calculate_profile_completion: {
         Args: {
           profile_row: Database["public"]["Tables"]["user_profiles_extended"]["Row"]
@@ -3352,6 +3692,7 @@ export type Database = {
         Args: { _contest_id: string }
         Returns: string
       }
+      ensure_player_rating: { Args: { _user: string }; Returns: undefined }
       get_coding_leaderboard:
         | {
             Args: {
@@ -3508,6 +3849,9 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "owner"
+      battle_difficulty: "easy" | "medium" | "hard"
+      battle_status: "pending" | "live" | "ended" | "abandoned"
+      friendship_status: "pending" | "accepted" | "blocked"
       study_year:
         | "1st Year"
         | "2nd Year"
@@ -3644,6 +3988,9 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user", "owner"],
+      battle_difficulty: ["easy", "medium", "hard"],
+      battle_status: ["pending", "live", "ended", "abandoned"],
+      friendship_status: ["pending", "accepted", "blocked"],
       study_year: [
         "1st Year",
         "2nd Year",

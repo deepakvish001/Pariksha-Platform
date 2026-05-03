@@ -1,0 +1,85 @@
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import type { Battle, BattleSubmission } from "../types";
+import { GlassPanel } from "../components/GlassPanel";
+import { NeonButton } from "../components/NeonButton";
+import { motion } from "framer-motion";
+import { Trophy, Skull, Equal } from "lucide-react";
+
+export default function BattleResult() {
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [battle, setBattle] = useState<Battle | null>(null);
+  const [subs, setSubs] = useState<BattleSubmission[]>([]);
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      const { data: b } = await supabase.from("battles" as never).select("*").eq("id", id).maybeSingle();
+      const { data: s } = await supabase.from("battle_submissions" as never).select("*").eq("battle_id", id).order("created_at");
+      setBattle(b as Battle | null);
+      setSubs((s as BattleSubmission[]) ?? []);
+    })();
+  }, [id]);
+
+  if (!battle) return null;
+
+  const isPlayerA = battle.player_a === user?.id;
+  const won = battle.winner_id === user?.id;
+  const draw = !battle.winner_id;
+  const myDelta = isPlayerA
+    ? (battle.elo_a_after ?? 0) - (battle.elo_a_before ?? 0)
+    : (battle.elo_b_after ?? 0) - (battle.elo_b_before ?? 0);
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring" }}>
+        <GlassPanel glow={won ? "lime" : draw ? "cyan" : "magenta"} className="p-10 text-center">
+          {won ? (
+            <Trophy className="h-20 w-20 mx-auto text-lime-400" style={{ filter: "drop-shadow(0 0 20px rgba(132,204,22,0.7))" }} />
+          ) : draw ? (
+            <Equal className="h-20 w-20 mx-auto text-cyan-400" />
+          ) : (
+            <Skull className="h-20 w-20 mx-auto text-fuchsia-400" />
+          )}
+          <h1 className="mt-4 text-5xl font-black">
+            {won ? "VICTORY" : draw ? "DRAW" : "DEFEAT"}
+          </h1>
+          {!draw && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+              className={`mt-3 text-2xl font-mono font-bold ${myDelta > 0 ? "text-lime-400" : "text-red-400"}`}
+            >
+              {myDelta > 0 ? "+" : ""}{myDelta} Elo
+            </motion.div>
+          )}
+          <p className="mt-2 text-sm text-white/50">{battle.end_reason}</p>
+        </GlassPanel>
+      </motion.div>
+
+      <GlassPanel className="p-4">
+        <h3 className="text-xs uppercase tracking-wider text-cyan-300/80 mb-2">Submissions ({subs.length})</h3>
+        <ul className="space-y-2 text-sm">
+          {subs.map((s) => (
+            <li key={s.id} className="flex items-center gap-3 rounded border border-white/10 bg-black/30 p-2">
+              <span className={`text-xs font-mono px-2 py-0.5 rounded ${s.verdict === "accepted" ? "bg-lime-500/20 text-lime-300" : "bg-red-500/20 text-red-300"}`}>{s.verdict}</span>
+              <span className="text-xs text-white/60">{s.passed}/{s.total} · {s.language}</span>
+              <span className={`ml-auto text-xs ${s.user_id === user?.id ? "text-cyan-300" : "text-fuchsia-300"}`}>
+                {s.user_id === user?.id ? "You" : "Opponent"}
+              </span>
+            </li>
+          ))}
+          {subs.length === 0 && <li className="text-xs text-white/40">No submissions recorded.</li>}
+        </ul>
+      </GlassPanel>
+
+      <div className="flex gap-3 justify-center">
+        <NeonButton onClick={() => navigate("/arena")}>Play Again</NeonButton>
+        <Link to="/arena/leaderboard"><NeonButton tone="magenta">Leaderboard</NeonButton></Link>
+      </div>
+    </div>
+  );
+}

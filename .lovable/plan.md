@@ -1,62 +1,125 @@
-# Admin sidebar polish — make it scan better and feel standard
+## Byteskill Battle Arena — Real-Time 1v1 Coding Battles
 
-The sidebar already has groups, sub-nav, badges, and tooltips. With 40+ items across 9 groups it's still slow to scan. The plan focuses on **findability**, **persistence**, and **a header that grounds you in the page** — the parts where the current shell falls short of "standard admin console" expectations.
+A full multiplayer layer on top of the existing problems/exec/auth stack. Built with the project's current tools (React + Vite + TS, Supabase, Tailwind, Framer Motion, Zustand) — not Next.js (project is Vite/React). All UI follows the existing deep-black + glassmorphism aesthetic with added neon battle accents.
 
-## What changes (UX)
+### 1. Database (Supabase migrations)
 
-### 1. Inline filter + ⌘K command palette
+New tables, all with strict RLS:
 
-- Add a small **Search** input pinned to the top of the sidebar (under the header). Typing filters every group/item by label in real time; non-matching groups collapse and hide their label, matching items are highlighted. ESC clears.
-- Add a global **⌘K / Ctrl+K command palette** (`cmdk` already shipped via shadcn) that lists every nav item, grouped, with icon + keyboard hints. Opens from anywhere in `/admin/*`. Hitting Enter navigates. Includes recent + pinned at the top.
-- Header gets a `⌘K` chip next to the breadcrumb so the shortcut is discoverable.
+- `battle_queue` — `user_id`, `topic`, `difficulty`, `elo`, `joined_at`, `status` (waiting/matched/cancelled). RLS: user CRUD own row; admin read.
+- `battles` — `id`, `player_a`, `player_b`, `problem_slug`, `topic`, `difficulty`, `status` (pending/live/ended/abandoned), `started_at`, `ends_at`, `duration_sec`, `winner_id`, `end_reason`, `is_private`, `invite_code`, `elo_a_before/after`, `elo_b_before/after`. RLS: participants + admin.
+- `battle_events` — append-only realtime feed: `battle_id`, `user_id`, `kind` (typing/test_run/submit/passed_tests/finished/forfeit), `payload jsonb`, `created_at`. RLS: participants insert own; participants read.
+- `battle_submissions` — links to existing `code_submissions`, plus `battle_id`, `passed`, `runtime_ms`, `score`. RLS: participants read; owner insert.
+- `player_ratings` — `user_id` PK, `elo` (default 1000), `peak_elo`, `wins`, `losses`, `draws`, `current_streak`, `best_streak`, `updated_at`. RLS: public read, system write.
+- `battle_achievements` — `user_id`, `achievement_key`, `earned_at`. Public read.
+- `friendships` — `requester_id`, `addressee_id`, `status` (pending/accepted/blocked). RLS: both parties.
+- `battle_invites` — `from_user`, `to_user`, `battle_id`, `status`, `expires_at`. RLS: sender + recipient.
+- `battle_notifications` — reuses existing `notifications` table with new `type` values (`battle_invite`, `battle_result`, `friend_request`, `rank_up`).
 
-### 2. Pinned + Recent groups (persisted)
+SQL functions (SECURITY DEFINER):
+- `match_make(_user, _topic, _difficulty)` — atomic queue scan, picks closest-Elo opponent (±100 → ±300 widening), creates `battles` row, deletes both queue rows, returns battle id.
+- `start_battle(_battle_id)` — sets status=live, starts timer.
+- `finish_battle(_battle_id, _winner, _reason)` — locks battle, computes Elo delta (K=32, classic formula), updates `player_ratings`, awards achievements, inserts notifications.
+- `create_private_battle(_problem_slug, _opponent, _duration)` — invite flow.
+- `accept_friend(_id)` / `reject_friend(_id)`.
 
-- Each item in the sidebar gets a **star icon** on hover that toggles "Pinned". Pinned items render in a **Pinned** group at the very top of the sidebar (also surfaced in ⌘K).
-- A **Recent** section (last 5 visited admin routes) sits between Pinned and the regular groups. Both lists persist to `localStorage` per user.
-- "Mark all read" lives in the header dropdown; "Reset pinned" / "Reset recent" added there too.
+Realtime: enable publication on `battles`, `battle_events`, `battle_queue`, `battle_invites`, `friendships`, `battle_notifications`.
 
-### 3. Persist group open/close + remember last view
+### 2. Edge Functions
 
-- Currently `openMap` is initialised every mount (always open). Persist it to `localStorage("admin:sidebar:groups")` so an admin who collapses **System** keeps it collapsed across reloads.
-- Persist `Sidebar` collapse state (icon-rail vs full) the same way.
+- `battle-matchmake` — wraps `match_make` RPC with rate-limit + telemetry.
+- `battle-grade` — called on submit: runs hidden tests via existing `submit-code` path, records `battle_submissions`, emits `battle_event`, calls `finish_battle` if win condition met (all tests pass first).
+- `battle-tick` — cron (pg_cron, every 30s) ends expired battles, applies forfeit Elo if one player solved more tests.
+- `battle-elo-recompute` — admin manual fix tool.
 
-### 4. Group hygiene
+### 3. Frontend routes (React Router)
 
-- Reduce visual noise without losing items by **merging small adjacent groups**:
-  - **Communications** → fold into **Engagement** (Notifications, Support move there).
-  - **Security** → fold into **People** (Security Center, Sessions move there as a sub-nav under "Roles").
-  - Keep **System** and **Platform** distinct — they're operationally different.
-- Add a thin **separator line** (1px, `border-border/40`) between groups, plus a small "section number" hint when the sidebar is in icon-rail mode so groups still read.
-- Show the **group badge count even when the group is open** (currently only when closed), placed before the chevron.
+- `/arena` — landing: rank card, Quick Match CTA, topic picker, recent battles, top players.
+- `/arena/queue` — animated searching state, ETA, cancel.
+- `/arena/battle/:id` — the battle room (see §4).
+- `/arena/result/:id` — post-match recap: diff of submissions, Elo delta animation, share card.
+- `/arena/leaderboard` — global + topic filters, time windows, friends-only toggle.
+- `/arena/profile/:username` — stats, recent battles, achievement showcase, "Challenge" button.
+- `/arena/friends` — requests, list, online status.
+- `/arena/private` — create/join private room via code.
+- `/admin/arena` — admin analytics: active battles, queue depth, MMR distribution, abuse flags, force-end controls.
 
-### 5. Header / breadcrumb upgrade
+All gated by existing `ProtectedRoute`; admin route by `AdminRoute`.
 
-- Replace the static "Admin" label in the top bar with a **dynamic breadcrumb** derived from the nav config, e.g. `Admin › Engagement › Contests › Edit`. Each crumb is a link.
-- Add a right-side **shortcut chip row**: `⌘K` (palette), `g h` (go to dashboard), `[` / `]` (prev/next group). Wire the keyboard shortcuts in a small hook.
-- Keep the `Live` indicator and add a tooltip that explains it.
+### 4. Battle Room UI (`/arena/battle/:id`)
 
-### 6. Better tooltips for every item
+```text
+┌─ Header: timer (synced) · topic · difficulty · forfeit ─┐
+├─────────────┬────────────────────┬──────────────────────┤
+│ Problem     │ Monaco Editor      │ Opponent panel       │
+│ statement   │ (you)              │ - avatar + Elo       │
+│ examples    │ run / submit       │ - live test progress │
+│ constraints │ language picker    │ - typing pulse       │
+│             │                    │ - last verdict       │
+└─────────────┴────────────────────┴──────────────────────┘
+         Bottom: console output · test results
+```
 
-- Today only "tracked" routes get tooltips. When the sidebar is collapsed, **every** item should show a tooltip with the label + (if any) badge count + last-visited timestamp.
-- When expanded, badge tooltips show "X new since last visit · Y total".
+- Synced timer: server `ends_at` is source of truth; client interpolates.
+- Opponent progress: throttled `battle_events` (typing every 2s, test runs on submit only — never code contents).
+- Win condition: first to pass all hidden tests; ties broken by submission time; expiry → most tests passed wins.
+- Live "first blood", "comeback", "clutch" toast effects.
 
-### 7. Visual polish (small but standard)
+### 5. State management (Zustand)
 
-- Slimmer rail in collapsed mode (`w-12` instead of default), icons centred.
-- Active item gets a 2px left accent bar in addition to the tinted background — a familiar pattern from Linear/Notion/Stripe admins.
-- Sub-nav indent uses a true tree connector (┌ └) instead of a flat border line.
+- `useBattleStore` — current battle, timer offset, opponent state, event log.
+- `useQueueStore` — queue status, elapsed, matched battle id.
+- `useFriendsStore` — list + presence (Supabase Presence channel `arena-online`).
+- `useArenaProfileStore` — cached rank/stats.
 
-## What changes (code)
+Reusable components: `<GlassPanel>`, `<NeonButton>`, `<EloBadge>`, `<RankProgressBar>`, `<BattleTimer>`, `<OpponentCard>`, `<EventTicker>`, `<AchievementToast>`, `<MatchmakingOrb>` (animated framer-motion orb during search).
 
-- **`src/components/admin/AdminShell.tsx`** — add `SidebarSearch` slot, breadcrumb header, persisted group state, pinned/recent rendering, keyboard shortcut listener.
-- **`src/components/admin/AdminCommandPalette.tsx`** *(new)* — cmdk-based palette wired to `GROUPS` plus pinned/recent.
-- **`src/hooks/admin/useAdminSidebarPrefs.ts`** *(new)* — localStorage-backed reader/writer for `pinned`, `recent`, `openGroups`, `collapsed`.
-- **`src/hooks/admin/useAdminBreadcrumb.ts`** *(new)* — given pathname, walks `GROUPS` + dynamic children to build crumb segments.
-- **No backend changes.** Pinned/recent stay client-side per device — keeps it instant and avoids polluting RLS.
+### 6. Design system additions
 
-## Out of scope
+- New CSS vars in `index.css`: `--neon-cyan #22d3ee`, `--neon-magenta #d946ef`, `--neon-lime #84cc16`, gradient utilities `bg-arena-grid`, `shadow-neon`.
+- Animated SVG grid background, scanline overlay, particle burst on victory.
+- All within existing dark theme — toggleable via `arena-mode` class scoped to `/arena/*`.
 
-- No reorganisation of admin **routes** themselves. Only sidebar grouping/visuals.
-- No new permissions or RBAC tiers.
-- Not touching mobile FAB or guest sidebar — admin shell only.
+### 7. Achievements (seeded)
+
+First Blood, Win Streak 3/5/10, Topic Master (10 wins in topic), Speed Demon (<5min win), Comeback King, Underdog (beat +200 Elo), Centurion (100 battles), Ranked: Bronze/Silver/Gold/Platinum/Diamond/Master tiers.
+
+### 8. Security
+
+- All RPCs `SECURITY DEFINER` with `auth.uid()` checks; no client trusts opponent code.
+- RLS denies reading opponent's `source_code` until battle ends.
+- Rate limits on queue join (1/5s) and invite send (10/min) via edge function in-memory + DB check.
+- Anti-cheat: server validates submission against hidden tests; Monaco paste-detector flags >500 char single paste into `battle_events` (admin review only).
+- Forfeit on tab-close detected via `visibilitychange` + heartbeat (3 missed = forfeit).
+
+### 9. Admin analytics
+
+`/admin/arena` cards: live battles count, queue depth by topic, avg match time, Elo histogram (recharts), top abusers (forfeit rate), recent ended battles table with replay link, force-end and Elo-revert actions, all logged to `admin_audit_log`.
+
+### 10. Performance & scalability
+
+- Single Realtime channel per battle (`battle:{id}`) carrying events; presence channel `arena-online` for friends.
+- Debounced typing events (max 1/2s); diff-based test progress (only changed counts).
+- Queue matching server-side via single RPC — no client polling.
+- Indexes: `battle_queue(topic, difficulty, elo)`, `battles(status, started_at)`, `battle_events(battle_id, created_at)`.
+- React Query for leaderboards/profile with 30s stale time.
+
+### 11. Tests
+
+- Vitest unit tests for Elo math, match-make widening, win-condition resolver.
+- Playwright e2e: queue → match → submit → result flow with two browser contexts.
+
+### 12. Rollout order
+
+1. Migrations + RPCs + RLS.
+2. Edge functions + cron.
+3. Zustand stores + Supabase realtime hooks.
+4. Arena landing, queue, battle room, result.
+5. Leaderboard, profile, friends, private rooms.
+6. Achievements + notifications wiring.
+7. Admin analytics.
+8. Polish: animations, sound fx (optional toggle), tests.
+
+### Open decisions
+
+I'll default to: classic Elo K=32, 5/15/30-min duration options (default 15), Quick Match across difficulties within ±1 tier, friends use Supabase Presence (no extra service), sounds off by default. Tell me if you want different defaults before I switch to build mode.

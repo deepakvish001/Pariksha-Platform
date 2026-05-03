@@ -91,6 +91,16 @@ import Collections from "./pages/platform/Collections";
 
 import PublicProfile from "./pages/PublicProfile";
 import { AdminRoute } from "@/components/AdminRoute";
+import { ArenaLayout } from "@/arena/ArenaLayout";
+import ArenaHome from "@/arena/pages/ArenaHome";
+import ArenaQueue from "@/arena/pages/ArenaQueue";
+import BattleRoom from "@/arena/pages/BattleRoom";
+import BattleResult from "@/arena/pages/BattleResult";
+import ArenaLeaderboard from "@/arena/pages/ArenaLeaderboard";
+import ArenaFriends from "@/arena/pages/ArenaFriends";
+import ArenaPrivate from "@/arena/pages/ArenaPrivate";
+import ArenaHistory from "@/arena/pages/ArenaHistory";
+import AdminArena from "@/arena/pages/AdminArena";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProblemsList from "./pages/admin/AdminProblemsList";
 import ProblemEditor from "./pages/admin/ProblemEditor";
@@ -363,6 +373,19 @@ const App = () => (
                   <Route path="contests/:id/registrations" element={<AdminContestRegistrations />} />
                   <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
                 </Route>
+
+                {/* Arena - 1v1 battles */}
+                <Route path="/arena" element={<ProtectedRoute><ArenaLayout /></ProtectedRoute>}>
+                  <Route index element={<ArenaHome />} />
+                  <Route path="queue" element={<ArenaQueue />} />
+                  <Route path="battle/:id" element={<BattleRoom />} />
+                  <Route path="result/:id" element={<BattleResult />} />
+                  <Route path="leaderboard" element={<ArenaLeaderboard />} />
+                  <Route path="friends" element={<ArenaFriends />} />
+                  <Route path="private" element={<ArenaPrivate />} />
+                  <Route path="history" element={<ArenaHistory />} />
+                </Route>
+                <Route path="/admin/arena" element={<AdminRoute><AdminArena /></AdminRoute>} />
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
