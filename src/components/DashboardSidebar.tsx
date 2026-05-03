@@ -19,6 +19,13 @@ import {
   Terminal,
   Shield,
   Sparkles,
+  Swords,
+  Gamepad2,
+  Calendar,
+  Users,
+  Lock,
+  History,
+  Target,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
