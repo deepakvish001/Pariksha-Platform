@@ -135,6 +135,9 @@ const AdminContestProctor = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "contest_proctor_snapshots", filter: `contest_id=eq.${id}` }, () => {
         snapshotsQuery.refetch();
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "contest_sessions", filter: `contest_id=eq.${id}` }, () => {
+        sessionsQuery.refetch();
+      })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [id]);
