@@ -109,9 +109,10 @@ export const useSaveContest = () => {
         if (user && data) await writeAudit("update", data.slug, rest, user.id);
         return data as Contest;
       } else {
+        const insertRow: any = { ...payload, created_by: user?.id };
         const { data, error } = await supabase
           .from("contests")
-          .insert({ ...payload, created_by: user?.id })
+          .insert(insertRow)
           .select("*")
           .maybeSingle();
         if (error) throw error;
