@@ -39,9 +39,89 @@ interface NavItem {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  /**
+   * When true, the item is only "active" for an exact pathname match.
+   * When false/undefined, the item is also active for any pathname that
+   * starts with `to + "/"`. This default keeps overlapping routes (e.g.
+   * `/admin/contests` vs `/admin/contests/new`) correctly highlighted on
+   * the parent item; pair with `end: true` on a child if you want the
+   * parent to deactivate when a child is selected.
+   */
   end?: boolean;
+  /**
+   * Optional custom predicate to override the default isActive logic.
+   * Receives the current pathname and returns whether this item should be
+   * highlighted. Useful for routes with dynamic segments.
+   */
+  match?: (pathname: string) => boolean;
+  /**
+   * Optional sub-navigation. Rendered indented beneath the parent only when
+   * the parent (or any sub-item) is active. Sub-items follow the same
+   * `end` / `match` rules as top-level items.
+   */
+  children?: NavItem[];
+  /**
+   * Stable test selector hook for Playwright assertions.
+   */
+  testId?: string;
 }
 interface NavGroup { label: string; items: NavItem[] }
+
+/**
+ * Resolve a sidebar item's children dynamically from the current pathname.
+ * Keeps nested sub-nav highlighting accurate even when route ids change
+ * (e.g. /admin/contests/:id/edit, /registrations, /leaderboard).
+ */
+function resolveDynamicChildren(item: NavItem, pathname: string): NavItem[] {
+  if (item.to === "/admin/contests") {
+    const base: NavItem[] = [
+      {
+        to: "/admin/contests",
+        label: "All contests",
+        icon: Trophy,
+        end: true,
+        testId: "admin-nav-contests-all",
+      },
+      {
+        to: "/admin/contests/new",
+        label: "New contest",
+        icon: Sparkles,
+        end: true,
+        testId: "admin-nav-contests-new",
+      },
+    ];
+    // /admin/contests/:id(/edit|/registrations|/leaderboard)
+    const m = pathname.match(/^\/admin\/contests\/([^/]+)(?:\/(edit|registrations|leaderboard))?\/?$/);
+    if (m && m[1] !== "new") {
+      const id = m[1];
+      base.push(
+        {
+          to: `/admin/contests/${id}/edit`,
+          label: "Edit contest",
+          icon: SettingsIcon,
+          end: true,
+          testId: "admin-nav-contests-edit",
+        },
+        {
+          to: `/admin/contests/${id}/registrations`,
+          label: "Registrations",
+          icon: Users,
+          end: true,
+          testId: "admin-nav-contests-registrations",
+        },
+        {
+          to: `/admin/contests/${id}/leaderboard`,
+          label: "Leaderboard",
+          icon: Trophy,
+          end: true,
+          testId: "admin-nav-contests-leaderboard",
+        },
+      );
+    }
+    return base;
+  }
+  return item.children ?? [];
+}
 
 const GROUPS: NavGroup[] = [
   { label: "Overview", items: [
