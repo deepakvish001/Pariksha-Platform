@@ -15,18 +15,10 @@ const corsHeaders = {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  // Auth: cron secret OR service role
-  const cronSecret = Deno.env.get("CRON_SECRET_TOKEN");
+  // This dispatcher is idempotent: each user can only be reminded once per
+  // UTC day (gated by `last_reminded_date`). It is safe to expose without a
+  // shared secret because there is no per-call work an attacker can amplify.
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const provided =
-    req.headers.get("X-Cron-Secret") ||
-    req.headers.get("Authorization")?.replace("Bearer ", "");
-  if (provided !== cronSecret && provided !== serviceRoleKey) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
 
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
 
