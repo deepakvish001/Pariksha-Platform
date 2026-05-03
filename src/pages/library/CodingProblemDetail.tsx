@@ -17,6 +17,7 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
+import SecureProblemHUD from "@/components/contests/SecureProblemHUD";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
