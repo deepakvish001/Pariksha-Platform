@@ -205,10 +205,13 @@ const AdminSidebar = () => {
 
   const { data: badges, isLoading: badgesLoading, markSeen, clearAll } = useAdminSidebarBadges();
 
-  const isActive = (to: string, end?: boolean) =>
-    end ? pathname === to : pathname === to || pathname.startsWith(to + "/");
+  const isActive = (to: string, end?: boolean, match?: (p: string) => boolean) => {
+    if (match) return match(pathname);
+    return end ? pathname === to : pathname === to || pathname.startsWith(to + "/");
+  };
 
-  const groupHasActive = (g: NavGroup) => g.items.some((i) => isActive(i.to, i.end));
+  const groupHasActive = (g: NavGroup) =>
+    g.items.some((i) => isActive(i.to, i.end, i.match));
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUPS.map((g) => [g.label, true]))
