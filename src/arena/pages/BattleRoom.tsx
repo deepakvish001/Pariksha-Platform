@@ -152,9 +152,9 @@ export default function BattleRoom() {
         </div>
       </GlassPanel>
 
-      <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr_320px]">
+      <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_minmax(0,1.6fr)_300px]">
         {/* Problem */}
-        <GlassPanel className="p-4 max-h-[75vh] overflow-y-auto">
+        <GlassPanel className="p-4 max-h-[75vh] overflow-y-auto min-w-0">
           {problemLoading || !problem ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
