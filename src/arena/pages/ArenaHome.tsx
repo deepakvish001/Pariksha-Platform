@@ -279,7 +279,7 @@ export default function ArenaHome() {
       {/* PROGRESS */}
       <section className="space-y-3">
         <SectionHeader icon={Trophy} title="Your Progress" subtitle="Quests and recent activity" />
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
           <DailyQuestsPanel />
           <DailyHistoryPanel />
         </div>
