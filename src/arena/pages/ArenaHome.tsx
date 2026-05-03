@@ -125,23 +125,23 @@ export default function ArenaHome() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* HERO */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <GlassPanel glow="cyan" className="p-8 sm:p-10 relative overflow-hidden">
+        <GlassPanel glow="cyan" className="p-5 sm:p-8 md:p-10 relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_0%,hsl(var(--primary)/0.25),transparent_60%)]" />
-          <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
+          <div className="relative grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                 <Swords className="h-3.5 w-3.5" /> Battle Arena
               </div>
-              <h1 className="mt-3 text-4xl sm:text-5xl font-black tracking-tight gradient-text">Enter the Arena</h1>
+              <h1 className="mt-3 text-3xl sm:text-4xl md:text-5xl font-black tracking-tight gradient-text">Enter the Arena</h1>
               <p className="mt-2 text-sm sm:text-base text-muted-foreground max-w-xl">
                 1v1 real-time coding battles · Earn Elo · Climb the ladder
               </p>
             </div>
             {rating && (
-              <div className="flex items-center gap-4 rounded-xl border border-border bg-card/40 p-4 backdrop-blur">
+              <div className="flex items-center gap-4 rounded-xl border border-border bg-card/40 p-3 sm:p-4 backdrop-blur w-full md:w-auto">
                 <EloBadge elo={rating.elo} />
                 <div className="text-xs">
                   <div className="font-semibold text-foreground">{rating.wins}W · {rating.losses}L</div>
