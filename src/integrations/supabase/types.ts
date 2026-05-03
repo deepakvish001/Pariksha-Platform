@@ -1276,37 +1276,141 @@ export type Database = {
           },
         ]
       }
+      contest_proctor_snapshots: {
+        Row: {
+          captured_at: string
+          contest_id: string
+          id: string
+          session_id: string | null
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          captured_at?: string
+          contest_id: string
+          id?: string
+          session_id?: string | null
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          captured_at?: string
+          contest_id?: string
+          id?: string
+          session_id?: string | null
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_proctor_snapshots_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_proctor_snapshots_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_registrations: {
         Row: {
           contest_id: string
           display_name: string | null
+          disqualified_at: string | null
+          disqualified_reason: string | null
+          flagged: boolean
+          honor_code_accepted_at: string | null
           id: string
           registered_at: string
           status: string
           team_name: string | null
           user_id: string
+          violation_count: number
         }
         Insert: {
           contest_id: string
           display_name?: string | null
+          disqualified_at?: string | null
+          disqualified_reason?: string | null
+          flagged?: boolean
+          honor_code_accepted_at?: string | null
           id?: string
           registered_at?: string
           status?: string
           team_name?: string | null
           user_id: string
+          violation_count?: number
         }
         Update: {
           contest_id?: string
           display_name?: string | null
+          disqualified_at?: string | null
+          disqualified_reason?: string | null
+          flagged?: boolean
+          honor_code_accepted_at?: string | null
           id?: string
           registered_at?: string
           status?: string
           team_name?: string | null
           user_id?: string
+          violation_count?: number
         }
         Relationships: [
           {
             foreignKeyName: "contest_registrations_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_sessions: {
+        Row: {
+          contest_id: string
+          id: string
+          invalidated_at: string | null
+          ip_hash: string | null
+          is_active: boolean
+          last_seen_at: string
+          session_token: string
+          started_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          contest_id: string
+          id?: string
+          invalidated_at?: string | null
+          ip_hash?: string | null
+          is_active?: boolean
+          last_seen_at?: string
+          session_token?: string
+          started_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          contest_id?: string
+          id?: string
+          invalidated_at?: string | null
+          ip_hash?: string | null
+          is_active?: boolean
+          last_seen_at?: string
+          session_token?: string
+          started_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_sessions_contest_id_fkey"
             columns: ["contest_id"]
             isOneToOne: false
             referencedRelation: "contests"
@@ -1354,6 +1458,54 @@ export type Database = {
             columns: ["contest_id"]
             isOneToOne: false
             referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_violations: {
+        Row: {
+          contest_id: string
+          created_at: string
+          id: string
+          meta: Json
+          session_id: string | null
+          severity: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          id?: string
+          meta?: Json
+          session_id?: string | null
+          severity?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          id?: string
+          meta?: Json
+          session_id?: string | null
+          severity?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_violations_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_violations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -4281,8 +4433,26 @@ export type Database = {
         }
         Returns: number
       }
+      contest_accept_honor_code: {
+        Args: { _contest_id: string }
+        Returns: undefined
+      }
       contest_effective_status: {
         Args: { _contest_id: string }
+        Returns: string
+      }
+      contest_log_violation: {
+        Args: {
+          _contest_id: string
+          _meta?: Json
+          _session_id: string
+          _severity?: string
+          _type: string
+        }
+        Returns: Json
+      }
+      contest_start_secure_session: {
+        Args: { _contest_id: string; _user_agent?: string }
         Returns: string
       }
       ensure_player_rating: { Args: { _user: string }; Returns: undefined }
