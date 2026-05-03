@@ -714,6 +714,227 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_leaderboard_cache: {
+        Row: {
+          contest_id: string
+          last_solve_at: string | null
+          problems_solved: number
+          rank: number
+          total_penalty_seconds: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contest_id: string
+          last_solve_at?: string | null
+          problems_solved?: number
+          rank?: number
+          total_penalty_seconds?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contest_id?: string
+          last_solve_at?: string | null
+          problems_solved?: number
+          rank?: number
+          total_penalty_seconds?: number
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_leaderboard_cache_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_problems: {
+        Row: {
+          contest_id: string
+          created_at: string
+          order_index: number
+          points: number
+          problem_slug: string
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          order_index?: number
+          points?: number
+          problem_slug: string
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          order_index?: number
+          points?: number
+          problem_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_problems_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_registrations: {
+        Row: {
+          contest_id: string
+          display_name: string | null
+          id: string
+          registered_at: string
+          status: string
+          team_name: string | null
+          user_id: string
+        }
+        Insert: {
+          contest_id: string
+          display_name?: string | null
+          id?: string
+          registered_at?: string
+          status?: string
+          team_name?: string | null
+          user_id: string
+        }
+        Update: {
+          contest_id?: string
+          display_name?: string | null
+          id?: string
+          registered_at?: string
+          status?: string
+          team_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_registrations_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_submissions: {
+        Row: {
+          contest_id: string
+          id: string
+          penalty_seconds: number
+          points_awarded: number
+          problem_slug: string
+          submission_id: string | null
+          submitted_at: string
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          contest_id: string
+          id?: string
+          penalty_seconds?: number
+          points_awarded?: number
+          problem_slug: string
+          submission_id?: string | null
+          submitted_at?: string
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          contest_id?: string
+          id?: string
+          penalty_seconds?: number
+          points_awarded?: number
+          problem_slug?: string
+          submission_id?: string | null
+          submitted_at?: string
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_submissions_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contests: {
+        Row: {
+          banner_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_at: string
+          id: string
+          invite_code: string | null
+          max_participants: number | null
+          penalty_minutes: number
+          registration_closes_at: string | null
+          registration_opens_at: string | null
+          rules_md: string | null
+          scoring_mode: string
+          slug: string
+          starts_at: string
+          status: string
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          banner_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at: string
+          id?: string
+          invite_code?: string | null
+          max_participants?: number | null
+          penalty_minutes?: number
+          registration_closes_at?: string | null
+          registration_opens_at?: string | null
+          rules_md?: string | null
+          scoring_mode?: string
+          slug: string
+          starts_at: string
+          status?: string
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          banner_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string
+          id?: string
+          invite_code?: string | null
+          max_participants?: number | null
+          penalty_minutes?: number
+          registration_closes_at?: string | null
+          registration_opens_at?: string | null
+          rules_md?: string | null
+          scoring_mode?: string
+          slug?: string
+          starts_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -3261,6 +3482,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      recompute_contest_leaderboard: {
+        Args: { _contest_id: string }
+        Returns: undefined
+      }
+      register_for_contest: {
+        Args: { _contest_id: string; _invite_code?: string }
+        Returns: string
       }
       snapshot_my_coding_leaderboard_rank: { Args: never; Returns: Json }
       user_pending_logout: { Args: { _user_id: string }; Returns: boolean }

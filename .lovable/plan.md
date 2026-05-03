@@ -1,141 +1,145 @@
-## Goal
+## Coding Contests — End-to-End Plan
 
-Make the Admin Control Center a true single pane of glass: every user-facing feature on Byteskill must be observable, configurable, and actionable from `/admin` with full CRUD/audit coverage.
+Build a complete **Contests** system: admins create timed contests with selected coding problems, users register/join, submit solutions during the window, and a live leaderboard ranks participants. Includes an admin registrations management page.
 
-## Current state — what already exists
+---
 
-```
-ADMIN ROUTE                      STATUS                                NOTES
-/admin                           ✓ working                             KPIs, trends
-/admin/problems + /editor        ✓ working                             CRUD + tests + bulk
-/admin/problems/import           ✓ working
-/admin/publish-history           ✓ working
-/admin/ai-content                ✓ working                             toggle public, delete
-/admin/featured                  ✓ working                             slot CRUD
-/admin/library-curation          ✓ working                             hide/unhide
-/admin/roadmaps                  ✓ working                             publish/feature/order
-/admin/users                     ✓ working                             search, drawer, XP, ban
-/admin/roles                     ✓ working                             grant/revoke
-/admin/reports                   ✓ working                             resolve content reports
-/admin/daily-challenge           ✓ working                             schedule
-/admin/broadcast                 ✓ working                             send to all
-/admin/achievements              ✓ working (just hardened)             bulk + diff modal
-/admin/leaderboards              ✓ working                             hide/snapshot
-/admin/gamification              ✓ working                             validated + history
-/admin/support                   ✓ working                             inbox
-/admin/settings                  ✓ working                             flag CRUD
-/admin/storage                   ✓ working                             list/delete files
-/admin/security                  ✓ working                             auth events
-/admin/system-health             ✓ working
-/admin/cron-jobs                 ✓ working                             read-only
-/admin/audit                     ✓ working                             filterable
-/admin/edge-logs                 ✓ working                             tail
-/admin/exports                   ✓ working                             CSV
-```
+### 1. Database (new tables)
 
-## Coverage gaps (user-facing features with NO admin control today)
+```text
+contests
+  id, slug, title, description, banner_url,
+  starts_at, ends_at, registration_opens_at, registration_closes_at,
+  status (draft|published|live|ended|archived — derived view also exposed),
+  visibility (public|unlisted|private),
+  max_participants (nullable), rules_md,
+  scoring_mode (icpc|ioi|points), penalty_minutes (default 10),
+  created_by, created_at, updated_at
 
-1. **Notifications** — `notifications` + `push_subscriptions` tables: no admin view, no per-user inspection, no template/digest controls.
-2. **Quizzes & SRS** — `quiz_results`, `quiz_question_responses`, `quiz_spaced_repetition`: no global stats view, no ability to delete malformed sessions or reset SRS for a user.
-3. **Resume system** — `resume_analyses`, `resume_downloads`, `resume_favorites`: zero admin visibility (cost & abuse risk for AI scoring).
-4. **Cold Outreach** — `outreach_custom_templates`, `outreach_favorites`, `outreach_usage`: no curation of user templates or usage analytics.
-5. **Folders & sharing** — `user_folders`, `shared_folders`: no way to revoke a public share link or audit shared content.
-6. **Daily challenge** — completions table + opt-in leaderboard exist, but `/admin/daily-challenge` only schedules; no completion/leaderboard inspection or unschedule.
-7. **Coding submissions** — `code_submissions`, `code_runs`, `code_drafts`: no admin viewer (judge debugging, abuse hunting).
-8. **Conversations / chat** — `conversations`, `chat_messages` (Byteskill AI): no usage stats, no per-user purge.
-9. **Email & deliverability** — Resend used by edge functions, but nothing in admin shows queue / bounces / failures.
-10. **Realtime channels & cache** — no kill-switch / TanStack invalidation broadcast.
-11. **User drawer gaps** — drawer shows XP/achievements/audit but not: notifications, quiz history, resume uploads, conversations, force-logout.
-12. **Daily challenge & broadcast scheduling** — broadcasts are immediate only; no scheduled/recurring broadcasts and no targeting (e.g., "all users with XP > N").
-13. **Bulk role ops** — roles page is one-by-one; no CSV import, no bulk grant.
-14. **Audit log retention & export** — no purge, no scheduled export.
-15. **Feature flags UX** — current flag editor is a raw JSON textarea; no typed schema, no environment-scoped toggles, no rollout %.
-16. **Support inbox** — no canned replies, no assignment, no SLA timer.
+contest_problems            (which problems belong to a contest)
+  contest_id, problem_slug, order_index, points (default 100), PK(contest_id, problem_slug)
 
-Plus a verification pass on all "✓ working" pages to confirm hooks aren't stubs and RPCs return real data.
+contest_registrations
+  id, contest_id, user_id, registered_at, status (registered|disqualified|withdrawn),
+  display_name, team_name (optional), UNIQUE(contest_id, user_id)
 
-## What we'll build
+contest_submissions          (mirror of code_submissions filtered to contest window)
+  id, contest_id, user_id, problem_slug, submission_id (FK code_submissions),
+  verdict, points_awarded, penalty_seconds, submitted_at
 
-### A. New admin sections (7 new pages)
-
-```
-/admin/notifications        — global notification log, per-user filter, resend, push-subscription audit, broadcast templates
-/admin/quizzes              — quiz attempts table (filterable), top categories, accuracy distribution, reset SRS, delete attempt
-/admin/resumes              — analyses + downloads + favorites; per-user usage; delete file from storage on row delete
-/admin/outreach             — user-created templates list (search, hide, delete), top templates by copies, weekly trend
-/admin/folders              — folders + shared_folders; revoke share link, force-private, view contents
-/admin/submissions          — code_submissions feed + per-problem acceptance, per-user history, rerun a submission
-/admin/conversations        — chat usage stats, per-user purge, top topics
-/admin/email                — Resend deliverability dashboard via edge function (sent, delivered, bounced, complaints), test send
-/admin/realtime             — list active realtime channels, broadcast cache-invalidation event, force-logout target user
+contest_leaderboard_cache    (materialized snapshot, refreshed via trigger + cron)
+  contest_id, user_id, rank, total_points, total_penalty_seconds,
+  problems_solved, last_solve_at, updated_at, PK(contest_id, user_id)
 ```
 
-### B. Enhancements to existing sections
+**RLS**
+- `contests`: public SELECT where `visibility='public' AND status IN ('published','live','ended')`; admins ALL.
+- `contest_problems`: public SELECT joined with visible contests; admins ALL.
+- `contest_registrations`: user SELECT/INSERT/DELETE own row; admins ALL.
+- `contest_submissions`: user SELECT own + public SELECT after `ends_at`; INSERT via SECURITY DEFINER function; admins ALL.
+- `contest_leaderboard_cache`: public SELECT for visible contests; writes only via trigger/function.
 
-- **AdminUserDrawer**: add tabs for Notifications · Quizzes · Resumes · Conversations · Sessions, plus a "Force logout" and "Send DM notification" button.
-- **Daily Challenge**: add list of past challenges + completion counts, unschedule, opt-in leaderboard preview.
-- **Broadcast**: schedule for later (`scheduled_broadcasts` table), targeting filters (role, min XP, registered after), draft/preview, send test to admin first.
-- **Roles**: bulk grant/revoke via CSV/multi-user picker, recently-changed audit strip.
-- **Audit Log**: retention slider (auto-purge >N days), download filtered slice.
-- **Feature Flags**: typed registry (boolean / number / json) + per-key inline editor with validation, rollout percentage.
-- **Support Inbox**: assign-to-admin, status workflow (open → in_progress → resolved), canned replies stored in `support_canned_replies`.
-- **Storage**: rename + move + signed-URL preview for non-public buckets.
-- **Reports**: bulk resolve, attach action note that auto-creates an audit row, "ban reporter" guardrail.
-- **System Health**: edge function uptime per-name, recent error count, DB connection count.
-- **Achievements**: import/export catalog as JSON.
-- **Leaderboards**: rebuild snapshot for a date range, recompute weekly XP.
+**Functions / triggers**
+- `register_for_contest(contest_id)` — validates window, capacity, visibility.
+- `record_contest_submission()` — trigger on `code_submissions` INSERT: if user is registered and submission is inside contest window, mirror into `contest_submissions` and recompute that user's leaderboard row.
+- `recompute_contest_leaderboard(contest_id)` — recalculates ranks, called from trigger (single user) and a `pg_cron` job every minute for live contests.
+- `has_role(..., 'owner')` already grants admin via existing logic.
 
-### C. Cross-cutting infra
+**Realtime**: enable `REPLICA IDENTITY FULL` and add `contests`, `contest_registrations`, `contest_leaderboard_cache`, `contest_submissions` to `supabase_realtime` publication.
 
-- **Single `admin_*` RPC family** for any new mutation (admin-only, audited).
-- **Audit auto-write** trigger wrapper: every new admin RPC inserts to `admin_audit_log` with a structured `diff`.
-- **Server-side validation**: zod-shaped JSON checks in the same shape as `gamificationRules.ts` (extracted to `src/lib/admin/`).
-- **Realtime invalidation**: a `admin_broadcast_invalidate` RPC that emits a Supabase realtime payload consumed by a global QueryClient listener.
-- **Admin-only edge functions**: `admin-email-stats` (Resend API), `admin-resend-broadcast` (Resend send), `admin-rerun-submission`, `admin-process-scheduled-broadcasts` (cron).
+---
 
-## Database changes (one migration)
+### 2. User-facing pages (under `/contests`)
 
-```
-TABLE scheduled_broadcasts(id, title, message, target_filter jsonb, scheduled_for, sent_at, created_by)
-TABLE support_canned_replies(id, label, body, created_by)
-TABLE admin_feature_flag_registry(key PK, type text, schema jsonb, description, rollout_pct)
-TABLE admin_session_invalidations(id, user_id, reason, created_by, created_at)   -- forces logout
-ALTER  notifications ADD COLUMN sent_by_admin uuid NULL
-ENABLE pg_cron job: process-scheduled-broadcasts every minute
-```
+| Route | Purpose |
+|---|---|
+| `/contests` | List of upcoming / live / past contests with status pills and countdowns. |
+| `/contests/:slug` | Overview: rules, problem count (problems hidden until start), prize, **Register / Joined** button. |
+| `/contests/:slug/problems` | Problem list (only after start, only for registered users). Reuses existing `CodingProblemDetail` with a `contestId` query param. |
+| `/contests/:slug/leaderboard` | Live leaderboard with realtime updates, your-rank pinned row, filter by registered users. |
+| `/contests/:slug/my-submissions` | Your contest submissions and verdicts. |
 
-Plus ~25 new SECURITY DEFINER RPCs (`admin_list_notifications`, `admin_resend_notification`, `admin_purge_user_conversations`, `admin_force_logout`, `admin_email_stats`, `admin_revoke_share`, `admin_delete_quiz_attempt`, `admin_reset_srs`, `admin_list_resumes`, `admin_delete_resume`, `admin_list_outreach`, `admin_hide_outreach_template`, `admin_list_folders`, `admin_list_submissions`, `admin_rerun_submission`, `admin_list_conversations`, `admin_chat_usage_stats`, `admin_schedule_broadcast`, `admin_cancel_scheduled_broadcast`, `admin_canned_reply_*`, `admin_flag_registry_*`, `admin_purge_audit_older_than`, `admin_storage_rename`, `admin_storage_move`, `admin_export_achievements`, `admin_import_achievements`).
+**Behavior**
+- Countdown timers (starts in / ends in) using a single `useContestClock` hook.
+- Submissions made on contest problems during the window are auto-attributed (no separate submit button).
+- Guests see overview + leaderboard; register prompts login.
 
-All follow the hardened pattern: `EXECUTE` granted only to `authenticated`, `has_role(auth.uid(),'admin')` enforced inside, every mutation writes to `admin_audit_log`.
+---
 
-## Verification pass — done as part of the work
+### 3. Admin pages (under `/admin/contests`)
 
-For every existing admin page, an automated walkthrough:
+| Route | Purpose |
+|---|---|
+| `/admin/contests` | Table of all contests with status, dates, registrations count, quick actions (publish, end, archive, delete). |
+| `/admin/contests/new` and `/admin/contests/:id/edit` | Form: metadata, dates, visibility, scoring mode, banner upload, **problem picker** (search published problems, drag-reorder, set points). |
+| `/admin/contests/:id/registrations` | Registrations table: user, registered at, status, score, solved count. Bulk disqualify / remove / export CSV. Search + filter. |
+| `/admin/contests/:id/leaderboard` | Admin view of leaderboard with recompute button and submission drill-down. |
+| `/admin/contests/:id/submissions` | All submissions in the contest window with verdict filters. |
 
-1. Page renders without console errors as admin.
-2. Page is forbidden for non-admin (RLS + UI gate).
-3. Each button triggers the expected RPC and an audit row appears.
-4. Network tab shows no 4xx beyond explicit forbidden test.
-5. Add a row to `mem://features/admin/control-center` listing each section's verified date.
+**Sidebar**: add a "Contests" group in `AdminShell` with the four entries above.
 
-A `docs/admin-coverage.md` matrix will list every user-facing feature, its admin route, and the verified actions (view / edit / delete / audit).
+**Audit**: every create/update/publish/end/disqualify writes to `admin_audit_log` (existing table).
 
-## Suggested execution order (to keep PRs reviewable)
+---
 
-1. Migration + new RPCs + audit wrapper (DB only).
-2. AdminUserDrawer expansion (highest leverage).
-3. Notifications + Email + Realtime pages (ops critical).
-4. Quizzes + Resumes + Submissions + Conversations + Outreach + Folders pages.
-5. Enhancements to Broadcast (scheduling), Flags (registry), Roles (bulk), Support (canned replies), Reports (bulk).
-6. Verification walkthrough + coverage doc + memory update.
+### 4. Realtime + caching strategy (matches existing admin pattern)
 
-## Out of scope / explicit non-goals
+- React Query with `keepPreviousData`, `staleTime: 60s` (already configured globally).
+- Per-page Supabase channel subscriptions invalidate only the relevant queries:
+  - Contests list ⇐ `contests` changes.
+  - Registrations page ⇐ `contest_registrations` filtered by `contest_id`.
+  - Leaderboard ⇐ `contest_leaderboard_cache` filtered by `contest_id`.
+- Optimistic UI for register / withdraw / admin disqualify (same pattern as `useGrantRole`).
+- Reuse `useAdminRealtimeSync` broadcast so all admin tabs stay in sync.
 
-- Multi-tenant / org-level admin (single global admin role only).
-- Self-serve developer API keys.
-- Stripe/Paddle billing dashboards (no payments enabled yet).
-- Rewriting the existing admin pages that already work — only enhancements listed above.
+---
 
-## Open question (will ask after approval if unclear)
+### 5. Files to create
 
-Do you want **scheduled broadcasts** to support recurring sends (e.g., weekly digest) on day 1, or only one-shot scheduled? Defaults to one-shot to keep scope tight. whichever will be good as a brand.,
+**Hooks**
+- `src/hooks/useContests.ts` — list, detail, register, withdraw, my registration.
+- `src/hooks/useContestLeaderboard.ts` — realtime leaderboard.
+- `src/hooks/useContestClock.ts` — shared countdown.
+- `src/hooks/admin/useAdminContests.ts` — CRUD + publish/end.
+- `src/hooks/admin/useAdminContestRegistrations.ts` — list, disqualify, export.
+
+**Pages (user)**
+- `src/pages/contests/ContestsList.tsx`
+- `src/pages/contests/ContestDetail.tsx`
+- `src/pages/contests/ContestProblems.tsx`
+- `src/pages/contests/ContestLeaderboard.tsx`
+- `src/pages/contests/MyContestSubmissions.tsx`
+
+**Pages (admin)**
+- `src/pages/admin/contests/AdminContestsList.tsx`
+- `src/pages/admin/contests/ContestEditor.tsx` (new + edit)
+- `src/pages/admin/contests/AdminContestRegistrations.tsx`
+- `src/pages/admin/contests/AdminContestLeaderboard.tsx`
+- `src/pages/admin/contests/AdminContestSubmissions.tsx`
+
+**Components**
+- `src/components/contests/ContestCard.tsx`, `CountdownPill.tsx`, `LeaderboardTable.tsx`, `ProblemPicker.tsx` (admin), `RegisterButton.tsx`.
+
+**Routing**
+- Update `src/App.tsx` to register all `/contests/*` (PublicDashboardWrapper) and `/admin/contests/*` (AdminRoute) routes.
+- Update `src/components/admin/AdminShell.tsx` sidebar with "Contests" group.
+
+**Migrations**
+- `supabase/migrations/<ts>_contests_schema.sql` — tables, RLS, functions, triggers, realtime publication, pg_cron job.
+
+---
+
+### 6. Edge cases handled
+- Registration closes when capacity reached or `registration_closes_at` passes.
+- Submissions outside `[starts_at, ends_at]` are NOT counted toward contest.
+- Private contests require an invite code (stored on contest, validated in `register_for_contest`).
+- Tie-breaking: total_points DESC, total_penalty ASC, last_solve_at ASC.
+- `owner` role inherits admin access automatically (existing `has_role`).
+
+---
+
+### Open questions (defaults assumed; tell me to change)
+1. **Scoring**: default ICPC-style (solved + penalty). Want IOI partial scoring or pure points instead?
+2. **Teams**: solo only for v1 (team_name kept as cosmetic). Add real teams later?
+3. **Problem visibility**: hidden until contest starts. OK, or show titles before start?
+4. **Public profile leaderboard freeze**: public leaderboard locks 1 hour before end (common in CP). Include this?
