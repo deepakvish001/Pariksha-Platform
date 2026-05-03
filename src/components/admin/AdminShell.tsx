@@ -467,12 +467,6 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
               </Collapsible>
             );
           })}
-
-          {filter && visibleGroups.length === 0 && !collapsed && (
-            <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-              No matches for “{filter}”.
-            </div>
-          )}
         </SidebarContent>
       </TooltipProvider>
     </Sidebar>
