@@ -182,6 +182,10 @@ const CodingProblemDetail = () => {
   // Inline contest-submission error banner (shown above the editor when a
   // contest-context submission is rejected by the server).
   const [contestError, setContestError] = useState<string | null>(null);
+  // Hard-block flag: when a contest pre-check (on mount) determines the user
+  // cannot submit (e.g. contest closed, not registered), disable Submit so
+  // the action is blocked before click — not just on the click handler.
+  const [contestSubmitBlocked, setContestSubmitBlocked] = useState(false);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
   const editorRef = useRef<MonacoEditorHandle>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
