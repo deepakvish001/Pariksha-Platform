@@ -3899,6 +3899,19 @@ export type Database = {
           solved: boolean
         }[]
       }
+      arena_get_daily_history: {
+        Args: { _days?: number }
+        Returns: {
+          attempted_at: string
+          challenge_date: string
+          problem_slug: string
+          problem_title: string
+          solve_time_sec: number
+          solved: boolean
+          xp_awarded: number
+        }[]
+      }
+      arena_pick_daily_problem: { Args: { _for_date: string }; Returns: string }
       arena_record_quest_progress: {
         Args: { _amount?: number; _kind: string }
         Returns: undefined
