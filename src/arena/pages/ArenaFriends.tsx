@@ -80,6 +80,9 @@ export default function ArenaFriends() {
   const [challengeDuration, setChallengeDuration] = useState<number>(900);
   const [challengeStep, setChallengeStep] = useState<"setup" | "confirm">("setup");
   const [challengeSending, setChallengeSending] = useState(false);
+  const [challengeRoomType, setChallengeRoomType] = useState<"private" | "public">("private");
+  const [challengeRoomName, setChallengeRoomName] = useState<string>("");
+  const [challengeTopic, setChallengeTopic] = useState<string>("");
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
