@@ -710,76 +710,117 @@ export default function ArenaFriends() {
       <Dialog open={!!challengeTarget} onOpenChange={(o) => !o && setChallengeTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Challenge {challengeTarget?.full_name ?? "player"}</DialogTitle>
+            <DialogTitle>
+              {challengeStep === "setup" ? "Challenge" : "Confirm challenge for"} {challengeTarget?.full_name ?? "player"}
+            </DialogTitle>
             <DialogDescription>
-              Send a private 1v1 invite. They'll be notified to accept.
+              {challengeStep === "setup"
+                ? "Configure the match. You'll review before sending."
+                : "Review the match setup. Once sent, your opponent is notified to accept."}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label className="text-xs">Problem</Label>
-              <select
-                value={challengeProblem}
-                onChange={(e) => setChallengeProblem(e.target.value)}
-                className="w-full bg-card/60 border border-border rounded p-2 text-sm mt-1"
-              >
-                <option value="">— select a problem —</option>
-                {problems.map((p) => (
-                  <option key={p.slug} value={p.slug}>{p.title}</option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Difficulty</Label>
-                <select
-                  value={challengeDifficulty}
-                  onChange={(e) => setChallengeDifficulty(e.target.value as "easy" | "medium" | "hard")}
-                  className="w-full bg-card/60 border border-border rounded p-2 text-sm mt-1"
-                >
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </div>
-              <div>
-                <Label className="text-xs">Duration</Label>
-                <select
-                  value={challengeDuration}
-                  onChange={(e) => setChallengeDuration(Number(e.target.value))}
-                  className="w-full bg-card/60 border border-border rounded p-2 text-sm mt-1"
-                >
-                  <option value={300}>5 min</option>
-                  <option value={600}>10 min</option>
-                  <option value={900}>15 min</option>
-                  <option value={1800}>30 min</option>
-                </select>
-              </div>
-            </div>
 
-            {/* Match summary */}
-            <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-xs space-y-1.5">
-              <div className="text-[10px] uppercase text-muted-foreground">Match setup</div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Problem</span><span className="font-medium truncate ml-2">{problems.find((p) => p.slug === challengeProblem)?.title ?? "— not selected —"}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Difficulty</span><span className="font-medium capitalize">{challengeDifficulty}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Time limit</span><span className="font-medium">{Math.round(challengeDuration / 60)} min</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Mode</span><span className="font-medium">Private 1v1 (invite-only)</span></div>
+          {challengeStep === "setup" ? (
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs">Problem</Label>
+                <select
+                  value={challengeProblem}
+                  onChange={(e) => setChallengeProblem(e.target.value)}
+                  className="w-full bg-card/60 border border-border rounded p-2 text-sm mt-1"
+                >
+                  <option value="">— select a problem —</option>
+                  {problems.map((p) => (
+                    <option key={p.slug} value={p.slug}>{p.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Difficulty</Label>
+                  <select
+                    value={challengeDifficulty}
+                    onChange={(e) => setChallengeDifficulty(e.target.value as "easy" | "medium" | "hard")}
+                    className="w-full bg-card/60 border border-border rounded p-2 text-sm mt-1"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Duration</Label>
+                  <select
+                    value={challengeDuration}
+                    onChange={(e) => setChallengeDuration(Number(e.target.value))}
+                    className="w-full bg-card/60 border border-border rounded p-2 text-sm mt-1"
+                  >
+                    <option value={300}>5 min</option>
+                    <option value={600}>10 min</option>
+                    <option value={900}>15 min</option>
+                    <option value={1800}>30 min</option>
+                  </select>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-background/40 p-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={challengeTarget?.avatar_url ?? undefined} />
+                  <AvatarFallback>{(challengeTarget?.full_name ?? "?").slice(0, 2)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase text-muted-foreground">Opponent</div>
+                  <div className="font-semibold truncate">{challengeTarget?.full_name ?? "Player"}</div>
+                </div>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-sm space-y-2">
+                <div className="text-[10px] uppercase text-muted-foreground">Match setup</div>
+                <div className="flex justify-between gap-2"><span className="text-muted-foreground">Problem</span><span className="font-medium truncate ml-2">{problems.find((p) => p.slug === challengeProblem)?.title ?? "— not selected —"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Difficulty</span><span className="font-medium capitalize">{challengeDifficulty}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Time limit</span><span className="font-medium">{Math.round(challengeDuration / 60)} min</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Mode</span><span className="font-medium">Private 1v1 (invite-only)</span></div>
+              </div>
+            </div>
+          )}
+
           <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={() => setChallengeTarget(null)}>Cancel</Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setChallengeTarget(null);
-                navigate("/arena/queue");
-              }}
-            >
-              Quick Match instead
-            </Button>
-            <NeonButton onClick={sendChallenge}>
-              <Swords className="h-3.5 w-3.5 mr-1" /> Send challenge
-            </NeonButton>
+            {challengeStep === "setup" ? (
+              <>
+                <Button variant="ghost" onClick={() => setChallengeTarget(null)}>Cancel</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setChallengeTarget(null);
+                    navigate("/arena/queue");
+                  }}
+                >
+                  Quick Match instead
+                </Button>
+                <NeonButton
+                  onClick={() => {
+                    if (!challengeProblem) {
+                      toast.error("Pick a problem first");
+                      return;
+                    }
+                    setChallengeStep("confirm");
+                  }}
+                >
+                  Review →
+                </NeonButton>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => setChallengeStep("setup")} disabled={challengeSending}>
+                  ← Back
+                </Button>
+                <NeonButton onClick={sendChallenge} disabled={challengeSending}>
+                  <Swords className="h-3.5 w-3.5 mr-1" />
+                  {challengeSending ? "Sending…" : "Confirm & send"}
+                </NeonButton>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
