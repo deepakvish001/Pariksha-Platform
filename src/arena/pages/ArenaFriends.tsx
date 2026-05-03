@@ -463,7 +463,7 @@ export default function ArenaFriends() {
   useEffect(() => {
     let cancelled = false;
     if (!user || arenaUsers.length === 0 || myFriendIds.length === 0) {
-      setMutualMap(new Map());
+      setMutualMap((prev) => (prev.size === 0 ? prev : new Map()));
       return;
     }
     // Invalidate when my friend set changes
