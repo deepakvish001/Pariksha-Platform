@@ -36,6 +36,41 @@ export async function leaveQueue(userId: string) {
   await supabase.from("battle_queue" as never).delete().eq("user_id", userId);
 }
 
+export async function createCodeRoom(opts: { problemSlug: string; difficulty: BattleDifficulty; duration: number }) {
+  const { data, error } = await supabase.rpc("battle_create_code" as never, {
+    _problem_slug: opts.problemSlug,
+    _difficulty: opts.difficulty,
+    _duration: opts.duration,
+  } as never);
+  if (error) throw error;
+  const row = Array.isArray(data) ? (data[0] as { invite_id: string; code: string }) : (data as { invite_id: string; code: string });
+  return row;
+}
+
+export async function joinByCode(code: string): Promise<string> {
+  const { data, error } = await supabase.rpc("battle_join_code" as never, { _code: code.trim().toUpperCase() } as never);
+  if (error) throw error;
+  return data as string;
+}
+
+export function useInviteWatcher(inviteId: string | undefined, onAccepted: (battleId: string) => void) {
+  useEffect(() => {
+    if (!inviteId) return;
+    const ch = supabase
+      .channel(`invite-${inviteId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "battle_invites", filter: `id=eq.${inviteId}` },
+        (p) => {
+          const row = p.new as { status: string; battle_id: string | null };
+          if (row.status === "accepted" && row.battle_id) onAccepted(row.battle_id);
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [inviteId, onAccepted]);
+}
+
 export async function finishBattle(battleId: string, winner: string | null, reason: string) {
   const { error } = await supabase.rpc("battle_finish" as never, { _battle_id: battleId, _winner: winner, _reason: reason } as never);
   if (error) throw error;
