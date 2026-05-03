@@ -18,6 +18,9 @@ export default function BattleResult() {
   const [subs, setSubs] = useState<BattleSubmission[]>([]);
   const [rematchState, setRematchState] = useState<"idle" | "loading" | "error">("idle");
   const [rematchError, setRematchError] = useState<string | null>(null);
+  const [streakInfo, setStreakInfo] = useState<{ current: number; used_freeze: boolean } | null>(null);
+  const [dailyXp, setDailyXp] = useState<number | null>(null);
+  const { data: dailyChallenge } = useDailyChallenge();
 
   async function handleRematch() {
     if (!battle) return;
