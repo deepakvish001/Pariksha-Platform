@@ -12,8 +12,8 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { id: "me" } }),
 }));
 
-const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
-vi.mock("sonner", () => ({ toast: toastMock }));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
+import { toast as toastMock } from "sonner";
 
 // Build a programmable supabase mock. Each .from(table).select()/insert()/delete()/update() chain
 // is fluent and resolves with whatever we configure for that table.
