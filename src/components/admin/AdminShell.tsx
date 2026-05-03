@@ -407,7 +407,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
       <TooltipProvider delayDuration={250}>
         <SidebarContent className="gap-0">
           {/* Pinned section */}
-          {!filter && pinnedItems.length > 0 && (
+          {pinnedItems.length > 0 && (
             <SidebarGroup className="py-1">
               {!collapsed && (
                 <SidebarGroupLabel className="flex h-7 items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
