@@ -52,7 +52,7 @@ const ContestEditor = () => {
   }, [existingProblems]);
 
   useEffect(() => {
-    supabase.from("coding_problems").select("slug, title").eq("is_published", true).order("title").limit(500)
+    supabase.from("coding_problems").select("slug, title, is_published").order("title").limit(500)
       .then(({ data }) => setAllProblems((data ?? []) as any));
   }, []);
 
