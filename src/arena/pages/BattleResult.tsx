@@ -6,7 +6,8 @@ import type { Battle, BattleSubmission } from "../types";
 import { GlassPanel } from "../components/GlassPanel";
 import { NeonButton } from "../components/NeonButton";
 import { motion } from "framer-motion";
-import { Trophy, Skull, Equal } from "lucide-react";
+import { Trophy, Skull, Equal, AlertTriangle, Loader2, RefreshCw } from "lucide-react";
+import { createCodeRoom } from "../hooks";
 
 export default function BattleResult() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +15,25 @@ export default function BattleResult() {
   const navigate = useNavigate();
   const [battle, setBattle] = useState<Battle | null>(null);
   const [subs, setSubs] = useState<BattleSubmission[]>([]);
+  const [rematchState, setRematchState] = useState<"idle" | "loading" | "error">("idle");
+  const [rematchError, setRematchError] = useState<string | null>(null);
+
+  async function handleRematch() {
+    if (!battle) return;
+    setRematchState("loading");
+    setRematchError(null);
+    try {
+      const { invite_id, code } = await createCodeRoom({
+        problemSlug: battle.problem_slug,
+        difficulty: battle.difficulty,
+        duration: battle.duration_sec,
+      });
+      navigate(`/arena/room/${code}`, { state: { inviteId: invite_id } });
+    } catch (e) {
+      setRematchError((e as Error).message || "Couldn't create rematch room");
+      setRematchState("error");
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
