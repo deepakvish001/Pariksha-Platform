@@ -1,11 +1,18 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { Swords, Home } from "lucide-react";
+import { Swords, Trophy, Users, Lock, BarChart3, Home, Target, Calendar, Gamepad2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 
 const NAV = [
   { to: "/arena", label: "Arena Hub", icon: Home, end: true },
+  { to: "/arena/solo", label: "Solo Practice", icon: Target },
+  { to: "/arena/daily", label: "Daily Challenge", icon: Calendar },
+  { to: "/arena/queue", label: "Quick Match", icon: Gamepad2 },
+  { to: "/arena/private", label: "Private Rooms", icon: Lock },
+  { to: "/arena/friends", label: "Friends", icon: Users },
+  { to: "/arena/leaderboard", label: "Rankings", icon: Trophy },
+  { to: "/arena/history", label: "Match History", icon: BarChart3 },
 ];
 
 export function ArenaLayout() {
