@@ -124,4 +124,90 @@ test.describe("RLS — private contest problems", () => {
       expect(rows.length).toBe(0);
     }
   });
+
+  test("registered contestants only see drafts attached to their live contest", async () => {
+    const storage = process.env.CONTESTANT_STORAGE_STATE;
+    test.skip(!storage, "Requires CONTESTANT_STORAGE_STATE for a registered contestant");
+
+    const liveContestId = process.env.CONTESTANT_LIVE_CONTEST_ID;
+    test.skip(!liveContestId, "Requires CONTESTANT_LIVE_CONTEST_ID for the live contest the user is registered in");
+
+    // Pull the auth token from the contestant's storage state.
+    const fs = await import("node:fs/promises");
+    const raw = JSON.parse(await fs.readFile(storage!, "utf-8"));
+    const origin = (raw.origins ?? []).find((o: any) => o.origin?.includes("supabase"));
+    const tokenItem = origin?.localStorage?.find((k: any) => /auth-token/i.test(k.name));
+    const token = tokenItem ? JSON.parse(tokenItem.value)?.access_token : null;
+    test.skip(!token, "Could not extract auth token from storage state");
+
+    const api = await request.newContext({
+      baseURL: SUPABASE_URL,
+      extraHTTPHeaders: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    // 1) Slugs attached to the live contest the contestant is registered in.
+    const liveAttached = await api.get(
+      `/rest/v1/contest_problems?select=problem_slug&contest_id=eq.${liveContestId}`,
+    );
+    expect(liveAttached.status()).toBe(200);
+    const liveSlugs = ((await liveAttached.json()) as Array<{ problem_slug: string }>).map((r) => r.problem_slug);
+
+    // 2) All draft problem slugs the contestant can currently SELECT.
+    const draftRes = await api.get(
+      "/rest/v1/coding_problems?select=slug,is_published&is_published=eq.false&limit=200",
+    );
+    expect(draftRes.status()).toBe(200);
+    const visibleDraftSlugs = ((await draftRes.json()) as Array<{ slug: string; is_published: boolean }>)
+      .map((r) => r.slug);
+
+    // Every visible draft must belong to the live contest the user is registered in.
+    const allowedSet = new Set(liveSlugs);
+    const leakedDrafts = visibleDraftSlugs.filter((s) => !allowedSet.has(s));
+    expect(leakedDrafts, `Drafts leaked to contestant: ${leakedDrafts.join(", ")}`).toEqual([]);
+
+    // 3) Negative check — a draft from a *different* contest must not be readable.
+    const otherContestId = process.env.OTHER_DRAFT_CONTEST_ID;
+    if (otherContestId) {
+      const otherAttached = await api.get(
+        `/rest/v1/contest_problems?select=problem_slug&contest_id=eq.${otherContestId}`,
+      );
+      expect(otherAttached.status()).toBe(200);
+      const otherSlugs = ((await otherAttached.json()) as Array<{ problem_slug: string }>)
+        .map((r) => r.problem_slug)
+        .filter((s) => !allowedSet.has(s));
+
+      if (otherSlugs.length > 0) {
+        const inList = `(${otherSlugs.map((s) => `"${s}"`).join(",")})`;
+        const probe = await api.get(
+          `/rest/v1/coding_problems?select=slug,is_published&slug=in.${inList}`,
+        );
+        expect(probe.status()).toBe(200);
+        const visible = (await probe.json()) as Array<{ slug: string; is_published: boolean }>;
+        // Any visible row from the other contest must already be Public.
+        const leaked = visible.filter((r) => !r.is_published);
+        expect(leaked, `Other-contest drafts leaked: ${leaked.map((r) => r.slug).join(", ")}`).toEqual([]);
+
+        // Starter code + sample tests for those other-contest drafts must also be hidden.
+        const [starter, tests, specs] = await Promise.all([
+          api.get(`/rest/v1/coding_problem_starter_code?select=problem_slug&problem_slug=in.${inList}`),
+          api.get(`/rest/v1/coding_problem_tests?select=problem_slug,kind&problem_slug=in.${inList}`),
+          api.get(`/rest/v1/coding_problem_sql_specs?select=problem_slug&problem_slug=in.${inList}`),
+        ]);
+        const draftOnly = new Set(leaked.map((r) => r.slug));
+        // If the other-contest slug is still a draft, no child rows should leak.
+        for (const r of (await starter.json()) as Array<{ problem_slug: string }>) {
+          expect(draftOnly.has(r.problem_slug)).toBe(false);
+        }
+        for (const r of (await tests.json()) as Array<{ problem_slug: string; kind: string }>) {
+          expect(draftOnly.has(r.problem_slug)).toBe(false);
+        }
+        for (const r of (await specs.json()) as Array<{ problem_slug: string }>) {
+          expect(draftOnly.has(r.problem_slug)).toBe(false);
+        }
+      }
+    }
+  });
 });
