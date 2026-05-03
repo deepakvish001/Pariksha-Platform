@@ -1,13 +1,18 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   Shield, FileCode2, Upload, ScrollText, LayoutGrid, History,
   Users, KeyRound, Sparkles, CalendarClock, Megaphone, Flag,
   Settings as SettingsIcon, Database, Activity, Download, HeartPulse, Clock,
   ChevronDown, Star, Library, Map as MapIcon, Inbox, ShieldAlert,
-  Award, Trophy, Gamepad2,
+  Award, Trophy, Gamepad2, Search, Command as CommandIcon, X, ChevronRight, Pin,
   Bell, Brain, FileText, Code2, MessageSquare, Mail, Share2, Send, LogOut,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { AdminCommandPalette } from "./AdminCommandPalette";
+import { useAdminSidebarPrefs } from "@/hooks/admin/useAdminSidebarPrefs";
+import { useAdminBreadcrumb } from "@/hooks/admin/useAdminBreadcrumb";
 import {
   Sidebar,
   SidebarContent,
@@ -141,6 +146,8 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/roles", label: "Roles", icon: KeyRound },
     { to: "/admin/rls-tester", label: "RLS Tester", icon: ShieldAlert },
     { to: "/admin/reports", label: "Reports", icon: Flag },
+    { to: "/admin/security", label: "Security Center", icon: ShieldAlert },
+    { to: "/admin/sessions", label: "Sessions", icon: LogOut },
   ]},
   { label: "Engagement", items: [
     { to: "/admin/daily-challenge", label: "Daily Challenge", icon: CalendarClock },
@@ -150,6 +157,8 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/achievements", label: "Achievements", icon: Award },
     { to: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
     { to: "/admin/gamification", label: "Gamification Rules", icon: Gamepad2 },
+    { to: "/admin/notifications", label: "Notifications", icon: Bell },
+    { to: "/admin/support", label: "Support Inbox", icon: Inbox },
   ]},
   { label: "User Activity", items: [
     { to: "/admin/quizzes", label: "Quizzes & SRS", icon: Brain },
@@ -159,17 +168,9 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/outreach", label: "Cold Outreach", icon: Mail },
     { to: "/admin/folders", label: "Shared Folders", icon: Share2 },
   ]},
-  { label: "Communications", items: [
-    { to: "/admin/notifications", label: "Notifications", icon: Bell },
-    { to: "/admin/support", label: "Support Inbox", icon: Inbox },
-  ]},
   { label: "Platform", items: [
     { to: "/admin/settings", label: "Settings & Flags", icon: SettingsIcon },
     { to: "/admin/storage", label: "Storage", icon: Database },
-  ]},
-  { label: "Security", items: [
-    { to: "/admin/security", label: "Security Center", icon: ShieldAlert },
-    { to: "/admin/sessions", label: "Sessions", icon: LogOut },
   ]},
   { label: "System", items: [
     { to: "/admin/system-health", label: "System Health", icon: HeartPulse },
@@ -198,37 +199,51 @@ const Badge = ({ count, tone = "default" }: { count: number; tone?: "default" | 
   );
 };
 
-const AdminSidebar = () => {
+interface AdminSidebarProps {
+  onOpenPalette: () => void;
+}
+
+const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
   const { pathname } = useLocation();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
 
   const { data: badges, isLoading: badgesLoading, markSeen, clearAll } = useAdminSidebarBadges();
+  const prefs = useAdminSidebarPrefs(pathname);
+  const [filter, setFilter] = useState("");
 
   const isActive = (to: string, end?: boolean, match?: (p: string) => boolean) => {
     if (match) return match(pathname);
     return end ? pathname === to : pathname === to || pathname.startsWith(to + "/");
   };
 
+  const matchesFilter = (item: NavItem) =>
+    !filter.trim() ||
+    item.label.toLowerCase().includes(filter.trim().toLowerCase());
+
+  const visibleGroups = useMemo(() => {
+    if (!filter.trim()) return GROUPS;
+    return GROUPS
+      .map((g) => ({ ...g, items: g.items.filter(matchesFilter) }))
+      .filter((g) => g.items.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
+
+  const flatItems = useMemo(() => GROUPS.flatMap((g) => g.items), []);
+  const findItem = (to: string) => flatItems.find((i) => i.to === to);
+  const pinnedItems = prefs.pinned.map(findItem).filter(Boolean) as NavItem[];
+
   const groupHasActive = (g: NavGroup) =>
     g.items.some((i) => isActive(i.to, i.end, i.match));
 
-  const [openMap, setOpenMap] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(GROUPS.map((g) => [g.label, true]))
-  );
-
-  // Auto-expand active group + close mobile drawer + flash key
+  // Auto-open active group + close mobile drawer
   const [flashKey, setFlashKey] = useState(0);
   useEffect(() => {
-    setOpenMap((prev) => {
-      const next = { ...prev };
-      for (const g of GROUPS) if (groupHasActive(g)) next[g.label] = true;
-      return next;
-    });
+    for (const g of GROUPS) if (groupHasActive(g) && prefs.openGroups[g.label] === false) {
+      prefs.setGroupOpen(g.label, true);
+    }
     setFlashKey((k) => k + 1);
     if (isMobile) setOpenMobile(false);
-
-    // mark-as-read for tracked routes when visited
     const matched = TRACKED.find((t) => isActive(t));
     if (matched) markSeen(matched);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -248,6 +263,150 @@ const AdminSidebar = () => {
     return () => clearTimeout(t);
   }, [pathname]);
 
+  const renderItem = (item: NavItem, opts?: { compact?: boolean; pinnedRow?: boolean }) => {
+    const Icon = item.icon;
+    const active = isActive(item.to, item.end, item.match);
+    const subItems = resolveDynamicChildren(item, pathname);
+    const subActive = subItems.some((s) => isActive(s.to, s.end, s.match));
+    const showSubNav = !collapsed && subItems.length > 0 && (active || subActive) && !opts?.pinnedRow;
+    const detail: BadgeDetail | undefined = badges?.[item.to as BadgeKey];
+    const tracked = (TRACKED as string[]).includes(item.to);
+    const showSkeleton = tracked && badgesLoading && !detail;
+    const unseen = detail?.unseen ?? 0;
+    const tone: "default" | "alert" =
+      item.to === "/admin/reports" || item.to === "/admin/system-health" ? "alert" : "default";
+    const isPinned = prefs.isPinned(item.to);
+
+    const linkEl = (
+      <NavLink
+        ref={active && !opts?.pinnedRow ? (activeRef as any) : undefined}
+        to={item.to}
+        end={item.end}
+        data-testid={item.testId ?? `admin-nav-${item.to.replace(/^\/admin\/?/, "") || "dashboard"}`}
+        key={`${item.to}-${active ? flashKey : "x"}`}
+        className={cn(
+          "group/item relative flex items-center gap-2 rounded-md pr-1 transition-colors",
+          active
+            ? "bg-primary/10 text-primary font-medium admin-nav-flash"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        {/* Left accent bar */}
+        <span
+          aria-hidden
+          className={cn(
+            "absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-r-full transition-all",
+            active ? "bg-primary opacity-100" : "opacity-0"
+          )}
+        />
+        <span className="relative flex shrink-0 items-center pl-2">
+          <Icon className="h-4 w-4" />
+          {collapsed && unseen > 0 && (
+            <span
+              className={cn(
+                "absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full ring-2 ring-sidebar",
+                tone === "alert" ? "bg-destructive" : "bg-primary"
+              )}
+            />
+          )}
+        </span>
+        {!collapsed && (
+          <>
+            <span className="truncate">{item.label}</span>
+            <span className="ml-auto flex items-center gap-1">
+              {showSkeleton ? (
+                <Skeleton className="h-4 w-6 rounded-full" />
+              ) : (
+                <Badge count={unseen} tone={tone} />
+              )}
+              {!opts?.pinnedRow && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    prefs.togglePin(item.to);
+                  }}
+                  className={cn(
+                    "rounded p-0.5 opacity-0 transition-opacity hover:bg-muted-foreground/10 group-hover/item:opacity-100",
+                    isPinned && "opacity-100"
+                  )}
+                  aria-label={isPinned ? "Unpin" : "Pin"}
+                >
+                  <Star
+                    className={cn(
+                      "h-3 w-3",
+                      isPinned ? "fill-primary text-primary" : "text-muted-foreground"
+                    )}
+                  />
+                </button>
+              )}
+            </span>
+          </>
+        )}
+      </NavLink>
+    );
+
+    return (
+      <SidebarMenuItem key={`${opts?.pinnedRow ? "pin-" : ""}${item.to}`}>
+        <SidebarMenuButton asChild isActive={active || subActive}>
+          {tracked && !opts?.pinnedRow ? (
+            <Tooltip>
+              <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
+              <TooltipContent side="right" className="text-xs">
+                <div className="font-medium">{item.label}</div>
+                {showSkeleton ? (
+                  <div className="text-muted-foreground">Loading…</div>
+                ) : (
+                  <div className="text-muted-foreground">{detail?.hint}</div>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          ) : collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
+              <TooltipContent side="right" className="text-xs">
+                {item.label}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            linkEl
+          )}
+        </SidebarMenuButton>
+
+        {showSubNav && (
+          <ul
+            data-testid={`admin-subnav-${item.to.replace(/^\/admin\/?/, "")}`}
+            className="mt-1 ml-6 flex flex-col gap-0.5 border-l border-border/40 pl-2"
+          >
+            {subItems.map((sub) => {
+              const SubIcon = sub.icon;
+              const subOn = isActive(sub.to, sub.end, sub.match);
+              return (
+                <li key={sub.to}>
+                  <NavLink
+                    to={sub.to}
+                    end={sub.end}
+                    data-testid={sub.testId}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors",
+                      subOn
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{sub.label}</span>
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </SidebarMenuItem>
+    );
+  };
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-border/40 px-3 py-2">
@@ -255,27 +414,80 @@ const AdminSidebar = () => {
           <Shield className="h-5 w-5 text-primary shrink-0" />
           {!collapsed && (
             <>
-              <span className="text-sm font-semibold">Admin Console</span>
+              <span className="text-sm font-semibold">Admin</span>
               <span className="ml-auto">
                 <AdminBadgeSettings onMarkAllRead={clearAll} />
               </span>
             </>
           )}
         </div>
+        {!collapsed && (
+          <>
+            <button
+              type="button"
+              onClick={onOpenPalette}
+              className="mt-2 flex w-full items-center gap-2 rounded-md border border-border/50 bg-muted/30 px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/60"
+            >
+              <CommandIcon className="h-3.5 w-3.5" />
+              <span>Quick jump…</span>
+              <kbd className="ml-auto rounded border border-border/50 bg-background px-1 text-[10px] font-mono">
+                ⌘K
+              </kbd>
+            </button>
+            <div className="relative mt-2">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                onKeyDown={(e) => e.key === "Escape" && setFilter("")}
+                placeholder="Filter…"
+                className="h-7 pl-7 pr-7 text-xs"
+              />
+              {filter && (
+                <button
+                  type="button"
+                  onClick={() => setFilter("")}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-muted"
+                  aria-label="Clear"
+                >
+                  <X className="h-3 w-3 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </SidebarHeader>
 
       <TooltipProvider delayDuration={250}>
         <SidebarContent className="gap-0">
-          {GROUPS.map((group) => {
+          {/* Pinned section */}
+          {!filter && pinnedItems.length > 0 && (
+            <SidebarGroup className="py-1">
+              {!collapsed && (
+                <SidebarGroupLabel className="flex h-7 items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                  <Pin className="h-3 w-3" />
+                  <span>Pinned</span>
+                </SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {pinnedItems.map((item) => renderItem(item, { pinnedRow: true }))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+
+          {visibleGroups.map((group) => {
             const hasActive = groupHasActive(group);
-            const open = collapsed ? true : (openMap[group.label] ?? true);
+            const persistedOpen = prefs.openGroups[group.label];
+            const open = collapsed || !!filter ? true : (persistedOpen ?? true);
             const groupCount = groupBadgeCount(group);
 
             return (
               <Collapsible
                 key={group.label}
                 open={open}
-                onOpenChange={(v) => setOpenMap((m) => ({ ...m, [group.label]: v }))}
+                onOpenChange={(v) => prefs.setGroupOpen(group.label, v)}
               >
                 <SidebarGroup className="py-1">
                   {!collapsed && (
@@ -287,7 +499,7 @@ const AdminSidebar = () => {
                         )}
                       >
                         <span>{group.label}</span>
-                        {groupCount > 0 && !open && <Badge count={groupCount} />}
+                        {groupCount > 0 && <Badge count={groupCount} />}
                         <ChevronDown
                           className={cn(
                             "ml-auto h-3.5 w-3.5 transition-transform duration-200",
@@ -301,121 +513,7 @@ const AdminSidebar = () => {
                   <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                     <SidebarGroupContent>
                       <SidebarMenu>
-                        {group.items.map((item) => {
-                          const Icon = item.icon;
-                          const active = isActive(item.to, item.end, item.match);
-                          const subItems = resolveDynamicChildren(item, pathname);
-                          const subActive = subItems.some((s) => isActive(s.to, s.end, s.match));
-                          const showSubNav = !collapsed && subItems.length > 0 && (active || subActive);
-                          const detail: BadgeDetail | undefined = badges?.[item.to as BadgeKey];
-                          const tracked = (TRACKED as string[]).includes(item.to);
-                          const showSkeleton = tracked && badgesLoading && !detail;
-                          const unseen = detail?.unseen ?? 0;
-                          const total = detail?.total ?? 0;
-                          const tone: "default" | "alert" =
-                            item.to === "/admin/reports" || item.to === "/admin/system-health"
-                              ? "alert"
-                              : "default";
-
-                          const linkEl = (
-                            <NavLink
-                              ref={active ? (activeRef as any) : undefined}
-                              to={item.to}
-                              end={item.end}
-                              data-testid={item.testId ?? `admin-nav-${item.to.replace(/^\/admin\/?/, "") || "dashboard"}`}
-                              key={`${item.to}-${active ? flashKey : "x"}`}
-                              className={cn(
-                                "flex items-center gap-2 rounded-md transition-colors",
-                                active
-                                  ? "bg-primary/10 text-primary font-medium admin-nav-flash"
-                                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                              )}
-                            >
-                              <span className="relative flex shrink-0 items-center">
-                                <Icon className="h-4 w-4" />
-                                {collapsed && unseen > 0 && (
-                                  <span
-                                    className={cn(
-                                      "absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full ring-2 ring-sidebar",
-                                      tone === "alert" ? "bg-destructive" : "bg-primary"
-                                    )}
-                                  />
-                                )}
-                              </span>
-                              {!collapsed && (
-                                <>
-                                  <span className="truncate">{item.label}</span>
-                                  {showSkeleton ? (
-                                    <Skeleton className="ml-auto h-4 w-6 rounded-full" />
-                                  ) : (
-                                    <Badge count={unseen} tone={tone} />
-                                  )}
-                                </>
-                              )}
-                            </NavLink>
-                          );
-
-                          return (
-                            <SidebarMenuItem key={item.to}>
-                              <SidebarMenuButton asChild isActive={active || subActive}>
-                                {tracked ? (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
-                                    <TooltipContent side="right" className="text-xs">
-                                      <div className="font-medium">{item.label}</div>
-                                      {showSkeleton ? (
-                                        <div className="text-muted-foreground">Loading…</div>
-                                      ) : (
-                                        <>
-                                          <div className="text-muted-foreground">
-                                            {detail?.hint}
-                                          </div>
-                                          {unseen > 0 && unseen !== total && (
-                                            <div className="text-muted-foreground">
-                                              {unseen} new since last visit
-                                            </div>
-                                          )}
-                                        </>
-                                      )}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                ) : (
-                                  linkEl
-                                )}
-                              </SidebarMenuButton>
-
-                              {showSubNav && (
-                                <ul
-                                  data-testid={`admin-subnav-${item.to.replace(/^\/admin\/?/, "")}`}
-                                  className="mt-1 ml-6 flex flex-col gap-0.5 border-l border-border/40 pl-2"
-                                >
-                                  {subItems.map((sub) => {
-                                    const SubIcon = sub.icon;
-                                    const subOn = isActive(sub.to, sub.end, sub.match);
-                                    return (
-                                      <li key={sub.to}>
-                                        <NavLink
-                                          to={sub.to}
-                                          end={sub.end}
-                                          data-testid={sub.testId}
-                                          className={cn(
-                                            "flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors",
-                                            subOn
-                                              ? "bg-primary/10 text-primary font-medium"
-                                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                                          )}
-                                        >
-                                          <SubIcon className="h-3.5 w-3.5 shrink-0" />
-                                          <span className="truncate">{sub.label}</span>
-                                        </NavLink>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              )}
-                            </SidebarMenuItem>
-                          );
-                        })}
+                        {group.items.map((item) => renderItem(item))}
                       </SidebarMenu>
                     </SidebarGroupContent>
                   </CollapsibleContent>
@@ -423,6 +521,12 @@ const AdminSidebar = () => {
               </Collapsible>
             );
           })}
+
+          {filter && visibleGroups.length === 0 && !collapsed && (
+            <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+              No matches for “{filter}”.
+            </div>
+          )}
         </SidebarContent>
       </TooltipProvider>
     </Sidebar>
@@ -432,28 +536,76 @@ const AdminSidebar = () => {
 export const AdminShell = ({ children }: { children: React.ReactNode }) => {
   const drawer = useAdminUserDrawerStore();
   useAdminRealtimeSync();
+  const { pathname } = useLocation();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const prefs = useAdminSidebarPrefs(pathname);
+  const crumbs = useAdminBreadcrumb(pathname, GROUPS);
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AdminSidebar />
+        <AdminSidebar onOpenPalette={() => setPaletteOpen(true)} />
         <SidebarInset className="min-w-0 flex-1">
           <div className="sticky top-0 z-10 flex h-11 items-center justify-between gap-2 border-b border-border/40 bg-background/80 px-3 backdrop-blur">
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <SidebarTrigger />
-              <span className="text-xs text-muted-foreground">Admin</span>
+              <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                {crumbs.map((c, i) => (
+                  <span key={`${c.label}-${i}`} className="flex min-w-0 items-center gap-1">
+                    {i > 0 && <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />}
+                    {c.to && i < crumbs.length - 1 ? (
+                      <Link to={c.to} className="truncate hover:text-foreground">
+                        {c.label}
+                      </Link>
+                    ) : (
+                      <span className={cn("truncate", i === crumbs.length - 1 && "font-medium text-foreground")}>
+                        {c.label}
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </nav>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-500">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              </span>
-              <Radio className="h-3 w-3" />
-              <span className="hidden sm:inline">Live</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPaletteOpen(true)}
+                className="hidden h-7 gap-1.5 px-2 text-[11px] text-muted-foreground sm:inline-flex"
+              >
+                <CommandIcon className="h-3 w-3" />
+                <span>Jump</span>
+                <kbd className="rounded border border-border/50 bg-muted px-1 text-[10px] font-mono">⌘K</kbd>
+              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-500">
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                      </span>
+                      <Radio className="h-3 w-3" />
+                      <span className="hidden sm:inline">Live</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Realtime admin sync is active
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
           <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">{children}</main>
         </SidebarInset>
       </div>
+      <AdminCommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        groups={GROUPS}
+        pinned={prefs.pinned}
+        recent={prefs.recent}
+      />
       <AdminUserDrawer
         userId={drawer.userId}
         open={drawer.open}
