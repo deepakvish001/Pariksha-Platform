@@ -43,7 +43,8 @@ export async function createCodeRoom(opts: { problemSlug: string; difficulty: Ba
     _duration: opts.duration,
   } as never);
   if (error) throw error;
-  const row = Array.isArray(data) ? (data[0] as { invite_id: string; code: string }) : (data as { invite_id: string; code: string });
+  const row = Array.isArray(data) ? (data[0] as { invite_id: string; code: string }) : (data as unknown as { invite_id: string; code: string } | null);
+  if (!row) throw new Error("Failed to create room");
   return row;
 }
 
