@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { AdminShell } from "@/components/admin/AdminShell";
 import { Helmet } from "react-helmet-async";
 import { useAdminContest, useRecomputeLeaderboard } from "@/hooks/admin/useAdminContests";
 import { useContestLeaderboard } from "@/hooks/useContestLeaderboard";
@@ -23,7 +24,7 @@ const AdminContestLeaderboard = () => {
   const recompute = useRecomputeLeaderboard();
 
   return (
-    <>
+    <AdminShell>
       <Helmet><title>Leaderboard | Admin</title></Helmet>
       <div className="space-y-6 p-6">
         <Link to="/admin/contests" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -78,7 +79,7 @@ const AdminContestLeaderboard = () => {
           )}
         </Card>
       </div>
-    </>
+    </AdminShell>
   );
 };
 

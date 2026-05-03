@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AdminShell } from "@/components/admin/AdminShell";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useAdminContest, useSaveContest, useAdminContestProblems, useSetContestProblems } from "@/hooks/admin/useAdminContests";
@@ -89,7 +90,7 @@ const ContestEditor = () => {
   );
 
   return (
-    <>
+    <AdminShell>
       <Helmet><title>{isNew ? "New Contest" : "Edit Contest"} | Admin</title></Helmet>
       <div className="space-y-6 p-6">
         <button onClick={() => navigate("/admin/contests")} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -214,7 +215,7 @@ const ContestEditor = () => {
           </Button>
         </div>
       </div>
-    </>
+    </AdminShell>
   );
 };
 
