@@ -24,6 +24,7 @@ export interface SecureModeState {
 }
 
 const SNAPSHOT_INTERVAL_MS = 60_000;
+const HEARTBEAT_INTERVAL_MS = 20_000;
 const FLAG_THRESHOLD = 3;
 const DQ_THRESHOLD = 5;
 
@@ -198,6 +199,31 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
       if (snapshotTimerRef.current) window.clearInterval(snapshotTimerRef.current);
     };
   }, [enabled, state.webcamReady, state.sessionId, user, contestId]);
+
+  // Heartbeat: ping the server every HEARTBEAT_INTERVAL_MS while session is active.
+  // Server reaps any session whose last_seen_at is older than 90s.
+  useEffect(() => {
+    if (!enabled || !state.sessionId || state.disqualified) return;
+    let cancelled = false;
+    const ping = async () => {
+      const { data, error } = await supabase.rpc("contest_session_heartbeat" as never, {
+        _session_id: state.sessionId,
+      } as never);
+      if (cancelled) return;
+      const res = data as { ok: boolean; code?: string } | null;
+      if (error || (res && !res.ok)) {
+        // Server says session is gone — flip local state so HUD reflects it.
+        sessionRef.current = null;
+        setState((s) => ({ ...s, sessionId: null }));
+      }
+    };
+    void ping();
+    const id = window.setInterval(ping, HEARTBEAT_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [enabled, state.sessionId, state.disqualified]);
 
   // Cleanup webcam on unmount
   useEffect(() => {

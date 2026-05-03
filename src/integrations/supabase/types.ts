@@ -4458,6 +4458,10 @@ export type Database = {
         }
         Returns: Json
       }
+      contest_session_heartbeat: {
+        Args: { _session_id: string }
+        Returns: Json
+      }
       contest_start_secure_session: {
         Args: { _contest_id: string; _user_agent?: string }
         Returns: string
