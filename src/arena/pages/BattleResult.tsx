@@ -6,8 +6,9 @@ import type { Battle, BattleSubmission } from "../types";
 import { GlassPanel } from "../components/GlassPanel";
 import { NeonButton } from "../components/NeonButton";
 import { motion } from "framer-motion";
-import { Trophy, Skull, Equal, AlertTriangle, Loader2, RefreshCw } from "lucide-react";
-import { createCodeRoom } from "../hooks";
+import { Trophy, Skull, Equal, AlertTriangle, Loader2, RefreshCw, Flame, Sparkles } from "lucide-react";
+import { createCodeRoop, createCodeRoom } from "../hooks";
+import { tickArenaStreak, completeDailyChallenge, useDailyChallenge } from "../dailyLoop";
 
 export default function BattleResult() {
   const { id } = useParams<{ id: string }>();
