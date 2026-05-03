@@ -127,12 +127,15 @@ const ContestDetail = () => {
           <SecureContestGate
             contestId={contest.id}
             contestSlug={contest.slug}
+            startsAt={contest.starts_at}
+            registeredCount={registrations.filter((r) => r.status === "registered").length}
             honorAccepted={honorAccepted}
             onHonorAccepted={() => setHonorAccepted(true)}
             hasStarted={clock.phase === "live" || clock.phase === "ended"}
             hasEnded={clock.phase === "ended"}
             isRegistered={isRegistered}
             isDisqualified={isDisqualified}
+            onSessionChange={setHasActiveSession}
           />
         )}
 
