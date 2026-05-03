@@ -260,22 +260,28 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         data-testid={item.testId ?? `admin-nav-${item.to.replace(/^\/admin\/?/, "") || "dashboard"}`}
         key={`${item.to}-${active ? flashKey : "x"}`}
         className={cn(
-          "group/item relative flex items-center gap-2 rounded-md pr-1 transition-colors",
+          "group/item relative flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-all duration-150",
           active
-            ? "bg-primary/10 text-primary font-medium admin-nav-flash"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "bg-primary/10 text-primary font-medium shadow-sm shadow-primary/5 admin-nav-flash"
+            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         )}
       >
         {/* Left accent bar */}
         <span
           aria-hidden
           className={cn(
-            "absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-r-full transition-all",
-            active ? "bg-primary opacity-100" : "opacity-0"
+            "absolute -left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full transition-all duration-200",
+            active ? "bg-primary opacity-100 scale-y-100" : "opacity-0 scale-y-0"
           )}
         />
-        <span className="relative flex shrink-0 items-center pl-2">
-          <Icon className="h-4 w-4" />
+        <span className="relative flex shrink-0 items-center">
+          <Icon
+            className={cn(
+              "h-4 w-4 transition-transform",
+              active ? "scale-110" : "group-hover/item:scale-105"
+            )}
+            strokeWidth={active ? 2.25 : 1.75}
+          />
           {collapsed && unseen > 0 && (
             <span
               className={cn(
@@ -287,7 +293,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         </span>
         {!collapsed && (
           <>
-            <span className="truncate">{item.label}</span>
+            <span className="truncate text-[13px]">{item.label}</span>
             <span className="ml-auto flex items-center gap-1">
               {showSkeleton ? (
                 <Skeleton className="h-4 w-6 rounded-full" />
