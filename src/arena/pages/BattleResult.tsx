@@ -113,6 +113,32 @@ export default function BattleResult() {
         </GlassPanel>
       </motion.div>
 
+      {(streakInfo || dailyXp) && (
+        <div className="grid gap-3 md:grid-cols-2" data-testid="rewards-row">
+          {streakInfo && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+              <GlassPanel glow={streakInfo.current >= 3 ? "lime" : "cyan"} className="p-4 text-center">
+                <Flame className="h-7 w-7 mx-auto text-orange-400" />
+                <p className="mt-1 text-2xl font-black">{streakInfo.current} day{streakInfo.current === 1 ? "" : "s"}</p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Arena Streak</p>
+                {streakInfo.used_freeze && (
+                  <p className="mt-1 text-[10px] text-primary">Freeze used to save your streak</p>
+                )}
+              </GlassPanel>
+            </motion.div>
+          )}
+          {dailyXp && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <GlassPanel glow="magenta" className="p-4 text-center" data-testid="daily-xp-banner">
+                <Sparkles className="h-7 w-7 mx-auto text-primary" />
+                <p className="mt-1 text-2xl font-black text-primary">+{dailyXp} XP</p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Daily Challenge Bonus</p>
+              </GlassPanel>
+            </motion.div>
+          )}
+        </div>
+      )}
+
       <GlassPanel className="p-4">
         <h3 className="text-xs uppercase tracking-wider text-primary/80 mb-2">Submissions ({subs.length})</h3>
         <ul className="space-y-2 text-sm">
