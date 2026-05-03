@@ -125,7 +125,7 @@ export default function ArenaFriends() {
     setBlockedIds(new Set(((data ?? []) as Array<{ blocked_id: string }>).map((r) => r.blocked_id)));
   }, [user]);
 
-  // Load arena users with pagination
+  // Load all users with pagination (everyone, not just arena-rated)
   const loadPage = useCallback(
     async (pageIdx: number, replace = false) => {
       if (loadingPage) return;
@@ -134,40 +134,55 @@ export default function ArenaFriends() {
         const from = pageIdx * PAGE_SIZE;
         const to = from + PAGE_SIZE - 1;
 
-        const { data: ratings } = await supabase
-          .from("player_ratings" as never)
-          .select("user_id,elo,total_battles")
-          .gte("elo", filters.eloMin)
-          .lte("elo", filters.eloMax)
-          .gte("total_battles", filters.minBattles)
-          .order("elo", { ascending: false })
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id,full_name,avatar_url")
+          .order("created_at", { ascending: false })
           .range(from, to);
 
-        const ratingRows = (ratings ?? []) as Array<{
-          user_id: string; elo: number; total_battles: number;
-        }>;
-        const newHasMore = ratingRows.length === PAGE_SIZE;
+        const profRows = ((profs ?? []) as Array<{
+          user_id: string; full_name: string | null; avatar_url: string | null;
+        }>).filter((p) => p.user_id !== user?.id);
+        const newHasMore = (profs?.length ?? 0) === PAGE_SIZE;
 
-        const ids = ratingRows.map((r) => r.user_id).filter((id) => id !== user?.id);
-        let merged: ArenaUser[] = [];
-        if (ids.length) {
-          const { data: profs } = await supabase
-            .from("profiles")
-            .select("user_id,full_name,avatar_url")
-            .in("user_id", ids);
-          const profMap = new Map((profs ?? []).map((p) => [p.user_id, p]));
-          merged = ratingRows
-            .filter((r) => r.user_id !== user?.id)
-            .map((r) => {
-              const p = profMap.get(r.user_id);
-              return {
-                user_id: r.user_id,
-                full_name: p?.full_name ?? null,
-                avatar_url: p?.avatar_url ?? null,
-                elo: r.elo,
-                total_battles: r.total_battles,
-              };
-            });
+        let merged: ArenaUser[] = profRows.map((p) => ({
+          user_id: p.user_id,
+          full_name: p.full_name,
+          avatar_url: p.avatar_url,
+          elo: null,
+          total_battles: null,
+        }));
+
+        if (profRows.length) {
+          const { data: ratings } = await supabase
+            .from("player_ratings" as never)
+            .select("user_id,elo,total_battles")
+            .in("user_id", profRows.map((p) => p.user_id));
+          const rMap = new Map(
+            ((ratings ?? []) as Array<{ user_id: string; elo: number; total_battles: number }>)
+              .map((r) => [r.user_id, r]),
+          );
+          merged = merged.map((u) => {
+            const r = rMap.get(u.user_id);
+            return r ? { ...u, elo: r.elo, total_battles: r.total_battles } : u;
+          });
+        }
+
+        // Apply Elo / battles filters only when set away from defaults
+        const isDefault =
+          filters.eloMin === DEFAULT_FILTERS.eloMin &&
+          filters.eloMax === DEFAULT_FILTERS.eloMax &&
+          filters.minBattles === DEFAULT_FILTERS.minBattles;
+        if (!isDefault) {
+          merged = merged.filter((u) => {
+            const elo = u.elo ?? 0;
+            const battles = u.total_battles ?? 0;
+            return (
+              elo >= filters.eloMin &&
+              elo <= filters.eloMax &&
+              battles >= filters.minBattles
+            );
+          });
         }
 
         setArenaUsers((prev) => {
@@ -436,7 +451,7 @@ export default function ArenaFriends() {
 
       <GlassPanel className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="text-xs uppercase text-primary/80">Arena players</div>
+          <div className="text-xs uppercase text-primary/80">All players</div>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
