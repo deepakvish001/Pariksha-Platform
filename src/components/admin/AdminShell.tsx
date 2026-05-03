@@ -198,24 +198,11 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
 
   const { data: badges, isLoading: badgesLoading, markSeen, clearAll } = useAdminSidebarBadges();
   const prefs = useAdminSidebarPrefs(pathname);
-  const [filter, setFilter] = useState("");
 
   const isActive = (to: string, end?: boolean, match?: (p: string) => boolean) => {
     if (match) return match(pathname);
     return end ? pathname === to : pathname === to || pathname.startsWith(to + "/");
   };
-
-  const matchesFilter = (item: NavItem) =>
-    !filter.trim() ||
-    item.label.toLowerCase().includes(filter.trim().toLowerCase());
-
-  const visibleGroups = useMemo(() => {
-    if (!filter.trim()) return GROUPS;
-    return GROUPS
-      .map((g) => ({ ...g, items: g.items.filter(matchesFilter) }))
-      .filter((g) => g.items.length > 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
 
   const flatItems = useMemo(() => GROUPS.flatMap((g) => g.items), []);
   const findItem = (to: string) => flatItems.find((i) => i.to === to);
