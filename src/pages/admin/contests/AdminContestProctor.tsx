@@ -321,6 +321,44 @@ const AdminContestProctor = () => {
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="sessions">
+            <Card>
+              {sessionsQuery.isLoading ? (
+                <div className="space-y-2 p-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10" />)}</div>
+              ) : (sessionsQuery.data ?? []).length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground">No active secure sessions right now.</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Started</TableHead>
+                      <TableHead>Participant</TableHead>
+                      <TableHead>Device</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(sessionsQuery.data ?? []).map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="text-xs whitespace-nowrap">{format(new Date(s.started_at), "PP p")}</TableCell>
+                        <TableCell>
+                          <div className="text-sm font-medium">{s.full_name ?? "Anonymous"}</div>
+                          <div className="text-xs text-muted-foreground">{s.user_id.slice(0, 8)}…</div>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate text-xs text-muted-foreground">{s.user_agent ?? "—"}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => forceEndSession(s.id)}>
+                            End session
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </AdminShell>
