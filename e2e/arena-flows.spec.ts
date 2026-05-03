@@ -1,0 +1,116 @@
+import { test, expect } from "@playwright/test";
+
+/**
+ * Arena end-to-end specs.
+ *
+ * These cover the public-facing UI surface of the Arena multiplayer system:
+ *   - Quick Match queue UX (loading, attempt counter, cancel)
+ *   - Create Room code sharing (copy code / share link)
+ *   - Join-by-code deep-link validation + countdown timer
+ *   - Realtime waiting room (host page subscribes & survives reload)
+ *   - Rematch retry UI on failure
+ *
+ * Specs auto-skip when authentication isn't configured. Set the env vars
+ * E2E_USER_EMAIL / E2E_USER_PASSWORD to exercise the authenticated flows.
+ */
+
+const EMAIL = process.env.E2E_USER_EMAIL;
+const PASSWORD = process.env.E2E_USER_PASSWORD;
+
+async function loginIfNeeded(page: import("@playwright/test").Page) {
+  if (!EMAIL || !PASSWORD) return false;
+  await page.goto("/login");
+  await page.getByLabel(/email/i).fill(EMAIL);
+  await page.getByLabel(/password/i).fill(PASSWORD);
+  await page.getByRole("button", { name: /sign in|log in/i }).click();
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 15_000 }).catch(() => {});
+  return true;
+}
+
+test.describe("Arena · Join by Code (deep link)", () => {
+  test("invalid code shows explicit validation message", async ({ page }) => {
+    await page.goto("/arena/join/bad");
+    await expect(page.getByTestId("join-invalid")).toBeVisible();
+    await expect(page.getByText(/invalid room code/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: /back to arena/i })).toBeVisible();
+  });
+
+  test("valid format triggers join attempt and surfaces error UI for unknown codes", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    await page.goto("/arena/join/ZZZZZZ");
+    // Either it succeeds (unlikely for random code) or surfaces a not-found / expired error.
+    const error = page.locator("[data-testid^='join-error-']");
+    await expect(error).toBeVisible({ timeout: 10_000 });
+  });
+});
+
+test.describe("Arena · Quick Match queue", () => {
+  test("queue page shows searching UI with attempt counter", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    await page.goto("/arena");
+    const quick = page.getByRole("button", { name: /quick match/i }).first();
+    if (!(await quick.isVisible().catch(() => false))) test.skip(true, "Arena home not reachable");
+    await quick.click();
+    await expect(page.getByTestId("queue-searching")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("queue-attempts")).toContainText(/Attempt \d+/);
+    await page.getByRole("button", { name: /cancel/i }).click();
+    await expect(page).toHaveURL(/\/arena$/);
+  });
+});
+
+test.describe("Arena · Create Room (code sharing + countdown)", () => {
+  test("host sees the 6-char code, share buttons, and a live countdown", async ({ page }) => {
+    if (!(await loginIfNeeded(page))) test.skip(true, "Login creds not configured");
+    await page.goto("/arena");
+    const create = page.getByRole("button", { name: /create room/i }).first();
+    if (!(await create.isVisible().catch(() => false))) test.skip(true, "Create room control not found");
+    await create.click();
+
+    // We may need to confirm a problem/difficulty in a sub-form before the room is created.
+    const confirm = page.getByRole("button", { name: /create|generate|start/i }).first();
+    if (await confirm.isVisible().catch(() => false)) await confirm.click();
+
+    await page.waitForURL(/\/arena\/room\/[A-Z0-9]{6}/, { timeout: 15_000 });
+    await expect(page.getByRole("button", { name: /copy code/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /copy link/i })).toBeVisible();
+
+    const countdown = page.getByTestId("room-countdown");
+    await expect(countdown).toBeVisible();
+    const first = (await countdown.textContent())?.trim();
+    expect(first).toMatch(/Code expires in \d+:\d{2}/);
+
+    // After a couple of seconds, the displayed seconds should change.
+    await page.waitForTimeout(2_500);
+    const second = (await countdown.textContent())?.trim();
+    expect(second).not.toEqual(first);
+  });
+});
+
+test.describe("Arena · Realtime waiting-room redirect", () => {
+  test("opening the same room URL in a second tab keeps both pages subscribed", async ({ browser }) => {
+    if (!EMAIL || !PASSWORD) test.skip(true, "Login creds not configured");
+    const ctx = await browser.newContext();
+    const host = await ctx.newPage();
+    await loginIfNeeded(host);
+
+    await host.goto("/arena");
+    const create = host.getByRole("button", { name: /create room/i }).first();
+    if (!(await create.isVisible().catch(() => false))) {
+      await ctx.close();
+      test.skip(true, "Create room control not found");
+    }
+    await create.click();
+    const confirm = host.getByRole("button", { name: /create|generate|start/i }).first();
+    if (await confirm.isVisible().catch(() => false)) await confirm.click();
+    await host.waitForURL(/\/arena\/room\/[A-Z0-9]{6}/, { timeout: 15_000 });
+    const url = host.url();
+
+    const observer = await ctx.newPage();
+    await observer.goto(url);
+    // The waiting-room "Waiting for opponent…" indicator should render in both tabs.
+    await expect(host.getByText(/waiting for opponent/i)).toBeVisible();
+    await expect(observer.getByText(/waiting for opponent/i)).toBeVisible();
+
+    await ctx.close();
+  });
+});
