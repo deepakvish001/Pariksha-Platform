@@ -421,6 +421,7 @@ const CodingProblemDetail = () => {
     if (!contestSlug || !problem?.slug) {
       setContestSubmitBlocked(false);
       setContestError(null);
+      setContestId(null);
       return;
     }
     let cancelled = false;
