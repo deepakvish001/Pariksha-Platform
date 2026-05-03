@@ -177,19 +177,56 @@ const ContestEditor = () => {
             <p className="text-sm text-muted-foreground">No problems added yet.</p>
           ) : (
             <div className="space-y-1">
-              {problems.map((p, i) => (
-                <div key={p.problem_slug} className="flex items-center gap-2 rounded border border-white/10 bg-card/40 p-2">
-                  <GripVertical className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-mono text-xs text-muted-foreground">{String.fromCharCode(65 + i)}</span>
-                  <span className="flex-1 text-sm">{p.problem_slug}</span>
-                  <Input type="number" value={p.points} onChange={(e) => {
-                    const next = [...problems]; next[i] = { ...p, points: Number(e.target.value) }; setProblems(next);
-                  }} className="w-20" />
-                  <Button size="icon" variant="ghost" onClick={() => setProblems(problems.filter((_, j) => j !== i))}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+              {problems.map((p, i) => {
+                const move = (dir: -1 | 1) => {
+                  const j = i + dir;
+                  if (j < 0 || j >= problems.length) return;
+                  const next = [...problems];
+                  [next[i], next[j]] = [next[j], next[i]];
+                  setProblems(next.map((q, k) => ({ ...q, order_index: k })));
+                };
+                return (
+                  <div
+                    key={p.problem_slug}
+                    data-testid={`contest-problem-row-${p.problem_slug}`}
+                    className="flex items-center gap-2 rounded border border-white/10 bg-card/40 p-2"
+                  >
+                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-mono text-xs text-muted-foreground">{String.fromCharCode(65 + i)}</span>
+                    <span className="flex-1 text-sm">{p.problem_slug}</span>
+                    <div className="flex items-center">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Move up"
+                        aria-label={`Move ${p.problem_slug} up`}
+                        data-testid={`move-up-${p.problem_slug}`}
+                        disabled={i === 0}
+                        onClick={() => move(-1)}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Move down"
+                        aria-label={`Move ${p.problem_slug} down`}
+                        data-testid={`move-down-${p.problem_slug}`}
+                        disabled={i === problems.length - 1}
+                        onClick={() => move(1)}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Input type="number" value={p.points} onChange={(e) => {
+                      const next = [...problems]; next[i] = { ...p, points: Number(e.target.value) }; setProblems(next);
+                    }} className="w-20" />
+                    <Button size="icon" variant="ghost" onClick={() => setProblems(problems.filter((_, j) => j !== i))}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           )}
           <div className="space-y-2 pt-2">
