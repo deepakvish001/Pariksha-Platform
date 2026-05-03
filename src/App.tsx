@@ -371,6 +371,11 @@ const App = () => (
                   <Route path="folders" element={<FoldersAdmin />} />
                   <Route path="scheduled-broadcasts" element={<ScheduledBroadcastsAdmin />} />
                   <Route path="sessions" element={<SessionsAdmin />} />
+                  <Route path="contests" element={<AdminContestsList />} />
+                  <Route path="contests/new" element={<ContestEditor />} />
+                  <Route path="contests/:id/edit" element={<ContestEditor />} />
+                  <Route path="contests/:id/registrations" element={<AdminContestRegistrations />} />
+                  <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
