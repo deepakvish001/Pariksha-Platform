@@ -15,7 +15,7 @@ import { CalendarDays, Trophy, Users, ArrowRight, Lock, Check, AlertCircle, Shie
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import SecureContestGate from "@/components/contests/SecureContestGate";
-import { useEffect, useState as useReactState } from "react";
+import { useState as useReactState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const fmtDate = (s: string) => new Date(s).toLocaleString();
