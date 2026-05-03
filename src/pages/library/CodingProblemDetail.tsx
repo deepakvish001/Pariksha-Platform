@@ -930,11 +930,16 @@ const CodingProblemDetail = () => {
             <span className="hidden sm:inline">Run</span>
           </Button>
           <Button
+            data-testid="contest-submit-button"
             onClick={handleSubmit}
-            disabled={isRunning || isSubmitting}
+            disabled={isRunning || isSubmitting || contestSubmitBlocked}
             size="sm"
             className="gap-1.5"
-            title="Submit solution (Ctrl/Cmd+Shift+Enter)"
+            title={
+              contestSubmitBlocked
+                ? contestError ?? "Submission is blocked for this contest"
+                : "Submit solution (Ctrl/Cmd+Shift+Enter)"
+            }
           >
             {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             Submit
