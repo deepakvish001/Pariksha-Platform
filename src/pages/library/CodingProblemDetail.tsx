@@ -17,6 +17,7 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
+import SecureProblemHUD from "@/components/contests/SecureProblemHUD";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
@@ -186,6 +187,7 @@ const CodingProblemDetail = () => {
   // cannot submit (e.g. contest closed, not registered), disable Submit so
   // the action is blocked before click — not just on the click handler.
   const [contestSubmitBlocked, setContestSubmitBlocked] = useState(false);
+  const [contestId, setContestId] = useState<string | null>(null);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
   const editorRef = useRef<MonacoEditorHandle>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
@@ -420,6 +422,7 @@ const CodingProblemDetail = () => {
     if (!contestSlug || !problem?.slug) {
       setContestSubmitBlocked(false);
       setContestError(null);
+      setContestId(null);
       return;
     }
     let cancelled = false;
@@ -432,6 +435,7 @@ const CodingProblemDetail = () => {
           .eq("slug", contestSlug)
           .maybeSingle();
         if (cancelled || !contestRow?.id) return;
+        setContestId(contestRow.id);
         const { data: check } = await supabase.rpc("validate_contest_submission", {
           _contest_id: contestRow.id,
           _problem_slug: problem.slug,
@@ -451,6 +455,7 @@ const CodingProblemDetail = () => {
           "already_solved",
           "invalid_problem",
           "not_found",
+          "no_active_session",
         ]);
         if (v && !v.ok && v.code && blockingCodes.has(v.code)) {
           setContestSubmitBlocked(true);
@@ -861,6 +866,12 @@ const CodingProblemDetail = () => {
           >
             Dismiss
           </button>
+        </div>
+      )}
+
+      {contestId && searchParams.get("contest") && (
+        <div className="px-4 py-2">
+          <SecureProblemHUD contestId={contestId} contestSlug={searchParams.get("contest")!} />
         </div>
       )}
 

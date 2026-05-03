@@ -1374,6 +1374,7 @@ export type Database = {
       contest_sessions: {
         Row: {
           contest_id: string
+          device_meta: Json
           id: string
           invalidated_at: string | null
           ip_hash: string | null
@@ -1386,6 +1387,7 @@ export type Database = {
         }
         Insert: {
           contest_id: string
+          device_meta?: Json
           id?: string
           invalidated_at?: string | null
           ip_hash?: string | null
@@ -1398,6 +1400,7 @@ export type Database = {
         }
         Update: {
           contest_id?: string
+          device_meta?: Json
           id?: string
           invalidated_at?: string | null
           ip_hash?: string | null
@@ -4440,6 +4443,10 @@ export type Database = {
       contest_effective_status: {
         Args: { _contest_id: string }
         Returns: string
+      }
+      contest_force_end_session: {
+        Args: { _session_id: string }
+        Returns: undefined
       }
       contest_log_violation: {
         Args: {

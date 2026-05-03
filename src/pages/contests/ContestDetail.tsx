@@ -44,6 +44,7 @@ const ContestDetail = () => {
   const isDisqualified = (myReg as { status?: string } | undefined)?.status === "disqualified";
   const honorAcceptedInitial = !!(myReg as { honor_code_accepted_at?: string | null } | undefined)?.honor_code_accepted_at;
   const [honorAccepted, setHonorAccepted] = useReactState(honorAcceptedInitial);
+  const [hasActiveSession, setHasActiveSession] = useReactState(false);
   useEffect(() => { setHonorAccepted(honorAcceptedInitial); }, [honorAcceptedInitial]);
 
   const onRegister = () => {
@@ -127,12 +128,15 @@ const ContestDetail = () => {
           <SecureContestGate
             contestId={contest.id}
             contestSlug={contest.slug}
+            startsAt={contest.starts_at}
+            registeredCount={registrations.filter((r) => r.status === "registered").length}
             honorAccepted={honorAccepted}
             onHonorAccepted={() => setHonorAccepted(true)}
             hasStarted={clock.phase === "live" || clock.phase === "ended"}
             hasEnded={clock.phase === "ended"}
             isRegistered={isRegistered}
             isDisqualified={isDisqualified}
+            onSessionChange={setHasActiveSession}
           />
         )}
 
@@ -156,6 +160,14 @@ const ContestDetail = () => {
             {!canSeeProblems ? (
               <Card className="p-6 text-center text-muted-foreground">
                 Problems unlock when the contest starts.
+              </Card>
+            ) : isRegistered && clock.phase === "live" && !hasActiveSession ? (
+              <Card className="space-y-2 border-amber-500/30 bg-amber-500/5 p-6 text-center">
+                <ShieldCheck className="mx-auto h-6 w-6 text-amber-300" />
+                <div className="font-medium">Start your Secure Session to view problems</div>
+                <div className="text-sm text-muted-foreground">
+                  In Secure Mode, problems are hidden until you start a proctored session above.
+                </div>
               </Card>
             ) : problems.length === 0 ? (
               <Card className="p-6 text-center text-muted-foreground">No problems set.</Card>

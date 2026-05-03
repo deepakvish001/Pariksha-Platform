@@ -97,6 +97,33 @@ const AdminContestProctor = () => {
     },
   });
 
+  type SessionRow = { id: string; user_id: string; started_at: string; user_agent: string | null; full_name?: string | null };
+  const sessionsQuery = useQuery({
+    queryKey: ["admin-contest-active-sessions", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contest_sessions")
+        .select("id, user_id, started_at, user_agent")
+        .eq("contest_id", id!)
+        .eq("is_active", true)
+        .order("started_at", { ascending: false });
+      if (error) throw error;
+      const userIds = Array.from(new Set((data ?? []).map((r: any) => r.user_id)));
+      const { data: profiles } = userIds.length
+        ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
+        : { data: [] as any[] };
+      const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+      return (data ?? []).map((s: any) => ({ ...s, full_name: nameMap.get(s.user_id) ?? null })) as SessionRow[];
+    },
+  });
+
+  const forceEndSession = async (sessionId: string) => {
+    const { error } = await supabase.rpc("contest_force_end_session" as never, { _session_id: sessionId } as never);
+    if (error) toast.error(error.message);
+    else { toast.success("Session ended"); sessionsQuery.refetch(); }
+  };
+
   // Realtime updates
   useEffect(() => {
     if (!id) return;
@@ -107,6 +134,9 @@ const AdminContestProctor = () => {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "contest_proctor_snapshots", filter: `contest_id=eq.${id}` }, () => {
         snapshotsQuery.refetch();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "contest_sessions", filter: `contest_id=eq.${id}` }, () => {
+        sessionsQuery.refetch();
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -172,8 +202,9 @@ const AdminContestProctor = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           {[
+            { label: "Active sessions", value: sessionsQuery.data?.length ?? 0 },
             { label: "Total events", value: stats.total },
             { label: "Unique offenders", value: stats.offenders },
             { label: "Flagged events", value: stats.flagged },
@@ -190,6 +221,7 @@ const AdminContestProctor = () => {
           <TabsList>
             <TabsTrigger value="violations"><ShieldAlert className="mr-2 h-4 w-4" />Violations</TabsTrigger>
             <TabsTrigger value="snapshots"><Camera className="mr-2 h-4 w-4" />Webcam snapshots</TabsTrigger>
+            <TabsTrigger value="sessions">Active sessions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="violations" className="space-y-3">
@@ -288,6 +320,44 @@ const AdminContestProctor = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="sessions">
+            <Card>
+              {sessionsQuery.isLoading ? (
+                <div className="space-y-2 p-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10" />)}</div>
+              ) : (sessionsQuery.data ?? []).length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground">No active secure sessions right now.</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Started</TableHead>
+                      <TableHead>Participant</TableHead>
+                      <TableHead>Device</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(sessionsQuery.data ?? []).map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="text-xs whitespace-nowrap">{format(new Date(s.started_at), "PP p")}</TableCell>
+                        <TableCell>
+                          <div className="text-sm font-medium">{s.full_name ?? "Anonymous"}</div>
+                          <div className="text-xs text-muted-foreground">{s.user_id.slice(0, 8)}…</div>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate text-xs text-muted-foreground">{s.user_agent ?? "—"}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => forceEndSession(s.id)}>
+                            End session
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
