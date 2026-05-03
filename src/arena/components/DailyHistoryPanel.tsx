@@ -25,7 +25,7 @@ function fmtTime(sec: number | null) {
 export function DailyHistoryPanel() {
   const { user } = useAuth();
   const streak = useArenaStreak(user?.id);
-  const { history, loading } = useDailyHistory(30);
+  const { history, loading, loadingMore, hasMore, loadMore } = useDailyHistory(30);
 
   const completed = history.filter((h) => h.solved).length;
   const totalXp = history.reduce((acc, h) => acc + (h.xp_awarded || 0), 0);
