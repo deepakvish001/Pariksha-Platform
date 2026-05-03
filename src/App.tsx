@@ -364,6 +364,19 @@ const App = () => (
                   <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
                 </Route>
 
+                {/* Arena - 1v1 battles */}
+                <Route path="/arena" element={<ProtectedRoute><ArenaLayout /></ProtectedRoute>}>
+                  <Route index element={<ArenaHome />} />
+                  <Route path="queue" element={<ArenaQueue />} />
+                  <Route path="battle/:id" element={<BattleRoom />} />
+                  <Route path="result/:id" element={<BattleResult />} />
+                  <Route path="leaderboard" element={<ArenaLeaderboard />} />
+                  <Route path="friends" element={<ArenaFriends />} />
+                  <Route path="private" element={<ArenaPrivate />} />
+                  <Route path="history" element={<ArenaHistory />} />
+                </Route>
+                <Route path="/admin/arena" element={<AdminRoute><AdminArena /></AdminRoute>} />
+
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
