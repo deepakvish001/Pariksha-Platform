@@ -29,11 +29,12 @@ interface Friend {
 interface ArenaUser {
   user_id: string;
   full_name: string | null;
-  username: string | null;
+  username?: string | null;
   avatar_url: string | null;
   elo: number | null;
   total_battles: number | null;
   created_at?: string | null;
+  mutualCount?: number;
 }
 
 const PAGE_SIZE = 40;
