@@ -91,6 +91,16 @@ import Collections from "./pages/platform/Collections";
 
 import PublicProfile from "./pages/PublicProfile";
 import { AdminRoute } from "@/components/AdminRoute";
+import { ArenaLayout } from "@/arena/ArenaLayout";
+import ArenaHome from "@/arena/pages/ArenaHome";
+import ArenaQueue from "@/arena/pages/ArenaQueue";
+import BattleRoom from "@/arena/pages/BattleRoom";
+import BattleResult from "@/arena/pages/BattleResult";
+import ArenaLeaderboard from "@/arena/pages/ArenaLeaderboard";
+import ArenaFriends from "@/arena/pages/ArenaFriends";
+import ArenaPrivate from "@/arena/pages/ArenaPrivate";
+import ArenaHistory from "@/arena/pages/ArenaHistory";
+import AdminArena from "@/arena/pages/AdminArena";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProblemsList from "./pages/admin/AdminProblemsList";
 import ProblemEditor from "./pages/admin/ProblemEditor";
