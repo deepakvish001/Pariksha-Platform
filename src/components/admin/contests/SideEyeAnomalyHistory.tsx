@@ -45,12 +45,30 @@ export const SideEyeAnomalyHistory = ({
   contestId: string;
   sessionIds: string[];
 }) => {
+  const PREFS_KEY = "sideeye:anomalyHistory:prefs:v1";
+  const loadPrefs = () => {
+    try {
+      const raw = localStorage.getItem(PREFS_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as { autoRefresh?: boolean; intervalSec?: number; minSev?: string };
+    } catch { return null; }
+  };
+  const initialPrefs = loadPrefs();
   const [rows, setRows] = useState<ChainRow[]>([]);
-  const [minSev, setMinSev] = useState<(typeof SEVERITIES)[number]>("info");
+  const [minSev, setMinSev] = useState<(typeof SEVERITIES)[number]>(
+    (initialPrefs?.minSev as any) ?? "info",
+  );
   const [loading, setLoading] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [intervalSec, setIntervalSec] = useState(15);
+  const [autoRefresh, setAutoRefresh] = useState<boolean>(initialPrefs?.autoRefresh ?? true);
+  const [intervalSec, setIntervalSec] = useState<number>(initialPrefs?.intervalSec ?? 15);
   const pollRef = useRef<number | null>(null);
+
+  // Persist preferences whenever they change.
+  useEffect(() => {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify({ autoRefresh, intervalSec, minSev }));
+    } catch { /* ignore quota */ }
+  }, [autoRefresh, intervalSec, minSev]);
 
   const load = async () => {
     if (sessionIds.length === 0) { setRows([]); return; }
