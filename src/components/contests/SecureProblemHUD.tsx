@@ -1,9 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, ShieldAlert, ShieldOff, Maximize2, Camera, AlertTriangle, Wifi, WifiOff, Loader2 } from "lucide-react";
+import { ShieldCheck, ShieldAlert, ShieldOff, Maximize2, Camera, AlertTriangle, Wifi, WifiOff, Loader2, Timer } from "lucide-react";
 import { useContestSecureMode } from "@/hooks/useContestSecureMode";
 import { useActiveContestSession } from "@/hooks/useActiveContestSession";
 import { toast } from "sonner";
@@ -11,15 +11,19 @@ import { toast } from "sonner";
 interface Props {
   contestId: string;
   contestSlug: string;
+  /** Notifies the parent whenever submission readiness changes so the page
+   *  can disable the Submit button while the heartbeat is offline/reconnecting. */
+  onSubmissionReadyChange?: (ready: boolean) => void;
 }
 
 type Status = "loading" | "active" | "missing" | "ended";
 
 /**
  * Floating Secure Mode HUD for the problem-solving page. Shows the live
- * session state (active / missing / ended) and the next action to take.
+ * session state (active / missing / ended), heartbeat health, an estimated
+ * reconnect countdown during backoff, and the next action to take.
  */
-export default function SecureProblemHUD({ contestId, contestSlug }: Props) {
+export default function SecureProblemHUD({ contestId, contestSlug, onSubmissionReadyChange }: Props) {
   const navigate = useNavigate();
   const secure = useContestSecureMode(contestId, true);
   const active = useActiveContestSession(contestId);
@@ -30,6 +34,22 @@ export default function SecureProblemHUD({ contestId, contestSlug }: Props) {
     if (active.hasActive) return "active";
     return "missing";
   }, [active.loading, active.hasActive, active.invalidatedJustNow]);
+
+  // Live ticking countdown for the reconnect ETA
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!secure.nextRetryAt) return;
+    const id = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(id);
+  }, [secure.nextRetryAt]);
+  const retryInSec = secure.nextRetryAt
+    ? Math.max(0, Math.ceil((secure.nextRetryAt - now) / 1000))
+    : null;
+
+  // Push readiness up to the parent for Submit-button gating.
+  useEffect(() => {
+    onSubmissionReadyChange?.(secure.submissionAllowed && status === "active");
+  }, [secure.submissionAllowed, status, onSubmissionReadyChange]);
 
   useEffect(() => {
     if (status === "ended") {
@@ -59,7 +79,9 @@ export default function SecureProblemHUD({ contestId, contestSlug }: Props) {
   const nextAction =
     status === "active"
       ? !secure.online || secure.reconnecting
-        ? "Network lost — reconnecting heartbeat. You stay registered."
+        ? retryInSec !== null
+          ? `Network lost — retrying heartbeat in ${retryInSec}s. Submissions paused.`
+          : "Network lost — reconnecting heartbeat. Submissions paused."
         : secure.fullscreen
         ? "Stay in this tab — submissions are enabled."
         : "Re-enter fullscreen to keep your session in good standing."
@@ -108,6 +130,11 @@ export default function SecureProblemHUD({ contestId, contestSlug }: Props) {
                 )}
                 {secure.reconnecting ? "Reconnecting" : secure.online ? "Online" : "Offline"}
               </Badge>
+              {retryInSec !== null && (secure.reconnecting || !secure.online) && (
+                <Badge variant="outline" className="border-amber-400/40 text-amber-300">
+                  <Timer className="mr-1 h-3 w-3" /> Retry in {retryInSec}s
+                </Badge>
+              )}
               {(secure.reconnecting || !secure.online) && (
                 <Button size="sm" variant="outline" onClick={secure.reconnect}>
                   Reconnect now
