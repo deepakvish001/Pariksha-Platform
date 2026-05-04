@@ -1200,11 +1200,15 @@ const CodingProblemDetail = () => {
               </TabsContent>
 
               <TabsContent value="notes" className="mt-0">
-                <NotesPanel
-                  value={notesValue}
-                  onChange={setNotesValue}
-                  savedAt={notesSavedAt}
-                />
+                {contestLocks.notesLocked ? (
+                  <LockedAuxPanel label="Notes" endsAt={contestLocks.endsAt} />
+                ) : (
+                  <NotesPanel
+                    value={notesValue}
+                    onChange={setNotesValue}
+                    savedAt={notesSavedAt}
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="my-solution" className="mt-0">
