@@ -290,6 +290,42 @@ const CodingProblemDetail = () => {
     reset: resetTabsLayout,
     isCustomized: isLayoutCustomized,
   } = useEditorTabsLayout(slug, language);
+
+  // Map of which tabs are locked by the active contest. Used to (a) reject
+  // setActiveTab calls that would land on a locked tab, (b) auto-redirect to
+  // Description if the persisted active tab is locked when the contest starts,
+  // and (c) decorate trigger labels with a 🔒.
+  const isTabLocked = (id: EditorTabId) =>
+    (id === "notes" && contestLocks.notesLocked) ||
+    (id === "my-solution" && contestLocks.solutionLocked) ||
+    (id === "solution" && contestLocks.solutionLocked) ||
+    (id === "runs" && contestLocks.historyLocked);
+
+  const setActiveTab = (id: EditorTabId) => {
+    if (isTabLocked(id)) {
+      toast({
+        title: "Locked during contest",
+        description: "This panel unlocks when the contest ends.",
+      });
+      return;
+    }
+    setActiveTabRaw(id);
+  };
+
+  // If the user previously had a now-locked tab as their active tab (e.g.
+  // they had "notes" open before the contest started, or hot-reloaded into a
+  // contest), force them back to Description.
+  useEffect(() => {
+    if (isTabLocked(activeTab)) {
+      setActiveTabRaw("description");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeTab,
+    contestLocks.notesLocked,
+    contestLocks.solutionLocked,
+    contestLocks.historyLocked,
+  ]);
   const {
     presetId: layoutPresetId,
     preset: layoutPreset,
