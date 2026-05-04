@@ -3,8 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ShieldCheck, ShieldAlert, Loader2, FileJson, FileDown } from "lucide-react";
 import { toast } from "sonner";
+import { logSideEyeAction } from "./lib/adminAuditLog";
 
 interface VerifyResult {
   ok: boolean;
@@ -21,6 +26,7 @@ interface VerifyResult {
 export const SideEyeIntegrityPanel = ({ sessionId }: { sessionId: string }) => {
   const [busy, setBusy] = useState<"verify" | "json" | "pdf" | null>(null);
   const [result, setResult] = useState<VerifyResult | null>(null);
+  const [confirm, setConfirm] = useState<null | "verify" | "json" | "pdf">(null);
 
   const callEdge = async <T,>(fn: string): Promise<T> => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -43,6 +49,9 @@ export const SideEyeIntegrityPanel = ({ sessionId }: { sessionId: string }) => {
     try {
       const r = await callEdge<VerifyResult>("contest-sideeye-verify-chain");
       setResult(r);
+      await logSideEyeAction("sideeye_verify_chain", sessionId, {
+        intact: r.intact, links: r.links, breaks: r.breaks.length,
+      });
       if (r.intact) toast.success(`Chain intact — ${r.links} link(s) verified`);
       else toast.error(`Chain broken: ${r.breaks.length} issue(s)`);
     } catch (e: any) {
@@ -73,6 +82,7 @@ export const SideEyeIntegrityPanel = ({ sessionId }: { sessionId: string }) => {
       a.download = `sideeye-integrity-${sessionId}.json`;
       a.click();
       URL.revokeObjectURL(a.href);
+      await logSideEyeAction("sideeye_export_json", sessionId, { format: "json" });
       toast.success("JSON report downloaded");
     } catch (e: any) {
       toast.error("JSON download failed", { description: e?.message });
@@ -158,6 +168,7 @@ ${breaks.map(b => `<tr><td>${b.seq}</td><td>${b.reason}</td><td><code>${(b.expec
 </body></html>`;
       win.document.write(html);
       win.document.close();
+      await logSideEyeAction("sideeye_export_pdf", sessionId, { format: "pdf" });
       toast.success("Use the print dialog to save as PDF");
     } catch (e: any) {
       toast.error("PDF export failed", { description: e?.message });
@@ -185,20 +196,51 @@ ${breaks.map(b => `<tr><td>${b.seq}</td><td>${b.reason}</td><td><code>${(b.expec
           )}
         </div>
         <div className="flex gap-1.5">
-          <Button size="sm" variant="outline" onClick={verify} disabled={busy !== null}>
+          <Button size="sm" variant="outline" onClick={() => setConfirm("verify")} disabled={busy !== null}>
             {busy === "verify" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <ShieldCheck className="mr-1 h-3 w-3" />}
             Verify chain
           </Button>
-          <Button size="sm" variant="outline" onClick={downloadJson} disabled={busy !== null}>
+          <Button size="sm" variant="outline" onClick={() => setConfirm("json")} disabled={busy !== null}>
             {busy === "json" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileJson className="mr-1 h-3 w-3" />}
             JSON
           </Button>
-          <Button size="sm" variant="outline" onClick={downloadPdf} disabled={busy !== null}>
+          <Button size="sm" variant="outline" onClick={() => setConfirm("pdf")} disabled={busy !== null}>
             {busy === "pdf" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileDown className="mr-1 h-3 w-3" />}
             PDF
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirm === "verify" && "Re-verify evidence chain?"}
+              {confirm === "json" && "Download integrity report as JSON?"}
+              {confirm === "pdf" && "Generate PDF integrity report?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will be logged in the admin audit log against this session.
+              {confirm === "verify" && " The chain walk re-hashes every evidence link and may take a moment."}
+              {confirm === "pdf" && " A new browser tab will open — allow popups."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const c = confirm;
+                setConfirm(null);
+                if (c === "verify") verify();
+                else if (c === "json") downloadJson();
+                else if (c === "pdf") downloadPdf();
+              }}
+            >
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {result && (
         <div className="text-xs space-y-1.5">

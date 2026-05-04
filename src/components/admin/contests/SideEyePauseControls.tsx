@@ -3,8 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Pause, Play, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { logSideEyeAction } from "./lib/adminAuditLog";
 
 interface PauseRow {
   id: string;
@@ -21,6 +26,7 @@ export const SideEyePauseControls = ({ sessionId }: { sessionId: string }) => {
   const [openPause, setOpenPause] = useState<PauseRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState("");
+  const [confirm, setConfirm] = useState<null | "pause" | "resume">(null);
 
   const load = async () => {
     const { data } = await supabase
@@ -50,10 +56,12 @@ export const SideEyePauseControls = ({ sessionId }: { sessionId: string }) => {
   const call = async (action: "pause" | "resume") => {
     setBusy(true);
     try {
+      const finalReason = action === "pause" ? (reason.trim() || null) : null;
       const { error } = await supabase.functions.invoke("contest-sideeye-pause", {
-        body: { sessionId, action, reason: action === "pause" ? (reason.trim() || null) : null },
+        body: { sessionId, action, reason: finalReason },
       });
       if (error) throw error;
+      await logSideEyeAction(`sideeye_${action}`, sessionId, { reason: finalReason });
       toast.success(action === "pause" ? "Session paused" : "Session resumed");
       if (action === "pause") setReason("");
       await load();
@@ -63,6 +71,35 @@ export const SideEyePauseControls = ({ sessionId }: { sessionId: string }) => {
       setBusy(false);
     }
   };
+
+  const ConfirmDialog = (
+    <AlertDialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {confirm === "pause" ? "Pause side-camera monitoring?" : "Resume monitoring?"}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {confirm === "pause"
+              ? "Anomaly detection and frame analysis will halt for this session. The action will be recorded in the admin audit log."
+              : "Monitoring will resume immediately. This action will be logged."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              const c = confirm;
+              setConfirm(null);
+              if (c) call(c);
+            }}
+          >
+            Confirm
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   if (openPause) {
     return (
@@ -75,10 +112,11 @@ export const SideEyePauseControls = ({ sessionId }: { sessionId: string }) => {
             “{openPause.reason}”
           </span>
         )}
-        <Button size="sm" onClick={() => call("resume")} disabled={busy}>
+        <Button size="sm" onClick={() => setConfirm("resume")} disabled={busy}>
           {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Play className="mr-1 h-3 w-3" />}
           Resume
         </Button>
+        {ConfirmDialog}
       </div>
     );
   }
@@ -91,10 +129,11 @@ export const SideEyePauseControls = ({ sessionId }: { sessionId: string }) => {
         placeholder="Pause reason (optional)"
         className="h-8 text-xs max-w-[220px]"
       />
-      <Button size="sm" variant="outline" onClick={() => call("pause")} disabled={busy}>
+      <Button size="sm" variant="outline" onClick={() => setConfirm("pause")} disabled={busy}>
         {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Pause className="mr-1 h-3 w-3" />}
         Pause monitoring
       </Button>
+      {ConfirmDialog}
     </div>
   );
 };
