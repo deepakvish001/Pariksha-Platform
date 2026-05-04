@@ -3813,6 +3813,42 @@ export type Database = {
           },
         ]
       }
+      sideeye_notification_settings: {
+        Row: {
+          created_at: string
+          escalate_kinds: string[]
+          id: string
+          min_severity: string
+          notify_all_admins: boolean
+          recipient_user_ids: string[]
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          escalate_kinds?: string[]
+          id?: string
+          min_severity?: string
+          notify_all_admins?: boolean
+          recipient_user_ids?: string[]
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          escalate_kinds?: string[]
+          id?: string
+          min_severity?: string
+          notify_all_admins?: boolean
+          recipient_user_ids?: string[]
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       solo_ratings: {
         Row: {
           games_played: number
