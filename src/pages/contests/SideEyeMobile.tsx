@@ -208,6 +208,7 @@ const SideEyeMobile = () => {
 
     return () => {
       clearInterval(frameId);
+      if (flushIntervalRef.current) clearInterval(flushIntervalRef.current);
       try { mr.stop(); } catch {}
       try { wakeLockRef.current?.release(); } catch {}
     };
