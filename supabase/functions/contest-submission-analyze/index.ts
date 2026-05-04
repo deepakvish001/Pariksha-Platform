@@ -2,7 +2,11 @@
 // and provenance-paste audit for a contest submission. Writes a row
 // to contest_solve_time_analysis and creates an admin alert when the
 // verdict is `too_fast` or `impossible`.
-import { corsHeaders } // no cors module;
+import { corsHeaders } /* inline cors */;
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 interface Body {
