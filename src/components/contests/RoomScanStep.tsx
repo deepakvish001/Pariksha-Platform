@@ -199,7 +199,7 @@ export function RoomScanStep({ contestId, sessionId, webcamStream, onPassed }: P
         </Badge>
         <div className="flex gap-2">
           {(phase === "idle" || phase === "done") && verdict !== "clean" && (
-            <Button onClick={start} disabled={!webcamStream || phase === "recording" || phase === "blocked"}>
+            <Button onClick={start} disabled={!webcamStream}>
               {phase === "done" ? "Re-record scan" : "Start 10s scan"}
             </Button>
           )}
