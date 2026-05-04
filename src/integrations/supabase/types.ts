@@ -2230,6 +2230,9 @@ export type Database = {
           detail: Json
           event_type: string
           id: string
+          reviewed_at: string | null
+          reviewer_id: string | null
+          reviewer_note: string | null
           session_id: string
           severity: string
           user_id: string
@@ -2239,6 +2242,9 @@ export type Database = {
           detail?: Json
           event_type: string
           id?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_note?: string | null
           session_id: string
           severity?: string
           user_id: string
@@ -2248,6 +2254,9 @@ export type Database = {
           detail?: Json
           event_type?: string
           id?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_note?: string | null
           session_id?: string
           severity?: string
           user_id?: string
@@ -3813,6 +3822,45 @@ export type Database = {
           },
         ]
       }
+      sideeye_evidence_chain: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          prev_hash: string | null
+          seq: number
+          session_id: string
+          sha256: string
+          storage_path: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          prev_hash?: string | null
+          seq: number
+          session_id: string
+          sha256: string
+          storage_path?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          prev_hash?: string | null
+          seq?: number
+          session_id?: string
+          sha256?: string
+          storage_path?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       sideeye_notification_settings: {
         Row: {
           created_at: string
@@ -3855,6 +3903,36 @@ export type Database = {
           singleton?: boolean
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      sideeye_session_pauses: {
+        Row: {
+          created_at: string
+          id: string
+          paused_at: string
+          paused_by: string
+          reason: string | null
+          resumed_at: string | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          paused_at?: string
+          paused_by: string
+          reason?: string | null
+          resumed_at?: string | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          paused_at?: string
+          paused_by?: string
+          reason?: string | null
+          resumed_at?: string | null
+          session_id?: string
         }
         Relationships: []
       }
