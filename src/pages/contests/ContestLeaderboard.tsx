@@ -121,6 +121,7 @@ const ContestLeaderboard = () => {
                     <TableHead className="text-right">Solved</TableHead>
                     <TableHead className="text-right">Points</TableHead>
                     <TableHead className="text-right">Penalty</TableHead>
+                    <TableHead className="text-right">Trust</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -141,6 +142,9 @@ const ContestLeaderboard = () => {
                       <TableCell className="text-right">{r.problems_solved}</TableCell>
                       <TableCell className="text-right font-semibold">{r.total_points}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{fmtPenalty(r.total_penalty_seconds)}</TableCell>
+                      <TableCell className="text-right">
+                        <TrustCell score={r.trust_score} risk={r.trust_risk} />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
