@@ -80,9 +80,17 @@ export default function ContestPlayProblem() {
           onSubmissionReadyChange={setSubmitReady}
         />
       </div>
+      <StreamHealthBanner
+        webcamHealthy={streamHealth.webcamHealthy}
+        screenHealthy={streamHealth.screenHealthy}
+        graceUntil={streamHealth.graceUntil}
+        onReshareScreen={() => navigate(`/contests/${contest.slug}`)}
+        onReshareWebcam={() => navigate(`/contests/${contest.slug}`)}
+      />
       <div className="flex-1">
         <CodingProblemDetail />
       </div>
+      <MultiTabBlockedDialog open={tabLock.displaced} contestSlug={contest.slug} />
     </>
   );
 }
