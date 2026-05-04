@@ -21,6 +21,9 @@ export interface SecureModeState {
   disqualified: boolean;
   fullscreen: boolean;
   webcamReady: boolean;
+  online: boolean;
+  reconnecting: boolean;
+  lastReconnectAt: number | null;
 }
 
 const SNAPSHOT_INTERVAL_MS = 60_000;
