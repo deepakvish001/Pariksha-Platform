@@ -121,23 +121,33 @@ Deno.serve(async (req) => {
       severity,
     });
 
-    if (severity === "high" || severity === "critical" || severity === "medium") {
-      await admin.from("contest_proctor_findings").insert({
-        session_id: sessionId,
-        user_id: user.id,
-        source: "side_camera",
-        severity,
-        kind: summary.extra_person
-          ? "extra_person"
-          : summary.secondary_device
-          ? "secondary_device"
-          : summary.candidate_absent
-          ? "candidate_absent"
-          : summary.earpiece_visible
-          ? "earpiece"
-          : "side_camera_alert",
-        detail: summary,
-      });
+    // Map severity to project's findings severity domain (info|warn|flag|fatal)
+    const findingSeverity =
+      severity === "critical" ? "fatal" :
+      severity === "high" ? "flag" :
+      severity === "medium" ? "warn" : "info";
+
+    if (findingSeverity === "warn" || findingSeverity === "flag" || findingSeverity === "fatal") {
+      // Look up contest_id from session
+      const { data: sess } = await admin
+        .from("contest_sessions")
+        .select("contest_id")
+        .eq("id", sessionId)
+        .maybeSingle();
+
+      if (sess?.contest_id) {
+        await admin.from("contest_proctor_findings").insert({
+          contest_id: sess.contest_id,
+          session_id: sessionId,
+          user_id: user.id,
+          severity: findingSeverity,
+          phone_detected: !!summary.secondary_device,
+          second_person_detected: !!summary.extra_person,
+          earbuds_detected: !!summary.earpiece_visible,
+          ai_summary: `Side camera: ${summary.notes ?? ""}`.slice(0, 1000),
+          raw: { source: "side_camera", ...summary },
+        });
+      }
     }
 
     return new Response(JSON.stringify({ ok: true, summary, severity }), {
