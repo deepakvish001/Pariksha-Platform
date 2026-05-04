@@ -50,6 +50,7 @@ export default function SecureContestGate({
   isRegistered,
   isDisqualified,
   onSessionChange,
+  firstProblemSlug,
 }: Props) {
   const navigate = useNavigate();
   const [agreed, setAgreed] = useState(false);
@@ -57,11 +58,27 @@ export default function SecureContestGate({
   const [checklistReady, setChecklistReady] = useState(false);
   const secure = useContestSecureMode(contestId, !!honorAccepted && hasStarted && !hasEnded);
   const active = useActiveContestSession(contestId);
+  const recorder = useScreenRecorder({
+    contestId,
+    sessionId: secure.sessionId,
+    enabled: !!secure.sessionId && hasStarted && !hasEnded,
+    onScreenShareStopped: () => {
+      void secure.logViolation("session_invalidated", "flag", { reason: "screen_share_stopped" });
+      toast.error("Screen sharing stopped — please re-share to keep submitting");
+    },
+  });
 
   // Bubble session state up so the parent can gate the Problems tab.
   useEffect(() => {
     onSessionChange?.(active.hasActive);
   }, [active.hasActive, onSessionChange]);
+
+  // Auto-jump into kiosk once session + screen share are live.
+  useEffect(() => {
+    if (secure.sessionId && recorder.sharing && firstProblemSlug && hasStarted && !hasEnded) {
+      navigate(`/contests/${contestSlug}/play/${firstProblemSlug}`);
+    }
+  }, [secure.sessionId, recorder.sharing, firstProblemSlug, hasStarted, hasEnded, contestSlug, navigate]);
 
   if (!isRegistered) {
     return (
