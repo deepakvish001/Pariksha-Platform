@@ -20,6 +20,7 @@ import { SimilarityTab } from "@/components/admin/contests/SimilarityTab";
 import { VivaQueueTab } from "@/components/admin/contests/VivaQueueTab";
 import { SideEyeTile } from "@/components/contests/SideEyeTile";
 import { SideEyeScanTimeline } from "@/components/admin/contests/SideEyeScanTimeline";
+import { SideEyeSettingsPanel } from "@/components/admin/contests/SideEyeSettingsPanel";
 
 type Violation = {
   id: string;
@@ -444,6 +445,7 @@ const AdminContestProctor = () => {
             {id && <VivaQueueTab contestId={id} />}
           </TabsContent>
           <TabsContent value="sideeye" className="space-y-4">
+            <SideEyeSettingsPanel />
             <Card className="p-4">
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                 <Smartphone className="h-4 w-4" /> Live side-camera streams
