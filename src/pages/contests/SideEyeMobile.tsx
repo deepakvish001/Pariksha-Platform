@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Camera, AlertCircle, CheckCircle2, BatteryLow } from "lucide-react";
+import { Loader2, Camera, AlertCircle, CheckCircle2, BatteryLow, EyeOff, RefreshCw } from "lucide-react";
 import { useSideEyeSignalling } from "@/hooks/useSideEyeSignalling";
+import { toast } from "sonner";
 
 /**
  * Phone-side page. Candidate opens this from QR scan on their phone.
@@ -20,9 +21,12 @@ const SideEyeMobile = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [pairingId, setPairingId] = useState<string | null>(null);
   const [batteryLow, setBatteryLow] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const wakeLockRef = useRef<any>(null);
+  const flushIntervalRef = useRef<number | null>(null);
 
   const { quality, connectionState } = useSideEyeSignalling({
     sessionId,
@@ -41,12 +45,56 @@ const SideEyeMobile = () => {
   // Battery monitoring
   useEffect(() => {
     (navigator as any).getBattery?.().then((b: any) => {
-      const update = () => setBatteryLow(b.level < 0.2 && !b.charging);
+      const update = () => {
+        const low = b.level < 0.2 && !b.charging;
+        setBatteryLow(low);
+        if (low) {
+          try { (navigator as any).vibrate?.([200, 100, 200]); } catch {}
+        }
+      };
       update();
       b.addEventListener("levelchange", update);
       b.addEventListener("chargingchange", update);
     });
   }, []);
+
+  // Background / tab-hidden detection — vibrate + flag so admin sees it
+  useEffect(() => {
+    const onVis = () => {
+      const isHidden = document.visibilityState === "hidden";
+      setHidden(isHidden);
+      if (isHidden) {
+        try { (navigator as any).vibrate?.([400, 200, 400, 200, 400]); } catch {}
+        toast.warning("Side camera tab moved to background. Return immediately.");
+      } else {
+        // Re-acquire wake lock when user returns
+        (async () => {
+          try {
+            wakeLockRef.current = await (navigator as any).wakeLock?.request("screen");
+          } catch {}
+        })();
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
+  // Auto re-pair after 3 failed reconnections
+  useEffect(() => {
+    if (connectionState === "failed" || connectionState === "disconnected") {
+      setReconnectAttempts((n) => {
+        const next = n + 1;
+        if (next >= 3) {
+          toast.error("Connection lost — attempting full repair…");
+          // Hard reload preserves token in URL and re-runs the full pairing flow
+          setTimeout(() => window.location.reload(), 1500);
+        }
+        return next;
+      });
+    } else if (connectionState === "connected") {
+      setReconnectAttempts(0);
+    }
+  }, [connectionState]);
 
   const requestCamera = async () => {
     setError(null);
@@ -130,6 +178,10 @@ const SideEyeMobile = () => {
       } catch (e) { console.warn("rec upload", e); }
     };
     mr.start(10_000); // 10 s chunks
+    // Force a flush every 10 s in case the timeslice arg is ignored on some mobile browsers
+    flushIntervalRef.current = window.setInterval(() => {
+      try { if (mr.state === "recording") mr.requestData(); } catch {}
+    }, 10_000);
 
     // AI frame sampling every 15 s
     const canvas = document.createElement("canvas");
@@ -156,6 +208,7 @@ const SideEyeMobile = () => {
 
     return () => {
       clearInterval(frameId);
+      if (flushIntervalRef.current) clearInterval(flushIntervalRef.current);
       try { mr.stop(); } catch {}
       try { wakeLockRef.current?.release(); } catch {}
     };
@@ -172,6 +225,18 @@ const SideEyeMobile = () => {
         {batteryLow && (
           <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 p-2 rounded">
             <BatteryLow className="h-4 w-4" /> Battery is low — please plug in your phone.
+          </div>
+        )}
+
+        {hidden && (
+          <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded">
+            <EyeOff className="h-4 w-4" /> Tab is in background — return now or your contest will be paused.
+          </div>
+        )}
+
+        {reconnectAttempts > 0 && reconnectAttempts < 3 && (
+          <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 p-2 rounded">
+            <RefreshCw className="h-4 w-4 animate-spin" /> Reconnecting… (attempt {reconnectAttempts}/3)
           </div>
         )}
 
