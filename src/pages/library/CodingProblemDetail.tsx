@@ -86,6 +86,8 @@ import { ProblemRunHistory } from "@/components/library/coding/ProblemRunHistory
 import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
 import { useProblemNotes } from "@/hooks/useProblemNotes";
 import { useProblemSolution } from "@/hooks/useProblemSolution";
+import { useContestLocks } from "@/hooks/useContestLocks";
+import { LockedAuxPanel } from "@/components/contests/LockedAuxPanel";
 import { useEditorPrefs } from "@/hooks/useEditorPrefs";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
