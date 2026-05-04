@@ -27,6 +27,12 @@ export default function ContestPlayProblem() {
   const { data: contest, isLoading } = useContest(slug);
   const session = useActiveContestSession(contest?.id);
   const [submitReady, setSubmitReady] = useState(false);
+  // Single-tab enforcement: any second tab/window opened on this contest
+  // is displaced and shown a blocking dialog.
+  const tabLock = useContestTabLock(contest?.id, !!contest?.id && session.hasActive);
+  // Read-only stream health snapshot for the kiosk banner. The actual
+  // recorders live inside SecureProblemHUD's useContestSecureMode hook.
+  const streamHealth = useContestStreamHealth(session.sessionId ?? null);
 
   // Make sure the URL CodingProblemDetail reads from has ?contest=<slug>
   useEffect(() => {
