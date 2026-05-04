@@ -61,7 +61,7 @@ describe("SortableEditorTabs — contest locking", () => {
         reorderDisabled
       />,
     );
-    const notes = screen.getByRole("tab", { name: /notes/i });
+    const notes = screen.getByRole("tab", { name: "notes — locked during contest" });
     // Disabled buttons cannot receive click activation
     notes.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     // No reorder occurred and trigger remained disabled
