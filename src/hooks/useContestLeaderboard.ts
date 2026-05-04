@@ -13,6 +13,8 @@ export type LeaderboardRow = {
   updated_at: string;
   display_name?: string;
   avatar_url?: string | null;
+  trust_score?: number | null;
+  trust_risk?: string | null;
 };
 
 export type LeaderboardPage = {
