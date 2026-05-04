@@ -13,6 +13,8 @@ export type LeaderboardRow = {
   updated_at: string;
   display_name?: string;
   avatar_url?: string | null;
+  trust_score?: number | null;
+  trust_risk?: string | null;
 };
 
 export type LeaderboardPage = {
@@ -43,6 +45,18 @@ export const useContestLeaderboard = (
           qc.invalidateQueries({ queryKey: ["contest-leaderboard", contestId] });
         },
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "contest_trust_scores",
+          filter: `contest_id=eq.${contestId}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ["contest-leaderboard", contestId] });
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
@@ -67,17 +81,36 @@ export const useContestLeaderboard = (
       const ids = Array.from(new Set(rows.map((r) => r.user_id)));
       let enriched = rows;
       if (ids.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, avatar_url")
-          .in("user_id", ids);
-        const map = new Map(
+        const [{ data: profiles }, { data: scores }] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("user_id, full_name, avatar_url")
+            .in("user_id", ids),
+          supabase
+            .from("contest_trust_scores")
+            .select("user_id, score, risk, computed_at")
+            .eq("contest_id", contestId!)
+            .in("user_id", ids)
+            .order("computed_at", { ascending: false }),
+        ]);
+        const profileMap = new Map(
           (profiles ?? []).map((p: any) => [
             p.user_id,
             { display_name: p.full_name, avatar_url: p.avatar_url },
           ]),
         );
-        enriched = rows.map((r) => ({ ...r, ...(map.get(r.user_id) ?? {}) }));
+        // Keep only the latest score per user (rows arrive newest-first)
+        const trustMap = new Map<string, { trust_score: number; trust_risk: string }>();
+        for (const s of (scores ?? []) as Array<{ user_id: string; score: number; risk: string }>) {
+          if (!trustMap.has(s.user_id)) {
+            trustMap.set(s.user_id, { trust_score: s.score, trust_risk: s.risk });
+          }
+        }
+        enriched = rows.map((r) => ({
+          ...r,
+          ...(profileMap.get(r.user_id) ?? {}),
+          ...(trustMap.get(r.user_id) ?? { trust_score: null, trust_risk: null }),
+        }));
       }
       return { rows: enriched, total: count ?? enriched.length };
     },

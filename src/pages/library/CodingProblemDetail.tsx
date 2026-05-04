@@ -86,6 +86,8 @@ import { ProblemRunHistory } from "@/components/library/coding/ProblemRunHistory
 import { ShortcutsCheatSheet } from "@/components/library/coding/ShortcutsCheatSheet";
 import { useProblemNotes } from "@/hooks/useProblemNotes";
 import { useProblemSolution } from "@/hooks/useProblemSolution";
+import { useContestLocks } from "@/hooks/useContestLocks";
+import { LockedAuxPanel } from "@/components/contests/LockedAuxPanel";
 import { useEditorPrefs } from "@/hooks/useEditorPrefs";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
@@ -239,6 +241,11 @@ const CodingProblemDetail = () => {
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
   const { note: notesValue, setNote: setNotesValue, savedAt: notesSavedAt } = useProblemNotes(slug);
+  // Lock state for contest aux materials (notes / my-solution / reference / runs)
+  // — driven by useContestLocks. While the contest is live and the user is a
+  // registered participant, these panels are replaced with a LockedAuxPanel
+  // surface that countdowns to the contest end.
+  const contestLocks = useContestLocks(contestId ?? undefined);
   const {
     notes: mySolutionNotes,
     code: mySolutionCode,
@@ -1193,14 +1200,21 @@ const CodingProblemDetail = () => {
               </TabsContent>
 
               <TabsContent value="notes" className="mt-0">
-                <NotesPanel
-                  value={notesValue}
-                  onChange={setNotesValue}
-                  savedAt={notesSavedAt}
-                />
+                {contestLocks.notesLocked ? (
+                  <LockedAuxPanel label="Notes" endsAt={contestLocks.endsAt} />
+                ) : (
+                  <NotesPanel
+                    value={notesValue}
+                    onChange={setNotesValue}
+                    savedAt={notesSavedAt}
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="my-solution" className="mt-0">
+                {contestLocks.solutionLocked ? (
+                  <LockedAuxPanel label="My Solution" endsAt={contestLocks.endsAt} />
+                ) : (
                 <MySolutionPanel
                   notes={mySolutionNotes}
                   onNotesChange={setMySolutionNotes}
@@ -1230,10 +1244,13 @@ const CodingProblemDetail = () => {
                     navigate(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`)
                   }
                 />
+                )}
               </TabsContent>
 
               <TabsContent value="solution" className="mt-0">
-                {!acceptedExists ? (
+                {contestLocks.solutionLocked ? (
+                  <LockedAuxPanel label="Reference solution" endsAt={contestLocks.endsAt} />
+                ) : !acceptedExists ? (
                   <Card className="p-8 text-center">
                     <p className="text-muted-foreground">
                       🔒 Solve the problem first to unlock the reference solution.
@@ -1320,7 +1337,9 @@ const CodingProblemDetail = () => {
               </TabsContent>
 
               <TabsContent value="runs" className="mt-0" aria-label="Run history">
-                {!user ? (
+                {contestLocks.historyLocked ? (
+                  <LockedAuxPanel label="Run history" endsAt={contestLocks.endsAt} />
+                ) : !user ? (
                   <Card className="p-8 text-center">
                     <p className="text-muted-foreground mb-3">
                       Sign in to view your run history.
