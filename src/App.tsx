@@ -156,6 +156,7 @@ import AdminContestLeaderboard from "./pages/admin/contests/AdminContestLeaderbo
 import AdminContestProctor from "./pages/admin/contests/AdminContestProctor";
 import AdminVivaQueue from "./pages/admin/contests/AdminVivaQueue";
 import AdminDQSignoffs from "./pages/admin/contests/AdminDQSignoffs";
+import AdminSessionForensics from "./pages/admin/contests/AdminSessionForensics";
 import PublicIntegrityReport from "./pages/contests/PublicIntegrityReport";
 
 const queryClient = new QueryClient({
@@ -397,6 +398,7 @@ const App = () => (
                   <Route path="contests/:id/proctor" element={<AdminContestProctor />} />
                   <Route path="contests/viva-queue" element={<AdminVivaQueue />} />
                   <Route path="contests/dq-signoffs" element={<AdminDQSignoffs />} />
+                  <Route path="contests/sessions/:sessionId/forensics" element={<AdminSessionForensics />} />
                 </Route>
 
                 {/* Arena - 1v1 battles */}
