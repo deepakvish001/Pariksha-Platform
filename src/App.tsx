@@ -158,6 +158,7 @@ import AdminVivaQueue from "./pages/admin/contests/AdminVivaQueue";
 import AdminDQSignoffs from "./pages/admin/contests/AdminDQSignoffs";
 import AdminSessionForensics from "./pages/admin/contests/AdminSessionForensics";
 import PublicIntegrityReport from "./pages/contests/PublicIntegrityReport";
+import SideEyeMobile from "./pages/contests/SideEyeMobile";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -277,6 +278,7 @@ const App = () => (
                   <Route path=":slug/leaderboard" element={<ContestLeaderboard />} />
                 </Route>
                 <Route path="/contests/:contestId/integrity" element={<PublicIntegrityReport />} />
+                <Route path="/contests/sideeye/:token" element={<SideEyeMobile />} />
 
                 {/* Contest kiosk — no sidebar/header, used while solving inside a secure session */}
                 <Route path="/contests/:slug/play" element={<ContestKioskLayout />}>

@@ -22,6 +22,7 @@ import { WebcamPiP } from "./WebcamPiP";
 import { IdentityCaptureStep } from "./IdentityCaptureStep";
 import { PreflightChecksStep } from "./PreflightChecksStep";
 import { RoomScanStep } from "./RoomScanStep";
+import { SideEyePairingStep } from "./SideEyePairingStep";
 import { ShieldCheck, Eye, Maximize2, Camera, Ban, AlertTriangle, Lock, Monitor, Mic } from "lucide-react";
 import { toast } from "sonner";
 import ContestLobby from "./ContestLobby";
@@ -365,6 +366,10 @@ export default function SecureContestGate({
           </Button>
         )}
       </Card>
+
+      {secure.sessionId && (
+        <SideEyePairingStep sessionId={secure.sessionId} required />
+      )}
 
       <Dialog
         open={active.invalidatedJustNow}
