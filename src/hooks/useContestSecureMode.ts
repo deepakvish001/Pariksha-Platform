@@ -313,5 +313,6 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     enterFullscreen,
     requestWebcam,
     logViolation,
+    reconnect,
   };
 }
