@@ -199,9 +199,32 @@ const AdminContestProctor = () => {
             </h1>
             <p className="text-sm text-muted-foreground">{contest?.title}</p>
           </div>
-          <Button size="sm" variant="outline" onClick={() => { violationsQuery.refetch(); snapshotsQuery.refetch(); }}>
-            <RefreshCw className="mr-2 h-4 w-4" /> Refresh
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => { violationsQuery.refetch(); snapshotsQuery.refetch(); }}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+            </Button>
+            <Button size="sm" variant="outline" onClick={async () => {
+              if (!id) return;
+              const t = toast.loading("Generating integrity report…");
+              const { data, error } = await supabase.functions.invoke("contest-integrity-report-generate", { body: { contest_id: id, publish: false } });
+              toast.dismiss(t);
+              if (error) toast.error(error.message);
+              else toast.success(`Report updated (${data?.report?.total_participants ?? 0} participants)`);
+            }}>
+              Generate Report
+            </Button>
+            <Button size="sm" onClick={async () => {
+              if (!id) return;
+              if (!window.confirm("Publish this report to the public integrity page?")) return;
+              const t = toast.loading("Publishing integrity report…");
+              const { error } = await supabase.functions.invoke("contest-integrity-report-generate", { body: { contest_id: id, publish: true } });
+              toast.dismiss(t);
+              if (error) toast.error(error.message);
+              else toast.success("Public integrity report published");
+            }}>
+              Generate &amp; Publish
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
