@@ -32,8 +32,8 @@ interface NotificationRow {
   created_at: string;
   type: string;
   title: string | null;
-  body: string | null;
-  metadata: any;
+  message: string | null;
+  data: any;
 }
 
 interface Props {
