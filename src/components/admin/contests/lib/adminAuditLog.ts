@@ -13,13 +13,13 @@ export async function logSideEyeAction(
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("admin_audit_log").insert({
+    await supabase.from("admin_audit_log").insert([{
       actor_id: user.id,
       action,
       entity_type: "sideeye_session",
       entity_slug: entitySlug,
-      diff,
-    });
+      diff: diff as any,
+    }]);
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn("[sideeye] admin audit log failed", e);
