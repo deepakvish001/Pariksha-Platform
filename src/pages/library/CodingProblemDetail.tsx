@@ -666,6 +666,12 @@ const CodingProblemDetail = () => {
   const langInfo = getLanguageById(language);
 
   const handleCodeChange = (v: string) => {
+    // Telemetry: record net characters added (deletes are ignored). Only
+    // active in contest mode; the hook is otherwise a no-op.
+    const prevLen = lastCodeLenRef.current;
+    const delta = v.length - prevLen;
+    lastCodeLenRef.current = v.length;
+    if (delta > 0) typing.record(delta);
     setCode(v);
     saveDraft(v);
     sessionTimerRef.current?.poke();
