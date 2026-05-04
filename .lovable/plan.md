@@ -1,84 +1,103 @@
-# Conduct Contest in Secure Mode
 
-The secure mode primitives (honor code RPC, session RPC, violation logging, webcam snapshots, admin proctor review) already exist. This plan stitches them into the actual participant journey so a contest can be conducted end-to-end with lockdown enforced from registration to submission.
+## Goal
 
-## Goals
+Turn Secure Mode into a true contest "kiosk": no sidebar, no escape routes to notes/solutions, an always-on timer, a draggable webcam PiP, recorded screen share, AI-assisted cheating detection, a live trust score, and a realtime leaderboard with full participant detail.
 
-1. A registered participant cannot see contest problems until they have started a Secure Session.
-2. Lockdown (fullscreen, anti-paste, tab-blur, webcam) is active on the **problem-solving page**, not just the contest detail page.
-3. Only one device can hold an active session; opening a second device kicks the first.
-4. Disqualification immediately blocks submissions and hides problems.
-5. Participants get a clear pre-start lobby with a live countdown, and a "background apps" reminder checklist.
+## 1. Contest kiosk shell (no sidebar)
 
-## Participant journey
+- New layout `ContestKioskLayout` used only when a problem is opened **inside an active secure session**.
+  - Detected via `useActiveContestSession(contestId).hasActive` + URL `?contest=<id>`.
+  - Renders `<Outlet/>` directly with **no `DashboardLayout`** (no sidebar, no header, no topbar). Just the SecureProblemHUD on top and a slim contest top-bar (title, timer, submit, exit-disabled-with-confirm).
+- New route: `/contests/:slug/play/:problemSlug` → `ContestKioskLayout` → `CodingProblemDetail` in "contest mode".
+- `CodingProblemDetail` accepts a `contestMode` prop:
+  - Hides Notes, My Solution, Hints, Run-history, Bookmarks tabs (locked with a 🔒 + "Unlocks when contest ends").
+  - Forces fullscreen on mount; if user exits fullscreen, shows blocking overlay "Return to fullscreen to continue" (already partially done — promote from violation to hard-block).
+  - Always-visible **contest timer** (countdown to `ends_at`) in the top bar; auto-submits current solution when it hits 0.
+  - **Submit** stays in the top bar at all times, gated on `submissionAllowed`.
 
-```text
-Register (before start) ──► Honor code accepted ──► Lobby + countdown
-        │                                               │
-        ▼                                               ▼
-   start_secure_session RPC ◄── "Start Secure Session" button (live phase)
-        │                            (requests webcam + fullscreen)
-        ▼
-   Secure HUD on contest page ──► Open problem ──► SecureProblemShell
-        │                                              │
-        ▼                                              ▼
-   Violations logged in real time            Submit only allowed while
-   (>=3 flag, >=5 auto-DQ via RPC)           session.is_active = true
-```
+## 2. Lock reference content until contest ends
 
-## Changes
+- Add a `useContestLocks(contestId)` helper returning `{ notesLocked, solutionLocked, hintsLocked, historyLocked }` based on `ends_at`.
+- In `NotesPanel`, `MySolutionPanel`, `ProgressiveHints`, `ProblemRunHistory`: when `locked`, render a Card with Lock icon + "Available after contest ends at HH:MM" instead of content. No data fetched.
+- Same gating server-side via a new RPC `contest_can_view_aux(_contest_id, _problem_id)` that the panels call before rendering — defense in depth.
 
-### 1. Gate problems behind an active secure session
-- `ContestDetail.tsx` Problems tab: replace the `canSeeProblems` check with `canSeeProblems && hasActiveSecureSession`. If contest is live, registered, and no active session, show a CTA card "Start Secure Session to view problems" that scrolls to the gate.
-- Pass an `onSessionStarted` callback from the gate up to `ContestDetail` so the tab updates without a refetch.
+## 3. Webcam PiP (draggable, min/max, crop)
 
-### 2. Lobby with live countdown
-- New `ContestLobby` block rendered by `SecureContestGate` when honor code is accepted but `phase !== "live"`.
-- Shows: countdown to `starts_at`, registered participant count, a "Pre-flight checklist" (close other apps, single monitor, charge laptop, quiet room) with a confirm checkbox before "Start Secure Session" becomes enabled at T-0.
+- New `WebcamPiP` component (replaces the hidden snapshot canvas):
+  - Live `<video>` from `videoStreamRef.current`.
+  - Default position **bottom-right**, draggable to any corner; remembers position in localStorage.
+  - Buttons: minimize (→ small avatar dot), maximize (240×180), close-disabled.
+  - Built-in **crop** (square / 4:3 / 16:9) using a CSS clip-path; the snapshot uploader uses the same crop region so saved JPEGs match what the proctor sees.
+  - Snapshots continue every 60 s into the existing `contest-proctor` bucket.
 
-### 3. Single active session enforcement (client side)
-- New `useActiveContestSession(contestId)` hook subscribes via Supabase realtime to `contest_sessions` filtered by `contest_id` + `user_id`.
-- When a row's `is_active` flips to `false` (server-side invalidation triggered by another device starting), the current device:
-  - Stops webcam tracks, exits fullscreen.
-  - Logs `session_invalidated` violation locally (already a typed enum value).
-  - Shows blocking dialog "Session ended on another device" with link back to the contest page.
+## 4. Screen-share capture + recording
 
-### 4. Secure problem solver shell
-- New wrapper `SecureProblemShell` mounted on `/library/problems/:slug` when the URL has `?contest=<slug>`:
-  - Reads contest by slug, verifies `phase === "live"`, registration is `registered`, not disqualified, and an active session row exists. Otherwise redirects back to the contest page with a toast.
-  - Mounts `useContestSecureMode(contestId, true)` so paste/copy/contextmenu/tab-blur/fullscreen-exit listeners fire on the editor too.
-  - Renders the floating Secure HUD in the corner (violations/5, fullscreen/proctor badges).
-  - Disables the existing submit button when `disqualified || !sessionId` and shows the same gating tooltip pattern used on Friends.
-- The submit handler additionally calls a new `contest_can_submit(_contest_id)` RPC that returns false when DQ'd, withdrawn, or no active session — this is the server-side guard so a savvy user cannot bypass the UI.
+- On entering secure session, prompt `getDisplayMedia({ video: true, audio: false })` in addition to webcam. If the user declines, the session cannot start (hard requirement, surfaced as a dedicated checklist item).
+- Record the screen stream with `MediaRecorder` (VP9/webm, 1 fps keyframe-heavy, ~500 kbps) into 30-second chunks.
+- Each chunk uploads to a new private bucket `contest-screen-recordings` at `userId/contestId/sessionId/<epoch>.webm`.
+- A new table `contest_screen_recordings` (session_id, user_id, contest_id, storage_path, started_at, duration_sec) lets admins replay segments from the proctor page.
+- If the screen stream ends (user clicks "Stop sharing"), log a `screen_share_stopped` violation (severity `flag`) and require the user to reshare to keep submitting.
 
-### 5. "Close background apps" guidance
-True OS-level enforcement is not possible from a browser, so we use the strongest available signals:
-- Pre-flight checklist item the user must tick.
-- Live HUD warns when `navigator.userActivation.isActive` is false for too long, when `screen.isExtended === true` (multiple monitors), and when `navigator.getBattery()` reports `< 25%`. Each is logged once per session as a `meta` field on a soft `warn` violation.
+## 5. AI-assisted cheating detection
 
-### 6. Server additions
-- New SQL function `public.contest_can_submit(_contest_id uuid) returns boolean` — checks active session + registration status. Used by the problem submit edge function (or RPC) before accepting a submission tied to a contest.
-- Extend `contest_start_secure_session` to accept `_screen` JSON (resolution, dpr, monitors) and persist it on `contest_sessions.user_agent`/new `device_meta jsonb` column for admin review.
-- Trigger on `contest_registrations.disqualified_at` change → set all that user's `contest_sessions.is_active = false` so the realtime hook above kicks them out instantly.
+- Tab/visibility, copy, paste, context-menu already logged. Add:
+  - `window_blur` (focus lost without `document.hidden`, e.g. devtools).
+  - `multi_face` / `no_face` from a lightweight client-side check on each webcam snapshot (use the existing snapshot pipeline; run a tiny FaceDetector via `window.FaceDetector` where available, otherwise skip silently).
+- New edge function `proctor-analyze` (verify_jwt = true):
+  - Triggered every 2 minutes per active session via pg_cron + pg_net OR client-side throttled call.
+  - Pulls the last N snapshots' storage URLs + the violation log for the session.
+  - Asks Lovable AI Gateway (`google/gemini-2.5-flash`, vision) to score:
+    `{ trust_score: 0–100, reasons: string[], risk: "low"|"medium"|"high" }`.
+  - Writes into a new table `contest_trust_scores (session_id, user_id, contest_id, score, risk, reasons jsonb, computed_at)`.
+- Score blends:
+  - Heuristic: `100 − 8 × violation_count − 15 × fullscreen_exits − 25 × screen_share_stops`.
+  - AI vision multiplier on top.
+  - Final = `clamp(0, 100, heuristic × ai_multiplier)`.
 
-### 7. Admin "Conduct" controls
-- On `AdminContestRegistrations.tsx`: add a "Force end session" action per row that updates `contest_sessions` (admin RLS already exists). Useful for support cases.
-- On `AdminContestProctor.tsx`: add a small live counter "X active sessions now" computed from `contest_sessions` where `is_active`.
+## 6. Trust-score UI
 
-## Files to add / edit
+- **Participant HUD**: badge in `SecureProblemHUD` shows current trust score + risk color (green ≥ 80, amber 50–79, red < 50). Clicking it opens a dialog listing the most recent reasons.
+- **Admin proctor page**: trust score column with sparkline; sortable; click a row to see snapshots, screen recording chunks, full violation log, and AI reasons.
 
-- new `src/components/contests/ContestLobby.tsx`
-- new `src/components/contests/SecureProblemShell.tsx`
-- new `src/hooks/useActiveContestSession.ts`
-- edit `src/components/contests/SecureContestGate.tsx` — render lobby, expose `onSessionStarted`, surface session-invalidated dialog.
-- edit `src/hooks/useContestSecureMode.ts` — emit `sessionInvalidated`, capture device meta, soft warns for multi-monitor/low-battery.
-- edit `src/pages/contests/ContestDetail.tsx` — gate Problems tab, hook session state up.
-- edit `src/pages/library/CodingProblemDetail.tsx` (or current problem detail file) — wrap in `SecureProblemShell` when `?contest=` query is present, route submit through `contest_can_submit`.
-- edit `src/pages/admin/contests/AdminContestRegistrations.tsx` and `AdminContestProctor.tsx` — force-end + active count.
-- one migration: `contest_can_submit` RPC, `contest_sessions.device_meta` column, DQ → invalidate-sessions trigger.
+## 7. Realtime leaderboard with participant detail
 
-## Out of scope
+- Extend `ContestLeaderboard.tsx`:
+  - Subscribe to `contest_leaderboard_rows` and `contest_trust_scores` via Supabase Realtime; update rows in place without page reload.
+  - Add columns: avatar, display name (already present), college (from `profiles`), trust score badge, last-submission time, language used.
+  - "Live" badge already exists; add row-flash animation on update.
+- Server-side: a `contest_leaderboard_full` view joins `profiles`, `contest_leaderboard_rows`, latest `contest_trust_scores`, and latest accepted submission.
 
-- True OS-level app blocking (browser cannot enforce).
-- Native desktop proctor app.
-- Secondary identity verification (ID upload) — can be a follow-up.
+## 8. Server enforcement (defense in depth)
+
+- Update `validate_contest_submission` RPC to also reject when:
+  - No screen-recording chunk uploaded in the last 60 s.
+  - Trust score < `contest.min_trust_score` (default 30, configurable per contest).
+- New RLS on the two new tables: only the owner and admins can read; only edge functions (service role) can insert trust scores; clients insert recording chunks via signed URLs only.
+
+## Files to create
+
+- `src/layouts/ContestKioskLayout.tsx`
+- `src/components/contests/ContestTopBar.tsx` (timer + submit + exit confirm)
+- `src/components/contests/WebcamPiP.tsx`
+- `src/components/contests/TrustScoreBadge.tsx`
+- `src/hooks/useContestLocks.ts`
+- `src/hooks/useScreenRecorder.ts`
+- `src/hooks/useContestTrustScore.ts`
+- `supabase/functions/proctor-analyze/index.ts` (+ config block, verify_jwt = true)
+- Migration: `contest_screen_recordings`, `contest_trust_scores`, view `contest_leaderboard_full`, bucket `contest-screen-recordings` (private) + RLS, updated `validate_contest_submission`, new RPC `contest_can_view_aux`.
+
+## Files to edit
+
+- `src/App.tsx` — add `/contests/:slug/play/:problemSlug` route under `ContestKioskLayout`.
+- `src/pages/library/CodingProblemDetail.tsx` — `contestMode` prop, lock panels, mount `WebcamPiP`, render `ContestTopBar` instead of default header, hide tabs.
+- `src/components/contests/SecureContestGate.tsx` — require screen-share in checklist; on start, navigate to `/contests/:slug/play/<first-problem>`.
+- `src/components/contests/SecureProblemHUD.tsx` — add `TrustScoreBadge`.
+- `src/hooks/useContestSecureMode.ts` — wire `useScreenRecorder`, new violation types (`window_blur`, `screen_share_stopped`, `multi_face`, `no_face`).
+- `src/pages/contests/ContestLeaderboard.tsx` — realtime subscription + new columns.
+- `src/pages/admin/contests/AdminContestProctor.tsx` — trust score column, screen-recording playback, AI reasons.
+
+## Notes / risks
+
+- `getDisplayMedia` and fullscreen require a fresh user gesture; we already have the "Start secure session" button — both prompts happen there.
+- 30-second webm chunks at low bitrate keep storage manageable (~2 MB / minute / user). For a 2-hour contest with 100 users that's ~24 GB; configurable via `chunk_seconds` and `bitrate` on the contest record.
+- Face detection is best-effort: only Chrome-based browsers ship `FaceDetector`. Where missing we skip — the AI vision pass still inspects snapshots server-side.
