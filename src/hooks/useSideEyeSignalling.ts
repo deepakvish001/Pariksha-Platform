@@ -111,6 +111,8 @@ export function useSideEyeSignalling(opts: {
 
         if (s === "connected") {
           reconnectAttemptRef.current = 0;
+          // Log selected ICE candidate-pair type once we're up
+          void logCandidatePairOnce(pc);
         } else if (s === "failed" || s === "disconnected" || s === "closed") {
           scheduleReconnect();
         }
