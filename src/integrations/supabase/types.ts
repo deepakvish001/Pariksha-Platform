@@ -5244,6 +5244,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      notify_admins: {
+        Args: { _data?: Json; _message: string; _title: string; _type?: string }
+        Returns: undefined
+      }
       recompute_contest_leaderboard: {
         Args: { _contest_id: string }
         Returns: undefined

@@ -9,6 +9,8 @@ import { ContestTopBar } from "@/components/contests/ContestTopBar";
 import SecureProblemHUD from "@/components/contests/SecureProblemHUD";
 import { MultiTabBlockedDialog } from "@/components/contests/MultiTabBlockedDialog";
 import { StreamHealthBanner } from "@/components/contests/StreamHealthBanner";
+import { ContestVariantBanner } from "@/components/contests/ContestVariantBanner";
+import { useContestProblemVariant } from "@/hooks/useContestProblemVariant";
 import CodingProblemDetail from "@/pages/library/CodingProblemDetail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -33,6 +35,8 @@ export default function ContestPlayProblem() {
   // Read-only stream health snapshot for the kiosk banner. The actual
   // recorders live inside SecureProblemHUD's useContestSecureMode hook.
   const streamHealth = useContestStreamHealth(session.sessionId ?? null);
+  // Assigns (or reuses) the participant's randomized variant for this problem.
+  const variantQuery = useContestProblemVariant(contest?.id, problemSlug);
 
   // Make sure the URL CodingProblemDetail reads from has ?contest=<slug>
   useEffect(() => {
@@ -87,6 +91,14 @@ export default function ContestPlayProblem() {
         onReshareScreen={() => navigate(`/contests/${contest.slug}`)}
         onReshareWebcam={() => navigate(`/contests/${contest.slug}`)}
       />
+      {variantQuery.data && (
+        <ContestVariantBanner
+          variantKey={variantQuery.data.variant_key}
+          title={variantQuery.data.title}
+          statementMd={variantQuery.data.statement_md}
+          weight={variantQuery.data.weight as number | null}
+        />
+      )}
       <div className="flex-1">
         <CodingProblemDetail />
       </div>

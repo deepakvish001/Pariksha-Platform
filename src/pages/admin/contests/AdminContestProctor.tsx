@@ -359,6 +359,37 @@ const AdminContestProctor = () => {
                             <Button
                               size="sm"
                               variant="ghost"
+                              onClick={async () => {
+                                const t = toast.loading("Running similarity scan…");
+                                const { data, error } = await supabase.functions.invoke("contest-similarity-scan", {
+                                  body: { contest_id: id, autoflag_threshold: 0.85, autodq_threshold: 0.95 },
+                                });
+                                toast.dismiss(t);
+                                if (error) toast.error("Similarity scan failed", { description: error.message });
+                                else toast.success(`Similarity scan: ${(data as any)?.pairs ?? 0} pairs · ${(data as any)?.dq_users ?? 0} auto-DQ`);
+                              }}
+                            >
+                              <Sparkles className="mr-1 h-3.5 w-3.5" /> Similarity
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={async () => {
+                                const t = toast.loading("Running viva scan…");
+                                const { data, error } = await supabase.functions.invoke("contest-viva-scan", {
+                                  body: { contest_id: id, session_id: s.id },
+                                });
+                                toast.dismiss(t);
+                                if (error) toast.error("Viva scan failed", { description: error.message });
+                                else if ((data as any)?.enqueued_to_viva) toast.success("Enqueued to viva queue");
+                                else toast.success("No viva action needed");
+                              }}
+                            >
+                              <Mic className="mr-1 h-3.5 w-3.5" /> Viva
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
                               className="text-destructive"
                               onClick={async () => {
                                 const { error } = await supabase.rpc("contest_force_dq" as never, {
