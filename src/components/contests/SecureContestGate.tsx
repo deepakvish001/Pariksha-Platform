@@ -136,6 +136,7 @@ export default function SecureContestGate({
           <Rule icon={Maximize2} text="The browser must remain in fullscreen. Exiting fullscreen counts as a violation." />
           <Rule icon={Camera} text="Webcam snapshots are captured periodically and stored privately for admin review." />
           <Rule icon={Lock} text="Only one active session is allowed. Joining from a second device will end this one." />
+          <Rule icon={Monitor} text="Screen sharing is required and recorded for the duration of the contest." />
           <Rule icon={AlertTriangle} text="Close all other applications and avoid background processes for the duration of the contest." />
         </ul>
         <label className="flex items-center gap-2 text-sm">
