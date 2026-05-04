@@ -1203,6 +1203,93 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_audio_events: {
+        Row: {
+          analysis: Json | null
+          coaching_keywords: string[] | null
+          contest_id: string
+          created_at: string
+          duration_sec: number | null
+          id: string
+          session_id: string | null
+          severity: string
+          storage_path: string | null
+          transcript: string | null
+          user_id: string
+          voices_detected: number | null
+        }
+        Insert: {
+          analysis?: Json | null
+          coaching_keywords?: string[] | null
+          contest_id: string
+          created_at?: string
+          duration_sec?: number | null
+          id?: string
+          session_id?: string | null
+          severity?: string
+          storage_path?: string | null
+          transcript?: string | null
+          user_id: string
+          voices_detected?: number | null
+        }
+        Update: {
+          analysis?: Json | null
+          coaching_keywords?: string[] | null
+          contest_id?: string
+          created_at?: string
+          duration_sec?: number | null
+          id?: string
+          session_id?: string | null
+          severity?: string
+          storage_path?: string | null
+          transcript?: string | null
+          user_id?: string
+          voices_detected?: number | null
+        }
+        Relationships: []
+      }
+      contest_identity_checks: {
+        Row: {
+          contest_id: string
+          created_at: string
+          id: string
+          id_document_path: string | null
+          kind: string
+          match_score: number | null
+          reasoning: string | null
+          selfie_path: string | null
+          session_id: string | null
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          id?: string
+          id_document_path?: string | null
+          kind?: string
+          match_score?: number | null
+          reasoning?: string | null
+          selfie_path?: string | null
+          session_id?: string | null
+          user_id: string
+          verdict?: string
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          id?: string
+          id_document_path?: string | null
+          kind?: string
+          match_score?: number | null
+          reasoning?: string | null
+          selfie_path?: string | null
+          session_id?: string | null
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
       contest_leaderboard_cache: {
         Row: {
           contest_id: string
@@ -1273,6 +1360,45 @@ export type Database = {
           id?: string
           problem_slug?: string | null
           target?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contest_network_audit: {
+        Row: {
+          blocked: boolean
+          contest_id: string
+          created_at: string
+          host: string
+          id: string
+          method: string
+          page_path: string | null
+          session_id: string | null
+          url: string
+          user_id: string
+        }
+        Insert: {
+          blocked?: boolean
+          contest_id: string
+          created_at?: string
+          host: string
+          id?: string
+          method?: string
+          page_path?: string | null
+          session_id?: string | null
+          url: string
+          user_id: string
+        }
+        Update: {
+          blocked?: boolean
+          contest_id?: string
+          created_at?: string
+          host?: string
+          id?: string
+          method?: string
+          page_path?: string | null
+          session_id?: string | null
+          url?: string
           user_id?: string
         }
         Relationships: []
