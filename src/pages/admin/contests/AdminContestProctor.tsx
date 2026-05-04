@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { SimilarityTab } from "@/components/admin/contests/SimilarityTab";
 import { VivaQueueTab } from "@/components/admin/contests/VivaQueueTab";
 import { SideEyeTile } from "@/components/contests/SideEyeTile";
+import { SideEyeScanTimeline } from "@/components/admin/contests/SideEyeScanTimeline";
 
 type Violation = {
   id: string;
@@ -442,7 +443,7 @@ const AdminContestProctor = () => {
           <TabsContent value="viva">
             {id && <VivaQueueTab contestId={id} />}
           </TabsContent>
-          <TabsContent value="sideeye">
+          <TabsContent value="sideeye" className="space-y-4">
             <Card className="p-4">
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                 <Smartphone className="h-4 w-4" /> Live side-camera streams
@@ -457,6 +458,9 @@ const AdminContestProctor = () => {
                 </div>
               )}
             </Card>
+            {(sessionsQuery.data ?? []).map((s: any) => (
+              <SideEyeScanTimeline key={`tl-${s.id}`} sessionId={s.id} />
+            ))}
           </TabsContent>
         </Tabs>
       </div>
