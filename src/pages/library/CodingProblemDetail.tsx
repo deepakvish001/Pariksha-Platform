@@ -188,6 +188,11 @@ const CodingProblemDetail = () => {
   // the action is blocked before click — not just on the click handler.
   const [contestSubmitBlocked, setContestSubmitBlocked] = useState(false);
   const [contestId, setContestId] = useState<string | null>(null);
+  // Reflects the SecureProblemHUD's heartbeat health. While the heartbeat is
+  // offline/reconnecting we disable the Submit button — server-side
+  // validate_contest_submission also rejects in that state, so this is purely
+  // a UX guardrail to prevent confusing failures mid-network-blip.
+  const [secureSubmissionReady, setSecureSubmissionReady] = useState(true);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
   const editorRef = useRef<MonacoEditorHandle>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
@@ -871,7 +876,11 @@ const CodingProblemDetail = () => {
 
       {contestId && searchParams.get("contest") && (
         <div className="px-4 py-2">
-          <SecureProblemHUD contestId={contestId} contestSlug={searchParams.get("contest")!} />
+          <SecureProblemHUD
+            contestId={contestId}
+            contestSlug={searchParams.get("contest")!}
+            onSubmissionReadyChange={setSecureSubmissionReady}
+          />
         </div>
       )}
 
@@ -1000,12 +1009,19 @@ const CodingProblemDetail = () => {
           <Button
             data-testid="contest-submit-button"
             onClick={handleSubmit}
-            disabled={isRunning || isSubmitting || contestSubmitBlocked}
+            disabled={
+              isRunning ||
+              isSubmitting ||
+              contestSubmitBlocked ||
+              (!!searchParams.get("contest") && !secureSubmissionReady)
+            }
             size="sm"
             className="gap-1.5"
             title={
               contestSubmitBlocked
                 ? contestError ?? "Submission is blocked for this contest"
+                : !!searchParams.get("contest") && !secureSubmissionReady
+                ? "Heartbeat offline — submissions paused until reconnected"
                 : "Submit solution (Ctrl/Cmd+Shift+Enter)"
             }
           >

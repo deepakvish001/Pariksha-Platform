@@ -24,6 +24,8 @@ export interface SecureModeState {
   online: boolean;
   reconnecting: boolean;
   lastReconnectAt: number | null;
+  /** Epoch ms timestamp of the next scheduled heartbeat retry (null when idle). */
+  nextRetryAt: number | null;
 }
 
 const SNAPSHOT_INTERVAL_MS = 60_000;
@@ -31,10 +33,54 @@ const HEARTBEAT_INTERVAL_MS = 20_000;
 const FLAG_THRESHOLD = 3;
 const DQ_THRESHOLD = 5;
 
+const LS_PREFIX = "byteskill:secure-session:";
+const lsKey = (contestId: string) => `${LS_PREFIX}${contestId}`;
+
+interface PersistedSession {
+  sessionId: string;
+  contestId: string;
+  savedAt: number;
+}
+
+function loadPersisted(contestId: string | undefined): PersistedSession | null {
+  if (!contestId || typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(lsKey(contestId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedSession;
+    if (parsed?.sessionId && parsed.contestId === contestId) return parsed;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function savePersisted(contestId: string, sessionId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      lsKey(contestId),
+      JSON.stringify({ sessionId, contestId, savedAt: Date.now() } satisfies PersistedSession),
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearPersisted(contestId: string | undefined) {
+  if (!contestId || typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(lsKey(contestId));
+  } catch {
+    /* ignore */
+  }
+}
+
 export function useContestSecureMode(contestId: string | undefined, enabled: boolean) {
   const { user } = useAuth();
+  const persisted = loadPersisted(contestId);
   const [state, setState] = useState<SecureModeState>({
-    sessionId: null,
+    sessionId: persisted?.sessionId ?? null,
     starting: false,
     startError: null,
     violationCount: 0,
@@ -45,10 +91,12 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     online: typeof navigator !== "undefined" ? navigator.onLine : true,
     reconnecting: false,
     lastReconnectAt: null,
+    nextRetryAt: null,
   });
-  const sessionRef = useRef<string | null>(null);
+  const sessionRef = useRef<string | null>(persisted?.sessionId ?? null);
   const videoStreamRef = useRef<MediaStream | null>(null);
   const snapshotTimerRef = useRef<number | null>(null);
+  const wasReconnectingRef = useRef(false);
 
   // Start the secure session
   const start = useCallback(async () => {
@@ -62,8 +110,10 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
       setState((s) => ({ ...s, starting: false, startError: error.message }));
       return;
     }
-    sessionRef.current = data as unknown as string;
-    setState((s) => ({ ...s, starting: false, sessionId: data as unknown as string }));
+    const newId = data as unknown as string;
+    sessionRef.current = newId;
+    savePersisted(contestId, newId);
+    setState((s) => ({ ...s, starting: false, sessionId: newId }));
   }, [user, contestId]);
 
   // Log a violation
@@ -206,10 +256,11 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     };
   }, [enabled, state.webcamReady, state.sessionId, user, contestId]);
 
-  // Heartbeat with reconnect: pings every HEARTBEAT_INTERVAL_MS. On failure
-  // (network loss, transient error) we mark `reconnecting` and retry with
-  // exponential backoff instead of immediately killing the session. The
-  // session is only considered ended if the server explicitly says so.
+  // Heartbeat with reconnect + persistence-aware. On a fresh page load with
+  // a persisted sessionId, the first ping confirms whether the server still
+  // considers us alive. If yes, heartbeat resumes seamlessly. If no, we
+  // clear local state without forcing a relogin — the user can press
+  // "Start Secure Session" again.
   const pingFnRef = useRef<(() => Promise<void>) | null>(null);
   useEffect(() => {
     if (!enabled || !state.sessionId || state.disqualified) return;
@@ -221,16 +272,18 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     const scheduleRetry = () => {
       if (cancelled) return;
       if (retryTimer) window.clearTimeout(retryTimer);
+      const delay = backoff;
+      const eta = Date.now() + delay;
+      setState((s) => ({ ...s, nextRetryAt: eta }));
       retryTimer = window.setTimeout(() => {
         retryTimer = null;
         void ping();
-      }, backoff);
+      }, delay);
       backoff = Math.min(backoff * 2, 30_000);
     };
 
     const ping = async () => {
       if (cancelled) return;
-      // If we know we're offline, don't even try — just reflect state and wait.
       if (typeof navigator !== "undefined" && !navigator.onLine) {
         setState((s) => (s.online && !s.reconnecting ? { ...s, online: false, reconnecting: true } : s));
         scheduleRetry();
@@ -243,22 +296,35 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
         if (cancelled) return;
         const res = data as { ok: boolean; code?: string } | null;
         if (error) {
-          // Network / transient — try to reconnect, do NOT drop session.
           setState((s) => ({ ...s, online: false, reconnecting: true }));
           scheduleRetry();
           return;
         }
         if (res && !res.ok) {
-          // Server explicitly says session is gone (reaped / kicked).
+          // Server says session is gone — clear localStorage so we don't
+          // keep trying a dead id on next refresh.
+          clearPersisted(contestId);
           sessionRef.current = null;
-          setState((s) => ({ ...s, sessionId: null, online: true, reconnecting: false }));
+          setState((s) => ({
+            ...s,
+            sessionId: null,
+            online: true,
+            reconnecting: false,
+            nextRetryAt: null,
+          }));
           return;
         }
-        // Success — clear any reconnect state.
+        // Success — clear reconnect state, surface a toast if we just recovered.
         backoff = 2_000;
+        if (wasReconnectingRef.current) {
+          toast.success("Heartbeat resumed", {
+            description: "Your secure session is active again.",
+          });
+          wasReconnectingRef.current = false;
+        }
         setState((s) =>
-          s.reconnecting || !s.online
-            ? { ...s, online: true, reconnecting: false, lastReconnectAt: Date.now() }
+          s.reconnecting || !s.online || s.nextRetryAt
+            ? { ...s, online: true, reconnecting: false, lastReconnectAt: Date.now(), nextRetryAt: null }
             : s,
         );
       } catch {
@@ -290,14 +356,18 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
-  }, [enabled, state.sessionId, state.disqualified]);
+  }, [enabled, state.sessionId, state.disqualified, contestId]);
+
+  // Track reconnecting transitions so we can fire the resume toast exactly once.
+  useEffect(() => {
+    if (state.reconnecting) wasReconnectingRef.current = true;
+  }, [state.reconnecting]);
 
   // Manual reconnect (HUD button) — kicks the heartbeat immediately.
   const reconnect = useCallback(async () => {
     setState((s) => ({ ...s, reconnecting: true }));
     if (pingFnRef.current) await pingFnRef.current();
   }, []);
-
 
   // Cleanup webcam on unmount
   useEffect(() => {
@@ -307,8 +377,18 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     };
   }, []);
 
+  /**
+   * True only when the heartbeat is healthy and the session is live. UI
+   * surfaces (Submit button) should gate on this so users can't fire off
+   * submissions during a known network gap. The server enforces the same
+   * rule via `validate_contest_submission`.
+   */
+  const submissionAllowed =
+    !!state.sessionId && state.online && !state.reconnecting && !state.disqualified;
+
   return {
     ...state,
+    submissionAllowed,
     start,
     enterFullscreen,
     requestWebcam,
