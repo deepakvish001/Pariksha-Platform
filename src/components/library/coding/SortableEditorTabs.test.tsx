@@ -28,7 +28,7 @@ describe("SortableEditorTabs — contest locking", () => {
     );
 
     for (const id of ["notes", "my-solution", "solution", "runs"] as const) {
-      const trigger = screen.getByRole("tab", { name: new RegExp(id, "i") });
+      const trigger = screen.getByRole("tab", { name: `${id} — locked during contest` });
       // Radix sets data-disabled and the button must be disabled
       expect(trigger).toBeDisabled();
       expect(trigger.getAttribute("aria-disabled")).toBe("true");
