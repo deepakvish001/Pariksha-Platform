@@ -101,6 +101,9 @@ export const SideEyeSettingsPanel = () => {
         escalate_kinds: settings.escalate_kinds,
         recipient_user_ids: ids,
         notify_all_admins: settings.notify_all_admins,
+        retention_days_audit: settings.retention_days_audit,
+        retention_days_frames: settings.retention_days_frames,
+        retention_days_recordings: settings.retention_days_recordings,
         updated_at: new Date().toISOString(),
       };
 
