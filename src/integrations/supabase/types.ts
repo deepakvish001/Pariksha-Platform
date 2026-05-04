@@ -1244,6 +1244,39 @@ export type Database = {
           },
         ]
       }
+      contest_lock_events: {
+        Row: {
+          contest_id: string | null
+          created_at: string
+          details: Json
+          event_kind: string
+          id: string
+          problem_slug: string | null
+          target: string | null
+          user_id: string
+        }
+        Insert: {
+          contest_id?: string | null
+          created_at?: string
+          details?: Json
+          event_kind: string
+          id?: string
+          problem_slug?: string | null
+          target?: string | null
+          user_id?: string
+        }
+        Update: {
+          contest_id?: string | null
+          created_at?: string
+          details?: Json
+          event_kind?: string
+          id?: string
+          problem_slug?: string | null
+          target?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       contest_problems: {
         Row: {
           contest_id: string
