@@ -178,6 +178,10 @@ const SideEyeMobile = () => {
       } catch (e) { console.warn("rec upload", e); }
     };
     mr.start(10_000); // 10 s chunks
+    // Force a flush every 10 s in case the timeslice arg is ignored on some mobile browsers
+    flushIntervalRef.current = window.setInterval(() => {
+      try { if (mr.state === "recording") mr.requestData(); } catch {}
+    }, 10_000);
 
     // AI frame sampling every 15 s
     const canvas = document.createElement("canvas");
