@@ -238,7 +238,10 @@ const CodingProblemDetail = () => {
   // Transient hint shown briefly when entering fullscreen.
   const [showFullscreenHint, setShowFullscreenHint] = useState(false);
   const { submissions, loading: submissionsLoading, refetch: refetchSubmissions } = useCodingSubmissions(slug);
-  const { runs, refetch: refetchRuns } = useCodeRuns(slug);
+  const { runs, refetch: refetchRuns } = useCodeRuns(slug, {
+    locked: contestLocks.historyLocked,
+    contestId,
+  });
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
   const { note: notesValue, setNote: setNotesValue, savedAt: notesSavedAt } = useProblemNotes(slug);
   // Lock state for contest aux materials (notes / my-solution / reference / runs)
