@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, ShieldAlert, ShieldOff, Maximize2, Camera, AlertTriangle } from "lucide-react";
+import { ShieldCheck, ShieldAlert, ShieldOff, Maximize2, Camera, AlertTriangle, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { useContestSecureMode } from "@/hooks/useContestSecureMode";
 import { useActiveContestSession } from "@/hooks/useActiveContestSession";
 import { toast } from "sonner";
@@ -58,7 +58,9 @@ export default function SecureProblemHUD({ contestId, contestSlug }: Props) {
 
   const nextAction =
     status === "active"
-      ? secure.fullscreen
+      ? !secure.online || secure.reconnecting
+        ? "Network lost — reconnecting heartbeat. You stay registered."
+        : secure.fullscreen
         ? "Stay in this tab — submissions are enabled."
         : "Re-enter fullscreen to keep your session in good standing."
       : status === "missing"
@@ -89,6 +91,28 @@ export default function SecureProblemHUD({ contestId, contestSlug }: Props) {
               <Badge variant="outline" className={secure.flagged ? "border-red-400/50 text-red-300" : "border-border"}>
                 <AlertTriangle className="mr-1 h-3 w-3" /> {secure.violationCount}/5 · {violationsLeft} left
               </Badge>
+              <Badge
+                variant="outline"
+                className={
+                  !secure.online || secure.reconnecting
+                    ? "border-amber-400/40 text-amber-300"
+                    : "border-emerald-400/40 text-emerald-300"
+                }
+              >
+                {secure.reconnecting ? (
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                ) : secure.online ? (
+                  <Wifi className="mr-1 h-3 w-3" />
+                ) : (
+                  <WifiOff className="mr-1 h-3 w-3" />
+                )}
+                {secure.reconnecting ? "Reconnecting" : secure.online ? "Online" : "Offline"}
+              </Badge>
+              {(secure.reconnecting || !secure.online) && (
+                <Button size="sm" variant="outline" onClick={secure.reconnect}>
+                  Reconnect now
+                </Button>
+              )}
               {!secure.fullscreen && (
                 <Button size="sm" variant="outline" onClick={secure.enterFullscreen}>
                   Re-enter fullscreen

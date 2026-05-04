@@ -21,6 +21,9 @@ export interface SecureModeState {
   disqualified: boolean;
   fullscreen: boolean;
   webcamReady: boolean;
+  online: boolean;
+  reconnecting: boolean;
+  lastReconnectAt: number | null;
 }
 
 const SNAPSHOT_INTERVAL_MS = 60_000;
@@ -39,6 +42,9 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     disqualified: false,
     fullscreen: false,
     webcamReady: false,
+    online: typeof navigator !== "undefined" ? navigator.onLine : true,
+    reconnecting: false,
+    lastReconnectAt: null,
   });
   const sessionRef = useRef<string | null>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
@@ -200,30 +206,98 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     };
   }, [enabled, state.webcamReady, state.sessionId, user, contestId]);
 
-  // Heartbeat: ping the server every HEARTBEAT_INTERVAL_MS while session is active.
-  // Server reaps any session whose last_seen_at is older than 90s.
+  // Heartbeat with reconnect: pings every HEARTBEAT_INTERVAL_MS. On failure
+  // (network loss, transient error) we mark `reconnecting` and retry with
+  // exponential backoff instead of immediately killing the session. The
+  // session is only considered ended if the server explicitly says so.
+  const pingFnRef = useRef<(() => Promise<void>) | null>(null);
   useEffect(() => {
     if (!enabled || !state.sessionId || state.disqualified) return;
     let cancelled = false;
-    const ping = async () => {
-      const { data, error } = await supabase.rpc("contest_session_heartbeat" as never, {
-        _session_id: state.sessionId,
-      } as never);
+    let intervalId: number | null = null;
+    let retryTimer: number | null = null;
+    let backoff = 2_000;
+
+    const scheduleRetry = () => {
       if (cancelled) return;
-      const res = data as { ok: boolean; code?: string } | null;
-      if (error || (res && !res.ok)) {
-        // Server says session is gone — flip local state so HUD reflects it.
-        sessionRef.current = null;
-        setState((s) => ({ ...s, sessionId: null }));
+      if (retryTimer) window.clearTimeout(retryTimer);
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        void ping();
+      }, backoff);
+      backoff = Math.min(backoff * 2, 30_000);
+    };
+
+    const ping = async () => {
+      if (cancelled) return;
+      // If we know we're offline, don't even try — just reflect state and wait.
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        setState((s) => (s.online && !s.reconnecting ? { ...s, online: false, reconnecting: true } : s));
+        scheduleRetry();
+        return;
+      }
+      try {
+        const { data, error } = await supabase.rpc("contest_session_heartbeat" as never, {
+          _session_id: sessionRef.current,
+        } as never);
+        if (cancelled) return;
+        const res = data as { ok: boolean; code?: string } | null;
+        if (error) {
+          // Network / transient — try to reconnect, do NOT drop session.
+          setState((s) => ({ ...s, online: false, reconnecting: true }));
+          scheduleRetry();
+          return;
+        }
+        if (res && !res.ok) {
+          // Server explicitly says session is gone (reaped / kicked).
+          sessionRef.current = null;
+          setState((s) => ({ ...s, sessionId: null, online: true, reconnecting: false }));
+          return;
+        }
+        // Success — clear any reconnect state.
+        backoff = 2_000;
+        setState((s) =>
+          s.reconnecting || !s.online
+            ? { ...s, online: true, reconnecting: false, lastReconnectAt: Date.now() }
+            : s,
+        );
+      } catch {
+        if (cancelled) return;
+        setState((s) => ({ ...s, online: false, reconnecting: true }));
+        scheduleRetry();
       }
     };
+    pingFnRef.current = ping;
+
     void ping();
-    const id = window.setInterval(ping, HEARTBEAT_INTERVAL_MS);
+    intervalId = window.setInterval(ping, HEARTBEAT_INTERVAL_MS);
+
+    const onOnline = () => {
+      backoff = 2_000;
+      void ping();
+    };
+    const onOffline = () => {
+      setState((s) => ({ ...s, online: false, reconnecting: true }));
+    };
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+
     return () => {
       cancelled = true;
-      window.clearInterval(id);
+      pingFnRef.current = null;
+      if (intervalId) window.clearInterval(intervalId);
+      if (retryTimer) window.clearTimeout(retryTimer);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
     };
   }, [enabled, state.sessionId, state.disqualified]);
+
+  // Manual reconnect (HUD button) — kicks the heartbeat immediately.
+  const reconnect = useCallback(async () => {
+    setState((s) => ({ ...s, reconnecting: true }));
+    if (pingFnRef.current) await pingFnRef.current();
+  }, []);
+
 
   // Cleanup webcam on unmount
   useEffect(() => {
@@ -239,5 +313,6 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     enterFullscreen,
     requestWebcam,
     logViolation,
+    reconnect,
   };
 }
