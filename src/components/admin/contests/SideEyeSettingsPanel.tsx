@@ -32,6 +32,9 @@ interface Settings {
   escalate_kinds: string[];
   recipient_user_ids: string[];
   notify_all_admins: boolean;
+  retention_days_audit: number;
+  retention_days_frames: number;
+  retention_days_recordings: number;
 }
 
 const DEFAULTS: Settings = {
@@ -39,6 +42,9 @@ const DEFAULTS: Settings = {
   escalate_kinds: ["secondary_device", "candidate_absent"],
   recipient_user_ids: [],
   notify_all_admins: true,
+  retention_days_audit: 30,
+  retention_days_frames: 30,
+  retention_days_recordings: 30,
 };
 
 export const SideEyeSettingsPanel = () => {
