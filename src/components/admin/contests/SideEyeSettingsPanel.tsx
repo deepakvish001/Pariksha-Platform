@@ -120,6 +120,23 @@ export const SideEyeSettingsPanel = () => {
     }
   };
 
+  const runPurge = async () => {
+    if (!confirm("Run purge now? This permanently deletes SideEye data older than the configured retention windows.")) return;
+    setPurging(true);
+    try {
+      const { data, error } = await supabase.rpc("admin_run_sideeye_purge");
+      if (error) throw error;
+      const r = (data ?? {}) as Record<string, number>;
+      toast.success("Purge complete", {
+        description: `Audit: ${r.deleted_audit ?? 0} • Frames: ${r.deleted_frames ?? 0} • Recordings: ${r.deleted_recordings ?? 0}`,
+      });
+    } catch (e: any) {
+      toast.error("Purge failed", { description: e?.message });
+    } finally {
+      setPurging(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card className="p-4 flex items-center gap-2 text-sm text-muted-foreground">
