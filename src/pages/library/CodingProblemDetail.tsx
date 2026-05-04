@@ -886,6 +886,7 @@ const CodingProblemDetail = () => {
               order_matters: !!problem.sql.orderMatters,
             }
           : {}),
+        ...(searchParams.get("contest") ? { contest_slug: searchParams.get("contest")! } : {}),
       });
       setSubmitResult(result);
       setExecutionErrorDetails(false);
