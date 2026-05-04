@@ -30,10 +30,10 @@ const toastDismiss = vi.fn();
 const toastLoading = vi.fn(() => "loading-id");
 vi.mock("sonner", () => ({
   toast: {
-    success: (...a: unknown[]) => toastSuccess(...a),
-    error: (...a: unknown[]) => toastError(...a),
-    dismiss: (...a: unknown[]) => toastDismiss(...a),
-    loading: (...a: unknown[]) => toastLoading(...a),
+    success: (...a: any[]) => toastSuccess(...a),
+    error: (...a: any[]) => toastError(...a),
+    dismiss: (...a: any[]) => toastDismiss(...a),
+    loading: (...a: any[]) => toastLoading(...a),
   },
 }));
 
@@ -94,7 +94,7 @@ vi.mock("@/integrations/supabase/client", () => ({
         ),
       })),
     },
-    functions: { invoke: (...a: unknown[]) => invokeMock(...a) },
+    functions: { invoke: (...a: any[]) => invokeMock(...a) },
   },
 }));
 
