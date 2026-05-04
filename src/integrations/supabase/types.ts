@@ -2169,6 +2169,8 @@ export type Database = {
           last_heartbeat_at: string | null
           last_seen_at: string
           session_token: string
+          side_camera_required: boolean
+          side_camera_status: string
           started_at: string
           stream_grace_until: string | null
           user_agent: string | null
@@ -2186,6 +2188,8 @@ export type Database = {
           last_heartbeat_at?: string | null
           last_seen_at?: string
           session_token?: string
+          side_camera_required?: boolean
+          side_camera_status?: string
           started_at?: string
           stream_grace_until?: string | null
           user_agent?: string | null
@@ -2203,6 +2207,8 @@ export type Database = {
           last_heartbeat_at?: string | null
           last_seen_at?: string
           session_token?: string
+          side_camera_required?: boolean
+          side_camera_status?: string
           started_at?: string
           stream_grace_until?: string | null
           user_agent?: string | null
@@ -2214,6 +2220,141 @@ export type Database = {
             columns: ["contest_id"]
             isOneToOne: false
             referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_side_camera_frames: {
+        Row: {
+          ai_summary: Json | null
+          captured_at: string
+          created_at: string
+          id: string
+          session_id: string
+          severity: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: Json | null
+          captured_at?: string
+          created_at?: string
+          id?: string
+          session_id: string
+          severity?: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          ai_summary?: Json | null
+          captured_at?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+          severity?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_side_camera_frames_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_side_camera_pairings: {
+        Row: {
+          created_at: string
+          device_fingerprint: string | null
+          device_user_agent: string | null
+          expires_at: string
+          id: string
+          last_heartbeat_at: string | null
+          paired_at: string | null
+          pairing_token: string
+          session_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint?: string | null
+          device_user_agent?: string | null
+          expires_at?: string
+          id?: string
+          last_heartbeat_at?: string | null
+          paired_at?: string | null
+          pairing_token: string
+          session_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string | null
+          device_user_agent?: string | null
+          expires_at?: string
+          id?: string
+          last_heartbeat_at?: string | null
+          paired_at?: string | null
+          pairing_token?: string
+          session_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_side_camera_pairings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_side_camera_recordings: {
+        Row: {
+          byte_size: number | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          session_id: string
+          started_at: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          byte_size?: number | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          session_id: string
+          started_at?: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          byte_size?: number | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          session_id?: string
+          started_at?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_side_camera_recordings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
             referencedColumns: ["id"]
           },
         ]
