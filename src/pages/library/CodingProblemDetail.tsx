@@ -876,7 +876,11 @@ const CodingProblemDetail = () => {
 
       {contestId && searchParams.get("contest") && (
         <div className="px-4 py-2">
-          <SecureProblemHUD contestId={contestId} contestSlug={searchParams.get("contest")!} />
+          <SecureProblemHUD
+            contestId={contestId}
+            contestSlug={searchParams.get("contest")!}
+            onSubmissionReadyChange={setSecureSubmissionReady}
+          />
         </div>
       )}
 
