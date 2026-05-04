@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,13 +45,13 @@ export function ContestTopBar({
     return () => window.clearInterval(id);
   }, []);
   const remaining = Math.max(0, Math.floor((endsAtMs - now) / 1000));
-  const firedRef = useState({ fired: false })[0];
+  const firedRef = useRef(false);
   useEffect(() => {
-    if (remaining <= 0 && !firedRef.fired) {
-      firedRef.fired = true;
+    if (remaining <= 0 && !firedRef.current) {
+      firedRef.current = true;
       onTimeUp();
     }
-  }, [remaining, onTimeUp, firedRef]);
+  }, [remaining, onTimeUp]);
 
   const tone =
     remaining <= 60 ? "border-red-400/50 text-red-300"
