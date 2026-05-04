@@ -228,6 +228,18 @@ const SideEyeMobile = () => {
           </div>
         )}
 
+        {hidden && (
+          <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded">
+            <EyeOff className="h-4 w-4" /> Tab is in background — return now or your contest will be paused.
+          </div>
+        )}
+
+        {reconnectAttempts > 0 && reconnectAttempts < 3 && (
+          <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 p-2 rounded">
+            <RefreshCw className="h-4 w-4 animate-spin" /> Reconnecting… (attempt {reconnectAttempts}/3)
+          </div>
+        )}
+
         {step === "login" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
