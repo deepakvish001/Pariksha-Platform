@@ -130,6 +130,38 @@ Deno.serve(async (req) => {
       detail: { storage_path: storagePath, summary },
     });
 
+    // Append to tamper-evident evidence chain (SHA-256 linked).
+    try {
+      const { data: prev } = await admin
+        .from("sideeye_evidence_chain")
+        .select("seq, sha256")
+        .eq("session_id", sessionId)
+        .order("seq", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nextSeq = (prev?.seq ?? 0) + 1;
+      const prevHash = prev?.sha256 ?? "";
+      const payload = { storage_path: storagePath, severity, summary };
+      const enc = new TextEncoder().encode(prevHash + JSON.stringify(payload) + storagePath);
+      const digest = await crypto.subtle.digest("SHA-256", enc);
+      const sha256 = Array.from(new Uint8Array(digest))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      await admin.from("sideeye_evidence_chain").insert({
+        session_id: sessionId,
+        user_id: user.id,
+        seq: nextSeq,
+        kind: "frame",
+        storage_path: storagePath,
+        sha256,
+        prev_hash: prevHash,
+        payload,
+      });
+    } catch (chainErr) {
+      console.warn("evidence chain append failed", chainErr);
+    }
+
+
     // Load admin-configurable thresholds (singleton row).
     const { data: settings } = await admin
       .from("sideeye_notification_settings")
