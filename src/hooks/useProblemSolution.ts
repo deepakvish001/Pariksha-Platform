@@ -155,6 +155,17 @@ export const useProblemSolution = (
       if (!userId) setSyncStatus("offline");
       return;
     }
+    if (locked) {
+      // Hard block: do not pull or push solution data while contest is active.
+      setSyncStatus("offline");
+      logContestLockEvent({
+        contestId,
+        problemSlug: slug,
+        kind: "blocked_hook_fetch",
+        target: "my-solution",
+      });
+      return;
+    }
     let cancelled = false;
     setSyncStatus("syncing");
     (async () => {
