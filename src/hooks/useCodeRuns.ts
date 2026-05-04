@@ -20,14 +20,33 @@ export interface CodeRunRow {
   created_at: string;
 }
 
-export const useCodeRuns = (problemSlug?: string) => {
+export interface UseCodeRunsOptions {
+  /** When true, skip all network fetches (used during locked contest mode). */
+  locked?: boolean;
+  /** Active contest id, used for telemetry on blocked fetches. */
+  contestId?: string | null;
+}
+
+export const useCodeRuns = (problemSlug?: string, options: UseCodeRunsOptions = {}) => {
   const { user } = useAuth();
+  const { locked = false, contestId = null } = options;
   const [runs, setRuns] = useState<CodeRunRow[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchRuns = useCallback(async () => {
     if (!user) {
       setRuns([]);
+      return;
+    }
+    if (locked) {
+      // Hard block: do not fetch run history while contest is active.
+      setRuns([]);
+      logContestLockEvent({
+        contestId,
+        problemSlug,
+        kind: "blocked_hook_fetch",
+        target: "runs",
+      });
       return;
     }
     setLoading(true);
@@ -41,7 +60,7 @@ export const useCodeRuns = (problemSlug?: string) => {
     const { data, error } = await q;
     if (!error && data) setRuns(data as CodeRunRow[]);
     setLoading(false);
-  }, [user, problemSlug]);
+  }, [user, problemSlug, locked, contestId]);
 
   useEffect(() => {
     fetchRuns();
