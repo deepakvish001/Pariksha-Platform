@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, ShieldAlert, ShieldOff, Maximize2, Camera, AlertTriangle } from "lucide-react";
+import { ShieldCheck, ShieldAlert, ShieldOff, Maximize2, Camera, AlertTriangle, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { useContestSecureMode } from "@/hooks/useContestSecureMode";
 import { useActiveContestSession } from "@/hooks/useActiveContestSession";
 import { toast } from "sonner";
