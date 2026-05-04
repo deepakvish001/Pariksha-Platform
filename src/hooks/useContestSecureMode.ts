@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { computeContestFingerprint, type ContestFingerprint } from "@/lib/contestFingerprint";
 
 export type ViolationType =
   | "tab_blur"
@@ -97,14 +98,35 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
   const videoStreamRef = useRef<MediaStream | null>(null);
   const snapshotTimerRef = useRef<number | null>(null);
   const wasReconnectingRef = useRef(false);
+  const fingerprintRef = useRef<ContestFingerprint | null>(null);
+  const [webcamHealthy, setWebcamHealthy] = useState(true);
+  const [webcamGraceUntil, setWebcamGraceUntil] = useState<number | null>(null);
+
+  const reportWebcamHealth = useCallback(async (healthy: boolean) => {
+    if (!sessionRef.current) return;
+    const { data } = await supabase.rpc("contest_report_stream_health" as never, {
+      _session_id: sessionRef.current,
+      _kind: "webcam",
+      _healthy: healthy,
+    } as never);
+    const res = data as { ok: boolean; grace_until?: string } | null;
+    if (res?.grace_until) {
+      setWebcamGraceUntil(new Date(res.grace_until).getTime());
+    } else if (healthy) {
+      setWebcamGraceUntil(null);
+    }
+  }, []);
 
   // Start the secure session
   const start = useCallback(async () => {
     if (!user || !contestId) return;
     setState((s) => ({ ...s, starting: true, startError: null }));
+    const fp = await computeContestFingerprint().catch(() => null);
+    fingerprintRef.current = fp;
     const { data, error } = await supabase.rpc("contest_start_secure_session" as never, {
       _contest_id: contestId,
       _user_agent: navigator.userAgent,
+      _fingerprint: fp ?? null,
     } as never);
     if (error) {
       setState((s) => ({ ...s, starting: false, startError: error.message }));
@@ -203,11 +225,21 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: false });
       videoStreamRef.current = stream;
       setState((s) => ({ ...s, webcamReady: true }));
+      setWebcamHealthy(true);
+      void reportWebcamHealth(true);
+      stream.getVideoTracks()[0]?.addEventListener("ended", () => {
+        setState((s) => ({ ...s, webcamReady: false }));
+        setWebcamHealthy(false);
+        void reportWebcamHealth(false);
+        logViolation("webcam_denied", "flag", { reason: "stream_ended" });
+      });
     } catch {
       setState((s) => ({ ...s, webcamReady: false }));
+      setWebcamHealthy(false);
+      void reportWebcamHealth(false);
       logViolation("webcam_denied", "flag");
     }
-  }, [logViolation]);
+  }, [logViolation, reportWebcamHealth]);
 
   // Periodic snapshot
   useEffect(() => {
@@ -292,6 +324,7 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
       try {
         const { data, error } = await supabase.rpc("contest_session_heartbeat" as never, {
           _session_id: sessionRef.current,
+          _fingerprint: fingerprintRef.current ?? null,
         } as never);
         if (cancelled) return;
         const res = data as { ok: boolean; code?: string } | null;
@@ -384,7 +417,7 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
    * rule via `validate_contest_submission`.
    */
   const submissionAllowed =
-    !!state.sessionId && state.online && !state.reconnecting && !state.disqualified;
+    !!state.sessionId && state.online && !state.reconnecting && !state.disqualified && webcamHealthy;
 
   return {
     ...state,
@@ -396,5 +429,8 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     reconnect,
     /** Live webcam MediaStream (for the WebcamPiP component). */
     webcamStream: videoStreamRef.current,
+    webcamHealthy,
+    webcamGraceUntil,
+    reportWebcamHealth,
   };
 }

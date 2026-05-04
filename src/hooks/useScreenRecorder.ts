@@ -10,6 +10,8 @@ interface RecorderState {
   recording: boolean;
   error: string | null;
   stream: MediaStream | null;
+  healthy: boolean;
+  graceUntil: number | null;
 }
 
 /**
@@ -17,6 +19,9 @@ interface RecorderState {
  * webm chunks to the private `contest-screen-recordings` bucket while
  * inserting a row into `contest_screen_recordings` per chunk. The recency
  * of these chunks is used by `validate_contest_submission` server-side.
+ *
+ * Tier 1: also reports stream health to `contest_report_stream_health`,
+ * which manages a 30s grace timer + auto-DQ on expiry.
  */
 export function useScreenRecorder(opts: {
   contestId: string | undefined;
@@ -31,39 +36,60 @@ export function useScreenRecorder(opts: {
     recording: false,
     error: null,
     stream: null,
+    healthy: true,
+    graceUntil: null,
   });
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const reportHealth = useCallback(
+    async (healthy: boolean) => {
+      if (!sessionId) return;
+      const { data } = await supabase.rpc("contest_report_stream_health" as never, {
+        _session_id: sessionId,
+        _kind: "screen",
+        _healthy: healthy,
+      } as never);
+      const res = data as { ok: boolean; healthy?: boolean; grace_until?: string } | null;
+      if (res?.grace_until) {
+        setState((s) => ({ ...s, graceUntil: new Date(res.grace_until!).getTime() }));
+      } else if (healthy) {
+        setState((s) => ({ ...s, graceUntil: null }));
+      }
+    },
+    [sessionId],
+  );
 
   const stop = useCallback(() => {
     try { recorderRef.current?.stop(); } catch { /* ignore */ }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     recorderRef.current = null;
     streamRef.current = null;
-    setState({ sharing: false, recording: false, error: null, stream: null });
+    setState((s) => ({ ...s, sharing: false, recording: false, error: null, stream: null, healthy: false }));
   }, []);
 
   const requestShare = useCallback(async () => {
-    // Note: do NOT gate on `enabled` here — this is invoked from a user
-    // gesture before the secure session id exists. The recording loop
-    // below still gates start on enabled+sessionId.
     try {
       const stream: MediaStream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: 5, max: 10 } },
         audio: false,
       });
       streamRef.current = stream;
-      setState((s) => ({ ...s, sharing: true, stream, error: null }));
+      setState((s) => ({ ...s, sharing: true, stream, error: null, healthy: true, graceUntil: null }));
+      void reportHealth(true);
 
       stream.getVideoTracks()[0]?.addEventListener("ended", () => {
         onScreenShareStopped?.();
+        setState((s) => ({ ...s, healthy: false }));
+        void reportHealth(false);
         stop();
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Screen share denied";
-      setState((s) => ({ ...s, sharing: false, error: msg }));
+      setState((s) => ({ ...s, sharing: false, error: msg, healthy: false }));
+      void reportHealth(false);
     }
-  }, [enabled, onScreenShareStopped, stop]);
+  }, [onScreenShareStopped, stop, reportHealth]);
 
   // Start chunked recorder once we have a stream + session
   useEffect(() => {
@@ -109,10 +135,11 @@ export function useScreenRecorder(opts: {
                 started_at: startedAt.toISOString(),
                 duration_sec: Math.round(CHUNK_MS / 1000),
               } as never);
+              // Each successful chunk = a healthy heartbeat for the screen stream.
+              void reportHealth(true);
             }
           } catch { /* swallow */ }
         }
-        // Loop next chunk if still sharing
         if (!cancelled && streamRef.current && streamRef.current.active) {
           startChunkLoop();
         }
@@ -130,7 +157,7 @@ export function useScreenRecorder(opts: {
       cancelled = true;
       try { recorderRef.current?.stop(); } catch { /* ignore */ }
     };
-  }, [enabled, state.stream, sessionId, contestId, user]);
+  }, [enabled, state.stream, sessionId, contestId, user, reportHealth]);
 
   // Cleanup on unmount
   useEffect(() => () => stop(), [stop]);
