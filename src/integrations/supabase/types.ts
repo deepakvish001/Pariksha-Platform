@@ -1454,41 +1454,53 @@ export type Database = {
       }
       contest_sessions: {
         Row: {
+          client_fingerprint: Json | null
           contest_id: string
           device_meta: Json
           id: string
           invalidated_at: string | null
+          ip_address: unknown
           ip_hash: string | null
           is_active: boolean
+          last_heartbeat_at: string | null
           last_seen_at: string
           session_token: string
           started_at: string
+          stream_grace_until: string | null
           user_agent: string | null
           user_id: string
         }
         Insert: {
+          client_fingerprint?: Json | null
           contest_id: string
           device_meta?: Json
           id?: string
           invalidated_at?: string | null
+          ip_address?: unknown
           ip_hash?: string | null
           is_active?: boolean
+          last_heartbeat_at?: string | null
           last_seen_at?: string
           session_token?: string
           started_at?: string
+          stream_grace_until?: string | null
           user_agent?: string | null
           user_id: string
         }
         Update: {
+          client_fingerprint?: Json | null
           contest_id?: string
           device_meta?: Json
           id?: string
           invalidated_at?: string | null
+          ip_address?: unknown
           ip_hash?: string | null
           is_active?: boolean
+          last_heartbeat_at?: string | null
           last_seen_at?: string
           session_token?: string
           started_at?: string
+          stream_grace_until?: string | null
           user_agent?: string | null
           user_id?: string
         }
@@ -1498,6 +1510,51 @@ export type Database = {
             columns: ["contest_id"]
             isOneToOne: false
             referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_stream_health: {
+        Row: {
+          contest_id: string
+          created_at: string
+          healthy: boolean
+          id: string
+          session_id: string | null
+          stream_kind: string
+          user_id: string
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          healthy: boolean
+          id?: string
+          session_id?: string | null
+          stream_kind: string
+          user_id: string
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          healthy?: boolean
+          id?: string
+          session_id?: string | null
+          stream_kind?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_stream_health_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_stream_health_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -1546,6 +1603,35 @@ export type Database = {
           },
         ]
       }
+      contest_tab_locks: {
+        Row: {
+          claimed_at: string
+          contest_id: string
+          tab_id: string
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          contest_id: string
+          tab_id: string
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          contest_id?: string
+          tab_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_tab_locks_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_trust_scores: {
         Row: {
           computed_at: string
@@ -1587,6 +1673,57 @@ export type Database = {
           },
           {
             foreignKeyName: "contest_trust_scores_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_typing_events: {
+        Row: {
+          char_count: number
+          contest_id: string
+          created_at: string
+          dt_ms: number
+          id: string
+          is_burst: boolean
+          problem_slug: string
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          char_count: number
+          contest_id: string
+          created_at?: string
+          dt_ms: number
+          id?: string
+          is_burst?: boolean
+          problem_slug: string
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          char_count?: number
+          contest_id?: string
+          created_at?: string
+          dt_ms?: number
+          id?: string
+          is_burst?: boolean
+          problem_slug?: string
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_typing_events_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_typing_events_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "contest_sessions"
@@ -4576,6 +4713,10 @@ export type Database = {
         Returns: undefined
       }
       contest_aux_unlocked: { Args: { _contest_id: string }; Returns: boolean }
+      contest_claim_tab_lock: {
+        Args: { _contest_id: string; _tab_id: string }
+        Returns: Json
+      }
       contest_effective_status: {
         Args: { _contest_id: string }
         Returns: string
@@ -4594,14 +4735,26 @@ export type Database = {
         }
         Returns: Json
       }
-      contest_session_heartbeat: {
-        Args: { _session_id: string }
+      contest_report_stream_health: {
+        Args: { _healthy: boolean; _kind: string; _session_id: string }
         Returns: Json
       }
-      contest_start_secure_session: {
-        Args: { _contest_id: string; _user_agent?: string }
-        Returns: string
-      }
+      contest_session_heartbeat:
+        | { Args: { _session_id: string }; Returns: Json }
+        | { Args: { _fingerprint: Json; _session_id: string }; Returns: Json }
+      contest_start_secure_session:
+        | {
+            Args: { _contest_id: string; _user_agent?: string }
+            Returns: string
+          }
+        | {
+            Args: {
+              _contest_id: string
+              _fingerprint?: Json
+              _user_agent?: string
+            }
+            Returns: string
+          }
       ensure_player_rating: { Args: { _user: string }; Returns: undefined }
       get_coding_leaderboard:
         | {
