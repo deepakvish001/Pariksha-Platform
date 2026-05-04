@@ -1089,6 +1089,12 @@ const CodingProblemDetail = () => {
                 <SortableEditorTabs
                   order={tabOrder}
                   onReorder={(next) => setTabOrder(next)}
+                  lockedIds={(["notes", "my-solution", "solution", "runs"] as EditorTabId[]).filter(isTabLocked)}
+                  reorderDisabled={
+                    contestLocks.notesLocked ||
+                    contestLocks.solutionLocked ||
+                    contestLocks.historyLocked
+                  }
                   renderLabel={(id) => {
                     const lockMark = isTabLocked(id) ? (
                       <span className="ml-1 text-amber-500" aria-label="Locked during contest">🔒</span>
