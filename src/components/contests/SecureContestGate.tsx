@@ -20,6 +20,8 @@ import { useScreenRecorder } from "@/hooks/useScreenRecorder";
 
 import { WebcamPiP } from "./WebcamPiP";
 import { IdentityCaptureStep } from "./IdentityCaptureStep";
+import { PreflightChecksStep } from "./PreflightChecksStep";
+import { RoomScanStep } from "./RoomScanStep";
 import { ShieldCheck, Eye, Maximize2, Camera, Ban, AlertTriangle, Lock, Monitor, Mic } from "lucide-react";
 import { toast } from "sonner";
 import ContestLobby from "./ContestLobby";
@@ -58,13 +60,29 @@ export default function SecureContestGate({
   const [agreed, setAgreed] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [checklistReady, setChecklistReady] = useState(false);
+  const preflightKey = `contest-preflight-passed:${contestId}`;
+  const roomScanKey = `contest-room-scan-passed:${contestId}`;
   const identityKey = `contest-identity-verified:${contestId}`;
+  const [preflightPassed, setPreflightPassed] = useState<boolean>(() => {
+    try { return localStorage.getItem(preflightKey) === "1"; } catch { return false; }
+  });
+  const [roomScanPassed, setRoomScanPassed] = useState<boolean>(() => {
+    try { return localStorage.getItem(roomScanKey) === "1"; } catch { return false; }
+  });
   const [identityVerified, setIdentityVerified] = useState<boolean>(() => {
     try { return localStorage.getItem(identityKey) === "1"; } catch { return false; }
   });
   const [audioConsent, setAudioConsent] = useState<boolean>(() => {
     try { return localStorage.getItem(`contest-audio-consent:${contestId}`) === "1"; } catch { return false; }
   });
+  const markPreflight = () => {
+    try { localStorage.setItem(preflightKey, "1"); } catch { /* ignore */ }
+    setPreflightPassed(true);
+  };
+  const markRoomScan = () => {
+    try { localStorage.setItem(roomScanKey, "1"); } catch { /* ignore */ }
+    setRoomScanPassed(true);
+  };
   const markVerified = () => {
     try { localStorage.setItem(identityKey, "1"); } catch { /* ignore */ }
     setIdentityVerified(true);
@@ -174,6 +192,17 @@ export default function SecureContestGate({
     );
   }
 
+  // Tier 4 pre-flight: environment integrity (runs before any webcam prompt)
+  if (!secure.sessionId && !active.hasActive && !preflightPassed) {
+    return (
+      <PreflightChecksStep
+        contestId={contestId}
+        sessionId={secure.sessionId}
+        onPassed={markPreflight}
+      />
+    );
+  }
+
   // Identity verification step (after webcam request, before session start)
   if (!secure.sessionId && !active.hasActive && !identityVerified) {
     return (
@@ -199,6 +228,35 @@ export default function SecureContestGate({
             sessionId={secure.sessionId}
             webcamStream={secure.webcamStream}
             onVerified={markVerified}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Tier 4 room scan: after identity, before secure session start.
+  // Needs the webcam stream that was opened during identity verification.
+  if (!secure.sessionId && !active.hasActive && !roomScanPassed) {
+    return (
+      <div className="space-y-3">
+        {!secure.webcamReady && (
+          <Card className="space-y-3 border-primary/30 bg-primary/5 p-5">
+            <div className="flex items-center gap-2">
+              <Camera className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold">Re-enable webcam for room scan</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              The webcam was released after identity verification. Re-enable it to record a 10-second room scan.
+            </p>
+            <Button onClick={secure.requestWebcam}>Grant webcam access</Button>
+          </Card>
+        )}
+        {secure.webcamReady && (
+          <RoomScanStep
+            contestId={contestId}
+            sessionId={secure.sessionId}
+            webcamStream={secure.webcamStream}
+            onPassed={markRoomScan}
           />
         )}
       </div>

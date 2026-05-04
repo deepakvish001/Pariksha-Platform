@@ -1374,6 +1374,7 @@ export type Database = {
           method: string
           page_path: string | null
           session_id: string | null
+          severity: string
           url: string
           user_id: string
         }
@@ -1386,6 +1387,7 @@ export type Database = {
           method?: string
           page_path?: string | null
           session_id?: string | null
+          severity?: string
           url: string
           user_id: string
         }
@@ -1398,7 +1400,41 @@ export type Database = {
           method?: string
           page_path?: string | null
           session_id?: string | null
+          severity?: string
           url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contest_preflight_checks: {
+        Row: {
+          contest_id: string
+          created_at: string
+          details: Json
+          id: string
+          session_id: string | null
+          status: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          session_id?: string | null
+          status: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          session_id?: string | null
+          status?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1573,6 +1609,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contest_room_scans: {
+        Row: {
+          ai_findings: Json
+          ai_summary: string | null
+          contest_id: string
+          created_at: string
+          duration_ms: number | null
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          session_id: string | null
+          storage_path: string
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          ai_findings?: Json
+          ai_summary?: string | null
+          contest_id: string
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id?: string | null
+          storage_path: string
+          user_id: string
+          verdict?: string
+        }
+        Update: {
+          ai_findings?: Json
+          ai_summary?: string | null
+          contest_id?: string
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id?: string | null
+          storage_path?: string
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: []
       }
       contest_screen_recordings: {
         Row: {
@@ -5083,6 +5164,25 @@ export type Database = {
           _type: string
         }
         Returns: Json
+      }
+      contest_record_preflight: {
+        Args: {
+          _contest_id: string
+          _details: Json
+          _session_id: string
+          _status: string
+          _user_agent: string
+        }
+        Returns: string
+      }
+      contest_record_room_scan: {
+        Args: {
+          _contest_id: string
+          _duration_ms: number
+          _session_id: string
+          _storage_path: string
+        }
+        Returns: string
       }
       contest_report_stream_health: {
         Args: { _healthy: boolean; _kind: string; _session_id: string }
