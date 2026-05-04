@@ -154,6 +154,9 @@ import ContestEditor from "./pages/admin/contests/ContestEditor";
 import AdminContestRegistrations from "./pages/admin/contests/AdminContestRegistrations";
 import AdminContestLeaderboard from "./pages/admin/contests/AdminContestLeaderboard";
 import AdminContestProctor from "./pages/admin/contests/AdminContestProctor";
+import AdminVivaQueue from "./pages/admin/contests/AdminVivaQueue";
+import AdminDQSignoffs from "./pages/admin/contests/AdminDQSignoffs";
+import PublicIntegrityReport from "./pages/contests/PublicIntegrityReport";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -391,6 +394,8 @@ const App = () => (
                   <Route path="contests/:id/registrations" element={<AdminContestRegistrations />} />
                   <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
                   <Route path="contests/:id/proctor" element={<AdminContestProctor />} />
+                  <Route path="contests/viva-queue" element={<AdminVivaQueue />} />
+                  <Route path="contests/dq-signoffs" element={<AdminDQSignoffs />} />
                 </Route>
 
                 {/* Arena - 1v1 battles */}
