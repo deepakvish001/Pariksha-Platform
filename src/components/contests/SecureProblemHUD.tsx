@@ -29,6 +29,23 @@ export default function SecureProblemHUD({ contestId, contestSlug, onSubmissionR
   const navigate = useNavigate();
   const secure = useContestSecureMode(contestId, true);
   const active = useActiveContestSession(contestId);
+  const trust = useContestTrustScore(contestId);
+
+  // Periodically ping the proctor-analyze edge function (~every 2 min)
+  useEffect(() => {
+    if (!contestId || !active.hasActive) return;
+    const ping = async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        await supabase.functions.invoke("proctor-analyze", {
+          body: { contest_id: contestId, session_id: active.sessionId },
+        });
+      } catch { /* ignore */ }
+    };
+    void ping();
+    const id = window.setInterval(ping, 120_000);
+    return () => window.clearInterval(id);
+  }, [contestId, active.hasActive, active.sessionId]);
 
   const status: Status = useMemo(() => {
     if (active.loading) return "loading";
