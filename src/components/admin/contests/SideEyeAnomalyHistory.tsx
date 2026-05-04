@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { History, RefreshCw, Filter } from "lucide-react";
+import { History, RefreshCw, Filter, Radio } from "lucide-react";
 import { format } from "date-fns";
 
 interface ChainRow {
@@ -47,6 +48,9 @@ export const SideEyeAnomalyHistory = ({
   const [rows, setRows] = useState<ChainRow[]>([]);
   const [minSev, setMinSev] = useState<(typeof SEVERITIES)[number]>("info");
   const [loading, setLoading] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [intervalSec, setIntervalSec] = useState(15);
+  const pollRef = useRef<number | null>(null);
 
   const load = async () => {
     if (sessionIds.length === 0) { setRows([]); return; }
