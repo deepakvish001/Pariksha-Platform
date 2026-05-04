@@ -1090,6 +1090,9 @@ const CodingProblemDetail = () => {
                   order={tabOrder}
                   onReorder={(next) => setTabOrder(next)}
                   renderLabel={(id) => {
+                    const lockMark = isTabLocked(id) ? (
+                      <span className="ml-1 text-amber-500" aria-label="Locked during contest">🔒</span>
+                    ) : null;
                     switch (id) {
                       case "description":
                         return "Description";
@@ -1104,16 +1107,18 @@ const CodingProblemDetail = () => {
                                 )}
                               />
                             )}
+                            {lockMark}
                           </>
                         );
                       case "solution":
-                        return "Reference";
+                        return <>Reference{lockMark}</>;
                       case "notes":
                         return (
                           <>
                             Notes {notesValue.trim().length > 0 && (
                               <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-primary inline-block" />
                             )}
+                            {lockMark}
                           </>
                         );
                       case "submissions":
@@ -1130,6 +1135,7 @@ const CodingProblemDetail = () => {
                             Runs {runs.length > 0 && (
                               <span className="ml-1.5 text-xs text-muted-foreground">({runs.length})</span>
                             )}
+                            {lockMark}
                           </>
                         );
                     }
