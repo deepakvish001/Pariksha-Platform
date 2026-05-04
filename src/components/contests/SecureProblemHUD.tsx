@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ShieldCheck, ShieldAlert, ShieldOff, Maximize2, Camera, AlertTriangle, Wifi, WifiOff, Loader2, Timer } from "lucide-react";
 import { useContestSecureMode } from "@/hooks/useContestSecureMode";
 import { useActiveContestSession } from "@/hooks/useActiveContestSession";
+import { useContestTrustScore } from "@/hooks/useContestTrustScore";
+import { TrustScoreBadge } from "./TrustScoreBadge";
 import { toast } from "sonner";
 
 interface Props {
