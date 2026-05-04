@@ -24,7 +24,7 @@ const SideEyeMobile = () => {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const wakeLockRef = useRef<any>(null);
 
-  useSideEyeSignalling({
+  const { quality, connectionState } = useSideEyeSignalling({
     sessionId,
     role: "phone",
     localStream: stream,
