@@ -417,7 +417,7 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
    * rule via `validate_contest_submission`.
    */
   const submissionAllowed =
-    !!state.sessionId && state.online && !state.reconnecting && !state.disqualified;
+    !!state.sessionId && state.online && !state.reconnecting && !state.disqualified && webcamHealthy;
 
   return {
     ...state,
@@ -429,5 +429,8 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     reconnect,
     /** Live webcam MediaStream (for the WebcamPiP component). */
     webcamStream: videoStreamRef.current,
+    webcamHealthy,
+    webcamGraceUntil,
+    reportWebcamHealth,
   };
 }
