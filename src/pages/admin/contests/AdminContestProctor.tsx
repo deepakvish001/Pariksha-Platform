@@ -12,12 +12,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ShieldAlert, Camera, RefreshCw, Flag, Ban, Sparkles, Mic } from "lucide-react";
+import { ArrowLeft, ShieldAlert, Camera, RefreshCw, Flag, Ban, Sparkles, Mic, Smartphone } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { SimilarityTab } from "@/components/admin/contests/SimilarityTab";
 import { VivaQueueTab } from "@/components/admin/contests/VivaQueueTab";
+import { SideEyeTile } from "@/components/contests/SideEyeTile";
 
 type Violation = {
   id: string;
@@ -249,6 +250,7 @@ const AdminContestProctor = () => {
             <TabsTrigger value="sessions">Active sessions</TabsTrigger>
             <TabsTrigger value="similarity"><Sparkles className="mr-2 h-4 w-4" />Similarity</TabsTrigger>
             <TabsTrigger value="viva"><Mic className="mr-2 h-4 w-4" />Viva queue</TabsTrigger>
+            <TabsTrigger value="sideeye"><Smartphone className="mr-2 h-4 w-4" />Side cameras</TabsTrigger>
           </TabsList>
 
           <TabsContent value="violations" className="space-y-3">
