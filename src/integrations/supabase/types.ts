@@ -1403,6 +1403,50 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_problem_variants: {
+        Row: {
+          contest_id: string
+          created_at: string
+          hidden_test_seed: string | null
+          id: string
+          problem_slug: string
+          statement_md: string | null
+          title: string | null
+          variant_key: string
+          weight: number
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          hidden_test_seed?: string | null
+          id?: string
+          problem_slug: string
+          statement_md?: string | null
+          title?: string | null
+          variant_key: string
+          weight?: number
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          hidden_test_seed?: string | null
+          id?: string
+          problem_slug?: string
+          statement_md?: string | null
+          title?: string | null
+          variant_key?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_problem_variants_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_problems: {
         Row: {
           contest_id: string
@@ -1640,6 +1684,65 @@ export type Database = {
           },
         ]
       }
+      contest_similarity_pairs: {
+        Row: {
+          contest_id: string
+          created_at: string
+          id: string
+          method: string
+          problem_slug: string
+          rationale: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          similarity: number
+          submission_a: string | null
+          submission_b: string | null
+          user_a: string
+          user_b: string
+          verdict: string
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          id?: string
+          method?: string
+          problem_slug: string
+          rationale?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          similarity: number
+          submission_a?: string | null
+          submission_b?: string | null
+          user_a: string
+          user_b: string
+          verdict?: string
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          id?: string
+          method?: string
+          problem_slug?: string
+          rationale?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          similarity?: number
+          submission_a?: string | null
+          submission_b?: string | null
+          user_a?: string
+          user_b?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_similarity_pairs_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_stream_health: {
         Row: {
           contest_id: string
@@ -1857,6 +1960,51 @@ export type Database = {
           },
         ]
       }
+      contest_user_variants: {
+        Row: {
+          assigned_at: string
+          contest_id: string
+          id: string
+          problem_slug: string
+          user_id: string
+          variant_id: string
+          variant_key: string
+        }
+        Insert: {
+          assigned_at?: string
+          contest_id: string
+          id?: string
+          problem_slug: string
+          user_id: string
+          variant_id: string
+          variant_key: string
+        }
+        Update: {
+          assigned_at?: string
+          contest_id?: string
+          id?: string
+          problem_slug?: string
+          user_id?: string
+          variant_id?: string
+          variant_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_user_variants_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_user_variants_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "contest_problem_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_violations: {
         Row: {
           contest_id: string
@@ -1901,6 +2049,59 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_viva_queue: {
+        Row: {
+          contest_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          problem_slug: string | null
+          reason: string
+          reviewer_id: string | null
+          scheduled_at: string | null
+          source: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          problem_slug?: string | null
+          reason: string
+          reviewer_id?: string | null
+          scheduled_at?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          problem_slug?: string | null
+          reason?: string
+          reviewer_id?: string | null
+          scheduled_at?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_viva_queue_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
             referencedColumns: ["id"]
           },
         ]
@@ -4766,6 +4967,24 @@ export type Database = {
         Returns: undefined
       }
       arena_tick_streak: { Args: never; Returns: Json }
+      assign_contest_variant: {
+        Args: { _contest_id: string; _problem_slug: string }
+        Returns: {
+          assigned_at: string
+          contest_id: string
+          id: string
+          problem_slug: string
+          user_id: string
+          variant_id: string
+          variant_key: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "contest_user_variants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       attach_problem_to_contest: {
         Args: { _contest_id: string; _problem_slug: string }
         Returns: Json
@@ -4846,6 +5065,10 @@ export type Database = {
       contest_effective_status: {
         Args: { _contest_id: string }
         Returns: string
+      }
+      contest_force_dq: {
+        Args: { _contest_id: string; _reason: string; _user_id: string }
+        Returns: undefined
       }
       contest_force_end_session: {
         Args: { _session_id: string }
