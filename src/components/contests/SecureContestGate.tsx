@@ -106,12 +106,12 @@ export default function SecureContestGate({
     onSessionChange?.(active.hasActive);
   }, [active.hasActive, onSessionChange]);
 
-  // Auto-jump into kiosk once session + screen share are live.
+  // Auto-jump into kiosk once session + screen share + side camera are live.
   useEffect(() => {
-    if (secure.sessionId && recorder.sharing && firstProblemSlug && hasStarted && !hasEnded) {
+    if (secure.sessionId && recorder.sharing && sideEyeReady && firstProblemSlug && hasStarted && !hasEnded) {
       navigate(`/contests/${contestSlug}/play/${firstProblemSlug}`);
     }
-  }, [secure.sessionId, recorder.sharing, firstProblemSlug, hasStarted, hasEnded, contestSlug, navigate]);
+  }, [secure.sessionId, recorder.sharing, sideEyeReady, firstProblemSlug, hasStarted, hasEnded, contestSlug, navigate]);
 
   if (!isRegistered) {
     return (
