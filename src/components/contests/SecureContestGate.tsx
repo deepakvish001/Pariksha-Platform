@@ -359,17 +359,29 @@ export default function SecureContestGate({
           </Button>
         )}
         {firstProblemSlug && (
-          <Button
-            size="sm"
-            onClick={() => navigate(`/contests/${contestSlug}/play/${firstProblemSlug}`)}
-          >
-            Enter contest workspace
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              disabled={!sideEyeReady}
+              onClick={() => navigate(`/contests/${contestSlug}/play/${firstProblemSlug}`)}
+            >
+              Enter contest workspace
+            </Button>
+            {!sideEyeReady && (
+              <span className="text-[11px] text-amber-300">
+                Pair your phone (Second Eye) below to continue.
+              </span>
+            )}
+          </div>
         )}
       </Card>
 
       {secure.sessionId && (
-        <SideEyePairingStep sessionId={secure.sessionId} required />
+        <SideEyePairingStep
+          sessionId={secure.sessionId}
+          required
+          onPaired={() => setSideEyeReady(true)}
+        />
       )}
 
       <Dialog
