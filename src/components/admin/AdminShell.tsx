@@ -153,6 +153,7 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/achievements", label: "Achievements", icon: Award },
     { to: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
     { to: "/admin/notifications", label: "Notifications", icon: Bell },
+    { to: "/admin/alerts", label: "Contest Alerts", icon: ShieldAlert },
     { to: "/admin/support", label: "Support Inbox", icon: Inbox },
   ]},
   { label: "User Activity", items: [
