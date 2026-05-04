@@ -358,7 +358,8 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
       {exportProgress && (
         <div className="text-[11px] text-muted-foreground flex items-center gap-2">
           <Loader2 className="h-3 w-3 animate-spin" />
-          Exporting {exportProgress.fetched} / {exportProgress.total}…
+          <span className="font-medium text-foreground">{exportProgress.format}</span>
+          <span>· {exportProgress.phase}: {exportProgress.fetched.toLocaleString()} / {exportProgress.total.toLocaleString()} row(s)</span>
           <div className="flex-1 h-1 bg-muted rounded overflow-hidden">
             <div
               className="h-full bg-primary transition-all"
