@@ -14,6 +14,7 @@ import {
 import { Loader2, Download, Smartphone, AlertTriangle, Activity, Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { SideEyeAuditDetailsDrawer } from "./SideEyeAuditDetailsDrawer";
 
 interface FrameRow {
   id: string;
