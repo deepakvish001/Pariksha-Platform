@@ -241,6 +241,11 @@ const CodingProblemDetail = () => {
   const { runs, refetch: refetchRuns } = useCodeRuns(slug);
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
   const { note: notesValue, setNote: setNotesValue, savedAt: notesSavedAt } = useProblemNotes(slug);
+  // Lock state for contest aux materials (notes / my-solution / reference / runs)
+  // — driven by useContestLocks. While the contest is live and the user is a
+  // registered participant, these panels are replaced with a LockedAuxPanel
+  // surface that countdowns to the contest end.
+  const contestLocks = useContestLocks(contestId ?? undefined);
   const {
     notes: mySolutionNotes,
     code: mySolutionCode,
