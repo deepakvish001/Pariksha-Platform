@@ -188,20 +188,25 @@ export default function SecureContestGate({
           disabled={secure.starting}
           onClick={async () => {
             await secure.requestWebcam();
+            await recorder.requestShare();
             await secure.enterFullscreen();
             await secure.start();
           }}
         >
           {secure.starting ? "Starting…" : "Start secure session"}
         </Button>
+        {recorder.error && (
+          <p className="text-xs text-red-300">Screen share: {recorder.error}</p>
+        )}
       </Card>
     );
   }
 
-  // Live secure HUD
+  // Live secure HUD — also mounts the WebcamPiP so the user always sees their camera.
   const violationsLeft = Math.max(0, 5 - secure.violationCount);
   return (
     <>
+      <WebcamPiP stream={secure.webcamStream} />
       <Card className="space-y-3 border-emerald-500/30 bg-emerald-500/5 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -215,14 +220,30 @@ export default function SecureContestGate({
             <Badge variant="outline" className={secure.webcamReady ? "border-emerald-400/40 text-emerald-300" : "border-amber-400/40 text-amber-300"}>
               <Camera className="mr-1 h-3 w-3" /> {secure.webcamReady ? "Proctor on" : "No webcam"}
             </Badge>
+            <Badge variant="outline" className={recorder.sharing ? "border-emerald-400/40 text-emerald-300" : "border-amber-400/40 text-amber-300"}>
+              <Monitor className="mr-1 h-3 w-3" /> {recorder.sharing ? "Screen recording" : "No screen share"}
+            </Badge>
             <Badge variant="outline" className={secure.flagged ? "border-red-400/50 text-red-300" : "border-border"}>
               <AlertTriangle className="mr-1 h-3 w-3" /> {secure.violationCount}/5 violations · {violationsLeft} left
             </Badge>
           </div>
         </div>
+        {!recorder.sharing && (
+          <Button size="sm" variant="outline" onClick={recorder.requestShare}>
+            Share screen again
+          </Button>
+        )}
         {!secure.fullscreen && (
           <Button size="sm" variant="outline" onClick={secure.enterFullscreen}>
             Re-enter fullscreen
+          </Button>
+        )}
+        {firstProblemSlug && (
+          <Button
+            size="sm"
+            onClick={() => navigate(`/contests/${contestSlug}/play/${firstProblemSlug}`)}
+          >
+            Enter contest workspace
           </Button>
         )}
       </Card>
