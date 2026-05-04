@@ -1196,7 +1196,11 @@ const CodingProblemDetail = () => {
                 )}
 
                 {/* Hints — progressive disclosure */}
-                <ProgressiveHints hints={problem.hints} slug={problem.slug} />
+                {contestLocks.hintsLocked ? (
+                  <LockedAuxPanel label="Hints" endsAt={contestLocks.endsAt} />
+                ) : (
+                  <ProgressiveHints hints={problem.hints} slug={problem.slug} />
+                )}
               </TabsContent>
 
               <TabsContent value="notes" className="mt-0">
