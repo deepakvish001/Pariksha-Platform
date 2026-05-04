@@ -1009,12 +1009,19 @@ const CodingProblemDetail = () => {
           <Button
             data-testid="contest-submit-button"
             onClick={handleSubmit}
-            disabled={isRunning || isSubmitting || contestSubmitBlocked}
+            disabled={
+              isRunning ||
+              isSubmitting ||
+              contestSubmitBlocked ||
+              (!!searchParams.get("contest") && !secureSubmissionReady)
+            }
             size="sm"
             className="gap-1.5"
             title={
               contestSubmitBlocked
                 ? contestError ?? "Submission is blocked for this contest"
+                : !!searchParams.get("contest") && !secureSubmissionReady
+                ? "Heartbeat offline — submissions paused until reconnected"
                 : "Submit solution (Ctrl/Cmd+Shift+Enter)"
             }
           >
