@@ -44,7 +44,9 @@ export function useScreenRecorder(opts: {
   }, []);
 
   const requestShare = useCallback(async () => {
-    if (!enabled) return;
+    // Note: do NOT gate on `enabled` here — this is invoked from a user
+    // gesture before the secure session id exists. The recording loop
+    // below still gates start on enabled+sessionId.
     try {
       const stream: MediaStream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: 5, max: 10 } },
