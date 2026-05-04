@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
     // Load admin-configurable thresholds (singleton row).
     const { data: settings } = await admin
       .from("sideeye_notification_settings")
-      .select("min_severity, escalate_kinds")
+      .select("min_severity, escalate_kinds, recipient_user_ids, notify_all_admins")
       .eq("singleton", true)
       .maybeSingle();
 
