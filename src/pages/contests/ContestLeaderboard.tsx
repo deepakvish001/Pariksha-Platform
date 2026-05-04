@@ -96,6 +96,23 @@ const ContestLeaderboard = () => {
           </Card>
         )}
 
+        {/* Trust score legend — explains the color key in the Trust column */}
+        <Card className="flex flex-wrap items-center gap-x-5 gap-y-2 p-3 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Trust score:</span>
+          <span className="inline-flex items-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+            <span><strong className="text-emerald-400">Low risk</strong> · 80–100 — clean session</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <ShieldAlert className="h-3.5 w-3.5 text-amber-400" />
+            <span><strong className="text-amber-400">Medium risk</strong> · 50–79 — minor anomalies</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <ShieldX className="h-3.5 w-3.5 text-red-400" />
+            <span><strong className="text-red-400">High risk</strong> · &lt; 50 — submissions may be blocked</span>
+          </span>
+        </Card>
+
         <Card>
           {lbError ? (
             <div className="flex flex-col items-center gap-3 p-12 text-center">
