@@ -280,9 +280,19 @@ export const useProblemSolution = (
     return () => {
       cancelled = true;
     };
-  }, [slug, userId]);
+  }, [slug, userId, locked, contestId]);
 
   const pushToDb = async (uid: string, problemSlug: string, value: SolutionEntry) => {
+    if (locked) {
+      logContestLockEvent({
+        contestId,
+        problemSlug,
+        kind: "blocked_hook_fetch",
+        target: "my-solution",
+        details: { op: "push" },
+      });
+      return;
+    }
     try {
       const isEmpty =
         !value.notes.trim() &&
