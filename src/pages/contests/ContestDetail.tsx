@@ -32,6 +32,10 @@ const ContestDetail = () => {
   const withdraw = useWithdrawFromContest();
   const clock = useContestClock(contest?.starts_at, contest?.ends_at);
   const [invite, setInvite] = useState("");
+  const honorAcceptedInitial = !!(myReg as { honor_code_accepted_at?: string | null } | undefined)?.honor_code_accepted_at;
+  const [honorAccepted, setHonorAccepted] = useReactState(honorAcceptedInitial);
+  const [hasActiveSession, setHasActiveSession] = useReactState(false);
+  useEffect(() => { setHonorAccepted(honorAcceptedInitial); }, [honorAcceptedInitial]);
 
   if (isLoading) return <Skeleton className="mx-auto mt-10 h-96 w-full max-w-5xl" />;
   if (!contest) return <div className="p-8 text-center text-muted-foreground">Contest not found.</div>;
@@ -42,10 +46,6 @@ const ContestDetail = () => {
   // Secure Mode: registration closes at start time (enforced by trigger too)
   const canRegister = lifecycle === "active" && clock.phase === "upcoming";
   const isDisqualified = (myReg as { status?: string } | undefined)?.status === "disqualified";
-  const honorAcceptedInitial = !!(myReg as { honor_code_accepted_at?: string | null } | undefined)?.honor_code_accepted_at;
-  const [honorAccepted, setHonorAccepted] = useReactState(honorAcceptedInitial);
-  const [hasActiveSession, setHasActiveSession] = useReactState(false);
-  useEffect(() => { setHonorAccepted(honorAcceptedInitial); }, [honorAcceptedInitial]);
 
   const onRegister = () => {
     if (!user) return navigate("/login");
