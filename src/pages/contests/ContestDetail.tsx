@@ -173,20 +173,28 @@ const ContestDetail = () => {
             ) : problems.length === 0 ? (
               <Card className="p-6 text-center text-muted-foreground">No problems set.</Card>
             ) : (
-              problems.map((p, i) => (
-                <Link key={p.problem_slug} to={`/library/problems/${p.problem_slug}?contest=${contest.slug}`}>
-                  <Card className="flex items-center justify-between p-4 transition hover:border-primary/40">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-sm text-muted-foreground">{String.fromCharCode(65 + i)}</span>
-                      <span className="font-medium">{p.problem_slug}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span>{p.points} pts</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </div>
-                  </Card>
-                </Link>
-              ))
+              problems.map((p, i) => {
+                // While a secure session is active, route problem links into the
+                // kiosk layout (no sidebar). Otherwise fall back to the normal
+                // problem page with ?contest=<slug> query param.
+                const href = hasActiveSession
+                  ? `/contests/${contest.slug}/play/${p.problem_slug}`
+                  : `/library/problems/${p.problem_slug}?contest=${contest.slug}`;
+                return (
+                  <Link key={p.problem_slug} to={href}>
+                    <Card className="flex items-center justify-between p-4 transition hover:border-primary/40">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-sm text-muted-foreground">{String.fromCharCode(65 + i)}</span>
+                        <span className="font-medium">{p.problem_slug}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span>{p.points} pts</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                    </Card>
+                  </Link>
+                );
+              })
             )}
           </TabsContent>
 
