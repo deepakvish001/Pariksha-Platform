@@ -11,6 +11,8 @@ import { MultiTabBlockedDialog } from "@/components/contests/MultiTabBlockedDial
 import { StreamHealthBanner } from "@/components/contests/StreamHealthBanner";
 import { ContestVariantBanner } from "@/components/contests/ContestVariantBanner";
 import { useContestProblemVariant } from "@/hooks/useContestProblemVariant";
+import { useCodeProvenance } from "@/hooks/useCodeProvenance";
+import { useAuth } from "@/contexts/AuthContext";
 import CodingProblemDetail from "@/pages/library/CodingProblemDetail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -37,6 +39,29 @@ export default function ContestPlayProblem() {
   const streamHealth = useContestStreamHealth(session.sessionId ?? null);
   // Assigns (or reuses) the participant's randomized variant for this problem.
   const variantQuery = useContestProblemVariant(contest?.id, problemSlug);
+  const { user } = useAuth();
+  // Find the Monaco editor DOM root after CodingProblemDetail mounts so the
+  // provenance ledger can attach keystroke / paste / cut listeners. We poll
+  // briefly because the editor mounts asynchronously after Suspense resolves.
+  const [editorEl, setEditorEl] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!session.sessionId) return;
+    let tries = 0;
+    const t = window.setInterval(() => {
+      const el = document.querySelector<HTMLElement>(".monaco-editor");
+      if (el) { setEditorEl(el); window.clearInterval(t); }
+      else if (++tries > 40) window.clearInterval(t); // give up after ~12s
+    }, 300);
+    return () => window.clearInterval(t);
+  }, [session.sessionId, problemSlug]);
+
+  useCodeProvenance({
+    target: editorEl,
+    sessionId: session.sessionId ?? null,
+    contestId: contest?.id ?? null,
+    userId: user?.id ?? null,
+    problemId: problemSlug ?? null,
+  });
 
   // Make sure the URL CodingProblemDetail reads from has ?contest=<slug>
   useEffect(() => {
