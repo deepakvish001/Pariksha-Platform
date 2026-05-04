@@ -1076,6 +1076,7 @@ const CodingProblemDetail = () => {
           </Button>
           <Button
             data-testid="contest-submit-button"
+            data-contest-submit-btn=""
             onClick={handleSubmit}
             disabled={
               isRunning ||
