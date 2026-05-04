@@ -174,6 +174,25 @@ Deno.serve(async (req) => {
           ai_summary: `Side camera: ${summary.notes ?? ""}`.slice(0, 1000),
           raw: { source: "side_camera", anomaly_kind: summary.secondary_device ? "secondary_device" : summary.candidate_absent ? "candidate_absent" : summary.extra_person ? "extra_person" : "side_camera", ...summary },
         });
+
+        // Direct extra-recipient notifications (configurable list).
+        const extraRecipients = settings?.recipient_user_ids ?? [];
+        if (!settings?.notify_all_admins && extraRecipients.length > 0) {
+          const rows = extraRecipients.map((uid: string) => ({
+            user_id: uid,
+            type: "contest_sideeye_finding",
+            title: "Side camera anomaly",
+            body: `Side camera flagged: ${summary.notes ?? triggeredKind ?? "anomaly"}`.slice(0, 500),
+            metadata: {
+              contest_id: sess.contest_id,
+              session_id: sessionId,
+              user_id: user.id,
+              severity: findingSeverity,
+              kind: triggeredKind ?? null,
+            },
+          }));
+          await admin.from("notifications").insert(rows);
+        }
       }
     }
 
