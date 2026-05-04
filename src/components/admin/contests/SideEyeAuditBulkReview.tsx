@@ -12,7 +12,7 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { CheckCircle2, Loader2, Download, FileText, FileJson, FileDown } from "lucide-react";
+import { CheckCircle2, Loader2, Download, FileText, FileJson, FileDown, FileArchive } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { logSideEyeAction } from "./lib/adminAuditLog";
@@ -150,7 +150,18 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
     }
   };
 
-  const [exportProgress, setExportProgress] = useState<{ fetched: number; total: number } | null>(null);
+  const [exportProgress, setExportProgress] = useState<{ fetched: number; total: number; phase: string; format: string } | null>(null);
+
+  /**
+   * Pipe a Blob through the browser's built-in gzip CompressionStream.
+   * Falls back to the original blob if the API is unavailable (very old browsers).
+   */
+  const gzipBlob = async (blob: Blob): Promise<Blob> => {
+    if (typeof (globalThis as any).CompressionStream === "undefined") return blob;
+    const cs = new (globalThis as any).CompressionStream("gzip");
+    const stream = blob.stream().pipeThrough(cs);
+    return await new Response(stream).blob();
+  };
 
   /**
    * Stream all matching rows in fixed-size pages so we can export far beyond
@@ -158,10 +169,10 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
    * `onBatch` so callers can build CSV/JSON/PDF incrementally.
    */
   const streamAllMatching = async (
+    format: string,
     onBatch: (batch: AuditRow[]) => void,
     pageSize = 1000,
   ): Promise<number> => {
-    // Resolve total first for accurate progress UI
     let countQ = supabase
       .from("contest_side_camera_audit_logs")
       .select("id", { count: "exact", head: true })
@@ -170,7 +181,7 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
     if (sevFilter !== "all") countQ = countQ.eq("severity", sevFilter);
     const { count } = await countQ;
     const grandTotal = count ?? 0;
-    setExportProgress({ fetched: 0, total: grandTotal });
+    setExportProgress({ fetched: 0, total: grandTotal, phase: "Fetching rows", format });
     let fetched = 0;
     for (let from = 0; from < grandTotal; from += pageSize) {
       const to = Math.min(from + pageSize - 1, grandTotal - 1);
@@ -187,8 +198,10 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
       const batch = (data as AuditRow[]) ?? [];
       onBatch(batch);
       fetched += batch.length;
-      setExportProgress({ fetched, total: grandTotal });
+      setExportProgress({ fetched, total: grandTotal, phase: "Writing rows", format });
       if (batch.length === 0) break;
+      // Yield to UI thread so progress bar updates between batches
+      await new Promise((r) => setTimeout(r, 0));
     }
     return fetched;
   };
@@ -210,9 +223,10 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
   const exportCsv = async () => {
     try {
       const chunks: string[] = [csvHeader.join(",")];
-      const fetched = await streamAllMatching((batch) => {
+      const fetched = await streamAllMatching("CSV", (batch) => {
         for (const r of batch) chunks.push(csvHeader.map((h) => csvEsc((r as any)[h])).join(","));
       });
+      setExportProgress((p) => p && { ...p, phase: "Building file" });
       const blob = new Blob([chunks.join("\n")], { type: "text/csv;charset=utf-8;" });
       downloadBlob(blob, `sideeye-audit-${sessionId}-${Date.now()}.csv`);
       await logSideEyeAction("sideeye_audit_export_csv", sessionId, {
@@ -226,10 +240,8 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
     }
   };
 
-  const exportJson = async () => {
+  const exportJson = async (compress = false) => {
     try {
-      // Stream batches directly into Blob parts so rows are never accumulated
-      // in a single in-memory array. Each row is serialized once and dropped.
       const parts: BlobPart[] = [];
       const exportedAt = new Date().toISOString();
       parts.push(
@@ -239,7 +251,7 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
         `  "rows": [`,
       );
       let wrote = 0;
-      const fetched = await streamAllMatching((batch) => {
+      const fetched = await streamAllMatching(compress ? "JSON.gz" : "JSON", (batch) => {
         if (batch.length === 0) return;
         let chunk = "";
         for (const r of batch) {
@@ -249,12 +261,22 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
         parts.push(chunk);
       });
       parts.push(`\n  ],\n  "count": ${fetched}\n}\n`);
-      const blob = new Blob(parts, { type: "application/json" });
-      downloadBlob(blob, `sideeye-audit-${sessionId}-${Date.now()}.json`);
-      await logSideEyeAction("sideeye_audit_export_json", sessionId, {
-        count: fetched, filters: { hideReviewed, severity: sevFilter },
+      setExportProgress((p) => p && { ...p, phase: compress ? "Compressing (gzip)" : "Building file" });
+      let blob = new Blob(parts, { type: "application/json" });
+      let ext = "json";
+      let mime = "application/json";
+      if (compress) {
+        blob = await gzipBlob(blob);
+        // Re-wrap with gzip mime so the browser doesn't auto-decompress on save
+        blob = new Blob([blob], { type: "application/gzip" });
+        ext = "json.gz";
+        mime = "application/gzip";
+      }
+      downloadBlob(blob, `sideeye-audit-${sessionId}-${Date.now()}.${ext}`);
+      await logSideEyeAction(compress ? "sideeye_audit_export_json_gz" : "sideeye_audit_export_json", sessionId, {
+        count: fetched, bytes: blob.size, filters: { hideReviewed, severity: sevFilter },
       });
-      toast.success(`Exported ${fetched} row(s) as JSON`);
+      toast.success(`Exported ${fetched} row(s) as ${compress ? "gzipped JSON" : "JSON"} (${(blob.size / 1024).toFixed(1)} KB)`);
     } catch (e: any) {
       toast.error("JSON export failed", { description: e?.message });
     } finally {
@@ -265,7 +287,8 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
   const exportPdf = async () => {
     try {
       const all: AuditRow[] = [];
-      const fetched = await streamAllMatching((batch) => { all.push(...batch); });
+      const fetched = await streamAllMatching("PDF", (batch) => { all.push(...batch); });
+      setExportProgress((p) => p && { ...p, phase: "Rendering PDF" });
       const win = window.open("", "_blank");
       if (!win) throw new Error("Popup blocked — allow popups to export PDF");
       const esc = (s: any) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]!));
@@ -320,8 +343,11 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
           <Button size="sm" variant="outline" className="h-7" onClick={exportCsv} disabled={!!exportProgress}>
             <Download className="mr-1 h-3 w-3" /> CSV
           </Button>
-          <Button size="sm" variant="outline" className="h-7" onClick={exportJson} disabled={!!exportProgress}>
+          <Button size="sm" variant="outline" className="h-7" onClick={() => exportJson(false)} disabled={!!exportProgress}>
             <FileJson className="mr-1 h-3 w-3" /> JSON
+          </Button>
+          <Button size="sm" variant="outline" className="h-7" onClick={() => exportJson(true)} disabled={!!exportProgress} title="Gzip-compressed JSON">
+            <FileArchive className="mr-1 h-3 w-3" /> JSON.gz
           </Button>
           <Button size="sm" variant="outline" className="h-7" onClick={exportPdf} disabled={!!exportProgress}>
             <FileDown className="mr-1 h-3 w-3" /> PDF
@@ -332,7 +358,8 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
       {exportProgress && (
         <div className="text-[11px] text-muted-foreground flex items-center gap-2">
           <Loader2 className="h-3 w-3 animate-spin" />
-          Exporting {exportProgress.fetched} / {exportProgress.total}…
+          <span className="font-medium text-foreground">{exportProgress.format}</span>
+          <span>· {exportProgress.phase}: {exportProgress.fetched.toLocaleString()} / {exportProgress.total.toLocaleString()} row(s)</span>
           <div className="flex-1 h-1 bg-muted rounded overflow-hidden">
             <div
               className="h-full bg-primary transition-all"
