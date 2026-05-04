@@ -225,11 +225,21 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: false });
       videoStreamRef.current = stream;
       setState((s) => ({ ...s, webcamReady: true }));
+      setWebcamHealthy(true);
+      void reportWebcamHealth(true);
+      stream.getVideoTracks()[0]?.addEventListener("ended", () => {
+        setState((s) => ({ ...s, webcamReady: false }));
+        setWebcamHealthy(false);
+        void reportWebcamHealth(false);
+        logViolation("webcam_denied", "flag", { reason: "stream_ended" });
+      });
     } catch {
       setState((s) => ({ ...s, webcamReady: false }));
+      setWebcamHealthy(false);
+      void reportWebcamHealth(false);
       logViolation("webcam_denied", "flag");
     }
-  }, [logViolation]);
+  }, [logViolation, reportWebcamHealth]);
 
   // Periodic snapshot
   useEffect(() => {
@@ -314,6 +324,7 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
       try {
         const { data, error } = await supabase.rpc("contest_session_heartbeat" as never, {
           _session_id: sessionRef.current,
+          _fingerprint: fingerprintRef.current ?? null,
         } as never);
         if (cancelled) return;
         const res = data as { ok: boolean; code?: string } | null;
