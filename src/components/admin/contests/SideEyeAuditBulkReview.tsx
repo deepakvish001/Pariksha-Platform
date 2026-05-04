@@ -150,41 +150,133 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
     }
   };
 
-  const exportCsv = async () => {
-    try {
-      // Pull *all* matching rows (cap 5000) so CSV reflects the active filter.
+  const [exportProgress, setExportProgress] = useState<{ fetched: number; total: number } | null>(null);
+
+  /**
+   * Stream all matching rows in fixed-size pages so we can export far beyond
+   * the previous 5000-row cap without slamming the API. Yields each batch via
+   * `onBatch` so callers can build CSV/JSON/PDF incrementally.
+   */
+  const streamAllMatching = async (
+    onBatch: (batch: AuditRow[]) => void,
+    pageSize = 1000,
+  ): Promise<number> => {
+    // Resolve total first for accurate progress UI
+    let countQ = supabase
+      .from("contest_side_camera_audit_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("session_id", sessionId);
+    if (hideReviewed) countQ = countQ.is("reviewed_at", null);
+    if (sevFilter !== "all") countQ = countQ.eq("severity", sevFilter);
+    const { count } = await countQ;
+    const grandTotal = count ?? 0;
+    setExportProgress({ fetched: 0, total: grandTotal });
+    let fetched = 0;
+    for (let from = 0; from < grandTotal; from += pageSize) {
+      const to = Math.min(from + pageSize - 1, grandTotal - 1);
       let q = supabase
         .from("contest_side_camera_audit_logs")
         .select("id,created_at,event_type,severity,detail,reviewed_at,reviewer_id,reviewer_note")
         .eq("session_id", sessionId)
         .order("created_at", { ascending: false })
-        .limit(5000);
+        .range(from, to);
       if (hideReviewed) q = q.is("reviewed_at", null);
       if (sevFilter !== "all") q = q.eq("severity", sevFilter);
       const { data, error } = await q;
       if (error) throw error;
-      const all = (data as AuditRow[]) ?? [];
-      const esc = (v: unknown) => {
-        const s = v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
-        return `"${s.replace(/"/g, '""')}"`;
-      };
-      const header = ["id","created_at","event_type","severity","detail","reviewed_at","reviewer_id","reviewer_note"];
-      const csv = [
-        header.join(","),
-        ...all.map((r) => header.map((h) => esc((r as any)[h])).join(",")),
-      ].join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `sideeye-audit-${sessionId}-${Date.now()}.csv`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      await logSideEyeAction("sideeye_audit_export_csv", sessionId, {
-        count: all.length, filters: { hideReviewed, severity: sevFilter },
+      const batch = (data as AuditRow[]) ?? [];
+      onBatch(batch);
+      fetched += batch.length;
+      setExportProgress({ fetched, total: grandTotal });
+      if (batch.length === 0) break;
+    }
+    return fetched;
+  };
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const csvHeader = ["id","created_at","event_type","severity","detail","reviewed_at","reviewer_id","reviewer_note"];
+  const csvEsc = (v: unknown) => {
+    const s = v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+
+  const exportCsv = async () => {
+    try {
+      const chunks: string[] = [csvHeader.join(",")];
+      const fetched = await streamAllMatching((batch) => {
+        for (const r of batch) chunks.push(csvHeader.map((h) => csvEsc((r as any)[h])).join(","));
       });
-      toast.success(`Exported ${all.length} row(s)`);
+      const blob = new Blob([chunks.join("\n")], { type: "text/csv;charset=utf-8;" });
+      downloadBlob(blob, `sideeye-audit-${sessionId}-${Date.now()}.csv`);
+      await logSideEyeAction("sideeye_audit_export_csv", sessionId, {
+        count: fetched, filters: { hideReviewed, severity: sevFilter },
+      });
+      toast.success(`Exported ${fetched} row(s) as CSV`);
     } catch (e: any) {
       toast.error("CSV export failed", { description: e?.message });
+    } finally {
+      setExportProgress(null);
+    }
+  };
+
+  const exportJson = async () => {
+    try {
+      const all: AuditRow[] = [];
+      const fetched = await streamAllMatching((batch) => { all.push(...batch); });
+      const blob = new Blob(
+        [JSON.stringify({ session_id: sessionId, exported_at: new Date().toISOString(), filters: { hideReviewed, severity: sevFilter }, count: fetched, rows: all }, null, 2)],
+        { type: "application/json" },
+      );
+      downloadBlob(blob, `sideeye-audit-${sessionId}-${Date.now()}.json`);
+      await logSideEyeAction("sideeye_audit_export_json", sessionId, {
+        count: fetched, filters: { hideReviewed, severity: sevFilter },
+      });
+      toast.success(`Exported ${fetched} row(s) as JSON`);
+    } catch (e: any) {
+      toast.error("JSON export failed", { description: e?.message });
+    } finally {
+      setExportProgress(null);
+    }
+  };
+
+  const exportPdf = async () => {
+    try {
+      const all: AuditRow[] = [];
+      const fetched = await streamAllMatching((batch) => { all.push(...batch); });
+      const win = window.open("", "_blank");
+      if (!win) throw new Error("Popup blocked — allow popups to export PDF");
+      const esc = (s: any) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]!));
+      const rowsHtml = all.map((r) => `<tr>
+        <td>${esc(format(new Date(r.created_at), "yyyy-MM-dd HH:mm:ss"))}</td>
+        <td>${esc(r.event_type)}</td>
+        <td>${esc(r.severity)}</td>
+        <td>${r.reviewed_at ? esc(format(new Date(r.reviewed_at), "yyyy-MM-dd HH:mm")) : "—"}</td>
+        <td>${esc(r.reviewer_note ?? "")}</td>
+      </tr>`).join("");
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>SideEye Audit Log</title>
+<style>body{font-family:system-ui,sans-serif;padding:24px;color:#111}h1{margin:0 0 8px}table{border-collapse:collapse;width:100%;font-size:11px;margin-top:12px}th,td{border:1px solid #ddd;padding:4px 6px;text-align:left;vertical-align:top}th{background:#f5f5f5}@media print{button{display:none}}</style>
+</head><body>
+<button onclick="window.print()" style="float:right;padding:8px 16px">Print / Save as PDF</button>
+<h1>SideEye Audit Log</h1>
+<p style="color:#666">Session <code>${esc(sessionId)}</code> · ${fetched} row(s) · filters: severity=${esc(sevFilter)}, hideReviewed=${hideReviewed}</p>
+<table><thead><tr><th>Time</th><th>Event</th><th>Sev</th><th>Reviewed</th><th>Reviewer note</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+</body></html>`);
+      win.document.close();
+      await logSideEyeAction("sideeye_audit_export_pdf", sessionId, {
+        count: fetched, filters: { hideReviewed, severity: sevFilter },
+      });
+      toast.success(`Prepared PDF for ${fetched} row(s)`);
+    } catch (e: any) {
+      toast.error("PDF export failed", { description: e?.message });
+    } finally {
+      setExportProgress(null);
     }
   };
 
