@@ -869,6 +869,17 @@ const CodingProblemDetail = () => {
             : baseDesc,
         variant: isAccepted ? "default" : "destructive",
       });
+
+      // Contest auto-finish: if this submission was Accepted in contest mode,
+      // route the participant to the leaderboard so they can see their result.
+      // Only triggers for accepted submissions to avoid kicking the user out
+      // mid-attempt on a wrong answer.
+      const contestSlugParam = searchParams.get("contest");
+      if (isAccepted && contestSlugParam) {
+        window.setTimeout(() => {
+          navigate(`/contests/${contestSlugParam}/leaderboard`);
+        }, 1500);
+      }
     } catch (err) {
       setExecutionErrorDetails(true);
       toast({
@@ -1089,6 +1100,12 @@ const CodingProblemDetail = () => {
                 <SortableEditorTabs
                   order={tabOrder}
                   onReorder={(next) => setTabOrder(next)}
+                  lockedIds={(["notes", "my-solution", "solution", "runs"] as EditorTabId[]).filter(isTabLocked)}
+                  reorderDisabled={
+                    contestLocks.notesLocked ||
+                    contestLocks.solutionLocked ||
+                    contestLocks.historyLocked
+                  }
                   renderLabel={(id) => {
                     const lockMark = isTabLocked(id) ? (
                       <span className="ml-1 text-amber-500" aria-label="Locked during contest">🔒</span>
