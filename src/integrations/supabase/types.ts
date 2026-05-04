@@ -6153,6 +6153,7 @@ export type Database = {
         Returns: string
       }
       sideeye_purge_old_data: { Args: never; Returns: Json }
+      sideeye_sweep_stale_status: { Args: never; Returns: Json }
       snapshot_my_coding_leaderboard_rank: { Args: never; Returns: Json }
       solo_finalize_session: { Args: { _session_id: string }; Returns: Json }
       solo_record_attempt: {
