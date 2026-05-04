@@ -45,12 +45,56 @@ const SideEyeMobile = () => {
   // Battery monitoring
   useEffect(() => {
     (navigator as any).getBattery?.().then((b: any) => {
-      const update = () => setBatteryLow(b.level < 0.2 && !b.charging);
+      const update = () => {
+        const low = b.level < 0.2 && !b.charging;
+        setBatteryLow(low);
+        if (low) {
+          try { (navigator as any).vibrate?.([200, 100, 200]); } catch {}
+        }
+      };
       update();
       b.addEventListener("levelchange", update);
       b.addEventListener("chargingchange", update);
     });
   }, []);
+
+  // Background / tab-hidden detection — vibrate + flag so admin sees it
+  useEffect(() => {
+    const onVis = () => {
+      const isHidden = document.visibilityState === "hidden";
+      setHidden(isHidden);
+      if (isHidden) {
+        try { (navigator as any).vibrate?.([400, 200, 400, 200, 400]); } catch {}
+        toast.warning("Side camera tab moved to background. Return immediately.");
+      } else {
+        // Re-acquire wake lock when user returns
+        (async () => {
+          try {
+            wakeLockRef.current = await (navigator as any).wakeLock?.request("screen");
+          } catch {}
+        })();
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
+  // Auto re-pair after 3 failed reconnections
+  useEffect(() => {
+    if (connectionState === "failed" || connectionState === "disconnected") {
+      setReconnectAttempts((n) => {
+        const next = n + 1;
+        if (next >= 3) {
+          toast.error("Connection lost — attempting full repair…");
+          // Hard reload preserves token in URL and re-runs the full pairing flow
+          setTimeout(() => window.location.reload(), 1500);
+        }
+        return next;
+      });
+    } else if (connectionState === "connected") {
+      setReconnectAttempts(0);
+    }
+  }, [connectionState]);
 
   const requestCamera = async () => {
     setError(null);
