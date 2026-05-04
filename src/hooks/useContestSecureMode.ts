@@ -98,14 +98,35 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
   const videoStreamRef = useRef<MediaStream | null>(null);
   const snapshotTimerRef = useRef<number | null>(null);
   const wasReconnectingRef = useRef(false);
+  const fingerprintRef = useRef<ContestFingerprint | null>(null);
+  const [webcamHealthy, setWebcamHealthy] = useState(true);
+  const [webcamGraceUntil, setWebcamGraceUntil] = useState<number | null>(null);
+
+  const reportWebcamHealth = useCallback(async (healthy: boolean) => {
+    if (!sessionRef.current) return;
+    const { data } = await supabase.rpc("contest_report_stream_health" as never, {
+      _session_id: sessionRef.current,
+      _kind: "webcam",
+      _healthy: healthy,
+    } as never);
+    const res = data as { ok: boolean; grace_until?: string } | null;
+    if (res?.grace_until) {
+      setWebcamGraceUntil(new Date(res.grace_until).getTime());
+    } else if (healthy) {
+      setWebcamGraceUntil(null);
+    }
+  }, []);
 
   // Start the secure session
   const start = useCallback(async () => {
     if (!user || !contestId) return;
     setState((s) => ({ ...s, starting: true, startError: null }));
+    const fp = await computeContestFingerprint().catch(() => null);
+    fingerprintRef.current = fp;
     const { data, error } = await supabase.rpc("contest_start_secure_session" as never, {
       _contest_id: contestId,
       _user_agent: navigator.userAgent,
+      _fingerprint: fp ?? null,
     } as never);
     if (error) {
       setState((s) => ({ ...s, starting: false, startError: error.message }));
