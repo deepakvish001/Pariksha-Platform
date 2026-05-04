@@ -168,6 +168,7 @@ ${breaks.map(b => `<tr><td>${b.seq}</td><td>${b.reason}</td><td><code>${(b.expec
 </body></html>`;
       win.document.write(html);
       win.document.close();
+      await logSideEyeAction("sideeye_export_pdf", sessionId, { format: "pdf" });
       toast.success("Use the print dialog to save as PDF");
     } catch (e: any) {
       toast.error("PDF export failed", { description: e?.message });
@@ -195,20 +196,51 @@ ${breaks.map(b => `<tr><td>${b.seq}</td><td>${b.reason}</td><td><code>${(b.expec
           )}
         </div>
         <div className="flex gap-1.5">
-          <Button size="sm" variant="outline" onClick={verify} disabled={busy !== null}>
+          <Button size="sm" variant="outline" onClick={() => setConfirm("verify")} disabled={busy !== null}>
             {busy === "verify" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <ShieldCheck className="mr-1 h-3 w-3" />}
             Verify chain
           </Button>
-          <Button size="sm" variant="outline" onClick={downloadJson} disabled={busy !== null}>
+          <Button size="sm" variant="outline" onClick={() => setConfirm("json")} disabled={busy !== null}>
             {busy === "json" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileJson className="mr-1 h-3 w-3" />}
             JSON
           </Button>
-          <Button size="sm" variant="outline" onClick={downloadPdf} disabled={busy !== null}>
+          <Button size="sm" variant="outline" onClick={() => setConfirm("pdf")} disabled={busy !== null}>
             {busy === "pdf" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileDown className="mr-1 h-3 w-3" />}
             PDF
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirm === "verify" && "Re-verify evidence chain?"}
+              {confirm === "json" && "Download integrity report as JSON?"}
+              {confirm === "pdf" && "Generate PDF integrity report?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will be logged in the admin audit log against this session.
+              {confirm === "verify" && " The chain walk re-hashes every evidence link and may take a moment."}
+              {confirm === "pdf" && " A new browser tab will open — allow popups."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const c = confirm;
+                setConfirm(null);
+                if (c === "verify") verify();
+                else if (c === "json") downloadJson();
+                else if (c === "pdf") downloadPdf();
+              }}
+            >
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {result && (
         <div className="text-xs space-y-1.5">
