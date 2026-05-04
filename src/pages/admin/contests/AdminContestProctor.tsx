@@ -12,10 +12,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ShieldAlert, Camera, RefreshCw, Flag, Ban } from "lucide-react";
+import { ArrowLeft, ShieldAlert, Camera, RefreshCw, Flag, Ban, Sparkles, Mic } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { SimilarityTab } from "@/components/admin/contests/SimilarityTab";
+import { VivaQueueTab } from "@/components/admin/contests/VivaQueueTab";
 
 type Violation = {
   id: string;
@@ -222,6 +224,8 @@ const AdminContestProctor = () => {
             <TabsTrigger value="violations"><ShieldAlert className="mr-2 h-4 w-4" />Violations</TabsTrigger>
             <TabsTrigger value="snapshots"><Camera className="mr-2 h-4 w-4" />Webcam snapshots</TabsTrigger>
             <TabsTrigger value="sessions">Active sessions</TabsTrigger>
+            <TabsTrigger value="similarity"><Sparkles className="mr-2 h-4 w-4" />Similarity</TabsTrigger>
+            <TabsTrigger value="viva"><Mic className="mr-2 h-4 w-4" />Viva queue</TabsTrigger>
           </TabsList>
 
           <TabsContent value="violations" className="space-y-3">
@@ -348,9 +352,25 @@ const AdminContestProctor = () => {
                         </TableCell>
                         <TableCell className="max-w-xs truncate text-xs text-muted-foreground">{s.user_agent ?? "—"}</TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => forceEndSession(s.id)}>
-                            End session
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => forceEndSession(s.id)}>
+                              End session
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive"
+                              onClick={async () => {
+                                const { error } = await supabase.rpc("contest_force_dq" as never, {
+                                  _contest_id: id!, _user_id: s.user_id, _reason: "admin force-DQ from live monitor",
+                                } as never);
+                                if (error) toast.error(error.message);
+                                else { toast.success("Disqualified"); sessionsQuery.refetch(); }
+                              }}
+                            >
+                              Force DQ
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -358,6 +378,13 @@ const AdminContestProctor = () => {
                 </Table>
               )}
             </Card>
+          </TabsContent>
+
+          <TabsContent value="similarity">
+            {id && <SimilarityTab contestId={id} />}
+          </TabsContent>
+          <TabsContent value="viva">
+            {id && <VivaQueueTab contestId={id} />}
           </TabsContent>
         </Tabs>
       </div>
