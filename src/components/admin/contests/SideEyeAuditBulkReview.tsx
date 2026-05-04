@@ -223,9 +223,10 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
   const exportCsv = async () => {
     try {
       const chunks: string[] = [csvHeader.join(",")];
-      const fetched = await streamAllMatching((batch) => {
+      const fetched = await streamAllMatching("CSV", (batch) => {
         for (const r of batch) chunks.push(csvHeader.map((h) => csvEsc((r as any)[h])).join(","));
       });
+      setExportProgress((p) => p && { ...p, phase: "Building file" });
       const blob = new Blob([chunks.join("\n")], { type: "text/csv;charset=utf-8;" });
       downloadBlob(blob, `sideeye-audit-${sessionId}-${Date.now()}.csv`);
       await logSideEyeAction("sideeye_audit_export_csv", sessionId, {
@@ -239,10 +240,8 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
     }
   };
 
-  const exportJson = async () => {
+  const exportJson = async (compress = false) => {
     try {
-      // Stream batches directly into Blob parts so rows are never accumulated
-      // in a single in-memory array. Each row is serialized once and dropped.
       const parts: BlobPart[] = [];
       const exportedAt = new Date().toISOString();
       parts.push(
@@ -252,7 +251,7 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
         `  "rows": [`,
       );
       let wrote = 0;
-      const fetched = await streamAllMatching((batch) => {
+      const fetched = await streamAllMatching(compress ? "JSON.gz" : "JSON", (batch) => {
         if (batch.length === 0) return;
         let chunk = "";
         for (const r of batch) {
@@ -262,12 +261,22 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
         parts.push(chunk);
       });
       parts.push(`\n  ],\n  "count": ${fetched}\n}\n`);
-      const blob = new Blob(parts, { type: "application/json" });
-      downloadBlob(blob, `sideeye-audit-${sessionId}-${Date.now()}.json`);
-      await logSideEyeAction("sideeye_audit_export_json", sessionId, {
-        count: fetched, filters: { hideReviewed, severity: sevFilter },
+      setExportProgress((p) => p && { ...p, phase: compress ? "Compressing (gzip)" : "Building file" });
+      let blob = new Blob(parts, { type: "application/json" });
+      let ext = "json";
+      let mime = "application/json";
+      if (compress) {
+        blob = await gzipBlob(blob);
+        // Re-wrap with gzip mime so the browser doesn't auto-decompress on save
+        blob = new Blob([blob], { type: "application/gzip" });
+        ext = "json.gz";
+        mime = "application/gzip";
+      }
+      downloadBlob(blob, `sideeye-audit-${sessionId}-${Date.now()}.${ext}`);
+      await logSideEyeAction(compress ? "sideeye_audit_export_json_gz" : "sideeye_audit_export_json", sessionId, {
+        count: fetched, bytes: blob.size, filters: { hideReviewed, severity: sevFilter },
       });
-      toast.success(`Exported ${fetched} row(s) as JSON`);
+      toast.success(`Exported ${fetched} row(s) as ${compress ? "gzipped JSON" : "JSON"} (${(blob.size / 1024).toFixed(1)} KB)`);
     } catch (e: any) {
       toast.error("JSON export failed", { description: e?.message });
     } finally {
@@ -278,7 +287,8 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
   const exportPdf = async () => {
     try {
       const all: AuditRow[] = [];
-      const fetched = await streamAllMatching((batch) => { all.push(...batch); });
+      const fetched = await streamAllMatching("PDF", (batch) => { all.push(...batch); });
+      setExportProgress((p) => p && { ...p, phase: "Rendering PDF" });
       const win = window.open("", "_blank");
       if (!win) throw new Error("Popup blocked — allow popups to export PDF");
       const esc = (s: any) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]!));
