@@ -7,6 +7,10 @@ import { ShieldCheck, ShieldAlert, ShieldOff, Maximize2, Camera, AlertTriangle, 
 import { useContestSecureMode } from "@/hooks/useContestSecureMode";
 import { useActiveContestSession } from "@/hooks/useActiveContestSession";
 import { useContestTrustScore } from "@/hooks/useContestTrustScore";
+import { useDevtoolsDetector } from "@/hooks/useDevtoolsDetector";
+import { useFetchInterceptor } from "@/hooks/useFetchInterceptor";
+import { useAudioMonitor } from "@/hooks/useAudioMonitor";
+import { useIdentityRecheck } from "@/hooks/useIdentityRecheck";
 import { TrustScoreBadge } from "./TrustScoreBadge";
 import { toast } from "sonner";
 
