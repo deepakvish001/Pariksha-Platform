@@ -221,6 +221,43 @@ export const SideEyeSettingsPanel = () => {
         </p>
       </div>
 
+      <div className="space-y-2 rounded border border-border/40 px-3 py-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs">Retention policy (days)</Label>
+          <Button size="sm" variant="outline" onClick={runPurge} disabled={purging} className="h-7 text-xs">
+            {purging ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1 h-3 w-3" />}
+            Run purge now
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {([
+            ["retention_days_audit", "Audit logs"],
+            ["retention_days_frames", "Frame events"],
+            ["retention_days_recordings", "Recordings"],
+          ] as const).map(([key, label]) => (
+            <div key={key} className="space-y-1">
+              <Label className="text-[11px] text-muted-foreground">{label}</Label>
+              <Input
+                type="number"
+                min={1}
+                max={365}
+                value={settings[key]}
+                onChange={(e) =>
+                  setSettings((p) => ({
+                    ...p,
+                    [key]: Math.max(1, Math.min(365, parseInt(e.target.value || "30", 10))),
+                  }))
+                }
+                className="h-8 text-xs"
+              />
+            </div>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          A daily background job purges any SideEye data older than these windows. Storage objects are removed alongside DB rows.
+        </p>
+      </div>
+
       <div className="flex justify-end">
         <Button size="sm" onClick={save} disabled={saving}>
           {saving ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />}
