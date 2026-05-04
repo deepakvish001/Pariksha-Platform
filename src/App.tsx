@@ -134,6 +134,7 @@ import AchievementsAdmin from "./pages/admin/AchievementsAdmin";
 import LeaderboardsAdmin from "./pages/admin/LeaderboardsAdmin";
 
 import NotificationsAdmin from "./pages/admin/NotificationsAdmin";
+import AdminAlerts from "./pages/admin/AdminAlerts";
 import QuizzesAdmin from "./pages/admin/QuizzesAdmin";
 
 import SubmissionsAdmin from "./pages/admin/SubmissionsAdmin";
@@ -380,6 +381,7 @@ const App = () => (
                   <Route path="leaderboards" element={<LeaderboardsAdmin />} />
                   
                   <Route path="notifications" element={<NotificationsAdmin />} />
+                  <Route path="alerts" element={<AdminAlerts />} />
                   <Route path="quizzes" element={<QuizzesAdmin />} />
                   
                   <Route path="submissions" element={<SubmissionsAdmin />} />
