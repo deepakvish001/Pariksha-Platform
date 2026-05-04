@@ -343,8 +343,11 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
           <Button size="sm" variant="outline" className="h-7" onClick={exportCsv} disabled={!!exportProgress}>
             <Download className="mr-1 h-3 w-3" /> CSV
           </Button>
-          <Button size="sm" variant="outline" className="h-7" onClick={exportJson} disabled={!!exportProgress}>
+          <Button size="sm" variant="outline" className="h-7" onClick={() => exportJson(false)} disabled={!!exportProgress}>
             <FileJson className="mr-1 h-3 w-3" /> JSON
+          </Button>
+          <Button size="sm" variant="outline" className="h-7" onClick={() => exportJson(true)} disabled={!!exportProgress} title="Gzip-compressed JSON">
+            <FileArchive className="mr-1 h-3 w-3" /> JSON.gz
           </Button>
           <Button size="sm" variant="outline" className="h-7" onClick={exportPdf} disabled={!!exportProgress}>
             <FileDown className="mr-1 h-3 w-3" /> PDF
