@@ -238,17 +238,18 @@ const CodingProblemDetail = () => {
   // Transient hint shown briefly when entering fullscreen.
   const [showFullscreenHint, setShowFullscreenHint] = useState(false);
   const { submissions, loading: submissionsLoading, refetch: refetchSubmissions } = useCodingSubmissions(slug);
+  // Lock state for contest aux materials (notes / my-solution / reference / runs)
+  // — driven by useContestLocks. While the contest is live and the user is a
+  // registered participant, these panels are replaced with a LockedAuxPanel
+  // surface that countdowns to the contest end. Hooks below also receive the
+  // `locked` flag so they refuse to fetch sensitive data over the network.
+  const contestLocks = useContestLocks(contestId ?? undefined);
   const { runs, refetch: refetchRuns } = useCodeRuns(slug, {
     locked: contestLocks.historyLocked,
     contestId,
   });
   const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
   const { note: notesValue, setNote: setNotesValue, savedAt: notesSavedAt } = useProblemNotes(slug);
-  // Lock state for contest aux materials (notes / my-solution / reference / runs)
-  // — driven by useContestLocks. While the contest is live and the user is a
-  // registered participant, these panels are replaced with a LockedAuxPanel
-  // surface that countdowns to the contest end.
-  const contestLocks = useContestLocks(contestId ?? undefined);
   const {
     notes: mySolutionNotes,
     code: mySolutionCode,
