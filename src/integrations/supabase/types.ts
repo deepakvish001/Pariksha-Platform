@@ -1371,6 +1371,54 @@ export type Database = {
           },
         ]
       }
+      contest_screen_recordings: {
+        Row: {
+          contest_id: string
+          created_at: string
+          duration_sec: number
+          id: string
+          session_id: string | null
+          started_at: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          duration_sec?: number
+          id?: string
+          session_id?: string | null
+          started_at?: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          duration_sec?: number
+          id?: string
+          session_id?: string | null
+          started_at?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_screen_recordings_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_screen_recordings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_sessions: {
         Row: {
           contest_id: string
@@ -1465,6 +1513,54 @@ export type Database = {
           },
         ]
       }
+      contest_trust_scores: {
+        Row: {
+          computed_at: string
+          contest_id: string
+          id: string
+          reasons: Json
+          risk: string
+          score: number
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          computed_at?: string
+          contest_id: string
+          id?: string
+          reasons?: Json
+          risk: string
+          score: number
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          computed_at?: string
+          contest_id?: string
+          id?: string
+          reasons?: Json
+          risk?: string
+          score?: number
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_trust_scores_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_trust_scores_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_violations: {
         Row: {
           contest_id: string
@@ -1523,9 +1619,11 @@ export type Database = {
           id: string
           invite_code: string | null
           max_participants: number | null
+          min_trust_score: number
           penalty_minutes: number
           registration_closes_at: string | null
           registration_opens_at: string | null
+          require_screen_share: boolean
           rules_md: string | null
           scoring_mode: string
           slug: string
@@ -1544,9 +1642,11 @@ export type Database = {
           id?: string
           invite_code?: string | null
           max_participants?: number | null
+          min_trust_score?: number
           penalty_minutes?: number
           registration_closes_at?: string | null
           registration_opens_at?: string | null
+          require_screen_share?: boolean
           rules_md?: string | null
           scoring_mode?: string
           slug: string
@@ -1565,9 +1665,11 @@ export type Database = {
           id?: string
           invite_code?: string | null
           max_participants?: number | null
+          min_trust_score?: number
           penalty_minutes?: number
           registration_closes_at?: string | null
           registration_opens_at?: string | null
+          require_screen_share?: boolean
           rules_md?: string | null
           scoring_mode?: string
           slug?: string
@@ -4440,6 +4542,7 @@ export type Database = {
         Args: { _contest_id: string }
         Returns: undefined
       }
+      contest_aux_unlocked: { Args: { _contest_id: string }; Returns: boolean }
       contest_effective_status: {
         Args: { _contest_id: string }
         Returns: string
