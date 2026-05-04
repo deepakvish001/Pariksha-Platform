@@ -160,6 +160,9 @@ export const useCodeRunner = () => {
     seed?: string;
     reference_query?: string;
     order_matters?: boolean;
+    // Contest context — when set the edge function will re-run
+    // validate_contest_submission server-side as defense in depth.
+    contest_slug?: string;
   }): Promise<SubmitResult> => {
     setIsSubmitting(true);
     try {
