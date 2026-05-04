@@ -174,6 +174,37 @@ export default function SecureContestGate({
     );
   }
 
+  // Identity verification step (after webcam request, before session start)
+  if (!secure.sessionId && !active.hasActive && !identityVerified) {
+    return (
+      <div className="space-y-3">
+        {!secure.webcamReady && (
+          <Card className="space-y-3 border-primary/30 bg-primary/5 p-5">
+            <div className="flex items-center gap-2">
+              <Camera className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold">Enable webcam to verify identity</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              We need your webcam on to capture a live selfie for identity verification.
+            </p>
+            <Button onClick={secure.requestWebcam}>Grant webcam access</Button>
+            {secure.startError && (
+              <p className="text-xs text-red-300">{secure.startError}</p>
+            )}
+          </Card>
+        )}
+        {secure.webcamReady && (
+          <IdentityCaptureStep
+            contestId={contestId}
+            sessionId={secure.sessionId}
+            webcamStream={secure.webcamStream}
+            onVerified={markVerified}
+          />
+        )}
+      </div>
+    );
+  }
+
   // Start secure session
   if (!secure.sessionId && !active.hasActive) {
     return (
@@ -190,6 +221,22 @@ export default function SecureContestGate({
             Tip: tick every item in the pre-flight checklist below for the best experience.
           </p>
         )}
+        <label className="flex items-start gap-2 rounded border border-border/40 bg-muted/20 p-2.5 text-xs">
+          <Checkbox
+            checked={audioConsent}
+            onCheckedChange={(c) => {
+              const v = !!c;
+              setAudioConsent(v);
+              try { localStorage.setItem(`contest-audio-consent:${contestId}`, v ? "1" : "0"); } catch { /* ignore */ }
+            }}
+            className="mt-0.5"
+          />
+          <span>
+            <Mic className="mr-1 inline h-3 w-3" />
+            <strong>Optional audio proctoring:</strong> capture short (~6s) microphone snippets every 2 minutes to
+            detect background voices or coaching. Stored privately for admin review only. You can decline.
+          </span>
+        </label>
         {secure.startError && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
