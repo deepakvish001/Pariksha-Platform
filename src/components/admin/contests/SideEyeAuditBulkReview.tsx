@@ -252,33 +252,34 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
                   ) : "—"}
                 </td>
                 <td className="p-2 text-right">
-                  {!r.reviewed_at && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]">
-                          <FileText className="mr-1 h-3 w-3" /> Review
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent align="end" className="w-72 space-y-2">
-                        <div className="text-xs font-semibold">Reviewer note for this event</div>
-                        <Textarea
-                          value={rowNotes[r.id] ?? ""}
-                          onChange={(e) => setRowNotes((s) => ({ ...s, [r.id]: e.target.value }))}
-                          placeholder="Optional context…"
-                          className="text-xs min-h-[60px]"
-                        />
-                        <Button
-                          size="sm"
-                          className="w-full"
-                          disabled={rowSavingId === r.id}
-                          onClick={() => markRow(r)}
-                        >
-                          {rowSavingId === r.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
-                          Mark reviewed
-                        </Button>
-                      </PopoverContent>
-                    </Popover>
-                  )}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]">
+                        <FileText className="mr-1 h-3 w-3" />
+                        {r.reviewed_at ? "Edit note" : "Review"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-72 space-y-2">
+                      <div className="text-xs font-semibold">
+                        {r.reviewed_at ? "Edit reviewer note" : "Reviewer note for this event"}
+                      </div>
+                      <Textarea
+                        value={rowNotes[r.id] ?? r.reviewer_note ?? ""}
+                        onChange={(e) => setRowNotes((s) => ({ ...s, [r.id]: e.target.value }))}
+                        placeholder="Optional context…"
+                        className="text-xs min-h-[60px]"
+                      />
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        disabled={rowSavingId === r.id}
+                        onClick={() => markRow(r, r.reviewed_at ? "edit" : "review")}
+                      >
+                        {rowSavingId === r.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
+                        {r.reviewed_at ? "Save note" : "Mark reviewed"}
+                      </Button>
+                    </PopoverContent>
+                  </Popover>
                 </td>
               </tr>
             ))}
