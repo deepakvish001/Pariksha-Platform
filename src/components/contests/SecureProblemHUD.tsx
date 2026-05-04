@@ -58,7 +58,9 @@ export default function SecureProblemHUD({ contestId, contestSlug }: Props) {
 
   const nextAction =
     status === "active"
-      ? secure.fullscreen
+      ? !secure.online || secure.reconnecting
+        ? "Network lost — reconnecting heartbeat. You stay registered."
+        : secure.fullscreen
         ? "Stay in this tab — submissions are enabled."
         : "Re-enter fullscreen to keep your session in good standing."
       : status === "missing"
