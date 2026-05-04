@@ -42,6 +42,9 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     disqualified: false,
     fullscreen: false,
     webcamReady: false,
+    online: typeof navigator !== "undefined" ? navigator.onLine : true,
+    reconnecting: false,
+    lastReconnectAt: null,
   });
   const sessionRef = useRef<string | null>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
