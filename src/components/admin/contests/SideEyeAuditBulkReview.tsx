@@ -323,7 +323,8 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
               style={{ width: `${exportProgress.total ? (exportProgress.fetched / exportProgress.total) * 100 : 0}%` }}
             />
           </div>
-      </div>
+        </div>
+      )}
 
       <div className="border border-border/40 rounded max-h-[420px] overflow-auto">
         <table className="w-full text-xs">
