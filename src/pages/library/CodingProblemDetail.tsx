@@ -311,6 +311,12 @@ const CodingProblemDetail = () => {
 
   const setActiveTab = (id: EditorTabId) => {
     if (isTabLocked(id)) {
+      logContestLockEvent({
+        contestId,
+        problemSlug: slug,
+        kind: "blocked_tab_activation",
+        target: id as never,
+      });
       toast({
         title: "Locked during contest",
         description: "This panel unlocks when the contest ends.",
