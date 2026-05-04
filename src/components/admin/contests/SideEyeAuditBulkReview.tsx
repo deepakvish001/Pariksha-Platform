@@ -12,7 +12,7 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { CheckCircle2, Loader2, Download, FileText } from "lucide-react";
+import { CheckCircle2, Loader2, Download, FileText, FileJson, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { logSideEyeAction } from "./lib/adminAuditLog";
@@ -114,24 +114,33 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
     }
   };
 
-  const markRow = async (row: AuditRow) => {
+  const markRow = async (row: AuditRow, mode: "review" | "edit" = "review") => {
     if (!user) return;
     setRowSavingId(row.id);
     try {
       const note = (rowNotes[row.id] ?? "").trim() || null;
+      const update: Record<string, unknown> = { reviewer_note: note };
+      // Only stamp reviewer/timestamp on first review; edits preserve original review time
+      // but record the editor as the new reviewer_id for accountability.
+      if (mode === "review") {
+        update.reviewed_at = new Date().toISOString();
+      }
+      update.reviewer_id = user.id;
       const { error } = await supabase
         .from("contest_side_camera_audit_logs")
-        .update({
-          reviewed_at: new Date().toISOString(),
-          reviewer_id: user.id,
-          reviewer_note: note,
-        })
+        .update(update)
         .eq("id", row.id);
       if (error) throw error;
-      await logSideEyeAction("sideeye_audit_row_review", sessionId, {
-        audit_id: row.id, note,
-      });
-      toast.success("Row marked reviewed");
+      await logSideEyeAction(
+        mode === "review" ? "sideeye_audit_row_review" : "sideeye_audit_row_note_edit",
+        sessionId,
+        {
+          audit_id: row.id,
+          note,
+          previous_note: row.reviewer_note ?? null,
+        },
+      );
+      toast.success(mode === "review" ? "Row marked reviewed" : "Reviewer note updated");
       setRowNotes((s) => { const n = { ...s }; delete n[row.id]; return n; });
       await load();
     } catch (e: any) {
@@ -141,41 +150,133 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
     }
   };
 
-  const exportCsv = async () => {
-    try {
-      // Pull *all* matching rows (cap 5000) so CSV reflects the active filter.
+  const [exportProgress, setExportProgress] = useState<{ fetched: number; total: number } | null>(null);
+
+  /**
+   * Stream all matching rows in fixed-size pages so we can export far beyond
+   * the previous 5000-row cap without slamming the API. Yields each batch via
+   * `onBatch` so callers can build CSV/JSON/PDF incrementally.
+   */
+  const streamAllMatching = async (
+    onBatch: (batch: AuditRow[]) => void,
+    pageSize = 1000,
+  ): Promise<number> => {
+    // Resolve total first for accurate progress UI
+    let countQ = supabase
+      .from("contest_side_camera_audit_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("session_id", sessionId);
+    if (hideReviewed) countQ = countQ.is("reviewed_at", null);
+    if (sevFilter !== "all") countQ = countQ.eq("severity", sevFilter);
+    const { count } = await countQ;
+    const grandTotal = count ?? 0;
+    setExportProgress({ fetched: 0, total: grandTotal });
+    let fetched = 0;
+    for (let from = 0; from < grandTotal; from += pageSize) {
+      const to = Math.min(from + pageSize - 1, grandTotal - 1);
       let q = supabase
         .from("contest_side_camera_audit_logs")
         .select("id,created_at,event_type,severity,detail,reviewed_at,reviewer_id,reviewer_note")
         .eq("session_id", sessionId)
         .order("created_at", { ascending: false })
-        .limit(5000);
+        .range(from, to);
       if (hideReviewed) q = q.is("reviewed_at", null);
       if (sevFilter !== "all") q = q.eq("severity", sevFilter);
       const { data, error } = await q;
       if (error) throw error;
-      const all = (data as AuditRow[]) ?? [];
-      const esc = (v: unknown) => {
-        const s = v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
-        return `"${s.replace(/"/g, '""')}"`;
-      };
-      const header = ["id","created_at","event_type","severity","detail","reviewed_at","reviewer_id","reviewer_note"];
-      const csv = [
-        header.join(","),
-        ...all.map((r) => header.map((h) => esc((r as any)[h])).join(",")),
-      ].join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `sideeye-audit-${sessionId}-${Date.now()}.csv`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      await logSideEyeAction("sideeye_audit_export_csv", sessionId, {
-        count: all.length, filters: { hideReviewed, severity: sevFilter },
+      const batch = (data as AuditRow[]) ?? [];
+      onBatch(batch);
+      fetched += batch.length;
+      setExportProgress({ fetched, total: grandTotal });
+      if (batch.length === 0) break;
+    }
+    return fetched;
+  };
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const csvHeader = ["id","created_at","event_type","severity","detail","reviewed_at","reviewer_id","reviewer_note"];
+  const csvEsc = (v: unknown) => {
+    const s = v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+
+  const exportCsv = async () => {
+    try {
+      const chunks: string[] = [csvHeader.join(",")];
+      const fetched = await streamAllMatching((batch) => {
+        for (const r of batch) chunks.push(csvHeader.map((h) => csvEsc((r as any)[h])).join(","));
       });
-      toast.success(`Exported ${all.length} row(s)`);
+      const blob = new Blob([chunks.join("\n")], { type: "text/csv;charset=utf-8;" });
+      downloadBlob(blob, `sideeye-audit-${sessionId}-${Date.now()}.csv`);
+      await logSideEyeAction("sideeye_audit_export_csv", sessionId, {
+        count: fetched, filters: { hideReviewed, severity: sevFilter },
+      });
+      toast.success(`Exported ${fetched} row(s) as CSV`);
     } catch (e: any) {
       toast.error("CSV export failed", { description: e?.message });
+    } finally {
+      setExportProgress(null);
+    }
+  };
+
+  const exportJson = async () => {
+    try {
+      const all: AuditRow[] = [];
+      const fetched = await streamAllMatching((batch) => { all.push(...batch); });
+      const blob = new Blob(
+        [JSON.stringify({ session_id: sessionId, exported_at: new Date().toISOString(), filters: { hideReviewed, severity: sevFilter }, count: fetched, rows: all }, null, 2)],
+        { type: "application/json" },
+      );
+      downloadBlob(blob, `sideeye-audit-${sessionId}-${Date.now()}.json`);
+      await logSideEyeAction("sideeye_audit_export_json", sessionId, {
+        count: fetched, filters: { hideReviewed, severity: sevFilter },
+      });
+      toast.success(`Exported ${fetched} row(s) as JSON`);
+    } catch (e: any) {
+      toast.error("JSON export failed", { description: e?.message });
+    } finally {
+      setExportProgress(null);
+    }
+  };
+
+  const exportPdf = async () => {
+    try {
+      const all: AuditRow[] = [];
+      const fetched = await streamAllMatching((batch) => { all.push(...batch); });
+      const win = window.open("", "_blank");
+      if (!win) throw new Error("Popup blocked — allow popups to export PDF");
+      const esc = (s: any) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]!));
+      const rowsHtml = all.map((r) => `<tr>
+        <td>${esc(format(new Date(r.created_at), "yyyy-MM-dd HH:mm:ss"))}</td>
+        <td>${esc(r.event_type)}</td>
+        <td>${esc(r.severity)}</td>
+        <td>${r.reviewed_at ? esc(format(new Date(r.reviewed_at), "yyyy-MM-dd HH:mm")) : "—"}</td>
+        <td>${esc(r.reviewer_note ?? "")}</td>
+      </tr>`).join("");
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>SideEye Audit Log</title>
+<style>body{font-family:system-ui,sans-serif;padding:24px;color:#111}h1{margin:0 0 8px}table{border-collapse:collapse;width:100%;font-size:11px;margin-top:12px}th,td{border:1px solid #ddd;padding:4px 6px;text-align:left;vertical-align:top}th{background:#f5f5f5}@media print{button{display:none}}</style>
+</head><body>
+<button onclick="window.print()" style="float:right;padding:8px 16px">Print / Save as PDF</button>
+<h1>SideEye Audit Log</h1>
+<p style="color:#666">Session <code>${esc(sessionId)}</code> · ${fetched} row(s) · filters: severity=${esc(sevFilter)}, hideReviewed=${hideReviewed}</p>
+<table><thead><tr><th>Time</th><th>Event</th><th>Sev</th><th>Reviewed</th><th>Reviewer note</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+</body></html>`);
+      win.document.close();
+      await logSideEyeAction("sideeye_audit_export_pdf", sessionId, {
+        count: fetched, filters: { hideReviewed, severity: sevFilter },
+      });
+      toast.success(`Prepared PDF for ${fetched} row(s)`);
+    } catch (e: any) {
+      toast.error("PDF export failed", { description: e?.message });
+    } finally {
+      setExportProgress(null);
     }
   };
 
@@ -200,11 +301,30 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
               {SEVERITIES.map((s) => <SelectItem key={s} value={s} className="capitalize text-xs">{s}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" className="h-7" onClick={exportCsv}>
+          <Button size="sm" variant="outline" className="h-7" onClick={exportCsv} disabled={!!exportProgress}>
             <Download className="mr-1 h-3 w-3" /> CSV
+          </Button>
+          <Button size="sm" variant="outline" className="h-7" onClick={exportJson} disabled={!!exportProgress}>
+            <FileJson className="mr-1 h-3 w-3" /> JSON
+          </Button>
+          <Button size="sm" variant="outline" className="h-7" onClick={exportPdf} disabled={!!exportProgress}>
+            <FileDown className="mr-1 h-3 w-3" /> PDF
           </Button>
         </div>
       </div>
+
+      {exportProgress && (
+        <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Exporting {exportProgress.fetched} / {exportProgress.total}…
+          <div className="flex-1 h-1 bg-muted rounded overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all"
+              style={{ width: `${exportProgress.total ? (exportProgress.fetched / exportProgress.total) * 100 : 0}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="border border-border/40 rounded max-h-[420px] overflow-auto">
         <table className="w-full text-xs">
@@ -243,33 +363,34 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
                   ) : "—"}
                 </td>
                 <td className="p-2 text-right">
-                  {!r.reviewed_at && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]">
-                          <FileText className="mr-1 h-3 w-3" /> Review
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent align="end" className="w-72 space-y-2">
-                        <div className="text-xs font-semibold">Reviewer note for this event</div>
-                        <Textarea
-                          value={rowNotes[r.id] ?? ""}
-                          onChange={(e) => setRowNotes((s) => ({ ...s, [r.id]: e.target.value }))}
-                          placeholder="Optional context…"
-                          className="text-xs min-h-[60px]"
-                        />
-                        <Button
-                          size="sm"
-                          className="w-full"
-                          disabled={rowSavingId === r.id}
-                          onClick={() => markRow(r)}
-                        >
-                          {rowSavingId === r.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
-                          Mark reviewed
-                        </Button>
-                      </PopoverContent>
-                    </Popover>
-                  )}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]">
+                        <FileText className="mr-1 h-3 w-3" />
+                        {r.reviewed_at ? "Edit note" : "Review"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-72 space-y-2">
+                      <div className="text-xs font-semibold">
+                        {r.reviewed_at ? "Edit reviewer note" : "Reviewer note for this event"}
+                      </div>
+                      <Textarea
+                        value={rowNotes[r.id] ?? r.reviewer_note ?? ""}
+                        onChange={(e) => setRowNotes((s) => ({ ...s, [r.id]: e.target.value }))}
+                        placeholder="Optional context…"
+                        className="text-xs min-h-[60px]"
+                      />
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        disabled={rowSavingId === r.id}
+                        onClick={() => markRow(r, r.reviewed_at ? "edit" : "review")}
+                      >
+                        {rowSavingId === r.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
+                        {r.reviewed_at ? "Save note" : "Mark reviewed"}
+                      </Button>
+                    </PopoverContent>
+                  </Popover>
                 </td>
               </tr>
             ))}
