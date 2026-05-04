@@ -21,6 +21,7 @@ import { VivaQueueTab } from "@/components/admin/contests/VivaQueueTab";
 import { SideEyeTile } from "@/components/contests/SideEyeTile";
 import { SideEyeScanTimeline } from "@/components/admin/contests/SideEyeScanTimeline";
 import { SideEyeSettingsPanel } from "@/components/admin/contests/SideEyeSettingsPanel";
+import { SideEyeAnomalyTicker } from "@/components/admin/contests/SideEyeAnomalyTicker";
 
 type Violation = {
   id: string;
