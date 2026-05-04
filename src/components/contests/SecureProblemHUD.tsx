@@ -11,6 +11,8 @@ import { useDevtoolsDetector } from "@/hooks/useDevtoolsDetector";
 import { useFetchInterceptor } from "@/hooks/useFetchInterceptor";
 import { useAudioMonitor } from "@/hooks/useAudioMonitor";
 import { useIdentityRecheck } from "@/hooks/useIdentityRecheck";
+import { useKeystrokeBiometrics } from "@/hooks/useKeystrokeBiometrics";
+import { useMouseEntropy } from "@/hooks/useMouseEntropy";
 import { TrustScoreBadge } from "./TrustScoreBadge";
 import { toast } from "sonner";
 
