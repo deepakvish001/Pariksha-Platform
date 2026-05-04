@@ -169,10 +169,10 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
    * `onBatch` so callers can build CSV/JSON/PDF incrementally.
    */
   const streamAllMatching = async (
+    format: string,
     onBatch: (batch: AuditRow[]) => void,
     pageSize = 1000,
   ): Promise<number> => {
-    // Resolve total first for accurate progress UI
     let countQ = supabase
       .from("contest_side_camera_audit_logs")
       .select("id", { count: "exact", head: true })
@@ -181,7 +181,7 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
     if (sevFilter !== "all") countQ = countQ.eq("severity", sevFilter);
     const { count } = await countQ;
     const grandTotal = count ?? 0;
-    setExportProgress({ fetched: 0, total: grandTotal });
+    setExportProgress({ fetched: 0, total: grandTotal, phase: "Fetching rows", format });
     let fetched = 0;
     for (let from = 0; from < grandTotal; from += pageSize) {
       const to = Math.min(from + pageSize - 1, grandTotal - 1);
@@ -198,8 +198,10 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
       const batch = (data as AuditRow[]) ?? [];
       onBatch(batch);
       fetched += batch.length;
-      setExportProgress({ fetched, total: grandTotal });
+      setExportProgress({ fetched, total: grandTotal, phase: "Writing rows", format });
       if (batch.length === 0) break;
+      // Yield to UI thread so progress bar updates between batches
+      await new Promise((r) => setTimeout(r, 0));
     }
     return fetched;
   };
