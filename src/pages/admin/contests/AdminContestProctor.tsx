@@ -12,10 +12,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ShieldAlert, Camera, RefreshCw, Flag, Ban } from "lucide-react";
+import { ArrowLeft, ShieldAlert, Camera, RefreshCw, Flag, Ban, Sparkles, Mic } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { SimilarityTab } from "@/components/admin/contests/SimilarityTab";
+import { VivaQueueTab } from "@/components/admin/contests/VivaQueueTab";
 
 type Violation = {
   id: string;
