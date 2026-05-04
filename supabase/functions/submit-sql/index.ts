@@ -188,12 +188,46 @@ Deno.serve(async (req) => {
     const seed: string = body.seed ?? "";
     const referenceQuery: string = body.reference_query ?? "";
     const orderMatters: boolean = !!body.order_matters;
+    const contest_slug: string | undefined = body.contest_slug;
 
     if (!source_code.trim() || !referenceQuery.trim() || !problem_slug) {
       return respond<SubmitResult>({
         ok: false,
         error: "Missing source_code, reference_query, or problem_slug",
       });
+    }
+
+    // Server-side contest gate (defense in depth) — also enforces side-camera
+    // requirement via validate_contest_submission.
+    if (contest_slug && typeof contest_slug === "string") {
+      try {
+        const { data: contestRow } = await supabase
+          .from("contests")
+          .select("id")
+          .eq("slug", contest_slug)
+          .maybeSingle();
+        if (contestRow?.id) {
+          const { data: check, error: vErr } = await supabase.rpc(
+            "validate_contest_submission",
+            { _contest_id: contestRow.id, _problem_slug: problem_slug },
+          );
+          if (vErr) {
+            return respond<SubmitResult>({
+              ok: false,
+              error: `Contest validation failed: ${vErr.message}`,
+            });
+          }
+          const v = check as { ok: boolean; message?: string; code?: string } | null;
+          if (v && !v.ok) {
+            return respond<SubmitResult>({
+              ok: false,
+              error: v.message ?? "Contest submission blocked",
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("submit-sql contest validation error", e);
+      }
     }
 
     const sqlMod = await getSQL();

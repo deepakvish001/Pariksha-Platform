@@ -28,19 +28,74 @@ export function useSideEyeSignalling(opts: {
   useEffect(() => {
     if (!sessionId) return;
     let cancelled = false;
+    let cachedIce: RTCIceServer[] | null = null;
+    let candidatePairLogged = false;
 
-    const connect = () => {
+    const fetchIce = async (): Promise<RTCIceServer[]> => {
+      if (cachedIce) return cachedIce;
+      const FALLBACK: RTCIceServer[] = [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+      ];
+      try {
+        const { data, error } = await supabase.functions.invoke("contest-sideeye-ice");
+        if (error) throw error;
+        const servers = (data?.iceServers as RTCIceServer[]) ?? FALLBACK;
+        cachedIce = servers;
+        return servers;
+      } catch (e) {
+        console.warn("[sideeye] ICE fetch failed, using STUN fallback", e);
+        cachedIce = FALLBACK;
+        return FALLBACK;
+      }
+    };
+
+    const logCandidatePairOnce = async (pc: RTCPeerConnection) => {
+      if (candidatePairLogged) return;
+      try {
+        const stats = await pc.getStats();
+        let pairType: string | null = null;
+        let localType: string | null = null;
+        let remoteType: string | null = null;
+        const candidates: Record<string, any> = {};
+        stats.forEach((r: any) => {
+          if (r.type === "local-candidate" || r.type === "remote-candidate") {
+            candidates[r.id] = r;
+          }
+        });
+        stats.forEach((r: any) => {
+          if (r.type === "candidate-pair" && r.state === "succeeded" && r.nominated) {
+            const local = candidates[r.localCandidateId];
+            const remote = candidates[r.remoteCandidateId];
+            localType = local?.candidateType ?? null;
+            remoteType = remote?.candidateType ?? null;
+            pairType = `${localType}-${remoteType}`;
+          }
+        });
+        if (pairType) {
+          candidatePairLogged = true;
+          // Best-effort audit log; ignore failure (RLS handles auth scoping).
+          await supabase.from("contest_side_camera_audit_logs").insert({
+            session_id: sessionId,
+            user_id: (await supabase.auth.getUser()).data.user?.id ?? null,
+            event_type: "ice_pair_selected",
+            severity: "info",
+            detail: { pair_type: pairType, local: localType, remote: remoteType, role },
+          });
+        }
+      } catch { /* noop */ }
+    };
+
+    const connect = async () => {
       if (cancelled) return;
 
       try { pcRef.current?.close(); } catch { /* noop */ }
       try { channelRef.current?.unsubscribe(); } catch { /* noop */ }
 
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: "stun:stun.l.google.com:19302" },
-          { urls: "stun:stun1.l.google.com:19302" },
-        ],
-      });
+      const iceServers = await fetchIce();
+      if (cancelled) return;
+
+      const pc = new RTCPeerConnection({ iceServers });
       pcRef.current = pc;
 
       pc.ontrack = (ev) => {
@@ -56,6 +111,8 @@ export function useSideEyeSignalling(opts: {
 
         if (s === "connected") {
           reconnectAttemptRef.current = 0;
+          // Log selected ICE candidate-pair type once we're up
+          void logCandidatePairOnce(pc);
         } else if (s === "failed" || s === "disconnected" || s === "closed") {
           scheduleReconnect();
         }
@@ -130,10 +187,10 @@ export function useSideEyeSignalling(opts: {
       const attempt = ++reconnectAttemptRef.current;
       const delay = Math.min(30_000, 1000 * 2 ** Math.min(attempt, 5));
       if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = window.setTimeout(() => connect(), delay);
+      reconnectTimerRef.current = window.setTimeout(() => { void connect(); }, delay);
     };
 
-    connect();
+    void connect();
 
     // Adaptive bandwidth sampler (phone side only, every 6 s)
     let qualityTimer: number | null = null;

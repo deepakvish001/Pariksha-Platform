@@ -61,6 +61,7 @@ export default function SecureContestGate({
   const [agreed, setAgreed] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [checklistReady, setChecklistReady] = useState(false);
+  const [sideEyeReady, setSideEyeReady] = useState(false);
   const preflightKey = `contest-preflight-passed:${contestId}`;
   const roomScanKey = `contest-room-scan-passed:${contestId}`;
   const identityKey = `contest-identity-verified:${contestId}`;
@@ -105,12 +106,12 @@ export default function SecureContestGate({
     onSessionChange?.(active.hasActive);
   }, [active.hasActive, onSessionChange]);
 
-  // Auto-jump into kiosk once session + screen share are live.
+  // Auto-jump into kiosk once session + screen share + side camera are live.
   useEffect(() => {
-    if (secure.sessionId && recorder.sharing && firstProblemSlug && hasStarted && !hasEnded) {
+    if (secure.sessionId && recorder.sharing && sideEyeReady && firstProblemSlug && hasStarted && !hasEnded) {
       navigate(`/contests/${contestSlug}/play/${firstProblemSlug}`);
     }
-  }, [secure.sessionId, recorder.sharing, firstProblemSlug, hasStarted, hasEnded, contestSlug, navigate]);
+  }, [secure.sessionId, recorder.sharing, sideEyeReady, firstProblemSlug, hasStarted, hasEnded, contestSlug, navigate]);
 
   if (!isRegistered) {
     return (
@@ -358,17 +359,29 @@ export default function SecureContestGate({
           </Button>
         )}
         {firstProblemSlug && (
-          <Button
-            size="sm"
-            onClick={() => navigate(`/contests/${contestSlug}/play/${firstProblemSlug}`)}
-          >
-            Enter contest workspace
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              disabled={!sideEyeReady}
+              onClick={() => navigate(`/contests/${contestSlug}/play/${firstProblemSlug}`)}
+            >
+              Enter contest workspace
+            </Button>
+            {!sideEyeReady && (
+              <span className="text-[11px] text-amber-300">
+                Pair your phone (Second Eye) below to continue.
+              </span>
+            )}
+          </div>
         )}
       </Card>
 
       {secure.sessionId && (
-        <SideEyePairingStep sessionId={secure.sessionId} required />
+        <SideEyePairingStep
+          sessionId={secure.sessionId}
+          required
+          onPaired={() => setSideEyeReady(true)}
+        />
       )}
 
       <Dialog
