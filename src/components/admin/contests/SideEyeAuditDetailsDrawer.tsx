@@ -114,7 +114,7 @@ export const SideEyeAuditDetailsDrawer = ({ sessionId, event, open, onOpenChange
       // 3) Related notifications in the same time window for this session
       const { data: n } = await supabase
         .from("notifications")
-        .select("id, created_at, type, title, body, metadata")
+        .select("id, created_at, type, title, message, data")
         .gte("created_at", lo)
         .lte("created_at", hi)
         .like("type", "contest_%")
@@ -122,7 +122,7 @@ export const SideEyeAuditDetailsDrawer = ({ sessionId, event, open, onOpenChange
         .limit(50);
 
       const filtered = ((n as NotificationRow[]) ?? []).filter(
-        (row) => row.metadata?.session_id === sessionId,
+        (row) => row.data?.session_id === sessionId,
       );
 
       if (!alive) return;
@@ -240,7 +240,7 @@ export const SideEyeAuditDetailsDrawer = ({ sessionId, event, open, onOpenChange
                     {format(new Date(n.created_at), "HH:mm:ss")}
                   </span>
                 </div>
-                {n.body && <p className="text-muted-foreground line-clamp-2">{n.body}</p>}
+                {n.message && <p className="text-muted-foreground line-clamp-2">{n.message}</p>}
               </div>
             ))}
             {notifications && notifications.length === 0 && (
