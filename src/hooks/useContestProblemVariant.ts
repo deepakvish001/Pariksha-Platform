@@ -29,6 +29,7 @@ export function useContestProblemVariant(contestId: string | undefined, problemS
       if (aErr) throw aErr;
 
       // assignment is a contest_user_variants row; load the variant content.
+      const assignedAt = (assignment as { assigned_at?: string } | null)?.assigned_at ?? null;
       const variantId = (assignment as { variant_id?: string } | null)?.variant_id;
       if (!variantId) return null;
 
@@ -38,7 +39,7 @@ export function useContestProblemVariant(contestId: string | undefined, problemS
         .eq("id", variantId)
         .single();
       if (vErr) throw vErr;
-      return variant;
+      return { ...variant, assigned_at: assignedAt };
     },
     staleTime: Infinity,
     retry: 1,
