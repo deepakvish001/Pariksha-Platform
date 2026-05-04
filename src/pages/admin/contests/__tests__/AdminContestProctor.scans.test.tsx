@@ -114,16 +114,18 @@ function renderProctor() {
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={["/admin/contests/contest-1/proctor"]}>
-        <Routes>
-          <Route
-            path="/admin/contests/:id/proctor"
-            element={<AdminContestProctor />}
-          />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+    <HelmetProvider>
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={["/admin/contests/contest-1/proctor"]}>
+          <Routes>
+            <Route
+              path="/admin/contests/:id/proctor"
+              element={<AdminContestProctor />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </HelmetProvider>,
   );
 }
 
