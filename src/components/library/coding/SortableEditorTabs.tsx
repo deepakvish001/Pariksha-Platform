@@ -36,6 +36,15 @@ interface SortableEditorTabsProps {
    * so locked tabs can't be hidden / shuffled to indirectly reactivate.
    */
   reorderDisabled?: boolean;
+  /**
+   * Fired whenever a drag-reorder attempt is rejected (because reorder is
+   * globally disabled or a locked tab was involved). Used by callers to
+   * audit-log the attempt for trust scoring.
+   */
+  onBlockedReorder?: (reason: "reorder_disabled" | "locked_tab", info: {
+    activeId: EditorTabId;
+    overId: EditorTabId | null;
+  }) => void;
 }
 
 interface SortableTriggerProps {
