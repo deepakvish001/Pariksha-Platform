@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { ArrowLeft, Radio, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Radio, ChevronLeft, ChevronRight, AlertTriangle, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 50;
@@ -20,6 +20,20 @@ const fmtPenalty = (sec: number) => {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
+};
+
+const TrustCell = ({ score, risk }: { score: number | null | undefined; risk: string | null | undefined }) => {
+  if (score == null) return <span className="text-xs text-muted-foreground">—</span>;
+  const tone =
+    risk === "low" ? "border-emerald-400/40 text-emerald-400"
+    : risk === "medium" ? "border-amber-400/40 text-amber-400"
+    : "border-red-400/50 text-red-400";
+  const Icon = risk === "low" ? ShieldCheck : risk === "medium" ? ShieldAlert : ShieldX;
+  return (
+    <Badge variant="outline" className={cn("gap-1 font-mono", tone)}>
+      <Icon className="h-3 w-3" /> {score}
+    </Badge>
+  );
 };
 
 const ContestLeaderboard = () => {
