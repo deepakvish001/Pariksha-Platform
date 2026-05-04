@@ -1212,6 +1212,9 @@ const CodingProblemDetail = () => {
               </TabsContent>
 
               <TabsContent value="my-solution" className="mt-0">
+                {contestLocks.solutionLocked ? (
+                  <LockedAuxPanel label="My Solution" endsAt={contestLocks.endsAt} />
+                ) : (
                 <MySolutionPanel
                   notes={mySolutionNotes}
                   onNotesChange={setMySolutionNotes}
@@ -1241,10 +1244,13 @@ const CodingProblemDetail = () => {
                     navigate(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`)
                   }
                 />
+                )}
               </TabsContent>
 
               <TabsContent value="solution" className="mt-0">
-                {!acceptedExists ? (
+                {contestLocks.solutionLocked ? (
+                  <LockedAuxPanel label="Reference solution" endsAt={contestLocks.endsAt} />
+                ) : !acceptedExists ? (
                   <Card className="p-8 text-center">
                     <p className="text-muted-foreground">
                       🔒 Solve the problem first to unlock the reference solution.
@@ -1331,7 +1337,9 @@ const CodingProblemDetail = () => {
               </TabsContent>
 
               <TabsContent value="runs" className="mt-0" aria-label="Run history">
-                {!user ? (
+                {contestLocks.historyLocked ? (
+                  <LockedAuxPanel label="Run history" endsAt={contestLocks.endsAt} />
+                ) : !user ? (
                   <Card className="p-8 text-center">
                     <p className="text-muted-foreground mb-3">
                       Sign in to view your run history.
