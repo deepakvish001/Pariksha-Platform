@@ -286,10 +286,46 @@ const CodingProblemDetail = () => {
     order: tabOrder,
     active: activeTab,
     setOrder: setTabOrder,
-    setActive: setActiveTab,
+    setActive: setActiveTabRaw,
     reset: resetTabsLayout,
     isCustomized: isLayoutCustomized,
   } = useEditorTabsLayout(slug, language);
+
+  // Map of which tabs are locked by the active contest. Used to (a) reject
+  // setActiveTab calls that would land on a locked tab, (b) auto-redirect to
+  // Description if the persisted active tab is locked when the contest starts,
+  // and (c) decorate trigger labels with a 🔒.
+  const isTabLocked = (id: EditorTabId) =>
+    (id === "notes" && contestLocks.notesLocked) ||
+    (id === "my-solution" && contestLocks.solutionLocked) ||
+    (id === "solution" && contestLocks.solutionLocked) ||
+    (id === "runs" && contestLocks.historyLocked);
+
+  const setActiveTab = (id: EditorTabId) => {
+    if (isTabLocked(id)) {
+      toast({
+        title: "Locked during contest",
+        description: "This panel unlocks when the contest ends.",
+      });
+      return;
+    }
+    setActiveTabRaw(id);
+  };
+
+  // If the user previously had a now-locked tab as their active tab (e.g.
+  // they had "notes" open before the contest started, or hot-reloaded into a
+  // contest), force them back to Description.
+  useEffect(() => {
+    if (isTabLocked(activeTab)) {
+      setActiveTabRaw("description");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeTab,
+    contestLocks.notesLocked,
+    contestLocks.solutionLocked,
+    contestLocks.historyLocked,
+  ]);
   const {
     presetId: layoutPresetId,
     preset: layoutPreset,
@@ -1054,6 +1090,9 @@ const CodingProblemDetail = () => {
                   order={tabOrder}
                   onReorder={(next) => setTabOrder(next)}
                   renderLabel={(id) => {
+                    const lockMark = isTabLocked(id) ? (
+                      <span className="ml-1 text-amber-500" aria-label="Locked during contest">🔒</span>
+                    ) : null;
                     switch (id) {
                       case "description":
                         return "Description";
@@ -1068,16 +1107,18 @@ const CodingProblemDetail = () => {
                                 )}
                               />
                             )}
+                            {lockMark}
                           </>
                         );
                       case "solution":
-                        return "Reference";
+                        return <>Reference{lockMark}</>;
                       case "notes":
                         return (
                           <>
                             Notes {notesValue.trim().length > 0 && (
                               <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-primary inline-block" />
                             )}
+                            {lockMark}
                           </>
                         );
                       case "submissions":
@@ -1094,6 +1135,7 @@ const CodingProblemDetail = () => {
                             Runs {runs.length > 0 && (
                               <span className="ml-1.5 text-xs text-muted-foreground">({runs.length})</span>
                             )}
+                            {lockMark}
                           </>
                         );
                     }
@@ -1196,7 +1238,11 @@ const CodingProblemDetail = () => {
                 )}
 
                 {/* Hints — progressive disclosure */}
-                <ProgressiveHints hints={problem.hints} slug={problem.slug} />
+                {contestLocks.hintsLocked ? (
+                  <LockedAuxPanel label="Hints" endsAt={contestLocks.endsAt} />
+                ) : (
+                  <ProgressiveHints hints={problem.hints} slug={problem.slug} />
+                )}
               </TabsContent>
 
               <TabsContent value="notes" className="mt-0">
