@@ -9,6 +9,8 @@ import { ContestTopBar } from "@/components/contests/ContestTopBar";
 import SecureProblemHUD from "@/components/contests/SecureProblemHUD";
 import { MultiTabBlockedDialog } from "@/components/contests/MultiTabBlockedDialog";
 import { StreamHealthBanner } from "@/components/contests/StreamHealthBanner";
+import { ContestVariantBanner } from "@/components/contests/ContestVariantBanner";
+import { useContestProblemVariant } from "@/hooks/useContestProblemVariant";
 import CodingProblemDetail from "@/pages/library/CodingProblemDetail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
