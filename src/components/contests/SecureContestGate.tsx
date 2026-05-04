@@ -60,13 +60,29 @@ export default function SecureContestGate({
   const [agreed, setAgreed] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [checklistReady, setChecklistReady] = useState(false);
+  const preflightKey = `contest-preflight-passed:${contestId}`;
+  const roomScanKey = `contest-room-scan-passed:${contestId}`;
   const identityKey = `contest-identity-verified:${contestId}`;
+  const [preflightPassed, setPreflightPassed] = useState<boolean>(() => {
+    try { return localStorage.getItem(preflightKey) === "1"; } catch { return false; }
+  });
+  const [roomScanPassed, setRoomScanPassed] = useState<boolean>(() => {
+    try { return localStorage.getItem(roomScanKey) === "1"; } catch { return false; }
+  });
   const [identityVerified, setIdentityVerified] = useState<boolean>(() => {
     try { return localStorage.getItem(identityKey) === "1"; } catch { return false; }
   });
   const [audioConsent, setAudioConsent] = useState<boolean>(() => {
     try { return localStorage.getItem(`contest-audio-consent:${contestId}`) === "1"; } catch { return false; }
   });
+  const markPreflight = () => {
+    try { localStorage.setItem(preflightKey, "1"); } catch { /* ignore */ }
+    setPreflightPassed(true);
+  };
+  const markRoomScan = () => {
+    try { localStorage.setItem(roomScanKey, "1"); } catch { /* ignore */ }
+    setRoomScanPassed(true);
+  };
   const markVerified = () => {
     try { localStorage.setItem(identityKey, "1"); } catch { /* ignore */ }
     setIdentityVerified(true);
