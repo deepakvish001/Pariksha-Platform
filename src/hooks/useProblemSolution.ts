@@ -78,9 +78,21 @@ const rowToEntry = (row: {
  * localStorage immediately and syncs to Supabase when the user is signed in,
  * so solutions follow the user across devices.
  */
-export const useProblemSolution = (slug: string | undefined, language: LangId) => {
+export interface UseProblemSolutionOptions {
+  /** When true, suppress all cloud sync (no DB read or write). */
+  locked?: boolean;
+  /** Active contest id, used for telemetry on blocked fetches. */
+  contestId?: string | null;
+}
+
+export const useProblemSolution = (
+  slug: string | undefined,
+  language: LangId,
+  options: UseProblemSolutionOptions = {},
+) => {
   const { user } = useAuth();
   const userId = user?.id ?? null;
+  const { locked = false, contestId = null } = options;
 
   const [entry, setEntry] = useState<SolutionEntry>(() =>
     slug ? readMap()[slug] ?? empty : empty,
