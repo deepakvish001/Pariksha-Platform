@@ -2,8 +2,8 @@
 // and primary device fingerprint. Subsequent contest sessions that
 // don't match these values increment the conflict_count and raise
 // an admin alert. Used to defeat impersonation and account-sharing.
-import { corsHeaders } from "@supabase/supabase-js/cors";
-import { createClient } from "@supabase/supabase-js";
+import { corsHeaders } // no cors module;
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 interface Body {
   user_id: string;

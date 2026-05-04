@@ -8,8 +8,8 @@
 //      identical snippet, when GITHUB_TOKEN is configured.
 // Matches above 0.6 are persisted to contest_cross_similarity; a DB
 // trigger raises an admin alert when similarity ≥ 0.80.
-import { corsHeaders } from "@supabase/supabase-js/cors";
-import { createClient } from "@supabase/supabase-js";
+import { corsHeaders } // no cors module;
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 interface Body {
   session_id: string;
