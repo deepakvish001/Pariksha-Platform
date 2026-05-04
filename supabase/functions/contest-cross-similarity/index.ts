@@ -8,7 +8,6 @@
 //      identical snippet, when GITHUB_TOKEN is configured.
 // Matches above 0.6 are persisted to contest_cross_similarity; a DB
 // trigger raises an admin alert when similarity ≥ 0.80.
-import { corsHeaders } /* inline cors */;
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",

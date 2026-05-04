@@ -2,7 +2,6 @@
 // and primary device fingerprint. Subsequent contest sessions that
 // don't match these values increment the conflict_count and raise
 // an admin alert. Used to defeat impersonation and account-sharing.
-import { corsHeaders } /* inline cors */;
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
