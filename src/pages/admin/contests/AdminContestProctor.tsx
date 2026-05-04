@@ -12,12 +12,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ShieldAlert, Camera, RefreshCw, Flag, Ban, Sparkles, Mic } from "lucide-react";
+import { ArrowLeft, ShieldAlert, Camera, RefreshCw, Flag, Ban, Sparkles, Mic, Smartphone } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { SimilarityTab } from "@/components/admin/contests/SimilarityTab";
 import { VivaQueueTab } from "@/components/admin/contests/VivaQueueTab";
+import { SideEyeTile } from "@/components/contests/SideEyeTile";
 
 type Violation = {
   id: string;
@@ -249,6 +250,7 @@ const AdminContestProctor = () => {
             <TabsTrigger value="sessions">Active sessions</TabsTrigger>
             <TabsTrigger value="similarity"><Sparkles className="mr-2 h-4 w-4" />Similarity</TabsTrigger>
             <TabsTrigger value="viva"><Mic className="mr-2 h-4 w-4" />Viva queue</TabsTrigger>
+            <TabsTrigger value="sideeye"><Smartphone className="mr-2 h-4 w-4" />Side cameras</TabsTrigger>
           </TabsList>
 
           <TabsContent value="violations" className="space-y-3">
@@ -439,6 +441,22 @@ const AdminContestProctor = () => {
           </TabsContent>
           <TabsContent value="viva">
             {id && <VivaQueueTab contestId={id} />}
+          </TabsContent>
+          <TabsContent value="sideeye">
+            <Card className="p-4">
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <Smartphone className="h-4 w-4" /> Live side-camera streams
+              </h3>
+              {(sessionsQuery.data ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No active sessions.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {(sessionsQuery.data ?? []).map((s: any) => (
+                    <SideEyeTile key={s.id} sessionId={s.id} candidateName={s.user_id?.slice(0, 8)} />
+                  ))}
+                </div>
+              )}
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
