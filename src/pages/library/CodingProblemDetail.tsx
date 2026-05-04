@@ -188,6 +188,11 @@ const CodingProblemDetail = () => {
   // the action is blocked before click — not just on the click handler.
   const [contestSubmitBlocked, setContestSubmitBlocked] = useState(false);
   const [contestId, setContestId] = useState<string | null>(null);
+  // Reflects the SecureProblemHUD's heartbeat health. While the heartbeat is
+  // offline/reconnecting we disable the Submit button — server-side
+  // validate_contest_submission also rejects in that state, so this is purely
+  // a UX guardrail to prevent confusing failures mid-network-blip.
+  const [secureSubmissionReady, setSecureSubmissionReady] = useState(true);
   const sessionTimerRef = useRef<SessionTimerHandle>(null);
   const editorRef = useRef<MonacoEditorHandle>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
