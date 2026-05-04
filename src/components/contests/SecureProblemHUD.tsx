@@ -132,6 +132,7 @@ export default function SecureProblemHUD({ contestId, contestSlug, onSubmissionR
               <Badge variant="outline" className={secure.flagged ? "border-red-400/50 text-red-300" : "border-border"}>
                 <AlertTriangle className="mr-1 h-3 w-3" /> {secure.violationCount}/5 · {violationsLeft} left
               </Badge>
+              <TrustScoreBadge trust={trust} />
               <Badge
                 variant="outline"
                 className={

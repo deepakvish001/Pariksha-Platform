@@ -146,6 +146,8 @@ import NotificationPreferences from "./pages/NotificationPreferences";
 import ContestsList from "./pages/contests/ContestsList";
 import ContestDetail from "./pages/contests/ContestDetail";
 import ContestLeaderboard from "./pages/contests/ContestLeaderboard";
+import ContestPlayProblem from "./pages/contests/ContestPlayProblem";
+import ContestKioskLayout from "./layouts/ContestKioskLayout";
 import AdminContestsList from "./pages/admin/contests/AdminContestsList";
 import ContestEditor from "./pages/admin/contests/ContestEditor";
 import AdminContestRegistrations from "./pages/admin/contests/AdminContestRegistrations";
@@ -268,6 +270,11 @@ const App = () => (
                   <Route index element={<ContestsList />} />
                   <Route path=":slug" element={<ContestDetail />} />
                   <Route path=":slug/leaderboard" element={<ContestLeaderboard />} />
+                </Route>
+
+                {/* Contest kiosk — no sidebar/header, used while solving inside a secure session */}
+                <Route path="/contests/:slug/play" element={<ContestKioskLayout />}>
+                  <Route path=":problemSlug" element={<ContestPlayProblem />} />
                 </Route>
 
                 {/* Fundamentals routes - public */}
