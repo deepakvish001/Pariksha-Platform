@@ -52,12 +52,13 @@ export const SideEyeSettingsPanel = () => {
   const [recipientsText, setRecipientsText] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [purging, setPurging] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from("sideeye_notification_settings")
-        .select("id, min_severity, escalate_kinds, recipient_user_ids, notify_all_admins")
+        .select("id, min_severity, escalate_kinds, recipient_user_ids, notify_all_admins, retention_days_audit, retention_days_frames, retention_days_recordings")
         .eq("singleton", true)
         .maybeSingle();
       if (data) {
