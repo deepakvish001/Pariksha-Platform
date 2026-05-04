@@ -20,6 +20,8 @@ import { useScreenRecorder } from "@/hooks/useScreenRecorder";
 
 import { WebcamPiP } from "./WebcamPiP";
 import { IdentityCaptureStep } from "./IdentityCaptureStep";
+import { PreflightChecksStep } from "./PreflightChecksStep";
+import { RoomScanStep } from "./RoomScanStep";
 import { ShieldCheck, Eye, Maximize2, Camera, Ban, AlertTriangle, Lock, Monitor, Mic } from "lucide-react";
 import { toast } from "sonner";
 import ContestLobby from "./ContestLobby";
