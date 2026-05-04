@@ -247,6 +247,16 @@ const CodingProblemDetail = () => {
   // surface that countdowns to the contest end. Hooks below also receive the
   // `locked` flag so they refuse to fetch sensitive data over the network.
   const contestLocks = useContestLocks(contestId ?? undefined);
+  // Active contest session id (for typing telemetry). Only resolved when we
+  // are on a `?contest=<slug>` URL inside an active secure session.
+  const contestSession = useActiveContestSession(contestId ?? undefined);
+  const typing = useTypingTelemetry({
+    contestId: contestId ?? undefined,
+    sessionId: contestSession.sessionId ?? null,
+    problemSlug: slug,
+    enabled: !!contestId && contestSession.hasActive,
+  });
+  const lastCodeLenRef = useRef<number>(0);
   const { runs, refetch: refetchRuns } = useCodeRuns(slug, {
     locked: contestLocks.historyLocked,
     contestId,
