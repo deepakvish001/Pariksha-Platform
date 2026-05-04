@@ -114,24 +114,33 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
     }
   };
 
-  const markRow = async (row: AuditRow) => {
+  const markRow = async (row: AuditRow, mode: "review" | "edit" = "review") => {
     if (!user) return;
     setRowSavingId(row.id);
     try {
       const note = (rowNotes[row.id] ?? "").trim() || null;
+      const update: Record<string, unknown> = { reviewer_note: note };
+      // Only stamp reviewer/timestamp on first review; edits preserve original review time
+      // but record the editor as the new reviewer_id for accountability.
+      if (mode === "review") {
+        update.reviewed_at = new Date().toISOString();
+      }
+      update.reviewer_id = user.id;
       const { error } = await supabase
         .from("contest_side_camera_audit_logs")
-        .update({
-          reviewed_at: new Date().toISOString(),
-          reviewer_id: user.id,
-          reviewer_note: note,
-        })
+        .update(update)
         .eq("id", row.id);
       if (error) throw error;
-      await logSideEyeAction("sideeye_audit_row_review", sessionId, {
-        audit_id: row.id, note,
-      });
-      toast.success("Row marked reviewed");
+      await logSideEyeAction(
+        mode === "review" ? "sideeye_audit_row_review" : "sideeye_audit_row_note_edit",
+        sessionId,
+        {
+          audit_id: row.id,
+          note,
+          previous_note: row.reviewer_note ?? null,
+        },
+      );
+      toast.success(mode === "review" ? "Row marked reviewed" : "Reviewer note updated");
       setRowNotes((s) => { const n = { ...s }; delete n[row.id]; return n; });
       await load();
     } catch (e: any) {
