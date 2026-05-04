@@ -52,33 +52,27 @@ const sessionRow = {
   user_agent: "Mozilla/5.0",
 };
 
-// `supabase.from(...)` returns a chainable object whose terminal methods
-// resolve with the data we want for each table.
+// Build a chainable that resolves like a PostgREST query when awaited.
 function buildFromQuery(table: string) {
-  const chain: any = {
-    select: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    in: vi.fn(() => chain),
-    order: vi.fn(() => chain),
-    limit: vi.fn(() => chain),
-    single: vi.fn(),
-    update: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) })),
-    insert: vi.fn(() => Promise.resolve({ error: null })),
-    upsert: vi.fn(() => Promise.resolve({ error: null })),
-    then: undefined as unknown,
-  };
+  let resolved: { data: unknown; error: unknown };
+  if (table === "contest_sessions") resolved = { data: [sessionRow], error: null };
+  else if (table === "profiles")
+    resolved = { data: [{ id: "user-9", full_name: "Alice" }], error: null };
+  else if (table === "contest_violations") resolved = { data: [], error: null };
+  else if (table === "contest_proctor_snapshots") resolved = { data: [], error: null };
+  else resolved = { data: [], error: null };
 
-  // Make the chain awaitable -> resolve with table-appropriate data
-  chain.then = (resolve: (v: { data: unknown; error: unknown }) => void) => {
-    if (table === "contest_sessions") resolve({ data: [sessionRow], error: null });
-    else if (table === "contest_violations") resolve({ data: [], error: null });
-    else if (table === "contest_proctor_snapshots") resolve({ data: [], error: null });
-    else if (table === "profiles")
-      resolve({ data: [{ id: "user-9", full_name: "Alice" }], error: null });
-    else resolve({ data: [], error: null });
-    return Promise.resolve();
-  };
-
+  const chain: any = {};
+  const passThrough = ["select", "eq", "in", "order", "limit", "neq", "is", "not", "gte", "lte", "range"];
+  for (const m of passThrough) chain[m] = vi.fn(() => chain);
+  chain.single = vi.fn(() => Promise.resolve(resolved));
+  chain.update = vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ error: null })) }));
+  chain.insert = vi.fn(() => Promise.resolve({ error: null }));
+  chain.upsert = vi.fn(() => Promise.resolve({ error: null }));
+  chain.then = (
+    onF: (v: { data: unknown; error: unknown }) => unknown,
+    onR?: (e: unknown) => unknown,
+  ) => Promise.resolve(resolved).then(onF, onR);
   return chain;
 }
 
