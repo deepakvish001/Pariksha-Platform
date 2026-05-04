@@ -91,6 +91,14 @@ export default function ContestPlayProblem() {
         onReshareScreen={() => navigate(`/contests/${contest.slug}`)}
         onReshareWebcam={() => navigate(`/contests/${contest.slug}`)}
       />
+      {variantQuery.data && (
+        <ContestVariantBanner
+          variantKey={variantQuery.data.variant_key}
+          title={variantQuery.data.title}
+          statementMd={variantQuery.data.statement_md}
+          weight={variantQuery.data.weight as number | null}
+        />
+      )}
       <div className="flex-1">
         <CodingProblemDetail />
       </div>
