@@ -2224,6 +2224,44 @@ export type Database = {
           },
         ]
       }
+      contest_side_camera_audit_logs: {
+        Row: {
+          created_at: string
+          detail: Json
+          event_type: string
+          id: string
+          session_id: string
+          severity: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json
+          event_type: string
+          id?: string
+          session_id: string
+          severity?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detail?: Json
+          event_type?: string
+          id?: string
+          session_id?: string
+          severity?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_side_camera_audit_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "contest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_side_camera_frames: {
         Row: {
           ai_summary: Json | null

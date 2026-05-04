@@ -24,7 +24,7 @@ const SideEyeMobile = () => {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const wakeLockRef = useRef<any>(null);
 
-  useSideEyeSignalling({
+  const { quality, connectionState } = useSideEyeSignalling({
     sessionId,
     role: "phone",
     localStream: stream,
@@ -213,9 +213,26 @@ const SideEyeMobile = () => {
           <div className="space-y-3">
             <video ref={videoRef} autoPlay playsInline muted className="w-full rounded-lg bg-black aspect-video" />
             {step === "streaming" && (
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 text-sm flex-wrap">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                 <span className="font-medium text-emerald-500">Streaming to proctor</span>
+                <Badge
+                  variant="outline"
+                  className={
+                    quality === "good"
+                      ? "border-emerald-500/40 text-emerald-300"
+                      : quality === "fair"
+                      ? "border-amber-500/40 text-amber-300"
+                      : "border-red-500/50 text-red-300"
+                  }
+                >
+                  {quality === "good" ? "Good network" : quality === "fair" ? "Fair network" : "Poor — reduced quality"}
+                </Badge>
+                {(connectionState === "disconnected" || connectionState === "failed") && (
+                  <Badge variant="outline" className="border-amber-500/40 text-amber-300">
+                    Reconnecting…
+                  </Badge>
+                )}
                 <Badge variant="secondary" className="ml-auto">Keep this tab open</Badge>
               </div>
             )}

@@ -121,14 +121,31 @@ Deno.serve(async (req) => {
       severity,
     });
 
-    // Map severity to project's findings severity domain (info|warn|flag|fatal)
-    const findingSeverity =
+    // Audit log every analyzed frame
+    await admin.from("contest_side_camera_audit_logs").insert({
+      session_id: sessionId,
+      user_id: user.id,
+      event_type: "frame_analyzed",
+      severity,
+      detail: { storage_path: storagePath, summary },
+    });
+
+    // Force-escalate the two anomalies the user explicitly cares about:
+    // secondary device sighting and empty chair (candidate absent).
+    let findingSeverity: "info" | "warn" | "flag" | "fatal" =
       severity === "critical" ? "fatal" :
       severity === "high" ? "flag" :
       severity === "medium" ? "warn" : "info";
 
+    if (summary.secondary_device || summary.candidate_absent) {
+      // bump to at least "flag" — this triggers admin notifications
+      // via existing trg_notify_proctor_finding_flag.
+      if (findingSeverity === "info" || findingSeverity === "warn") {
+        findingSeverity = "flag";
+      }
+    }
+
     if (findingSeverity === "warn" || findingSeverity === "flag" || findingSeverity === "fatal") {
-      // Look up contest_id from session
       const { data: sess } = await admin
         .from("contest_sessions")
         .select("contest_id")
@@ -145,7 +162,7 @@ Deno.serve(async (req) => {
           second_person_detected: !!summary.extra_person,
           earbuds_detected: !!summary.earpiece_visible,
           ai_summary: `Side camera: ${summary.notes ?? ""}`.slice(0, 1000),
-          raw: { source: "side_camera", ...summary },
+          raw: { source: "side_camera", anomaly_kind: summary.secondary_device ? "secondary_device" : summary.candidate_absent ? "candidate_absent" : summary.extra_person ? "extra_person" : "side_camera", ...summary },
         });
       }
     }
