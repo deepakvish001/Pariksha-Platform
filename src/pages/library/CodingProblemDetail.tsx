@@ -271,7 +271,10 @@ const CodingProblemDetail = () => {
     isCloudSynced: mySolutionIsCloudSynced,
     lastSyncedAt: mySolutionLastSyncedAt,
     lastConflictResolvedAt: mySolutionLastConflictAt,
-  } = useProblemSolution(slug, mySolutionLanguage);
+  } = useProblemSolution(slug, mySolutionLanguage, {
+    locked: contestLocks.solutionLocked,
+    contestId,
+  });
   const {
     prefs: editorPrefs,
     incFontSize,
