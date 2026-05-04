@@ -58,6 +58,17 @@ export default function SecureContestGate({
   const [agreed, setAgreed] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [checklistReady, setChecklistReady] = useState(false);
+  const identityKey = `contest-identity-verified:${contestId}`;
+  const [identityVerified, setIdentityVerified] = useState<boolean>(() => {
+    try { return localStorage.getItem(identityKey) === "1"; } catch { return false; }
+  });
+  const [audioConsent, setAudioConsent] = useState<boolean>(() => {
+    try { return localStorage.getItem(`contest-audio-consent:${contestId}`) === "1"; } catch { return false; }
+  });
+  const markVerified = () => {
+    try { localStorage.setItem(identityKey, "1"); } catch { /* ignore */ }
+    setIdentityVerified(true);
+  };
   const secure = useContestSecureMode(contestId, !!honorAccepted && hasStarted && !hasEnded);
   const active = useActiveContestSession(contestId);
   const recorder = useScreenRecorder({
