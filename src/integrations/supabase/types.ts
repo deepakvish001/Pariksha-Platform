@@ -3821,6 +3821,9 @@ export type Database = {
           min_severity: string
           notify_all_admins: boolean
           recipient_user_ids: string[]
+          retention_days_audit: number
+          retention_days_frames: number
+          retention_days_recordings: number
           singleton: boolean
           updated_at: string
           updated_by: string | null
@@ -3832,6 +3835,9 @@ export type Database = {
           min_severity?: string
           notify_all_admins?: boolean
           recipient_user_ids?: string[]
+          retention_days_audit?: number
+          retention_days_frames?: number
+          retention_days_recordings?: number
           singleton?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -3843,6 +3849,9 @@ export type Database = {
           min_severity?: string
           notify_all_admins?: boolean
           recipient_user_ids?: string[]
+          retention_days_audit?: number
+          retention_days_frames?: number
+          retention_days_recordings?: number
           singleton?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -5628,6 +5637,7 @@ export type Database = {
         }[]
       }
       admin_rollback_daily_challenge: { Args: { _date: string }; Returns: Json }
+      admin_run_sideeye_purge: { Args: never; Returns: Json }
       admin_save_problem: { Args: { payload: Json }; Returns: Json }
       admin_schedule_broadcast: {
         Args: {
@@ -6142,6 +6152,7 @@ export type Database = {
         Args: { _contest_id: string; _invite_code?: string }
         Returns: string
       }
+      sideeye_purge_old_data: { Args: never; Returns: Json }
       snapshot_my_coding_leaderboard_rank: { Args: never; Returns: Json }
       solo_finalize_session: { Args: { _session_id: string }; Returns: Json }
       solo_record_attempt: {

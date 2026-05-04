@@ -182,8 +182,8 @@ Deno.serve(async (req) => {
             user_id: uid,
             type: "contest_sideeye_finding",
             title: "Side camera anomaly",
-            body: `Side camera flagged: ${summary.notes ?? triggeredKind ?? "anomaly"}`.slice(0, 500),
-            metadata: {
+            message: `Side camera flagged: ${summary.notes ?? triggeredKind ?? "anomaly"}`.slice(0, 500),
+            data: {
               contest_id: sess.contest_id,
               session_id: sessionId,
               user_id: user.id,

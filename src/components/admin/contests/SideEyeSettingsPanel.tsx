@@ -13,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Save, Settings as SettingsIcon } from "lucide-react";
+import { Loader2, Save, Settings as SettingsIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 const SEVERITIES = ["info", "low", "medium", "high", "critical"] as const;
 const KINDS = [
@@ -31,6 +32,9 @@ interface Settings {
   escalate_kinds: string[];
   recipient_user_ids: string[];
   notify_all_admins: boolean;
+  retention_days_audit: number;
+  retention_days_frames: number;
+  retention_days_recordings: number;
 }
 
 const DEFAULTS: Settings = {
@@ -38,6 +42,9 @@ const DEFAULTS: Settings = {
   escalate_kinds: ["secondary_device", "candidate_absent"],
   recipient_user_ids: [],
   notify_all_admins: true,
+  retention_days_audit: 30,
+  retention_days_frames: 30,
+  retention_days_recordings: 30,
 };
 
 export const SideEyeSettingsPanel = () => {
@@ -45,12 +52,13 @@ export const SideEyeSettingsPanel = () => {
   const [recipientsText, setRecipientsText] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [purging, setPurging] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from("sideeye_notification_settings")
-        .select("id, min_severity, escalate_kinds, recipient_user_ids, notify_all_admins")
+        .select("id, min_severity, escalate_kinds, recipient_user_ids, notify_all_admins, retention_days_audit, retention_days_frames, retention_days_recordings")
         .eq("singleton", true)
         .maybeSingle();
       if (data) {
@@ -93,6 +101,9 @@ export const SideEyeSettingsPanel = () => {
         escalate_kinds: settings.escalate_kinds,
         recipient_user_ids: ids,
         notify_all_admins: settings.notify_all_admins,
+        retention_days_audit: settings.retention_days_audit,
+        retention_days_frames: settings.retention_days_frames,
+        retention_days_recordings: settings.retention_days_recordings,
         updated_at: new Date().toISOString(),
       };
 
@@ -106,6 +117,23 @@ export const SideEyeSettingsPanel = () => {
       toast.error("Save failed", { description: e?.message });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const runPurge = async () => {
+    if (!confirm("Run purge now? This permanently deletes SideEye data older than the configured retention windows.")) return;
+    setPurging(true);
+    try {
+      const { data, error } = await supabase.rpc("admin_run_sideeye_purge");
+      if (error) throw error;
+      const r = (data ?? {}) as Record<string, number>;
+      toast.success("Purge complete", {
+        description: `Audit: ${r.deleted_audit ?? 0} • Frames: ${r.deleted_frames ?? 0} • Recordings: ${r.deleted_recordings ?? 0}`,
+      });
+    } catch (e: any) {
+      toast.error("Purge failed", { description: e?.message });
+    } finally {
+      setPurging(false);
     }
   };
 
@@ -190,6 +218,43 @@ export const SideEyeSettingsPanel = () => {
         />
         <p className="text-[11px] text-muted-foreground">
           Used when “Notify all admins” is off, or as extra recipients in addition to the trigger.
+        </p>
+      </div>
+
+      <div className="space-y-2 rounded border border-border/40 px-3 py-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs">Retention policy (days)</Label>
+          <Button size="sm" variant="outline" onClick={runPurge} disabled={purging} className="h-7 text-xs">
+            {purging ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1 h-3 w-3" />}
+            Run purge now
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {([
+            ["retention_days_audit", "Audit logs"],
+            ["retention_days_frames", "Frame events"],
+            ["retention_days_recordings", "Recordings"],
+          ] as const).map(([key, label]) => (
+            <div key={key} className="space-y-1">
+              <Label className="text-[11px] text-muted-foreground">{label}</Label>
+              <Input
+                type="number"
+                min={1}
+                max={365}
+                value={settings[key]}
+                onChange={(e) =>
+                  setSettings((p) => ({
+                    ...p,
+                    [key]: Math.max(1, Math.min(365, parseInt(e.target.value || "30", 10))),
+                  }))
+                }
+                className="h-8 text-xs"
+              />
+            </div>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          A daily background job purges any SideEye data older than these windows. Storage objects are removed alongside DB rows.
         </p>
       </div>
 
