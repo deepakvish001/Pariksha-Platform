@@ -352,9 +352,25 @@ const AdminContestProctor = () => {
                         </TableCell>
                         <TableCell className="max-w-xs truncate text-xs text-muted-foreground">{s.user_agent ?? "—"}</TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => forceEndSession(s.id)}>
-                            End session
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => forceEndSession(s.id)}>
+                              End session
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive"
+                              onClick={async () => {
+                                const { error } = await supabase.rpc("contest_force_dq" as never, {
+                                  _contest_id: id!, _user_id: s.user_id, _reason: "admin force-DQ from live monitor",
+                                } as never);
+                                if (error) toast.error(error.message);
+                                else { toast.success("Disqualified"); sessionsQuery.refetch(); }
+                              }}
+                            >
+                              Force DQ
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -362,6 +378,13 @@ const AdminContestProctor = () => {
                 </Table>
               )}
             </Card>
+          </TabsContent>
+
+          <TabsContent value="similarity">
+            {id && <SimilarityTab contestId={id} />}
+          </TabsContent>
+          <TabsContent value="viva">
+            {id && <VivaQueueTab contestId={id} />}
           </TabsContent>
         </Tabs>
       </div>
