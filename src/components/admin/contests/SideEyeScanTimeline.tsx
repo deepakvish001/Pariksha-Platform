@@ -349,6 +349,13 @@ export const SideEyeScanTimeline = ({ sessionId, limit = 100 }: Props) => {
           </div>
         </div>
       </div>
+
+      <SideEyeAuditDetailsDrawer
+        sessionId={sessionId}
+        event={drawerEvent}
+        open={!!drawerEvent}
+        onOpenChange={(o) => { if (!o) setDrawerEvent(null); }}
+      />
     </Card>
   );
 };
