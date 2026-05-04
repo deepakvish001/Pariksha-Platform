@@ -275,6 +275,7 @@ const App = () => (
                   <Route path=":slug" element={<ContestDetail />} />
                   <Route path=":slug/leaderboard" element={<ContestLeaderboard />} />
                 </Route>
+                <Route path="/contests/:contestId/integrity" element={<PublicIntegrityReport />} />
 
                 {/* Contest kiosk — no sidebar/header, used while solving inside a secure session */}
                 <Route path="/contests/:slug/play" element={<ContestKioskLayout />}>
