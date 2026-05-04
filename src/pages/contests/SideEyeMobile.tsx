@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Camera, AlertCircle, CheckCircle2, BatteryLow } from "lucide-react";
+import { Loader2, Camera, AlertCircle, CheckCircle2, BatteryLow, EyeOff, RefreshCw } from "lucide-react";
 import { useSideEyeSignalling } from "@/hooks/useSideEyeSignalling";
+import { toast } from "sonner";
 
 /**
  * Phone-side page. Candidate opens this from QR scan on their phone.
