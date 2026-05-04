@@ -3,8 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Pause, Play, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { logSideEyeAction } from "./lib/adminAuditLog";
 
 interface PauseRow {
   id: string;
@@ -21,6 +26,7 @@ export const SideEyePauseControls = ({ sessionId }: { sessionId: string }) => {
   const [openPause, setOpenPause] = useState<PauseRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState("");
+  const [confirm, setConfirm] = useState<null | "pause" | "resume">(null);
 
   const load = async () => {
     const { data } = await supabase
