@@ -3,8 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ShieldCheck, ShieldAlert, Loader2, FileJson, FileDown } from "lucide-react";
 import { toast } from "sonner";
+import { logSideEyeAction } from "./lib/adminAuditLog";
 
 interface VerifyResult {
   ok: boolean;
@@ -21,6 +26,7 @@ interface VerifyResult {
 export const SideEyeIntegrityPanel = ({ sessionId }: { sessionId: string }) => {
   const [busy, setBusy] = useState<"verify" | "json" | "pdf" | null>(null);
   const [result, setResult] = useState<VerifyResult | null>(null);
+  const [confirm, setConfirm] = useState<null | "verify" | "json" | "pdf">(null);
 
   const callEdge = async <T,>(fn: string): Promise<T> => {
     const { data: { session } } = await supabase.auth.getSession();
