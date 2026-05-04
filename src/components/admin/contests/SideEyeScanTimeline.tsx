@@ -320,11 +320,16 @@ export const SideEyeScanTimeline = ({ sessionId, limit = 100 }: Props) => {
 
         <div className="max-h-48 overflow-auto divide-y divide-border/40 border border-border/40 rounded">
           {pagedAudit.map((a) => (
-            <div key={a.id} className="px-2 py-1 text-[11px] flex items-center justify-between gap-2">
+            <button
+              type="button"
+              key={a.id}
+              onClick={() => setDrawerEvent(a)}
+              className="w-full text-left px-2 py-1 text-[11px] flex items-center justify-between gap-2 hover:bg-muted/40 transition-colors"
+            >
               <span className="font-mono text-muted-foreground shrink-0">{format(new Date(a.created_at), "HH:mm:ss")}</span>
               <span className="font-medium truncate flex-1">{a.event_type}</span>
               <Badge variant="outline" className={`${sevColor[a.severity] ?? ""} text-[9px]`}>{a.severity}</Badge>
-            </div>
+            </button>
           ))}
           {pagedAudit.length === 0 && (
             <div className="p-3 text-xs text-muted-foreground">No audit events match.</div>
