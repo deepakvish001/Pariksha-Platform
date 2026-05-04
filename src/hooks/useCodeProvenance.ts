@@ -36,7 +36,7 @@ type Event = {
     | "snapshot";
   char_count?: number;
   paste_size?: number;
-  diff_summary?: Record<string, unknown>;
+  diff_summary?: Record<string, string | number | boolean | null>;
   client_ts: string;
   suspicious?: boolean;
   reason?: string;
