@@ -1203,6 +1203,48 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_account_bindings: {
+        Row: {
+          conflict_count: number
+          created_at: string
+          face_embedding_hash: string
+          id: string
+          id_document_hash: string
+          last_seen_device: string | null
+          notes: string | null
+          primary_device_fingerprint: string
+          updated_at: string
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          conflict_count?: number
+          created_at?: string
+          face_embedding_hash: string
+          id?: string
+          id_document_hash: string
+          last_seen_device?: string | null
+          notes?: string | null
+          primary_device_fingerprint: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          conflict_count?: number
+          created_at?: string
+          face_embedding_hash?: string
+          id?: string
+          id_document_hash?: string
+          last_seen_device?: string | null
+          notes?: string | null
+          primary_device_fingerprint?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       contest_audio_events: {
         Row: {
           analysis: Json | null
@@ -1248,6 +1290,150 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_code_provenance: {
+        Row: {
+          char_count: number | null
+          client_ts: string
+          contest_id: string
+          diff_summary: Json | null
+          event_type: string
+          id: string
+          paste_size: number | null
+          problem_id: string
+          reason: string | null
+          server_ts: string
+          session_id: string
+          suspicious: boolean
+          user_id: string
+        }
+        Insert: {
+          char_count?: number | null
+          client_ts: string
+          contest_id: string
+          diff_summary?: Json | null
+          event_type: string
+          id?: string
+          paste_size?: number | null
+          problem_id: string
+          reason?: string | null
+          server_ts?: string
+          session_id: string
+          suspicious?: boolean
+          user_id: string
+        }
+        Update: {
+          char_count?: number | null
+          client_ts?: string
+          contest_id?: string
+          diff_summary?: Json | null
+          event_type?: string
+          id?: string
+          paste_size?: number | null
+          problem_id?: string
+          reason?: string | null
+          server_ts?: string
+          session_id?: string
+          suspicious?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contest_cross_similarity: {
+        Row: {
+          created_at: string
+          details: Json | null
+          id: string
+          match_contest_id: string | null
+          match_session_id: string | null
+          match_source: string
+          match_url: string | null
+          match_user_id: string | null
+          matched_lines: number | null
+          similarity: number
+          source_contest_id: string
+          source_session_id: string
+          source_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          id?: string
+          match_contest_id?: string | null
+          match_session_id?: string | null
+          match_source: string
+          match_url?: string | null
+          match_user_id?: string | null
+          matched_lines?: number | null
+          similarity: number
+          source_contest_id: string
+          source_session_id: string
+          source_user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          id?: string
+          match_contest_id?: string | null
+          match_session_id?: string | null
+          match_source?: string
+          match_url?: string | null
+          match_user_id?: string | null
+          matched_lines?: number | null
+          similarity?: number
+          source_contest_id?: string
+          source_session_id?: string
+          source_user_id?: string
+        }
+        Relationships: []
+      }
+      contest_dq_signoffs: {
+        Row: {
+          approver_decision: string | null
+          approver_id: string | null
+          approver_notes: string | null
+          contest_id: string
+          created_at: string
+          decided_at: string | null
+          evidence: Json
+          id: string
+          proposed_by: string
+          proposed_reason: string
+          session_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          approver_decision?: string | null
+          approver_id?: string | null
+          approver_notes?: string | null
+          contest_id: string
+          created_at?: string
+          decided_at?: string | null
+          evidence: Json
+          id?: string
+          proposed_by: string
+          proposed_reason: string
+          session_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          approver_decision?: string | null
+          approver_id?: string | null
+          approver_notes?: string | null
+          contest_id?: string
+          created_at?: string
+          decided_at?: string | null
+          evidence?: Json
+          id?: string
+          proposed_by?: string
+          proposed_reason?: string
+          session_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contest_identity_checks: {
         Row: {
           contest_id: string
@@ -1287,6 +1473,48 @@ export type Database = {
           session_id?: string | null
           user_id?: string
           verdict?: string
+        }
+        Relationships: []
+      }
+      contest_integrity_reports: {
+        Row: {
+          contest_id: string
+          created_at: string
+          dq_count: number
+          flagged_count: number
+          id: string
+          is_published: boolean
+          published_at: string | null
+          summary: Json
+          total_participants: number
+          updated_at: string
+          viva_count: number
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          dq_count?: number
+          flagged_count?: number
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          summary?: Json
+          total_participants?: number
+          updated_at?: string
+          viva_count?: number
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          dq_count?: number
+          flagged_count?: number
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          summary?: Json
+          total_participants?: number
+          updated_at?: string
+          viva_count?: number
         }
         Relationships: []
       }
@@ -2049,6 +2277,51 @@ export type Database = {
           },
         ]
       }
+      contest_solve_time_analysis: {
+        Row: {
+          actual_seconds: number
+          ai_likelihood: number | null
+          contest_id: string
+          created_at: string
+          details: Json | null
+          expected_min_seconds: number
+          id: string
+          problem_id: string
+          session_id: string
+          user_id: string
+          verdict: string
+          z_score: number | null
+        }
+        Insert: {
+          actual_seconds: number
+          ai_likelihood?: number | null
+          contest_id: string
+          created_at?: string
+          details?: Json | null
+          expected_min_seconds: number
+          id?: string
+          problem_id: string
+          session_id: string
+          user_id: string
+          verdict: string
+          z_score?: number | null
+        }
+        Update: {
+          actual_seconds?: number
+          ai_likelihood?: number | null
+          contest_id?: string
+          created_at?: string
+          details?: Json | null
+          expected_min_seconds?: number
+          id?: string
+          problem_id?: string
+          session_id?: string
+          user_id?: string
+          verdict?: string
+          z_score?: number | null
+        }
+        Relationships: []
+      }
       contest_stream_health: {
         Row: {
           contest_id: string
@@ -2311,6 +2584,36 @@ export type Database = {
           },
         ]
       }
+      contest_variant_test_bindings: {
+        Row: {
+          bundle_hash: string
+          contest_id: string
+          created_at: string
+          id: string
+          problem_id: string
+          test_bundle: Json
+          variant_key: string
+        }
+        Insert: {
+          bundle_hash: string
+          contest_id: string
+          created_at?: string
+          id?: string
+          problem_id: string
+          test_bundle: Json
+          variant_key: string
+        }
+        Update: {
+          bundle_hash?: string
+          contest_id?: string
+          created_at?: string
+          id?: string
+          problem_id?: string
+          test_bundle?: Json
+          variant_key?: string
+        }
+        Relationships: []
+      }
       contest_violations: {
         Row: {
           contest_id: string
@@ -2366,9 +2669,11 @@ export type Database = {
           id: string
           notes: string | null
           problem_slug: string | null
+          rank: number | null
           reason: string
           reviewer_id: string | null
           scheduled_at: string | null
+          session_id: string | null
           source: string
           status: string
           updated_at: string
@@ -2380,9 +2685,11 @@ export type Database = {
           id?: string
           notes?: string | null
           problem_slug?: string | null
+          rank?: number | null
           reason: string
           reviewer_id?: string | null
           scheduled_at?: string | null
+          session_id?: string | null
           source?: string
           status?: string
           updated_at?: string
@@ -2394,9 +2701,11 @@ export type Database = {
           id?: string
           notes?: string | null
           problem_slug?: string | null
+          rank?: number | null
           reason?: string
           reviewer_id?: string | null
           scheduled_at?: string | null
+          session_id?: string | null
           source?: string
           status?: string
           updated_at?: string

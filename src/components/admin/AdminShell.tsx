@@ -149,6 +149,8 @@ const GROUPS: NavGroup[] = [
   { label: "Engagement", items: [
     { to: "/admin/daily-challenge", label: "Daily Challenge", icon: CalendarClock },
     { to: "/admin/contests", label: "Contests", icon: Trophy },
+    { to: "/admin/contests/viva-queue", label: "Viva Queue", icon: ShieldAlert },
+    { to: "/admin/contests/dq-signoffs", label: "DQ Sign-offs", icon: ShieldAlert },
     { to: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
     { to: "/admin/achievements", label: "Achievements", icon: Award },
     { to: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
