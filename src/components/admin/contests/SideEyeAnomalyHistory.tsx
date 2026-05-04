@@ -83,6 +83,16 @@ export const SideEyeAnomalyHistory = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contestId, sessionIds.join(",")]);
 
+  // Auto-refresh polling — supplements realtime subscription so admins see fresh
+  // counts even if the realtime channel temporarily drops.
+  useEffect(() => {
+    if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; }
+    if (!autoRefresh) return;
+    pollRef.current = window.setInterval(() => { load(); }, intervalSec * 1000);
+    return () => { if (pollRef.current) window.clearInterval(pollRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefresh, intervalSec, sessionIds.join(",")]);
+
   const filtered = useMemo(
     () => rows.filter((r) => (sevRank[r.payload?.severity ?? "info"] ?? 0) >= sevRank[minSev]),
     [rows, minSev],
@@ -103,7 +113,7 @@ export const SideEyeAnomalyHistory = ({
             {filtered.length} of {rows.length}
           </Badge>
         </h3>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <Filter className="h-3 w-3 text-muted-foreground" />
           <Select value={minSev} onValueChange={(v) => setMinSev(v as any)}>
             <SelectTrigger className="h-7 w-32 text-xs"><SelectValue /></SelectTrigger>
@@ -113,6 +123,21 @@ export const SideEyeAnomalyHistory = ({
               ))}
             </SelectContent>
           </Select>
+          <div className="flex items-center gap-1 pl-1 border-l border-border/40">
+            <Radio className={`h-3 w-3 ${autoRefresh ? "text-emerald-400" : "text-muted-foreground"}`} />
+            <span className="text-[10px] text-muted-foreground">Auto</span>
+            <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} className="scale-75" />
+            {autoRefresh && (
+              <Select value={String(intervalSec)} onValueChange={(v) => setIntervalSec(Number(v))}>
+                <SelectTrigger className="h-7 w-16 text-[10px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[5, 10, 15, 30, 60].map((s) => (
+                    <SelectItem key={s} value={String(s)} className="text-xs">{s}s</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
           <Button size="sm" variant="ghost" className="h-7 px-2" onClick={load} disabled={loading}>
             <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
           </Button>
