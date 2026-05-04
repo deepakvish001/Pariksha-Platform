@@ -130,22 +130,32 @@ Deno.serve(async (req) => {
       detail: { storage_path: storagePath, summary },
     });
 
-    // Force-escalate the two anomalies the user explicitly cares about:
-    // secondary device sighting and empty chair (candidate absent).
+    // Load admin-configurable thresholds (singleton row).
+    const { data: settings } = await admin
+      .from("sideeye_notification_settings")
+      .select("min_severity, escalate_kinds")
+      .eq("singleton", true)
+      .maybeSingle();
+
+    const minSev: string = settings?.min_severity ?? "medium";
+    const escalateKinds: string[] = settings?.escalate_kinds ?? ["secondary_device", "candidate_absent"];
+    const sevRank: Record<string, number> = { info: 0, low: 1, medium: 2, high: 3, critical: 4 };
+
     let findingSeverity: "info" | "warn" | "flag" | "fatal" =
       severity === "critical" ? "fatal" :
       severity === "high" ? "flag" :
       severity === "medium" ? "warn" : "info";
 
-    if (summary.secondary_device || summary.candidate_absent) {
-      // bump to at least "flag" — this triggers admin notifications
-      // via existing trg_notify_proctor_finding_flag.
-      if (findingSeverity === "info" || findingSeverity === "warn") {
-        findingSeverity = "flag";
-      }
+    // Force-escalate configured anomaly kinds to at least "flag" so admins are notified.
+    const triggeredKind = escalateKinds.find((k) => !!summary[k]);
+    if (triggeredKind && (findingSeverity === "info" || findingSeverity === "warn")) {
+      findingSeverity = "flag";
     }
 
-    if (findingSeverity === "warn" || findingSeverity === "flag" || findingSeverity === "fatal") {
+    // Suppress notifications below the admin-configured min severity.
+    const meetsThreshold = (sevRank[severity] ?? 0) >= (sevRank[minSev] ?? 2);
+
+    if (meetsThreshold && (findingSeverity === "warn" || findingSeverity === "flag" || findingSeverity === "fatal")) {
       const { data: sess } = await admin
         .from("contest_sessions")
         .select("contest_id")
