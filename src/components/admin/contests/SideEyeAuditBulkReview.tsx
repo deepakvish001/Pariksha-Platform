@@ -150,7 +150,18 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
     }
   };
 
-  const [exportProgress, setExportProgress] = useState<{ fetched: number; total: number } | null>(null);
+  const [exportProgress, setExportProgress] = useState<{ fetched: number; total: number; phase: string; format: string } | null>(null);
+
+  /**
+   * Pipe a Blob through the browser's built-in gzip CompressionStream.
+   * Falls back to the original blob if the API is unavailable (very old browsers).
+   */
+  const gzipBlob = async (blob: Blob): Promise<Blob> => {
+    if (typeof (globalThis as any).CompressionStream === "undefined") return blob;
+    const cs = new (globalThis as any).CompressionStream("gzip");
+    const stream = blob.stream().pipeThrough(cs);
+    return await new Response(stream).blob();
+  };
 
   /**
    * Stream all matching rows in fixed-size pages so we can export far beyond
