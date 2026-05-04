@@ -1120,6 +1120,15 @@ const CodingProblemDetail = () => {
                     contestLocks.solutionLocked ||
                     contestLocks.historyLocked
                   }
+                  onBlockedReorder={(reason, info) => {
+                    logContestLockEvent({
+                      contestId,
+                      problemSlug: slug,
+                      kind: "blocked_drag_reorder",
+                      target: "tabs",
+                      details: { reason, ...info },
+                    });
+                  }}
                   renderLabel={(id) => {
                     const lockMark = isTabLocked(id) ? (
                       <span className="ml-1 text-amber-500" aria-label="Locked during contest">🔒</span>
