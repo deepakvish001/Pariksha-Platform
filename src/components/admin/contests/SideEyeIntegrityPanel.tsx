@@ -82,6 +82,7 @@ export const SideEyeIntegrityPanel = ({ sessionId }: { sessionId: string }) => {
       a.download = `sideeye-integrity-${sessionId}.json`;
       a.click();
       URL.revokeObjectURL(a.href);
+      await logSideEyeAction("sideeye_export_json", sessionId, { format: "json" });
       toast.success("JSON report downloaded");
     } catch (e: any) {
       toast.error("JSON download failed", { description: e?.message });
