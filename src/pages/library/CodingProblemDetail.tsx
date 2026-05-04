@@ -286,7 +286,7 @@ const CodingProblemDetail = () => {
     order: tabOrder,
     active: activeTab,
     setOrder: setTabOrder,
-    setActive: setActiveTab,
+    setActive: setActiveTabRaw,
     reset: resetTabsLayout,
     isCustomized: isLayoutCustomized,
   } = useEditorTabsLayout(slug, language);
