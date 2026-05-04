@@ -66,6 +66,7 @@ export const SideEyeScanTimeline = ({ sessionId, limit = 100 }: Props) => {
   const [auditSev, setAuditSev] = useState<string>("all");
   const [auditEvent, setAuditEvent] = useState<string>("all");
   const [auditPage, setAuditPage] = useState(0);
+  const [drawerEvent, setDrawerEvent] = useState<AuditRow | null>(null);
 
   useEffect(() => {
     let alive = true;
