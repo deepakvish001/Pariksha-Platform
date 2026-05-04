@@ -46,7 +46,6 @@ export function useScreenRecorder(opts: {
   const requestShare = useCallback(async () => {
     if (!enabled) return;
     try {
-      // @ts-expect-error: TS lib doesn't always include getDisplayMedia
       const stream: MediaStream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: 5, max: 10 } },
         audio: false,
