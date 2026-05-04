@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { LangId } from "@/data/codingProblemsData";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { logContestLockEvent } from "@/lib/contestTelemetry";
 
 const KEY = "byteskill:coding-my-solution:v1";
 
@@ -77,9 +78,21 @@ const rowToEntry = (row: {
  * localStorage immediately and syncs to Supabase when the user is signed in,
  * so solutions follow the user across devices.
  */
-export const useProblemSolution = (slug: string | undefined, language: LangId) => {
+export interface UseProblemSolutionOptions {
+  /** When true, suppress all cloud sync (no DB read or write). */
+  locked?: boolean;
+  /** Active contest id, used for telemetry on blocked fetches. */
+  contestId?: string | null;
+}
+
+export const useProblemSolution = (
+  slug: string | undefined,
+  language: LangId,
+  options: UseProblemSolutionOptions = {},
+) => {
   const { user } = useAuth();
   const userId = user?.id ?? null;
+  const { locked = false, contestId = null } = options;
 
   const [entry, setEntry] = useState<SolutionEntry>(() =>
     slug ? readMap()[slug] ?? empty : empty,
@@ -140,6 +153,17 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
   useEffect(() => {
     if (!slug || !userId) {
       if (!userId) setSyncStatus("offline");
+      return;
+    }
+    if (locked) {
+      // Hard block: do not pull or push solution data while contest is active.
+      setSyncStatus("offline");
+      logContestLockEvent({
+        contestId,
+        problemSlug: slug,
+        kind: "blocked_hook_fetch",
+        target: "my-solution",
+      });
       return;
     }
     let cancelled = false;
@@ -256,9 +280,19 @@ export const useProblemSolution = (slug: string | undefined, language: LangId) =
     return () => {
       cancelled = true;
     };
-  }, [slug, userId]);
+  }, [slug, userId, locked, contestId]);
 
   const pushToDb = async (uid: string, problemSlug: string, value: SolutionEntry) => {
+    if (locked) {
+      logContestLockEvent({
+        contestId,
+        problemSlug,
+        kind: "blocked_hook_fetch",
+        target: "my-solution",
+        details: { op: "push" },
+      });
+      return;
+    }
     try {
       const isEmpty =
         !value.notes.trim() &&

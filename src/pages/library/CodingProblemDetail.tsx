@@ -88,6 +88,7 @@ import { useProblemNotes } from "@/hooks/useProblemNotes";
 import { useProblemSolution } from "@/hooks/useProblemSolution";
 import { useContestLocks } from "@/hooks/useContestLocks";
 import { LockedAuxPanel } from "@/components/contests/LockedAuxPanel";
+import { logContestLockEvent } from "@/lib/contestTelemetry";
 import { useEditorPrefs } from "@/hooks/useEditorPrefs";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
@@ -238,14 +239,18 @@ const CodingProblemDetail = () => {
   // Transient hint shown briefly when entering fullscreen.
   const [showFullscreenHint, setShowFullscreenHint] = useState(false);
   const { submissions, loading: submissionsLoading, refetch: refetchSubmissions } = useCodingSubmissions(slug);
-  const { runs, refetch: refetchRuns } = useCodeRuns(slug);
-  const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
-  const { note: notesValue, setNote: setNotesValue, savedAt: notesSavedAt } = useProblemNotes(slug);
   // Lock state for contest aux materials (notes / my-solution / reference / runs)
   // — driven by useContestLocks. While the contest is live and the user is a
   // registered participant, these panels are replaced with a LockedAuxPanel
-  // surface that countdowns to the contest end.
+  // surface that countdowns to the contest end. Hooks below also receive the
+  // `locked` flag so they refuse to fetch sensitive data over the network.
   const contestLocks = useContestLocks(contestId ?? undefined);
+  const { runs, refetch: refetchRuns } = useCodeRuns(slug, {
+    locked: contestLocks.historyLocked,
+    contestId,
+  });
+  const { isBookmarked, toggle: toggleBookmark } = useCodingProblemBookmarks();
+  const { note: notesValue, setNote: setNotesValue, savedAt: notesSavedAt } = useProblemNotes(slug);
   const {
     notes: mySolutionNotes,
     code: mySolutionCode,
@@ -267,7 +272,10 @@ const CodingProblemDetail = () => {
     isCloudSynced: mySolutionIsCloudSynced,
     lastSyncedAt: mySolutionLastSyncedAt,
     lastConflictResolvedAt: mySolutionLastConflictAt,
-  } = useProblemSolution(slug, mySolutionLanguage);
+  } = useProblemSolution(slug, mySolutionLanguage, {
+    locked: contestLocks.solutionLocked,
+    contestId,
+  });
   const {
     prefs: editorPrefs,
     incFontSize,
@@ -303,6 +311,12 @@ const CodingProblemDetail = () => {
 
   const setActiveTab = (id: EditorTabId) => {
     if (isTabLocked(id)) {
+      logContestLockEvent({
+        contestId,
+        problemSlug: slug,
+        kind: "blocked_tab_activation",
+        target: id as never,
+      });
       toast({
         title: "Locked during contest",
         description: "This panel unlocks when the contest ends.",
@@ -1106,6 +1120,15 @@ const CodingProblemDetail = () => {
                     contestLocks.solutionLocked ||
                     contestLocks.historyLocked
                   }
+                  onBlockedReorder={(reason, info) => {
+                    logContestLockEvent({
+                      contestId,
+                      problemSlug: slug,
+                      kind: "blocked_drag_reorder",
+                      target: "tabs",
+                      details: { reason, ...info },
+                    });
+                  }}
                   renderLabel={(id) => {
                     const lockMark = isTabLocked(id) ? (
                       <span className="ml-1 text-amber-500" aria-label="Locked during contest">🔒</span>
