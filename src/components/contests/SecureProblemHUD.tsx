@@ -91,6 +91,28 @@ export default function SecureProblemHUD({ contestId, contestSlug }: Props) {
               <Badge variant="outline" className={secure.flagged ? "border-red-400/50 text-red-300" : "border-border"}>
                 <AlertTriangle className="mr-1 h-3 w-3" /> {secure.violationCount}/5 · {violationsLeft} left
               </Badge>
+              <Badge
+                variant="outline"
+                className={
+                  !secure.online || secure.reconnecting
+                    ? "border-amber-400/40 text-amber-300"
+                    : "border-emerald-400/40 text-emerald-300"
+                }
+              >
+                {secure.reconnecting ? (
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                ) : secure.online ? (
+                  <Wifi className="mr-1 h-3 w-3" />
+                ) : (
+                  <WifiOff className="mr-1 h-3 w-3" />
+                )}
+                {secure.reconnecting ? "Reconnecting" : secure.online ? "Online" : "Offline"}
+              </Badge>
+              {(secure.reconnecting || !secure.online) && (
+                <Button size="sm" variant="outline" onClick={secure.reconnect}>
+                  Reconnect now
+                </Button>
+              )}
               {!secure.fullscreen && (
                 <Button size="sm" variant="outline" onClick={secure.enterFullscreen}>
                   Re-enter fullscreen
