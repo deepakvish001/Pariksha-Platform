@@ -451,6 +451,12 @@ const AdminContestProctor = () => {
           </TabsContent>
           <TabsContent value="sideeye" className="space-y-4">
             <SideEyeSettingsPanel />
+            {id && (
+              <SideEyeAnomalyHistory
+                contestId={id}
+                sessionIds={(sessionsQuery.data ?? []).map((s: any) => s.id)}
+              />
+            )}
             <Card className="p-4">
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                 <Smartphone className="h-4 w-4" /> Live side-camera streams
@@ -460,13 +466,23 @@ const AdminContestProctor = () => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {(sessionsQuery.data ?? []).map((s: any) => (
-                    <SideEyeTile key={s.id} sessionId={s.id} candidateName={s.user_id?.slice(0, 8)} />
+                    <div key={s.id} className="space-y-2">
+                      <SideEyeTile sessionId={s.id} candidateName={s.user_id?.slice(0, 8)} />
+                      <SideEyePauseControls sessionId={s.id} />
+                    </div>
                   ))}
                 </div>
               )}
             </Card>
             {(sessionsQuery.data ?? []).map((s: any) => (
-              <SideEyeScanTimeline key={`tl-${s.id}`} sessionId={s.id} />
+              <div key={`group-${s.id}`} className="space-y-3 rounded-lg border border-border/40 p-3">
+                <div className="text-xs font-semibold text-muted-foreground">
+                  Session <span className="font-mono">{s.id.slice(0, 8)}</span> — {s.full_name ?? s.user_id.slice(0, 8)}
+                </div>
+                <SideEyeIntegrityPanel sessionId={s.id} />
+                <SideEyeScanTimeline sessionId={s.id} />
+                <SideEyeAuditBulkReview sessionId={s.id} />
+              </div>
             ))}
           </TabsContent>
         </Tabs>
