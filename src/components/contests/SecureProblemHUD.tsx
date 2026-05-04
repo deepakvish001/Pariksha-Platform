@@ -35,6 +35,21 @@ export default function SecureProblemHUD({ contestId, contestSlug, onSubmissionR
   const active = useActiveContestSession(contestId);
   const trust = useContestTrustScore(contestId);
 
+  // Tier 2 anti-cheat hooks — active only while a secure session is live.
+  const tierEnabled = active.hasActive && !!active.sessionId;
+  const audioConsented = (() => {
+    try { return localStorage.getItem(`contest-audio-consent:${contestId}`) === "1"; } catch { return false; }
+  })();
+  useDevtoolsDetector({ contestId, sessionId: active.sessionId, enabled: tierEnabled });
+  useFetchInterceptor({ contestId, sessionId: active.sessionId, enabled: tierEnabled });
+  useAudioMonitor({ contestId, sessionId: active.sessionId, enabled: tierEnabled, consented: audioConsented });
+  useIdentityRecheck({
+    contestId,
+    sessionId: active.sessionId,
+    webcamStream: secure.webcamStream,
+    enabled: tierEnabled && secure.webcamReady,
+  });
+
   // Periodically ping the proctor-analyze edge function (~every 2 min)
   useEffect(() => {
     if (!contestId || !active.hasActive) return;
