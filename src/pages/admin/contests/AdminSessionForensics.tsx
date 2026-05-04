@@ -76,14 +76,14 @@ export default function AdminSessionForensics() {
     if (!sessionId || !session || !user) return;
     const reason = window.prompt("Reason for proposing disqualification:");
     if (!reason) return;
-    const { error } = await supabase.from("contest_dq_signoffs").insert({
+    const { error } = await supabase.from("contest_dq_signoffs").insert([{
       contest_id: session.contest_id as string,
       session_id: sessionId,
       user_id: session.user_id as string,
       proposed_by: user.id,
       proposed_reason: reason,
-      evidence: { counts, snapshot_at: new Date().toISOString() },
-    });
+      evidence: { counts, snapshot_at: new Date().toISOString() } as never,
+    }]);
     if (error) toast.error(error.message);
     else toast.success("DQ proposal submitted — awaiting second admin");
   };
