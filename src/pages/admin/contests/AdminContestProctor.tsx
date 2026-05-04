@@ -466,6 +466,7 @@ const AdminContestProctor = () => {
             ))}
           </TabsContent>
         </Tabs>
+        {id && <SideEyeAnomalyTicker contestId={id} />}
       </div>
     </AdminShell>
   );
