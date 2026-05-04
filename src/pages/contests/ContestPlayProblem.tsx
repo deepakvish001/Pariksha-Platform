@@ -3,8 +3,12 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useContest } from "@/hooks/useContests";
 import { useActiveContestSession } from "@/hooks/useActiveContestSession";
+import { useContestTabLock } from "@/hooks/useContestTabLock";
+import { useContestStreamHealth } from "@/hooks/useContestStreamHealth";
 import { ContestTopBar } from "@/components/contests/ContestTopBar";
 import SecureProblemHUD from "@/components/contests/SecureProblemHUD";
+import { MultiTabBlockedDialog } from "@/components/contests/MultiTabBlockedDialog";
+import { StreamHealthBanner } from "@/components/contests/StreamHealthBanner";
 import CodingProblemDetail from "@/pages/library/CodingProblemDetail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -23,6 +27,12 @@ export default function ContestPlayProblem() {
   const { data: contest, isLoading } = useContest(slug);
   const session = useActiveContestSession(contest?.id);
   const [submitReady, setSubmitReady] = useState(false);
+  // Single-tab enforcement: any second tab/window opened on this contest
+  // is displaced and shown a blocking dialog.
+  const tabLock = useContestTabLock(contest?.id, !!contest?.id && session.hasActive);
+  // Read-only stream health snapshot for the kiosk banner. The actual
+  // recorders live inside SecureProblemHUD's useContestSecureMode hook.
+  const streamHealth = useContestStreamHealth(session.sessionId ?? null);
 
   // Make sure the URL CodingProblemDetail reads from has ?contest=<slug>
   useEffect(() => {
@@ -70,9 +80,17 @@ export default function ContestPlayProblem() {
           onSubmissionReadyChange={setSubmitReady}
         />
       </div>
+      <StreamHealthBanner
+        webcamHealthy={streamHealth.webcamHealthy}
+        screenHealthy={streamHealth.screenHealthy}
+        graceUntil={streamHealth.graceUntil}
+        onReshareScreen={() => navigate(`/contests/${contest.slug}`)}
+        onReshareWebcam={() => navigate(`/contests/${contest.slug}`)}
+      />
       <div className="flex-1">
         <CodingProblemDetail />
       </div>
+      <MultiTabBlockedDialog open={tabLock.displaced} contestSlug={contest.slug} />
     </>
   );
 }

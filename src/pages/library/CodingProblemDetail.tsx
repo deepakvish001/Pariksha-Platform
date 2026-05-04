@@ -89,6 +89,8 @@ import { useProblemSolution } from "@/hooks/useProblemSolution";
 import { useContestLocks } from "@/hooks/useContestLocks";
 import { LockedAuxPanel } from "@/components/contests/LockedAuxPanel";
 import { logContestLockEvent } from "@/lib/contestTelemetry";
+import { useActiveContestSession } from "@/hooks/useActiveContestSession";
+import { useTypingTelemetry } from "@/hooks/useTypingTelemetry";
 import { useEditorPrefs } from "@/hooks/useEditorPrefs";
 import type { CodeSubmissionRow } from "@/hooks/useCodingSubmissions";
 import { cn } from "@/lib/utils";
@@ -245,6 +247,16 @@ const CodingProblemDetail = () => {
   // surface that countdowns to the contest end. Hooks below also receive the
   // `locked` flag so they refuse to fetch sensitive data over the network.
   const contestLocks = useContestLocks(contestId ?? undefined);
+  // Active contest session id (for typing telemetry). Only resolved when we
+  // are on a `?contest=<slug>` URL inside an active secure session.
+  const contestSession = useActiveContestSession(contestId ?? undefined);
+  const typing = useTypingTelemetry({
+    contestId: contestId ?? undefined,
+    sessionId: contestSession.sessionId ?? null,
+    problemSlug: slug,
+    enabled: !!contestId && contestSession.hasActive,
+  });
+  const lastCodeLenRef = useRef<number>(0);
   const { runs, refetch: refetchRuns } = useCodeRuns(slug, {
     locked: contestLocks.historyLocked,
     contestId,
@@ -654,6 +666,12 @@ const CodingProblemDetail = () => {
   const langInfo = getLanguageById(language);
 
   const handleCodeChange = (v: string) => {
+    // Telemetry: record net characters added (deletes are ignored). Only
+    // active in contest mode; the hook is otherwise a no-op.
+    const prevLen = lastCodeLenRef.current;
+    const delta = v.length - prevLen;
+    lastCodeLenRef.current = v.length;
+    if (delta > 0) typing.record(delta);
     setCode(v);
     saveDraft(v);
     sessionTimerRef.current?.poke();
@@ -868,6 +886,7 @@ const CodingProblemDetail = () => {
               order_matters: !!problem.sql.orderMatters,
             }
           : {}),
+        ...(searchParams.get("contest") ? { contest_slug: searchParams.get("contest")! } : {}),
       });
       setSubmitResult(result);
       setExecutionErrorDetails(false);
