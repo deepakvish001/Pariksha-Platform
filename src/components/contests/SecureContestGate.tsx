@@ -16,7 +16,9 @@ import {
 } from "@/components/ui/dialog";
 import { useContestSecureMode } from "@/hooks/useContestSecureMode";
 import { useActiveContestSession } from "@/hooks/useActiveContestSession";
-import { ShieldCheck, Eye, Maximize2, Camera, Ban, AlertTriangle, Lock } from "lucide-react";
+import { useScreenRecorder } from "@/hooks/useScreenRecorder";
+import { WebcamPiP } from "./WebcamPiP";
+import { ShieldCheck, Eye, Maximize2, Camera, Ban, AlertTriangle, Lock, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import ContestLobby from "./ContestLobby";
 
@@ -32,6 +34,8 @@ interface Props {
   isRegistered: boolean;
   isDisqualified: boolean;
   onSessionChange?: (hasActive: boolean) => void;
+  /** Slug of the first contest problem so we can navigate into the kiosk on start. */
+  firstProblemSlug?: string;
 }
 
 export default function SecureContestGate({
@@ -46,6 +50,7 @@ export default function SecureContestGate({
   isRegistered,
   isDisqualified,
   onSessionChange,
+  firstProblemSlug,
 }: Props) {
   const navigate = useNavigate();
   const [agreed, setAgreed] = useState(false);
@@ -53,11 +58,27 @@ export default function SecureContestGate({
   const [checklistReady, setChecklistReady] = useState(false);
   const secure = useContestSecureMode(contestId, !!honorAccepted && hasStarted && !hasEnded);
   const active = useActiveContestSession(contestId);
+  const recorder = useScreenRecorder({
+    contestId,
+    sessionId: secure.sessionId,
+    enabled: !!secure.sessionId && hasStarted && !hasEnded,
+    onScreenShareStopped: () => {
+      void secure.logViolation("session_invalidated", "flag", { reason: "screen_share_stopped" });
+      toast.error("Screen sharing stopped — please re-share to keep submitting");
+    },
+  });
 
   // Bubble session state up so the parent can gate the Problems tab.
   useEffect(() => {
     onSessionChange?.(active.hasActive);
   }, [active.hasActive, onSessionChange]);
+
+  // Auto-jump into kiosk once session + screen share are live.
+  useEffect(() => {
+    if (secure.sessionId && recorder.sharing && firstProblemSlug && hasStarted && !hasEnded) {
+      navigate(`/contests/${contestSlug}/play/${firstProblemSlug}`);
+    }
+  }, [secure.sessionId, recorder.sharing, firstProblemSlug, hasStarted, hasEnded, contestSlug, navigate]);
 
   if (!isRegistered) {
     return (
@@ -115,6 +136,7 @@ export default function SecureContestGate({
           <Rule icon={Maximize2} text="The browser must remain in fullscreen. Exiting fullscreen counts as a violation." />
           <Rule icon={Camera} text="Webcam snapshots are captured periodically and stored privately for admin review." />
           <Rule icon={Lock} text="Only one active session is allowed. Joining from a second device will end this one." />
+          <Rule icon={Monitor} text="Screen sharing is required and recorded for the duration of the contest." />
           <Rule icon={AlertTriangle} text="Close all other applications and avoid background processes for the duration of the contest." />
         </ul>
         <label className="flex items-center gap-2 text-sm">
@@ -166,20 +188,25 @@ export default function SecureContestGate({
           disabled={secure.starting}
           onClick={async () => {
             await secure.requestWebcam();
+            await recorder.requestShare();
             await secure.enterFullscreen();
             await secure.start();
           }}
         >
           {secure.starting ? "Starting…" : "Start secure session"}
         </Button>
+        {recorder.error && (
+          <p className="text-xs text-red-300">Screen share: {recorder.error}</p>
+        )}
       </Card>
     );
   }
 
-  // Live secure HUD
+  // Live secure HUD — also mounts the WebcamPiP so the user always sees their camera.
   const violationsLeft = Math.max(0, 5 - secure.violationCount);
   return (
     <>
+      <WebcamPiP stream={secure.webcamStream} />
       <Card className="space-y-3 border-emerald-500/30 bg-emerald-500/5 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -193,14 +220,30 @@ export default function SecureContestGate({
             <Badge variant="outline" className={secure.webcamReady ? "border-emerald-400/40 text-emerald-300" : "border-amber-400/40 text-amber-300"}>
               <Camera className="mr-1 h-3 w-3" /> {secure.webcamReady ? "Proctor on" : "No webcam"}
             </Badge>
+            <Badge variant="outline" className={recorder.sharing ? "border-emerald-400/40 text-emerald-300" : "border-amber-400/40 text-amber-300"}>
+              <Monitor className="mr-1 h-3 w-3" /> {recorder.sharing ? "Screen recording" : "No screen share"}
+            </Badge>
             <Badge variant="outline" className={secure.flagged ? "border-red-400/50 text-red-300" : "border-border"}>
               <AlertTriangle className="mr-1 h-3 w-3" /> {secure.violationCount}/5 violations · {violationsLeft} left
             </Badge>
           </div>
         </div>
+        {!recorder.sharing && (
+          <Button size="sm" variant="outline" onClick={recorder.requestShare}>
+            Share screen again
+          </Button>
+        )}
         {!secure.fullscreen && (
           <Button size="sm" variant="outline" onClick={secure.enterFullscreen}>
             Re-enter fullscreen
+          </Button>
+        )}
+        {firstProblemSlug && (
+          <Button
+            size="sm"
+            onClick={() => navigate(`/contests/${contestSlug}/play/${firstProblemSlug}`)}
+          >
+            Enter contest workspace
           </Button>
         )}
       </Card>

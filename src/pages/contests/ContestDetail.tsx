@@ -137,6 +137,7 @@ const ContestDetail = () => {
             isRegistered={isRegistered}
             isDisqualified={isDisqualified}
             onSessionChange={setHasActiveSession}
+            firstProblemSlug={problems[0]?.problem_slug}
           />
         )}
 

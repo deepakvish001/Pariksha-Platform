@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ShieldCheck, ShieldAlert, ShieldOff, Maximize2, Camera, AlertTriangle, Wifi, WifiOff, Loader2, Timer } from "lucide-react";
 import { useContestSecureMode } from "@/hooks/useContestSecureMode";
 import { useActiveContestSession } from "@/hooks/useActiveContestSession";
+import { useContestTrustScore } from "@/hooks/useContestTrustScore";
+import { TrustScoreBadge } from "./TrustScoreBadge";
 import { toast } from "sonner";
 
 interface Props {
@@ -27,6 +29,23 @@ export default function SecureProblemHUD({ contestId, contestSlug, onSubmissionR
   const navigate = useNavigate();
   const secure = useContestSecureMode(contestId, true);
   const active = useActiveContestSession(contestId);
+  const trust = useContestTrustScore(contestId);
+
+  // Periodically ping the proctor-analyze edge function (~every 2 min)
+  useEffect(() => {
+    if (!contestId || !active.hasActive) return;
+    const ping = async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        await supabase.functions.invoke("proctor-analyze", {
+          body: { contest_id: contestId, session_id: active.sessionId },
+        });
+      } catch { /* ignore */ }
+    };
+    void ping();
+    const id = window.setInterval(ping, 120_000);
+    return () => window.clearInterval(id);
+  }, [contestId, active.hasActive, active.sessionId]);
 
   const status: Status = useMemo(() => {
     if (active.loading) return "loading";
@@ -113,6 +132,7 @@ export default function SecureProblemHUD({ contestId, contestSlug, onSubmissionR
               <Badge variant="outline" className={secure.flagged ? "border-red-400/50 text-red-300" : "border-border"}>
                 <AlertTriangle className="mr-1 h-3 w-3" /> {secure.violationCount}/5 · {violationsLeft} left
               </Badge>
+              <TrustScoreBadge trust={trust} />
               <Badge
                 variant="outline"
                 className={

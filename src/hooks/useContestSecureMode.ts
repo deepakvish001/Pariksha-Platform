@@ -394,5 +394,7 @@ export function useContestSecureMode(contestId: string | undefined, enabled: boo
     requestWebcam,
     logViolation,
     reconnect,
+    /** Live webcam MediaStream (for the WebcamPiP component). */
+    webcamStream: videoStreamRef.current,
   };
 }
