@@ -21,9 +21,12 @@ const SideEyeMobile = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [pairingId, setPairingId] = useState<string | null>(null);
   const [batteryLow, setBatteryLow] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const wakeLockRef = useRef<any>(null);
+  const flushIntervalRef = useRef<number | null>(null);
 
   const { quality, connectionState } = useSideEyeSignalling({
     sessionId,
