@@ -442,6 +442,22 @@ const AdminContestProctor = () => {
           <TabsContent value="viva">
             {id && <VivaQueueTab contestId={id} />}
           </TabsContent>
+          <TabsContent value="sideeye">
+            <Card className="p-4">
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <Smartphone className="h-4 w-4" /> Live side-camera streams
+              </h3>
+              {(sessionsQuery.data ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No active sessions.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {(sessionsQuery.data ?? []).map((s: any) => (
+                    <SideEyeTile key={s.id} sessionId={s.id} candidateName={s.user_id?.slice(0, 8)} />
+                  ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </AdminShell>
