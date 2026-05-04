@@ -97,6 +97,19 @@ export default function ContestPlayProblem() {
           title={variantQuery.data.title}
           statementMd={variantQuery.data.statement_md}
           weight={variantQuery.data.weight as number | null}
+          assignedAt={variantQuery.data.assigned_at}
+          refreshing={variantQuery.isFetching}
+          onRefresh={async () => {
+            const previousKey = variantQuery.data?.variant_key;
+            const result = await variantQuery.refetch();
+            const nextKey = result.data?.variant_key;
+            if (!nextKey) toast.error("Failed to refresh variant");
+            else if (previousKey === nextKey)
+              toast.info(`Variant unchanged: ${nextKey}`, {
+                description: "Assignment is deterministic — same variant on retry.",
+              });
+            else toast.success(`Variant updated to ${nextKey}`);
+          }}
         />
       )}
       <div className="flex-1">
