@@ -102,6 +102,7 @@ export const SortableEditorTabs = ({
   className,
   lockedIds,
   reorderDisabled = false,
+  onBlockedReorder,
 }: SortableEditorTabsProps) => {
   const sensors = useSensors(
     // Require a small drag distance so plain clicks still switch tabs.
@@ -114,13 +115,21 @@ export const SortableEditorTabs = ({
   const lockedSet = new Set(lockedIds ?? []);
 
   const handleDragEnd = (event: DragEndEvent) => {
-    if (reorderDisabled) return;
     const { active, over } = event;
+    const activeId = active.id as EditorTabId;
+    const overId = (over?.id ?? null) as EditorTabId | null;
+    if (reorderDisabled) {
+      onBlockedReorder?.("reorder_disabled", { activeId, overId });
+      return;
+    }
     if (!over || active.id === over.id) return;
     // Block drag involving a locked tab in either position.
-    if (lockedSet.has(active.id as EditorTabId) || lockedSet.has(over.id as EditorTabId)) return;
-    const from = order.indexOf(active.id as EditorTabId);
-    const to = order.indexOf(over.id as EditorTabId);
+    if (lockedSet.has(activeId) || (overId && lockedSet.has(overId))) {
+      onBlockedReorder?.("locked_tab", { activeId, overId });
+      return;
+    }
+    const from = order.indexOf(activeId);
+    const to = order.indexOf(overId as EditorTabId);
     if (from < 0 || to < 0) return;
     onReorder(arrayMove(order, from, to));
   };
