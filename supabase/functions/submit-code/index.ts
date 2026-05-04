@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
     const userId = userData.user.id;
 
     const body = await req.json();
-    const { source_code, language, language_id, problem_slug, tests, cpu_time_limit, memory_limit } = body ?? {};
+    const { source_code, language, language_id, problem_slug, tests, cpu_time_limit, memory_limit, contest_slug } = body ?? {};
 
     if (!source_code || typeof source_code !== "string" || source_code.length > 50000)
       return respond<SubmitResult>({ ok: false, error: "Invalid source_code", diagnostics: { error_stage: "validation" } });
@@ -304,6 +304,48 @@ Deno.serve(async (req) => {
       return respond<SubmitResult>({ ok: false, error: "Invalid language", diagnostics: { error_stage: "validation" } });
     if (!problem_slug)
       return respond<SubmitResult>({ ok: false, error: "problem_slug required", diagnostics: { error_stage: "validation" } });
+
+    // Server-side contest gate (defense in depth — the client also calls this
+    // RPC, but a malicious client can bypass that check). Looks up the contest
+    // by slug and refuses the submission if the user has no live session,
+    // stale heartbeat, fingerprint mismatch, or paste-only typing pattern.
+    if (contest_slug && typeof contest_slug === "string") {
+      try {
+        const { data: contestRow } = await supabase
+          .from("contests")
+          .select("id")
+          .eq("slug", contest_slug)
+          .maybeSingle();
+        if (contestRow?.id) {
+          const { data: check, error: vErr } = await supabase.rpc(
+            "validate_contest_submission",
+            { _contest_id: contestRow.id, _problem_slug: problem_slug },
+          );
+          if (vErr) {
+            return respond<SubmitResult>({
+              ok: false,
+              error: `Contest validation failed: ${vErr.message}`,
+              diagnostics: { error_stage: "contest_validation" },
+            });
+          }
+          const v = check as { ok: boolean; message?: string; code?: string } | null;
+          if (v && !v.ok) {
+            return respond<SubmitResult>({
+              ok: false,
+              error: v.message ?? "Contest submission blocked",
+              diagnostics: { error_stage: "contest_validation" },
+            });
+          }
+        }
+      } catch (e) {
+        return respond<SubmitResult>({
+          ok: false,
+          error: `Contest validation error: ${(e as Error).message}`,
+          diagnostics: { error_stage: "contest_validation" },
+        });
+      }
+    }
+
 
     // Prefer DB-stored hidden tests (zero-trust): fetch via service role and
     // override any client-supplied tests when the problem exists in DB.
