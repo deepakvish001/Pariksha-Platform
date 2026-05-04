@@ -228,12 +228,28 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
 
   const exportJson = async () => {
     try {
-      const all: AuditRow[] = [];
-      const fetched = await streamAllMatching((batch) => { all.push(...batch); });
-      const blob = new Blob(
-        [JSON.stringify({ session_id: sessionId, exported_at: new Date().toISOString(), filters: { hideReviewed, severity: sevFilter }, count: fetched, rows: all }, null, 2)],
-        { type: "application/json" },
+      // Stream batches directly into Blob parts so rows are never accumulated
+      // in a single in-memory array. Each row is serialized once and dropped.
+      const parts: BlobPart[] = [];
+      const exportedAt = new Date().toISOString();
+      parts.push(
+        `{\n  "session_id": ${JSON.stringify(sessionId)},\n` +
+        `  "exported_at": ${JSON.stringify(exportedAt)},\n` +
+        `  "filters": ${JSON.stringify({ hideReviewed, severity: sevFilter })},\n` +
+        `  "rows": [`,
       );
+      let wrote = 0;
+      const fetched = await streamAllMatching((batch) => {
+        if (batch.length === 0) return;
+        let chunk = "";
+        for (const r of batch) {
+          chunk += (wrote === 0 ? "\n    " : ",\n    ") + JSON.stringify(r);
+          wrote++;
+        }
+        parts.push(chunk);
+      });
+      parts.push(`\n  ],\n  "count": ${fetched}\n}\n`);
+      const blob = new Blob(parts, { type: "application/json" });
       downloadBlob(blob, `sideeye-audit-${sessionId}-${Date.now()}.json`);
       await logSideEyeAction("sideeye_audit_export_json", sessionId, {
         count: fetched, filters: { hideReviewed, severity: sevFilter },
