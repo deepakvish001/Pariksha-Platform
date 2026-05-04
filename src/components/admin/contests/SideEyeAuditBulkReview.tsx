@@ -12,7 +12,7 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { CheckCircle2, Loader2, Download, FileText } from "lucide-react";
+import { CheckCircle2, Loader2, Download, FileText, FileJson, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { logSideEyeAction } from "./lib/adminAuditLog";
@@ -301,10 +301,28 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
               {SEVERITIES.map((s) => <SelectItem key={s} value={s} className="capitalize text-xs">{s}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" className="h-7" onClick={exportCsv}>
+          <Button size="sm" variant="outline" className="h-7" onClick={exportCsv} disabled={!!exportProgress}>
             <Download className="mr-1 h-3 w-3" /> CSV
           </Button>
+          <Button size="sm" variant="outline" className="h-7" onClick={exportJson} disabled={!!exportProgress}>
+            <FileJson className="mr-1 h-3 w-3" /> JSON
+          </Button>
+          <Button size="sm" variant="outline" className="h-7" onClick={exportPdf} disabled={!!exportProgress}>
+            <FileDown className="mr-1 h-3 w-3" /> PDF
+          </Button>
         </div>
+      </div>
+
+      {exportProgress && (
+        <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Exporting {exportProgress.fetched} / {exportProgress.total}…
+          <div className="flex-1 h-1 bg-muted rounded overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all"
+              style={{ width: `${exportProgress.total ? (exportProgress.fetched / exportProgress.total) * 100 : 0}%` }}
+            />
+          </div>
       </div>
 
       <div className="border border-border/40 rounded max-h-[420px] overflow-auto">
