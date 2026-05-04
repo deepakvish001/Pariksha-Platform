@@ -61,6 +61,7 @@ export default function SecureContestGate({
   const [agreed, setAgreed] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [checklistReady, setChecklistReady] = useState(false);
+  const [sideEyeReady, setSideEyeReady] = useState(false);
   const preflightKey = `contest-preflight-passed:${contestId}`;
   const roomScanKey = `contest-room-scan-passed:${contestId}`;
   const identityKey = `contest-identity-verified:${contestId}`;
