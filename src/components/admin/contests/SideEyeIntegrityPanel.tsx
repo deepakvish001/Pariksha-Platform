@@ -49,6 +49,9 @@ export const SideEyeIntegrityPanel = ({ sessionId }: { sessionId: string }) => {
     try {
       const r = await callEdge<VerifyResult>("contest-sideeye-verify-chain");
       setResult(r);
+      await logSideEyeAction("sideeye_verify_chain", sessionId, {
+        intact: r.intact, links: r.links, breaks: r.breaks.length,
+      });
       if (r.intact) toast.success(`Chain intact — ${r.links} link(s) verified`);
       else toast.error(`Chain broken: ${r.breaks.length} issue(s)`);
     } catch (e: any) {
