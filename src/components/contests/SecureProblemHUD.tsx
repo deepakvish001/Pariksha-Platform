@@ -11,6 +11,8 @@ import { useDevtoolsDetector } from "@/hooks/useDevtoolsDetector";
 import { useFetchInterceptor } from "@/hooks/useFetchInterceptor";
 import { useAudioMonitor } from "@/hooks/useAudioMonitor";
 import { useIdentityRecheck } from "@/hooks/useIdentityRecheck";
+import { useKeystrokeBiometrics } from "@/hooks/useKeystrokeBiometrics";
+import { useMouseEntropy } from "@/hooks/useMouseEntropy";
 import { TrustScoreBadge } from "./TrustScoreBadge";
 import { toast } from "sonner";
 
@@ -49,11 +51,15 @@ export default function SecureProblemHUD({ contestId, contestSlug, onSubmissionR
     webcamStream: secure.webcamStream,
     enabled: tierEnabled && secure.webcamReady,
   });
+  // Tier 5 behavioral biometrics — active only inside the kiosk.
+  useKeystrokeBiometrics({ contestId, sessionId: active.sessionId, enabled: tierEnabled });
+  useMouseEntropy({ contestId, sessionId: active.sessionId, enabled: tierEnabled });
 
-  // Periodically ping the proctor-analyze edge function (~every 2 min)
+  // Periodically ping proctor-analyze (trust score) and presence-analyze
+  // (structured webcam findings) — staggered so we don't double-bill quota.
   useEffect(() => {
     if (!contestId || !active.hasActive) return;
-    const ping = async () => {
+    const pingTrust = async () => {
       try {
         const { supabase } = await import("@/integrations/supabase/client");
         await supabase.functions.invoke("proctor-analyze", {
@@ -61,9 +67,26 @@ export default function SecureProblemHUD({ contestId, contestSlug, onSubmissionR
         });
       } catch { /* ignore */ }
     };
-    void ping();
-    const id = window.setInterval(ping, 120_000);
-    return () => window.clearInterval(id);
+    const pingPresence = async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        await supabase.functions.invoke("contest-presence-analyze", {
+          body: { contest_id: contestId, session_id: active.sessionId },
+        });
+      } catch { /* ignore */ }
+    };
+    void pingTrust();
+    const t1 = window.setInterval(pingTrust, 120_000);
+    // Offset by 60s so calls don't overlap
+    const presenceFirst = window.setTimeout(() => {
+      void pingPresence();
+    }, 60_000);
+    const t2 = window.setInterval(pingPresence, 120_000);
+    return () => {
+      window.clearInterval(t1);
+      window.clearTimeout(presenceFirst);
+      window.clearInterval(t2);
+    };
   }, [contestId, active.hasActive, active.sessionId]);
 
   const status: Status = useMemo(() => {

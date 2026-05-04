@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useScreenFrameSampler } from "./useScreenFrameSampler";
 
 const CHUNK_MS = 30_000;
 const BITRATE = 500_000;
@@ -161,6 +162,14 @@ export function useScreenRecorder(opts: {
 
   // Cleanup on unmount
   useEffect(() => () => stop(), [stop]);
+
+  // Tier 5: sample frames + enforce monitor-only display surface.
+  useScreenFrameSampler({
+    contestId,
+    sessionId,
+    stream: state.stream,
+    enabled: enabled && state.sharing,
+  });
 
   return { ...state, requestShare, stop };
 }

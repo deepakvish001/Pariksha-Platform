@@ -1290,6 +1290,90 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_keystroke_profiles: {
+        Row: {
+          burst_ratio: number
+          contest_id: string
+          created_at: string
+          id: string
+          mean_interval: number
+          median_interval: number
+          p90_interval: number
+          sample_size: number
+          session_id: string
+          stddev_interval: number
+          user_id: string
+        }
+        Insert: {
+          burst_ratio: number
+          contest_id: string
+          created_at?: string
+          id?: string
+          mean_interval: number
+          median_interval: number
+          p90_interval: number
+          sample_size: number
+          session_id: string
+          stddev_interval: number
+          user_id: string
+        }
+        Update: {
+          burst_ratio?: number
+          contest_id?: string
+          created_at?: string
+          id?: string
+          mean_interval?: number
+          median_interval?: number
+          p90_interval?: number
+          sample_size?: number
+          session_id?: string
+          stddev_interval?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contest_keystroke_samples: {
+        Row: {
+          burst_ratio: number
+          contest_id: string
+          created_at: string
+          drift: boolean
+          id: string
+          mean_interval: number
+          sample_size: number
+          session_id: string
+          similarity: number | null
+          stddev_interval: number
+          user_id: string
+        }
+        Insert: {
+          burst_ratio: number
+          contest_id: string
+          created_at?: string
+          drift?: boolean
+          id?: string
+          mean_interval: number
+          sample_size: number
+          session_id: string
+          similarity?: number | null
+          stddev_interval: number
+          user_id: string
+        }
+        Update: {
+          burst_ratio?: number
+          contest_id?: string
+          created_at?: string
+          drift?: boolean
+          id?: string
+          mean_interval?: number
+          sample_size?: number
+          session_id?: string
+          similarity?: number | null
+          stddev_interval?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       contest_leaderboard_cache: {
         Row: {
           contest_id: string
@@ -1361,6 +1445,51 @@ export type Database = {
           problem_slug?: string | null
           target?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      contest_mouse_metrics: {
+        Row: {
+          click_count: number
+          contest_id: string
+          created_at: string
+          id: string
+          idle_ratio: number
+          is_bot_like: boolean
+          move_count: number
+          path_entropy: number
+          session_id: string
+          total_distance_px: number
+          user_id: string
+          window_ms: number
+        }
+        Insert: {
+          click_count: number
+          contest_id: string
+          created_at?: string
+          id?: string
+          idle_ratio: number
+          is_bot_like?: boolean
+          move_count: number
+          path_entropy: number
+          session_id: string
+          total_distance_px: number
+          user_id: string
+          window_ms: number
+        }
+        Update: {
+          click_count?: number
+          contest_id?: string
+          created_at?: string
+          id?: string
+          idle_ratio?: number
+          is_bot_like?: boolean
+          move_count?: number
+          path_entropy?: number
+          session_id?: string
+          total_distance_px?: number
+          user_id?: string
+          window_ms?: number
         }
         Relationships: []
       }
@@ -1514,6 +1643,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contest_proctor_findings: {
+        Row: {
+          ai_summary: string | null
+          contest_id: string
+          created_at: string
+          earbuds_detected: boolean | null
+          face_count: number | null
+          gaze_direction: string | null
+          id: string
+          phone_detected: boolean | null
+          raw: Json
+          second_person_detected: boolean | null
+          second_screen_detected: boolean | null
+          session_id: string | null
+          severity: string
+          snapshot_id: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          contest_id: string
+          created_at?: string
+          earbuds_detected?: boolean | null
+          face_count?: number | null
+          gaze_direction?: string | null
+          id?: string
+          phone_detected?: boolean | null
+          raw?: Json
+          second_person_detected?: boolean | null
+          second_screen_detected?: boolean | null
+          session_id?: string | null
+          severity?: string
+          snapshot_id?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_summary?: string | null
+          contest_id?: string
+          created_at?: string
+          earbuds_detected?: boolean | null
+          face_count?: number | null
+          gaze_direction?: string | null
+          id?: string
+          phone_detected?: boolean | null
+          raw?: Json
+          second_person_detected?: boolean | null
+          second_screen_detected?: boolean | null
+          session_id?: string | null
+          severity?: string
+          snapshot_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       contest_proctor_snapshots: {
         Row: {
@@ -1702,6 +1885,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contest_screen_share_audits: {
+        Row: {
+          ai_summary: string | null
+          contest_id: string
+          created_at: string
+          detected_windows: Json
+          forbidden_apps: string[]
+          id: string
+          session_id: string | null
+          severity: string
+          storage_path: string | null
+          surface_kind: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          contest_id: string
+          created_at?: string
+          detected_windows?: Json
+          forbidden_apps?: string[]
+          id?: string
+          session_id?: string | null
+          severity?: string
+          storage_path?: string | null
+          surface_kind?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_summary?: string | null
+          contest_id?: string
+          created_at?: string
+          detected_windows?: Json
+          forbidden_apps?: string[]
+          id?: string
+          session_id?: string | null
+          severity?: string
+          storage_path?: string | null
+          surface_kind?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       contest_sessions: {
         Row: {
@@ -5164,6 +5389,43 @@ export type Database = {
           _type: string
         }
         Returns: Json
+      }
+      contest_record_keystroke_profile: {
+        Args: {
+          _burst_ratio: number
+          _contest_id: string
+          _mean: number
+          _median: number
+          _p90: number
+          _sample_size: number
+          _session_id: string
+          _stddev: number
+        }
+        Returns: string
+      }
+      contest_record_keystroke_sample: {
+        Args: {
+          _burst_ratio: number
+          _contest_id: string
+          _mean: number
+          _sample_size: number
+          _session_id: string
+          _stddev: number
+        }
+        Returns: Json
+      }
+      contest_record_mouse_metrics: {
+        Args: {
+          _click_count: number
+          _contest_id: string
+          _idle_ratio: number
+          _move_count: number
+          _path_entropy: number
+          _session_id: string
+          _total_distance_px: number
+          _window_ms: number
+        }
+        Returns: string
       }
       contest_record_preflight: {
         Args: {
