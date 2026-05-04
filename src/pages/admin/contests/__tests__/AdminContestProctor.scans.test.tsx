@@ -24,10 +24,10 @@ vi.mock("@/components/admin/contests/VivaQueueTab", () => ({
   VivaQueueTab: () => <div>VivaQueueTab</div>,
 }));
 
-const toastSuccess = vi.fn();
-const toastError = vi.fn();
-const toastDismiss = vi.fn();
-const toastLoading = vi.fn(() => "loading-id");
+const toastSuccess = vi.fn((..._a: any[]) => undefined);
+const toastError = vi.fn((..._a: any[]) => undefined);
+const toastDismiss = vi.fn((..._a: any[]) => undefined);
+const toastLoading = vi.fn((..._a: any[]) => "loading-id");
 vi.mock("sonner", () => ({
   toast: {
     success: (...a: any[]) => toastSuccess(...a),
