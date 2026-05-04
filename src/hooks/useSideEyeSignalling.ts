@@ -187,10 +187,10 @@ export function useSideEyeSignalling(opts: {
       const attempt = ++reconnectAttemptRef.current;
       const delay = Math.min(30_000, 1000 * 2 ** Math.min(attempt, 5));
       if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = window.setTimeout(() => connect(), delay);
+      reconnectTimerRef.current = window.setTimeout(() => { void connect(); }, delay);
     };
 
-    connect();
+    void connect();
 
     // Adaptive bandwidth sampler (phone side only, every 6 s)
     let qualityTimer: number | null = null;
