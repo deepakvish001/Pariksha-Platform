@@ -16,7 +16,9 @@ import {
 } from "@/components/ui/dialog";
 import { useContestSecureMode } from "@/hooks/useContestSecureMode";
 import { useActiveContestSession } from "@/hooks/useActiveContestSession";
-import { ShieldCheck, Eye, Maximize2, Camera, Ban, AlertTriangle, Lock } from "lucide-react";
+import { useScreenRecorder } from "@/hooks/useScreenRecorder";
+import { WebcamPiP } from "./WebcamPiP";
+import { ShieldCheck, Eye, Maximize2, Camera, Ban, AlertTriangle, Lock, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import ContestLobby from "./ContestLobby";
 
@@ -32,6 +34,8 @@ interface Props {
   isRegistered: boolean;
   isDisqualified: boolean;
   onSessionChange?: (hasActive: boolean) => void;
+  /** Slug of the first contest problem so we can navigate into the kiosk on start. */
+  firstProblemSlug?: string;
 }
 
 export default function SecureContestGate({
