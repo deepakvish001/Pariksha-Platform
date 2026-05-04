@@ -60,7 +60,7 @@ export default function ContestPlayProblem() {
     sessionId: session.sessionId ?? null,
     contestId: contest?.id ?? null,
     userId: user?.id ?? null,
-    problemId: variantQuery.data?.problem_id ?? problemSlug ?? null,
+    problemId: problemSlug ?? null,
   });
 
   // Make sure the URL CodingProblemDetail reads from has ?contest=<slug>
