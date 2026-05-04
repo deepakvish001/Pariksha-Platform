@@ -55,6 +55,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Detect recovery from a long gap
+    const { data: prevPair } = await admin
+      .from("contest_side_camera_pairings")
+      .select("last_heartbeat_at, status")
+      .eq("id", pairingId)
+      .maybeSingle();
+
+    const now = Date.now();
+    const prevTs = prevPair?.last_heartbeat_at ? new Date(prevPair.last_heartbeat_at).getTime() : now;
+    const gapMs = now - prevTs;
+    const recovered = prevPair?.status === "lost" || gapMs > 30_000;
+
     await admin
       .from("contest_side_camera_pairings")
       .update({
@@ -68,6 +80,14 @@ Deno.serve(async (req) => {
       .from("contest_sessions")
       .update({ side_camera_status: "active" })
       .eq("id", pair.session_id);
+
+    await admin.from("contest_side_camera_audit_logs").insert({
+      session_id: pair.session_id,
+      user_id: user.id,
+      event_type: recovered ? "stream_recovered" : "heartbeat",
+      severity: "info",
+      detail: { gap_ms: gapMs },
+    });
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

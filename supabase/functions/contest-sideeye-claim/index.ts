@@ -93,6 +93,14 @@ Deno.serve(async (req) => {
       .update({ side_camera_status: "paired" })
       .eq("id", pair.session_id);
 
+    await admin.from("contest_side_camera_audit_logs").insert({
+      session_id: pair.session_id,
+      user_id: user.id,
+      event_type: "paired",
+      severity: "info",
+      detail: { device_user_agent: deviceUserAgent ?? null, device_fingerprint: deviceFingerprint ?? null },
+    });
+
     return new Response(
       JSON.stringify({ ok: true, sessionId: pair.session_id, pairingId: pair.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
