@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.sideeye_unified_risk_score(uuid) FROM PUBLIC, anon;
