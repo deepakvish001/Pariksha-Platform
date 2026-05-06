@@ -43,6 +43,10 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
   const [bulkNote, setBulkNote] = useState("");
   const [hideReviewed, setHideReviewed] = useState(true);
   const [sevFilter, setSevFilter] = useState<string>("all");
+  const [hideLowConfidence, setHideLowConfidence] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("sideeye:hideLowConfidence") !== "0";
+  });
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
@@ -320,6 +324,12 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const visibleRows = hideLowConfidence
+    ? rows.filter((r) => {
+        const c = (r.detail as any)?.summary?.confidence ?? (r.detail as any)?.confidence;
+        return c !== "low";
+      })
+    : rows;
 
   return (
     <Card className="p-4 space-y-3">
@@ -332,6 +342,17 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
           <label className="flex items-center gap-1.5">
             <Checkbox checked={hideReviewed} onCheckedChange={(v) => setHideReviewed(!!v)} />
             <span>Hide reviewed</span>
+          </label>
+          <label className="flex items-center gap-1.5" title="Hide AI findings flagged as low confidence (e.g. matches the candidate's calibrated baseline)">
+            <Checkbox
+              checked={hideLowConfidence}
+              onCheckedChange={(v) => {
+                const b = !!v;
+                setHideLowConfidence(b);
+                try { localStorage.setItem("sideeye:hideLowConfidence", b ? "1" : "0"); } catch {}
+              }}
+            />
+            <span>Hide low-confidence</span>
           </label>
           <Select value={sevFilter} onValueChange={setSevFilter}>
             <SelectTrigger className="h-7 w-32 text-xs"><SelectValue /></SelectTrigger>
@@ -375,7 +396,7 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
             <tr>
               <th className="p-2 w-8">
                 <Checkbox
-                  checked={rows.length > 0 && selected.size === rows.length}
+                  checked={visibleRows.length > 0 && visibleRows.every((r) => selected.has(r.id))}
                   onCheckedChange={toggleAll}
                 />
               </th>
@@ -387,7 +408,7 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {visibleRows.map((r) => (
               <tr key={r.id} className="border-t border-border/30 hover:bg-muted/20">
                 <td className="p-2">
                   <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggle(r.id)} />

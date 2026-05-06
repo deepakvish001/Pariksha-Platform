@@ -7,7 +7,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ShieldCheck, ShieldAlert, Loader2, FileJson, FileDown } from "lucide-react";
+import { ShieldCheck, ShieldAlert, Loader2, FileJson, FileDown, Package } from "lucide-react";
 import { toast } from "sonner";
 import { logSideEyeAction } from "./lib/adminAuditLog";
 
@@ -24,9 +24,39 @@ interface VerifyResult {
  * download verified report as JSON, or render a plain-text PDF summary.
  */
 export const SideEyeIntegrityPanel = ({ sessionId }: { sessionId: string }) => {
-  const [busy, setBusy] = useState<"verify" | "json" | "pdf" | null>(null);
+  const [busy, setBusy] = useState<"verify" | "json" | "pdf" | "pack" | null>(null);
   const [result, setResult] = useState<VerifyResult | null>(null);
-  const [confirm, setConfirm] = useState<null | "verify" | "json" | "pdf">(null);
+  const [confirm, setConfirm] = useState<null | "verify" | "json" | "pdf" | "pack">(null);
+
+  const downloadEvidencePack = async () => {
+    setBusy("pack");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/contest-sideeye-evidence-pack`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
+        },
+        body: JSON.stringify({ sessionId }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const blob = await resp.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `sideeye-evidence-${sessionId}.zip`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(a.href);
+      await logSideEyeAction("sideeye_evidence_pack", sessionId, { format: "zip" });
+      toast.success("Evidence pack downloaded");
+    } catch (e: any) {
+      toast.error("Evidence pack failed", { description: e?.message });
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const callEdge = async <T,>(fn: string): Promise<T> => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -208,6 +238,10 @@ ${breaks.map(b => `<tr><td>${b.seq}</td><td>${b.reason}</td><td><code>${(b.expec
             {busy === "pdf" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileDown className="mr-1 h-3 w-3" />}
             PDF
           </Button>
+          <Button size="sm" variant="outline" onClick={() => setConfirm("pack")} disabled={busy !== null} title="ZIP: audit CSV, chain, findings, 7-day signed evidence URLs">
+            {busy === "pack" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Package className="mr-1 h-3 w-3" />}
+            Evidence pack
+          </Button>
         </div>
       </div>
 
@@ -218,11 +252,13 @@ ${breaks.map(b => `<tr><td>${b.seq}</td><td>${b.reason}</td><td><code>${(b.expec
               {confirm === "verify" && "Re-verify evidence chain?"}
               {confirm === "json" && "Download integrity report as JSON?"}
               {confirm === "pdf" && "Generate PDF integrity report?"}
+              {confirm === "pack" && "Generate full evidence pack (ZIP)?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               This action will be logged in the admin audit log against this session.
               {confirm === "verify" && " The chain walk re-hashes every evidence link and may take a moment."}
               {confirm === "pdf" && " A new browser tab will open — allow popups."}
+              {confirm === "pack" && " Includes audit log, hash chain, findings, and 7-day signed evidence URLs. Larger sessions may take a few seconds."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -234,6 +270,7 @@ ${breaks.map(b => `<tr><td>${b.seq}</td><td>${b.reason}</td><td><code>${(b.expec
                 if (c === "verify") verify();
                 else if (c === "json") downloadJson();
                 else if (c === "pdf") downloadPdf();
+                else if (c === "pack") downloadEvidencePack();
               }}
             >
               Continue
