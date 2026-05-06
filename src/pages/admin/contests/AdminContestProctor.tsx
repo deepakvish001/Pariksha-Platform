@@ -25,6 +25,7 @@ import { SideEyeAnomalyTicker } from "@/components/admin/contests/SideEyeAnomaly
 import { SideEyeAnomalyHistory } from "@/components/admin/contests/SideEyeAnomalyHistory";
 import { SideEyeIntegrityPanel } from "@/components/admin/contests/SideEyeIntegrityPanel";
 import { SideEyeAuditBulkReview } from "@/components/admin/contests/SideEyeAuditBulkReview";
+import { SideEyeUnifiedRiskBadge } from "@/components/admin/contests/SideEyeUnifiedRiskBadge";
 import { SideEyePauseControls } from "@/components/admin/contests/SideEyePauseControls";
 import { SideEyeApprovalQueue } from "@/components/admin/contests/SideEyeApprovalQueue";
 import { SideEyeCandidateReportsPanel } from "@/components/admin/contests/SideEyeCandidateReportsPanel";
