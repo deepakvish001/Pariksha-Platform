@@ -289,7 +289,7 @@ Deno.serve(async (req) => {
       key: idemKey,
       function_name: "contest-sideeye-frame-analyze",
       result,
-    }, { onConflict: "key,function_name" });
+    }, { onConflict: "key" });
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
