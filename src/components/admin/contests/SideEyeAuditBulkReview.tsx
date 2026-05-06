@@ -324,6 +324,12 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const visibleRows = hideLowConfidence
+    ? rows.filter((r) => {
+        const c = (r.detail as any)?.summary?.confidence ?? (r.detail as any)?.confidence;
+        return c !== "low";
+      })
+    : rows;
 
   return (
     <Card className="p-4 space-y-3">
