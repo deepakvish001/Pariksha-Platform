@@ -30,12 +30,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { sessionId, storagePath, dataUrl } = await req.json();
+    const { sessionId, storagePath, dataUrl, idempotencyKey } = await req.json();
     if (!sessionId || !storagePath || !dataUrl) {
       return new Response(JSON.stringify({ error: "sessionId, storagePath, dataUrl required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const admin0 = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // Idempotency: if the same key was processed before, return cached result.
+    const idemKey = idempotencyKey ?? `${sessionId}:${storagePath}`;
+    {
+      const { data: existing } = await admin0
+        .from("sideeye_idempotency")
+        .select("result")
+        .eq("key", idemKey)
+        .eq("function_name", "contest-sideeye-frame-analyze")
+        .maybeSingle();
+      if (existing?.result) {
+        return new Response(JSON.stringify({ ...existing.result, cached: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
