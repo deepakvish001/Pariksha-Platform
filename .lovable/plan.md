@@ -1,129 +1,105 @@
-## Second Eye — Production Hardening Plan
+# Second Eye → Industry-Grade for College Adoption
 
-The current Second Eye flow works end-to-end on a happy path. Below are the **six concrete gaps** that block real-world, daily production use, and what to build for each.
-
----
-
-### 1. Reliable connectivity on real networks (TURN relay)
-
-**Problem.** Today we only configure public STUN servers. ~15-20% of candidates (corporate Wi-Fi, mobile carrier NATs, hotel networks) cannot establish a peer connection without a TURN relay, so their phone never appears in the admin grid.
-
-**What to build:**
-- Add a `contest-sideeye-ice` edge function that returns short-lived (1 hour) TURN credentials. Use the connector for a managed TURN provider (Cloudflare Calls, Twilio, or Metered) — the existing `secrets--add_secret` flow handles the API key.
-- Update `useSideEyeSignalling.ts` to fetch ICE servers from this function on connect, with the existing STUN servers as fallback.
-- Audit-log which transport was used (`host` / `srflx` / `relay`) per connection so we can see at a glance how many candidates needed the relay.
+To make Second Eye trustworthy enough for every college to deploy at scale (placement drives, semester exams, hackathons), we need to harden it across **trust, governance, reliability, compliance, and operations**. The system already does live proctoring, evidence chains, integrity reports, audit logs, exports and pause/resume. This plan layers the missing pieces that institutions specifically demand before signing off.
 
 ---
 
-### 2. Enforcement: candidate cannot start the contest without Second Eye
+## 1. Institutional Trust & Identity
 
-**Problem.** `side_camera_required` and `side_camera_status` columns exist on `contest_sessions` but are never read. A candidate can skip pairing and still submit answers.
+- **Institution accounts**: new `institutions` + `institution_members` tables. Each contest owned by an institution; admins inherit role from membership.
+- **SSO via SAML / Google Workspace** for college admins (already supported in Lovable Cloud — wire UI).
+- **Verified candidate identity**: pre-contest ID-card capture + face match (Lovable AI vision) stored in `contest_identity_verifications`. Match score gates entry.
+- **Public verification page** `/verify/:reportId`: anyone (recruiter, HoD, parent) can paste a report ID and see hash-chain status + signed PDF without logging in.
 
-**What to build:**
-- Server-side guard in `submit-code`, `submit-sql`, and any answer-submission edge function: if the contest's `side_camera_required = true` and the session's `side_camera_status != 'connected'` for more than the configured grace window, reject submissions with `412 Precondition Failed`.
-- Heartbeat-driven status: `contest-sideeye-heartbeat` already pings; add a small DB function `sideeye_sweep_stale_status()` (cron every minute) that flips sessions to `disconnected` after 30s of silence and emits an admin notification.
-- In `SecureContestGate`, block the "Start contest" button until pairing reports `connected` at least once. After that, brief drops show a banner but don't stop the test.
+## 2. Governance, RBAC & Two-Person Rule
 
----
+- Extend `app_role`: `proctor_viewer`, `proctor_reviewer`, `proctor_admin`, `institution_admin`.
+- Server-side `has_role()` checks in every SideEye edge function (`pause`, `verify-chain`, `report`, `repair`, future `erase`, `evidence-pack`).
+- **Two-person approval** for destructive actions (delete evidence, expunge chain, override DQ, mass review). New `sideeye_admin_approvals` table; UI dialog blocks until a second admin confirms.
+- Harden `admin_audit_log`: add `ip`, `user_agent`, `actor_role`, `prev_hash` (its own tamper chain).
 
-### 3. Mobile resilience: keep the phone alive for a 2-3 hour contest
+## 3. Compliance & Data Lifecycle (DPDP / GDPR ready)
 
-**Problem.** iOS Safari and Android Chrome aggressively throttle a backgrounded tab — the camera stops, recording stops, WebRTC dies. The candidate doesn't notice until the admin pings them.
+- **Consent ledger**: `contest_sideeye_consents` records the exact consent text version, timestamp, IP, user-agent. Surfaced in integrity PDF.
+- **Retention policy**: `retention_days` on `contests`. Daily cron purges raw frames/recordings past retention; chain + reports retained forever.
+- **Right-to-erasure**: `contest-sideeye-erase-subject` edge function scrubs PII while keeping aggregate audit trail intact.
+- **Region pinning**: `data_region` on contests; storage routed accordingly.
+- **DPA-ready exports**: one-click "Compliance bundle" = consent records + retention policy + audit chain proof.
 
-**What to build:**
-- `SideEyeMobile.tsx`: enable Wake Lock API (`navigator.wakeLock.request('screen')`) and re-acquire on `visibilitychange`.
-- Switch recording chunks from `MediaRecorder` keep-alive timer to `setInterval` that explicitly calls `requestData()` every 10s, so chunks still flush if the timer drifts.
-- Background-detect: if `document.hidden` for >5s, pause uploads, surface a big "RETURN TO THIS TAB" banner with vibration (`navigator.vibrate`), and emit a `mobile_backgrounded` audit event so the admin sees it immediately.
-- Battery API: when battery <15%, surface a warning to the candidate and notify the admin (`mobile_low_battery` event).
-- Add an explicit "I lost connection" recovery flow: if the WebRTC peer fails three reconnect attempts, the page automatically re-enters pairing mode using the same session token (no new QR scan needed).
+## 4. Reliability, Scale & Idempotency
 
----
+- **Idempotency keys** on `frame-analyze`, `report`, `verify-chain`, `pause`; new `sideeye_idempotency` table dedupes retries under flaky college Wi-Fi.
+- **Dead-letter queue** `sideeye_failed_analyses` with retry counter; hourly cron retries up to 5x then alerts.
+- **Adaptive sampling**: when frame queue depth high, mobile cuts cadence 15s → 30s automatically (server flag pulled by `SideEyeMobile`).
+- **Backpressure-aware exports**: existing streaming exports already paginate; add resume-from-cursor so a dropped export can be continued.
 
-### 4. Live admin alerts that actually reach a human
+## 5. Detection Quality (fewer false positives)
 
-**Problem.** Anomaly notifications land in the in-app notification table. If the admin isn't on the proctoring tab, they miss it.
+- **Calibration capture**: 60s pre-contest baseline (room layout + face) per candidate. Subsequent flags compared against baseline → static posters or family photos no longer trigger "extra person".
+- **Confidence bands** on every finding (`low|med|high`); bulk-review hides `low` by default; integrity PDF only includes `med`+.
+- **Cross-signal fusion**: combine SideEye + primary webcam + screen analyses into one `unified_risk_score` per candidate with drill-down.
+- **Reviewer feedback loop**: marking a finding as false-positive writes to `sideeye_review_feedback`; weekly cron rolls up FP-rate per finding type to tune thresholds.
 
-**What to build:**
-- Wire SideEye flag/fatal findings into the existing `usePushNotifications` web push subscription so admins get an OS-level toast even when the tab is in the background.
-- Add a minimal "Live anomaly ticker" floating panel on `/admin/contests/:id/proctor` that uses the existing realtime channel and plays a short beep + flashes red when a `secondary_device` / `extra_person` / `candidate_absent` finding arrives. Mute toggle persisted per admin in `localStorage`.
-- Optional escalation channel (off by default): if `recipient_user_ids` is set and Resend is configured, send an email digest every 60s (not per finding) for high-severity events only — avoids inbox flooding.
+## 6. Live Operations Console for Proctors
 
----
+- **Multi-contest console** `/admin/sideeye`: severity heatmap across every active session, so one proctor supervises many rooms.
+- **Live anomaly ticker** with audible alert (already present) + per-admin mute persistence.
+- **Saved views** in audit log (filters + columns + sort) shareable across the team via `sideeye_admin_views`.
+- **Keyboard-first review**: `j/k` rows, `r` review, `e` edit note, `x` mark FP, `?` help.
+- **Chain-break diff view**: side-by-side expected vs actual hash + previous valid frame thumbnail + uploader IP.
+- **HR/Placement dispute pack**: one-click ZIP = filtered audit CSV + integrity PDF + 7-day signed evidence URLs (new `contest-sideeye-evidence-pack` function).
 
-### 5. Tamper-evident evidence (integrity for HR / legal)
+## 7. Observability & Status
 
-**Problem.** Recordings and frames sit in storage. If a candidate disputes a flag, we have no proof the file wasn't edited after the fact.
+- **Structured JSON logging** in every SideEye function (`session_id`, `actor_id`, `latency_ms`, `outcome`).
+- **SLO dashboard** `/admin/contests/:id/sideeye/health`: pair-success %, time-to-pair, frame-analysis p95, chain-verify duration, TURN-relay ratio, mobile-backgrounding rate. Backed by `sideeye_metrics` materialized view (5-min refresh).
+- **Synthetic monitor** (hourly cron) runs a fake pairing flow end-to-end; alerts admins if any step exceeds SLO.
+- **Public status snippet** for institutions: 90-day uptime + recent incidents.
 
-**What to build:**
-- On every recording chunk upload, compute SHA-256 client-side and store it on the `contest_side_camera_recordings` row alongside the storage path. Same for frames.
-- Add an append-only `sideeye_evidence_chain` table: each row references the prior row's hash + the new file hash, forming a hash chain per session. This is what gets cited in the integrity report.
-- Extend `contest-sideeye-report` edge function to:
-  - Walk the chain and re-verify each hash against the stored object.
-  - Embed signed URLs valid for 7 days for each frame and recording.
-  - Render to PDF (not just JSON) using a server-side template so HR can attach it directly to a case file. Keep the JSON export as well.
+## 8. Candidate-Side Polish (trust-building)
 
----
-
-### 6. Operational controls the admin needs day-to-day
-
-Small but high-value additions for the SideEye tab in `AdminContestProctor`:
-
-- **"Pause / resume monitoring"** per session — useful when a candidate has a legitimate restroom break. Records who paused and why; resumes cleanly with a fresh chain entry.
-- **"Re-pair phone"** action that invalidates the current pairing token and shows a fresh QR for the candidate to re-scan, without restarting their contest session.
-- **Bandwidth/quality indicator per tile** — packet-loss, bitrate, resolution — pulled from `RTCPeerConnection.getStats()` and surfaced as a small color dot on each `SideEyeTile`.
-- **Bulk actions on the audit log table**: filter to a window, then "Mark reviewed" or "Add note" against many events at once. Adds two columns (`reviewed_at`, `reviewer_note`) to `contest_side_camera_audit_logs`.
-
----
-
-### Out of scope for this batch (deliberate)
-
-- A native iOS/Android app (browser-based stays our differentiator — no install).
-- Realtime on-device person counting (handled by the 15-second AI sweep; doing it on-device would drain battery).
-- Replacing WebRTC with HLS pull (WebRTC's sub-second latency is the whole point for live proctoring).
+- Clear pre-contest screen: what's recorded, why, retention period, who can view, how to request erasure. Linked from every page.
+- Connection-quality dot on the candidate view too (not just admin) so they know their stream is healthy.
+- "Report a problem" button posts to a `sideeye_candidate_reports` table that admins triage in the proctor console.
 
 ---
 
-### Technical specifics
+## Technical changes summary
 
-**New tables / columns**
-- `contest_sessions`: enforce read of `side_camera_required` / `side_camera_status` (no schema change).
-- `contest_side_camera_recordings`: add `sha256 text`, `prev_hash text`.
-- `contest_side_camera_frames`: add `sha256 text`.
-- New `sideeye_evidence_chain` (`session_id`, `seq int`, `kind`, `object_path`, `sha256`, `prev_sha256`, `created_at`), unique `(session_id, seq)`.
-- `contest_side_camera_audit_logs`: add `reviewed_at timestamptz`, `reviewer_note text`, `reviewer_id uuid`.
-- New `sideeye_session_pauses` (`session_id`, `paused_by`, `reason`, `paused_at`, `resumed_at`).
+**New tables**
+`institutions`, `institution_members`, `contest_identity_verifications`, `contest_sideeye_consents`, `sideeye_admin_approvals`, `sideeye_idempotency`, `sideeye_failed_analyses`, `sideeye_metrics` (mat. view), `sideeye_admin_views`, `sideeye_review_feedback`, `sideeye_candidate_reports`.
+
+**New columns**
+- `app_role` enum: `proctor_viewer`, `proctor_reviewer`, `proctor_admin`, `institution_admin`.
+- `contests`: `institution_id`, `retention_days`, `data_region`, `two_person_rule`, `calibration_required`.
+- `admin_audit_log`: `ip`, `user_agent`, `actor_role`, `prev_hash`.
+- SideEye finding rows: `confidence`.
 
 **New edge functions**
-- `contest-sideeye-ice` — returns TURN credentials.
-- `contest-sideeye-pause` / `contest-sideeye-resume` — admin-gated.
-- `contest-sideeye-repair` — invalidates pairing token + emits new one.
+`contest-sideeye-erase-subject`, `contest-sideeye-evidence-pack`, `contest-sideeye-health-metrics`, `contest-sideeye-synthetic-monitor`, `contest-identity-match`.
 
 **Updated edge functions**
-- `contest-sideeye-frame-analyze` — write hash + chain entry.
-- `contest-sideeye-heartbeat` — return current session status, drive stale-sweep.
-- `contest-sideeye-report` — verify chain, return PDF + JSON.
-- `submit-code`, `submit-sql` — enforcement gate.
+All SideEye functions get role checks via `has_role()`, structured logging, idempotency keys.
 
 **Cron**
-- `sideeye-sweep-stale-status` — every minute.
+`sideeye-retention-purge` (daily), `sideeye-dlq-retry` (hourly), `sideeye-metrics-refresh` (5 min), `sideeye-synthetic-monitor` (hourly), `sideeye-fp-feedback-rollup` (weekly).
 
 **Frontend**
-- `useSideEyeSignalling.ts` — fetch ICE, log selected candidate-pair type.
-- `SideEyeMobile.tsx` — Wake Lock, background warning, low-battery, auto re-pair.
-- `SideEyeTile.tsx` — connection-quality dot.
-- `AdminContestProctor.tsx` — live anomaly ticker, pause/resume/re-pair actions.
-- `SideEyeScanTimeline.tsx` — bulk review, reviewer notes.
-
-**Secrets needed (one new)**
-- TURN provider API key. I will request this via `add_secret` once you confirm the provider — Cloudflare Calls is recommended (cheap, generous free tier, no per-minute billing surprise).
+- New routes: `/admin/sideeye` (multi-contest), `/admin/contests/:id/sideeye/health`, `/verify/:reportId`.
+- New components: `SideEyeUnifiedRiskBadge`, `SideEyeChainDiff`, `SideEyeSavedViews`, `SideEyeEvidencePackButton`, `SideEyeApprovalDialog`, `SideEyeCalibrationCapture`, `SideEyeConsentScreen`, `PublicVerifyReport`.
+- Updates: `SideEyeMobile.tsx` (calibration, adaptive sampling, candidate quality dot, problem report), `SideEyeAuditBulkReview.tsx` (saved views, keyboard nav, FP marking, idempotency, resume-from-cursor exports), `AdminContestProctor.tsx` (multi-contest links, two-person dialogs).
 
 ---
 
-### Suggested rollout order
+## Suggested rollout order
 
-1. **TURN + enforcement** (sections 1 + 2) — without these, the rest doesn't matter; candidates either can't connect or can bypass entirely.
-2. **Mobile resilience** (section 3) — the single biggest source of false-positive "candidate disappeared" flags today.
-3. **Live admin alerts + ops controls** (sections 4 + 6) — quality-of-life for the proctor.
-4. **Evidence chain + PDF reports** (section 5) — needed before the first real dispute, not before the first real contest.
+1. **Batch A — Trust foundations**: institutions + RBAC + two-person rule + audit-chain hardening + public verify page.
+2. **Batch B — Compliance**: consent ledger + retention purge + right-to-erasure + identity verification.
+3. **Batch C — Reliability**: idempotency + DLQ + adaptive sampling + resume-from-cursor exports.
+4. **Batch D — Detection quality**: calibration + confidence bands + unified risk score + FP feedback loop.
+5. **Batch E — Ops console**: multi-contest console + saved views + chain-break diff + dispute pack.
+6. **Batch F — Observability**: SLO dashboard + synthetic monitor + public status snippet.
 
-Approve this plan and I'll start with batch 1 (TURN + enforcement). I'll ask for the TURN provider choice before requesting the secret.
+Recommend starting with **Batch A + B together** — they unlock the rest and are what colleges ask for first (RBAC, consent, retention, identity, public verifiability). No new external secrets required for A; B can use Lovable Cloud Vault for at-rest key wrapping (no user secret needed).
+
+Reply with which batches to proceed with, or "all" to run them in order.
