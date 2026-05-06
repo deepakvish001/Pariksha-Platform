@@ -4352,31 +4352,43 @@ export type Database = {
           audit_log_id: string | null
           contest_id: string | null
           created_at: string
+          finding_kind: string | null
           finding_type: string | null
           id: string
           is_false_positive: boolean
           note: string | null
+          reason: string | null
           reviewer_id: string
+          session_id: string | null
+          verdict: string
         }
         Insert: {
           audit_log_id?: string | null
           contest_id?: string | null
           created_at?: string
+          finding_kind?: string | null
           finding_type?: string | null
           id?: string
           is_false_positive: boolean
           note?: string | null
+          reason?: string | null
           reviewer_id: string
+          session_id?: string | null
+          verdict: string
         }
         Update: {
           audit_log_id?: string | null
           contest_id?: string | null
           created_at?: string
+          finding_kind?: string | null
           finding_type?: string | null
           id?: string
           is_false_positive?: boolean
           note?: string | null
+          reason?: string | null
           reviewer_id?: string
+          session_id?: string | null
+          verdict?: string
         }
         Relationships: []
       }
@@ -6741,6 +6753,17 @@ export type Database = {
       }
       sideeye_purge_old_data: { Args: never; Returns: Json }
       sideeye_sweep_stale_status: { Args: never; Returns: Json }
+      sideeye_unified_risk_score: {
+        Args: { _session_id: string }
+        Returns: {
+          false_positive_count: number
+          high_severity_count: number
+          presence_count: number
+          score: number
+          screen_count: number
+          side_camera_count: number
+        }[]
+      }
       snapshot_my_coding_leaderboard_rank: { Args: never; Returns: Json }
       solo_finalize_session: { Args: { _session_id: string }; Returns: Json }
       solo_record_attempt: {

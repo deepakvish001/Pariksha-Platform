@@ -12,7 +12,7 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { CheckCircle2, Loader2, Download, FileText, FileJson, FileDown, FileArchive } from "lucide-react";
+import { CheckCircle2, Loader2, Download, FileText, FileJson, FileDown, FileArchive, ThumbsDown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { logSideEyeAction } from "./lib/adminAuditLog";
@@ -149,6 +149,57 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
       await load();
     } catch (e: any) {
       toast.error("Row update failed", { description: e?.message });
+    } finally {
+      setRowSavingId(null);
+    }
+  };
+
+  /**
+   * Mark a row as a false positive — feeds the reviewer feedback loop that
+   * tunes thresholds and lowers the unified risk score.
+   */
+  const markFalsePositive = async (row: AuditRow) => {
+    if (!user) return;
+    setRowSavingId(row.id);
+    try {
+      const note = (rowNotes[row.id] ?? "").trim() || null;
+      const kind =
+        (row.detail as any)?.summary?.anomaly_kind ??
+        (row.detail as any)?.anomaly_kind ??
+        row.event_type ?? null;
+      const { error: fbErr } = await supabase
+        .from("sideeye_review_feedback" as never)
+        .upsert(
+          {
+            audit_log_id: row.id,
+            session_id: sessionId,
+            reviewer_id: user.id,
+            verdict: "false_positive",
+            finding_kind: kind,
+            reason: note,
+            is_false_positive: true,
+            note,
+            finding_type: kind,
+          } as never,
+          { onConflict: "audit_log_id,reviewer_id" } as never,
+        );
+      if (fbErr) throw fbErr;
+      await supabase
+        .from("contest_side_camera_audit_logs")
+        .update({
+          reviewed_at: new Date().toISOString(),
+          reviewer_id: user.id,
+          reviewer_note: note ? `[FP] ${note}` : "[FP]",
+        })
+        .eq("id", row.id);
+      await logSideEyeAction("sideeye_audit_row_false_positive", sessionId, {
+        audit_id: row.id, kind, note,
+      });
+      toast.success("Marked as false positive");
+      setRowNotes((s) => { const n = { ...s }; delete n[row.id]; return n; });
+      await load();
+    } catch (e: any) {
+      toast.error("Failed to mark false positive", { description: e?.message });
     } finally {
       setRowSavingId(null);
     }
@@ -452,6 +503,17 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
                       >
                         {rowSavingId === r.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
                         {r.reviewed_at ? "Save note" : "Mark reviewed"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full text-amber-600 hover:text-amber-600"
+                        disabled={rowSavingId === r.id}
+                        onClick={() => markFalsePositive(r)}
+                        title="Records a reviewer false-positive vote, lowering the unified risk score and tuning future thresholds."
+                      >
+                        <ThumbsDown className="mr-1 h-3 w-3" />
+                        Mark false positive
                       </Button>
                     </PopoverContent>
                   </Popover>

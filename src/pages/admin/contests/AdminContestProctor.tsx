@@ -25,6 +25,7 @@ import { SideEyeAnomalyTicker } from "@/components/admin/contests/SideEyeAnomaly
 import { SideEyeAnomalyHistory } from "@/components/admin/contests/SideEyeAnomalyHistory";
 import { SideEyeIntegrityPanel } from "@/components/admin/contests/SideEyeIntegrityPanel";
 import { SideEyeAuditBulkReview } from "@/components/admin/contests/SideEyeAuditBulkReview";
+import { SideEyeUnifiedRiskBadge } from "@/components/admin/contests/SideEyeUnifiedRiskBadge";
 import { SideEyePauseControls } from "@/components/admin/contests/SideEyePauseControls";
 import { SideEyeApprovalQueue } from "@/components/admin/contests/SideEyeApprovalQueue";
 import { SideEyeCandidateReportsPanel } from "@/components/admin/contests/SideEyeCandidateReportsPanel";
@@ -500,8 +501,11 @@ const AdminContestProctor = () => {
             </Card>
             {(sessionsQuery.data ?? []).map((s: any) => (
               <div key={`group-${s.id}`} className="space-y-3 rounded-lg border border-border/40 p-3">
-                <div className="text-xs font-semibold text-muted-foreground">
-                  Session <span className="font-mono">{s.id.slice(0, 8)}</span> — {s.full_name ?? s.user_id.slice(0, 8)}
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="text-xs font-semibold text-muted-foreground">
+                    Session <span className="font-mono">{s.id.slice(0, 8)}</span> — {s.full_name ?? s.user_id.slice(0, 8)}
+                  </div>
+                  <SideEyeUnifiedRiskBadge sessionId={s.id} />
                 </div>
                 <SideEyeIntegrityPanel sessionId={s.id} />
                 <SideEyeScanTimeline sessionId={s.id} />
