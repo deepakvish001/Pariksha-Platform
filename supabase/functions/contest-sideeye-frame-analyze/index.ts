@@ -254,11 +254,12 @@ Deno.serve(async (req) => {
           session_id: sessionId,
           user_id: user.id,
           severity: findingSeverity,
+          confidence,
           phone_detected: !!summary.secondary_device,
           second_person_detected: !!summary.extra_person,
           earbuds_detected: !!summary.earpiece_visible,
           ai_summary: `Side camera: ${summary.notes ?? ""}`.slice(0, 1000),
-          raw: { source: "side_camera", anomaly_kind: summary.secondary_device ? "secondary_device" : summary.candidate_absent ? "candidate_absent" : summary.extra_person ? "extra_person" : "side_camera", ...summary },
+          raw: { source: "side_camera", confidence, anomaly_kind: summary.secondary_device ? "secondary_device" : summary.candidate_absent ? "candidate_absent" : summary.extra_person ? "extra_person" : "side_camera", ...summary },
         });
 
         // Direct extra-recipient notifications (configurable list).
