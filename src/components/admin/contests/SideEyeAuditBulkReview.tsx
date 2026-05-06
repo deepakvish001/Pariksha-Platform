@@ -12,7 +12,7 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { CheckCircle2, Loader2, Download, FileText, FileJson, FileDown, FileArchive } from "lucide-react";
+import { CheckCircle2, Loader2, Download, FileText, FileJson, FileDown, FileArchive, ThumbsDown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { logSideEyeAction } from "./lib/adminAuditLog";
