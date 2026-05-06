@@ -258,6 +258,7 @@ ${breaks.map(b => `<tr><td>${b.seq}</td><td>${b.reason}</td><td><code>${(b.expec
               This action will be logged in the admin audit log against this session.
               {confirm === "verify" && " The chain walk re-hashes every evidence link and may take a moment."}
               {confirm === "pdf" && " A new browser tab will open — allow popups."}
+              {confirm === "pack" && " Includes audit log, hash chain, findings, and 7-day signed evidence URLs. Larger sessions may take a few seconds."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -269,6 +270,7 @@ ${breaks.map(b => `<tr><td>${b.seq}</td><td>${b.reason}</td><td><code>${(b.expec
                 if (c === "verify") verify();
                 else if (c === "json") downloadJson();
                 else if (c === "pdf") downloadPdf();
+                else if (c === "pack") downloadEvidencePack();
               }}
             >
               Continue
