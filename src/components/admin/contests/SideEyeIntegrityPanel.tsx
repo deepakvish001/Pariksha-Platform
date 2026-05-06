@@ -24,9 +24,39 @@ interface VerifyResult {
  * download verified report as JSON, or render a plain-text PDF summary.
  */
 export const SideEyeIntegrityPanel = ({ sessionId }: { sessionId: string }) => {
-  const [busy, setBusy] = useState<"verify" | "json" | "pdf" | null>(null);
+  const [busy, setBusy] = useState<"verify" | "json" | "pdf" | "pack" | null>(null);
   const [result, setResult] = useState<VerifyResult | null>(null);
-  const [confirm, setConfirm] = useState<null | "verify" | "json" | "pdf">(null);
+  const [confirm, setConfirm] = useState<null | "verify" | "json" | "pdf" | "pack">(null);
+
+  const downloadEvidencePack = async () => {
+    setBusy("pack");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/contest-sideeye-evidence-pack`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
+        },
+        body: JSON.stringify({ sessionId }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const blob = await resp.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `sideeye-evidence-${sessionId}.zip`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(a.href);
+      await logSideEyeAction("sideeye_evidence_pack", sessionId, { format: "zip" });
+      toast.success("Evidence pack downloaded");
+    } catch (e: any) {
+      toast.error("Evidence pack failed", { description: e?.message });
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const callEdge = async <T,>(fn: string): Promise<T> => {
     const { data: { session } } = await supabase.auth.getSession();
