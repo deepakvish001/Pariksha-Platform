@@ -119,7 +119,21 @@ Deno.serve(async (req) => {
     if (!aiResp.ok) {
       const t = await aiResp.text();
       console.error("AI error", aiResp.status, t);
-      return new Response(JSON.stringify({ error: "AI analysis failed" }), {
+      // Push to dead-letter queue so a cron retries up to 5x.
+      const { data: sessRow } = await admin0
+        .from("contest_sessions")
+        .select("contest_id")
+        .eq("id", sessionId)
+        .maybeSingle();
+      await admin0.from("sideeye_failed_analyses").insert({
+        session_id: sessionId,
+        contest_id: sessRow?.contest_id ?? null,
+        payload: { storagePath, idemKey },
+        error: `AI ${aiResp.status}: ${t.slice(0, 500)}`,
+        retry_count: 0,
+        next_retry_at: new Date(Date.now() + 60_000).toISOString(),
+      });
+      return new Response(JSON.stringify({ error: "AI analysis failed", queued: true }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -130,11 +144,28 @@ Deno.serve(async (req) => {
     let summary: any = {};
     try { summary = args ? JSON.parse(args) : {}; } catch { summary = {}; }
     const severity = summary.severity ?? "info";
+    let confidence: "low" | "medium" | "high" = (summary.confidence ?? "medium") as any;
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    // Calibration-aware suppression: if a baseline exists for this session and
+    // the current face_count matches the baseline (e.g. a static poster), demote
+    // extra_person to low confidence to cut false positives.
+    try {
+      const { data: baseline } = await admin0
+        .from("sideeye_calibration_baselines")
+        .select("face_count_avg, room_fingerprint")
+        .eq("session_id", sessionId)
+        .maybeSingle();
+      if (baseline && typeof summary.face_count === "number" && typeof baseline.face_count_avg === "number") {
+        const baseFaces = Math.round(Number(baseline.face_count_avg));
+        if (summary.extra_person && summary.face_count <= baseFaces) {
+          summary.extra_person = false;
+          summary.notes = `[calibrated:matches baseline ${baseFaces}] ${summary.notes ?? ""}`.slice(0, 1000);
+          confidence = "low";
+        }
+      }
+    } catch (_) { /* ignore */ }
+
+    const admin = admin0;
 
     await admin.from("contest_side_camera_frames").insert({
       session_id: sessionId,
