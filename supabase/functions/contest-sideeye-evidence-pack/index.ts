@@ -198,8 +198,9 @@ Deno.serve(async (req) => {
     await admin.from("admin_audit_log").insert({
       actor_id: user.id,
       action: "sideeye_evidence_pack_generated",
-      target: sessionId,
-      detail: manifest.counts,
+      entity_type: "contest_session",
+      entity_slug: sessionId,
+      diff: manifest.counts,
     });
 
     return new Response(zip, {
