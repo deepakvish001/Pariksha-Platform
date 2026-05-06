@@ -467,6 +467,15 @@ const AdminContestProctor = () => {
           <TabsContent value="sideeye" className="space-y-4">
             <SideEyeSettingsPanel />
             {id && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <SideEyeApprovalQueue
+                  contestId={id}
+                  institutionId={contestMetaQuery.data?.institution_id ?? null}
+                />
+                <SideEyeCandidateReportsPanel contestId={id} />
+              </div>
+            )}
+            {id && (
               <SideEyeAnomalyHistory
                 contestId={id}
                 sessionIds={(sessionsQuery.data ?? []).map((s: any) => s.id)}
