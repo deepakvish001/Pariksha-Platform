@@ -29,7 +29,7 @@ export function SideEyeUnifiedRiskBadge({ sessionId }: { sessionId: string }) {
       const { data } = await supabase.rpc("sideeye_unified_risk_score" as never, {
         _session_id: sessionId,
       } as never);
-      if (cancelled) return;
+      if (cancelled || !data) return;
       const first = Array.isArray(data) ? (data[0] as RiskRow) : (data as RiskRow);
       if (first) setRow(first);
     };
