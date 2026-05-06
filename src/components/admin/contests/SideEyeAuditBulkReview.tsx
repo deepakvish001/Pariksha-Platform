@@ -43,6 +43,10 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
   const [bulkNote, setBulkNote] = useState("");
   const [hideReviewed, setHideReviewed] = useState(true);
   const [sevFilter, setSevFilter] = useState<string>("all");
+  const [hideLowConfidence, setHideLowConfidence] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("sideeye:hideLowConfidence") !== "0";
+  });
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
