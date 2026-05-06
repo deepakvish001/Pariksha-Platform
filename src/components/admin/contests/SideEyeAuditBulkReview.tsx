@@ -396,7 +396,7 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
             <tr>
               <th className="p-2 w-8">
                 <Checkbox
-                  checked={rows.length > 0 && selected.size === rows.length}
+                  checked={visibleRows.length > 0 && visibleRows.every((r) => selected.has(r.id))}
                   onCheckedChange={toggleAll}
                 />
               </th>
