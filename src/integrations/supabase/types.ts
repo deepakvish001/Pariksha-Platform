@@ -6254,7 +6254,15 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user" | "owner"
+      app_role:
+        | "admin"
+        | "moderator"
+        | "user"
+        | "owner"
+        | "proctor_viewer"
+        | "proctor_reviewer"
+        | "proctor_admin"
+        | "institution_admin"
       battle_difficulty: "easy" | "medium" | "hard"
       battle_status: "pending" | "live" | "ended" | "abandoned"
       friendship_status: "pending" | "accepted" | "blocked"
@@ -6393,7 +6401,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user", "owner"],
+      app_role: [
+        "admin",
+        "moderator",
+        "user",
+        "owner",
+        "proctor_viewer",
+        "proctor_reviewer",
+        "proctor_admin",
+        "institution_admin",
+      ],
       battle_difficulty: ["easy", "medium", "hard"],
       battle_status: ["pending", "live", "ended", "abandoned"],
       friendship_status: ["pending", "accepted", "blocked"],
