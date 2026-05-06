@@ -1934,6 +1934,7 @@ export type Database = {
       contest_proctor_findings: {
         Row: {
           ai_summary: string | null
+          confidence: string | null
           contest_id: string
           created_at: string
           earbuds_detected: boolean | null
@@ -1951,6 +1952,7 @@ export type Database = {
         }
         Insert: {
           ai_summary?: string | null
+          confidence?: string | null
           contest_id: string
           created_at?: string
           earbuds_detected?: boolean | null
@@ -1968,6 +1970,7 @@ export type Database = {
         }
         Update: {
           ai_summary?: string | null
+          confidence?: string | null
           contest_id?: string
           created_at?: string
           earbuds_detected?: boolean | null
@@ -4111,6 +4114,48 @@ export type Database = {
           },
         ]
       }
+      sideeye_calibration_baselines: {
+        Row: {
+          baseline: Json
+          captured_at: string
+          contest_id: string
+          created_at: string
+          face_count_avg: number | null
+          id: string
+          lighting_profile: Json | null
+          room_fingerprint: string | null
+          sample_count: number
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          baseline?: Json
+          captured_at?: string
+          contest_id: string
+          created_at?: string
+          face_count_avg?: number | null
+          id?: string
+          lighting_profile?: Json | null
+          room_fingerprint?: string | null
+          sample_count?: number
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          baseline?: Json
+          captured_at?: string
+          contest_id?: string
+          created_at?: string
+          face_count_avg?: number | null
+          id?: string
+          lighting_profile?: Json | null
+          room_fingerprint?: string | null
+          sample_count?: number
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sideeye_candidate_reports: {
         Row: {
           category: string
@@ -4332,6 +4377,33 @@ export type Database = {
           is_false_positive?: boolean
           note?: string | null
           reviewer_id?: string
+        }
+        Relationships: []
+      }
+      sideeye_runtime_flags: {
+        Row: {
+          contest_id: string
+          frame_interval_ms: number
+          high_load: boolean
+          notes: string | null
+          queue_depth: number
+          updated_at: string
+        }
+        Insert: {
+          contest_id: string
+          frame_interval_ms?: number
+          high_load?: boolean
+          notes?: string | null
+          queue_depth?: number
+          updated_at?: string
+        }
+        Update: {
+          contest_id?: string
+          frame_interval_ms?: number
+          high_load?: boolean
+          notes?: string | null
+          queue_depth?: number
+          updated_at?: string
         }
         Relationships: []
       }

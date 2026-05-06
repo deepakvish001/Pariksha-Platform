@@ -30,12 +30,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { sessionId, storagePath, dataUrl } = await req.json();
+    const { sessionId, storagePath, dataUrl, idempotencyKey } = await req.json();
     if (!sessionId || !storagePath || !dataUrl) {
       return new Response(JSON.stringify({ error: "sessionId, storagePath, dataUrl required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const admin0 = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // Idempotency: if the same key was processed before, return cached result.
+    const idemKey = idempotencyKey ?? `${sessionId}:${storagePath}`;
+    {
+      const { data: existing } = await admin0
+        .from("sideeye_idempotency")
+        .select("result")
+        .eq("key", idemKey)
+        .eq("function_name", "contest-sideeye-frame-analyze")
+        .maybeSingle();
+      if (existing?.result) {
+        return new Response(JSON.stringify({ ...existing.result, cached: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -82,9 +103,11 @@ Deno.serve(async (req) => {
                 candidate_absent: { type: "boolean" },
                 earpiece_visible: { type: "boolean" },
                 severity: { type: "string", enum: ["info", "low", "medium", "high", "critical"] },
+                confidence: { type: "string", enum: ["low", "medium", "high"], description: "Model confidence in the verdict; use low for ambiguous frames." },
+                face_count: { type: "integer", description: "Number of human faces visible (0,1,2+)." },
                 notes: { type: "string" },
               },
-              required: ["extra_person", "secondary_device", "looking_down_at_notes", "candidate_absent", "earpiece_visible", "severity", "notes"],
+              required: ["extra_person", "secondary_device", "looking_down_at_notes", "candidate_absent", "earpiece_visible", "severity", "confidence", "face_count", "notes"],
               additionalProperties: false,
             },
           },
@@ -96,7 +119,21 @@ Deno.serve(async (req) => {
     if (!aiResp.ok) {
       const t = await aiResp.text();
       console.error("AI error", aiResp.status, t);
-      return new Response(JSON.stringify({ error: "AI analysis failed" }), {
+      // Push to dead-letter queue so a cron retries up to 5x.
+      const { data: sessRow } = await admin0
+        .from("contest_sessions")
+        .select("contest_id")
+        .eq("id", sessionId)
+        .maybeSingle();
+      await admin0.from("sideeye_failed_analyses").insert({
+        session_id: sessionId,
+        contest_id: sessRow?.contest_id ?? null,
+        payload: { storagePath, idemKey },
+        error: `AI ${aiResp.status}: ${t.slice(0, 500)}`,
+        retry_count: 0,
+        next_retry_at: new Date(Date.now() + 60_000).toISOString(),
+      });
+      return new Response(JSON.stringify({ error: "AI analysis failed", queued: true }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -107,11 +144,28 @@ Deno.serve(async (req) => {
     let summary: any = {};
     try { summary = args ? JSON.parse(args) : {}; } catch { summary = {}; }
     const severity = summary.severity ?? "info";
+    let confidence: "low" | "medium" | "high" = (summary.confidence ?? "medium") as any;
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    // Calibration-aware suppression: if a baseline exists for this session and
+    // the current face_count matches the baseline (e.g. a static poster), demote
+    // extra_person to low confidence to cut false positives.
+    try {
+      const { data: baseline } = await admin0
+        .from("sideeye_calibration_baselines")
+        .select("face_count_avg, room_fingerprint")
+        .eq("session_id", sessionId)
+        .maybeSingle();
+      if (baseline && typeof summary.face_count === "number" && typeof baseline.face_count_avg === "number") {
+        const baseFaces = Math.round(Number(baseline.face_count_avg));
+        if (summary.extra_person && summary.face_count <= baseFaces) {
+          summary.extra_person = false;
+          summary.notes = `[calibrated:matches baseline ${baseFaces}] ${summary.notes ?? ""}`.slice(0, 1000);
+          confidence = "low";
+        }
+      }
+    } catch (_) { /* ignore */ }
+
+    const admin = admin0;
 
     await admin.from("contest_side_camera_frames").insert({
       session_id: sessionId,
@@ -200,11 +254,12 @@ Deno.serve(async (req) => {
           session_id: sessionId,
           user_id: user.id,
           severity: findingSeverity,
+          confidence,
           phone_detected: !!summary.secondary_device,
           second_person_detected: !!summary.extra_person,
           earbuds_detected: !!summary.earpiece_visible,
           ai_summary: `Side camera: ${summary.notes ?? ""}`.slice(0, 1000),
-          raw: { source: "side_camera", anomaly_kind: summary.secondary_device ? "secondary_device" : summary.candidate_absent ? "candidate_absent" : summary.extra_person ? "extra_person" : "side_camera", ...summary },
+          raw: { source: "side_camera", confidence, anomaly_kind: summary.secondary_device ? "secondary_device" : summary.candidate_absent ? "candidate_absent" : summary.extra_person ? "extra_person" : "side_camera", ...summary },
         });
 
         // Direct extra-recipient notifications (configurable list).
@@ -228,7 +283,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ ok: true, summary, severity }), {
+    const result = { ok: true, summary, severity, confidence };
+    // Cache for idempotency replays.
+    await admin.from("sideeye_idempotency").upsert({
+      key: idemKey,
+      function_name: "contest-sideeye-frame-analyze",
+      result,
+    }, { onConflict: "key" });
+
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
