@@ -337,6 +337,17 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
             <Checkbox checked={hideReviewed} onCheckedChange={(v) => setHideReviewed(!!v)} />
             <span>Hide reviewed</span>
           </label>
+          <label className="flex items-center gap-1.5" title="Hide AI findings flagged as low confidence (e.g. matches the candidate's calibrated baseline)">
+            <Checkbox
+              checked={hideLowConfidence}
+              onCheckedChange={(v) => {
+                const b = !!v;
+                setHideLowConfidence(b);
+                try { localStorage.setItem("sideeye:hideLowConfidence", b ? "1" : "0"); } catch {}
+              }}
+            />
+            <span>Hide low-confidence</span>
+          </label>
           <Select value={sevFilter} onValueChange={setSevFilter}>
             <SelectTrigger className="h-7 w-32 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
