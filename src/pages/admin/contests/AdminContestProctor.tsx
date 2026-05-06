@@ -130,6 +130,19 @@ const AdminContestProctor = () => {
     },
   });
 
+  const contestMetaQuery = useQuery({
+    queryKey: ["admin-contest-meta", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("contests" as never)
+        .select("institution_id, two_person_rule" as never)
+        .eq("id", id!)
+        .maybeSingle();
+      return (data as { institution_id: string | null; two_person_rule: boolean } | null) ?? null;
+    },
+  });
+
   const forceEndSession = async (sessionId: string) => {
     const { error } = await supabase.rpc("contest_force_end_session" as never, { _session_id: sessionId } as never);
     if (error) toast.error(error.message);
