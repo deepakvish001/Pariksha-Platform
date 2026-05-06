@@ -159,6 +159,8 @@ import AdminDQSignoffs from "./pages/admin/contests/AdminDQSignoffs";
 import AdminSessionForensics from "./pages/admin/contests/AdminSessionForensics";
 import PublicIntegrityReport from "./pages/contests/PublicIntegrityReport";
 import SideEyeMobile from "./pages/contests/SideEyeMobile";
+import PublicVerifyReport from "./pages/contests/PublicVerifyReport";
+import AdminSideEyeConsole from "./pages/admin/contests/AdminSideEyeConsole";
 
 const queryClient = new QueryClient({
   defaultOptions: {
