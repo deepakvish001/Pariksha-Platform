@@ -7,7 +7,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ShieldCheck, ShieldAlert, Loader2, FileJson, FileDown } from "lucide-react";
+import { ShieldCheck, ShieldAlert, Loader2, FileJson, FileDown, Package } from "lucide-react";
 import { toast } from "sonner";
 import { logSideEyeAction } from "./lib/adminAuditLog";
 
