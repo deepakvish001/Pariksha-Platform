@@ -18,29 +18,44 @@ export type Database = {
         Row: {
           action: string
           actor_id: string
+          actor_role: string | null
           created_at: string
           diff: Json | null
           entity_slug: string | null
           entity_type: string
           id: string
+          ip: string | null
+          prev_hash: string | null
+          row_hash: string | null
+          user_agent: string | null
         }
         Insert: {
           action: string
           actor_id: string
+          actor_role?: string | null
           created_at?: string
           diff?: Json | null
           entity_slug?: string | null
           entity_type: string
           id?: string
+          ip?: string | null
+          prev_hash?: string | null
+          row_hash?: string | null
+          user_agent?: string | null
         }
         Update: {
           action?: string
           actor_id?: string
+          actor_role?: string | null
           created_at?: string
           diff?: Json | null
           entity_slug?: string | null
           entity_type?: string
           id?: string
+          ip?: string | null
+          prev_hash?: string | null
+          row_hash?: string | null
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -1476,6 +1491,50 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_identity_verifications: {
+        Row: {
+          contest_id: string
+          created_at: string
+          id: string
+          id_card_path: string | null
+          match_score: number | null
+          reasons: Json | null
+          selfie_path: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          id?: string
+          id_card_path?: string | null
+          match_score?: number | null
+          reasons?: Json | null
+          selfie_path?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          id?: string
+          id_card_path?: string | null
+          match_score?: number | null
+          reasons?: Json | null
+          selfie_path?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_identity_verifications_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_integrity_reports: {
         Row: {
           contest_id: string
@@ -2406,6 +2465,47 @@ export type Database = {
           },
         ]
       }
+      contest_sideeye_consents: {
+        Row: {
+          consent_text_sha256: string
+          consent_version: string
+          contest_id: string
+          granted_at: string
+          id: string
+          ip: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          consent_text_sha256: string
+          consent_version: string
+          contest_id: string
+          granted_at?: string
+          id?: string
+          ip?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          consent_text_sha256?: string
+          consent_version?: string
+          contest_id?: string
+          granted_at?: string
+          id?: string
+          ip?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_sideeye_consents_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_similarity_pairs: {
         Row: {
           contest_id: string
@@ -2912,11 +3012,14 @@ export type Database = {
       contests: {
         Row: {
           banner_url: string | null
+          calibration_required: boolean
           created_at: string
           created_by: string | null
+          data_region: string
           description: string | null
           ends_at: string
           id: string
+          institution_id: string | null
           invite_code: string | null
           max_participants: number | null
           min_trust_score: number
@@ -2924,22 +3027,27 @@ export type Database = {
           registration_closes_at: string | null
           registration_opens_at: string | null
           require_screen_share: boolean
+          retention_days: number
           rules_md: string | null
           scoring_mode: string
           slug: string
           starts_at: string
           status: string
           title: string
+          two_person_rule: boolean
           updated_at: string
           visibility: string
         }
         Insert: {
           banner_url?: string | null
+          calibration_required?: boolean
           created_at?: string
           created_by?: string | null
+          data_region?: string
           description?: string | null
           ends_at: string
           id?: string
+          institution_id?: string | null
           invite_code?: string | null
           max_participants?: number | null
           min_trust_score?: number
@@ -2947,22 +3055,27 @@ export type Database = {
           registration_closes_at?: string | null
           registration_opens_at?: string | null
           require_screen_share?: boolean
+          retention_days?: number
           rules_md?: string | null
           scoring_mode?: string
           slug: string
           starts_at: string
           status?: string
           title: string
+          two_person_rule?: boolean
           updated_at?: string
           visibility?: string
         }
         Update: {
           banner_url?: string | null
+          calibration_required?: boolean
           created_at?: string
           created_by?: string | null
+          data_region?: string
           description?: string | null
           ends_at?: string
           id?: string
+          institution_id?: string | null
           invite_code?: string | null
           max_participants?: number | null
           min_trust_score?: number
@@ -2970,16 +3083,26 @@ export type Database = {
           registration_closes_at?: string | null
           registration_opens_at?: string | null
           require_screen_share?: boolean
+          retention_days?: number
           rules_md?: string | null
           scoring_mode?: string
           slug?: string
           starts_at?: string
           status?: string
           title?: string
+          two_person_rule?: boolean
           updated_at?: string
           visibility?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contests_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversations: {
         Row: {
@@ -3143,6 +3266,77 @@ export type Database = {
           note?: string | null
           old_value?: Json | null
           rule_key?: string
+        }
+        Relationships: []
+      }
+      institution_members: {
+        Row: {
+          created_at: string
+          id: string
+          institution_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          institution_id: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          institution_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institution_members_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institutions: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          created_by: string | null
+          data_region: string
+          default_retention_days: number
+          id: string
+          logo_url: string | null
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_region?: string
+          default_retention_days?: number
+          id?: string
+          logo_url?: string | null
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_region?: string
+          default_retention_days?: number
+          id?: string
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3822,6 +4016,151 @@ export type Database = {
           },
         ]
       }
+      sideeye_admin_approvals: {
+        Row: {
+          action: string
+          approved_by: string | null
+          contest_id: string | null
+          decided_at: string | null
+          id: string
+          institution_id: string | null
+          payload: Json
+          reason: string | null
+          requested_at: string
+          requested_by: string
+          status: string
+        }
+        Insert: {
+          action: string
+          approved_by?: string | null
+          contest_id?: string | null
+          decided_at?: string | null
+          id?: string
+          institution_id?: string | null
+          payload?: Json
+          reason?: string | null
+          requested_at?: string
+          requested_by: string
+          status?: string
+        }
+        Update: {
+          action?: string
+          approved_by?: string | null
+          contest_id?: string | null
+          decided_at?: string | null
+          id?: string
+          institution_id?: string | null
+          payload?: Json
+          reason?: string | null
+          requested_at?: string
+          requested_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sideeye_admin_approvals_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sideeye_admin_approvals_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sideeye_admin_views: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          institution_id: string | null
+          is_shared: boolean
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          institution_id?: string | null
+          is_shared?: boolean
+          name: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          institution_id?: string | null
+          is_shared?: boolean
+          name?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sideeye_admin_views_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sideeye_candidate_reports: {
+        Row: {
+          category: string
+          contest_id: string
+          created_at: string
+          id: string
+          message: string | null
+          resolved_at: string | null
+          resolver_id: string | null
+          resolver_note: string | null
+          session_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          contest_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          resolver_id?: string | null
+          resolver_note?: string | null
+          session_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          contest_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          resolver_id?: string | null
+          resolver_note?: string | null
+          session_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sideeye_candidate_reports_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sideeye_evidence_chain: {
         Row: {
           created_at: string
@@ -3858,6 +4197,63 @@ export type Database = {
           sha256?: string
           storage_path?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      sideeye_failed_analyses: {
+        Row: {
+          contest_id: string | null
+          created_at: string
+          error: string | null
+          id: string
+          next_retry_at: string
+          payload: Json
+          resolved_at: string | null
+          retry_count: number
+          session_id: string | null
+        }
+        Insert: {
+          contest_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          next_retry_at?: string
+          payload: Json
+          resolved_at?: string | null
+          retry_count?: number
+          session_id?: string | null
+        }
+        Update: {
+          contest_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          next_retry_at?: string
+          payload?: Json
+          resolved_at?: string | null
+          retry_count?: number
+          session_id?: string | null
+        }
+        Relationships: []
+      }
+      sideeye_idempotency: {
+        Row: {
+          created_at: string
+          function_name: string
+          key: string
+          result: Json | null
+        }
+        Insert: {
+          created_at?: string
+          function_name: string
+          key: string
+          result?: Json | null
+        }
+        Update: {
+          created_at?: string
+          function_name?: string
+          key?: string
+          result?: Json | null
         }
         Relationships: []
       }
@@ -3903,6 +4299,39 @@ export type Database = {
           singleton?: boolean
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      sideeye_review_feedback: {
+        Row: {
+          audit_log_id: string | null
+          contest_id: string | null
+          created_at: string
+          finding_type: string | null
+          id: string
+          is_false_positive: boolean
+          note: string | null
+          reviewer_id: string
+        }
+        Insert: {
+          audit_log_id?: string | null
+          contest_id?: string | null
+          created_at?: string
+          finding_type?: string | null
+          id?: string
+          is_false_positive: boolean
+          note?: string | null
+          reviewer_id: string
+        }
+        Update: {
+          audit_log_id?: string | null
+          contest_id?: string | null
+          created_at?: string
+          finding_type?: string | null
+          id?: string
+          is_false_positive?: boolean
+          note?: string | null
+          reviewer_id?: string
         }
         Relationships: []
       }
@@ -6218,6 +6647,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_institution_member: {
+        Args: {
+          _inst: string
+          _min_role: Database["public"]["Enums"]["app_role"]
+          _user: string
+        }
+        Returns: boolean
+      }
       notify_admins: {
         Args: { _data?: Json; _message: string; _title: string; _type?: string }
         Returns: undefined
@@ -6254,7 +6691,15 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user" | "owner"
+      app_role:
+        | "admin"
+        | "moderator"
+        | "user"
+        | "owner"
+        | "proctor_viewer"
+        | "proctor_reviewer"
+        | "proctor_admin"
+        | "institution_admin"
       battle_difficulty: "easy" | "medium" | "hard"
       battle_status: "pending" | "live" | "ended" | "abandoned"
       friendship_status: "pending" | "accepted" | "blocked"
@@ -6393,7 +6838,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user", "owner"],
+      app_role: [
+        "admin",
+        "moderator",
+        "user",
+        "owner",
+        "proctor_viewer",
+        "proctor_reviewer",
+        "proctor_admin",
+        "institution_admin",
+      ],
       battle_difficulty: ["easy", "medium", "hard"],
       battle_status: ["pending", "live", "ended", "abandoned"],
       friendship_status: ["pending", "accepted", "blocked"],

@@ -26,6 +26,8 @@ import { SideEyeAnomalyHistory } from "@/components/admin/contests/SideEyeAnomal
 import { SideEyeIntegrityPanel } from "@/components/admin/contests/SideEyeIntegrityPanel";
 import { SideEyeAuditBulkReview } from "@/components/admin/contests/SideEyeAuditBulkReview";
 import { SideEyePauseControls } from "@/components/admin/contests/SideEyePauseControls";
+import { SideEyeApprovalQueue } from "@/components/admin/contests/SideEyeApprovalQueue";
+import { SideEyeCandidateReportsPanel } from "@/components/admin/contests/SideEyeCandidateReportsPanel";
 
 type Violation = {
   id: string;
@@ -125,6 +127,19 @@ const AdminContestProctor = () => {
         : { data: [] as any[] };
       const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
       return (data ?? []).map((s: any) => ({ ...s, full_name: nameMap.get(s.user_id) ?? null })) as SessionRow[];
+    },
+  });
+
+  const contestMetaQuery = useQuery({
+    queryKey: ["admin-contest-meta", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("contests" as never)
+        .select("institution_id, two_person_rule" as never)
+        .eq("id", id!)
+        .maybeSingle();
+      return (data as { institution_id: string | null; two_person_rule: boolean } | null) ?? null;
     },
   });
 
@@ -451,6 +466,15 @@ const AdminContestProctor = () => {
           </TabsContent>
           <TabsContent value="sideeye" className="space-y-4">
             <SideEyeSettingsPanel />
+            {id && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <SideEyeApprovalQueue
+                  contestId={id}
+                  institutionId={contestMetaQuery.data?.institution_id ?? null}
+                />
+                <SideEyeCandidateReportsPanel contestId={id} />
+              </div>
+            )}
             {id && (
               <SideEyeAnomalyHistory
                 contestId={id}

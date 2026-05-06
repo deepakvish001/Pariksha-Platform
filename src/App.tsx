@@ -159,6 +159,8 @@ import AdminDQSignoffs from "./pages/admin/contests/AdminDQSignoffs";
 import AdminSessionForensics from "./pages/admin/contests/AdminSessionForensics";
 import PublicIntegrityReport from "./pages/contests/PublicIntegrityReport";
 import SideEyeMobile from "./pages/contests/SideEyeMobile";
+import PublicVerifyReport from "./pages/contests/PublicVerifyReport";
+import AdminSideEyeConsole from "./pages/admin/contests/AdminSideEyeConsole";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -398,10 +400,12 @@ const App = () => (
                   <Route path="contests/:id/registrations" element={<AdminContestRegistrations />} />
                   <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
                   <Route path="contests/:id/proctor" element={<AdminContestProctor />} />
+                  <Route path="sideeye" element={<AdminSideEyeConsole />} />
                   <Route path="contests/viva-queue" element={<AdminVivaQueue />} />
                   <Route path="contests/dq-signoffs" element={<AdminDQSignoffs />} />
                   <Route path="contests/sessions/:sessionId/forensics" element={<AdminSessionForensics />} />
                 </Route>
+                <Route path="/verify/:reportId" element={<PublicVerifyReport />} />
 
                 {/* Arena - 1v1 battles */}
                 <Route path="/arena" element={<ProtectedRoute><ArenaLayout /></ProtectedRoute>}>
