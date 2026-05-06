@@ -504,6 +504,17 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
                         {rowSavingId === r.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
                         {r.reviewed_at ? "Save note" : "Mark reviewed"}
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full text-amber-600 hover:text-amber-600"
+                        disabled={rowSavingId === r.id}
+                        onClick={() => markFalsePositive(r)}
+                        title="Records a reviewer false-positive vote, lowering the unified risk score and tuning future thresholds."
+                      >
+                        <ThumbsDown className="mr-1 h-3 w-3" />
+                        Mark false positive
+                      </Button>
                     </PopoverContent>
                   </Popover>
                 </td>
