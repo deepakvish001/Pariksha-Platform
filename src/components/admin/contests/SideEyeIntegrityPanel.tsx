@@ -238,6 +238,10 @@ ${breaks.map(b => `<tr><td>${b.seq}</td><td>${b.reason}</td><td><code>${(b.expec
             {busy === "pdf" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <FileDown className="mr-1 h-3 w-3" />}
             PDF
           </Button>
+          <Button size="sm" variant="outline" onClick={() => setConfirm("pack")} disabled={busy !== null} title="ZIP: audit CSV, chain, findings, 7-day signed evidence URLs">
+            {busy === "pack" ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Package className="mr-1 h-3 w-3" />}
+            Evidence pack
+          </Button>
         </div>
       </div>
 
