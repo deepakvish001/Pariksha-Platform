@@ -283,7 +283,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ ok: true, summary, severity }), {
+    const result = { ok: true, summary, severity, confidence };
+    // Cache for idempotency replays.
+    await admin.from("sideeye_idempotency").upsert({
+      key: idemKey,
+      function_name: "contest-sideeye-frame-analyze",
+      result,
+    }, { onConflict: "key,function_name" });
+
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
