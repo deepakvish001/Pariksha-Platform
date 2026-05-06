@@ -154,6 +154,57 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
     }
   };
 
+  /**
+   * Mark a row as a false positive — feeds the reviewer feedback loop that
+   * tunes thresholds and lowers the unified risk score.
+   */
+  const markFalsePositive = async (row: AuditRow) => {
+    if (!user) return;
+    setRowSavingId(row.id);
+    try {
+      const note = (rowNotes[row.id] ?? "").trim() || null;
+      const kind =
+        (row.detail as any)?.summary?.anomaly_kind ??
+        (row.detail as any)?.anomaly_kind ??
+        row.event_type ?? null;
+      const { error: fbErr } = await supabase
+        .from("sideeye_review_feedback" as never)
+        .upsert(
+          {
+            audit_log_id: row.id,
+            session_id: sessionId,
+            reviewer_id: user.id,
+            verdict: "false_positive",
+            finding_kind: kind,
+            reason: note,
+            is_false_positive: true,
+            note,
+            finding_type: kind,
+          } as never,
+          { onConflict: "audit_log_id,reviewer_id" } as never,
+        );
+      if (fbErr) throw fbErr;
+      await supabase
+        .from("contest_side_camera_audit_logs")
+        .update({
+          reviewed_at: new Date().toISOString(),
+          reviewer_id: user.id,
+          reviewer_note: note ? `[FP] ${note}` : "[FP]",
+        })
+        .eq("id", row.id);
+      await logSideEyeAction("sideeye_audit_row_false_positive", sessionId, {
+        audit_id: row.id, kind, note,
+      });
+      toast.success("Marked as false positive");
+      setRowNotes((s) => { const n = { ...s }; delete n[row.id]; return n; });
+      await load();
+    } catch (e: any) {
+      toast.error("Failed to mark false positive", { description: e?.message });
+    } finally {
+      setRowSavingId(null);
+    }
+  };
+
   const [exportProgress, setExportProgress] = useState<{ fetched: number; total: number; phase: string; format: string } | null>(null);
 
   /**
