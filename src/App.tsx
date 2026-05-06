@@ -400,10 +400,12 @@ const App = () => (
                   <Route path="contests/:id/registrations" element={<AdminContestRegistrations />} />
                   <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
                   <Route path="contests/:id/proctor" element={<AdminContestProctor />} />
+                  <Route path="sideeye" element={<AdminSideEyeConsole />} />
                   <Route path="contests/viva-queue" element={<AdminVivaQueue />} />
                   <Route path="contests/dq-signoffs" element={<AdminDQSignoffs />} />
                   <Route path="contests/sessions/:sessionId/forensics" element={<AdminSessionForensics />} />
                 </Route>
+                <Route path="/verify/:reportId" element={<PublicVerifyReport />} />
 
                 {/* Arena - 1v1 battles */}
                 <Route path="/arena" element={<ProtectedRoute><ArenaLayout /></ProtectedRoute>}>
