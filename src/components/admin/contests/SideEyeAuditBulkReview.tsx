@@ -408,7 +408,7 @@ export const SideEyeAuditBulkReview = ({ sessionId }: { sessionId: string }) => 
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {visibleRows.map((r) => (
               <tr key={r.id} className="border-t border-border/30 hover:bg-muted/20">
                 <td className="p-2">
                   <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggle(r.id)} />
