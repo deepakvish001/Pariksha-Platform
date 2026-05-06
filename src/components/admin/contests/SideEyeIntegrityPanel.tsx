@@ -252,6 +252,7 @@ ${breaks.map(b => `<tr><td>${b.seq}</td><td>${b.reason}</td><td><code>${(b.expec
               {confirm === "verify" && "Re-verify evidence chain?"}
               {confirm === "json" && "Download integrity report as JSON?"}
               {confirm === "pdf" && "Generate PDF integrity report?"}
+              {confirm === "pack" && "Generate full evidence pack (ZIP)?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               This action will be logged in the admin audit log against this session.
