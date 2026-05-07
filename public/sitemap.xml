@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://exact-web-sight.lovable.app/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/login</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/signup</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/dashboard</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/dashboard/sheets</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/dashboard/roadmaps</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/dashboard/leaderboard</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/problems</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/problems/leaderboard</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/problems/weekly</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/dsa</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/sql</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/aptitude</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/interview</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/companies</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/positions</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/recruitment</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/cs</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/notes</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/library/quiz</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/contests</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/fundamentals</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/system-design</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/research</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/research/jobs</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/research/resume</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/research/analyser</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/research/outreach</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/platform/resources</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/platform/ai/staff-picks</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/platform/ai/community</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/arena</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/arena/daily</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://exact-web-sight.lovable.app/arena/leaderboard</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+</urlset>

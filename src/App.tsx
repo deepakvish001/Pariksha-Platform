@@ -14,6 +14,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { RouteRestorer } from "@/components/RouteRestorer";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import SeoPreviewPanel from "@/components/SeoPreviewPanel";
+import RouteSeo from "@/components/RouteSeo";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -206,6 +207,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <RouteRestorer />
+              <RouteSeo />
               <SeoPreviewPanel />
               <Routes>
                 <Route path="/" element={<Index />} />
