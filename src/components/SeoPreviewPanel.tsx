@@ -114,8 +114,10 @@ const Row = ({ label, value, max }: { label: string; value: string; max?: number
 
 export const SeoPreviewPanel = () => {
   const [open, setOpen] = useState(false);
-  const [meta, setMeta] = useState<Meta | null>(null);
+  const [meta, setMeta] = useState<ReturnType<typeof readMeta> | null>(null);
   const [copied, setCopied] = useState(false);
+  const [assets, setAssets] = useState<AssetCheck[] | null>(null);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
