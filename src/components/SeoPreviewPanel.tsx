@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Search, ExternalLink, Copy, Check } from "lucide-react";
+import { X, Search, ExternalLink, Copy, Check, Download, ShieldCheck, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Meta = {
