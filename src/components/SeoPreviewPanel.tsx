@@ -243,6 +243,43 @@ export const SeoPreviewPanel = () => {
               <Row label="JSON-LD blocks" value={String(meta.jsonLdCount)} />
               <Row label="URL" value={meta.url} />
             </div>
+
+            {/* Brand asset production check */}
+            <div className="mt-3 rounded-lg border border-border/40 bg-card p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3" /> Brand assets
+                </div>
+                <button
+                  onClick={runAssetCheck}
+                  disabled={checking}
+                  className="text-[10px] px-2 py-0.5 rounded border border-border/60 hover:bg-secondary disabled:opacity-50"
+                >
+                  {checking ? "Checking…" : assets ? "Re-check" : "Run check"}
+                </button>
+              </div>
+              {assets ? (
+                <ul className="space-y-1">
+                  {assets.map((a) => (
+                    <li key={a.path} className="flex items-center justify-between text-[11px]">
+                      <span className="truncate">{a.path}</span>
+                      <span className={cn("flex items-center gap-1 font-mono", a.ok ? "text-emerald-500" : "text-destructive")}>
+                        {a.ok ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                        {a.status ?? "ERR"}
+                        {a.width ? ` · ${a.width}×${a.height}` : ""}
+                        {a.expectedW && (a.width !== a.expectedW || a.height !== a.expectedH)
+                          ? ` (≠${a.expectedW}×${a.expectedH})`
+                          : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-[10px] text-muted-foreground">
+                  Verifies /favicon.png, /logo.png, /og-image.png return 200 with expected dimensions.
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
