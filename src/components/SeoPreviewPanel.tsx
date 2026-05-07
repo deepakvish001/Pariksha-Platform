@@ -159,15 +159,47 @@ export const SeoPreviewPanel = () => {
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const exportJson = () => {
+    if (!meta) return;
+    const payload = {
+      route: window.location.pathname,
+      checkedAt: new Date().toISOString(),
+      meta,
+      assets,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `seo-${window.location.pathname.replace(/\W+/g, "_") || "root"}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const runAssetCheck = async () => {
+    setChecking(true);
+    try {
+      const r = await checkAssets();
+      setAssets(r);
+    } finally {
+      setChecking(false);
+    }
+  };
+
   return (
-    <div className="fixed bottom-4 left-4 z-[60] w-[360px] max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-hidden rounded-xl border border-border/60 bg-background/95 shadow-2xl backdrop-blur-xl flex flex-col">
+    <div className="fixed bottom-4 left-4 z-[60] w-[380px] max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-hidden rounded-xl border border-border/60 bg-background/95 shadow-2xl backdrop-blur-xl flex flex-col">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-secondary/40">
         <div className="flex items-center gap-2">
           <Search className="h-3.5 w-3.5 text-primary" />
           <span className="text-xs font-semibold">SEO Preview</span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={copy} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" aria-label="Copy meta">
+          <button onClick={exportJson} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" aria-label="Export SEO JSON" title="Export SEO JSON">
+            <Download className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={copy} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" aria-label="Copy meta" title="Copy JSON to clipboard">
             {copied ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
           </button>
           <button onClick={() => setOpen(false)} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" aria-label="Close">
