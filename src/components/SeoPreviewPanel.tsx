@@ -17,9 +17,17 @@ type Meta = {
   url: string;
 };
 
-const readMeta = (): Meta => {
+const readMeta = (): Meta & { jsonLd: unknown[]; twitterDescription: string } => {
   const get = (sel: string, attr = "content") =>
     document.querySelector(sel)?.getAttribute(attr) ?? "";
+  const jsonLd: unknown[] = [];
+  document.querySelectorAll('script[type="application/ld+json"]').forEach((s) => {
+    try {
+      jsonLd.push(JSON.parse(s.textContent ?? "null"));
+    } catch {
+      jsonLd.push({ _parseError: true, raw: s.textContent });
+    }
+  });
   return {
     title: document.title,
     description: get('meta[name="description"]'),
@@ -30,10 +38,60 @@ const readMeta = (): Meta => {
     ogType: get('meta[property="og:type"]'),
     twitterCard: get('meta[name="twitter:card"]'),
     twitterTitle: get('meta[name="twitter:title"]'),
+    twitterDescription: get('meta[name="twitter:description"]'),
     twitterImage: get('meta[name="twitter:image"]'),
-    jsonLdCount: document.querySelectorAll('script[type="application/ld+json"]').length,
+    jsonLdCount: jsonLd.length,
+    jsonLd,
     url: window.location.href,
   };
+};
+
+type AssetCheck = {
+  path: string;
+  status: number | null;
+  ok: boolean;
+  width?: number;
+  height?: number;
+  expectedW?: number;
+  expectedH?: number;
+  error?: string;
+};
+
+const ASSETS: { path: string; expectedW?: number; expectedH?: number }[] = [
+  { path: "/favicon.png", expectedW: 256, expectedH: 256 },
+  { path: "/logo.png" },
+  { path: "/og-image.png", expectedW: 1200, expectedH: 630 },
+];
+
+const checkAssets = async (): Promise<AssetCheck[]> => {
+  return Promise.all(
+    ASSETS.map(async (a) => {
+      try {
+        const res = await fetch(a.path, { cache: "no-cache" });
+        const blob = await res.blob();
+        const dim = await new Promise<{ w: number; h: number }>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+          img.onerror = () => reject(new Error("decode failed"));
+          img.src = URL.createObjectURL(blob);
+        });
+        return {
+          path: a.path,
+          status: res.status,
+          ok:
+            res.ok &&
+            (a.expectedW ? dim.w === a.expectedW : true) &&
+            (a.expectedH ? dim.h === a.expectedH : true),
+          width: dim.w,
+          height: dim.h,
+          expectedW: a.expectedW,
+          expectedH: a.expectedH,
+        };
+      } catch (e) {
+        return { path: a.path, status: null, ok: false, error: (e as Error).message };
+      }
+    }),
+  );
 };
 
 const Row = ({ label, value, max }: { label: string; value: string; max?: number }) => {
