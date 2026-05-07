@@ -207,6 +207,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <RouteRestorer />
+              <RouteSeo />
               <SeoPreviewPanel />
               <Routes>
                 <Route path="/" element={<Index />} />
