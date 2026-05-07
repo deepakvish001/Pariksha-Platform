@@ -105,7 +105,7 @@ const { upsertMock, rpcMock, selectChain } = (
 ).__mocks;
 
 
-const STORAGE_KEY = "byteskill:coding:dailyChallenge:v2";
+const STORAGE_KEY = "parikshaa:coding:dailyChallenge:v2";
 
 describe("useDailyChallenge — cloud pull/push end-to-end (post sync-field removal)", () => {
   beforeEach(() => {

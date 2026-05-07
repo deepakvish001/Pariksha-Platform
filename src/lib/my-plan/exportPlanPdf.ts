@@ -160,7 +160,7 @@ export const exportPlanToPdf = (
     doc.setFontSize(9);
     doc.setTextColor(140);
     doc.text(
-      `Page ${i} / ${total} · Byteskill My Plan`,
+      `Page ${i} / ${total} · Parikshaa My Plan`,
       pageWidth / 2,
       doc.internal.pageSize.getHeight() - 20,
       { align: "center" }

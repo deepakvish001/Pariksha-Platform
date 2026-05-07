@@ -197,7 +197,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
   // localStorage key for "last-used filters" (per-user). Reapplied only when the
   // current URL has none of the filter params present (so a fresh deep-link or
   // a "Clear all" reset still wins).
-  const PREFS_KEY = user ? `byteskill:submissions-history:prefs:${user.id}` : null;
+  const PREFS_KEY = user ? `parikshaa:submissions-history:prefs:${user.id}` : null;
   const FILTER_KEYS = ["q", "verdict", "lang", "from", "to", "tab", "sort"] as const;
 
   // ---- Hydrate persisted filter prefs into the URL on first mount ---------

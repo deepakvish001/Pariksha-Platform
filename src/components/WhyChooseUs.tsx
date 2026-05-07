@@ -3,14 +3,14 @@ import { motion } from "framer-motion";
 import ScrollReveal from "./ScrollReveal";
 
 const comparisons = [
-  { feature: "500+ DSA Problems with Tracking", byteskill: true, others: false },
-  { feature: "Competitive Programming Sheets", byteskill: true, others: false },
-  { feature: "XP System & Achievements", byteskill: true, others: "Partial" },
-  { feature: "GitHub-style Activity Heatmap", byteskill: true, others: false },
-  { feature: "AI-Powered Learning Assistant", byteskill: true, others: "Partial" },
-  { feature: "Company-wise Interview Prep", byteskill: true, others: false },
-  { feature: "Resume Builder & Analyzer", byteskill: true, others: true },
-  { feature: "Completely Free to Use", byteskill: true, others: false },
+  { feature: "500+ DSA Problems with Tracking", parikshaa: true, others: false },
+  { feature: "Competitive Programming Sheets", parikshaa: true, others: false },
+  { feature: "XP System & Achievements", parikshaa: true, others: "Partial" },
+  { feature: "GitHub-style Activity Heatmap", parikshaa: true, others: false },
+  { feature: "AI-Powered Learning Assistant", parikshaa: true, others: "Partial" },
+  { feature: "Company-wise Interview Prep", parikshaa: true, others: false },
+  { feature: "Resume Builder & Analyzer", parikshaa: true, others: true },
+  { feature: "Completely Free to Use", parikshaa: true, others: false },
 ];
 
 const reasons = [
@@ -54,7 +54,7 @@ const WhyChooseUs = () => {
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground mb-4">
               Why Choose
-              <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent"> Byteskill?</span>
+              <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent"> Parikshaa?</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
               See how we compare to other platforms and why thousands of students trust us
@@ -70,7 +70,7 @@ const WhyChooseUs = () => {
               <div className="grid grid-cols-3 bg-gradient-to-r from-primary/10 to-orange-500/10 px-4 sm:px-6 py-4 border-b border-border/50">
                 <span className="text-sm font-bold text-foreground">Feature</span>
                 <span className="text-sm font-bold text-center">
-                  <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">Byteskill</span>
+                  <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">Parikshaa</span>
                 </span>
                 <span className="text-sm font-bold text-center text-muted-foreground">Others</span>
               </div>

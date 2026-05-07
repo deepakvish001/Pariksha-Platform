@@ -14,7 +14,7 @@ interface Props {
   initialPosition?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
 }
 
-const LS_KEY = "byteskill:webcam-pip";
+const LS_KEY = "parikshaa:webcam-pip";
 
 /**
  * Floating live webcam picture-in-picture used during contest kiosk mode.

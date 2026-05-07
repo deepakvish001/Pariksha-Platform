@@ -34,7 +34,7 @@ const HEARTBEAT_INTERVAL_MS = 20_000;
 const FLAG_THRESHOLD = 3;
 const DQ_THRESHOLD = 5;
 
-const LS_PREFIX = "byteskill:secure-session:";
+const LS_PREFIX = "parikshaa:secure-session:";
 const lsKey = (contestId: string) => `${LS_PREFIX}${contestId}`;
 
 interface PersistedSession {

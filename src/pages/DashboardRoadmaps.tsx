@@ -112,7 +112,7 @@ const DashboardRoadmaps = () => {
   return (
     <>
       <Helmet>
-        <title>Roadmaps | Byteskill</title>
+        <title>Roadmaps | Parikshaa</title>
         <meta
           name="description"
           content="Step-by-step learning roadmaps for Frontend, Backend, Full Stack, DevOps, Mobile, AI/ML, and Data Engineering."

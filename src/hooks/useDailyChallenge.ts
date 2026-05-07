@@ -7,7 +7,7 @@ import {
   type CompletionRecord,
 } from "@/lib/dailyChallengeMerge";
 
-const STORAGE_KEY = "byteskill:coding:dailyChallenge:v2";
+const STORAGE_KEY = "parikshaa:coding:dailyChallenge:v2";
 
 interface DailyState {
   completions: CompletionRecord[];
@@ -37,7 +37,7 @@ const readState = (): DailyState => {
     const parsed = JSON.parse(raw);
     if (parsed && Array.isArray(parsed.completions)) return parsed;
     // migrate v1 (string[] of dates) if present
-    const legacy = localStorage.getItem("byteskill:coding:dailyChallenge:v1");
+    const legacy = localStorage.getItem("parikshaa:coding:dailyChallenge:v1");
     if (legacy) {
       try {
         const legacyParsed = JSON.parse(legacy);

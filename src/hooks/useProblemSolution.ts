@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { logContestLockEvent } from "@/lib/contestTelemetry";
 
-const KEY = "byteskill:coding-my-solution:v1";
+const KEY = "parikshaa:coding-my-solution:v1";
 
 export interface SolutionEntry {
   notes: string;

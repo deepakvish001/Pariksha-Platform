@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormatOnSubmit } from "@/hooks/useEditorPrefs";
 
-const KEY = "byteskill:coding-format-on-submit-overrides:v1";
+const KEY = "parikshaa:coding-format-on-submit-overrides:v1";
 
 type OverrideMap = Record<string, FormatOnSubmit>;
 

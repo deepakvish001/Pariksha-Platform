@@ -9,7 +9,7 @@ interface Props {
   slug?: string;
 }
 
-const KEY = "byteskill:coding-hints-revealed:v1";
+const KEY = "parikshaa:coding-hints-revealed:v1";
 
 const readMap = (): Record<string, number> => {
   if (typeof window === "undefined") return {};

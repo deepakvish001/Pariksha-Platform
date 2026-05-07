@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-const KEY = "byteskill:coding-custom-tests:v1";
+const KEY = "parikshaa:coding-custom-tests:v1";
 
 type CustomTest = { id: string; input: string };
 type StoredMap = Record<string, CustomTest[]>;

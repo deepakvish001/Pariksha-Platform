@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
             {
               role: "system",
               content:
-                "You audit screenshots of a coding-contest participant's screen. Detect any visible window/app that is FORBIDDEN during a contest. Forbidden examples: ChatGPT, Claude, Gemini chat UI, GitHub Copilot Chat, Cursor chat, Phind, Perplexity, Stack Overflow, LeetCode/HackerRank/Codeforces problem pages, GeeksforGeeks, any messaging app (Discord/Slack/WhatsApp/Telegram/Teams), email client showing a question, a SECOND code editor not the contest UI, a PDF or doc with code. Allowed: the contest's own browser tab, a single terminal showing local compiler output, Byteskill UI itself. Be conservative — only flag windows you can identify with text/logo/UI elements. Return only structured output.",
+                "You audit screenshots of a coding-contest participant's screen. Detect any visible window/app that is FORBIDDEN during a contest. Forbidden examples: ChatGPT, Claude, Gemini chat UI, GitHub Copilot Chat, Cursor chat, Phind, Perplexity, Stack Overflow, LeetCode/HackerRank/Codeforces problem pages, GeeksforGeeks, any messaging app (Discord/Slack/WhatsApp/Telegram/Teams), email client showing a question, a SECOND code editor not the contest UI, a PDF or doc with code. Allowed: the contest's own browser tab, a single terminal showing local compiler output, Parikshaa UI itself. Be conservative — only flag windows you can identify with text/logo/UI elements. Return only structured output.",
             },
             {
               role: "user",

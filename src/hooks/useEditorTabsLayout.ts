@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-const KEY = "byteskill:coding-editor-tabs-layout:v1";
+const KEY = "parikshaa:coding-editor-tabs-layout:v1";
 
 export type EditorTabId =
   | "description"

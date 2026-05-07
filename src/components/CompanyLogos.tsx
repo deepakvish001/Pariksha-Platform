@@ -200,7 +200,7 @@ const CompanyLogos = () => {
               Our Students Work At
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Top tech companies and unicorns trust Byteskill graduates
+              Top tech companies and unicorns trust Parikshaa graduates
             </p>
           </div>
         </ScrollReveal>
@@ -219,7 +219,7 @@ const CompanyLogos = () => {
             <blockquote className="relative">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-5xl text-primary/30 font-serif">"</div>
               <p className="text-lg text-muted-foreground italic leading-relaxed px-8">
-                Byteskill helped me land my dream internship at a top tech company. 
+                Parikshaa helped me land my dream internship at a top tech company. 
                 The structured approach to tracking my progress made all the difference.
               </p>
               <footer className="mt-4">

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-const KEY = "byteskill:coding-editor-layout-preset:v1";
+const KEY = "parikshaa:coding-editor-layout-preset:v1";
 
 export type LayoutPresetId = "default" | "leet" | "note-taking" | "debug";
 

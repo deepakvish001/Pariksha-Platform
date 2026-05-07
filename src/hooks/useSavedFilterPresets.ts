@@ -11,7 +11,7 @@ export interface FilterPreset {
   createdAt: string;
 }
 
-const KEY = "byteskill:coding-saved-filters:v1";
+const KEY = "parikshaa:coding-saved-filters:v1";
 
 const read = (): FilterPreset[] => {
   if (typeof window === "undefined") return [];

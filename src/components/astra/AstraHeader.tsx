@@ -52,7 +52,7 @@ const AstraHeader = ({ onNewChat, onOpenHistory }: AstraHeaderProps) => {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground via-foreground to-foreground/80 bg-clip-text text-transparent">
-                  Byteskill AI
+                  Parikshaa AI
                 </h1>
                 <motion.div
                   animate={{ opacity: [0.5, 1, 0.5] }}

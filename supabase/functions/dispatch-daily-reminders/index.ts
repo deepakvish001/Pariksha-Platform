@@ -82,7 +82,7 @@ Deno.serve(async (req: Request) => {
         const email = u?.user?.email;
         if (!email) continue;
         await resend.emails.send({
-          from: "Byteskill Arena <onboarding@resend.dev>",
+          from: "Parikshaa Arena <onboarding@resend.dev>",
           to: [email],
           subject: title,
           html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px;background:#0b0b0f;color:#e6e6f0;border-radius:12px">

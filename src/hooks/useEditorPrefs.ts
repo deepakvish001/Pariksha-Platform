@@ -19,7 +19,7 @@ export interface EditorPrefs {
   formatOnSubmit: FormatOnSubmit;
 }
 
-const KEY = "byteskill:coding-editor-prefs:v1";
+const KEY = "parikshaa:coding-editor-prefs:v1";
 const MIN = 11;
 const MAX = 22;
 

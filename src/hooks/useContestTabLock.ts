@@ -42,7 +42,7 @@ export function useContestTabLock(contestId: string | undefined, enabled: boolea
     };
 
     try {
-      bc = new BroadcastChannel(`byteskill:contest:${contestId}`);
+      bc = new BroadcastChannel(`parikshaa:contest:${contestId}`);
       bc.onmessage = (ev) => {
         if (!ev.data) return;
         if (ev.data.type === "claim" && ev.data.tabId && ev.data.tabId !== tabId) {

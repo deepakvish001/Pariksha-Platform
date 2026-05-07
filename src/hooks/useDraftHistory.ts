@@ -8,7 +8,7 @@ export interface DraftSnapshot {
   length: number;
 }
 
-const KEY_PREFIX = "byteskill:coding-draft-history";
+const KEY_PREFIX = "parikshaa:coding-draft-history";
 const MAX_SNAPSHOTS = 5;
 const MIN_DELTA_MS = 60_000; // throttle: 1 snapshot/min max
 const MIN_LEN_DELTA = 20; // skip near-identical changes

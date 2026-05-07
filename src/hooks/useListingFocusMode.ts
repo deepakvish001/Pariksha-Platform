@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-const KEY = "byteskill:coding-problems-focus-mode:v1";
+const KEY = "parikshaa:coding-problems-focus-mode:v1";
 
 const read = (): boolean => {
   if (typeof window === "undefined") return false;

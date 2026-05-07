@@ -126,8 +126,8 @@ const difficultyClass = (d: string) =>
       ? "text-amber-500 bg-amber-500/10 border-amber-500/20"
       : "text-rose-500 bg-rose-500/10 border-rose-500/20";
 
-const LAST_OPENED_KEY = "byteskill:coding-last-opened-submission";
-const LAST_FAILED_KEY = "byteskill:coding-last-failed-submission";
+const LAST_OPENED_KEY = "parikshaa:coding-last-opened-submission";
+const LAST_FAILED_KEY = "parikshaa:coding-last-failed-submission";
 
 const readMap = (key: string): Record<string, string> => {
   try {
@@ -936,7 +936,7 @@ const CodingProblemDetail = () => {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       <Helmet>
-        <title>{problem.title} — Coding Problem | Byteskill</title>
+        <title>{problem.title} — Coding Problem | Parikshaa</title>
         <meta name="description" content={problem.description.slice(0, 155)} />
       </Helmet>
 
