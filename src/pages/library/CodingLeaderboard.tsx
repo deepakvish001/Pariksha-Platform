@@ -767,7 +767,7 @@ export default function CodingLeaderboard() {
   return (
     <TooltipProvider delayDuration={150}>
       <Helmet>
-        <title>Coding Leaderboard — Top Problem Solvers | Byteskill</title>
+        <title>Coding Leaderboard — Top Problem Solvers | Parikshaa</title>
         <meta
           name="description"
           content="Global ranking of the top coding problem solvers. Weighted by problem difficulty and execution speed."

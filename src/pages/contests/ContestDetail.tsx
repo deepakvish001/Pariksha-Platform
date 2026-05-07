@@ -55,7 +55,7 @@ const ContestDetail = () => {
   return (
     <>
       <Helmet>
-        <title>{contest.title} | Byteskill Contests</title>
+        <title>{contest.title} | Parikshaa Contests</title>
         <meta name="description" content={contest.description?.slice(0, 150) ?? "Coding contest"} />
       </Helmet>
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">

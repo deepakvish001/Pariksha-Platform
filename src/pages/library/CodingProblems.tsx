@@ -139,8 +139,8 @@ const CodingProblems = () => {
 
   // Persist & restore scroll position + page for /library/problems so refresh
   // returns the user to the same spot.
-  const SCROLL_KEY = "byteskill:coding-problems-scroll";
-  const PAGE_KEY = "byteskill:coding-problems-last-page";
+  const SCROLL_KEY = "parikshaa:coding-problems-scroll";
+  const PAGE_KEY = "parikshaa:coding-problems-last-page";
 
   // Tracks whether the user has actively changed filters/page in this session
   // (vs. the initial mount restoring previous state). Used so a fresh refresh
@@ -769,7 +769,7 @@ const CodingProblems = () => {
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
       <Helmet>
-        <title>Coding Problems — Practice with Real-Time Code Execution | Byteskill</title>
+        <title>Coding Problems — Practice with Real-Time Code Execution | Parikshaa</title>
         <meta
           name="description"
           content="Solve LeetCode-style coding problems in Python, C++, Java, JavaScript, TypeScript, C, and Go with real code execution and submission tracking."

@@ -19,7 +19,7 @@ const ContestsList = () => {
   return (
     <>
       <Helmet>
-        <title>Coding Contests | Byteskill</title>
+        <title>Coding Contests | Parikshaa</title>
         <meta name="description" content="Compete in live coding contests, register, and climb the leaderboard." />
       </Helmet>
       <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-8">

@@ -41,8 +41,8 @@ interface Props {
   dismissedKey: string;
 }
 
-const STORAGE_KEY_PREFIX = "byteskill:coding-recs-dismissed:";
-const EVENT_NAME = "byteskill:coding-recs-dismissed-change";
+const STORAGE_KEY_PREFIX = "parikshaa:coding-recs-dismissed:";
+const EVENT_NAME = "parikshaa:coding-recs-dismissed-change";
 
 const storageKey = (key: string) => STORAGE_KEY_PREFIX + key;
 

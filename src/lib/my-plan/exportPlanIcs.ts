@@ -51,10 +51,10 @@ export const buildPlanIcs = (tasks: PlanTask[], opts: Opts = {}): string => {
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Byteskill//My Plan//EN",
+    "PRODID:-//Parikshaa//My Plan//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    "X-WR-CALNAME:Byteskill — My Plan",
+    "X-WR-CALNAME:Parikshaa — My Plan",
   ];
 
   for (const [dayIso, dayTasks] of byDay) {
@@ -77,7 +77,7 @@ export const buildPlanIcs = (tasks: PlanTask[], opts: Opts = {}): string => {
         (t.source_url ? `\nResource: ${t.source_url}` : "");
       lines.push(
         "BEGIN:VEVENT",
-        `UID:${t.id}@byteskill.app`,
+        `UID:${t.id}@parikshaa.app`,
         `DTSTAMP:${fmtUtc(now)}`,
         `DTSTART:${fmtLocal(start)}`,
         `DTEND:${fmtLocal(end)}`,
@@ -101,7 +101,7 @@ export const downloadPlanIcs = (tasks: PlanTask[], opts: Opts = {}) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `byteskill-plan-${new Date().toISOString().slice(0, 10)}.ics`;
+  a.download = `parikshaa-plan-${new Date().toISOString().slice(0, 10)}.ics`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

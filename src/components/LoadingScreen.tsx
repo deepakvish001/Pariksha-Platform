@@ -124,7 +124,7 @@ const LoadingScreen = ({ isLoading, progress, loadingStage = "Loading..." }: Loa
                 <div className="bg-background rounded-[13px] p-2">
                   <motion.img
                     src="/logo.png"
-                    alt="Byteskill"
+                    alt="Parikshaa"
                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover"
                     animate={{
                       scale: [1, 1.05, 1],
@@ -175,7 +175,7 @@ const LoadingScreen = ({ isLoading, progress, loadingStage = "Loading..." }: Loa
                   ease: "easeInOut",
                 }}
               >
-                Byteskill
+                Parikshaa
               </motion.h1>
               <motion.p
                 className="text-sm sm:text-base text-muted-foreground"

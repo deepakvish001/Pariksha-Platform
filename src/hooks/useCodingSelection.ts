@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-const KEY = "byteskill:coding-selection";
+const KEY = "parikshaa:coding-selection";
 
 interface Persisted {
   mode: boolean;

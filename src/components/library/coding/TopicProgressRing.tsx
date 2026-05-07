@@ -23,7 +23,7 @@ interface Props {
   className?: string;
 }
 
-const STORAGE_KEY = "byteskill:coding:topicRing:selectedTopic";
+const STORAGE_KEY = "parikshaa:coding:topicRing:selectedTopic";
 
 const RING_SIZE = 96;
 const STROKE = 8;

@@ -5,8 +5,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-const STORAGE_KEY = "byteskill:coding-session-time:v1";
-const POMODORO_KEY = "byteskill:coding-pomodoro-on:v1";
+const STORAGE_KEY = "parikshaa:coding-session-time:v1";
+const POMODORO_KEY = "parikshaa:coding-pomodoro-on:v1";
 const IDLE_MS = 60_000;
 const FOCUS_MS = 25 * 60 * 1000;
 const BREAK_MS = 5 * 60 * 1000;

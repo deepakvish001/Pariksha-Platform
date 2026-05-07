@@ -111,7 +111,7 @@
      }
    };
  
-   const shareText = `🏆 I just earned the "${achievement.name}" achievement on Byteskill! ${rarity ? `Only ${rarity.percentage.toFixed(1)}% of users have this badge!` : ""} #Byteskill #Achievement`;
+   const shareText = `🏆 I just earned the "${achievement.name}" achievement on Parikshaa! ${rarity ? `Only ${rarity.percentage.toFixed(1)}% of users have this badge!` : ""} #Parikshaa #Achievement`;
    const shareUrl = window.location.origin;
  
    const handleCopyText = async () => {
@@ -212,7 +212,7 @@
  
                   {/* Branding */}
                   <div className="pt-2 border-t border-gray-800 w-full">
-                    <p className="text-xs text-gray-600">Byteskill Achievements</p>
+                    <p className="text-xs text-gray-600">Parikshaa Achievements</p>
                   </div>
                </div>
              </div>

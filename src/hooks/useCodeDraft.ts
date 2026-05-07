@@ -37,7 +37,7 @@ export const useCodeDraft = (problemSlug: string, language: string) => {
   const pendingRef = useRef<string | null>(null);
   // Local fallback so refresh doesn't lose changes even if the network save
   // hasn't fired yet (e.g. user refreshes within the 1.5s debounce window).
-  const localKey = `byteskill:code-draft:${problemSlug}:${language}`;
+  const localKey = `parikshaa:code-draft:${problemSlug}:${language}`;
 
   // Hydrate from local fallback while remote fetch is in-flight, so the editor
   // never momentarily flashes back to the starter template after a refresh.

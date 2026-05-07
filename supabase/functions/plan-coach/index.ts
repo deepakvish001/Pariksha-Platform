@@ -24,7 +24,7 @@ interface PlanContext {
   overdue?: Array<{ id: string; title: string; topic: string; day_date: string; est_minutes: number }>;
 }
 
-const buildSystemPrompt = (ctx: PlanContext) => `You are "Coach", an embedded AI advisor inside Byteskill's My Plan dashboard.
+const buildSystemPrompt = (ctx: PlanContext) => `You are "Coach", an embedded AI advisor inside Parikshaa's My Plan dashboard.
 You can SEE the user's actual study plan, today's tasks, completion stats, streak, weak topics, and overdue items.
 
 You MUST always call the "coach_reply" tool with:

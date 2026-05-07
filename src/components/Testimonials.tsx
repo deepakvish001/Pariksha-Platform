@@ -8,7 +8,7 @@ const testimonials = [
     role: "SDE at Google",
     college: "IIT Delhi",
     avatar: "PS",
-    content: "Byteskill completely transformed how I prepare for interviews. The structured DSA sheets and progress tracking helped me maintain a 45-day streak. Cracked Google on my first attempt!",
+    content: "Parikshaa completely transformed how I prepare for interviews. The structured DSA sheets and progress tracking helped me maintain a 45-day streak. Cracked Google on my first attempt!",
     rating: 5,
     featured: true,
   },
@@ -25,7 +25,7 @@ const testimonials = [
     role: "SDE at Microsoft",
     college: "IIM Bangalore",
     avatar: "AP",
-    content: "As someone juggling multiple prep resources, Byteskill brought everything together. The roadmap feature helped me plan my entire preparation journey.",
+    content: "As someone juggling multiple prep resources, Parikshaa brought everything together. The roadmap feature helped me plan my entire preparation journey.",
     rating: 5,
   },
   {
@@ -33,7 +33,7 @@ const testimonials = [
     role: "SDE at Meta",
     college: "ISI Kolkata",
     avatar: "VS",
-    content: "The streak system kept me accountable during my 3-month prep. Ended up cracking interviews at 4 top companies. Byteskill was my secret weapon!",
+    content: "The streak system kept me accountable during my 3-month prep. Ended up cracking interviews at 4 top companies. Parikshaa was my secret weapon!",
     rating: 5,
   },
   {

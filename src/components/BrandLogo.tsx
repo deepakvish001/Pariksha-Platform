@@ -91,7 +91,7 @@ const BrandLogo = ({
           <div className="bg-background rounded-[10px] p-0.5">
             <img
               src="/logo.png"
-              alt="Byteskill"
+              alt="Parikshaa"
               className={cn(
                 config.logo,
                 "rounded-lg object-cover transition-transform duration-300"
@@ -132,7 +132,7 @@ const BrandLogo = ({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1, duration: 0.3 }}
           >
-            Byteskill
+            Parikshaa
           </motion.span>
           {size === "lg" || size === "xl" ? (
             <motion.span

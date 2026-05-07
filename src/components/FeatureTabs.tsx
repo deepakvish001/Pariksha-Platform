@@ -150,7 +150,7 @@ const FeatureTabs = () => {
               <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent"> Action</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Explore the key features that make Byteskill the ultimate placement prep companion
+              Explore the key features that make Parikshaa the ultimate placement prep companion
             </p>
           </div>
         </ScrollReveal>
@@ -265,7 +265,7 @@ const FeatureTabs = () => {
                         </div>
                         <div className="flex-1 flex justify-center">
                           <div className="px-3 py-1 rounded-full bg-background/50 border border-border/50 text-xs text-muted-foreground">
-                            app.byteskill.io/{activeContent.id}
+                            app.parikshaa.io/{activeContent.id}
                           </div>
                         </div>
                       </div>

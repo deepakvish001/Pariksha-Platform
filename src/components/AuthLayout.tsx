@@ -22,7 +22,7 @@ const testimonials = [
     name: "Priya Sharma",
     role: "Computer Science, IIT Delhi",
     avatar: "PS",
-    content: "Byteskill completely transformed how I manage my studies. My GPA improved by 0.8 points!",
+    content: "Parikshaa completely transformed how I manage my studies. My GPA improved by 0.8 points!",
     rating: 5,
   },
   {
@@ -36,7 +36,7 @@ const testimonials = [
     name: "Ananya Patel",
     role: "MBA, IIM Bangalore",
     avatar: "AP",
-    content: "As someone juggling multiple projects, Byteskill keeps everything organized perfectly.",
+    content: "As someone juggling multiple projects, Parikshaa keeps everything organized perfectly.",
     rating: 5,
   },
 ];

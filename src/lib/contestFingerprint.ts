@@ -36,9 +36,9 @@ function canvasFingerprint(): string {
     ctx.fillStyle = "#f60";
     ctx.fillRect(0, 0, 100, 30);
     ctx.fillStyle = "#069";
-    ctx.fillText("byteskill-contest", 2, 2);
+    ctx.fillText("parikshaa-contest", 2, 2);
     ctx.fillStyle = "rgba(102,204,0,0.7)";
-    ctx.fillText("byteskill-contest", 4, 17);
+    ctx.fillText("parikshaa-contest", 4, 17);
     return canvas.toDataURL();
   } catch {
     return "no-canvas";

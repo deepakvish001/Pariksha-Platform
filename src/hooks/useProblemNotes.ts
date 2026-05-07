@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const KEY = "byteskill:coding-problem-notes:v1";
+const KEY = "parikshaa:coding-problem-notes:v1";
 
 const readMap = (): Record<string, string> => {
   if (typeof window === "undefined") return {};

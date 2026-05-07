@@ -177,7 +177,7 @@ function AnonymousGate({ rank }: { rank: number | null }) {
         </div>
       </div>
       <p className="text-[11px] text-center text-muted-foreground">
-        Join Byteskill to track your own weighted score, speed bonus, and rank.
+        Join Parikshaa to track your own weighted score, speed bonus, and rank.
       </p>
     </div>
   );

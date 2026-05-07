@@ -324,10 +324,10 @@ const PublicProfile = () => {
 
   const siteUrl = window.location.origin;
   const profileUrl = `${siteUrl}/u/${profile.username}`;
-  const profileTitle = `${profile.full_name} (@${profile.username}) | Byteskill`;
+  const profileTitle = `${profile.full_name} (@${profile.username}) | Parikshaa`;
   const profileDescription = profile.bio
     ? profile.bio.slice(0, 155) + (profile.bio.length > 155 ? "..." : "")
-    : `Check out ${profile.full_name}'s profile on Byteskill. ${profile.occupation ?? ""} ${profile.location ? `from ${profile.location}` : ""}`.trim();
+    : `Check out ${profile.full_name}'s profile on Parikshaa. ${profile.occupation ?? ""} ${profile.location ? `from ${profile.location}` : ""}`.trim();
 
   const isOwner = user?.id === profile.user_id;
 

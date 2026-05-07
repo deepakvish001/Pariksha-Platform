@@ -33,7 +33,7 @@ export const PROBLEM_COLUMNS: ProblemColumnDef[] = [
 ];
 
 const VERSION = 1;
-const KEY = `byteskill:coding-problems-table-prefs:v${VERSION}`;
+const KEY = `parikshaa:coding-problems-table-prefs:v${VERSION}`;
 
 export type TableDensity = "comfortable" | "compact";
 

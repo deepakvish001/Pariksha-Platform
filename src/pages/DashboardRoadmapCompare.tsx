@@ -444,7 +444,7 @@ const DashboardRoadmapCompare = () => {
   return (
     <>
       <Helmet>
-        <title>Compare Roadmaps | Byteskill</title>
+        <title>Compare Roadmaps | Parikshaa</title>
         <meta
           name="description"
           content="Compare two developer roadmaps side-by-side. See shared sections and topic differences to plan your learning path."

@@ -124,7 +124,7 @@ export default function FullStackRoadmap() {
   return (
     <>
       <Helmet>
-        <title>{dataset.title} | Byteskill</title>
+        <title>{dataset.title} | Parikshaa</title>
         <meta name="description" content={dataset.description} />
       </Helmet>
 

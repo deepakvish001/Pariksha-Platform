@@ -365,7 +365,7 @@ const DashboardRoadmapDetail = () => {
   return (
     <>
       <Helmet>
-        <title>{roadmap.title} Roadmap | Byteskill</title>
+        <title>{roadmap.title} Roadmap | Parikshaa</title>
         <meta name="description" content={roadmap.description} />
       </Helmet>
 

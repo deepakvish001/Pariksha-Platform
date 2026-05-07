@@ -8,8 +8,8 @@ import ScrollReveal from "./ScrollReveal";
 
 const faqs = [
   {
-    question: "Is Byteskill free to use?",
-    answer: "Yes! Byteskill is completely free. You can access all available features including DSA sheets, progress tracking, streaks, and profile — with no credit card required.",
+    question: "Is Parikshaa free to use?",
+    answer: "Yes! Parikshaa is completely free. You can access all available features including DSA sheets, progress tracking, streaks, and profile — with no credit card required.",
   },
   {
     question: "What DSA sheets are available?",
@@ -20,8 +20,8 @@ const faqs = [
     answer: "Mark problems as solved or for revision, and your progress is automatically saved. View your stats on a GitHub-style activity heatmap, track daily/weekly goals, and maintain streaks to stay consistent.",
   },
   {
-    question: "Can I access Byteskill on mobile?",
-    answer: "Yes! Byteskill is fully responsive and works on all devices. Your data syncs in real-time so you can switch between phone, tablet, and desktop seamlessly.",
+    question: "Can I access Parikshaa on mobile?",
+    answer: "Yes! Parikshaa is fully responsive and works on all devices. Your data syncs in real-time so you can switch between phone, tablet, and desktop seamlessly.",
   },
   {
     question: "What features are coming next?",

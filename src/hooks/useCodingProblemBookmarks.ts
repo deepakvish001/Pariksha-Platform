@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-const KEY = "byteskill:coding-bookmarks";
+const KEY = "parikshaa:coding-bookmarks";
 
 const read = (): Set<string> => {
   if (typeof window === "undefined") return new Set();

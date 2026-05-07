@@ -113,7 +113,7 @@ const DailyChallengeWeekly = () => {
   return (
     <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 max-w-5xl">
       <Helmet>
-        <title>Daily Challenge — Weekly Review | Byteskill</title>
+        <title>Daily Challenge — Weekly Review | Parikshaa</title>
         <meta
           name="description"
           content="Review your last 7 days of coding daily challenges, track your streak, and see the opt-in daily leaderboard."
