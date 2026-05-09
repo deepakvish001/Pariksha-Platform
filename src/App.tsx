@@ -180,8 +180,6 @@ import ContestEditor from "./pages/admin/contests/ContestEditor";
 import AdminContestRegistrations from "./pages/admin/contests/AdminContestRegistrations";
 import AdminContestLeaderboard from "./pages/admin/contests/AdminContestLeaderboard";
 import AdminContestProctor from "./pages/admin/contests/AdminContestProctor";
-import AdminVivaQueue from "./pages/admin/contests/AdminVivaQueue";
-import AdminDQSignoffs from "./pages/admin/contests/AdminDQSignoffs";
 import AdminSessionForensics from "./pages/admin/contests/AdminSessionForensics";
 import PublicIntegrityReport from "./pages/contests/PublicIntegrityReport";
 import SideEyeMobile from "./pages/contests/SideEyeMobile";
