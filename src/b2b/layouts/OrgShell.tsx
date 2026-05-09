@@ -8,6 +8,7 @@ const NAV = [
   { to: "/b2b/assessments", label: "Assessments", icon: FileText },
   { to: "/b2b/question-bank", label: "Question Bank", icon: Library },
   { to: "/b2b/settings/team", label: "Team", icon: Users },
+  { to: "/b2b/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export function OrgShell({ children, title, actions }: { children: ReactNode; title?: string; actions?: ReactNode }) {
