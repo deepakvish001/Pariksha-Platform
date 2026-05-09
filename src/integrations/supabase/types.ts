@@ -512,6 +512,97 @@ export type Database = {
           },
         ]
       }
+      assessment_sections: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          id: string
+          order_index: number
+          title: string
+          weight: number
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          title: string
+          weight?: number
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          title?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_sections_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessments: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          duration_min: number
+          ends_at: string | null
+          id: string
+          max_attempts: number
+          org_id: string
+          proctoring_enabled: boolean
+          starts_at: string | null
+          status: Database["public"]["Enums"]["assessment_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          duration_min?: number
+          ends_at?: string | null
+          id?: string
+          max_attempts?: number
+          org_id: string
+          proctoring_enabled?: boolean
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["assessment_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          duration_min?: number
+          ends_at?: string | null
+          id?: string
+          max_attempts?: number
+          org_id?: string
+          proctoring_enabled?: boolean
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["assessment_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       battle_achievements: {
         Row: {
           achievement_key: string
@@ -3364,6 +3455,41 @@ export type Database = {
         }
         Relationships: []
       }
+      mcq_options: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_correct: boolean
+          order_index: number
+          question_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          order_index?: number
+          question_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          order_index?: number
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcq_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -3705,6 +3831,100 @@ export type Database = {
         }
         Relationships: []
       }
+      question_test_cases: {
+        Row: {
+          created_at: string
+          expected_output: string
+          id: string
+          input: string
+          is_hidden: boolean
+          order_index: number
+          question_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          expected_output?: string
+          id?: string
+          input?: string
+          is_hidden?: boolean
+          order_index?: number
+          question_id: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          expected_output?: string
+          id?: string
+          input?: string
+          is_hidden?: boolean
+          order_index?: number
+          question_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_test_cases_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          body_md: string | null
+          created_at: string
+          created_by: string
+          id: string
+          language: string | null
+          meta: Json
+          org_id: string
+          points: number
+          starter_code: string | null
+          title: string
+          type: Database["public"]["Enums"]["question_type"]
+          updated_at: string
+        }
+        Insert: {
+          body_md?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          language?: string | null
+          meta?: Json
+          org_id: string
+          points?: number
+          starter_code?: string | null
+          title: string
+          type: Database["public"]["Enums"]["question_type"]
+          updated_at?: string
+        }
+        Update: {
+          body_md?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          language?: string | null
+          meta?: Json
+          org_id?: string
+          points?: number
+          starter_code?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["question_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_question_responses: {
         Row: {
           created_at: string
@@ -4045,6 +4265,48 @@ export type Database = {
           type?: string
         }
         Relationships: []
+      }
+      section_questions: {
+        Row: {
+          created_at: string
+          id: string
+          order_index: number
+          question_id: string
+          section_id: string
+          weight_override: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_index?: number
+          question_id: string
+          section_id: string
+          weight_override?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_index?: number
+          question_id?: string
+          section_id?: string
+          weight_override?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "section_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "section_questions_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_sections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shared_folders: {
         Row: {
@@ -6463,6 +6725,7 @@ export type Database = {
         Returns: undefined
       }
       arena_tick_streak: { Args: never; Returns: Json }
+      assessment_org: { Args: { _assessment: string }; Returns: string }
       assign_contest_variant: {
         Args: { _contest_id: string; _problem_slug: string }
         Returns: {
@@ -6549,6 +6812,7 @@ export type Database = {
         }
         Returns: number
       }
+      can_write_org: { Args: { _org: string }; Returns: boolean }
       contest_accept_honor_code: {
         Args: { _contest_id: string }
         Returns: undefined
@@ -6815,6 +7079,7 @@ export type Database = {
         Args: { _data?: Json; _message: string; _title: string; _type?: string }
         Returns: undefined
       }
+      question_org: { Args: { _question: string }; Returns: string }
       recompute_contest_leaderboard: {
         Args: { _contest_id: string }
         Returns: undefined
@@ -6823,6 +7088,7 @@ export type Database = {
         Args: { _contest_id: string; _invite_code?: string }
         Returns: string
       }
+      section_org: { Args: { _section: string }; Returns: string }
       sideeye_purge_old_data: { Args: never; Returns: Json }
       sideeye_sweep_stale_status: { Args: never; Returns: Json }
       sideeye_unified_risk_score: {
@@ -6867,11 +7133,13 @@ export type Database = {
         | "proctor_reviewer"
         | "proctor_admin"
         | "institution_admin"
+      assessment_status: "draft" | "published" | "archived"
       battle_difficulty: "easy" | "medium" | "hard"
       battle_status: "pending" | "live" | "ended" | "abandoned"
       friendship_status: "pending" | "accepted" | "blocked"
       org_member_role: "owner" | "admin" | "recruiter" | "viewer"
       org_type: "college" | "company"
+      question_type: "coding" | "mcq" | "sql" | "subjective"
       study_year:
         | "1st Year"
         | "2nd Year"
@@ -7017,11 +7285,13 @@ export const Constants = {
         "proctor_admin",
         "institution_admin",
       ],
+      assessment_status: ["draft", "published", "archived"],
       battle_difficulty: ["easy", "medium", "hard"],
       battle_status: ["pending", "live", "ended", "abandoned"],
       friendship_status: ["pending", "accepted", "blocked"],
       org_member_role: ["owner", "admin", "recruiter", "viewer"],
       org_type: ["college", "company"],
+      question_type: ["coding", "mcq", "sql", "subjective"],
       study_year: [
         "1st Year",
         "2nd Year",

@@ -19,6 +19,9 @@ import B2BLanding from "@/b2b/pages/Landing";
 import B2BOnboarding from "@/b2b/pages/Onboarding";
 import B2BDashboard from "@/b2b/pages/Dashboard";
 import B2BAssessmentsList from "@/b2b/pages/assessments/List";
+import B2BAssessmentNew from "@/b2b/pages/assessments/New";
+import B2BAssessmentDetail from "@/b2b/pages/assessments/Detail";
+import B2BQuestionBank from "@/b2b/pages/QuestionBank";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -226,7 +229,9 @@ const App = () => (
                 <Route path="/b2b/onboarding" element={<ProtectedRoute><B2BOnboarding /></ProtectedRoute>} />
                 <Route path="/b2b/dashboard" element={<ProtectedRoute><B2BDashboard /></ProtectedRoute>} />
                 <Route path="/b2b/assessments" element={<ProtectedRoute><B2BAssessmentsList /></ProtectedRoute>} />
-                <Route path="/b2b/assessments/new" element={<ProtectedRoute><B2BAssessmentsList /></ProtectedRoute>} />
+                <Route path="/b2b/assessments/new" element={<ProtectedRoute><B2BAssessmentNew /></ProtectedRoute>} />
+                <Route path="/b2b/assessments/:id" element={<ProtectedRoute><B2BAssessmentDetail /></ProtectedRoute>} />
+                <Route path="/b2b/question-bank" element={<ProtectedRoute><B2BQuestionBank /></ProtectedRoute>} />
 
                 <Route path="/shared/:shareCode" element={<SharedFolder />} />
                 <Route
