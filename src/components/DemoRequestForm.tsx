@@ -75,7 +75,8 @@ const DemoRequestForm = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
-    const data = Object.fromEntries(new FormData(form).entries());
+    const formData = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
+    const data = { ...formData, notes };
     const parsed = schema.safeParse(data);
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "Please check the form");
@@ -88,7 +89,8 @@ const DemoRequestForm = () => {
         ...parsed.data,
         proctoring,
         reporting,
-        utm,
+        // Standard lead-source fields piggy-backed via UTM channel for the existing handler schema
+        utm: { ...utm, content: utm?.content || leadSource },
         referrer: typeof document !== "undefined" ? document.referrer : null,
         landingPage:
           typeof window !== "undefined"
@@ -104,7 +106,7 @@ const DemoRequestForm = () => {
           error?.message ||
           "Something went wrong. Try again in a moment.";
         toast.error(msg);
-        await trackLeadEvent("demo_request_failed", { reason: msg });
+        await trackLeadEvent("demo_request_failed", { reason: msg, source: leadSource });
         return;
       }
       await trackLeadEvent("demo_request_submitted", {
@@ -113,13 +115,19 @@ const DemoRequestForm = () => {
         candidates: parsed.data.candidates,
         proctoring_count: proctoring.length,
         reporting_count: reporting.length,
+        source: leadSource,
         lead_id: (res as { id?: string } | null)?.id,
       });
       toast.success("Demo request received — we'll reach out within 1 business day.");
       setDone(true);
       form.reset();
+      setNotes("");
       setProctoring([]);
       setReporting([]);
+      setLeadSource("demo_form");
+      window.dispatchEvent(
+        new CustomEvent("demo-form-submitted", { detail: { source: leadSource } }),
+      );
     } catch (err) {
       console.error("[demo-request] error", err);
       toast.error("Something went wrong. Try again in a moment.");
