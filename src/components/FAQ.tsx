@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { MessageCircle, ArrowRight } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -6,6 +7,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import ScrollReveal from "./ScrollReveal";
+import { trackLeadEvent } from "@/lib/leadTracking";
 
 const faqs = [
   {
