@@ -108,13 +108,12 @@ const AdminDashboard = () => {
           },
         ]}
         actions={
-          <>
+          <div className="flex flex-wrap items-center gap-2">
             <Button asChild variant="outline" size="sm" className="border-border/60 bg-card/40 backdrop-blur">
               <Link to="/admin/broadcast">
                 <Megaphone className="mr-2 h-4 w-4" /> Broadcast
               </Link>
             </Button>
-            
             <Button asChild variant="outline" size="sm" className="border-border/60 bg-card/40 backdrop-blur">
               <Link to="/admin/problems/import">
                 <Upload className="mr-2 h-4 w-4" /> Import
@@ -129,7 +128,7 @@ const AdminDashboard = () => {
                 <Plus className="mr-2 h-4 w-4" /> New problem
               </Link>
             </Button>
-          </>
+          </div>
         }
       />
 
