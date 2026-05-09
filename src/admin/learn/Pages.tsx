@@ -441,7 +441,7 @@ export function LearnReports() {
     <>
       <LearnHeader
         title="Open Reports"
-        actions={<FullLink to="/admin/reports">Open full queue</FullLink>}
+        actions={<><RangeBadge /><FullLink to="/admin/reports">Open full queue</FullLink></>}
       />
       <div className="p-4 sm:p-6 space-y-4">
         <Card className="p-4">
