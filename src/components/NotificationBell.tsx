@@ -120,7 +120,7 @@ import { useAuth } from "@/contexts/AuthContext";
        </PopoverTrigger>
         <PopoverContent className="w-80 p-0" align="end">
           <div className="flex items-center justify-between p-3 border-b">
-            <Link to="/dashboard/notifications" className="font-semibold hover:text-primary transition-colors">
+            <Link to="/learn/notifications" className="font-semibold hover:text-primary transition-colors">
               Notifications
             </Link>
             {unreadCount > 0 && (

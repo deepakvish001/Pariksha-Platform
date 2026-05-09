@@ -65,13 +65,13 @@ import { GuestSidebarTooltip } from "@/components/GuestSidebarTooltip";
 // to `/u/<username>` for the logged-in user.
 const PROFILE_SENTINEL = "__profile__";
 const homeNavItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
-  { title: "My Plan", url: "/dashboard/my-plan", icon: Sparkles },
-  { title: "Sheets", url: "/dashboard/sheets", icon: FileSpreadsheet },
-  { title: "Roadmap", url: "/dashboard/roadmaps", icon: Route },
+  { title: "Dashboard", url: "/learn", icon: LayoutGrid },
+  { title: "My Plan", url: "/learn/my-plan", icon: Sparkles },
+  { title: "Sheets", url: "/learn/sheets", icon: FileSpreadsheet },
+  { title: "Roadmap", url: "/learn/roadmaps", icon: Route },
   { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "Contests", url: "/contests", icon: Trophy },
-  { title: "Leaderboard", url: "/dashboard/leaderboard", icon: Trophy },
+  { title: "Leaderboard", url: "/learn/leaderboard", icon: Trophy },
   { title: "Profile", url: PROFILE_SENTINEL, icon: User },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
@@ -300,7 +300,7 @@ export function DashboardSidebar() {
                         ? "/onboarding"
                         : "/login"
                     : item.url;
-                  const isRoadmap = item.url === "/dashboard/roadmaps";
+                  const isRoadmap = item.url === "/learn/roadmaps";
                   const handleClick = isRoadmap
                     ? (e: React.MouseEvent) => {
                         // Restore last opened roadmap if available
@@ -310,8 +310,8 @@ export function DashboardSidebar() {
                             e.preventDefault();
                             const target =
                               lastId === "fullstack"
-                                ? "/dashboard/roadmap/fullstack"
-                                : `/dashboard/roadmaps/${lastId}`;
+                                ? "/learn/roadmap/fullstack"
+                                : `/learn/roadmaps/${lastId}`;
                             navigate(target);
                           }
                         } catch {

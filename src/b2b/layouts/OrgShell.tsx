@@ -1,42 +1,69 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon } from "lucide-react";
+import { useOrgBasePath } from "../context/OrgContext";
 import "../theme.css";
 
-const NAV = [
-  { to: "/b2b/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/b2b/assessments", label: "Assessments", icon: FileText },
-  { to: "/b2b/question-bank", label: "Question Bank", icon: Library },
-  { to: "/b2b/settings/team", label: "Team", icon: Users },
-  { to: "/b2b/settings", label: "Settings", icon: SettingsIcon },
-];
-
-export function OrgShell({ children, title, actions }: { children: ReactNode; title?: string; actions?: ReactNode }) {
+export function OrgShell({
+  children,
+  title,
+  actions,
+}: {
+  children: ReactNode;
+  title?: string;
+  actions?: ReactNode;
+}) {
   const { pathname } = useLocation();
+  const base = useOrgBasePath();
+
+  // For legacy /b2b/*, show legacy nav. For slug routes, show slug-aware nav.
+  const isLegacy = base === "/b2b";
+  const NAV = isLegacy
+    ? [
+        { to: "/b2b/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: false },
+        { to: "/b2b/assessments", label: "Assessments", icon: FileText, exact: false },
+        { to: "/b2b/question-bank", label: "Question Bank", icon: Library, exact: false },
+        { to: "/b2b/settings/team", label: "Team", icon: Users, exact: false },
+        { to: "/b2b/settings", label: "Settings", icon: SettingsIcon, exact: true },
+      ]
+    : [
+        { to: base, label: "Dashboard", icon: LayoutDashboard, exact: true },
+        { to: `${base}/assessments`, label: "Assessments", icon: FileText, exact: false },
+        { to: `${base}/question-bank`, label: "Question Bank", icon: Library, exact: false },
+        { to: `${base}/team`, label: "Team", icon: Users, exact: false },
+        { to: `${base}/settings`, label: "Settings", icon: SettingsIcon, exact: true },
+      ];
+
+  const homeHref = isLegacy ? "/b2b/dashboard" : base;
+
   return (
     <div className="theme-b2b min-h-screen">
       <div className="flex">
         <aside className="hidden md:flex w-60 shrink-0 flex-col border-r bg-[hsl(var(--card))] min-h-screen sticky top-0">
           <div className="px-5 py-5 border-b">
-            <NavLink to="/b2b/dashboard" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center font-bold">P</div>
+            <NavLink to={homeHref} className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center font-bold">
+                P
+              </div>
               <div className="leading-tight">
                 <div className="text-sm font-semibold">Parikshaa</div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Assessments</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Assessments
+                </div>
               </div>
             </NavLink>
           </div>
           <nav className="flex-1 p-2 space-y-1">
             {NAV.map((n) => {
-              const active =
-                n.to === "/b2b/settings"
-                  ? pathname === "/b2b/settings"
-                  : pathname === n.to || pathname.startsWith(n.to + "/");
+              const active = n.exact
+                ? pathname === n.to
+                : pathname === n.to || pathname.startsWith(n.to + "/");
               const Icon = n.icon;
               return (
                 <NavLink
                   key={n.to}
                   to={n.to}
+                  end={n.exact}
                   className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
                     active
                       ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
@@ -50,7 +77,7 @@ export function OrgShell({ children, title, actions }: { children: ReactNode; ti
             })}
           </nav>
           <div className="p-3 border-t">
-            <NavLink to="/dashboard" className="text-xs text-muted-foreground hover:text-foreground">
+            <NavLink to="/learn" className="text-xs text-muted-foreground hover:text-foreground">
               ← Back to learning app
             </NavLink>
           </div>

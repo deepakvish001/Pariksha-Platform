@@ -391,12 +391,12 @@ function RowQuickLinks({ row, isYou }: { row: CodingLeaderboardRow; isYou: boole
   const [pendingSubs, setPendingSubs] = useState(false);
 
   const runsHref = isYou
-    ? "/dashboard/submissions?tab=runs"
+    ? "/learn/submissions?tab=runs"
     : row.username
       ? `/u/${row.username}#runs`
       : null;
   const subsHref = isYou
-    ? "/dashboard/submissions"
+    ? "/learn/submissions"
     : row.username
       ? `/u/${row.username}#submissions`
       : null;

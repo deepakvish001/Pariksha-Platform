@@ -190,7 +190,7 @@ const Navbar = () => {
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to="/dashboard" className="cursor-pointer">
+                      <Link to="/learn" className="cursor-pointer">
                         <User className="w-4 h-4 mr-2" />
                         Dashboard
                       </Link>
@@ -210,7 +210,7 @@ const Navbar = () => {
                   >
                     Sign In
                   </Link>
-                  <Link to="/dashboard" className="btn-primary text-sm py-2 px-5">
+                  <Link to="/learn" className="btn-primary text-sm py-2 px-5">
                     Get Started
                   </Link>
                 </div>
@@ -233,7 +233,7 @@ const Navbar = () => {
 
             {/* User Avatar - Mobile */}
             {!loading && user && (
-              <Link to="/dashboard">
+              <Link to="/learn">
                 <Avatar className="w-8 h-8 border border-border">
                   <AvatarImage src={profile?.avatar_url || undefined} />
                   <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
@@ -281,7 +281,7 @@ const Navbar = () => {
                   user ? (
                     <>
                       <Link
-                        to="/dashboard"
+                        to="/learn"
                         className="block w-full text-left px-2 py-2 text-muted-foreground hover:text-foreground transition-colors"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
@@ -307,7 +307,7 @@ const Navbar = () => {
                         Sign In
                       </Link>
                       <Link
-                        to="/dashboard"
+                        to="/learn"
                         className="btn-primary w-full text-sm py-2 mt-2 text-center block"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >

@@ -83,7 +83,7 @@ const SheetCard = ({ sheet, index, progress = 0, completedCount = 0, lastActivit
           "bg-gradient-to-br from-card to-card/80",
           "transition-all duration-300 hover:shadow-xl hover:shadow-primary/5"
         )}
-        onClick={() => navigate(`/dashboard/sheets/${sheet.id}`)}
+        onClick={() => navigate(`/learn/sheets/${sheet.id}`)}
       >
         {/* Category Color Strip */}
         <div className={cn("absolute top-0 left-0 right-0 h-1", categoryStyles.bg)} />

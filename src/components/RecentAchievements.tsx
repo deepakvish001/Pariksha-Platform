@@ -49,7 +49,7 @@
              <Button 
                variant="link" 
                className="mt-2"
-               onClick={() => navigate("/dashboard/achievements")}
+               onClick={() => navigate("/learn/achievements")}
              >
                View all badges <ChevronRight className="h-4 w-4 ml-1" />
              </Button>
@@ -77,7 +77,7 @@
            <Button 
              variant="ghost" 
              size="sm"
-             onClick={() => navigate("/dashboard/achievements")}
+             onClick={() => navigate("/learn/achievements")}
              className="flex-shrink-0"
            >
              View all <ChevronRight className="h-4 w-4 ml-1" />

@@ -336,7 +336,7 @@ const DashboardRoadmapDetail = () => {
         <div className="text-center space-y-4">
           <MapIcon className="mx-auto h-12 w-12 text-muted-foreground" />
           <h1 className="text-xl font-semibold">Roadmap not found</h1>
-          <Button onClick={() => navigate("/dashboard/roadmaps")}>
+          <Button onClick={() => navigate("/learn/roadmaps")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Roadmaps
           </Button>
@@ -381,7 +381,7 @@ const DashboardRoadmapDetail = () => {
           <div className="relative max-w-6xl mx-auto p-4 md:p-6 lg:p-8">
             {/* Back button */}
             <Link
-              to="/dashboard/roadmaps"
+              to="/learn/roadmaps"
               className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
             >
               <ArrowLeft className="h-4 w-4" />

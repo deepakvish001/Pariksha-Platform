@@ -1435,7 +1435,7 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/dashboard/sheets")}
+            onClick={() => navigate("/learn/sheets")}
             className="shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />

@@ -45,10 +45,10 @@ export function useRestoreRoute() {
 
   useEffect(() => {
     // Only restore if we're on the root dashboard path
-    if (location.pathname === "/dashboard") {
+    if (location.pathname === "/learn") {
       const savedRoute = localStorage.getItem(STORAGE_KEY);
       
-      if (savedRoute && savedRoute !== "/dashboard") {
+      if (savedRoute && savedRoute !== "/learn") {
         // Small delay to ensure auth state is settled
         const timer = setTimeout(() => {
           navigate(savedRoute, { replace: true });

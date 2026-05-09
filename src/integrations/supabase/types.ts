@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_actions: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          id: string
+          payload: Json | null
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -3795,32 +3825,44 @@ export type Database = {
       }
       organizations: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
+          featured: boolean
           id: string
           logo_url: string | null
           name: string
           owner_id: string
           slug: string
+          status: string
           type: Database["public"]["Enums"]["org_type"]
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
+          featured?: boolean
           id?: string
           logo_url?: string | null
           name: string
           owner_id: string
           slug: string
+          status?: string
           type: Database["public"]["Enums"]["org_type"]
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
+          featured?: boolean
           id?: string
           logo_url?: string | null
           name?: string
           owner_id?: string
           slug?: string
+          status?: string
           type?: Database["public"]["Enums"]["org_type"]
           updated_at?: string
         }
@@ -4015,6 +4057,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          suspended_at: string | null
           updated_at: string
           user_id: string
         }
@@ -4023,6 +4066,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          suspended_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -4031,6 +4075,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          suspended_at?: string | null
           updated_at?: string
           user_id?: string
         }

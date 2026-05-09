@@ -3,7 +3,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
+
+function LegacyDashboardRedirect() {
+  const { pathname, search, hash } = useLocation();
+  const next = pathname.replace(/^\/dashboard/, "/learn") + search + hash;
+  return <Navigate to={next} replace />;
+}
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AchievementNotificationProvider } from "@/contexts/AchievementNotificationContext";
@@ -30,7 +36,7 @@ import StudentJoin from "@/assessments/pages/Join";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
 import StudentPlayer from "@/assessments/pages/Player";
-import Index from "./pages/Index";
+import Index from "./pages/ParikshaaLanding";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import DashboardMatrix from "./pages/DashboardMatrix";
@@ -232,6 +238,10 @@ const App = () => (
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
 
+                {/* Legacy /dashboard → /learn redirect (one-shot, kept for old bookmarks) */}
+                <Route path="/dashboard" element={<LegacyDashboardRedirect />} />
+                <Route path="/dashboard/*" element={<LegacyDashboardRedirect />} />
+
                 {/* B2B (Parikshaa for Teams) */}
                 <Route path="/b2b" element={<B2BLanding />} />
                 <Route path="/pricing" element={<B2BPricing />} />
@@ -262,7 +272,7 @@ const App = () => (
                 />
                 
                 {/* Protected dashboard routes (personal pages) */}
-                <Route path="/dashboard" element={<ProtectedDashboardWrapper />}>
+                <Route path="/learn" element={<ProtectedDashboardWrapper />}>
                   <Route path="achievements" element={<Achievements />} />
                   <Route path="notifications" element={<NotificationCenter />} />
                   <Route path="notifications/preferences" element={<NotificationPreferences />} />
@@ -270,7 +280,7 @@ const App = () => (
                 </Route>
 
                 {/* Public dashboard routes (viewable without login) */}
-                <Route path="/dashboard" element={<PublicDashboardWrapper />}>
+                <Route path="/learn" element={<PublicDashboardWrapper />}>
                   <Route index element={<DashboardMatrix />} />
                   <Route path="sheets" element={<DashboardSheets />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />

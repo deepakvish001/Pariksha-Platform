@@ -28,7 +28,7 @@ const tabs = [
     features: ["500+ curated problems", "Progress tracking", "Revision markers", "Difficulty filters", "Company tags", "Video solutions"],
     stats: { problems: "500+", users: "8K+", completion: "92%" },
     cta: "Start Practicing",
-    ctaLink: "/dashboard/sheets",
+    ctaLink: "/learn/sheets",
     preview: [
       { icon: CheckCircle2, text: "Two Sum - Easy", status: "done", xp: "+10 XP" },
       { icon: Code2, text: "Binary Search - Medium", status: "progress", xp: "+20 XP" },
@@ -45,7 +45,7 @@ const tabs = [
     features: ["270+ contest problems", "Track-wise organization", "Platform filters", "Notes support", "Rating tracker", "Contest calendar"],
     stats: { problems: "270+", users: "5K+", tracks: "8" },
     cta: "View Problem Sets",
-    ctaLink: "/dashboard/sheets/competitive-programming",
+    ctaLink: "/learn/sheets/competitive-programming",
     preview: [
       { icon: CheckCircle2, text: "ABC 330 - Complete", status: "done", xp: "+50 XP" },
       { icon: Zap, text: "Educational Round 156", status: "progress", xp: "+40 XP" },
@@ -62,7 +62,7 @@ const tabs = [
     features: ["Activity heatmap", "Weekly reports", "Streak tracking", "XP leaderboards", "Time analytics", "Goal tracking"],
     stats: { streak: "23 days", xp: "2,450", rank: "#127" },
     cta: "View Analytics",
-    ctaLink: "/dashboard",
+    ctaLink: "/learn",
     preview: [
       { icon: TrendingUp, text: "Weekly problems: 45 solved", status: "done", xp: "+15%" },
       { icon: Flame, text: "Current streak: 23 days", status: "done", xp: "🔥" },
@@ -79,7 +79,7 @@ const tabs = [
     features: ["50+ achievements", "XP system", "Level progression", "Public profiles", "Rarity tiers", "Social sharing"],
     stats: { badges: "50+", levels: "25", active: "10K+" },
     cta: "View Achievements",
-    ctaLink: "/dashboard/achievements",
+    ctaLink: "/learn/achievements",
     preview: [
       { icon: Trophy, text: "Speed Demon - 10 in 1 hour", status: "done", xp: "Unlocked!" },
       { icon: Star, text: "Streak Master - 30 day streak", status: "progress", xp: "78%" },
@@ -96,7 +96,7 @@ const tabs = [
     features: ["Company-wise questions", "CS subjects", "Aptitude tests", "SQL practice", "System design", "HR questions"],
     stats: { companies: "50+", questions: "1000+", categories: "8" },
     cta: "Start Prep",
-    ctaLink: "/dashboard/library/company-resources",
+    ctaLink: "/learn/library/company-resources",
     preview: [
       { icon: BookOpen, text: "Google - System Design", status: "progress", xp: "5 topics" },
       { icon: FileText, text: "Amazon - Leadership Principles", status: "pending", xp: "14 Qs" },

@@ -70,7 +70,7 @@ const MyPlan = () => {
   }, [recMode]);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/login?redirect=/dashboard/my-plan");
+    if (!authLoading && !user) navigate("/login?redirect=/learn/my-plan");
   }, [authLoading, user, navigate]);
 
   // Auto-prompt daily check-in once per day, after 6pm local, if there are unfinished tasks

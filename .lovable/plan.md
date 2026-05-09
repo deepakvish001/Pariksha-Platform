@@ -1,184 +1,126 @@
 
-# Parikshaa B2B Assessments — MVP Plan
+# Parikshaa: Rebrand, Route Restructure & Super-Admin
 
-A focused MVP layered onto the existing Parikshaa app: organizations (colleges + companies) create assessments, invite students, and review results. Students sign in, take proctored tests (coding, MCQ, SQL, subjective), and get scored automatically (or manually for subjective).
+This plan does four things in one focused pass:
 
-The existing learning/practice features stay intact. The new B2B surface lives under `/b2b` (org-side) and `/assessments` (student-side) so nothing already shipped breaks.
+1. **Rebrand**: `/` becomes the new Parikshaa landing.
+2. **Move learning app**: every `/dashboard/*` route becomes `/learn/*`. No backwards compatibility.
+3. **Private org dashboards** at `/companies/:slug` and `/colleges/:slug` (members only).
+4. **Super-admin Control Center** at `/admin/parikshaa` covering users, orgs, content moderation and growth.
 
 ---
 
-## 1. Brand & Design Direction
+## 1. New `/` — Parikshaa landing
 
-- **Palette shift for B2B surface only**: deep navy (`#0A1F44` / hsl 218 75% 16%) primary, white background, slate-gray neutrals, single emerald accent for "passed/active". Existing learning app keeps its current orange theme.
-- New CSS tokens added in `index.css` under a `.theme-b2b` class scoped to B2B routes — does not disturb global tokens.
-- **Typography**: Inter (already in use). Tightened scale, generous whitespace, Stripe/Linear-style cards with 1px borders + subtle shadow.
-- **Components**: reuse shadcn primitives (Card, Table, Sheet, Dialog, Tabs, Badge). New shared pieces: `OrgShell`, `StatTile`, `AssessmentCard`, `InviteTable`, `LiveProctorBadge`.
-- Mobile-first. Keyboard-navigable. Color contrast AA. ARIA labels on all icon buttons. Skip-to-content link.
+Replace the current Byteskill landing component at `/` with a new Parikshaa hero. Existing landing files are kept but no longer routed (we may delete in cleanup later).
 
-## 2. User Roles & Access
+Sections (top to bottom):
 
-Roles stored in a separate `org_members` table (never on profiles). New app role `org_admin` (for TPO/HR) and `student`. Platform `admin` already exists.
+- **Hero** — "One platform. Two outcomes."
+  - Primary CTA: **Learn (Free)** → `/learn`
+  - Secondary CTA: **For Teams** → `/b2b/onboarding`
+  - Tertiary text-link: "Already invited? Sign in" → `/login`
+- **Two pillars side-by-side**
+  - *Learn* (free, students) — links into `/learn` with screenshot of sheets / roadmaps.
+  - *Hire & Assess* (companies + colleges) — links into `/b2b`.
+- **Logos band** (re-uses existing `Get Placed` logos).
+- **How it works** (3 steps for each pillar in tabs).
+- **Pricing teaser** → `/pricing`.
+- **Footer** — single, unified.
 
-```text
-auth.users
-  ├── profiles (existing)
-  ├── user_roles (existing — keeps platform-admin)
-  └── organizations
-        └── org_members (user_id, org_id, role: owner|admin|recruiter|viewer)
-```
+Header is shared with the rest of the public surface: `Parikshaa` lockup left, links (Learn, For Teams, Pricing) center, Sign in / Get started right.
 
-- A user can belong to multiple organizations (TPO at one college + recruiter at one company).
-- Students are normal `auth.users` rows, no org membership required.
-- All access enforced via RLS using a `SECURITY DEFINER` helper `is_org_member(_org, _role[])`.
+The old `Byteskill` brand assets and orange theme are kept inside `/learn/*` (the learning app keeps its current look). Only the public marketing surface becomes Parikshaa-blue.
 
-## 3. Core Flows
+## 2. `/dashboard` → `/learn` (full rename)
 
-### Org onboarding
-1. User signs up / logs in (Email + password, Google OAuth — already wired).
-2. New `/b2b/onboarding` step: choose **College** or **Company**, enter org name + logo → creates `organizations` row, makes user `owner`.
-3. Lands on `/b2b/dashboard`.
+User chose **rewrite + drop**, so:
 
-### Assessment authoring (`/b2b/assessments/new`)
-- Wizard: **Details → Sections → Questions → Settings → Review**.
-- Sections can mix question types: coding, MCQ, SQL, subjective.
-- Question bank: org-private + reusable across assessments.
-- Settings: window (start/end), duration, max attempts, shuffle, per-section cutoff, proctoring toggle (basic — see §5).
+- Mount the existing learning app routes under `/learn` instead of `/dashboard`. Same components, same nested children, same layout wrapper.
+- Sweep all internal `Link to="/dashboard…"`, `navigate("/dashboard…")`, redirect targets, route-restore localStorage keys, breadcrumbs, hard-coded URLs in emails / share intents, and SEO sitemap.
+- Add a single catch-all `<Route path="/dashboard/*" element={<Navigate to="/learn/..." replace />} />` so users currently mid-session don't 404 on next click. (This is the only redirect — no `/dashboard` UI, no link to it.)
+- Update `RouteRestorer` so the persisted "last visited" path migrates `/dashboard/x` → `/learn/x` once on load.
+- Update the **Learn (Free)** CTA on `/` to point to `/learn`.
 
-### Inviting students (`/b2b/assessments/:id/invites`)
-- Bulk paste emails or CSV upload (name, email, roll/employee id).
-- For each invite: creates row in `assessment_invites` with unique `invite_token`.
-- "Send invites" → calls Edge Function `send-assessment-invite` → uses Lovable transactional email infra (no third-party setup) to send branded email with link `/assessments/join/:token`.
+Files touched (estimated): `src/App.tsx`, `src/components/RouteRestorer.tsx`, `src/components/DashboardSidebar.tsx`, `src/components/Navbar.tsx`, `src/components/MobileFAB.tsx`, `src/components/FeatureTabs.tsx`, plus ~30 page files that hard-code `/dashboard`. Done with a structured find-and-replace.
 
-### Student flow
-1. Receives email with join link → if not signed in, prompted to sign up / log in.
-2. Token claim creates `assessment_attempt` (one per invite).
-3. `/assessments/:attemptId/lobby` — system check (camera/mic permission if proctored, fullscreen prompt, browser/network sanity).
-4. `/assessments/:attemptId/play` — split-pane player:
-   - Left: question navigator + timer.
-   - Right: question renderer (Monaco for code/SQL, rich textarea for subjective, radio/checkbox for MCQ).
-5. Auto-save every 10s. Submit (or auto-submit on timeout) → grading pipeline.
+## 3. Private org dashboards at `/companies/:slug` & `/colleges/:slug`
 
-### Results & analytics (`/b2b/assessments/:id/results`)
-- Leaderboard table: candidate, score, percentile, time taken, integrity score.
-- Drill-down drawer: per-question answers, run logs, proctoring events.
-- Export CSV.
+These are **not public profiles**. They're the recruiter-side workspace, just under a vanity URL instead of the opaque `/b2b/dashboard` shell.
 
-## 4. Question Types & Grading
-
-| Type        | Editor               | Grading                                                     |
-|-------------|----------------------|-------------------------------------------------------------|
-| Coding      | Monaco + lang select | Edge Function `grade-code` runs hidden test cases (Judge0-compatible API; reuses existing coding execution path) |
-| MCQ         | Radio/checkbox       | Auto, instant on submit                                     |
-| SQL         | Monaco + schema view | Edge Function `grade-sql` executes against an isolated Postgres schema, diffs result set |
-| Subjective  | Markdown textarea    | Manual: recruiter rubric in results drawer                  |
-
-Final score = weighted sum across sections; integrity score is separate.
-
-## 5. Proctoring (basic, MVP)
-
-- Tab-switch + window-blur counter (`useContestTabLock` already exists — reuse).
-- Fullscreen lock prompt + exit warning.
-- Optional webcam snapshot every 30s stored in `attempt_proctor_snapshots` bucket (private). Reuses existing Side Eye infra patterns; no AI room sweep in MVP.
-- Per-attempt **integrity_score** = 100 − weighted penalties.
-
-## 6. Database Schema (new tables, all RLS-protected)
+Routing:
 
 ```text
-organizations            id, name, type(college|company), slug, logo_url, owner_id
-org_members              org_id, user_id, role
-assessments              id, org_id, title, description, type, duration_min,
-                         starts_at, ends_at, max_attempts, proctoring_enabled,
-                         status(draft|published|archived), created_by
-assessment_sections      id, assessment_id, title, weight, order_index
-questions                id, org_id, type(coding|mcq|sql|subjective),
-                         title, body_md, language, starter_code, points, meta jsonb
-question_test_cases      id, question_id, input, expected_output, is_hidden, weight
-mcq_options              id, question_id, body, is_correct, order_index
-section_questions        section_id, question_id, order_index
-assessment_invites       id, assessment_id, email, name, external_id,
-                         token (unique), status(pending|claimed|submitted|expired)
-assessment_attempts      id, invite_id, user_id, started_at, submitted_at,
-                         score, integrity_score, status
-attempt_answers          id, attempt_id, question_id, answer jsonb,
-                         auto_score, manual_score, run_log jsonb
-attempt_events           id, attempt_id, kind(tab_blur|fullscreen_exit|paste|...), payload jsonb, created_at
+/companies/:slug     → OrgWorkspace (only if org.type = 'company' AND user is a member)
+/companies/:slug/assessments
+/companies/:slug/assessments/:id
+/companies/:slug/assessments/:id/attempts/:attemptId
+/companies/:slug/question-bank
+/companies/:slug/team
+/companies/:slug/settings
+
+/colleges/:slug      → same set, only if org.type = 'college'
 ```
 
-RLS pattern: members of an org see/manage their org's data; students see only their own attempts/answers; recruiters see attempts under assessments they own.
+Behavior:
 
-## 7. Routing
+- `OrgRoute` guard reads `:slug`, looks up the org, checks `is_org_member(org.id)` via the existing helper. On fail → 404 (we deliberately do **not** reveal slug existence to non-members).
+- The page tree reuses every existing `/b2b/*` page — they just receive the resolved `org` from a new `OrgContext` provider instead of "first org of current user". This means we can keep `/b2b/dashboard` as a "pick an org" router that 302s into the right slug URL.
+- Sending an invite still happens from inside this dashboard → invite email links to `/assessments/join/:token` (unchanged, candidate-side).
+- Onboarding (`/b2b/onboarding`) on success now redirects to `/companies/:slug` or `/colleges/:slug` based on chosen type.
+
+No new tables. We do add:
+- A unique partial index on `(type, slug)` if not already present.
+- A migration to backfill any orgs missing a slug (kebab-case of name + collision suffix).
+
+Old `/b2b/*` URLs are kept as redirects to the new slug URLs for now (zero broken bookmarks for existing recruiters).
+
+## 4. Super-Admin Control Center — `/admin/parikshaa`
+
+A single shell with a left sidebar; gated by `has_role(auth.uid(), 'admin')`. Purely additive — does not touch the existing learning admin at `/admin/*`.
+
+Sections (one route each):
+
+| Route | Purpose | Key actions |
+|---|---|---|
+| `/admin/parikshaa` | Overview | Users / orgs / assessments / leads counters, 30-day signup chart, recent leads, recent orgs awaiting approval. |
+| `/admin/parikshaa/users` | Users | Search by email / name, filter by role, change platform role, suspend (sets `profiles.suspended_at`), impersonate (issues a magic link via edge function). |
+| `/admin/parikshaa/orgs` | Companies & Colleges | Approve new orgs (gate so new signups land in `pending` until approved), edit display name, edit slug (with collision check), mark `featured`, suspend. Tabs split by type. |
+| `/admin/parikshaa/moderation` | Content moderation | Review reported questions and AI-generated content; approve / hide. Pulls from the existing `content_reports` table if present, otherwise we add one. |
+| `/admin/parikshaa/leads` | Growth | Lists `b2b_leads` with status pipeline (`new → contacted → qualified → closed`), notes, signup funnel chart. |
+
+New schema (small):
 
 ```text
-Org-side (org_admin gate):
-  /b2b                     → marketing/landing for B2B (public)
-  /b2b/onboarding
-  /b2b/dashboard
-  /b2b/assessments
-  /b2b/assessments/new
-  /b2b/assessments/:id     (overview / edit / invites / results sub-tabs)
-  /b2b/question-bank
-  /b2b/settings/team
-
-Student-side (auth required):
-  /assessments/join/:token
-  /assessments                → list of invites + past attempts
-  /assessments/:attemptId/lobby
-  /assessments/:attemptId/play
-  /assessments/:attemptId/result   (only if results released)
-
-Public:
-  /pricing                   → "Contact sales" form (writes to leads table + email notification)
+profiles            + suspended_at TIMESTAMPTZ
+organizations       + status TEXT DEFAULT 'pending' (pending|approved|suspended)
+                    + featured BOOL DEFAULT false
+                    + approved_at TIMESTAMPTZ
+                    + approved_by UUID
+admin_actions       audit log: actor_id, action, target_type, target_id, payload jsonb, created_at
 ```
 
-## 8. Edge Functions
+RLS:
 
-- `send-assessment-invite` — generates tokens, calls transactional email infra.
-- `claim-invite` — converts token → attempt (atomic, one per invite).
-- `grade-code` — runs hidden test cases for code submissions.
-- `grade-sql` — runs SQL against sandboxed schema and grades.
-- `finalize-attempt` — aggregates per-question scores, computes integrity score, marks invite submitted.
+- All new admin endpoints gated by `public.has_role(auth.uid(), 'admin')`.
+- `b2b_leads`, `admin_actions` already admin-only.
+- `organizations` reads stay member-scoped; admins get a separate "all orgs" policy.
+- Slug edits allowed only for admins, not org members (prevents recruiter-side confusion).
 
-All deploy automatically. CORS + zod validation on every function.
+New edge function: `admin-impersonate` — creates a one-time magic link for the target user and writes an `admin_actions` row.
 
-## 9. File Structure (new)
+## 5. Build order
 
-```text
-src/
-  b2b/
-    layouts/OrgShell.tsx
-    components/{StatTile,AssessmentCard,InviteTable,QuestionEditor,...}
-    pages/
-      Landing.tsx, Onboarding.tsx, Dashboard.tsx,
-      assessments/{List,New,Detail,Invites,Results}.tsx,
-      QuestionBank.tsx, Team.tsx, Pricing.tsx
-    hooks/{useOrg,useAssessments,useInvites,useAttempts}.ts
-  assessments/                        // student player
-    pages/{Join,Lobby,Player,Result,MyAssessments}.tsx
-    components/{QuestionNav,Timer,CodeRunner,SqlRunner,McqQuestion,SubjectiveQuestion,ProctorOverlay}.tsx
-supabase/functions/
-  send-assessment-invite/, claim-invite/, grade-code/, grade-sql/, finalize-attempt/
-```
+1. **DB migration**: add `status / featured / approved_at / approved_by` to `organizations`, `suspended_at` to `profiles`, create `admin_actions`, partial unique index `(type, slug)`. RLS for each.
+2. **Route rename**: mount learning under `/learn`, sweep links, add legacy `/dashboard/*` redirect, update `RouteRestorer`.
+3. **Parikshaa landing**: replace `/` page, wire CTAs.
+4. **Org slug routes**: `OrgRoute` guard, `OrgContext`, mount `/companies/:slug/*` and `/colleges/:slug/*`, redirect old `/b2b/*` flow.
+5. **Super-admin**: new shell + 5 pages + impersonation edge function.
+6. **QA pass**: walk every nav surface, every email-generated link, sitemap, route restorer.
 
-## 10. Build Order (suggested)
+## 6. Out of scope (called out so we don't drift)
 
-1. Migration: orgs, org_members, helper functions, RLS. B2B onboarding flow + `/b2b/dashboard` shell.
-2. Assessment CRUD + question bank + section builder.
-3. Invite flow (manual list, no email yet) → claim-invite function.
-4. Student player (MCQ + subjective first — no execution sandbox).
-5. Coding + SQL question types with grading edge functions.
-6. Basic proctoring (tab/fullscreen/snapshots) + integrity score.
-7. Results dashboard + CSV export + transactional invite emails.
-8. Pricing/contact-sales page + leads table.
-
-Each step ships independently; you can use the platform after step 4.
-
-## 11. Out of Scope for MVP (called out so we don't scope-creep)
-
-- Stripe billing, plans, seat management.
-- Plagiarism / AI cheating detection beyond tab/fullscreen events.
-- Live human proctoring, phone-as-side-camera (Side Eye AI sweep).
-- Public candidate profiles / employer search.
-- Question difficulty calibration & adaptive testing.
-- Multi-language UI.
-
-These are natural follow-ups once MVP is validated.
+- Public org profile pages (you explicitly said no).
+- Custom domains per org (`acme.parikshaa.app`) — future.
+- Stripe billing, seat management, MRR — only proxies in admin chart.
+- Migrating the existing `/admin/*` learning admin into the new shell — keeps shipping in parallel.

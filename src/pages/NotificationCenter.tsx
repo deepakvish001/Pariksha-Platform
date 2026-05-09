@@ -201,7 +201,7 @@ export default function NotificationCenter() {
               Mark all read ({unreadCount})
             </Button>
           )}
-          <Link to="/dashboard/notifications/preferences">
+          <Link to="/learn/notifications/preferences">
             <Button variant="outline" size="sm">
               <Settings className="h-4 w-4 mr-2" />
               Preferences

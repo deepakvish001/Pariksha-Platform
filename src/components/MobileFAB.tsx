@@ -32,7 +32,7 @@ const MobileFAB = ({ onOpenGoals }: MobileFABProps) => {
       icon: <LayoutGrid className="h-5 w-5" />,
       label: "Dashboard",
       onClick: () => {
-        navigate("/dashboard");
+        navigate("/learn");
         setIsOpen(false);
       },
       color: "bg-purple-500",
@@ -41,7 +41,7 @@ const MobileFAB = ({ onOpenGoals }: MobileFABProps) => {
       icon: <FileSpreadsheet className="h-5 w-5" />,
       label: "Sheets",
       onClick: () => {
-        navigate("/dashboard/sheets");
+        navigate("/learn/sheets");
         setIsOpen(false);
       },
       color: "bg-green-500",
@@ -70,8 +70,8 @@ const MobileFAB = ({ onOpenGoals }: MobileFABProps) => {
 
   // Filter out current page from actions
   const filteredActions = actions.filter((action) => {
-    if (action.label === "Dashboard" && location.pathname === "/dashboard") return false;
-    if (action.label === "Sheets" && location.pathname === "/dashboard/sheets") return false;
+    if (action.label === "Dashboard" && location.pathname === "/learn") return false;
+    if (action.label === "Sheets" && location.pathname === "/learn/sheets") return false;
     if (action.label === "Parikshaa AI" && location.pathname === "/platform/ai") return false;
     return true;
   });
