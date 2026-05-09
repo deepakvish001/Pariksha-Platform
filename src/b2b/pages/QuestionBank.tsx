@@ -58,63 +58,230 @@ export default function QuestionBank() {
   const { data: questions } = useQuestions(org?.id);
   const del = useDeleteQuestion();
   const [editing, setEditing] = useState<Question | null>(null);
+  const [filter, setFilter] = useState<"all" | QuestionType>("all");
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    let list = questions ?? [];
+    if (filter !== "all") list = list.filter((q) => q.type === filter);
+    const s = search.trim().toLowerCase();
+    if (s) {
+      list = list.filter(
+        (q) =>
+          q.title.toLowerCase().includes(s) ||
+          (q.body_md ?? "").toLowerCase().includes(s) ||
+          (q.language ?? "").toLowerCase().includes(s),
+      );
+    }
+    return list;
+  }, [questions, filter, search]);
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: questions?.length ?? 0 };
+    TYPES.forEach((t) => (c[t.value] = 0));
+    (questions ?? []).forEach((q) => (c[q.type] = (c[q.type] ?? 0) + 1));
+    return c;
+  }, [questions]);
 
   if (isLoading) return <OrgShell title="Question Bank">Loading…</OrgShell>;
   if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
 
+  const empty = !questions?.length;
+
   return (
     <OrgShell
       title="Question Bank"
-      actions={<NewQuestionDialog orgId={org!.id} />}
+      actions={
+        <div className="flex items-center gap-2">
+          <ImportQuestionsDialog orgId={org!.id} />
+          <NewQuestionDialog orgId={org!.id} />
+        </div>
+      }
     >
-      {!questions?.length ? (
+      {empty ? (
         <div className="b2b-card p-12 text-center">
           <Library className="h-8 w-8 mx-auto text-[hsl(var(--muted-foreground))]" />
           <p className="mt-3 font-medium">No questions yet</p>
           <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
             Build a reusable bank of coding, MCQ, SQL, and subjective questions.
           </p>
-          <div className="mt-4 flex justify-center">
+          <div className="mt-4 flex justify-center gap-2">
+            <ImportQuestionsDialog orgId={org!.id} />
             <NewQuestionDialog orgId={org!.id} />
           </div>
         </div>
       ) : (
-        <div className="grid gap-3">
-          {questions.map((q) => (
-            <div key={q.id} className="b2b-card p-4 flex items-center justify-between gap-3">
-              <button
-                onClick={() => setEditing(q)}
-                className="flex-1 min-w-0 text-left"
-              >
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{q.type}</Badge>
-                  <span className="font-medium truncate">{q.title}</span>
-                </div>
-                <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                  {q.points} pts {q.language ? `· ${q.language}` : ""}
-                </div>
-              </button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  if (!confirm(`Delete "${q.title}"?`)) return;
-                  del.mutate({ id: q.id, org_id: q.org_id });
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+        <>
+          <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-1">
+              {FILTERS.map((f) => {
+                const active = filter === f.value;
+                return (
+                  <button
+                    key={f.value}
+                    onClick={() => setFilter(f.value)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      active
+                        ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                        : "bg-[hsl(var(--secondary))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                    }`}
+                  >
+                    {f.label}
+                    <span className="ml-1.5 opacity-70">{counts[f.value] ?? 0}</span>
+                  </button>
+                );
+              })}
             </div>
-          ))}
-        </div>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[hsl(var(--muted-foreground))]" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search questions…"
+                className="pl-8 h-9 text-sm"
+              />
+            </div>
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+              No questions match your filters.
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {filtered.map((q) => (
+                <div key={q.id} className="b2b-card p-4 flex items-center justify-between gap-3">
+                  <button onClick={() => setEditing(q)} className="flex-1 min-w-0 text-left">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{q.type}</Badge>
+                      <span className="font-medium truncate">{q.title}</span>
+                    </div>
+                    <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                      {q.points} pts {q.language ? `· ${q.language}` : ""}
+                    </div>
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (!confirm(`Delete "${q.title}"?`)) return;
+                      del.mutate({ id: q.id, org_id: q.org_id });
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
-      {editing && (
-        <QuestionEditorDialog
-          question={editing}
-          onClose={() => setEditing(null)}
-        />
-      )}
+      {editing && <QuestionEditorDialog question={editing} onClose={() => setEditing(null)} />}
     </OrgShell>
+  );
+}
+
+function ImportQuestionsDialog({ orgId }: { orgId: string }) {
+  const [open, setOpen] = useState(false);
+  const [json, setJson] = useState("");
+  const [busy, setBusy] = useState(false);
+  const create = useCreateQuestion();
+
+  const SAMPLE = JSON.stringify(
+    [
+      { type: "mcq", title: "What does HTTP stand for?", body_md: "Pick the correct expansion.", points: 5 },
+      { type: "coding", title: "Two Sum", body_md: "Return indices of two numbers that add up to target.", points: 20, language: "javascript" },
+    ],
+    null,
+    2,
+  );
+
+  const onImport = async () => {
+    let arr: any;
+    try {
+      arr = JSON.parse(json);
+    } catch (e: any) {
+      toast.error("Invalid JSON: " + e.message);
+      return;
+    }
+    if (!Array.isArray(arr)) {
+      toast.error("JSON must be an array of questions");
+      return;
+    }
+    const valid: QuestionType[] = ["coding", "mcq", "sql", "subjective"];
+    setBusy(true);
+    let ok = 0;
+    let failed = 0;
+    for (const item of arr) {
+      try {
+        if (!item?.title || !valid.includes(item.type)) {
+          failed++;
+          continue;
+        }
+        await create.mutateAsync({
+          org_id: orgId,
+          type: item.type,
+          title: String(item.title),
+          body_md: item.body_md ? String(item.body_md) : undefined,
+          points: Number(item.points) || 10,
+          language: item.language ? String(item.language) : undefined,
+        });
+        ok++;
+      } catch {
+        failed++;
+      }
+    }
+    setBusy(false);
+    toast.success(`Imported ${ok} question${ok === 1 ? "" : "s"}${failed ? ` · ${failed} failed` : ""}`);
+    if (ok > 0) {
+      setOpen(false);
+      setJson("");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <Upload className="h-4 w-4 mr-1" /> Import
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Bulk import questions</DialogTitle>
+          <DialogDescription>
+            Paste a JSON array. Each item needs <code>type</code> (coding | mcq | sql | subjective) and <code>title</code>. Options and test cases can be added after import.
+          </DialogDescription>
+        </DialogHeader>
+        <Textarea
+          value={json}
+          onChange={(e) => setJson(e.target.value)}
+          placeholder={SAMPLE}
+          className="min-h-[260px] font-mono text-xs"
+        />
+        <div className="flex justify-between items-center">
+          <button
+            type="button"
+            className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] underline-offset-2 hover:underline"
+            onClick={() => setJson(SAMPLE)}
+          >
+            Insert sample
+          </button>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            disabled={!json.trim() || busy}
+            onClick={onImport}
+            className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+          >
+            {busy ? "Importing…" : "Import"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
