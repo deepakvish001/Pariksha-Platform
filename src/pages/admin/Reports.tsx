@@ -25,7 +25,7 @@ const Reports = () => {
       </Tabs>
 
       <Card className="mt-4 p-4">
-        {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : (
+        {isLoading ? <p className="text-sm text-muted-foreground"></p> : (
           <table className="w-full text-sm">
             <thead className="text-left text-muted-foreground">
               <tr className="border-b border-border/50">

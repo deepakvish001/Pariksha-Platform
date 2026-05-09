@@ -94,7 +94,7 @@ const AuditLog = () => {
 
       <Card className="p-4">
         {isLoading ? (
-          <p className="text-muted-foreground">Loading…</p>
+          <p className="text-muted-foreground"></p>
         ) : rows.length === 0 ? (
           <p className="text-muted-foreground">No matching entries.</p>
         ) : (

@@ -53,7 +53,7 @@ const StorageBrowser = () => {
           <Button variant="outline" size="sm" onClick={load}>Refresh</Button>
         </div>
 
-        {loading ? <p className="text-sm text-muted-foreground">Loading…</p> : (
+        {loading ? <p className="text-sm text-muted-foreground"></p> : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-muted-foreground">

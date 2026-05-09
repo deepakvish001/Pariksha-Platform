@@ -36,7 +36,7 @@ export default function B2BTeam() {
   if (loadingOrgs) {
     return (
       <OrgShell title="Team">
-        <div className="text-sm text-[hsl(var(--muted-foreground))]">Loading…</div>
+        <div className="text-sm text-[hsl(var(--muted-foreground))]"></div>
       </OrgShell>
     );
   }
@@ -68,7 +68,7 @@ export default function B2BTeam() {
           </span>
         </div>
         {isLoading ? (
-          <div className="p-6 text-sm text-[hsl(var(--muted-foreground))]">Loading members…</div>
+          <div className="p-6 text-sm text-[hsl(var(--muted-foreground))]"></div>
         ) : (members?.length ?? 0) === 0 ? (
           <div className="p-6 text-sm text-[hsl(var(--muted-foreground))]">No members yet.</div>
         ) : (

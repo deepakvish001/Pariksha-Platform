@@ -1038,7 +1038,7 @@ const QuizHistory: React.FC = () => {
          </CardHeader>
          <CardContent>
            {isLoading ? (
-             <div className="text-center py-8 text-muted-foreground">Loading...</div>
+             <div className="text-center py-8 text-muted-foreground"></div>
            ) : filteredResults.length === 0 ? (
              <div className="text-center py-8 text-muted-foreground">
                {results.length === 0 

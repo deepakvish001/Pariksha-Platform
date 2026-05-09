@@ -26,7 +26,7 @@ export default function B2BDashboard() {
   if (isLoading) {
     return (
       <OrgShell title="Dashboard">
-        <div className="text-sm text-[hsl(var(--muted-foreground))]">Loading…</div>
+        <div className="text-sm text-[hsl(var(--muted-foreground))]"></div>
       </OrgShell>
     );
   }

@@ -18,7 +18,7 @@ const CronJobs = () => {
 
       <Card className="p-0 overflow-x-auto">
         {isLoading ? (
-          <p className="p-6 text-sm text-muted-foreground">Loading…</p>
+          <p className="p-6 text-sm text-muted-foreground"></p>
         ) : jobs.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">No scheduled jobs found.</p>
         ) : (

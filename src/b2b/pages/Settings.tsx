@@ -35,7 +35,7 @@ export default function B2BSettings() {
   if (isLoading) {
     return (
       <OrgShell title="Settings">
-        <div className="text-sm text-[hsl(var(--muted-foreground))]">Loading…</div>
+        <div className="text-sm text-[hsl(var(--muted-foreground))]"></div>
       </OrgShell>
     );
   }

@@ -218,7 +218,7 @@ export default function DemoRequestsAdmin() {
           <TabsContent value={tab} className="mt-4">
             <div className="rounded-lg border bg-card divide-y">
               {isLoading ? (
-                <div className="px-4 py-6 text-sm text-muted-foreground">Loading…</div>
+                <div className="px-4 py-6 text-sm text-muted-foreground"></div>
               ) : filtered.length === 0 ? (
                 <div className="px-4 py-10 text-center text-sm text-muted-foreground">
                   No demo requests match these filters.

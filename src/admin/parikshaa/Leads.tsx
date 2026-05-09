@@ -80,7 +80,7 @@ export default function ParikshaaLeads() {
             <TabsContent key={s} value={s} className="mt-4">
               <div className="rounded-lg border bg-card divide-y">
                 {isLoading ? (
-                  <div className="px-4 py-6 text-sm text-muted-foreground">Loading…</div>
+                  <div className="px-4 py-6 text-sm text-muted-foreground"></div>
                 ) : (data ?? []).length === 0 ? (
                   <div className="px-4 py-6 text-sm text-muted-foreground">No leads here.</div>
                 ) : (

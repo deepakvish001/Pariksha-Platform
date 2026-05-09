@@ -1033,7 +1033,7 @@ export default function CodingLeaderboard() {
             {loading ? (
               <span className="inline-flex items-center gap-2">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Loading results…
+                
               </span>
             ) : (
               <>
