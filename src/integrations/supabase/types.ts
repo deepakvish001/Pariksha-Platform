@@ -793,6 +793,51 @@ export type Database = {
           },
         ]
       }
+      b2b_leads: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          name: string
+          org_type: string
+          organization: string
+          source: string | null
+          status: string
+          team_size: string | null
+          updated_at: string
+          user_id: string | null
+          work_email: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          name: string
+          org_type: string
+          organization: string
+          source?: string | null
+          status?: string
+          team_size?: string | null
+          updated_at?: string
+          user_id?: string | null
+          work_email: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          name?: string
+          org_type?: string
+          organization?: string
+          source?: string | null
+          status?: string
+          team_size?: string | null
+          updated_at?: string
+          user_id?: string | null
+          work_email?: string
+        }
+        Relationships: []
+      }
       battle_achievements: {
         Row: {
           achievement_key: string

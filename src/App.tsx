@@ -25,6 +25,7 @@ import B2BAttemptDetail from "@/b2b/pages/assessments/AttemptDetail";
 import B2BQuestionBank from "@/b2b/pages/QuestionBank";
 import B2BTeam from "@/b2b/pages/Team";
 import B2BSettings from "@/b2b/pages/Settings";
+import B2BPricing from "@/b2b/pages/Pricing";
 import StudentJoin from "@/assessments/pages/Join";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
@@ -233,6 +234,7 @@ const App = () => (
 
                 {/* B2B (Parikshaa for Teams) */}
                 <Route path="/b2b" element={<B2BLanding />} />
+                <Route path="/pricing" element={<B2BPricing />} />
                 <Route path="/b2b/onboarding" element={<ProtectedRoute><B2BOnboarding /></ProtectedRoute>} />
                 <Route path="/b2b/dashboard" element={<ProtectedRoute><B2BDashboard /></ProtectedRoute>} />
                 <Route path="/b2b/assessments" element={<ProtectedRoute><B2BAssessmentsList /></ProtectedRoute>} />
