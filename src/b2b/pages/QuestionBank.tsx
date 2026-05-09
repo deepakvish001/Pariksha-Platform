@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { OrgShell } from "../layouts/OrgShell";
 import { useMyOrganizations } from "../hooks/useOrg";
+import { supabase } from "@/integrations/supabase/client";
 import {
   useQuestions,
   useCreateQuestion,
@@ -37,7 +38,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Library, Search, Upload } from "lucide-react";
+import { Plus, Trash2, Library, Search, Upload, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 const TYPES: { value: QuestionType; label: string }[] = [
@@ -93,6 +94,7 @@ export default function QuestionBank() {
       title="Question Bank"
       actions={
         <div className="flex items-center gap-2">
+          <AIGenerateDialog orgId={org!.id} />
           <ImportQuestionsDialog orgId={org!.id} />
           <NewQuestionDialog orgId={org!.id} />
         </div>
