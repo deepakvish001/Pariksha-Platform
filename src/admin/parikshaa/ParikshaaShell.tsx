@@ -302,6 +302,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   leads: "Leads & Growth",
   "demo-requests": "Demo Requests",
   funnel: "Conversion Funnel",
+  "email-preview": "Email Preview",
 };
 
 const buildCrumbs = (pathname: string) => {
