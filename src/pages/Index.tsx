@@ -1,7 +1,8 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import { DelayedLoginPrompt } from "@/components/DelayedLoginPrompt";
+import { captureUtm, trackLeadEvent } from "@/lib/leadTracking";
 
 const CompanyLogos = lazy(() => import("@/components/CompanyLogos"));
 const ValueProps = lazy(() => import("@/components/ValueProps"));
