@@ -7,7 +7,6 @@ import {
   Plus,
   Upload,
   Megaphone,
-  CalendarClock,
   AlertTriangle,
   Users,
   Activity,
@@ -15,7 +14,6 @@ import {
   UserPlus,
   Code2,
   CheckCircle2,
-  Sparkles,
   Flag,
   type LucideIcon,
 } from "lucide-react";
