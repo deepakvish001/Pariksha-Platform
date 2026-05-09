@@ -2,6 +2,7 @@ import { ArrowRight, Sparkles, Briefcase, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
+import HeroLeadCapture from "./HeroLeadCapture";
 
 const taglines = ["Into Offers", "Into Hires", "Into Results", "Into Careers"];
 
