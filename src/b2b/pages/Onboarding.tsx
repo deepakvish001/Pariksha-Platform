@@ -172,14 +172,38 @@ export default function B2BOnboarding() {
         setEmails(parsed.emails);
         setEmailErrors(parsed.emails.map(() => null));
       }
-      if (Array.isArray(parsed.links) && parsed.links.length) {
-        setGeneratedLinks(parsed.links);
+      // Drop any links that have already expired before re-displaying them.
+      const fresh = (parsed.links ?? []).filter(
+        (l) => new Date(l.expires_at).getTime() > Date.now(),
+      );
+      if (fresh.length) setGeneratedLinks(fresh);
+      if (fresh.length !== (parsed.links?.length ?? 0)) {
+        // Persist the cleaned snapshot immediately.
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ ...parsed, links: fresh, savedAt: Date.now() }),
+          );
+        } catch {
+          /* ignore */
+        }
       }
       setStep(2);
     } catch {
       /* ignore */
     }
   }, []);
+
+  // Auto-purge expired links on every tick so stale entries never linger.
+  useEffect(() => {
+    if (!generatedLinks?.length) return;
+    const stillValid = generatedLinks.filter(
+      (l) => new Date(l.expires_at).getTime() > Date.now(),
+    );
+    if (stillValid.length !== generatedLinks.length) {
+      setGeneratedLinks(stillValid.length ? stillValid : null);
+    }
+  });
 
   // Persist step 2 state
   useEffect(() => {
