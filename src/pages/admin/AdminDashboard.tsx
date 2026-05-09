@@ -146,7 +146,7 @@ const AdminDashboard = () => {
           <Kpi label="Signups 7d" value={kpi("signups_7d")} icon={UserPlus} tone="success" />
           <Kpi label="Submissions" value={kpi("submissions_total")} icon={Code2} />
           <Kpi label="Accepted today" value={kpi("accepted_today")} icon={CheckCircle2} tone="success" />
-          <Kpi label="AI content" value={kpi("ai_content_total")} icon={Sparkles} />
+          
           <Kpi
             label="Open reports"
             value={openReports}
