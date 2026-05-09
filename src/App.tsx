@@ -238,6 +238,10 @@ const App = () => (
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
 
+                {/* Legacy /dashboard → /learn redirect (one-shot, kept for old bookmarks) */}
+                <Route path="/dashboard" element={<LegacyDashboardRedirect />} />
+                <Route path="/dashboard/*" element={<LegacyDashboardRedirect />} />
+
                 {/* B2B (Parikshaa for Teams) */}
                 <Route path="/b2b" element={<B2BLanding />} />
                 <Route path="/pricing" element={<B2BPricing />} />
