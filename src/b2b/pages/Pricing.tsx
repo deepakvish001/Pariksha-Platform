@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, ArrowRight, Sparkles, Building2, GraduationCap } from "lucide-react";
+import { CheckCircle2, ArrowRight, Sparkles, Building2, GraduationCap, Minus, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -25,6 +25,7 @@ type Tier = {
   price: string;
   unit?: string;
   features: string[];
+  demoIncludes: string[];
   cta: string;
   highlight?: boolean;
 };
@@ -41,6 +42,11 @@ const TIERS: Tier[] = [
       "1 organization workspace",
       "Email support",
     ],
+    demoIncludes: [
+      "Self-serve onboarding tour",
+      "Sample assessment template",
+      "Async email walkthrough",
+    ],
     cta: "Get started",
   },
   {
@@ -55,6 +61,12 @@ const TIERS: Tier[] = [
       "Bulk CSV invites",
       "CSV export of results",
       "Priority support",
+    ],
+    demoIncludes: [
+      "30-min live demo with a specialist",
+      "Tailored to your hiring workflow",
+      "Sandbox workspace pre-loaded for you",
+      "Free pilot test with 50 candidates",
     ],
     cta: "Contact sales",
     highlight: true,
@@ -71,9 +83,67 @@ const TIERS: Tier[] = [
       "Custom proctoring policies",
       "SLA + uptime guarantees",
     ],
+    demoIncludes: [
+      "60-min strategic demo with founders",
+      "Security & compliance review (SOC2)",
+      "Pilot with up to 500 candidates",
+      "Custom SSO & branding setup call",
+      "Dedicated Slack channel during pilot",
+    ],
     cta: "Contact sales",
   },
 ];
+
+type CompareValue = boolean | string;
+type CompareRow = { feature: string; starter: CompareValue; growth: CompareValue; enterprise: CompareValue };
+type CompareSection = { title: string; rows: CompareRow[] };
+
+const COMPARISON: CompareSection[] = [
+  {
+    title: "Assessments",
+    rows: [
+      { feature: "Candidates / month", starter: "25", growth: "Unlimited", enterprise: "Unlimited" },
+      { feature: "Active assessments", starter: "3", growth: "Unlimited", enterprise: "Unlimited" },
+      { feature: "Coding, MCQ, SQL & subjective", starter: true, growth: true, enterprise: true },
+      { feature: "Question bank reuse", starter: false, growth: true, enterprise: true },
+      { feature: "Custom rubrics & weighted scoring", starter: false, growth: true, enterprise: true },
+    ],
+  },
+  {
+    title: "Proctoring & integrity",
+    rows: [
+      { feature: "Browser-level proctoring", starter: "Basic", growth: "Full", enterprise: "Full + custom" },
+      { feature: "Integrity score per attempt", starter: false, growth: true, enterprise: true },
+      { feature: "Tamper-proof audit log", starter: false, growth: true, enterprise: true },
+      { feature: "AI-assisted attempt detection", starter: false, growth: true, enterprise: true },
+    ],
+  },
+  {
+    title: "Team & access",
+    rows: [
+      { feature: "Seats", starter: "2", growth: "10", enterprise: "Unlimited" },
+      { feature: "Role-based permissions", starter: false, growth: true, enterprise: true },
+      { feature: "SSO (SAML / Google)", starter: false, growth: false, enterprise: true },
+      { feature: "Custom subdomain & branding", starter: false, growth: true, enterprise: true },
+    ],
+  },
+  {
+    title: "Support & onboarding",
+    rows: [
+      { feature: "Email support", starter: "48h", growth: "12h priority", enterprise: "1h priority" },
+      { feature: "Live demo & training", starter: false, growth: "30 min", enterprise: "60 min + workshop" },
+      { feature: "Free pilot test included", starter: false, growth: "50 candidates", enterprise: "500 candidates" },
+      { feature: "Dedicated success manager", starter: false, growth: false, enterprise: true },
+      { feature: "SLA & uptime guarantees", starter: false, growth: false, enterprise: true },
+    ],
+  },
+];
+
+function CompareCell({ value }: { value: CompareValue }) {
+  if (value === true) return <Check className="h-4 w-4 text-[hsl(var(--primary))] mx-auto" aria-label="Included" />;
+  if (value === false) return <Minus className="h-4 w-4 text-[hsl(var(--muted-foreground))]/50 mx-auto" aria-label="Not included" />;
+  return <span className="text-xs text-[hsl(var(--foreground))] font-medium">{value}</span>;
+}
 
 export default function B2BPricing() {
   const { user } = useAuth();
