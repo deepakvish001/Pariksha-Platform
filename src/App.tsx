@@ -22,6 +22,10 @@ import B2BAssessmentsList from "@/b2b/pages/assessments/List";
 import B2BAssessmentNew from "@/b2b/pages/assessments/New";
 import B2BAssessmentDetail from "@/b2b/pages/assessments/Detail";
 import B2BQuestionBank from "@/b2b/pages/QuestionBank";
+import StudentJoin from "@/assessments/pages/Join";
+import MyAssessments from "@/assessments/pages/MyAssessments";
+import StudentLobby from "@/assessments/pages/Lobby";
+import StudentPlayer from "@/assessments/pages/Player";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -232,6 +236,12 @@ const App = () => (
                 <Route path="/b2b/assessments/new" element={<ProtectedRoute><B2BAssessmentNew /></ProtectedRoute>} />
                 <Route path="/b2b/assessments/:id" element={<ProtectedRoute><B2BAssessmentDetail /></ProtectedRoute>} />
                 <Route path="/b2b/question-bank" element={<ProtectedRoute><B2BQuestionBank /></ProtectedRoute>} />
+
+                {/* Student-side assessments */}
+                <Route path="/assessments/join/:token" element={<StudentJoin />} />
+                <Route path="/assessments" element={<ProtectedRoute><MyAssessments /></ProtectedRoute>} />
+                <Route path="/assessments/:attemptId/lobby" element={<ProtectedRoute><StudentLobby /></ProtectedRoute>} />
+                <Route path="/assessments/:attemptId/play" element={<ProtectedRoute><StudentPlayer /></ProtectedRoute>} />
 
                 <Route path="/shared/:shareCode" element={<SharedFolder />} />
                 <Route
