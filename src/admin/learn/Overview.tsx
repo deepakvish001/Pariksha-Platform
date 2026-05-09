@@ -24,12 +24,35 @@ import { useQueryClient } from "@tanstack/react-query";
 type Range = "24h" | "7d" | "30d";
 const RANGE_DAYS: Record<Range, number> = { "24h": 1, "7d": 7, "30d": 30 };
 
-const Kpi = ({ label, value, accent }: { label: string; value: number | string; accent?: string }) => (
-  <Card className="p-4">
-    <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-    <p className={`mt-1 text-3xl font-bold ${accent ?? ""}`}>{value ?? "—"}</p>
-  </Card>
-);
+const Kpi = ({
+  label,
+  value,
+  accent,
+  to,
+}: {
+  label: string;
+  value: number | string;
+  accent?: string;
+  to?: string;
+}) => {
+  const body = (
+    <Card
+      className={`p-4 h-full ${
+        to ? "transition hover:border-primary/50 hover:bg-secondary/40 cursor-pointer" : ""
+      }`}
+    >
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`mt-1 text-3xl font-bold ${accent ?? ""}`}>{value ?? "—"}</p>
+    </Card>
+  );
+  return to ? (
+    <Link to={to} className="block">
+      {body}
+    </Link>
+  ) : (
+    body
+  );
+};
 
 const QuickLink = ({
   to,
