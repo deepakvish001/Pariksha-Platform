@@ -70,7 +70,7 @@ export function useAssessmentInsights(assessmentId?: string) {
       let answers: any[] = [];
       if (attemptIds.length > 0) {
         const { data, error } = await supabase
-          .from("assessment_answers")
+          .from("attempt_answers")
           .select("attempt_id,question_id,auto_score,manual_score")
           .in("attempt_id", attemptIds);
         if (error) throw error;
