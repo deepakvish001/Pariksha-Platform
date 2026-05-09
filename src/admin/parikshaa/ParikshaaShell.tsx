@@ -295,6 +295,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   orgs: "Companies & Colleges",
   moderation: "Moderation",
   leads: "Leads & Growth",
+  "demo-requests": "Demo Requests",
 };
 
 const buildCrumbs = (pathname: string) => {
