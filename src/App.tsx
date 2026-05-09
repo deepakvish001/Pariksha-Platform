@@ -36,6 +36,14 @@ import { OrgWorkspace } from "@/b2b/context/OrgContext";
 import { ParikshaaShell } from "@/admin/parikshaa/ParikshaaShell";
 import { LearnShell } from "@/admin/learn/LearnShell";
 import LearnOverview from "@/admin/learn/Overview";
+import {
+  LearnProblems,
+  LearnUsers,
+  LearnDaily,
+  LearnAIContent,
+  LearnReports,
+  LearnBroadcast,
+} from "@/admin/learn/Pages";
 import ParikshaaOverview from "@/admin/parikshaa/Overview";
 import ParikshaaUsers from "@/admin/parikshaa/Users";
 import ParikshaaOrgs from "@/admin/parikshaa/Orgs";
@@ -518,6 +526,12 @@ const App = () => (
                   }
                 >
                   <Route index element={<LearnOverview />} />
+                  <Route path="problems" element={<LearnProblems />} />
+                  <Route path="users" element={<LearnUsers />} />
+                  <Route path="daily" element={<LearnDaily />} />
+                  <Route path="ai-content" element={<LearnAIContent />} />
+                  <Route path="reports" element={<LearnReports />} />
+                  <Route path="broadcast" element={<LearnBroadcast />} />
                 </Route>
 
                 {/* Parikshaa Control Center (super-admin) */}
