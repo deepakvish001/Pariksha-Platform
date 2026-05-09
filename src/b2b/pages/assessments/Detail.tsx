@@ -28,6 +28,8 @@ import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon } from "
 import { toast } from "sonner";
 import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
 import { Textarea } from "@/components/ui/textarea";
+import { useAttempts } from "../../hooks/useAttempts";
+import { Link } from "react-router-dom";
 
 const TYPE_LABEL: Record<string, string> = {
   coding: "Code",
@@ -87,6 +89,7 @@ export default function AssessmentDetail() {
         <TabsList>
           <TabsTrigger value="sections">Sections & Questions</TabsTrigger>
           <TabsTrigger value="invites">Invites</TabsTrigger>
+          <TabsTrigger value="results">Results</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="sections">
@@ -94,6 +97,9 @@ export default function AssessmentDetail() {
         </TabsContent>
         <TabsContent value="invites">
           <InvitesPanel assessmentId={assessment.id} />
+        </TabsContent>
+        <TabsContent value="results">
+          <ResultsPanel assessmentId={assessment.id} />
         </TabsContent>
         <TabsContent value="settings">
           <SettingsPanel assessment={assessment} onDelete={async () => {
