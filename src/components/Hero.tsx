@@ -1,4 +1,4 @@
-import { ArrowRight, Sparkles, ShieldCheck, GraduationCap, Briefcase, Code2, CheckCircle2, Zap } from "lucide-react";
+import { ArrowRight, Sparkles, Briefcase, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
@@ -80,46 +80,6 @@ const AnimatedCounter = ({ value, suffix = "", label }: { value: number; suffix?
     </div>
   );
 };
-
-const featurePills = [
-  { icon: ShieldCheck, label: "AI Proctoring" },
-  { icon: Code2, label: "Coding Contests" },
-  { icon: Zap, label: "Auto-Grading" },
-  { icon: CheckCircle2, label: "Integrity Score" },
-];
-
-const audienceCards = [
-  {
-    icon: GraduationCap,
-    eyebrow: "For Colleges",
-    title: "Run placement drives in minutes",
-    desc: "Bulk-invite batches, mix coding + MCQ + SQL, and export results to recruiters.",
-    href: "/b2b",
-    accent: "from-blue-500/20 to-cyan-500/10",
-    ring: "hover:border-blue-500/40",
-    iconColor: "text-blue-400",
-  },
-  {
-    icon: Briefcase,
-    eyebrow: "For Companies",
-    title: "Hire developers without the noise",
-    desc: "Reuse a question bank, auto-grade objective rounds, manually grade code with rubrics.",
-    href: "/b2b",
-    accent: "from-amber-500/20 to-orange-500/10",
-    ring: "hover:border-amber-500/40",
-    iconColor: "text-amber-400",
-  },
-  {
-    icon: Sparkles,
-    eyebrow: "For Students",
-    title: "Learn free, prove it on Parikshaa",
-    desc: "DSA sheets, roadmaps, contests, and AI mentor — all free, forever.",
-    href: "/learn",
-    accent: "from-emerald-500/20 to-teal-500/10",
-    ring: "hover:border-emerald-500/40",
-    iconColor: "text-emerald-400",
-  },
-];
 
 const Hero = () => {
   return (
