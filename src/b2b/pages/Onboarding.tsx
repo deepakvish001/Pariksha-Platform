@@ -391,7 +391,6 @@ export default function B2BOnboarding() {
     }
     return null;
   };
-  };
 
   const generateAndSend = async (kind: "send" | "resend") => {
     if (!validateEmails()) return;
