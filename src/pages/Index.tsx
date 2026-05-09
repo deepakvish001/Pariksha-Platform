@@ -7,6 +7,7 @@ const CompanyLogos = lazy(() => import("@/components/CompanyLogos"));
 const ValueProps = lazy(() => import("@/components/ValueProps"));
 const ProductShowcase = lazy(() => import("@/components/ProductShowcase"));
 const Outcomes = lazy(() => import("@/components/Outcomes"));
+const ManualVsParikshaa = lazy(() => import("@/components/ManualVsParikshaa"));
 const Testimonials = lazy(() => import("@/components/Testimonials"));
 const FAQ = lazy(() => import("@/components/FAQ"));
 const CTA = lazy(() => import("@/components/CTA"));
@@ -26,6 +27,7 @@ const Index = () => {
       <LazySection><ValueProps /></LazySection>
       <LazySection><ProductShowcase /></LazySection>
       <LazySection><Outcomes /></LazySection>
+      <LazySection><ManualVsParikshaa /></LazySection>
       <LazySection><Testimonials /></LazySection>
       <LazySection><section id="faq"><FAQ /></section></LazySection>
       <LazySection><CTA /></LazySection>
