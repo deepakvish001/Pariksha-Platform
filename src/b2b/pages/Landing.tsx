@@ -431,51 +431,88 @@ export default function B2BLanding() {
   );
 }
 
+const FREE_EMAIL_RE = /@(gmail|yahoo|hotmail|outlook|icloud|proton|aol|live|rediffmail)\./i;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 function DemoLeadForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [org, setOrg] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; email?: string; org?: string }>({});
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [touched, setTouched] = useState<{ name?: boolean; email?: boolean }>({});
+  const [hasStarted, setHasStarted] = useState(false);
+  const [calendarUrl, setCalendarUrl] = useState<string | null>(null);
 
-  const validate = () => {
-    const e: typeof errors = {};
-    if (!name.trim()) e.name = "Required";
-    if (!email.trim()) e.email = "Required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Enter a valid work email";
-    if (!org.trim()) e.org = "Required";
-    setErrors(e);
-    return Object.keys(e).length === 0;
+  const errors = (() => {
+    const e: { name?: string; email?: string } = {};
+    if (touched.name) {
+      if (!name.trim()) e.name = "Please enter your full name";
+      else if (name.trim().length < 2) e.name = "Name is too short";
+    }
+    if (touched.email) {
+      const v = email.trim();
+      if (!v) e.email = "Work email is required";
+      else if (!EMAIL_RE.test(v)) e.email = "Enter a valid email like name@company.com";
+      else if (FREE_EMAIL_RE.test(v)) e.email = "Please use your work email (not a personal address)";
+    }
+    return e;
+  })();
+
+  const markStarted = () => {
+    if (!hasStarted) {
+      setHasStarted(true);
+      void trackLeadEvent("b2b_hero_form_start");
+    }
   };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    setTouched({ name: true, email: true });
+    // Re-evaluate against the synchronous values
+    const v = email.trim();
+    const finalErrors: { name?: string; email?: string } = {};
+    if (!name.trim()) finalErrors.name = "Please enter your full name";
+    else if (name.trim().length < 2) finalErrors.name = "Name is too short";
+    if (!v) finalErrors.email = "Work email is required";
+    else if (!EMAIL_RE.test(v)) finalErrors.email = "Enter a valid email like name@company.com";
+    else if (FREE_EMAIL_RE.test(v)) finalErrors.email = "Please use your work email (not a personal address)";
+    if (Object.keys(finalErrors).length) {
+      toast.error("Fix the highlighted fields to continue");
+      return;
+    }
     setSubmitting(true);
+    setServerError(null);
     try {
       const utm = getStoredUtm();
-      await supabase.functions.invoke("submit-demo-request", {
+      const { data: res, error } = await supabase.functions.invoke("submit-demo-request", {
         body: {
-          name,
-          email,
-          organization: org,
+          name: name.trim(),
+          email: v,
+          organization: v.split("@")[1]?.split(".")[0] ?? "—",
           source: "b2b_landing_hero",
           notes: "Quick capture from /b2b hero",
-          utm_source: utm.source,
-          utm_medium: utm.medium,
-          utm_campaign: utm.campaign,
-          utm_term: utm.term,
-          utm_content: utm.content,
+          utm: { ...utm, content: utm.content || "b2b_landing_hero" },
           referrer: document.referrer || null,
+          landingPage: window.location.pathname + window.location.search,
         },
       });
-      await trackLeadEvent("b2b_hero_form_submit", { email, org });
+      if (error || (res as { error?: string } | null)?.error) {
+        const msg = (res as { error?: string } | null)?.error || error?.message || "Something went wrong.";
+        setServerError(msg);
+        toast.error(msg);
+        await trackLeadEvent("b2b_hero_form_failed", { reason: msg });
+        return;
+      }
+      setCalendarUrl((res as { calendar_url?: string } | null)?.calendar_url ?? null);
+      await trackLeadEvent("b2b_hero_form_submit", { email: v });
       setSubmitted(true);
-      toast.success("Got it — we'll be in touch within 24 hours.");
+      toast.success("Got it — check your inbox for next steps.");
     } catch (err) {
       console.error(err);
-      toast.error("Something went wrong. Please try again or email sales@parikshaa.app.");
+      const msg = "Something went wrong. Please try again or email sales@parikshaa.app.";
+      setServerError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -483,57 +520,81 @@ function DemoLeadForm() {
 
   if (submitted) {
     return (
-      <div className="b2b-card p-7 text-center">
-        <div className="mx-auto h-12 w-12 rounded-full bg-[hsl(var(--primary))]/15 grid place-items-center">
-          <CheckCircle2 className="h-6 w-6 text-[hsl(var(--primary))]" />
+      <div className="b2b-card p-7 text-center animate-in fade-in slide-in-from-bottom-2">
+        <div className="mx-auto h-12 w-12 rounded-full bg-emerald-500/15 grid place-items-center">
+          <CheckCircle2 className="h-6 w-6 text-emerald-500" />
         </div>
         <h3 className="mt-4 text-lg font-semibold tracking-tight">You're on the list.</h3>
         <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
-          We'll reach out within 24 hours with a tailored demo. Want to start exploring now?
+          We just emailed <span className="font-medium text-[hsl(var(--foreground))]">{email}</span> with next steps and a link to pick a 15-min slot.
         </p>
-        <Button asChild className="mt-5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
-          <Link to="/b2b/onboarding">Set up your free org <ArrowRight className="h-4 w-4 ml-1" /></Link>
-        </Button>
+        <div className="mt-5 flex flex-col sm:flex-row gap-2 justify-center">
+          {calendarUrl && (
+            <Button
+              asChild
+              className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+            >
+              <a href={calendarUrl} target="_blank" rel="noopener noreferrer">
+                Book a slot now <ArrowRight className="h-4 w-4 ml-1" />
+              </a>
+            </Button>
+          )}
+          <Button asChild variant="outline">
+            <Link to="/b2b/onboarding">Or start free</Link>
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="b2b-card p-6 sm:p-7">
+    <form onSubmit={onSubmit} noValidate className="b2b-card p-6 sm:p-7">
       <h3 className="text-lg font-semibold tracking-tight">Book a tailored demo</h3>
       <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
-        15 minutes. See it live with your use case.
+        Just two fields. We'll email you a calendar link.
       </p>
       <div className="mt-5 space-y-3">
         <div>
           <Input
-            placeholder="Your name"
+            placeholder="Your full name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              markStarted();
+            }}
+            onBlur={() => setTouched((t) => ({ ...t, name: true }))}
             aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? "lead-name-err" : undefined}
+            disabled={submitting}
           />
-          {errors.name && <p className="text-xs text-red-400 mt-1">{errors.name}</p>}
+          {errors.name && (
+            <p id="lead-name-err" className="text-xs text-red-400 mt-1">{errors.name}</p>
+          )}
         </div>
         <div>
           <Input
             type="email"
-            placeholder="Work email"
+            placeholder="you@yourcompany.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              markStarted();
+            }}
+            onBlur={() => setTouched((t) => ({ ...t, email: true }))}
             aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? "lead-email-err" : undefined}
+            disabled={submitting}
           />
-          {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
-        </div>
-        <div>
-          <Input
-            placeholder="Organization (college / company)"
-            value={org}
-            onChange={(e) => setOrg(e.target.value)}
-            aria-invalid={!!errors.org}
-          />
-          {errors.org && <p className="text-xs text-red-400 mt-1">{errors.org}</p>}
+          {errors.email && (
+            <p id="lead-email-err" className="text-xs text-red-400 mt-1">{errors.email}</p>
+          )}
         </div>
       </div>
+      {serverError && (
+        <div className="mt-3 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          {serverError}
+        </div>
+      )}
       <Button
         type="submit"
         disabled={submitting}
@@ -543,7 +604,7 @@ function DemoLeadForm() {
         {!submitting && <ArrowRight className="h-4 w-4 ml-1" />}
       </Button>
       <p className="mt-3 text-[11px] text-[hsl(var(--muted-foreground))] text-center">
-        We never share your details. Unsubscribe anytime.
+        Takes 10 seconds. No credit card. Unsubscribe anytime.
       </p>
     </form>
   );
