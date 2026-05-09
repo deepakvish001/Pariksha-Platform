@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -8,39 +9,83 @@ import ScrollReveal from "./ScrollReveal";
 
 const faqs = [
   {
-    question: "Is Parikshaa free to use?",
-    answer: "Yes! Parikshaa is completely free. You can access all available features including DSA sheets, progress tracking, streaks, and profile — with no credit card required.",
+    question: "What is Parikshaa?",
+    answer:
+      "Parikshaa is an all-in-one platform that combines a free learning hub for students with a serious assessment & proctoring suite for colleges and companies. Learners practice DSA, SQL, system design, and aptitude; teams run secure, proctored coding rounds.",
   },
   {
-    question: "What DSA sheets are available?",
-    answer: "We offer curated problem sheets from Striver's SDE Sheet, A2Z Sheet, Love Babbar's DSA Sheet, NeetCode 150, NeetCode 250, Blind 75, and more — all with built-in progress tracking.",
+    question: "Is Parikshaa free for students?",
+    answer:
+      "Yes — the entire learning side is free. You get curated DSA sheets, roadmaps, daily challenges, contests, an AI mentor, progress tracking, streaks, and leaderboards with no credit card required.",
   },
   {
-    question: "How does progress tracking work?",
-    answer: "Mark problems as solved or for revision, and your progress is automatically saved. View your stats on a GitHub-style activity heatmap, track daily/weekly goals, and maintain streaks to stay consistent.",
+    question: "How does proctoring work for assessments?",
+    answer:
+      "Parikshaa runs entirely in the browser with built-in tab-switch detection, fullscreen enforcement, event logging, and our Side Eye AI which uses your phone as a side camera. Every attempt produces a single integrity score backed by a verifiable event log.",
   },
   {
-    question: "Can I access Parikshaa on mobile?",
-    answer: "Yes! Parikshaa is fully responsive and works on all devices. Your data syncs in real-time so you can switch between phone, tablet, and desktop seamlessly.",
+    question: "What question types can I include in a test?",
+    answer:
+      "Coding (with auto-grading and run-against-tests), MCQs, SQL with live execution, and long-form subjective questions — all in a single assessment. You can mix and match per section.",
   },
   {
-    question: "What features are coming next?",
-    answer: "We're actively building AI-powered learning assistant, learning roadmaps, resume builder, interview prep, and more. These are marked as 'Coming Soon' and will be unlocked progressively.",
+    question: "How do colleges and companies invite candidates?",
+    answer:
+      "Paste a CSV or list of emails and every candidate gets a unique join link in seconds. Each invite is single-use, identity-bound, and tied to your organization slug.",
   },
   {
-    question: "Do I need to create an account?",
-    answer: "Yes, a free account is required to save your progress across sessions. Sign up takes less than 30 seconds with email or Google authentication.",
+    question: "What DSA and interview content is available?",
+    answer:
+      "Striver SDE & A2Z, NeetCode 150 & 250, Blind 75, company-wise sheets, SQL question banks, system design, aptitude, and interview question libraries — all with built-in progress tracking and spaced repetition.",
+  },
+  {
+    question: "How does progress tracking and gamification work?",
+    answer:
+      "Mark problems as solved or for revision and your progress syncs in real time. A GitHub-style heatmap shows daily activity, streaks keep you accountable, and an XP system unlocks 20 levels and achievement badges.",
+  },
+  {
+    question: "Does Parikshaa work on mobile?",
+    answer:
+      "Yes. The learning experience is fully responsive across phone, tablet, and desktop, and your data syncs in real time. Proctored assessments are best taken on a laptop or desktop with a webcam.",
+  },
+  {
+    question: "Do I need an account to start learning?",
+    answer:
+      "Most learning content is browsable as a guest. To save progress, earn XP, join contests, or attempt invited assessments you'll need a free account — sign up takes under 30 seconds with email or Google.",
   },
 ];
 
 const FAQ = () => {
+  // Inject FAQPage JSON-LD for SEO
+  useEffect(() => {
+    const id = "faq-jsonld";
+    const existing = document.getElementById(id);
+    if (existing) existing.remove();
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = id;
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqs.map((f) => ({
+        "@type": "Question",
+        name: f.question,
+        acceptedAnswer: { "@type": "Answer", text: f.answer },
+      })),
+    });
+    document.head.appendChild(script);
+    return () => {
+      document.getElementById(id)?.remove();
+    };
+  }, []);
+
   return (
     <section className="py-24 bg-background">
       <div className="section-container">
         <ScrollReveal>
           <h2 className="section-title">Frequently Asked Questions</h2>
           <p className="section-subtitle">
-            Got questions? We've got answers
+            Everything you need to know before you start
           </p>
         </ScrollReveal>
 
