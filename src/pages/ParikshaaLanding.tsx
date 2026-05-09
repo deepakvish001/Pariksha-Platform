@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import "@/b2b/theme.css";
 import { B2BBackdrop, amberGradientText } from "@/b2b/components/B2BBackdrop";
+import { B2BSiteHeader } from "@/b2b/components/B2BSiteHeader";
 
 const CompanyLogos = lazy(() => import("@/components/CompanyLogos"));
 
@@ -23,7 +24,15 @@ export default function ParikshaaLanding() {
   return (
     <div className="theme-b2b relative min-h-screen overflow-hidden bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
       <B2BBackdrop />
-      <SiteHeader />
+      <B2BSiteHeader
+        links={[
+          { label: "Learn", to: "/learn" },
+          { label: "For Teams", to: "/b2b" },
+          { label: "Pricing", to: "/pricing" },
+        ]}
+        ctaTo="/learn"
+      />
+      <div className="pt-16">
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-[hsl(var(--border))]">
@@ -219,10 +228,12 @@ export default function ParikshaaLanding() {
       </section>
 
       <SiteFooter />
+      </div>
     </div>
   );
 }
 
+// Legacy header retained for compatibility (no longer used).
 function SiteHeader() {
   return (
     <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]/80 backdrop-blur sticky top-0 z-30">
