@@ -128,7 +128,7 @@ const Hero = () => {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black leading-[0.85] tracking-tight mb-8"
         >
-          <span className="block text-foreground">Turn Learning</span>
+          <span className="block text-foreground">Turn Assessments</span>
           <TypingEffect />
         </motion.h1>
 
