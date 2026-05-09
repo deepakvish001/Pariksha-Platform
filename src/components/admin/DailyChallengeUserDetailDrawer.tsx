@@ -123,7 +123,7 @@ function VirtualList<T>({
       {shown < items.length && (
         <div ref={sentinelRef} data-testid={testIdSentinel} className="flex items-center justify-center py-2 text-[11px] text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin mr-1" />
-          Loading more ({items.length - shown} remaining)
+          
         </div>
       )}
     </div>
@@ -182,7 +182,7 @@ export function DailyChallengeUserDetailDrawer({ open, onOpenChange, userId, dat
 
         {loading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground p-4" data-testid="drawer-loading" role="status" aria-live="polite">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading details…
+            <Loader2 className="h-4 w-4 animate-spin" /> 
           </div>
         )}
 

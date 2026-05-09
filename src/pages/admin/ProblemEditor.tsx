@@ -396,7 +396,7 @@ const ProblemEditor = () => {
       <AdminShell>
         <div className="mx-auto max-w-3xl space-y-3 p-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading problem “{slug}”…
+            <Loader2 className="h-4 w-4 animate-spin" /> 
           </div>
           <div className="h-8 w-1/2 animate-pulse rounded bg-muted" />
           <div className="h-32 w-full animate-pulse rounded bg-muted" />

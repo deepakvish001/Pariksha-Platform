@@ -159,7 +159,7 @@ const QuizLeaderboard: React.FC<QuizLeaderboardProps> = ({ quizType, currentUser
      return (
        <Card className="bg-card/50">
          <CardContent className="p-6 text-center text-muted-foreground">
-           Loading leaderboard...
+           
          </CardContent>
        </Card>
      );

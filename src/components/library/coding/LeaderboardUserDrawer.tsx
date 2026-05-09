@@ -99,7 +99,7 @@ type SortDir = "asc" | "desc";
 
 function DrawerSkeleton() {
   return (
-    <div className="space-y-5" aria-busy="true" aria-label="Loading breakdown">
+    <div className="space-y-5" aria-busy="true" aria-label="Breakdown">
       <div className="flex items-center gap-3 p-4 rounded-xl border border-border/60">
         <Skeleton className="h-12 w-12 rounded-full" />
         <div className="flex-1 space-y-2">

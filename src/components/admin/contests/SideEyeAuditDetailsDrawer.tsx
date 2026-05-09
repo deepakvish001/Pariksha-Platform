@@ -156,7 +156,7 @@ export const SideEyeAuditDetailsDrawer = ({ sessionId, event, open, onOpenChange
 
         {loading && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-4">
-            <Loader2 className="h-3 w-3 animate-spin" /> Loading details…
+            <Loader2 className="h-3 w-3 animate-spin" /> 
           </div>
         )}
 

@@ -179,7 +179,7 @@
        <Card>
          <CardContent className="py-12 text-center text-muted-foreground">
            <Activity className="h-8 w-8 mx-auto mb-2 animate-pulse" />
-           Loading statistics...
+           
          </CardContent>
        </Card>
      );
