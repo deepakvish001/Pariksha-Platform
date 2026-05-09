@@ -168,7 +168,7 @@ const GROUPS: NavGroup[] = [
   ]},
 ];
 
-const TRACKED: BadgeKey[] = ["/admin/reports", "/admin/ai-content", "/admin/system-health", "/admin/support"];
+const TRACKED: BadgeKey[] = ["/admin/reports", "/admin/system-health", "/admin/support"];
 
 const Badge = ({ count, tone = "default" }: { count: number; tone?: "default" | "alert" }) => {
   if (!count) return null;
