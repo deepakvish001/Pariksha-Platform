@@ -201,6 +201,7 @@ export default function B2BLanding() {
           </div>
         </div>
       </footer>
+      </div>
     </div>
   );
 }
