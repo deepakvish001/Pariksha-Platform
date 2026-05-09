@@ -418,7 +418,11 @@ export default function B2BOnboarding() {
                       </p>
                     </div>
 
-                    <div className="space-y-6">
+                    <fieldset
+                      disabled={submitting}
+                      aria-busy={submitting}
+                      className="space-y-5 disabled:opacity-60 sm:space-y-6"
+                    >
                       {/* Type selector */}
                       <div>
                         <Label className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
@@ -598,7 +602,7 @@ export default function B2BOnboarding() {
                       <p className="text-center text-[11px] text-[hsl(var(--muted-foreground))]">
                         By continuing you agree to Parikshaa's terms &amp; privacy policy.
                       </p>
-                    </div>
+                    </fieldset>
                   </>
                 )}
 
