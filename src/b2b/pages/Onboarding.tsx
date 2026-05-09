@@ -300,74 +300,107 @@ export default function B2BOnboarding() {
     ? `${window.location.origin}/${createdOrg.type === "company" ? "companies" : "colleges"}/${createdOrg.slug}/team`
     : "";
 
-  /** Per-email tokenized invite link. Bumping `linkSeed` regenerates them all. */
-  const buildInviteLink = (email: string, seed = linkSeed) => {
-    const handle = email.replace(/[^a-z0-9]+/gi, "-").slice(0, 24).toLowerCase();
-    const token = `${seed}-${handle || "guest"}`;
-    return `${teamUrl}?invite=${token}`;
-  };
-
-  const buildMailto = (links: { email: string; url: string }[]) => {
+  const buildMailto = (links: GeneratedLink[]) => {
     const subject = encodeURIComponent(
       `You're invited to ${createdOrg?.name ?? "our team"} on Parikshaa`,
     );
-    const lines = links
-      .map((l) => `• ${l.email}\n  ${l.url}`)
-      .join("\n");
+    const lines = links.map((l) => `• ${l.email}\n  ${l.url}`).join("\n");
     const body = encodeURIComponent(
       `Hi,\n\nI've set up "${createdOrg?.name}" on Parikshaa for our assessments.\n` +
         `Use your personal invite link below to join the team:\n\n${lines}\n\n` +
-        `Thanks!`,
+        `Each link expires in 72 hours.\n\nThanks!`,
     );
     return `mailto:${links.map((l) => l.email).join(",")}?subject=${subject}&body=${body}`;
   };
 
-  const generateAndSend = (seed: string) => {
-    if (!validateEmails()) return false;
+  /** Calls the secure edge function to mint server-issued, expiring tokens. */
+  const requestInviteLinks = async (): Promise<GeneratedLink[] | null> => {
+    if (!createdOrg) return null;
+    const { data, error } = await supabase.functions.invoke<{
+      links: GeneratedLink[];
+      expires_at: string;
+    }>("b2b-onboarding-invites", {
+      body: { org_id: createdOrg.id, emails: validEmails, ttl_hours: 72 },
+    });
+    if (error) {
+      toast({
+        title: "Could not generate invite links",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    }
+    return data?.links ?? null;
+  };
+
+  const generateAndSend = async (kind: "send" | "resend") => {
+    if (!validateEmails()) return;
     if (validEmails.length === 0) {
       toast({
         title: "Add at least one email",
         description: "Or click 'Skip for now' to finish onboarding.",
       });
-      return false;
+      return;
     }
-    const links = validEmails.map((email) => ({
-      email,
-      url: buildInviteLink(email, seed),
-    }));
-    setGeneratedLinks(links);
-    window.location.href = buildMailto(links);
-    return true;
-  };
-
-  const handleSendInvites = () => generateAndSend(linkSeed);
-
-  const handleResendInvites = () => {
-    const fresh = Math.random().toString(36).slice(2, 10);
-    setLinkSeed(fresh);
-    if (generateAndSend(fresh)) {
-      toast({
-        title: "Invite links refreshed",
-        description: "We regenerated unique links and reopened your email client.",
+    if (sendingInvites) return;
+    setSendingInvites(true);
+    try {
+      const links = await requestInviteLinks();
+      if (!links) return;
+      setGeneratedLinks(links);
+      void trackOnboarding(kind === "send" ? "invite_send" : "invite_resend", {
+        user_id: user?.id,
+        org_id: createdOrg?.id,
+        step: 2,
+        metadata: { count: links.length },
       });
+      toast({
+        title: kind === "send" ? "Invite links ready" : "Invite links refreshed",
+        description:
+          kind === "send"
+            ? `Generated ${links.length} secure link${links.length === 1 ? "" : "s"} • opens your email client.`
+            : "We rotated tokens and reopened your email client.",
+      });
+      window.location.href = buildMailto(links);
+    } finally {
+      setSendingInvites(false);
     }
   };
+
+  const handleSendInvites = () => void generateAndSend("send");
+  const handleResendInvites = () => void generateAndSend("resend");
 
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(teamUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
+      toast({ title: "Team link copied", description: teamUrl });
+      void trackOnboarding("copy_team_link", {
+        user_id: user?.id,
+        org_id: createdOrg?.id,
+        step: 2,
+      });
     } catch {
       toast({ title: "Could not copy link", variant: "destructive" });
     }
   };
 
-  const handleCopyInviteLink = async (url: string) => {
+  const handleCopyInviteLink = async (link: GeneratedLink) => {
     try {
-      await navigator.clipboard.writeText(url);
-      setCopiedLink(url);
-      setTimeout(() => setCopiedLink(null), 1800);
+      await navigator.clipboard.writeText(link.url);
+      setCopiedLink(link.url);
+      setTimeout(() => setCopiedLink(null), 2200);
+      toast({
+        title: `Invite link copied`,
+        description: `${link.email} — expires ${formatTimeLeft(link.expires_at).label.toLowerCase()}.`,
+      });
+      void trackOnboarding("copy_invite_link", {
+        user_id: user?.id,
+        org_id: createdOrg?.id,
+        step: 2,
+        metadata: { email: link.email },
+      });
     } catch {
       toast({ title: "Could not copy link", variant: "destructive" });
     }
@@ -375,9 +408,21 @@ export default function B2BOnboarding() {
 
   const finishOnboarding = () => {
     if (!createdOrg) return;
+    void trackOnboarding("skip_invites", {
+      user_id: user?.id,
+      org_id: createdOrg.id,
+      step: 2,
+      metadata: { had_links: !!generatedLinks?.length },
+    });
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
     const base = createdOrg.type === "company" ? "/companies" : "/colleges";
     navigate(`${base}/${createdOrg.slug}`);
   };
+
 
   // ────────────────────────────────────────────────────────────────────────
   return (
