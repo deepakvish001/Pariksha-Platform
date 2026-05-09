@@ -2,6 +2,7 @@ import { ArrowRight, Sparkles, Briefcase, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
+import HeroLeadCapture from "./HeroLeadCapture";
 
 const taglines = ["Into Offers", "Into Hires", "Into Results", "Into Careers"];
 
@@ -162,6 +163,15 @@ const Hero = () => {
             <Briefcase className="w-5 h-5 text-primary" />
             Book a Demo
           </Link>
+        </motion.div>
+
+        {/* Inline lead capture */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <HeroLeadCapture />
         </motion.div>
 
         {/* Reassurance microcopy */}

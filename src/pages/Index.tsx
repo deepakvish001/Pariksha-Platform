@@ -11,10 +11,12 @@ const Outcomes = lazy(() => import("@/components/Outcomes"));
 const ManualVsParikshaa = lazy(() => import("@/components/ManualVsParikshaa"));
 const Testimonials = lazy(() => import("@/components/Testimonials"));
 const CaseStudies = lazy(() => import("@/components/CaseStudies"));
+const RoiCalculator = lazy(() => import("@/components/RoiCalculator"));
 const DemoRequestForm = lazy(() => import("@/components/DemoRequestForm"));
 const FAQ = lazy(() => import("@/components/FAQ"));
 const CTA = lazy(() => import("@/components/CTA"));
 const Footer = lazy(() => import("@/components/Footer"));
+const StickyDemoCTA = lazy(() => import("@/components/StickyDemoCTA"));
 
 const LazySection = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<div className="min-h-[200px]" />}>{children}</Suspense>
@@ -45,13 +47,16 @@ const Index = () => {
       <LazySection><CaseStudies /></LazySection>
       {/* 8. SOCIAL PROOF — testimonials */}
       <LazySection><Testimonials /></LazySection>
-      {/* 9. OBJECTIONS — FAQ */}
+      {/* 9. SELF-SERVE ROI — interactive calculator */}
+      <LazySection><RoiCalculator /></LazySection>
+      {/* 10. OBJECTIONS — FAQ */}
       <LazySection><section id="faq"><FAQ /></section></LazySection>
-      {/* 10. CONVERT — tailored demo form */}
+      {/* 11. CONVERT — tailored demo form */}
       <LazySection><DemoRequestForm /></LazySection>
-      {/* 11. LAST PUSH — final CTA */}
+      {/* 12. LAST PUSH — final CTA */}
       <LazySection><CTA /></LazySection>
       <LazySection><Footer /></LazySection>
+      <LazySection><StickyDemoCTA /></LazySection>
     </main>
   );
 };
