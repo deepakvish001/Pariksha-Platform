@@ -506,6 +506,22 @@ const App = () => (
                 </Route>
                 <Route path="/admin/arena" element={<AdminRoute><AdminArena /></AdminRoute>} />
 
+                {/* Parikshaa Control Center (super-admin) */}
+                <Route
+                  path="/admin/parikshaa"
+                  element={
+                    <AdminRoute>
+                      <ParikshaaShell />
+                    </AdminRoute>
+                  }
+                >
+                  <Route index element={<ParikshaaOverview />} />
+                  <Route path="users" element={<ParikshaaUsers />} />
+                  <Route path="orgs" element={<ParikshaaOrgs />} />
+                  <Route path="moderation" element={<ParikshaaModeration />} />
+                  <Route path="leads" element={<ParikshaaLeads />} />
+                </Route>
+
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
