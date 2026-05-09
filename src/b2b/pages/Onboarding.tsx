@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { GraduationCap, Building2 } from "lucide-react";
 import { slugify } from "../hooks/useOrg";
 import "../theme.css";
+import { B2BBackdrop } from "../components/B2BBackdrop";
 
 export default function B2BOnboarding() {
   const { user } = useAuth();
@@ -42,7 +43,8 @@ export default function B2BOnboarding() {
   };
 
   return (
-    <div className="theme-b2b min-h-screen grid place-items-center px-4 py-10">
+    <div className="theme-b2b relative min-h-screen overflow-hidden grid place-items-center px-4 py-10 bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+      <B2BBackdrop variant="subtle" />
       <div className="w-full max-w-xl">
         <div className="text-center mb-8">
           <div className="mx-auto h-12 w-12 rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center font-bold text-xl">P</div>

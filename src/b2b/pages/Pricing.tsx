@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import "../theme.css";
+import { B2BBackdrop, amberGradientText } from "../components/B2BBackdrop";
 
 type Tier = {
   name: string;
@@ -115,7 +116,8 @@ export default function B2BPricing() {
   };
 
   return (
-    <div className="theme-b2b min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+    <div className="theme-b2b relative min-h-screen overflow-hidden bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+      <B2BBackdrop variant="subtle" />
       {/* Nav */}
       <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]/80 backdrop-blur sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
@@ -161,7 +163,7 @@ export default function B2BPricing() {
             <Sparkles className="h-3 w-3 text-[hsl(var(--primary))]" /> Simple, transparent pricing
           </div>
           <h1 className="mt-5 text-4xl sm:text-5xl font-semibold tracking-tight max-w-3xl mx-auto leading-[1.05]">
-            Pricing that scales with your hiring.
+            Pricing that <span className={amberGradientText}>scales</span> with your hiring.
           </h1>
           <p className="mt-4 text-base sm:text-lg text-[hsl(var(--muted-foreground))] max-w-2xl mx-auto">
             Start free. Talk to us when you're ready to run real-volume hiring or campus drives.

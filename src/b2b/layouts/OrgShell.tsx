@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { LayoutDashboard, FileText, Library, Users, Settings as SettingsIcon } from "lucide-react";
 import { useOrgBasePath } from "../context/OrgContext";
+import { B2BBackdrop } from "../components/B2BBackdrop";
 import "../theme.css";
 
 export function OrgShell({
@@ -37,9 +38,10 @@ export function OrgShell({
   const homeHref = isLegacy ? "/b2b/dashboard" : base;
 
   return (
-    <div className="theme-b2b min-h-screen">
-      <div className="flex">
-        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r bg-[hsl(var(--card))] min-h-screen sticky top-0">
+    <div className="theme-b2b relative min-h-screen overflow-hidden">
+      <B2BBackdrop variant="subtle" />
+      <div className="relative flex">
+        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl min-h-screen sticky top-0">
           <div className="px-5 py-5 border-b">
             <NavLink to={homeHref} className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center font-bold">
@@ -84,7 +86,7 @@ export function OrgShell({
         </aside>
 
         <main className="flex-1 min-w-0">
-          <header className="border-b bg-[hsl(var(--card))] px-6 py-4 flex items-center justify-between gap-4">
+          <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-10">
             <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
             <div className="flex items-center gap-2">{actions}</div>
           </header>
