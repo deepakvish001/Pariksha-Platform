@@ -379,7 +379,7 @@ export function LearnAIContent() {
     <>
       <LearnHeader
         title="AI Content"
-        actions={<FullLink to="/admin/ai-content">Open full moderation</FullLink>}
+        actions={<><RangeBadge /><FullLink to="/admin/ai-content">Open full moderation</FullLink></>}
       />
       <div className="p-4 sm:p-6 space-y-4">
         <div className="relative max-w-sm">
