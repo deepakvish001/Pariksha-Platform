@@ -155,15 +155,15 @@ const Hero = () => {
             to="/learn"
             className="group relative inline-flex items-center gap-2 px-10 py-5 rounded-full bg-gradient-to-r from-primary to-orange-500 text-primary-foreground font-bold text-lg shadow-2xl shadow-primary/30 hover:shadow-primary/40 transition-all duration-300 hover:scale-105"
           >
-            <span>Start Free Today</span>
+            <span>Learn (Free)</span>
             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
-            to="#features"
+            to="/b2b"
             className="inline-flex items-center gap-2 px-8 py-5 rounded-full border-2 border-border bg-card/50 backdrop-blur-sm text-foreground font-semibold hover:bg-card hover:border-primary/50 transition-all duration-300"
           >
             <Sparkles className="w-5 h-5 text-primary" />
-            Explore Features
+            For Teams
           </Link>
         </motion.div>
 
