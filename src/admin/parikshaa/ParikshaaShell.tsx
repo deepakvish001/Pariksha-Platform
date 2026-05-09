@@ -52,6 +52,14 @@ interface NavGroup {
   items: NavItem[];
 }
 
+interface NavItem {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  end?: boolean;
+  children?: { to: string; label: string }[];
+}
+
 const GROUPS: NavGroup[] = [
   {
     label: "Overview",
@@ -63,17 +71,35 @@ const GROUPS: NavGroup[] = [
     label: "People",
     items: [
       { to: "/admin/parikshaa/users", label: "Users", icon: Users },
-      { to: "/admin/parikshaa/orgs", label: "Companies & Colleges", icon: Building2 },
+      {
+        to: "/admin/parikshaa/orgs",
+        label: "Companies & Colleges",
+        icon: Building2,
+        children: [
+          { to: "/admin/parikshaa/orgs?tab=company", label: "Companies" },
+          { to: "/admin/parikshaa/orgs?tab=college", label: "Colleges" },
+        ],
+      },
     ],
   },
   {
     label: "Operations",
     items: [
-      { to: "/admin/parikshaa/moderation", label: "Moderation", icon: ShieldAlert },
+      {
+        to: "/admin/parikshaa/moderation",
+        label: "Moderation",
+        icon: ShieldAlert,
+        children: [
+          { to: "/admin/parikshaa/moderation?tab=reports", label: "Reports" },
+          { to: "/admin/parikshaa/moderation?tab=ai", label: "AI content" },
+        ],
+      },
       { to: "/admin/parikshaa/leads", label: "Leads & Growth", icon: TrendingUp },
     ],
   },
 ];
+
+// Re-declare interface above already (local). Remove old interface.
 
 const ParikshaaSidebar = () => {
   const { pathname } = useLocation();
