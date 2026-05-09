@@ -7135,6 +7135,7 @@ export type Database = {
             Returns: string
           }
       ensure_player_rating: { Args: { _user: string }; Returns: undefined }
+      get_attempt_paper: { Args: { _attempt: string }; Returns: Json }
       get_coding_leaderboard:
         | {
             Args: {
@@ -7330,6 +7331,28 @@ export type Database = {
       solo_start_session: {
         Args: { _difficulty?: string; _duration_sec?: number; _mode: string }
         Returns: string
+      }
+      submit_attempt: {
+        Args: { _attempt: string }
+        Returns: {
+          assessment_id: string
+          created_at: string
+          id: string
+          integrity_score: number
+          invite_id: string | null
+          score: number | null
+          started_at: string
+          status: Database["public"]["Enums"]["attempt_status"]
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessment_attempts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       user_pending_logout: { Args: { _user_id: string }; Returns: boolean }
       validate_contest_submission: {
