@@ -31,7 +31,9 @@ const Index = () => {
       <LazySection><Outcomes /></LazySection>
       <LazySection><ManualVsParikshaa /></LazySection>
       <LazySection><Testimonials /></LazySection>
+      <LazySection><CaseStudies /></LazySection>
       <LazySection><section id="faq"><FAQ /></section></LazySection>
+      <LazySection><DemoRequestForm /></LazySection>
       <LazySection><CTA /></LazySection>
       <LazySection><Footer /></LazySection>
     </main>
