@@ -139,9 +139,9 @@ const Hero = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
         >
-          Track your <span className="text-foreground font-semibold">DSA practice</span>, build 
-          <span className="text-foreground font-semibold"> streaks</span>, and stay consistent with 
-          <span className="text-foreground font-semibold"> curated sheets</span> — all in one place.
+          One platform for <span className="text-foreground font-semibold">colleges</span>, 
+          <span className="text-foreground font-semibold"> companies</span>, and 
+          <span className="text-foreground font-semibold"> students</span> — proctored tests, coding contests, and a free learning hub.
         </motion.p>
 
         {/* CTA Buttons */}
