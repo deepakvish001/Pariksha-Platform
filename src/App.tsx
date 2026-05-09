@@ -19,7 +19,7 @@ import { FaviconNotificationProvider } from "@/contexts/FaviconNotificationConte
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { RouteRestorer } from "@/components/RouteRestorer";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import SeoPreviewPanel from "@/components/SeoPreviewPanel";
+
 import RouteSeo from "@/components/RouteSeo";
 import B2BLanding from "@/b2b/pages/Landing";
 import B2BOnboarding from "@/b2b/pages/Onboarding";
