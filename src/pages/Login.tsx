@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import AuthLayout from "@/components/AuthLayout";
+import { getPostLoginPath } from "@/lib/postLoginRedirect";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -21,7 +23,7 @@ const Login = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  const from = location.state?.from?.pathname || "/learn";
+  const from: string | undefined = location.state?.from?.pathname;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,13 +37,19 @@ const Login = () => {
         title: "Login failed",
         description: error.message,
       });
-    } else {
-      toast({
-        title: "Welcome back!",
-        description: "You've successfully logged in.",
-      });
-      navigate(from, { replace: true });
+      setIsLoading(false);
+      return;
     }
+
+    toast({
+      title: "Welcome back!",
+      description: "You've successfully logged in.",
+    });
+
+    // Resolve role-based redirect
+    const { data: { user } } = await supabase.auth.getUser();
+    const dest = from ?? (user ? await getPostLoginPath(user.id) : "/learn");
+    navigate(dest, { replace: true });
 
     setIsLoading(false);
   };
