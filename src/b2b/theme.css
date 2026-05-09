@@ -1,0 +1,41 @@
+/* B2B navy/white theme — scoped to .theme-b2b wrapper. */
+.theme-b2b {
+  --background: 0 0% 100%;
+  --foreground: 218 35% 12%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 218 35% 12%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 218 35% 12%;
+
+  --primary: 218 75% 16%;            /* deep navy */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 218 20% 96%;
+  --secondary-foreground: 218 35% 12%;
+
+  --muted: 218 20% 96%;
+  --muted-foreground: 218 12% 42%;
+
+  --accent: 152 64% 38%;             /* emerald accent */
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 72% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 218 20% 90%;
+  --input: 218 20% 90%;
+  --ring: 218 75% 16%;
+
+  --radius: 0.625rem;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.theme-b2b .b2b-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px hsl(218 35% 12% / 0.04), 0 1px 3px hsl(218 35% 12% / 0.06);
+}
