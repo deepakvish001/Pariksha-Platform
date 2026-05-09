@@ -262,6 +262,31 @@ const App = () => (
                 <Route path="/b2b/settings/team" element={<ProtectedRoute><B2BTeam /></ProtectedRoute>} />
                 <Route path="/b2b/settings" element={<ProtectedRoute><B2BSettings /></ProtectedRoute>} />
 
+                {/* Vanity org workspaces — members only, slug-resolved */}
+                {(["companies", "colleges"] as const).map((seg) => {
+                  const expectedType = seg === "companies" ? ("company" as const) : ("college" as const);
+                  return (
+                    <Route
+                      key={seg}
+                      path={`/${seg}/:slug`}
+                      element={
+                        <ProtectedRoute>
+                          <OrgWorkspace expectedType={expectedType} />
+                        </ProtectedRoute>
+                      }
+                    >
+                      <Route index element={<B2BDashboard />} />
+                      <Route path="assessments" element={<B2BAssessmentsList />} />
+                      <Route path="assessments/new" element={<B2BAssessmentNew />} />
+                      <Route path="assessments/:id" element={<B2BAssessmentDetail />} />
+                      <Route path="assessments/:id/attempts/:attemptId" element={<B2BAttemptDetail />} />
+                      <Route path="question-bank" element={<B2BQuestionBank />} />
+                      <Route path="team" element={<B2BTeam />} />
+                      <Route path="settings" element={<B2BSettings />} />
+                    </Route>
+                  );
+                })}
+
                 {/* Student-side assessments */}
                 <Route path="/assessments/join/:token" element={<StudentJoin />} />
                 <Route path="/assessments" element={<ProtectedRoute><MyAssessments /></ProtectedRoute>} />
