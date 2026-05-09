@@ -1,68 +1,345 @@
-import { ReactNode } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Building2, ShieldAlert, TrendingUp } from "lucide-react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  ShieldAlert,
+  TrendingUp,
+  ChevronDown,
+  ChevronRight,
+  ArrowLeft,
+  Radio,
+} from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { AdminBackdrop } from "@/components/admin/AdminBackdrop";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { cn } from "@/lib/utils";
 
-const NAV = [
-  { to: "/admin/parikshaa", label: "Overview", icon: LayoutDashboard, exact: true },
-  { to: "/admin/parikshaa/users", label: "Users", icon: Users },
-  { to: "/admin/parikshaa/orgs", label: "Companies & Colleges", icon: Building2 },
-  { to: "/admin/parikshaa/moderation", label: "Moderation", icon: ShieldAlert },
-  { to: "/admin/parikshaa/leads", label: "Leads & Growth", icon: TrendingUp },
+interface NavItem {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  end?: boolean;
+}
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const GROUPS: NavGroup[] = [
+  {
+    label: "Overview",
+    items: [
+      { to: "/admin/parikshaa", label: "Dashboard", icon: LayoutDashboard, end: true },
+    ],
+  },
+  {
+    label: "People",
+    items: [
+      { to: "/admin/parikshaa/users", label: "Users", icon: Users },
+      { to: "/admin/parikshaa/orgs", label: "Companies & Colleges", icon: Building2 },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { to: "/admin/parikshaa/moderation", label: "Moderation", icon: ShieldAlert },
+      { to: "/admin/parikshaa/leads", label: "Leads & Growth", icon: TrendingUp },
+    ],
+  },
 ];
+
+const ParikshaaSidebar = () => {
+  const { pathname } = useLocation();
+  const { state, isMobile, setOpenMobile } = useSidebar();
+  const collapsed = state === "collapsed" && !isMobile;
+
+  const isActive = (to: string, end?: boolean) =>
+    end ? pathname === to : pathname === to || pathname.startsWith(to + "/");
+
+  const groupHasActive = (g: NavGroup) =>
+    g.items.some((i) => isActive(i.to, i.end));
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(GROUPS.map((g) => [g.label, true])),
+  );
+
+  useEffect(() => {
+    setOpenGroups((prev) => {
+      const next = { ...prev };
+      for (const g of GROUPS) if (groupHasActive(g)) next[g.label] = true;
+      return next;
+    });
+    if (isMobile) setOpenMobile(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  const activeRef = useRef<HTMLAnchorElement | null>(null);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      activeRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [pathname]);
+
+  const renderItem = (item: NavItem) => {
+    const Icon = item.icon;
+    const active = isActive(item.to, item.end);
+
+    const link = (
+      <NavLink
+        ref={active ? (activeRef as any) : undefined}
+        to={item.to}
+        end={item.end}
+        className={cn(
+          "group/item relative flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-all duration-150",
+          active
+            ? "bg-primary/10 text-primary font-medium shadow-sm shadow-primary/5"
+            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+        )}
+      >
+        <span
+          aria-hidden
+          className={cn(
+            "absolute -left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full transition-all duration-200",
+            active ? "bg-primary opacity-100 scale-y-100" : "opacity-0 scale-y-0",
+          )}
+        />
+        <Icon
+          className={cn(
+            "h-4 w-4 shrink-0 transition-transform",
+            active ? "scale-110" : "group-hover/item:scale-105",
+          )}
+        />
+        {!collapsed && <span className="truncate text-[13px]">{item.label}</span>}
+      </NavLink>
+    );
+
+    const button = (
+      <SidebarMenuButton asChild isActive={active}>
+        {link}
+      </SidebarMenuButton>
+    );
+
+    return (
+      <SidebarMenuItem key={item.to}>
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>{button}</TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">
+              {item.label}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          button
+        )}
+      </SidebarMenuItem>
+    );
+  };
+
+  return (
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-border/40 bg-gradient-to-b from-sidebar to-sidebar/95"
+    >
+      <SidebarHeader className="border-b border-border/40 px-2 py-3">
+        <NavLink
+          to="/admin/parikshaa"
+          className={cn("flex items-center gap-2.5", collapsed && "justify-center")}
+        >
+          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/60 shadow-sm shadow-primary/20">
+            <span className="text-sm font-bold text-primary-foreground">P</span>
+          </div>
+          {!collapsed && (
+            <div className="flex min-w-0 flex-col leading-tight">
+              <span className="text-sm font-semibold tracking-tight">Parikshaa</span>
+              <span className="text-[10px] text-muted-foreground">Control Center</span>
+            </div>
+          )}
+        </NavLink>
+      </SidebarHeader>
+
+      <TooltipProvider delayDuration={250}>
+        <SidebarContent className="gap-0">
+          {GROUPS.map((group) => {
+            const hasActive = groupHasActive(group);
+            const open = collapsed ? true : (openGroups[group.label] ?? true);
+
+            return (
+              <Collapsible
+                key={group.label}
+                open={open}
+                onOpenChange={(v) =>
+                  setOpenGroups((prev) => ({ ...prev, [group.label]: v }))
+                }
+              >
+                <SidebarGroup className="py-1">
+                  {!collapsed && (
+                    <CollapsibleTrigger asChild>
+                      <SidebarGroupLabel
+                        className={cn(
+                          "flex h-7 cursor-pointer items-center gap-2 rounded-md px-2 text-[11px] font-semibold uppercase tracking-wide hover:bg-muted/40",
+                          hasActive ? "text-primary" : "text-muted-foreground/70",
+                        )}
+                      >
+                        <span>{group.label}</span>
+                        <ChevronDown
+                          className={cn(
+                            "ml-auto h-3.5 w-3.5 transition-transform duration-200",
+                            open ? "rotate-0" : "-rotate-90",
+                          )}
+                        />
+                      </SidebarGroupLabel>
+                    </CollapsibleTrigger>
+                  )}
+
+                  <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                    <SidebarGroupContent>
+                      <SidebarMenu>{group.items.map(renderItem)}</SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
+            );
+          })}
+        </SidebarContent>
+      </TooltipProvider>
+    </Sidebar>
+  );
+};
+
+const buildCrumbs = (pathname: string) => {
+  const flat = GROUPS.flatMap((g) => g.items);
+  const match =
+    flat.find((i) => i.end ? pathname === i.to : pathname.startsWith(i.to)) ??
+    flat[0];
+  const crumbs: { label: string; to?: string }[] = [
+    { label: "Parikshaa", to: "/admin/parikshaa" },
+  ];
+  if (match && match.to !== "/admin/parikshaa") crumbs.push({ label: match.label });
+  return crumbs;
+};
 
 export function ParikshaaShell() {
   const { pathname } = useLocation();
+  const crumbs = useMemo(() => buildCrumbs(pathname), [pathname]);
+
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
-      <aside className="hidden md:flex w-60 shrink-0 flex-col border-r bg-card sticky top-0 h-screen">
-        <div className="px-5 py-5 border-b">
-          <NavLink to="/admin/parikshaa" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-primary text-primary-foreground grid place-items-center font-bold">P</div>
-            <div className="leading-tight">
-              <div className="text-sm font-semibold">Parikshaa</div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Control Center</div>
-            </div>
-          </NavLink>
-        </div>
-        <nav className="flex-1 p-2 space-y-1">
-          {NAV.map((n) => {
-            const active = n.exact ? pathname === n.to : pathname === n.to || pathname.startsWith(n.to + "/");
-            const Icon = n.icon;
-            return (
-              <NavLink
-                key={n.to}
-                to={n.to}
-                end={n.exact}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <ParikshaaSidebar />
+        <SidebarInset className="min-w-0 flex-1">
+          <div className="sticky top-0 z-20 flex h-12 items-center justify-between gap-2 border-b border-border/40 bg-background/70 px-3 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50">
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+            />
+            <div className="flex min-w-0 items-center gap-2">
+              <SidebarTrigger />
+              <span aria-hidden className="hidden h-5 w-px bg-border/60 sm:block" />
+              <div className="hidden items-center gap-1.5 sm:flex">
+                <span className="grid h-5 w-5 place-items-center rounded-md bg-gradient-to-br from-primary to-amber-500 shadow-[0_0_12px_hsl(var(--primary)/0.45)]">
+                  <span className="text-[10px] font-bold text-primary-foreground">P</span>
+                </span>
+                <span className="text-[11px] font-semibold tracking-wide bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+                  Parikshaa
+                </span>
+              </div>
+              <span aria-hidden className="hidden h-5 w-px bg-border/60 sm:block" />
+              <nav
+                aria-label="Breadcrumb"
+                className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
               >
-                <Icon className="h-4 w-4" />
-                {n.label}
-              </NavLink>
-            );
-          })}
-        </nav>
-        <div className="p-3 border-t">
-          <NavLink to="/admin" className="text-xs text-muted-foreground hover:text-foreground">
-            ← Learning admin
-          </NavLink>
-        </div>
-      </aside>
-      <main className="flex-1 min-w-0">
-        <Outlet />
-      </main>
-    </div>
+                {crumbs.map((c, i) => (
+                  <span key={`${c.label}-${i}`} className="flex min-w-0 items-center gap-1">
+                    {i > 0 && <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />}
+                    {c.to && i < crumbs.length - 1 ? (
+                      <Link to={c.to} className="truncate hover:text-foreground">
+                        {c.label}
+                      </Link>
+                    ) : (
+                      <span
+                        className={cn(
+                          "truncate",
+                          i === crumbs.length - 1 && "font-medium text-foreground",
+                        )}
+                      >
+                        {c.label}
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </nav>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/admin"
+                className="hidden h-7 items-center gap-1.5 rounded-full border border-border/50 bg-card/40 px-2.5 text-[11px] text-muted-foreground backdrop-blur transition-colors hover:border-primary/40 hover:text-foreground sm:inline-flex"
+              >
+                <ArrowLeft className="h-3 w-3" />
+                Learning admin
+              </Link>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                      </span>
+                      <Radio className="h-3 w-3" />
+                      <span className="hidden sm:inline">Live</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Realtime sync is active
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+          <main className="relative min-w-0 flex-1 px-4 py-6 lg:px-8">
+            <AdminBackdrop />
+            <div className="relative">
+              <Outlet />
+            </div>
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }
 
+/**
+ * Backwards-compatible page header for existing Parikshaa pages.
+ * Wraps AdminPageHeader so the look matches /admin pages.
+ */
 export function ShellHeader({ title, actions }: { title: string; actions?: ReactNode }) {
-  return (
-    <header className="border-b bg-card px-6 py-4 flex items-center justify-between gap-4">
-      <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
-      <div className="flex items-center gap-2">{actions}</div>
-    </header>
-  );
+  return <AdminPageHeader title={title} actions={actions} />;
 }
