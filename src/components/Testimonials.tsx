@@ -52,6 +52,22 @@ const testimonials = [
     content: "I was skeptical at first, but the gamification really works. Competing with friends on streaks made preparation fun. Best prep platform I've used.",
     rating: 5,
   },
+  {
+    name: "Dr. Kavita Iyer",
+    role: "Placement Head",
+    college: "PES University",
+    avatar: "KI",
+    content: "We replaced three different tools with Parikshaa for our campus drives. Bulk invites, integrity scoring, and a clean leaderboard — our recruiters finally trust the results.",
+    rating: 5,
+  },
+  {
+    name: "Rohan Gupta",
+    role: "Engineering Manager",
+    college: "Razorpay",
+    avatar: "RG",
+    content: "Side Eye proctoring is a game-changer for remote hiring. We screened 400+ candidates in a week with zero integrity disputes. Setup took less than 10 minutes.",
+    rating: 5,
+  },
 ];
 
 // Duplicate for seamless loop
@@ -101,12 +117,20 @@ const Testimonials = () => {
         {/* Header */}
         <ScrollReveal>
           <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+              <div className="flex gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="w-3.5 h-3.5 fill-primary text-primary" />
+                ))}
+              </div>
+              <span className="text-xs font-semibold text-primary">4.9 / 5 average rating</span>
+            </div>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground mb-4">
-              Trusted by
-              <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent"> 10,000+</span> Students
+              Loved by students &
+              <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent"> trusted by teams</span>
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-              See what our community has to say about their success stories
+              From IIT toppers to placement cells and hiring managers — see why 200+ colleges and companies pick Parikshaa
             </p>
           </div>
         </ScrollReveal>
