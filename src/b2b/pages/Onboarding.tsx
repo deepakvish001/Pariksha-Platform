@@ -306,7 +306,7 @@ export default function B2BOnboarding() {
       />
 
       <main className="relative z-10 flex flex-1 items-stretch pt-16">
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-[1.05fr,1fr] lg:gap-16 lg:px-8 lg:py-14">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-3 py-6 sm:gap-8 sm:px-6 sm:py-10 lg:grid-cols-[1.05fr,1fr] lg:gap-16 lg:px-8 lg:py-14">
           {/* LEFT — brand & value (hidden on mobile) */}
           <aside className="hidden flex-col justify-between lg:flex">
             <div>
