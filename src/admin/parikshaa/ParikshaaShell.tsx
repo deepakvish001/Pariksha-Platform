@@ -13,6 +13,7 @@ import {
   Radio,
   Filter,
   BarChart3,
+  Mail,
 } from "lucide-react";
 import {
   Sidebar,
