@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
 import { Textarea } from "@/components/ui/textarea";
 import { useAttempts } from "../../hooks/useAttempts";
+import { useAssessmentInsights } from "../../hooks/useInsights";
 import { Link } from "react-router-dom";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -90,6 +91,7 @@ export default function AssessmentDetail() {
           <TabsTrigger value="sections">Sections & Questions</TabsTrigger>
           <TabsTrigger value="invites">Invites</TabsTrigger>
           <TabsTrigger value="results">Results</TabsTrigger>
+          <TabsTrigger value="insights">Insights</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="sections">
@@ -100,6 +102,9 @@ export default function AssessmentDetail() {
         </TabsContent>
         <TabsContent value="results">
           <ResultsPanel assessmentId={assessment.id} />
+        </TabsContent>
+        <TabsContent value="insights">
+          <InsightsPanel assessmentId={assessment.id} />
         </TabsContent>
         <TabsContent value="settings">
           <SettingsPanel assessment={assessment} onDelete={async () => {
@@ -570,6 +575,125 @@ function ResultsPanel({ assessmentId }: { assessmentId: string }) {
         ))}
       </div>
     </div>
+    </div>
+  );
+}
+
+function InsightsPanel({ assessmentId }: { assessmentId: string }) {
+  const { data, isLoading, error } = useAssessmentInsights(assessmentId);
+
+  if (isLoading) return <div className="b2b-card p-6 text-sm">Loading insights…</div>;
+  if (error)
+    return (
+      <div className="b2b-card p-6 text-sm text-destructive">
+        Failed to load insights: {(error as Error).message}
+      </div>
+    );
+  if (!data) return null;
+
+  const { totals, scoreDistribution, perQuestion } = data;
+  const maxBucket = Math.max(1, ...scoreDistribution.map((b) => b.count));
+  const fmtPct = (n: number) => `${Math.round(n * 100)}%`;
+  const fmtNum = (n: number | null, digits = 1) =>
+    n === null ? "—" : Number.isInteger(n) ? String(n) : n.toFixed(digits);
+
+  const stat = (label: string, value: string, hint?: string) => (
+    <div className="b2b-card p-4">
+      <div className="text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))]">{label}</div>
+      <div className="text-2xl font-semibold mt-1">{value}</div>
+      {hint && <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">{hint}</div>}
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {stat("Invited", String(totals.invited))}
+        {stat("Started", String(totals.started), `${totals.inProgress} in progress`)}
+        {stat(
+          "Submitted",
+          String(totals.submitted),
+          totals.invited > 0 ? `${fmtPct(totals.completionRate)} completion` : undefined
+        )}
+        {stat(
+          "Avg score",
+          totals.avgScore === null
+            ? "—"
+            : `${fmtNum(totals.avgScore)} / ${totals.maxPossible}`,
+          totals.avgIntegrity !== null ? `Integrity ${fmtNum(totals.avgIntegrity)}` : undefined
+        )}
+      </div>
+
+      <div className="b2b-card p-4">
+        <div className="text-sm font-medium mb-3">Score distribution (submitted attempts)</div>
+        {totals.maxPossible === 0 || totals.submitted === 0 ? (
+          <div className="text-sm text-[hsl(var(--muted-foreground))]">
+            Not enough data yet — distribution appears once candidates submit.
+          </div>
+        ) : (
+          <div className="grid grid-cols-5 gap-3 items-end h-40">
+            {scoreDistribution.map((b) => (
+              <div key={b.bucket} className="flex flex-col items-center gap-1.5 h-full">
+                <div className="flex-1 w-full flex items-end">
+                  <div
+                    className="w-full rounded-t-md bg-[hsl(var(--primary))] transition-all"
+                    style={{ height: `${(b.count / maxBucket) * 100}%`, minHeight: b.count > 0 ? 6 : 0 }}
+                    title={`${b.count} attempt(s)`}
+                  />
+                </div>
+                <div className="text-[10px] text-[hsl(var(--muted-foreground))]">{b.bucket}</div>
+                <div className="text-xs font-medium">{b.count}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="b2b-card overflow-hidden">
+        <div className="px-4 py-2 text-sm font-medium border-b border-[hsl(var(--border))]">
+          Per-question performance
+        </div>
+        {perQuestion.length === 0 ? (
+          <div className="p-6 text-sm text-[hsl(var(--muted-foreground))]">
+            Add questions to sections to see per-question stats.
+          </div>
+        ) : (
+          <div className="divide-y">
+            <div className="grid grid-cols-12 px-4 py-2 text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+              <div className="col-span-6">Question</div>
+              <div className="col-span-2">Attempts</div>
+              <div className="col-span-2">Avg score</div>
+              <div className="col-span-2">Accuracy</div>
+            </div>
+            {perQuestion.map((q) => (
+              <div key={q.question_id} className="grid grid-cols-12 items-center px-4 py-3 text-sm">
+                <div className="col-span-6 min-w-0 flex items-center gap-2">
+                  <Badge variant="outline" className="uppercase">{q.type}</Badge>
+                  <span className="truncate">{q.title}</span>
+                  <span className="text-xs text-[hsl(var(--muted-foreground))]">{q.points} pts</span>
+                </div>
+                <div className="col-span-2">{q.attempts}</div>
+                <div className="col-span-2">
+                  {q.avgScore === null ? (
+                    <span className="text-[hsl(var(--muted-foreground))]">—</span>
+                  ) : (
+                    <span>
+                      {fmtNum(q.avgScore)} <span className="text-xs text-[hsl(var(--muted-foreground))]">/ {q.points}</span>
+                    </span>
+                  )}
+                </div>
+                <div className="col-span-2">
+                  {q.accuracy === null ? (
+                    <span className="text-[hsl(var(--muted-foreground))]">—</span>
+                  ) : (
+                    <span>{fmtPct(q.accuracy)}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
