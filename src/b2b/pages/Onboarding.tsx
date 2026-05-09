@@ -85,6 +85,48 @@ const emailSchema = z
   .email({ message: "Enter a valid email address." });
 
 type CreatedOrg = { id: string; slug: string; name: string; type: "college" | "company" };
+type GeneratedLink = { email: string; url: string; expires_at: string; token?: string };
+
+const STORAGE_KEY = "b2b:onboarding:step2";
+
+type PersistedStep2 = {
+  org: CreatedOrg;
+  emails: string[];
+  links: GeneratedLink[];
+  savedAt: number;
+};
+
+/** Fire-and-forget analytics for the onboarding funnel. */
+async function trackOnboarding(
+  event: string,
+  payload: { user_id?: string | null; org_id?: string | null; step?: number; metadata?: Record<string, unknown> } = {},
+) {
+  try {
+    await supabase.from("b2b_onboarding_events").insert({
+      user_id: payload.user_id ?? null,
+      org_id: payload.org_id ?? null,
+      event,
+      step: payload.step ?? null,
+      metadata: payload.metadata ?? {},
+    });
+  } catch {
+    /* swallow — analytics must never break the flow */
+  }
+}
+
+function formatTimeLeft(iso: string): { label: string; ms: number; warn: boolean; expired: boolean } {
+  const ms = new Date(iso).getTime() - Date.now();
+  if (ms <= 0) return { label: "Expired", ms, warn: true, expired: true };
+  const hours = Math.floor(ms / 3_600_000);
+  const mins = Math.floor((ms % 3_600_000) / 60_000);
+  const label =
+    hours >= 24
+      ? `${Math.floor(hours / 24)}d ${hours % 24}h left`
+      : hours >= 1
+        ? `${hours}h ${mins}m left`
+        : `${mins}m left`;
+  return { label, ms, warn: ms < 6 * 3_600_000, expired: false };
+}
 
 export default function B2BOnboarding() {
   const { user } = useAuth();
@@ -105,14 +147,61 @@ export default function B2BOnboarding() {
   const [emails, setEmails] = useState<string[]>(["", "", ""]);
   const [emailErrors, setEmailErrors] = useState<(string | null)[]>([null, null, null]);
   const [copied, setCopied] = useState(false);
-  // Per-email invite tokens; bumping the seed regenerates every link.
-  const [linkSeed, setLinkSeed] = useState<string>(() =>
-    Math.random().toString(36).slice(2, 10),
-  );
-  const [generatedLinks, setGeneratedLinks] = useState<
-    { email: string; url: string }[] | null
-  >(null);
+  const [generatedLinks, setGeneratedLinks] = useState<GeneratedLink[] | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [sendingInvites, setSendingInvites] = useState(false);
+  // Re-render every 30s so expiry countdowns stay live.
+  const [, setNowTick] = useState(0);
+
+  // ── Hydrate from localStorage ──────────────────────────────────────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as PersistedStep2;
+      if (!parsed?.org?.id) return;
+      // Drop entries older than 7 days
+      if (Date.now() - parsed.savedAt > 7 * 24 * 3600 * 1000) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      setCreatedOrg(parsed.org);
+      if (Array.isArray(parsed.emails) && parsed.emails.length) {
+        setEmails(parsed.emails);
+        setEmailErrors(parsed.emails.map(() => null));
+      }
+      if (Array.isArray(parsed.links) && parsed.links.length) {
+        setGeneratedLinks(parsed.links);
+      }
+      setStep(2);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Persist step 2 state
+  useEffect(() => {
+    if (step !== 2 || !createdOrg) return;
+    const payload: PersistedStep2 = {
+      org: createdOrg,
+      emails,
+      links: generatedLinks ?? [],
+      savedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [step, createdOrg, emails, generatedLinks]);
+
+  // Live countdown ticker
+  useEffect(() => {
+    if (!generatedLinks?.length) return;
+    const id = window.setInterval(() => setNowTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, [generatedLinks]);
+
 
   // ── Derived validation ──────────────────────────────────────────────────
   const validation = useMemo(() => {
