@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 
-const taglines = ["Into Results", "Into Success", "Into Offers", "Into Growth"];
+const taglines = ["Into Offers", "Into Hires", "Into Results", "Into Careers"];
 
 const TypingEffect = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -117,7 +117,7 @@ const Hero = () => {
               </div>
             ))}
           </div>
-          <span className="text-sm font-semibold text-foreground">Join 10,000+ students crushing their goals</span>
+          <span className="text-sm font-semibold text-foreground">Trusted by 200+ colleges & companies hiring with Parikshaa</span>
           <Sparkles className="w-4 h-4 text-primary animate-pulse" />
         </motion.div>
 
@@ -128,7 +128,7 @@ const Hero = () => {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black leading-[0.85] tracking-tight mb-8"
         >
-          <span className="block text-foreground">Turn Learning</span>
+          <span className="block text-foreground">Turn Assessments</span>
           <TypingEffect />
         </motion.h1>
 
@@ -139,9 +139,9 @@ const Hero = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed"
         >
-          Track your <span className="text-foreground font-semibold">DSA practice</span>, build 
-          <span className="text-foreground font-semibold"> streaks</span>, and stay consistent with 
-          <span className="text-foreground font-semibold"> curated sheets</span> — all in one place.
+          One platform for <span className="text-foreground font-semibold">colleges</span>, 
+          <span className="text-foreground font-semibold"> companies</span>, and 
+          <span className="text-foreground font-semibold"> students</span> — proctored tests, coding contests, and a free learning hub.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -155,15 +155,15 @@ const Hero = () => {
             to="/learn"
             className="group relative inline-flex items-center gap-2 px-10 py-5 rounded-full bg-gradient-to-r from-primary to-orange-500 text-primary-foreground font-bold text-lg shadow-2xl shadow-primary/30 hover:shadow-primary/40 transition-all duration-300 hover:scale-105"
           >
-            <span>Start Free Today</span>
+            <span>Learn (Free)</span>
             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
-            to="#features"
+            to="/b2b"
             className="inline-flex items-center gap-2 px-8 py-5 rounded-full border-2 border-border bg-card/50 backdrop-blur-sm text-foreground font-semibold hover:bg-card hover:border-primary/50 transition-all duration-300"
           >
             <Sparkles className="w-5 h-5 text-primary" />
-            Explore Features
+            For Teams
           </Link>
         </motion.div>
 
@@ -174,10 +174,10 @@ const Hero = () => {
           transition={{ duration: 0.5, delay: 0.4 }}
           className="flex flex-wrap justify-center items-center divide-x divide-border/50 max-w-4xl mx-auto bg-card/30 backdrop-blur-sm rounded-2xl border border-border/50 py-6"
         >
-          <AnimatedCounter value={10000} suffix="+" label="Active Users" />
-          <AnimatedCounter value={500} suffix="+" label="DSA Problems" />
-          <AnimatedCounter value={95} suffix="%" label="Success Rate" />
-          <AnimatedCounter value={50} suffix="+" label="Companies Hired" />
+          <AnimatedCounter value={200} suffix="+" label="Colleges & Companies" />
+          <AnimatedCounter value={50000} suffix="+" label="Assessments Taken" />
+          <AnimatedCounter value={99} suffix="%" label="Integrity Score" />
+          <AnimatedCounter value={10000} suffix="+" label="Active Learners" />
         </motion.div>
       </div>
 

@@ -18,6 +18,7 @@ import BrandLogo from "@/components/BrandLogo";
 const navLinks = [
   { label: "How It Works", href: "#how-it-works" },
   { label: "Features", href: "#features" },
+  { label: "For Teams", href: "/b2b" },
   { label: "FAQ", href: "#faq" },
 ];
 
