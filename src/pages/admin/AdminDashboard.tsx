@@ -116,11 +116,7 @@ const AdminDashboard = () => {
                 <Megaphone className="mr-2 h-4 w-4" /> Broadcast
               </Link>
             </Button>
-            <Button asChild variant="outline" size="sm" className="border-border/60 bg-card/40 backdrop-blur">
-              <Link to="/admin/daily-challenge">
-                <CalendarClock className="mr-2 h-4 w-4" /> Daily challenge
-              </Link>
-            </Button>
+            
             <Button asChild variant="outline" size="sm" className="border-border/60 bg-card/40 backdrop-blur">
               <Link to="/admin/problems/import">
                 <Upload className="mr-2 h-4 w-4" /> Import
