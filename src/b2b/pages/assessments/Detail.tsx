@@ -313,7 +313,7 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
         const others = parts.filter((_, i) => i !== emailIdx);
         return { email, name: others[0], external_id: others[1] };
       })
-      .filter((r): r is { email: string; name?: string; external_id?: string } => !!r);
+      .filter((r): r is NonNullable<typeof r> => !!r);
   }
 
   return (
