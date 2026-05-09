@@ -51,17 +51,17 @@ const faqs = [
   {
     question: "How accurate is Parikshaa's proctoring and what does it actually detect?",
     answer:
-      "Our proctoring stack runs entirely in-browser and detects tab switches, fullscreen exits, copy/paste, multiple faces, missing face, background voices, screen-share drops, and suspicious phone usage via the Side Eye AI side camera. Every event is timestamped, hashed, and chained — so the log itself is tamper-evident and verifiable after the test ends.",
+      "Our proctoring stack runs entirely in-browser — no plugins, no kernel drivers — and captures a wide event surface in real time:\n\n• Window & focus: tab switches, window blur, fullscreen exits, devtools open, alt-tab and Cmd-Tab attempts.\n• Input behavior: copy / paste / cut, keystroke cadence anomalies, paste-from-clipboard with source-type sniffing, suspicious paste bursts.\n• Vision: missing face, multiple faces, face-swap / static-image spoofing, head pose drift, gaze off-screen for sustained windows.\n• Audio: background voices, conversation overlap, repeated whispers, third-party noise correlation.\n• Network & device: screen-share drops, VM / emulator fingerprints, virtual camera detection, IP / geo deltas mid-test.\n• Side Eye AI side camera: pairs the candidate's phone via QR to capture the side angle — detects phone usage, second monitor, off-camera helpers, and printed cheat-sheets.\n\nEvery event is timestamped, hashed, and chained into a tamper-evident log so a single edited entry breaks the chain — auditors can verify the log integrity after the test independently of Parikshaa.",
   },
   {
     question: "How does the integrity score work?",
     answer:
-      "Each attempt produces a single integrity score from 0–100, computed from weighted signals: proctoring events, typing/coding behavior, similarity to other submissions, identity verification, and Side Eye sweep results. You see the score plus a full breakdown — no black-box flags. Thresholds are configurable per organization so you can tune strictness for placement drives vs. practice tests.",
+      "Each attempt produces one 0–100 integrity score with a full per-signal breakdown — no black-box flags. The score combines five weighted streams:\n\n1. Proctoring events (35%) — severity-weighted, decayed over session length.\n2. Typing & coding behavior (20%) — paste vs. type ratio, keystroke entropy, copy-paste run length, AI-generation fingerprints.\n3. Cross-submission similarity (20%) — token-level + AST-level similarity vs. cohort and historical corpus.\n4. Identity verification (15%) — selfie ↔ ID match score plus continuous face-presence confidence.\n5. Side Eye sweep (10%) — room scan, phone movement, off-camera object detection.\n\nThresholds are configurable per org: you can set 'placement-drive' (strict, auto-flag below 70), 'practice' (lenient), or fully custom. Every score links back to the raw events so reviewers can drill in instead of just trusting the number.",
   },
   {
     question: "Can I export reports for placement cells, hiring managers, or auditors?",
     answer:
-      "Yes. Every assessment produces exportable reports in PDF and CSV — candidate-level (score, integrity, event timeline, code submissions, viva transcript) and assessment-level (leaderboard, score distribution, integrity heatmap, similarity clusters). Public verifiable integrity reports can also be shared via signed URL so external auditors can confirm the chain of custody without a Parikshaa account.",
+      "Yes — exports are first-class, not an afterthought.\n\nCandidate-level (PDF + CSV):\n• Final score, section breakdown, time per question.\n• Integrity score with per-signal breakdown.\n• Full event timeline with timestamps and severity.\n• Code submissions with diff vs. starter, run logs, test pass/fail.\n• Viva / subjective answers with AI-generated rubric scoring.\n• Side Eye snapshots (consented) and room-scan summary.\n\nAssessment-level (PDF + CSV + JSON):\n• Leaderboard, score distribution, percentile bands.\n• Integrity heatmap across the cohort.\n• Similarity clusters with linked candidate IDs.\n• Section difficulty calibration.\n\nSharing:\n• Public verifiable integrity reports via signed URL — external auditors confirm the chain of custody without needing a Parikshaa account.\n• CSV / JSON pulls via API or webhook for ATS, LMS, or in-house BI dashboards.\n• Bulk export of an entire drive in one ZIP.",
   },
   {
     question: "Do I need an account to start learning?",
@@ -116,7 +116,7 @@ const FAQ = () => {
                   <AccordionTrigger className="text-left text-foreground font-medium py-5 hover:no-underline hover:text-primary">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground pb-5 leading-relaxed">
+                  <AccordionContent className="text-muted-foreground pb-5 leading-relaxed whitespace-pre-line">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>

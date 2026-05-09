@@ -9,6 +9,8 @@ const ProductShowcase = lazy(() => import("@/components/ProductShowcase"));
 const Outcomes = lazy(() => import("@/components/Outcomes"));
 const ManualVsParikshaa = lazy(() => import("@/components/ManualVsParikshaa"));
 const Testimonials = lazy(() => import("@/components/Testimonials"));
+const CaseStudies = lazy(() => import("@/components/CaseStudies"));
+const DemoRequestForm = lazy(() => import("@/components/DemoRequestForm"));
 const FAQ = lazy(() => import("@/components/FAQ"));
 const CTA = lazy(() => import("@/components/CTA"));
 const Footer = lazy(() => import("@/components/Footer"));
@@ -29,7 +31,9 @@ const Index = () => {
       <LazySection><Outcomes /></LazySection>
       <LazySection><ManualVsParikshaa /></LazySection>
       <LazySection><Testimonials /></LazySection>
+      <LazySection><CaseStudies /></LazySection>
       <LazySection><section id="faq"><FAQ /></section></LazySection>
+      <LazySection><DemoRequestForm /></LazySection>
       <LazySection><CTA /></LazySection>
       <LazySection><Footer /></LazySection>
     </main>
