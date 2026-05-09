@@ -77,6 +77,32 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Ad-hoc rate limit: max 6 generations per inviter per org per minute ──
+    const sinceIso = new Date(Date.now() - 60 * 1000).toISOString();
+    const { count: recentCount } = await admin
+      .from("b2b_org_invites")
+      .select("id", { count: "exact", head: true })
+      .eq("inviter_id", user.id)
+      .eq("org_id", org_id)
+      .gte("created_at", sinceIso);
+    if ((recentCount ?? 0) >= 6) {
+      return new Response(
+        JSON.stringify({
+          error: "rate_limited",
+          message: "Too many invite generations — please wait a moment before trying again.",
+          retry_after_seconds: 30,
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "Retry-After": "30",
+          },
+        },
+      );
+    }
+
     const expiresAt = new Date(Date.now() + ttl_hours * 3600 * 1000);
     const origin =
       req.headers.get("origin") ?? req.headers.get("referer") ?? "";
@@ -85,6 +111,16 @@ Deno.serve(async (req) => {
 
     // Dedupe + lowercase
     const uniq = Array.from(new Set(emails.map((e) => e.toLowerCase().trim())));
+
+    // Revoke previous active tokens for these emails so resends never leave
+    // multiple valid links per recipient (no duplicate tokens in flight).
+    await admin
+      .from("b2b_org_invites")
+      .update({ revoked: true })
+      .eq("org_id", org_id)
+      .eq("revoked", false)
+      .in("email", uniq);
+
     const rows = uniq.map((email) => ({
       org_id,
       inviter_id: user.id,
@@ -93,23 +129,40 @@ Deno.serve(async (req) => {
       expires_at: expiresAt.toISOString(),
     }));
 
-    const { data: inserted, error: insErr } = await admin
-      .from("b2b_org_invites")
-      .insert(rows)
-      .select("email, token, expires_at");
-
-    if (insErr) {
-      return new Response(JSON.stringify({ error: insErr.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Safe retry: if a unique-token collision somehow happens, regenerate once.
+    let inserted: { email: string; token: string; expires_at: string }[] | null = null;
+    let lastErr: { message: string } | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const { data, error } = await admin
+        .from("b2b_org_invites")
+        .insert(rows)
+        .select("email, token, expires_at");
+      if (!error) {
+        inserted = data as typeof inserted;
+        lastErr = null;
+        break;
+      }
+      lastErr = error;
+      if (!`${error.message}`.toLowerCase().includes("duplicate")) break;
+      // Regenerate tokens and retry once.
+      for (const r of rows) r.token = randomToken();
     }
 
-    const links = (inserted ?? []).map((r) => ({
-      email: r.email as string,
+    if (lastErr || !inserted) {
+      return new Response(
+        JSON.stringify({ error: lastErr?.message ?? "Insert failed" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const links = inserted.map((r) => ({
+      email: r.email,
       url: `${baseHost}/${basePath}?invite=${r.token}`,
-      token: r.token as string,
-      expires_at: r.expires_at as string,
+      token: r.token,
+      expires_at: r.expires_at,
     }));
 
     return new Response(JSON.stringify({ links, expires_at: expiresAt.toISOString() }), {
