@@ -3617,6 +3617,72 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_requests: {
+        Row: {
+          candidates: string
+          created_at: string
+          email: string
+          id: string
+          landing_page: string | null
+          name: string
+          notes: string | null
+          org: string
+          proctoring: string[]
+          referrer: string | null
+          reporting: string[]
+          status: string
+          use_case: string
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          candidates: string
+          created_at?: string
+          email: string
+          id?: string
+          landing_page?: string | null
+          name: string
+          notes?: string | null
+          org: string
+          proctoring?: string[]
+          referrer?: string | null
+          reporting?: string[]
+          status?: string
+          use_case: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          candidates?: string
+          created_at?: string
+          email?: string
+          id?: string
+          landing_page?: string | null
+          name?: string
+          notes?: string | null
+          org?: string
+          proctoring?: string[]
+          referrer?: string | null
+          reporting?: string[]
+          status?: string
+          use_case?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
       featured_content: {
         Row: {
           ends_at: string | null
@@ -3775,6 +3841,57 @@ export type Database = {
           name?: string
           slug?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      lead_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          page: string | null
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          page?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          page?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: []
       }

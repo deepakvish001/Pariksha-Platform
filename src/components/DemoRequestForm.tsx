@@ -7,6 +7,8 @@ import ScrollReveal from "./ScrollReveal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { getStoredUtm, trackLeadEvent } from "@/lib/leadTracking";
 
 const PROCTORING_OPTIONS = [
   "Tab-switch & fullscreen",
@@ -62,15 +64,45 @@ const DemoRequestForm = () => {
     }
     setSubmitting(true);
     try {
-      // Lightweight client-side capture; wired later to backend lead capture
-      await new Promise((r) => setTimeout(r, 700));
-      console.info("[demo-request]", { ...parsed.data, proctoring, reporting });
+      const utm = getStoredUtm();
+      const payload = {
+        ...parsed.data,
+        proctoring,
+        reporting,
+        utm,
+        referrer: typeof document !== "undefined" ? document.referrer : null,
+        landingPage:
+          typeof window !== "undefined"
+            ? window.location.pathname + window.location.search
+            : null,
+      };
+      const { data: res, error } = await supabase.functions.invoke("submit-demo-request", {
+        body: payload,
+      });
+      if (error || (res as { error?: string } | null)?.error) {
+        const msg =
+          (res as { error?: string } | null)?.error ||
+          error?.message ||
+          "Something went wrong. Try again in a moment.";
+        toast.error(msg);
+        await trackLeadEvent("demo_request_failed", { reason: msg });
+        return;
+      }
+      await trackLeadEvent("demo_request_submitted", {
+        org: parsed.data.org,
+        useCase: parsed.data.useCase,
+        candidates: parsed.data.candidates,
+        proctoring_count: proctoring.length,
+        reporting_count: reporting.length,
+        lead_id: (res as { id?: string } | null)?.id,
+      });
       toast.success("Demo request received — we'll reach out within 1 business day.");
       setDone(true);
       form.reset();
       setProctoring([]);
       setReporting([]);
-    } catch {
+    } catch (err) {
+      console.error("[demo-request] error", err);
       toast.error("Something went wrong. Try again in a moment.");
     } finally {
       setSubmitting(false);
