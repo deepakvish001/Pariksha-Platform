@@ -292,3 +292,105 @@ function SettingsPanel({
     </div>
   );
 }
+
+function InvitesPanel({ assessmentId }: { assessmentId: string }) {
+  const { data: invites } = useInvites(assessmentId);
+  const create = useCreateInvites();
+  const del = useDeleteInvite();
+  const [bulk, setBulk] = useState("");
+
+  function parseRows(text: string) {
+    return text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        // accept "email", "email,name", "name,email", "email,name,external_id"
+        const parts = line.split(/[,;\t]/).map((p) => p.trim()).filter(Boolean);
+        const emailIdx = parts.findIndex((p) => /@/.test(p));
+        if (emailIdx < 0) return null;
+        const email = parts[emailIdx];
+        const others = parts.filter((_, i) => i !== emailIdx);
+        return { email, name: others[0], external_id: others[1] };
+      })
+      .filter((r): r is { email: string; name?: string; external_id?: string } => !!r);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="b2b-card p-4 space-y-3">
+        <div>
+          <label className="text-sm font-medium">Add candidates</label>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+            One per line. Format: <code>email</code>, or <code>email, name</code>, or <code>email, name, roll_id</code>.
+          </p>
+        </div>
+        <Textarea
+          value={bulk}
+          onChange={(e) => setBulk(e.target.value)}
+          placeholder={"alex@example.com, Alex Morgan, R001\nsam@example.com"}
+          className="min-h-[120px] font-mono text-xs"
+        />
+        <div className="flex justify-end">
+          <Button
+            className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+            disabled={create.isPending || !bulk.trim()}
+            onClick={async () => {
+              const rows = parseRows(bulk);
+              if (!rows.length) return toast.error("No valid emails found");
+              const inserted = await create.mutateAsync({ assessment_id: assessmentId, rows });
+              toast.success(`${inserted.length} invite(s) added`);
+              setBulk("");
+            }}
+          >
+            <Plus className="h-4 w-4 mr-1" /> Add invites
+          </Button>
+        </div>
+      </div>
+
+      {!invites?.length ? (
+        <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+          No invites yet. Add candidates above.
+        </div>
+      ) : (
+        <div className="b2b-card divide-y">
+          {invites.map((i) => {
+            const url = buildJoinUrl(i.token);
+            return (
+              <div key={i.id} className="p-3 flex items-center gap-3 text-sm">
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium truncate">{i.name ?? i.email}</div>
+                  <div className="text-xs text-[hsl(var(--muted-foreground))] truncate">
+                    {i.email}{i.external_id ? ` · ${i.external_id}` : ""}
+                  </div>
+                </div>
+                <Badge variant={i.status === "pending" ? "secondary" : "default"}>{i.status}</Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(url);
+                    toast.success("Join link copied");
+                  }}
+                  title={url}
+                >
+                  <Copy className="h-3 w-3 mr-1" /> Link
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (!confirm(`Remove invite for ${i.email}?`)) return;
+                    del.mutate({ id: i.id, assessment_id: assessmentId });
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
