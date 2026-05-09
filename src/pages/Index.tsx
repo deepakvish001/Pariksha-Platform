@@ -9,6 +9,8 @@ const ProductShowcase = lazy(() => import("@/components/ProductShowcase"));
 const Outcomes = lazy(() => import("@/components/Outcomes"));
 const ManualVsParikshaa = lazy(() => import("@/components/ManualVsParikshaa"));
 const Testimonials = lazy(() => import("@/components/Testimonials"));
+const CaseStudies = lazy(() => import("@/components/CaseStudies"));
+const DemoRequestForm = lazy(() => import("@/components/DemoRequestForm"));
 const FAQ = lazy(() => import("@/components/FAQ"));
 const CTA = lazy(() => import("@/components/CTA"));
 const Footer = lazy(() => import("@/components/Footer"));
