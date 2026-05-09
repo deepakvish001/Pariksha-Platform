@@ -32,6 +32,13 @@ import B2BQuestionBank from "@/b2b/pages/QuestionBank";
 import B2BTeam from "@/b2b/pages/Team";
 import B2BSettings from "@/b2b/pages/Settings";
 import B2BPricing from "@/b2b/pages/Pricing";
+import { OrgWorkspace } from "@/b2b/context/OrgContext";
+import { ParikshaaShell } from "@/admin/parikshaa/ParikshaaShell";
+import ParikshaaOverview from "@/admin/parikshaa/Overview";
+import ParikshaaUsers from "@/admin/parikshaa/Users";
+import ParikshaaOrgs from "@/admin/parikshaa/Orgs";
+import ParikshaaModeration from "@/admin/parikshaa/Moderation";
+import ParikshaaLeads from "@/admin/parikshaa/Leads";
 import StudentJoin from "@/assessments/pages/Join";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
@@ -255,6 +262,31 @@ const App = () => (
                 <Route path="/b2b/settings/team" element={<ProtectedRoute><B2BTeam /></ProtectedRoute>} />
                 <Route path="/b2b/settings" element={<ProtectedRoute><B2BSettings /></ProtectedRoute>} />
 
+                {/* Vanity org workspaces — members only, slug-resolved */}
+                {(["companies", "colleges"] as const).map((seg) => {
+                  const expectedType = seg === "companies" ? ("company" as const) : ("college" as const);
+                  return (
+                    <Route
+                      key={seg}
+                      path={`/${seg}/:slug`}
+                      element={
+                        <ProtectedRoute>
+                          <OrgWorkspace expectedType={expectedType} />
+                        </ProtectedRoute>
+                      }
+                    >
+                      <Route index element={<B2BDashboard />} />
+                      <Route path="assessments" element={<B2BAssessmentsList />} />
+                      <Route path="assessments/new" element={<B2BAssessmentNew />} />
+                      <Route path="assessments/:id" element={<B2BAssessmentDetail />} />
+                      <Route path="assessments/:id/attempts/:attemptId" element={<B2BAttemptDetail />} />
+                      <Route path="question-bank" element={<B2BQuestionBank />} />
+                      <Route path="team" element={<B2BTeam />} />
+                      <Route path="settings" element={<B2BSettings />} />
+                    </Route>
+                  );
+                })}
+
                 {/* Student-side assessments */}
                 <Route path="/assessments/join/:token" element={<StudentJoin />} />
                 <Route path="/assessments" element={<ProtectedRoute><MyAssessments /></ProtectedRoute>} />
@@ -473,6 +505,22 @@ const App = () => (
                   <Route path="solo/session/:id/report" element={<ArenaSoloReport />} />
                 </Route>
                 <Route path="/admin/arena" element={<AdminRoute><AdminArena /></AdminRoute>} />
+
+                {/* Parikshaa Control Center (super-admin) */}
+                <Route
+                  path="/admin/parikshaa"
+                  element={
+                    <AdminRoute>
+                      <ParikshaaShell />
+                    </AdminRoute>
+                  }
+                >
+                  <Route index element={<ParikshaaOverview />} />
+                  <Route path="users" element={<ParikshaaUsers />} />
+                  <Route path="orgs" element={<ParikshaaOrgs />} />
+                  <Route path="moderation" element={<ParikshaaModeration />} />
+                  <Route path="leads" element={<ParikshaaLeads />} />
+                </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
