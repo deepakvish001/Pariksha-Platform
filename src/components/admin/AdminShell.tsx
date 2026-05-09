@@ -134,8 +134,16 @@ const GROUPS: NavGroup[] = [
     { to: "/admin", label: "Dashboard", icon: LayoutGrid, end: true },
   ]},
   { label: "Content", items: [
-    { to: "/admin/problems", label: "Coding Problems", icon: FileCode2 },
-    { to: "/admin/problems/import", label: "Bulk Import", icon: Upload },
+    {
+      to: "/admin/problems",
+      label: "Coding Problems",
+      icon: FileCode2,
+      children: [
+        { to: "/admin/problems", label: "All problems", icon: FileCode2, end: true },
+        { to: "/admin/problems/new", label: "New problem", icon: Sparkles, end: true },
+        { to: "/admin/problems/import", label: "Bulk Import", icon: Upload, end: true },
+      ],
+    },
   ]},
   { label: "People", items: [
     { to: "/admin/users", label: "Users", icon: Users },
@@ -145,12 +153,28 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/security", label: "Security Center", icon: ShieldAlert },
   ]},
   { label: "Engagement", items: [
-    { to: "/admin/contests", label: "Contests", icon: Trophy },
+    {
+      to: "/admin/contests",
+      label: "Contests",
+      icon: Trophy,
+      children: [
+        { to: "/admin/contests", label: "All contests", icon: Trophy, end: true },
+        { to: "/admin/contests/new", label: "New contest", icon: Sparkles, end: true },
+        { to: "/admin/sideeye", label: "Side-Eye Console", icon: ShieldAlert, end: true },
+      ],
+    },
     { to: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
     { to: "/admin/achievements", label: "Achievements", icon: Award },
     { to: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
-    { to: "/admin/notifications", label: "Notifications", icon: Bell },
-    { to: "/admin/alerts", label: "Contest Alerts", icon: ShieldAlert },
+    {
+      to: "/admin/notifications",
+      label: "Notifications",
+      icon: Bell,
+      children: [
+        { to: "/admin/notifications", label: "Outbox", icon: Bell, end: true },
+        { to: "/admin/alerts", label: "Contest Alerts", icon: ShieldAlert, end: true },
+      ],
+    },
     { to: "/admin/support", label: "Support Inbox", icon: Inbox },
   ]},
   { label: "User Activity", items: [
