@@ -175,6 +175,7 @@ const DemoRequestForm = () => {
           <ScrollReveal delay={0.1} className="lg:col-span-3">
             <div>
               <motion.form
+                ref={formRef}
                 onSubmit={handleSubmit}
                 className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-6 sm:p-8 shadow-xl"
                 initial={{ opacity: 0, y: 20 }}
