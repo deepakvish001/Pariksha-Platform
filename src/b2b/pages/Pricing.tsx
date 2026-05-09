@@ -357,6 +357,7 @@ export default function B2BPricing() {
           </div>
         </div>
       </footer>
+      </div>
     </div>
   );
 }
