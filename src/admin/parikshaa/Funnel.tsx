@@ -265,7 +265,46 @@ export default function FunnelDashboard() {
           </div>
         </div>
 
-        {/* Step bars with drop-off labels */}
+        {/* Absolute drop-off counts between steps */}
+        <div className="rounded-lg border bg-card p-6">
+          <h3 className="text-sm font-semibold tracking-tight mb-1">Drop-off counts</h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Absolute number of sessions lost between each step (not just %).
+          </p>
+          <div className="grid gap-3 md:grid-cols-3">
+            {steps.slice(1).map((s, i) => {
+              const prev = steps[i];
+              const drop = Math.max(prev.value - s.value, 0);
+              const dropPct = pct(drop, prev.value);
+              const retained = Math.max(prev.value - drop, 0);
+              const tone =
+                dropPct >= 70 ? "text-red-400 border-red-500/30 bg-red-500/5"
+                : dropPct >= 40 ? "text-amber-400 border-amber-500/30 bg-amber-500/5"
+                : "text-emerald-400 border-emerald-500/30 bg-emerald-500/5";
+              return (
+                <div key={s.key} className={`rounded-lg border p-4 ${tone}`}>
+                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <span className="truncate">{prev.label}</span>
+                    <ArrowDown className="h-3 w-3 -rotate-90" />
+                    <span className="truncate">{s.label}</span>
+                  </div>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className="text-2xl font-semibold tracking-tight">{drop.toLocaleString()}</span>
+                    <span className="text-xs opacity-80">dropped</span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-1">
+                    {dropPct}% lost · {retained.toLocaleString()} retained
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 pt-4 border-t flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[11px] text-muted-foreground">
+            <div>Total entered: <strong className="text-foreground">{stats.view.toLocaleString()}</strong></div>
+            <div>Total dropped: <strong className="text-foreground">{Math.max(stats.view - stats.onboarded, 0).toLocaleString()}</strong></div>
+            <div>End-to-end conversion: <strong className="text-foreground">{pct(stats.onboarded, stats.view)}%</strong></div>
+          </div>
+        </div>
         <div className="rounded-lg border bg-card p-6">
           <h3 className="text-sm font-semibold tracking-tight mb-1">Step-by-step breakdown</h3>
           <p className="text-xs text-muted-foreground mb-5">
