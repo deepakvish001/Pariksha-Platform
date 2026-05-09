@@ -19,19 +19,15 @@ export const useAdminSidebarBadges = () => {
     refetchInterval: prefs.refreshSeconds * 1000,
     queryFn: async (): Promise<AdminBadges> => {
       const reportsEnabled = prefs.enabled["/admin/reports"];
-      const aiEnabled = prefs.enabled["/admin/ai-content"];
       const healthEnabled = prefs.enabled["/admin/system-health"];
       const supportEnabled = prefs.enabled["/admin/support"];
 
       const sinceReports = seen["/admin/reports"];
-      const sinceAI = seen["/admin/ai-content"];
       const sinceSupport = seen["/admin/support"];
 
       const [
         reportsTotal,
         reportsUnseen,
-        aiTotal,
-        aiUnseen,
         healthRes,
         supportTotal,
         supportUnseen,
@@ -45,18 +41,6 @@ export const useAdminSidebarBadges = () => {
               .select("id", { count: "exact", head: true })
               .eq("status", "open")
               .gt("created_at", sinceReports)
-          : Promise.resolve({ count: null } as any),
-        aiEnabled
-          ? supabase
-              .from("ai_generated_content")
-              .select("id", { count: "exact", head: true })
-              .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-          : Promise.resolve({ count: 0 } as any),
-        aiEnabled && sinceAI
-          ? supabase
-              .from("ai_generated_content")
-              .select("id", { count: "exact", head: true })
-              .gt("created_at", sinceAI)
           : Promise.resolve({ count: null } as any),
         healthEnabled ? (supabase.rpc as any)("admin_system_health") : Promise.resolve({ data: {} }),
         supportEnabled
@@ -76,8 +60,6 @@ export const useAdminSidebarBadges = () => {
 
       const rTotal = reportsTotal.count ?? 0;
       const rUnseen = reportsUnseen.count ?? rTotal;
-      const aTotal = aiTotal.count ?? 0;
-      const aUnseen = aiUnseen.count ?? aTotal;
       const sTotal = supportTotal.count ?? 0;
       const sUnseen = supportUnseen.count ?? sTotal;
       const health = (healthRes.data ?? {}) as Record<string, number>;
@@ -88,11 +70,6 @@ export const useAdminSidebarBadges = () => {
           total: rTotal,
           unseen: rUnseen,
           hint: rTotal === 0 ? "No open reports" : `${rTotal} open report${rTotal === 1 ? "" : "s"}`,
-        },
-        "/admin/ai-content": {
-          total: aTotal,
-          unseen: aUnseen,
-          hint: `${aTotal} new in last 24h`,
         },
         "/admin/system-health": {
           total: hAlert,

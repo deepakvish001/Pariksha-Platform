@@ -5,7 +5,6 @@ const SEEN_KEY = "admin:badge-seen:v1";
 
 export type BadgeKey =
   | "/admin/reports"
-  | "/admin/ai-content"
   | "/admin/system-health"
   | "/admin/support";
 
@@ -17,7 +16,6 @@ export interface BadgePrefs {
 export const DEFAULT_PREFS: BadgePrefs = {
   enabled: {
     "/admin/reports": true,
-    "/admin/ai-content": true,
     "/admin/system-health": true,
     "/admin/support": true,
   },
@@ -92,7 +90,6 @@ export const useAdminBadgeSeen = () => {
     const now = new Date().toISOString();
     const next: SeenMap = {
       "/admin/reports": now,
-      "/admin/ai-content": now,
       "/admin/system-health": now,
       "/admin/support": now,
     };

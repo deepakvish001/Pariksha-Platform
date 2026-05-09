@@ -146,8 +146,6 @@ import AuditLog from "./pages/admin/AuditLog";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminRoles from "./pages/admin/AdminRoles";
 
-import AIContentModeration from "./pages/admin/AIContentModeration";
-import DailyChallengeAdmin from "./pages/admin/DailyChallengeAdmin";
 import Broadcast from "./pages/admin/Broadcast";
 import Reports from "./pages/admin/Reports";
 import ArenaModeration from "./pages/admin/ArenaModeration";
@@ -155,9 +153,7 @@ import SettingsAndFlags from "./pages/admin/SettingsAndFlags";
 import StorageBrowser from "./pages/admin/StorageBrowser";
 import SystemHealth from "./pages/admin/SystemHealth";
 import CronJobs from "./pages/admin/CronJobs";
-import FeaturedContent from "./pages/admin/FeaturedContent";
 
-import RoadmapsManager from "./pages/admin/RoadmapsManager";
 import SupportInbox from "./pages/admin/SupportInbox";
 import SecurityCenter from "./pages/admin/SecurityCenter";
 import AchievementsAdmin from "./pages/admin/AchievementsAdmin";
@@ -184,8 +180,6 @@ import ContestEditor from "./pages/admin/contests/ContestEditor";
 import AdminContestRegistrations from "./pages/admin/contests/AdminContestRegistrations";
 import AdminContestLeaderboard from "./pages/admin/contests/AdminContestLeaderboard";
 import AdminContestProctor from "./pages/admin/contests/AdminContestProctor";
-import AdminVivaQueue from "./pages/admin/contests/AdminVivaQueue";
-import AdminDQSignoffs from "./pages/admin/contests/AdminDQSignoffs";
 import AdminSessionForensics from "./pages/admin/contests/AdminSessionForensics";
 import PublicIntegrityReport from "./pages/contests/PublicIntegrityReport";
 import SideEyeMobile from "./pages/contests/SideEyeMobile";
@@ -452,8 +446,6 @@ const App = () => (
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="roles" element={<AdminRoles />} />
                   
-                  <Route path="ai-content" element={<AIContentModeration />} />
-                  <Route path="daily-challenge" element={<DailyChallengeAdmin />} />
                   <Route path="broadcast" element={<Broadcast />} />
                   <Route path="reports" element={<Reports />} />
                   <Route path="arena-moderation" element={<ArenaModeration />} />
@@ -461,9 +453,7 @@ const App = () => (
                   <Route path="storage" element={<StorageBrowser />} />
                   <Route path="system-health" element={<SystemHealth />} />
                   <Route path="cron-jobs" element={<CronJobs />} />
-                  <Route path="featured" element={<FeaturedContent />} />
-                  
-                  <Route path="roadmaps" element={<RoadmapsManager />} />
+
                   <Route path="support" element={<SupportInbox />} />
                   <Route path="security" element={<SecurityCenter />} />
                   <Route path="achievements" element={<AchievementsAdmin />} />
@@ -481,8 +471,6 @@ const App = () => (
                   <Route path="contests/:id/leaderboard" element={<AdminContestLeaderboard />} />
                   <Route path="contests/:id/proctor" element={<AdminContestProctor />} />
                   <Route path="sideeye" element={<AdminSideEyeConsole />} />
-                  <Route path="contests/viva-queue" element={<AdminVivaQueue />} />
-                  <Route path="contests/dq-signoffs" element={<AdminDQSignoffs />} />
                   <Route path="contests/sessions/:sessionId/forensics" element={<AdminSessionForensics />} />
                 </Route>
                 <Route path="/verify/:reportId" element={<PublicVerifyReport />} />
