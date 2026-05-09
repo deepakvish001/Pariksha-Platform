@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Send, Loader2, Sparkles } from "lucide-react";
 import { z } from "zod";
@@ -41,7 +41,7 @@ const schema = z.object({
   org: z.string().trim().min(2, "Org name required").max(120),
   useCase: z.string().min(1, "Pick a use case"),
   candidates: z.string().min(1, "Pick a volume"),
-  notes: z.string().max(600).optional(),
+  notes: z.string().max(2000).optional(),
 });
 
 const DemoRequestForm = () => {
@@ -49,6 +49,25 @@ const DemoRequestForm = () => {
   const [done, setDone] = useState(false);
   const [proctoring, setProctoring] = useState<string[]>([]);
   const [reporting, setReporting] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
+  const [leadSource, setLeadSource] = useState<string>("demo_form");
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const notesRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Listen for prefill events from other landing sections (e.g. ROI calculator)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ notes?: string; source?: string }>).detail || {};
+      if (detail.notes) setNotes(detail.notes);
+      if (detail.source) setLeadSource(detail.source);
+      // Smooth-focus the notes textarea so the user sees prefilled context
+      requestAnimationFrame(() => {
+        notesRef.current?.focus({ preventScroll: true });
+      });
+    };
+    window.addEventListener("prefill-demo-form", handler as EventListener);
+    return () => window.removeEventListener("prefill-demo-form", handler as EventListener);
+  }, []);
 
   const toggle = (list: string[], setList: (v: string[]) => void, val: string) =>
     setList(list.includes(val) ? list.filter((v) => v !== val) : [...list, val]);
@@ -56,7 +75,8 @@ const DemoRequestForm = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
-    const data = Object.fromEntries(new FormData(form).entries());
+    const formData = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
+    const data = { ...formData, notes };
     const parsed = schema.safeParse(data);
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "Please check the form");
@@ -69,7 +89,8 @@ const DemoRequestForm = () => {
         ...parsed.data,
         proctoring,
         reporting,
-        utm,
+        // Standard lead-source fields piggy-backed via UTM channel for the existing handler schema
+        utm: { ...utm, content: utm?.content || leadSource },
         referrer: typeof document !== "undefined" ? document.referrer : null,
         landingPage:
           typeof window !== "undefined"
@@ -85,7 +106,7 @@ const DemoRequestForm = () => {
           error?.message ||
           "Something went wrong. Try again in a moment.";
         toast.error(msg);
-        await trackLeadEvent("demo_request_failed", { reason: msg });
+        await trackLeadEvent("demo_request_failed", { reason: msg, source: leadSource });
         return;
       }
       await trackLeadEvent("demo_request_submitted", {
@@ -94,13 +115,19 @@ const DemoRequestForm = () => {
         candidates: parsed.data.candidates,
         proctoring_count: proctoring.length,
         reporting_count: reporting.length,
+        source: leadSource,
         lead_id: (res as { id?: string } | null)?.id,
       });
       toast.success("Demo request received — we'll reach out within 1 business day.");
       setDone(true);
       form.reset();
+      setNotes("");
       setProctoring([]);
       setReporting([]);
+      setLeadSource("demo_form");
+      window.dispatchEvent(
+        new CustomEvent("demo-form-submitted", { detail: { source: leadSource } }),
+      );
     } catch (err) {
       console.error("[demo-request] error", err);
       toast.error("Something went wrong. Try again in a moment.");
@@ -148,6 +175,7 @@ const DemoRequestForm = () => {
           <ScrollReveal delay={0.1} className="lg:col-span-3">
             <div>
               <motion.form
+                ref={formRef}
                 onSubmit={handleSubmit}
                 className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-6 sm:p-8 shadow-xl"
                 initial={{ opacity: 0, y: 20 }}
@@ -274,12 +302,15 @@ const DemoRequestForm = () => {
                 <div className="space-y-2 mb-6">
                   <Label htmlFor="notes">Anything specific? <span className="text-muted-foreground font-normal">(optional)</span></Label>
                   <Textarea
+                    ref={notesRef}
                     id="notes"
                     name="notes"
-                    rows={3}
+                    rows={4}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
                     placeholder="E.g. We run 600 candidates over 2 days, need integrity reports for our auditors."
                     disabled={submitting}
-                    maxLength={600}
+                    maxLength={2000}
                   />
                 </div>
 
