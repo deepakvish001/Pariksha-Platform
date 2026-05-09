@@ -930,7 +930,7 @@ export function SubmissionsAndRunsBody({ forcedTab }: { forcedTab?: "submissions
           {!detailRun && detailRunId && runsLoading && (
             <div className="py-12 text-center text-sm text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-              Loading run…
+              
             </div>
           )}
           {detailRun && (

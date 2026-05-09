@@ -103,7 +103,7 @@ export const RoleAuditLog = () => {
           </thead>
           <tbody>
             {isLoading && filtered.length === 0 && (
-              <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">Loading…</td></tr>
+              <tr><td colSpan={5} className="py-8 text-center text-muted-foreground"></td></tr>
             )}
             {!isLoading && filtered.length === 0 && (
               <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">No audit entries</td></tr>

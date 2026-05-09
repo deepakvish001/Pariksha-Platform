@@ -165,7 +165,7 @@ export function DailyHistoryPanel() {
               data-testid="history-load-more"
               className="w-full rounded-md border border-border/60 bg-card/30 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition disabled:opacity-50"
             >
-              {loadingMore ? "Loading…" : "View More"}
+              {loadingMore ? "" : "View More"}
             </button>
           )}
         </>

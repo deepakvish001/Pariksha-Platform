@@ -390,7 +390,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         <TooltipContent side="right" className="text-xs">
           <div className="font-medium">{item.label}</div>
           {showSkeleton ? (
-            <div className="text-muted-foreground">Loading…</div>
+            <div className="text-muted-foreground"></div>
           ) : (
             <div className="text-muted-foreground">{detail?.hint}</div>
           )}

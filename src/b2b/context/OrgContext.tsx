@@ -79,7 +79,7 @@ export function OrgWorkspace({ expectedType }: { expectedType: "company" | "coll
   if (authLoading || isLoading) {
     return (
       <div className="theme-b2b min-h-screen grid place-items-center">
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">Loading…</p>
+        <p className="text-sm text-[hsl(var(--muted-foreground))]"></p>
       </div>
     );
   }
