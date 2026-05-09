@@ -117,7 +117,7 @@ const Hero = () => {
               </div>
             ))}
           </div>
-          <span className="text-sm font-semibold text-foreground">Join 10,000+ students crushing their goals</span>
+          <span className="text-sm font-semibold text-foreground">Trusted by 200+ colleges & companies hiring with Parikshaa</span>
           <Sparkles className="w-4 h-4 text-primary animate-pulse" />
         </motion.div>
 
