@@ -138,10 +138,16 @@ const PAGE_SIZE = 20;
 
 /* ────────────── Problems ────────────── */
 export function LearnProblems() {
-  const [q, setQ] = useState("");
-  const { data, isLoading } = useAdminProblems(q);
+  const { value: q, setValue: setQ, applied } = useUrlSearch("q");
+  const { page, setPage } = usePageParam();
+  const { data, isLoading, isFetching } = useAdminProblems(applied);
   const toggle = useTogglePublish();
-  const rows = (data ?? []).slice(0, 20);
+
+  const total = data?.length ?? 0;
+  const start = (page - 1) * PAGE_SIZE;
+  const rows = (data ?? []).slice(start, start + PAGE_SIZE);
+  const hasNext = start + PAGE_SIZE < total;
+  const hasPrev = page > 1;
 
   return (
     <>
@@ -149,6 +155,7 @@ export function LearnProblems() {
         title="Coding Problems"
         actions={
           <>
+            <RangeBadge />
             <FullLink to="/admin/problems">Open full editor</FullLink>
             <Button asChild variant="outline" size="sm">
               <Link to="/admin/problems/import">
@@ -176,57 +183,60 @@ export function LearnProblems() {
         {isLoading ? (
           <Empty>Loading…</Empty>
         ) : rows.length === 0 ? (
-          <Empty>No problems yet.</Empty>
+          <Empty>{applied ? `No problems matching "${applied}".` : "No problems yet."}</Empty>
         ) : (
-          <div className="rounded-lg border bg-card divide-y">
-            {rows.map((p) => (
-              <div
-                key={p.slug}
-                className="flex flex-wrap items-center justify-between gap-3 p-3"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      to={`/admin/problems/${p.slug}`}
-                      className="text-sm font-medium hover:underline truncate"
-                    >
-                      {p.title}
-                    </Link>
-                    <Badge variant="secondary" className="text-[10px] capitalize">
-                      {p.difficulty}
-                    </Badge>
-                    {p.is_published ? (
-                      <Badge className="text-[10px]">Live</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px]">Draft</Badge>
-                    )}
-                  </div>
-                  <div className="mt-0.5 text-xs text-muted-foreground truncate">
-                    {p.slug} · updated{" "}
-                    {formatDistanceToNow(new Date(p.updated_at), { addSuffix: true })}
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant={p.is_published ? "outline" : "default"}
-                  onClick={() =>
-                    toggle.mutate({ slug: p.slug, publish: !p.is_published })
-                  }
-                  disabled={toggle.isPending}
+          <>
+            <div className="rounded-lg border bg-card divide-y">
+              {rows.map((p) => (
+                <div
+                  key={p.slug}
+                  className="flex flex-wrap items-center justify-between gap-3 p-3"
                 >
-                  {p.is_published ? "Unpublish" : "Publish"}
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-        {(data?.length ?? 0) > rows.length && (
-          <p className="text-xs text-muted-foreground">
-            Showing {rows.length} of {data!.length}.{" "}
-            <Link to="/admin/problems" className="underline">
-              See all
-            </Link>
-          </p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/admin/problems/${p.slug}`}
+                        className="text-sm font-medium hover:underline truncate"
+                      >
+                        {p.title}
+                      </Link>
+                      <Badge variant="secondary" className="text-[10px] capitalize">
+                        {p.difficulty}
+                      </Badge>
+                      {p.is_published ? (
+                        <Badge className="text-[10px]">Live</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">Draft</Badge>
+                      )}
+                    </div>
+                    <div className="mt-0.5 text-xs text-muted-foreground truncate">
+                      {p.slug} · updated{" "}
+                      {formatDistanceToNow(new Date(p.updated_at), { addSuffix: true })}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={p.is_published ? "outline" : "default"}
+                    onClick={() =>
+                      toggle.mutate({ slug: p.slug, publish: !p.is_published })
+                    }
+                    disabled={toggle.isPending}
+                  >
+                    {p.is_published ? "Unpublish" : "Publish"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Pager
+              page={page}
+              setPage={setPage}
+              hasPrev={hasPrev}
+              hasNext={hasNext}
+              label={`Showing ${start + 1}–${Math.min(start + PAGE_SIZE, total)} of ${total}${
+                isFetching ? " · refreshing…" : ""
+              }`}
+            />
+          </>
         )}
       </div>
     </>
@@ -235,15 +245,27 @@ export function LearnProblems() {
 
 /* ────────────── Users ────────────── */
 export function LearnUsers() {
-  const [q, setQ] = useState("");
-  const { data, isLoading } = useAdminUsers(q, 20, 0);
-  const rows = (data ?? []) as any[];
+  const { value: q, setValue: setQ, applied } = useUrlSearch("q");
+  const { page, setPage } = usePageParam();
+  // Fetch one extra row to detect a next page without a count query.
+  const limit = PAGE_SIZE + 1;
+  const offset = (page - 1) * PAGE_SIZE;
+  const { data, isLoading, isFetching } = useAdminUsers(applied, limit, offset);
+  const all = (data ?? []) as any[];
+  const rows = all.slice(0, PAGE_SIZE);
+  const hasNext = all.length > PAGE_SIZE;
+  const hasPrev = page > 1;
 
   return (
     <>
       <LearnHeader
         title="Users"
-        actions={<FullLink to="/admin/users">Open full users console</FullLink>}
+        actions={
+          <>
+            <RangeBadge />
+            <FullLink to="/admin/users">Open full users console</FullLink>
+          </>
+        }
       />
       <div className="p-4 sm:p-6 space-y-4">
         <div className="relative max-w-sm">
@@ -258,30 +280,41 @@ export function LearnUsers() {
         {isLoading ? (
           <Empty>Loading…</Empty>
         ) : rows.length === 0 ? (
-          <Empty>No users found.</Empty>
+          <Empty>{applied ? `No users matching "${applied}".` : "No users found."}</Empty>
         ) : (
-          <div className="rounded-lg border bg-card divide-y">
-            {rows.map((u) => (
-              <div key={u.user_id} className="flex items-center justify-between gap-3 p-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium truncate">
-                    {u.full_name || u.username || u.email || u.user_id.slice(0, 8)}
+          <>
+            <div className="rounded-lg border bg-card divide-y">
+              {rows.map((u) => (
+                <div key={u.user_id} className="flex items-center justify-between gap-3 p-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">
+                      {u.full_name || u.username || u.email || u.user_id.slice(0, 8)}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {u.email ?? "—"} · L{u.current_level ?? 0} · {u.total_xp ?? 0} XP
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {u.email ?? "—"} · L{u.current_level ?? 0} · {u.total_xp ?? 0} XP
+                  <div className="flex items-center gap-2 shrink-0">
+                    {u.is_suspended && <Badge variant="destructive">Suspended</Badge>}
+                    {(u.roles ?? []).slice(0, 2).map((r: string) => (
+                      <Badge key={r} variant="secondary" className="text-[10px]">
+                        {r}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {u.is_suspended && <Badge variant="destructive">Suspended</Badge>}
-                  {(u.roles ?? []).slice(0, 2).map((r: string) => (
-                    <Badge key={r} variant="secondary" className="text-[10px]">
-                      {r}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <Pager
+              page={page}
+              setPage={setPage}
+              hasPrev={hasPrev}
+              hasNext={hasNext}
+              label={`Showing ${offset + 1}–${offset + rows.length}${
+                isFetching ? " · refreshing…" : ""
+              }`}
+            />
+          </>
         )}
       </div>
     </>
