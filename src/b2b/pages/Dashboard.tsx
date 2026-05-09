@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { OrgShell } from "../layouts/OrgShell";
 import { StatTile } from "../components/StatTile";
 import { useMyOrganizations } from "../hooks/useOrg";
+import { useDashboardStats } from "../hooks/useDashboardStats";
 import { Button } from "@/components/ui/button";
 import { FileText, Users, CheckCircle2, ShieldCheck, Plus } from "lucide-react";
 
@@ -24,6 +25,7 @@ export default function B2BDashboard() {
 
   if (!orgs || orgs.length === 0) return <Navigate to="/b2b/onboarding" replace />;
   const org = orgs[0];
+  const { data: stats } = useDashboardStats(org.id);
 
   return (
     <OrgShell
@@ -35,10 +37,10 @@ export default function B2BDashboard() {
       }
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Assessments" value={0} icon={FileText} hint="Drafts and live tests" />
-        <StatTile label="Invites sent" value={0} icon={Users} />
-        <StatTile label="Submissions" value={0} icon={CheckCircle2} />
-        <StatTile label="Avg integrity" value="—" icon={ShieldCheck} hint="Across submissions" />
+        <StatTile label="Assessments" value={stats?.assessments ?? 0} icon={FileText} hint="Drafts and live tests" />
+        <StatTile label="Invites sent" value={stats?.invites ?? 0} icon={Users} />
+        <StatTile label="Submissions" value={stats?.submissions ?? 0} icon={CheckCircle2} />
+        <StatTile label="Avg integrity" value={stats?.avgIntegrity != null ? `${stats.avgIntegrity}%` : "—"} icon={ShieldCheck} hint="Across submissions" />
       </div>
 
       <div className="mt-8 b2b-card p-8 text-center">
