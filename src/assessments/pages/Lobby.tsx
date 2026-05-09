@@ -14,7 +14,9 @@ export default function Lobby() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("assessment_attempts")
-        .select("*, assessment:assessments(id,title,description,duration_min,proctoring_enabled)")
+        .select(
+          "*, assessment:assessments(id,title,description,duration_min,proctoring_enabled,starts_at,ends_at,status)",
+        )
         .eq("id", attemptId!)
         .maybeSingle();
       if (error) throw error;
@@ -25,6 +27,21 @@ export default function Lobby() {
   if (isLoading) return <div className="p-8">Loading…</div>;
   if (!data) return <div className="p-8">Attempt not found.</div>;
   const a: any = data.assessment;
+
+  const now = Date.now();
+  const startMs = a?.starts_at ? new Date(a.starts_at).getTime() : null;
+  const endMs = a?.ends_at ? new Date(a.ends_at).getTime() : null;
+  const notYetOpen = !!startMs && now < startMs;
+  const closed = !!endMs && now > endMs;
+  const notPublished = a?.status && a.status !== "published";
+  const blocked = notYetOpen || closed || notPublished;
+  const blockReason = notPublished
+    ? "This assessment isn't open yet — the recruiter hasn't published it."
+    : notYetOpen
+    ? `This assessment opens on ${new Date(startMs!).toLocaleString()}.`
+    : closed
+    ? `This assessment closed on ${new Date(endMs!).toLocaleString()}.`
+    : null;
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] p-6 max-w-2xl mx-auto">
@@ -38,12 +55,26 @@ export default function Lobby() {
             <li className="flex items-center gap-2"><Clock className="h-4 w-4" /> Duration: {a?.duration_min} minutes</li>
             <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Proctoring: {a?.proctoring_enabled ? "On" : "Off"}</li>
             <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Stable internet recommended</li>
+            {(startMs || endMs) && (
+              <li className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                Window: {startMs ? new Date(startMs).toLocaleString() : "open now"} →{" "}
+                {endMs ? new Date(endMs).toLocaleString() : "no close time"}
+              </li>
+            )}
           </ul>
-          <p className="text-xs text-muted-foreground">
-            Once you start, the timer cannot be paused. Make sure you're ready.
-          </p>
+          {blocked && blockReason && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+              {blockReason}
+            </div>
+          )}
+          {!blocked && (
+            <p className="text-xs text-muted-foreground">
+              Once you start, the timer cannot be paused. Make sure you're ready.
+            </p>
+          )}
           <div className="flex gap-2">
-            <Button onClick={() => navigate(`/assessments/${attemptId}/play`)}>
+            <Button disabled={blocked} onClick={() => navigate(`/assessments/${attemptId}/play`)}>
               Start now
             </Button>
             <Button variant="ghost" onClick={() => navigate("/assessments")}>Cancel</Button>
