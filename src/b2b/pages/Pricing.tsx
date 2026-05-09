@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import "../theme.css";
 import { B2BBackdrop, amberGradientText } from "../components/B2BBackdrop";
+import { B2BSiteHeader } from "../components/B2BSiteHeader";
 
 type Tier = {
   name: string;
@@ -118,43 +119,8 @@ export default function B2BPricing() {
   return (
     <div className="theme-b2b relative min-h-screen overflow-hidden bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
       <B2BBackdrop variant="subtle" />
-      {/* Nav */}
-      <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]/80 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
-          <Link to="/b2b" className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center font-bold">
-              P
-            </div>
-            <span className="font-semibold tracking-tight text-[15px]">
-              Parikshaa{" "}
-              <span className="text-[hsl(var(--muted-foreground))] font-normal">for Teams</span>
-            </span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-7 text-sm text-[hsl(var(--muted-foreground))]">
-            <Link to="/b2b" className="hover:text-[hsl(var(--foreground))]">
-              Overview
-            </Link>
-            <Link to="/pricing" className="text-[hsl(var(--foreground))]">
-              Pricing
-            </Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hidden sm:block"
-            >
-              Sign in
-            </Link>
-            <Button
-              asChild
-              size="sm"
-              className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-            >
-              <Link to="/b2b/onboarding">Get started</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <B2BSiteHeader />
+      <div className="pt-16">
 
       {/* Hero */}
       <section className="border-b border-[hsl(var(--border))]">
