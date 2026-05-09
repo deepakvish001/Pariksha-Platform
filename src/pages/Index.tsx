@@ -4,6 +4,7 @@ import Hero from "@/components/Hero";
 import { DelayedLoginPrompt } from "@/components/DelayedLoginPrompt";
 
 const CompanyLogos = lazy(() => import("@/components/CompanyLogos"));
+const ValueProps = lazy(() => import("@/components/ValueProps"));
 const HowItWorks = lazy(() => import("@/components/HowItWorks"));
 const Features = lazy(() => import("@/components/Features"));
 const WhyChooseUs = lazy(() => import("@/components/WhyChooseUs"));
@@ -22,6 +23,7 @@ const Index = () => {
       <DelayedLoginPrompt />
       <Navbar />
       <Hero />
+      <LazySection><ValueProps /></LazySection>
       <LazySection><CompanyLogos /></LazySection>
       <LazySection>
         <section id="how-it-works">
