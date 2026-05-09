@@ -102,13 +102,15 @@ async function trackOnboarding(
   payload: { user_id?: string | null; org_id?: string | null; step?: number; metadata?: Record<string, unknown> } = {},
 ) {
   try {
-    await supabase.from("b2b_onboarding_events").insert({
-      user_id: payload.user_id ?? null,
-      org_id: payload.org_id ?? null,
-      event,
-      step: payload.step ?? null,
-      metadata: payload.metadata ?? {},
-    });
+    await supabase.from("b2b_onboarding_events").insert([
+      {
+        user_id: payload.user_id ?? null,
+        org_id: payload.org_id ?? null,
+        event,
+        step: payload.step ?? null,
+        metadata: payload.metadata ?? {},
+      },
+    ] as any);
   } catch {
     /* swallow — analytics must never break the flow */
   }
