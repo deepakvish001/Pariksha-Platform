@@ -210,28 +210,57 @@ export default function B2BOnboarding() {
     ? `${window.location.origin}/${createdOrg.type === "company" ? "companies" : "colleges"}/${createdOrg.slug}/team`
     : "";
 
-  const buildMailto = () => {
+  /** Per-email tokenized invite link. Bumping `linkSeed` regenerates them all. */
+  const buildInviteLink = (email: string, seed = linkSeed) => {
+    const handle = email.replace(/[^a-z0-9]+/gi, "-").slice(0, 24).toLowerCase();
+    const token = `${seed}-${handle || "guest"}`;
+    return `${teamUrl}?invite=${token}`;
+  };
+
+  const buildMailto = (links: { email: string; url: string }[]) => {
     const subject = encodeURIComponent(
       `You're invited to ${createdOrg?.name ?? "our team"} on Parikshaa`,
     );
+    const lines = links
+      .map((l) => `• ${l.email}\n  ${l.url}`)
+      .join("\n");
     const body = encodeURIComponent(
       `Hi,\n\nI've set up "${createdOrg?.name}" on Parikshaa for our assessments.\n` +
-        `Sign up with this email and join the team here:\n${teamUrl}\n\n` +
+        `Use your personal invite link below to join the team:\n\n${lines}\n\n` +
         `Thanks!`,
     );
-    return `mailto:${validEmails.join(",")}?subject=${subject}&body=${body}`;
+    return `mailto:${links.map((l) => l.email).join(",")}?subject=${subject}&body=${body}`;
   };
 
-  const handleSendInvites = () => {
-    if (!validateEmails()) return;
+  const generateAndSend = (seed: string) => {
+    if (!validateEmails()) return false;
     if (validEmails.length === 0) {
       toast({
         title: "Add at least one email",
         description: "Or click 'Skip for now' to finish onboarding.",
       });
-      return;
+      return false;
     }
-    window.location.href = buildMailto();
+    const links = validEmails.map((email) => ({
+      email,
+      url: buildInviteLink(email, seed),
+    }));
+    setGeneratedLinks(links);
+    window.location.href = buildMailto(links);
+    return true;
+  };
+
+  const handleSendInvites = () => generateAndSend(linkSeed);
+
+  const handleResendInvites = () => {
+    const fresh = Math.random().toString(36).slice(2, 10);
+    setLinkSeed(fresh);
+    if (generateAndSend(fresh)) {
+      toast({
+        title: "Invite links refreshed",
+        description: "We regenerated unique links and reopened your email client.",
+      });
+    }
   };
 
   const handleCopyLink = async () => {
@@ -239,6 +268,16 @@ export default function B2BOnboarding() {
       await navigator.clipboard.writeText(teamUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast({ title: "Could not copy link", variant: "destructive" });
+    }
+  };
+
+  const handleCopyInviteLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedLink(url);
+      setTimeout(() => setCopiedLink(null), 1800);
     } catch {
       toast({ title: "Could not copy link", variant: "destructive" });
     }
