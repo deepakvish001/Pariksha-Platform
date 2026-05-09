@@ -24,6 +24,9 @@ import {
   Mail,
   Copy,
   CheckCircle2,
+  RefreshCcw,
+  SkipForward,
+  Link2,
 } from "lucide-react";
 import { slugify } from "../hooks/useOrg";
 import "../theme.css";
