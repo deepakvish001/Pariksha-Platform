@@ -39,6 +39,7 @@ import ParikshaaUsers from "@/admin/parikshaa/Users";
 import ParikshaaOrgs from "@/admin/parikshaa/Orgs";
 import ParikshaaModeration from "@/admin/parikshaa/Moderation";
 import ParikshaaLeads from "@/admin/parikshaa/Leads";
+import ParikshaaDemoRequests from "@/admin/parikshaa/DemoRequests";
 import StudentJoin from "@/assessments/pages/Join";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
