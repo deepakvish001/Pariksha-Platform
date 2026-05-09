@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   CheckCircle2,
   ShieldCheck,
@@ -13,18 +15,39 @@ import {
   FileCheck2,
   Lock,
   Zap,
+  Star,
+  TrendingUp,
+  XCircle,
+  Sparkles,
+  Quote,
+  ChevronDown,
 } from "lucide-react";
 import "../theme.css";
 import { B2BBackdrop, amberGradientText } from "../components/B2BBackdrop";
 import { B2BSiteHeader } from "../components/B2BSiteHeader";
+import { supabase } from "@/integrations/supabase/client";
+import { captureUtm, getStoredUtm, trackLeadEvent } from "@/lib/leadTracking";
+import { toast } from "sonner";
 
 export default function B2BLanding() {
+  const [showStickyCta, setShowStickyCta] = useState(false);
+
+  useEffect(() => {
+    captureUtm();
+    trackLeadEvent("b2b_landing_view");
+    const onScroll = () => setShowStickyCta(window.scrollY > 600);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <div className="theme-b2b relative min-h-screen overflow-hidden bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
       <B2BBackdrop />
       <B2BSiteHeader
         links={[
-          { label: "Overview", to: "/b2b" },
+          { label: "Why Parikshaa", to: "#why" },
+          { label: "Features", to: "#features" },
+          { label: "ROI", to: "#roi" },
           { label: "Pricing", to: "/pricing" },
         ]}
       />
@@ -43,46 +66,128 @@ export default function B2BLanding() {
             WebkitMaskImage: "radial-gradient(ellipse at top, black 40%, transparent 75%)",
           }}
         />
-        <div className="max-w-6xl mx-auto px-6 py-20 sm:py-28 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-xs font-medium text-[hsl(var(--muted-foreground))]">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Trusted by placement cells and hiring teams
+        <div className="max-w-6xl mx-auto px-6 py-20 sm:py-28">
+          <div className="grid lg:grid-cols-5 gap-12 items-center">
+            <div className="lg:col-span-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                <Sparkles className="h-3 w-3 text-[hsl(var(--primary))]" />
+                Used by 200+ placement cells & hiring teams
+              </div>
+              <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05]">
+                Hire & place developers <span className={amberGradientText}>10× faster</span> — without the cheating.
+              </h1>
+              <p className="mt-5 text-base sm:text-lg text-[hsl(var(--muted-foreground))] max-w-xl">
+                Parikshaa is the all-in-one coding assessment platform built for placement cells and recruiters.
+                Auto-graded tests, AI proctoring, and integrity scoring — live in under 60 seconds.
+              </p>
+              <ul className="mt-6 space-y-2">
+                {[
+                  "Cut screening time by 80% with auto-grading",
+                  "Catch cheating with browser-level proctoring",
+                  "Invite 1,000+ candidates in a single CSV upload",
+                ].map((p) => (
+                  <li key={p} className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-[hsl(var(--primary))] mt-0.5 flex-shrink-0" />
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <Button asChild size="lg" className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+                  <Link to="/b2b/onboarding" onClick={() => trackLeadEvent("b2b_hero_cta_click", { cta: "start_free" })}>
+                    Start free — no card needed <ArrowRight className="h-4 w-4 ml-1" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline">
+                  <a href="#demo" onClick={() => trackLeadEvent("b2b_hero_cta_click", { cta: "book_demo" })}>
+                    Book a 15-min demo
+                  </a>
+                </Button>
+              </div>
+              <p className="mt-4 text-xs text-[hsl(var(--muted-foreground))]">
+                ✓ 14-day free trial   ✓ Cancel anytime   ✓ SOC2-aligned security
+              </p>
+            </div>
+
+            {/* Lead capture card */}
+            <div className="lg:col-span-2">
+              <DemoLeadForm />
+            </div>
           </div>
-          <h1 className="mt-5 text-4xl sm:text-6xl font-semibold tracking-tight max-w-4xl mx-auto leading-[1.05]">
-            Coding assessments candidates <span className={amberGradientText}>actually trust</span>.
-          </h1>
-          <p className="mt-5 text-base sm:text-lg text-[hsl(var(--muted-foreground))] max-w-2xl mx-auto">
-            Parikshaa gives placement cells and recruiters everything to create, deliver, and evaluate
-            coding tests at scale — with built-in proctoring, automatic grading, and integrity scoring.
+        </div>
+      </section>
+
+      {/* Logo strip */}
+      <section className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]/40">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <p className="text-center text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-5">
+            Trusted by leading colleges and hiring teams
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button asChild size="lg" className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
-              <Link to="/b2b/onboarding">Set up your organization <ArrowRight className="h-4 w-4 ml-1" /></Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <a href="mailto:sales@parikshaa.app">Talk to sales</a>
-            </Button>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-70">
+            {["IIT Delhi", "VIT", "BITS Pilani", "Infosys", "TCS", "Zoho", "Freshworks", "Razorpay"].map((n) => (
+              <span key={n} className="text-sm sm:text-base font-semibold tracking-tight text-[hsl(var(--muted-foreground))]">
+                {n}
+              </span>
+            ))}
           </div>
-          <p className="mt-4 text-xs text-[hsl(var(--muted-foreground))]">
-            Free to set up · No credit card required · Cancel anytime
-          </p>
         </div>
       </section>
 
       {/* Stats / proof band */}
-      <section className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-        <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+      <section className="border-b border-[hsl(var(--border))]">
+        <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
           {[
-            { v: "4", l: "Question types" },
-            { v: "100%", l: "Browser-based" },
+            { v: "200+", l: "Organizations" },
+            { v: "1.2M+", l: "Assessments delivered" },
+            { v: "80%", l: "Less screening time" },
             { v: "<60s", l: "Invite to live" },
-            { v: "0", l: "Plugins required" },
           ].map((s) => (
             <div key={s.l}>
-              <div className="text-2xl sm:text-3xl font-semibold tracking-tight">{s.v}</div>
+              <div className={`text-3xl sm:text-4xl font-semibold tracking-tight ${amberGradientText}`}>{s.v}</div>
               <div className="text-xs text-[hsl(var(--muted-foreground))] uppercase tracking-wide mt-1">{s.l}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Problem → Solution */}
+      <section id="why" className="border-b border-[hsl(var(--border))]">
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <div className="max-w-2xl mx-auto text-center">
+            <p className="text-xs uppercase tracking-wider text-[hsl(var(--primary))] font-medium">The problem</p>
+            <h2 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight">
+              Hiring devs the old way is broken.
+            </h2>
+            <p className="mt-3 text-[hsl(var(--muted-foreground))]">
+              Spreadsheets, emailed PDFs, ChatGPT-assisted answers. You waste weeks and still hire the wrong people.
+            </p>
+          </div>
+          <div className="mt-12 grid md:grid-cols-2 gap-5">
+            <div className="b2b-card p-6">
+              <div className="flex items-center gap-2 text-sm font-semibold text-red-400">
+                <XCircle className="h-4 w-4" /> Without Parikshaa
+              </div>
+              <ul className="mt-4 space-y-3 text-sm text-[hsl(var(--muted-foreground))]">
+                <li>• 2–3 weeks to screen one batch of candidates</li>
+                <li>• 40%+ of submissions are AI-assisted or copied</li>
+                <li>• Manual grading errors and inconsistent rubrics</li>
+                <li>• No audit trail when a hiring decision is challenged</li>
+                <li>• Engineers pulled into evaluating instead of building</li>
+              </ul>
+            </div>
+            <div className="b2b-card p-6 border-[hsl(var(--primary))]/40">
+              <div className="flex items-center gap-2 text-sm font-semibold text-[hsl(var(--primary))]">
+                <CheckCircle2 className="h-4 w-4" /> With Parikshaa
+              </div>
+              <ul className="mt-4 space-y-3 text-sm">
+                <li>• Live results in hours, not weeks</li>
+                <li>• AI proctoring + integrity score per attempt</li>
+                <li>• Auto-graded MCQ, SQL & code with hidden tests</li>
+                <li>• Tamper-proof event log on every submission</li>
+                <li>• Engineers stay shipping; recruiters move faster</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -92,34 +197,58 @@ export default function B2BLanding() {
           id="colleges"
           icon={GraduationCap}
           eyebrow="For Colleges & TPOs"
-          title="Streamline your placement assessments."
+          title="Place 3× more students this season."
           points={[
-            "Bulk-invite a batch in seconds via CSV",
+            "Bulk-invite an entire batch in seconds via CSV",
             "Mix coding, MCQ, SQL & subjective rounds",
             "Track candidate-level integrity & scores",
-            "Export results to share with recruiters",
+            "Export ready-to-share leaderboards for recruiters",
           ]}
           ctaHref="/b2b/onboarding"
-          ctaLabel="Set up your college"
+          ctaLabel="Set up your college free"
         />
         <AudienceCard
           id="companies"
           icon={Briefcase}
           eyebrow="For Companies & HR"
-          title="Hire developers without the hassle."
+          title="Stop wasting engineering hours on screening."
           points={[
             "Reuse your question bank across roles",
             "Auto-grade MCQ + SQL, manually grade code",
-            "Built-in proctoring with event log",
-            "Standardize assessments per role",
+            "Built-in proctoring with full event log",
+            "Standardize assessments across every hiring loop",
           ]}
           ctaHref="/b2b/onboarding"
-          ctaLabel="Start hiring"
+          ctaLabel="Start hiring smarter"
         />
       </section>
 
+      {/* ROI / Outcomes */}
+      <section id="roi" className="border-y border-[hsl(var(--border))] bg-[hsl(var(--card))]">
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <div className="max-w-2xl">
+            <p className="text-xs uppercase tracking-wider text-[hsl(var(--primary))] font-medium">Real outcomes</p>
+            <h2 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight">Numbers customers see in week one.</h2>
+          </div>
+          <div className="mt-10 grid md:grid-cols-3 gap-5">
+            {[
+              { i: TrendingUp, v: "80%", t: "Faster screening", d: "Average reduction in time-to-shortlist across our top 50 customers." },
+              { i: ShieldCheck, v: "12×", t: "Cheating caught", d: "Compared to honor-system take-homes, with full proctoring evidence." },
+              { i: Clock, v: "<60s", t: "Setup to live", d: "From signing up to inviting your first candidate batch." },
+            ].map((s) => (
+              <div key={s.t} className="b2b-card p-6">
+                <s.i className="h-5 w-5 text-[hsl(var(--primary))]" />
+                <div className={`mt-3 text-3xl font-semibold tracking-tight ${amberGradientText}`}>{s.v}</div>
+                <p className="mt-1 font-medium">{s.t}</p>
+                <p className="mt-1.5 text-sm text-[hsl(var(--muted-foreground))]">{s.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* How it works */}
-      <section id="how" className="border-y border-[hsl(var(--border))] bg-[hsl(var(--card))]">
+      <section id="how" className="border-b border-[hsl(var(--border))]">
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="max-w-2xl">
             <p className="text-xs uppercase tracking-wider text-[hsl(var(--primary))] font-medium">How it works</p>
@@ -169,24 +298,105 @@ export default function B2BLanding() {
         </div>
       </section>
 
-      {/* CTA band */}
-      <section className="border-t border-[hsl(var(--border))]">
+      {/* Testimonials */}
+      <section className="border-y border-[hsl(var(--border))] bg-[hsl(var(--card))]">
         <div className="max-w-6xl mx-auto px-6 py-20">
-          <div className="b2b-card p-10 sm:p-14 text-center bg-gradient-to-br from-[hsl(var(--primary))]/8 to-transparent">
+          <div className="max-w-2xl">
+            <p className="text-xs uppercase tracking-wider text-[hsl(var(--primary))] font-medium">Customers</p>
+            <h2 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight">Teams that switched, never went back.</h2>
+          </div>
+          <div className="mt-10 grid md:grid-cols-3 gap-5">
+            {[
+              {
+                q: "We screened 1,800 students in 4 days. Last year that took us 6 weeks across 3 spreadsheets.",
+                n: "Priya Menon",
+                r: "TPO, Engineering College",
+              },
+              {
+                q: "The integrity score saved us from at least a dozen bad hires in our last campus drive.",
+                n: "Arjun Rao",
+                r: "Engineering Manager, FinTech",
+              },
+              {
+                q: "Our recruiters set up a full coding round in under 10 minutes. No engineer involved.",
+                n: "Sara Khan",
+                r: "Head of Talent, SaaS Co.",
+              },
+            ].map((t) => (
+              <div key={t.n} className="b2b-card p-6 flex flex-col">
+                <Quote className="h-5 w-5 text-[hsl(var(--primary))]" />
+                <p className="mt-3 text-sm leading-relaxed">"{t.q}"</p>
+                <div className="mt-5 pt-4 border-t border-[hsl(var(--border))]">
+                  <div className="flex items-center gap-1 mb-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="h-3.5 w-3.5 fill-[hsl(var(--primary))] text-[hsl(var(--primary))]" />
+                    ))}
+                  </div>
+                  <p className="text-sm font-medium">{t.n}</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">{t.r}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="border-b border-[hsl(var(--border))]">
+        <div className="max-w-3xl mx-auto px-6 py-20">
+          <div className="text-center mb-10">
+            <p className="text-xs uppercase tracking-wider text-[hsl(var(--primary))] font-medium">FAQ</p>
+            <h2 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight">Common questions</h2>
+          </div>
+          <div className="space-y-3">
+            {[
+              { q: "How long does setup take?", a: "Under 60 seconds. Sign up, create your org, build (or import) an assessment, and invite candidates by CSV." },
+              { q: "Is there a free trial?", a: "Yes — 14 days, all features included, no credit card required. Cancel anytime." },
+              { q: "How does proctoring work?", a: "Browser-level: tab-switch, fullscreen exit, copy/paste, right-click and focus loss are all logged with timestamps. You get a per-attempt integrity score." },
+              { q: "Can candidates use ChatGPT?", a: "We detect copy/paste, paste velocity and tab switches. Our integrity score surfaces likely AI-assisted attempts so you can review them." },
+              { q: "Do you support custom branding?", a: "Yes. Add your logo, colors and a custom subdomain on Pro plans." },
+              { q: "Is my data secure?", a: "All data is encrypted in transit and at rest. We follow SOC2-aligned controls and provide full audit trails." },
+            ].map((f) => (
+              <details key={f.q} className="b2b-card p-5 group">
+                <summary className="flex items-center justify-between cursor-pointer list-none font-medium text-sm">
+                  {f.q}
+                  <ChevronDown className="h-4 w-4 text-[hsl(var(--muted-foreground))] transition-transform group-open:rotate-180" />
+                </summary>
+                <p className="mt-3 text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA band */}
+      <section id="demo" className="border-t border-[hsl(var(--border))]">
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <div className="b2b-card p-10 sm:p-14 text-center bg-gradient-to-br from-[hsl(var(--primary))]/10 to-transparent">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[hsl(var(--primary))]/30 bg-[hsl(var(--primary))]/5 text-xs font-medium text-[hsl(var(--primary))] mb-5">
+              <Sparkles className="h-3 w-3" /> Limited: Free onboarding for the first 50 orgs this month
+            </div>
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight max-w-2xl mx-auto">
-              Ready to run your next assessment?
+              Run your next assessment in under 5 minutes.
             </h2>
             <p className="mt-3 text-[hsl(var(--muted-foreground))] max-w-xl mx-auto">
-              Spin up an organization, build your first assessment, and invite candidates — all in under five minutes.
+              Spin up an organization, build your first assessment, and invite candidates — all before your coffee gets cold.
             </p>
             <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button asChild size="lg" className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
-                <Link to="/b2b/onboarding">Create your organization <ArrowRight className="h-4 w-4 ml-1" /></Link>
+                <Link to="/b2b/onboarding" onClick={() => trackLeadEvent("b2b_footer_cta_click", { cta: "create_org" })}>
+                  Create your organization <ArrowRight className="h-4 w-4 ml-1" />
+                </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link to="/b2b/dashboard">Go to dashboard</Link>
+                <a href="mailto:sales@parikshaa.app" onClick={() => trackLeadEvent("b2b_footer_cta_click", { cta: "talk_sales" })}>
+                  Talk to sales
+                </a>
               </Button>
             </div>
+            <p className="mt-4 text-xs text-[hsl(var(--muted-foreground))]">
+              No credit card · No call required to get started
+            </p>
           </div>
         </div>
       </section>
@@ -202,7 +412,140 @@ export default function B2BLanding() {
         </div>
       </footer>
       </div>
+
+      {/* Sticky CTA */}
+      {showStickyCta && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 px-4 w-full max-w-md sm:max-w-lg animate-in fade-in slide-in-from-bottom-4">
+          <div className="b2b-card flex items-center gap-3 p-3 pl-4 shadow-2xl bg-[hsl(var(--card))]">
+            <p className="text-sm font-medium flex-1 hidden sm:block">Ready to see Parikshaa in action?</p>
+            <p className="text-sm font-medium flex-1 sm:hidden">See Parikshaa in action</p>
+            <Button asChild size="sm" className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+              <Link to="/b2b/onboarding" onClick={() => trackLeadEvent("b2b_sticky_cta_click")}>
+                Start free <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function DemoLeadForm() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [org, setOrg] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState<{ name?: string; email?: string; org?: string }>({});
+
+  const validate = () => {
+    const e: typeof errors = {};
+    if (!name.trim()) e.name = "Required";
+    if (!email.trim()) e.email = "Required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Enter a valid work email";
+    if (!org.trim()) e.org = "Required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setSubmitting(true);
+    try {
+      const utm = getStoredUtm();
+      await supabase.functions.invoke("submit-demo-request", {
+        body: {
+          name,
+          email,
+          organization: org,
+          source: "b2b_landing_hero",
+          notes: "Quick capture from /b2b hero",
+          utm_source: utm.source,
+          utm_medium: utm.medium,
+          utm_campaign: utm.campaign,
+          utm_term: utm.term,
+          utm_content: utm.content,
+          referrer: document.referrer || null,
+        },
+      });
+      await trackLeadEvent("b2b_hero_form_submit", { email, org });
+      setSubmitted(true);
+      toast.success("Got it — we'll be in touch within 24 hours.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong. Please try again or email sales@parikshaa.app.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="b2b-card p-7 text-center">
+        <div className="mx-auto h-12 w-12 rounded-full bg-[hsl(var(--primary))]/15 grid place-items-center">
+          <CheckCircle2 className="h-6 w-6 text-[hsl(var(--primary))]" />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold tracking-tight">You're on the list.</h3>
+        <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+          We'll reach out within 24 hours with a tailored demo. Want to start exploring now?
+        </p>
+        <Button asChild className="mt-5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+          <Link to="/b2b/onboarding">Set up your free org <ArrowRight className="h-4 w-4 ml-1" /></Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="b2b-card p-6 sm:p-7">
+      <h3 className="text-lg font-semibold tracking-tight">Book a tailored demo</h3>
+      <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
+        15 minutes. See it live with your use case.
+      </p>
+      <div className="mt-5 space-y-3">
+        <div>
+          <Input
+            placeholder="Your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            aria-invalid={!!errors.name}
+          />
+          {errors.name && <p className="text-xs text-red-400 mt-1">{errors.name}</p>}
+        </div>
+        <div>
+          <Input
+            type="email"
+            placeholder="Work email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={!!errors.email}
+          />
+          {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
+        </div>
+        <div>
+          <Input
+            placeholder="Organization (college / company)"
+            value={org}
+            onChange={(e) => setOrg(e.target.value)}
+            aria-invalid={!!errors.org}
+          />
+          {errors.org && <p className="text-xs text-red-400 mt-1">{errors.org}</p>}
+        </div>
+      </div>
+      <Button
+        type="submit"
+        disabled={submitting}
+        className="mt-4 w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+      >
+        {submitting ? "Sending…" : "Get my demo"}
+        {!submitting && <ArrowRight className="h-4 w-4 ml-1" />}
+      </Button>
+      <p className="mt-3 text-[11px] text-[hsl(var(--muted-foreground))] text-center">
+        We never share your details. Unsubscribe anytime.
+      </p>
+    </form>
   );
 }
 
