@@ -6,6 +6,7 @@ import {
   Building2,
   ShieldAlert,
   TrendingUp,
+  Sparkles,
   ChevronDown,
   ChevronRight,
   ArrowLeft,
