@@ -153,9 +153,7 @@ import SettingsAndFlags from "./pages/admin/SettingsAndFlags";
 import StorageBrowser from "./pages/admin/StorageBrowser";
 import SystemHealth from "./pages/admin/SystemHealth";
 import CronJobs from "./pages/admin/CronJobs";
-import FeaturedContent from "./pages/admin/FeaturedContent";
 
-import RoadmapsManager from "./pages/admin/RoadmapsManager";
 import SupportInbox from "./pages/admin/SupportInbox";
 import SecurityCenter from "./pages/admin/SecurityCenter";
 import AchievementsAdmin from "./pages/admin/AchievementsAdmin";
