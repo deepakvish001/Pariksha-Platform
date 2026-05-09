@@ -41,6 +41,7 @@ import ParikshaaModeration from "@/admin/parikshaa/Moderation";
 import ParikshaaLeads from "@/admin/parikshaa/Leads";
 import ParikshaaDemoRequests from "@/admin/parikshaa/DemoRequests";
 import ParikshaaFunnel from "@/admin/parikshaa/Funnel";
+import ParikshaaEmailPreview from "@/admin/parikshaa/EmailPreview";
 import StudentJoin from "@/assessments/pages/Join";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
@@ -513,6 +514,7 @@ const App = () => (
                   <Route path="leads" element={<ParikshaaLeads />} />
                   <Route path="demo-requests" element={<ParikshaaDemoRequests />} />
                   <Route path="funnel" element={<ParikshaaFunnel />} />
+                  <Route path="email-preview" element={<ParikshaaEmailPreview />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

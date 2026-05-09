@@ -13,6 +13,7 @@ import {
   Radio,
   Filter,
   BarChart3,
+  Mail,
 } from "lucide-react";
 import {
   Sidebar,
@@ -98,6 +99,7 @@ const GROUPS: NavGroup[] = [
       { to: "/admin/parikshaa/leads", label: "Leads & Growth", icon: TrendingUp },
       { to: "/admin/parikshaa/demo-requests", label: "Demo Requests", icon: Sparkles },
       { to: "/admin/parikshaa/funnel", label: "Conversion Funnel", icon: BarChart3 },
+      { to: "/admin/parikshaa/email-preview", label: "Email Preview", icon: Mail },
     ],
   },
 ];
@@ -300,6 +302,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   leads: "Leads & Growth",
   "demo-requests": "Demo Requests",
   funnel: "Conversion Funnel",
+  "email-preview": "Email Preview",
 };
 
 const buildCrumbs = (pathname: string) => {
