@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { OrgShell } from "../../layouts/OrgShell";
-import { useAttemptDetail, useGradeAnswer, useFinalizeAttemptScore } from "../../hooks/useAttempts";
+import { useAttemptDetail, useGradeAnswer, useFinalizeAttemptScore, useAttemptEvents } from "../../hooks/useAttempts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ export default function AttemptDetail() {
   const { data, isLoading, error } = useAttemptDetail(attemptId);
   const grade = useGradeAnswer();
   const finalize = useFinalizeAttemptScore();
+  const { data: events } = useAttemptEvents(attemptId);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   const totals = useMemo(() => {
@@ -78,6 +79,20 @@ export default function AttemptDetail() {
           </CardContent>
         </Card>
       </div>
+
+      {events && events.length > 0 && (
+        <Card className="mb-4">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Proctoring log ({events.length} events)</CardTitle></CardHeader>
+          <CardContent className="max-h-56 overflow-auto text-xs space-y-1 font-mono">
+            {events.map((e: any) => (
+              <div key={e.id} className="flex gap-3">
+                <span className="text-[hsl(var(--muted-foreground))]">{new Date(e.created_at).toLocaleTimeString()}</span>
+                <span className="font-medium">{e.kind}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="space-y-4">
         {data.answers.length === 0 && (

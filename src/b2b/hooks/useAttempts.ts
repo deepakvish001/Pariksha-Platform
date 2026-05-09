@@ -83,6 +83,22 @@ export function useAttemptDetail(attemptId?: string) {
   });
 }
 
+export function useAttemptEvents(attemptId?: string) {
+  return useQuery({
+    queryKey: ["b2b", "attempt-events", attemptId],
+    enabled: !!attemptId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("attempt_events")
+        .select("id, kind, payload, created_at")
+        .eq("attempt_id", attemptId!)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export function useGradeAnswer() {
   const qc = useQueryClient();
   return useMutation({
