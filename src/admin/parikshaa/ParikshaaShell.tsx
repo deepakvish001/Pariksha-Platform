@@ -133,6 +133,8 @@ const ParikshaaSidebar = () => {
   const renderItem = (item: NavItem) => {
     const Icon = item.icon;
     const active = isActive(item.to, item.end);
+    const hasChildren = !!item.children?.length;
+    const showSubNav = !collapsed && hasChildren && active;
 
     const link = (
       <NavLink
@@ -180,6 +182,30 @@ const ParikshaaSidebar = () => {
           </Tooltip>
         ) : (
           button
+        )}
+
+        {showSubNav && (
+          <ul className="mt-1 ml-6 flex flex-col gap-0.5 border-l border-border/40 pl-2">
+            {item.children!.map((sub) => {
+              const subOn = pathname + (typeof window !== "undefined" ? window.location.search : "") === sub.to;
+              return (
+                <li key={sub.to}>
+                  <Link
+                    to={sub.to}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors",
+                      subOn
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <span className="h-1 w-1 rounded-full bg-current opacity-60" />
+                    <span className="truncate">{sub.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </SidebarMenuItem>
     );
