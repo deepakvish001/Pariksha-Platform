@@ -185,7 +185,7 @@ const DashboardRoadmaps = () => {
                 />
               </div>
               <Button asChild variant="outline" size="sm" className="self-start sm:self-auto">
-                <Link to="/dashboard/roadmaps/compare">
+                <Link to="/learn/roadmaps/compare">
                   <GitCompare className="h-4 w-4 mr-1.5" />
                   Compare roadmaps
                 </Link>
@@ -275,8 +275,8 @@ const RoadmapCard = ({ roadmap, index }: RoadmapCardProps) => {
   // Every roadmap now opens the same interactive flow view.
   const href =
     roadmap.id === "fullstack"
-      ? "/dashboard/roadmap/fullstack"
-      : `/dashboard/roadmaps/${roadmap.id}`;
+      ? "/learn/roadmap/fullstack"
+      : `/learn/roadmaps/${roadmap.id}`;
 
   const Icon = roadmap.Icon;
 

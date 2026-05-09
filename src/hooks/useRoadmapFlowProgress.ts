@@ -12,7 +12,7 @@ interface UseRoadmapFlowProgressOptions {
 
 const buildKeys = (id: string) => ({
   storage: `roadmap-flow-progress-${id}`,
-  // Mirror key so the generic listing page (`/dashboard/roadmaps`) can read
+  // Mirror key so the generic listing page (`/learn/roadmaps`) can read
   // each roadmap's progress in a uniform shape.
   sync: `roadmap-progress-${id}`,
 });

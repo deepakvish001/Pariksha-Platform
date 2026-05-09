@@ -110,7 +110,7 @@ export default function FullStackRoadmap() {
         <div className="text-center space-y-3">
           <h1 className="text-xl font-semibold">Roadmap not found</h1>
           <Link
-            to="/dashboard/roadmaps"
+            to="/learn/roadmaps"
             className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -132,7 +132,7 @@ export default function FullStackRoadmap() {
         <div className="space-y-3">
           {/* Back button */}
           <Link
-            to="/dashboard/roadmaps"
+            to="/learn/roadmaps"
             className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
           >
             <ArrowLeft className="h-3.5 w-3.5" />

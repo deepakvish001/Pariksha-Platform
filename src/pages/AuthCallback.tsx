@@ -13,7 +13,7 @@ const AuthCallback = () => {
         console.error("Auth callback error:", error);
         navigate("/login", { replace: true });
       } else {
-        navigate("/dashboard", { replace: true });
+        navigate("/learn", { replace: true });
       }
     };
 

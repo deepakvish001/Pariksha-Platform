@@ -263,7 +263,7 @@ const NotificationPreferences = () => {
               <p className="text-sm text-muted-foreground">Manage how you receive notifications</p>
             </div>
           </div>
-          <Link to="/dashboard/notifications">
+          <Link to="/learn/notifications">
             <Button variant="outline" size="sm">
               <Bell className="h-4 w-4 mr-2" />
               View Notifications

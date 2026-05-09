@@ -191,7 +191,7 @@ const Onboarding = () => {
   // Redirect to dashboard if onboarding is already completed
   useEffect(() => {
     if (onboardingCompleted) {
-      navigate("/dashboard", { replace: true });
+      navigate("/learn", { replace: true });
     }
   }, [onboardingCompleted, navigate]);
 
@@ -354,7 +354,7 @@ const Onboarding = () => {
       title: "Skipped for now",
       description: "We'll ask you to complete your profile next time you log in.",
     });
-    navigate("/dashboard", { replace: true });
+    navigate("/learn", { replace: true });
   };
 
   const handleSubmit = async () => {
@@ -406,7 +406,7 @@ const Onboarding = () => {
         title: "Profile completed!",
         description: "Welcome to Parikshaa!",
       });
-      navigate("/dashboard", { replace: true });
+      navigate("/learn", { replace: true });
     }
 
     setIsLoading(false);

@@ -315,7 +315,7 @@ const FundamentalsOverview: React.FC = () => {
                   <Award className="h-5 w-5 text-primary" />
                   Fundamentals Achievements
                 </CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard/achievements")}>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/learn/achievements")}>
                   View All
                   <ArrowRight className="h-4 w-4 ml-1" />
                 </Button>

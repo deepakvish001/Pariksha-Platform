@@ -50,7 +50,7 @@ export function OrgShell({ children, title, actions }: { children: ReactNode; ti
             })}
           </nav>
           <div className="p-3 border-t">
-            <NavLink to="/dashboard" className="text-xs text-muted-foreground hover:text-foreground">
+            <NavLink to="/learn" className="text-xs text-muted-foreground hover:text-foreground">
               ← Back to learning app
             </NavLink>
           </div>

@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const STORAGE_KEY = "lastVisitedRoute";
 
 // Routes that trigger restoration
-const RESTORE_TRIGGER_ROUTES = ["/dashboard"];
+const RESTORE_TRIGGER_ROUTES = ["/learn"];
 
 // Routes to never restore to
 const NEVER_RESTORE_TO = [

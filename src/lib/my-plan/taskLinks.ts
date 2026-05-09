@@ -21,7 +21,7 @@ export const resolveTaskLink = (task: PlanTask): string | null => {
     case "quiz":
       return idSlug ? `/library/quiz?category=${encodeURIComponent(idSlug)}` : `/library/quiz`;
     case "concept":
-      return `/dashboard/roadmaps`;
+      return `/learn/roadmaps`;
     default:
       return null;
   }

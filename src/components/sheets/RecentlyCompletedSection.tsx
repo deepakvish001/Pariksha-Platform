@@ -62,7 +62,7 @@ const RecentlyCompletedSection = ({ sheets }: RecentlyCompletedSectionProps) => 
           >
             <Card 
               className="group cursor-pointer border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent hover:shadow-lg hover:border-emerald-500/40 transition-all duration-300"
-              onClick={() => navigate(`/dashboard/sheets/${sheet.id}`)}
+              onClick={() => navigate(`/learn/sheets/${sheet.id}`)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3 mb-3">

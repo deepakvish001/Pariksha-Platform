@@ -461,7 +461,7 @@ const DashboardRoadmapCompare = () => {
               asChild
               className="-ml-2 text-muted-foreground hover:text-foreground"
             >
-              <Link to="/dashboard/roadmaps">
+              <Link to="/learn/roadmaps">
                 <ArrowLeft className="h-4 w-4 mr-1.5" />
                 Back to Roadmaps
               </Link>
@@ -715,8 +715,8 @@ const DashboardRoadmapCompare = () => {
                   <Link
                     to={
                       treeA.id === "fullstack"
-                        ? "/dashboard/roadmap/fullstack"
-                        : `/dashboard/roadmaps/${treeA.id}`
+                        ? "/learn/roadmap/fullstack"
+                        : `/learn/roadmaps/${treeA.id}`
                     }
                   >
                     Open {treeA.title}
@@ -727,8 +727,8 @@ const DashboardRoadmapCompare = () => {
                   <Link
                     to={
                       treeB.id === "fullstack"
-                        ? "/dashboard/roadmap/fullstack"
-                        : `/dashboard/roadmaps/${treeB.id}`
+                        ? "/learn/roadmap/fullstack"
+                        : `/learn/roadmaps/${treeB.id}`
                     }
                   >
                     Open {treeB.title}

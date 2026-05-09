@@ -17,12 +17,12 @@ interface GuestTooltipItem {
 }
 
 const tooltipData: Record<string, GuestTooltipItem> = {
-  "/dashboard": {
+  "/learn": {
     id: "dashboard",
     label: "Dashboard",
     tip: "Your progress hub — sign in to track solved problems, streaks & achievements.",
   },
-  "/dashboard/sheets": {
+  "/learn/sheets": {
     id: "sheets",
     label: "Sheets",
     tip: "Browse curated DSA sheets. Sign in to mark problems as solved.",

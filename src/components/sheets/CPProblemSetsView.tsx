@@ -603,7 +603,7 @@ const CPProblemSetsView = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate("/dashboard/sheets")}
+            onClick={() => navigate("/learn/sheets")}
             className="gap-1 shrink-0"
           >
             <ChevronRight className="h-4 w-4 rotate-180" />

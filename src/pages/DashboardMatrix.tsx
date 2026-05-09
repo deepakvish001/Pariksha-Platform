@@ -31,23 +31,23 @@ import { cn } from "@/lib/utils";
 
 // Accurate sheet definitions matching DashboardSheets
 const sheetDefinitions = [
-  { id: "strivers-sde-sheet", name: "Striver's SDE Sheet", total: 199, category: "DSA", route: "/dashboard/sheets/strivers-sde-sheet" },
-  { id: "strivers-a2z-dsa", name: "Striver's A2Z DSA", total: 445, category: "DSA", route: "/dashboard/sheets/strivers-a2z-dsa" },
-  { id: "blind-75", name: "Blind 75", total: 75, category: "DSA", route: "/dashboard/sheets/blind-75" },
-  { id: "neetcode-150", name: "Neetcode 150", total: 150, category: "DSA", route: "/dashboard/sheets/neetcode-150" },
-  { id: "neetcode-250", name: "NeetCode 250", total: 250, category: "DSA", route: "/dashboard/sheets/neetcode-250" },
-  { id: "dsa-level-1", name: "Java DSA Level 1", total: 467, category: "DSA", route: "/dashboard/sheets/dsa-level-1" },
-  { id: "dsa-level-2", name: "Java DSA Level 2", total: 309, category: "DSA", route: "/dashboard/sheets/dsa-level-2" },
-  { id: "dsa-level-3", name: "Java DSA Level 3", total: 226, category: "DSA", route: "/dashboard/sheets/dsa-level-3" },
-  { id: "competitive-programming", name: "Competitive Programming", total: 270, category: "CP", route: "/dashboard/sheets/competitive-programming" },
-  { id: "acm-icpc-training", name: "ACM-ICPC Training", total: 1243, category: "CP", route: "/dashboard/sheets/acm-icpc-training" },
-  { id: "tle-cp31-sheet", name: "TLE CP-31", total: 372, category: "CP", route: "/dashboard/sheets/tle-cp31-sheet" },
-  { id: "sql-practice", name: "LeetCode SQL 50", total: 50, category: "SQL", route: "/dashboard/sheets/sql-practice" },
-  { id: "adv-sql-practice", name: "Advanced SQL 50", total: 50, category: "SQL", route: "/dashboard/sheets/adv-sql-practice" },
-  { id: "dbms-sheet", name: "DBMS Sheet", total: 124, category: "DBMS", route: "/dashboard/sheets/dbms-sheet" },
-  { id: "cn-sheet", name: "CN Sheet", total: 115, category: "CN", route: "/dashboard/sheets/cn-sheet" },
-  { id: "os-sheet", name: "OS Sheet", total: 135, category: "OS", route: "/dashboard/sheets/os-sheet" },
-  { id: "striver-sd-sheet", name: "System Design", total: 97, category: "System Design", route: "/dashboard/sheets/striver-sd-sheet" },
+  { id: "strivers-sde-sheet", name: "Striver's SDE Sheet", total: 199, category: "DSA", route: "/learn/sheets/strivers-sde-sheet" },
+  { id: "strivers-a2z-dsa", name: "Striver's A2Z DSA", total: 445, category: "DSA", route: "/learn/sheets/strivers-a2z-dsa" },
+  { id: "blind-75", name: "Blind 75", total: 75, category: "DSA", route: "/learn/sheets/blind-75" },
+  { id: "neetcode-150", name: "Neetcode 150", total: 150, category: "DSA", route: "/learn/sheets/neetcode-150" },
+  { id: "neetcode-250", name: "NeetCode 250", total: 250, category: "DSA", route: "/learn/sheets/neetcode-250" },
+  { id: "dsa-level-1", name: "Java DSA Level 1", total: 467, category: "DSA", route: "/learn/sheets/dsa-level-1" },
+  { id: "dsa-level-2", name: "Java DSA Level 2", total: 309, category: "DSA", route: "/learn/sheets/dsa-level-2" },
+  { id: "dsa-level-3", name: "Java DSA Level 3", total: 226, category: "DSA", route: "/learn/sheets/dsa-level-3" },
+  { id: "competitive-programming", name: "Competitive Programming", total: 270, category: "CP", route: "/learn/sheets/competitive-programming" },
+  { id: "acm-icpc-training", name: "ACM-ICPC Training", total: 1243, category: "CP", route: "/learn/sheets/acm-icpc-training" },
+  { id: "tle-cp31-sheet", name: "TLE CP-31", total: 372, category: "CP", route: "/learn/sheets/tle-cp31-sheet" },
+  { id: "sql-practice", name: "LeetCode SQL 50", total: 50, category: "SQL", route: "/learn/sheets/sql-practice" },
+  { id: "adv-sql-practice", name: "Advanced SQL 50", total: 50, category: "SQL", route: "/learn/sheets/adv-sql-practice" },
+  { id: "dbms-sheet", name: "DBMS Sheet", total: 124, category: "DBMS", route: "/learn/sheets/dbms-sheet" },
+  { id: "cn-sheet", name: "CN Sheet", total: 115, category: "CN", route: "/learn/sheets/cn-sheet" },
+  { id: "os-sheet", name: "OS Sheet", total: 135, category: "OS", route: "/learn/sheets/os-sheet" },
+  { id: "striver-sd-sheet", name: "System Design", total: 97, category: "System Design", route: "/learn/sheets/striver-sd-sheet" },
 ];
 
 interface SheetProgress {
@@ -367,7 +367,7 @@ const DashboardMatrix = () => {
 
           <Card
             className="cursor-pointer hover:shadow-md hover:border-emerald-500/30 transition-all group"
-            onClick={() => navigate("/dashboard/sheets")}
+            onClick={() => navigate("/learn/sheets")}
           >
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition-colors">
@@ -505,7 +505,7 @@ const DashboardMatrix = () => {
                       <CardDescription className="text-xs">Sheets you're currently working on</CardDescription>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => navigate("/dashboard/sheets")}>
+                  <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => navigate("/learn/sheets")}>
                     View All <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
                 </div>
