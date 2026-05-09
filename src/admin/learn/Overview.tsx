@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,9 +11,18 @@ import {
   Megaphone,
   Plus,
   Upload,
+  RefreshCw,
 } from "lucide-react";
 import { LearnHeader } from "./LearnShell";
-import { useAdminKpis } from "@/hooks/admin/useAdminControl";
+import {
+  useAdminKpis,
+  useAdminTrendSubmissions,
+  useAdminTrendSignups,
+} from "@/hooks/admin/useAdminControl";
+import { useQueryClient } from "@tanstack/react-query";
+
+type Range = "24h" | "7d" | "30d";
+const RANGE_DAYS: Record<Range, number> = { "24h": 1, "7d": 7, "30d": 30 };
 
 const Kpi = ({ label, value, accent }: { label: string; value: number | string; accent?: string }) => (
   <Card className="p-4">
@@ -49,8 +59,40 @@ const QuickLink = ({
 );
 
 export default function LearnOverview() {
-  const { data: k } = useAdminKpis();
+  const [range, setRange] = useState<Range>("7d");
+  const days = RANGE_DAYS[range];
+
+  const qc = useQueryClient();
+  const { data: k, refetch: refetchKpis, isFetching: kpisFetching } = useAdminKpis();
+  const { data: subs, refetch: refetchSubs, isFetching: subsFetching } =
+    useAdminTrendSubmissions(days);
+  const { data: signups, refetch: refetchSignups, isFetching: signupsFetching } =
+    useAdminTrendSignups(days);
+
   const kpi = (key: string) => (k?.[key] ?? 0) as number;
+
+  const windowSubs = useMemo(
+    () => (subs ?? []).reduce((a, r) => a + (r.total ?? 0), 0),
+    [subs],
+  );
+  const windowAccepted = useMemo(
+    () => (subs ?? []).reduce((a, r) => a + (r.accepted ?? 0), 0),
+    [subs],
+  );
+  const windowSignups = useMemo(
+    () => (signups ?? []).reduce((a, r) => a + (r.signups ?? 0), 0),
+    [signups],
+  );
+  const acceptanceRate = windowSubs > 0 ? Math.round((windowAccepted / windowSubs) * 100) : 0;
+
+  const refreshAll = () => {
+    refetchKpis();
+    refetchSubs();
+    refetchSignups();
+    qc.invalidateQueries({ queryKey: ["admin-kpis"] });
+  };
+
+  const fetching = kpisFetching || subsFetching || signupsFetching;
 
   return (
     <>
@@ -72,18 +114,61 @@ export default function LearnOverview() {
         }
       />
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-muted-foreground">At a glance</h2>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-muted-foreground">
+              At a glance · last {range}
+            </h2>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex rounded-md border bg-card p-0.5">
+                {(["24h", "7d", "30d"] as Range[]).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setRange(r)}
+                    className={`px-2.5 py-1 text-xs font-medium rounded ${
+                      range === r
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={refreshAll}
+                disabled={fetching}
+                aria-label="Refresh"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${fetching ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Kpi label="Total users" value={kpi("total_users")} />
-            <Kpi label="DAU (24h)" value={kpi("dau")} accent="text-primary" />
-            <Kpi label="Submissions" value={kpi("submissions_total")} />
+            <Kpi label={`New signups (${range})`} value={windowSignups} accent="text-primary" />
+            <Kpi label={`Submissions (${range})`} value={windowSubs} />
+            <Kpi
+              label="Acceptance rate"
+              value={`${acceptanceRate}%`}
+              accent={acceptanceRate >= 50 ? "text-primary" : ""}
+            />
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Kpi label="DAU (24h)" value={kpi("dau")} />
+            <Kpi label="Submissions (all time)" value={kpi("submissions_total")} />
             <Kpi
               label="Open reports"
               value={kpi("open_reports")}
               accent={kpi("open_reports") > 0 ? "text-destructive" : ""}
             />
+            <Kpi label="AI content" value={kpi("ai_content_total")} />
           </div>
         </section>
 
@@ -91,37 +176,37 @@ export default function LearnOverview() {
           <h2 className="mb-3 text-sm font-semibold text-muted-foreground">Manage</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <QuickLink
-              to="/admin/problems"
+              to="/admin/learn/problems"
               icon={FileCode2}
               label="Coding Problems"
               desc={`${kpi("published_problems")} published · ${kpi("draft_problems")} drafts`}
             />
             <QuickLink
-              to="/admin/users"
+              to="/admin/learn/users"
               icon={Users}
               label="Users"
               desc={`${kpi("total_users")} total accounts`}
             />
             <QuickLink
-              to="/admin/daily-challenge"
+              to="/admin/learn/daily"
               icon={CalendarClock}
               label="Daily Challenge"
               desc="Schedule and curate the daily problem"
             />
             <QuickLink
-              to="/admin/ai-content"
+              to="/admin/learn/ai-content"
               icon={Sparkles}
               label="AI Content"
               desc={`${kpi("ai_content_total")} pieces to moderate`}
             />
             <QuickLink
-              to="/admin/reports"
+              to="/admin/learn/reports"
               icon={Flag}
               label="Reports"
               desc={`${kpi("open_reports")} open`}
             />
             <QuickLink
-              to="/admin/broadcast"
+              to="/admin/learn/broadcast"
               icon={Megaphone}
               label="Broadcast"
               desc="Send announcements to learners"

@@ -1,0 +1,442 @@
+import { Link } from "react-router-dom";
+import { useState } from "react";
+import { LearnHeader } from "./LearnShell";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Plus,
+  Upload,
+  ExternalLink,
+  Search,
+  CheckCircle2,
+  Eye,
+  Send,
+} from "lucide-react";
+import {
+  useAdminProblems,
+  useTogglePublish,
+} from "@/hooks/useAdminProblems";
+import {
+  useAdminUsers,
+  useReports,
+  useResolveReport,
+  useAdminAIContent,
+  useToggleAIContentPublic,
+  useDailyChallengeSchedule,
+  useBroadcast,
+} from "@/hooks/admin/useAdminControl";
+import { formatDistanceToNow } from "date-fns";
+
+const Empty = ({ children }: { children: React.ReactNode }) => (
+  <div className="rounded-lg border bg-card p-8 text-center text-sm text-muted-foreground">
+    {children}
+  </div>
+);
+
+const FullLink = ({ to, children }: { to: string; children: React.ReactNode }) => (
+  <Button asChild variant="outline" size="sm">
+    <Link to={to}>
+      <ExternalLink className="mr-2 h-3.5 w-3.5" />
+      {children}
+    </Link>
+  </Button>
+);
+
+/* ────────────── Problems ────────────── */
+export function LearnProblems() {
+  const [q, setQ] = useState("");
+  const { data, isLoading } = useAdminProblems(q);
+  const toggle = useTogglePublish();
+  const rows = (data ?? []).slice(0, 20);
+
+  return (
+    <>
+      <LearnHeader
+        title="Coding Problems"
+        actions={
+          <>
+            <FullLink to="/admin/problems">Open full editor</FullLink>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin/problems/import">
+                <Upload className="mr-2 h-3.5 w-3.5" /> Import
+              </Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/admin/problems/new">
+                <Plus className="mr-2 h-3.5 w-3.5" /> New
+              </Link>
+            </Button>
+          </>
+        }
+      />
+      <div className="p-4 sm:p-6 space-y-4">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search problems…"
+            className="pl-8 h-9"
+          />
+        </div>
+        {isLoading ? (
+          <Empty>Loading…</Empty>
+        ) : rows.length === 0 ? (
+          <Empty>No problems yet.</Empty>
+        ) : (
+          <div className="rounded-lg border bg-card divide-y">
+            {rows.map((p) => (
+              <div
+                key={p.slug}
+                className="flex flex-wrap items-center justify-between gap-3 p-3"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to={`/admin/problems/${p.slug}`}
+                      className="text-sm font-medium hover:underline truncate"
+                    >
+                      {p.title}
+                    </Link>
+                    <Badge variant="secondary" className="text-[10px] capitalize">
+                      {p.difficulty}
+                    </Badge>
+                    {p.is_published ? (
+                      <Badge className="text-[10px]">Live</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px]">Draft</Badge>
+                    )}
+                  </div>
+                  <div className="mt-0.5 text-xs text-muted-foreground truncate">
+                    {p.slug} · updated{" "}
+                    {formatDistanceToNow(new Date(p.updated_at), { addSuffix: true })}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant={p.is_published ? "outline" : "default"}
+                  onClick={() =>
+                    toggle.mutate({ slug: p.slug, publish: !p.is_published })
+                  }
+                  disabled={toggle.isPending}
+                >
+                  {p.is_published ? "Unpublish" : "Publish"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        {(data?.length ?? 0) > rows.length && (
+          <p className="text-xs text-muted-foreground">
+            Showing {rows.length} of {data!.length}.{" "}
+            <Link to="/admin/problems" className="underline">
+              See all
+            </Link>
+          </p>
+        )}
+      </div>
+    </>
+  );
+}
+
+/* ────────────── Users ────────────── */
+export function LearnUsers() {
+  const [q, setQ] = useState("");
+  const { data, isLoading } = useAdminUsers(q, 20, 0);
+  const rows = (data ?? []) as any[];
+
+  return (
+    <>
+      <LearnHeader
+        title="Users"
+        actions={<FullLink to="/admin/users">Open full users console</FullLink>}
+      />
+      <div className="p-4 sm:p-6 space-y-4">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by email or name…"
+            className="pl-8 h-9"
+          />
+        </div>
+        {isLoading ? (
+          <Empty>Loading…</Empty>
+        ) : rows.length === 0 ? (
+          <Empty>No users found.</Empty>
+        ) : (
+          <div className="rounded-lg border bg-card divide-y">
+            {rows.map((u) => (
+              <div key={u.user_id} className="flex items-center justify-between gap-3 p-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">
+                    {u.full_name || u.username || u.email || u.user_id.slice(0, 8)}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {u.email ?? "—"} · L{u.current_level ?? 0} · {u.total_xp ?? 0} XP
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {u.is_suspended && <Badge variant="destructive">Suspended</Badge>}
+                  {(u.roles ?? []).slice(0, 2).map((r: string) => (
+                    <Badge key={r} variant="secondary" className="text-[10px]">
+                      {r}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+/* ────────────── Daily Challenge ────────────── */
+export function LearnDaily() {
+  const { data, isLoading } = useDailyChallengeSchedule();
+  const upcoming = (data ?? []).slice(0, 10);
+  return (
+    <>
+      <LearnHeader
+        title="Daily Challenge"
+        actions={<FullLink to="/admin/daily-challenge">Open scheduler</FullLink>}
+      />
+      <div className="p-4 sm:p-6 space-y-4">
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">Upcoming</p>
+          <p className="mt-1 text-3xl font-bold">{upcoming.length}</p>
+          <p className="mt-1 text-xs text-muted-foreground">scheduled challenges</p>
+        </Card>
+        {isLoading ? (
+          <Empty>Loading…</Empty>
+        ) : upcoming.length === 0 ? (
+          <Empty>
+            No upcoming challenges scheduled.{" "}
+            <Link to="/admin/daily-challenge" className="underline">
+              Schedule one
+            </Link>
+          </Empty>
+        ) : (
+          <div className="rounded-lg border bg-card divide-y">
+            {upcoming.map((d: any) => (
+              <div key={d.challenge_date} className="flex items-center justify-between gap-3 p-3">
+                <div>
+                  <div className="text-sm font-medium">{d.challenge_date}</div>
+                  <div className="text-xs text-muted-foreground">{d.problem_slug}</div>
+                </div>
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/admin/problems/${d.problem_slug}`}>
+                    <Eye className="mr-2 h-3.5 w-3.5" /> View
+                  </Link>
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+/* ────────────── AI Content ────────────── */
+export function LearnAIContent() {
+  const [q, setQ] = useState("");
+  const { data, isLoading } = useAdminAIContent(q);
+  const toggle = useToggleAIContentPublic();
+  const rows = ((data ?? []) as any[]).slice(0, 20);
+
+  return (
+    <>
+      <LearnHeader
+        title="AI Content"
+        actions={<FullLink to="/admin/ai-content">Open full moderation</FullLink>}
+      />
+      <div className="p-4 sm:p-6 space-y-4">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by title…"
+            className="pl-8 h-9"
+          />
+        </div>
+        {isLoading ? (
+          <Empty>Loading…</Empty>
+        ) : rows.length === 0 ? (
+          <Empty>No AI content.</Empty>
+        ) : (
+          <div className="rounded-lg border bg-card divide-y">
+            {rows.map((c) => (
+              <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">{c.title || "Untitled"}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {c.content_type} · {c.topic ?? "—"} · ♥ {c.likes_count ?? 0}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {c.is_public ? (
+                    <Badge className="text-[10px]">Public</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px]">Private</Badge>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      toggle.mutate({ id: c.id, isPublic: !c.is_public })
+                    }
+                    disabled={toggle.isPending}
+                  >
+                    {c.is_public ? "Unpublish" : "Publish"}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+/* ────────────── Reports ────────────── */
+export function LearnReports() {
+  const { data, isLoading } = useReports("open");
+  const resolve = useResolveReport();
+  const rows = ((data ?? []) as any[]).slice(0, 20);
+
+  return (
+    <>
+      <LearnHeader
+        title="Open Reports"
+        actions={<FullLink to="/admin/reports">Open full queue</FullLink>}
+      />
+      <div className="p-4 sm:p-6 space-y-4">
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">Open</p>
+          <p
+            className={`mt-1 text-3xl font-bold ${
+              rows.length > 0 ? "text-destructive" : ""
+            }`}
+          >
+            {data?.length ?? 0}
+          </p>
+        </Card>
+        {isLoading ? (
+          <Empty>Loading…</Empty>
+        ) : rows.length === 0 ? (
+          <Empty>No open reports. Nice.</Empty>
+        ) : (
+          <div className="rounded-lg border bg-card divide-y">
+            {rows.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">
+                    {r.reason ?? "Reported"}{" "}
+                    <span className="text-xs text-muted-foreground">
+                      · {r.entity_type}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {r.details ?? "No details"} ·{" "}
+                    {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => resolve.mutate({ id: r.id, status: "dismissed" })}
+                    disabled={resolve.isPending}
+                  >
+                    Dismiss
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => resolve.mutate({ id: r.id, status: "resolved" })}
+                    disabled={resolve.isPending}
+                  >
+                    <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Resolve
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+/* ────────────── Broadcast ────────────── */
+export function LearnBroadcast() {
+  const broadcast = useBroadcast();
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+
+  const send = () => {
+    if (!title.trim() || !message.trim()) return;
+    broadcast.mutate(
+      { audience: { kind: "all" }, title: title.trim(), message: message.trim() },
+      {
+        onSuccess: () => {
+          setTitle("");
+          setMessage("");
+        },
+      },
+    );
+  };
+
+  return (
+    <>
+      <LearnHeader
+        title="Broadcast"
+        actions={<FullLink to="/admin/broadcast">Open full composer</FullLink>}
+      />
+      <div className="p-4 sm:p-6 space-y-4 max-w-2xl">
+        <Card className="p-4 space-y-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Title</label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="A short headline…"
+              maxLength={120}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Message</label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="What do you want learners to know?"
+              rows={4}
+              maxLength={500}
+              className="w-full mt-1 px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              Sends to <strong>all learners</strong>. For targeted audiences, use the full composer.
+            </p>
+            <Button
+              size="sm"
+              onClick={send}
+              disabled={broadcast.isPending || !title.trim() || !message.trim()}
+            >
+              <Send className="mr-2 h-3.5 w-3.5" />
+              {broadcast.isPending ? "Sending…" : "Send to all"}
+            </Button>
+          </div>
+        </Card>
+      </div>
+    </>
+  );
+}
