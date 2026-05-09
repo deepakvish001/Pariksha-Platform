@@ -6,6 +6,7 @@ import { useCurrentOrg, useOrgBasePath } from "../context/OrgContext";
 import { useDashboardStats } from "../hooks/useDashboardStats";
 import { Button } from "@/components/ui/button";
 import { FileText, Users, CheckCircle2, ShieldCheck, Plus } from "lucide-react";
+import { amberGradientText } from "../components/B2BBackdrop";
 
 export default function B2BDashboard() {
   const { org, isLoading } = useCurrentOrg();
@@ -35,7 +36,12 @@ export default function B2BDashboard() {
 
   return (
     <OrgShell
-      title={`${org.name} · Overview`}
+      title={
+        <>
+          <span className={amberGradientText}>{org.name}</span>{" "}
+          <span className="text-[hsl(var(--muted-foreground))] font-normal">· Overview</span>
+        </>
+      }
       actions={
         <Button
           className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
