@@ -1,41 +1,51 @@
-/* B2B navy/white theme — scoped to .theme-b2b wrapper. */
+/* B2B (Parikshaa for Teams) theme — matches main landing page (dark + amber).
+   Scoped to the .theme-b2b wrapper so it doesn't bleed into the learning app. */
 .theme-b2b {
-  --background: 0 0% 100%;
-  --foreground: 218 35% 12%;
+  --background: 0 0% 4%;
+  --foreground: 0 0% 98%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 218 35% 12%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 98%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 218 35% 12%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 98%;
 
-  --primary: 218 75% 16%;            /* deep navy */
+  --primary: 24 95% 53%;             /* amber/orange — same as landing */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 218 20% 96%;
-  --secondary-foreground: 218 35% 12%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 98%;
 
-  --muted: 218 20% 96%;
-  --muted-foreground: 218 12% 42%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 65%;
 
-  --accent: 152 64% 38%;             /* emerald accent */
-  --accent-foreground: 0 0% 100%;
+  --accent: 38 92% 55%;              /* warm amber accent */
+  --accent-foreground: 0 0% 9%;
 
   --destructive: 0 72% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 218 20% 90%;
-  --input: 218 20% 90%;
-  --ring: 218 75% 16%;
+  --border: 0 0% 18%;
+  --input: 0 0% 18%;
+  --ring: 24 95% 53%;
 
   --radius: 0.625rem;
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
 }
 
+/* Glassy card to echo landing-page glassmorphism */
 .theme-b2b .b2b-card {
-  background: hsl(var(--card));
+  background: hsl(var(--card) / 0.6);
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
-  box-shadow: 0 1px 2px hsl(218 35% 12% / 0.04), 0 1px 3px hsl(218 35% 12% / 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.03) inset,
+    0 10px 30px -12px hsl(0 0% 0% / 0.5);
+}
+
+.theme-b2b .b2b-card:hover {
+  border-color: hsl(var(--primary) / 0.35);
 }
