@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 
-const taglines = ["Into Results", "Into Success", "Into Offers", "Into Growth"];
+const taglines = ["Into Offers", "Into Hires", "Into Results", "Into Careers"];
 
 const TypingEffect = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
