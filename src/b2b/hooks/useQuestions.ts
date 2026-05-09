@@ -102,7 +102,7 @@ export function useUpdateQuestion() {
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Question> }) => {
       const { data, error } = await supabase
         .from("questions")
-        .update(patch)
+        .update(patch as never)
         .eq("id", id)
         .select("*")
         .single();
