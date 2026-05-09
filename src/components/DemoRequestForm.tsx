@@ -49,6 +49,25 @@ const DemoRequestForm = () => {
   const [done, setDone] = useState(false);
   const [proctoring, setProctoring] = useState<string[]>([]);
   const [reporting, setReporting] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
+  const [leadSource, setLeadSource] = useState<string>("demo_form");
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const notesRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Listen for prefill events from other landing sections (e.g. ROI calculator)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ notes?: string; source?: string }>).detail || {};
+      if (detail.notes) setNotes(detail.notes);
+      if (detail.source) setLeadSource(detail.source);
+      // Smooth-focus the notes textarea so the user sees prefilled context
+      requestAnimationFrame(() => {
+        notesRef.current?.focus({ preventScroll: true });
+      });
+    };
+    window.addEventListener("prefill-demo-form", handler as EventListener);
+    return () => window.removeEventListener("prefill-demo-form", handler as EventListener);
+  }, []);
 
   const toggle = (list: string[], setList: (v: string[]) => void, val: string) =>
     setList(list.includes(val) ? list.filter((v) => v !== val) : [...list, val]);
