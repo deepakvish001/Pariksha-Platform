@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { OrgShell } from "../layouts/OrgShell";
 import { useMyOrganizations } from "../hooks/useOrg";
@@ -34,9 +34,10 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Library } from "lucide-react";
+import { Plus, Trash2, Library, Search, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 const TYPES: { value: QuestionType; label: string }[] = [
@@ -44,6 +45,11 @@ const TYPES: { value: QuestionType; label: string }[] = [
   { value: "mcq", label: "MCQ" },
   { value: "sql", label: "SQL" },
   { value: "subjective", label: "Subjective" },
+];
+
+const FILTERS: { value: "all" | QuestionType; label: string }[] = [
+  { value: "all", label: "All" },
+  ...TYPES.map((t) => ({ value: t.value, label: t.label })),
 ];
 
 export default function QuestionBank() {
