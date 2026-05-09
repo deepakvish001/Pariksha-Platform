@@ -301,8 +301,8 @@ export default function B2BPricing() {
               </thead>
               <tbody>
                 {COMPARISON.map((section) => (
-                  <>
-                    <tr key={`${section.title}-h`} className="bg-[hsl(var(--card))]/60 border-y border-[hsl(var(--border))]">
+                  <Fragment key={section.title}>
+                    <tr className="bg-[hsl(var(--card))]/60 border-y border-[hsl(var(--border))]">
                       <td colSpan={4} className="px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[hsl(var(--primary))]">
                         {section.title}
                       </td>
@@ -318,7 +318,7 @@ export default function B2BPricing() {
                         <td className="py-3 px-3 text-center"><CompareCell value={row.enterprise} /></td>
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
