@@ -172,14 +172,38 @@ export default function B2BOnboarding() {
         setEmails(parsed.emails);
         setEmailErrors(parsed.emails.map(() => null));
       }
-      if (Array.isArray(parsed.links) && parsed.links.length) {
-        setGeneratedLinks(parsed.links);
+      // Drop any links that have already expired before re-displaying them.
+      const fresh = (parsed.links ?? []).filter(
+        (l) => new Date(l.expires_at).getTime() > Date.now(),
+      );
+      if (fresh.length) setGeneratedLinks(fresh);
+      if (fresh.length !== (parsed.links?.length ?? 0)) {
+        // Persist the cleaned snapshot immediately.
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ ...parsed, links: fresh, savedAt: Date.now() }),
+          );
+        } catch {
+          /* ignore */
+        }
       }
       setStep(2);
     } catch {
       /* ignore */
     }
   }, []);
+
+  // Auto-purge expired links on every tick so stale entries never linger.
+  useEffect(() => {
+    if (!generatedLinks?.length) return;
+    const stillValid = generatedLinks.filter(
+      (l) => new Date(l.expires_at).getTime() > Date.now(),
+    );
+    if (stillValid.length !== generatedLinks.length) {
+      setGeneratedLinks(stillValid.length ? stillValid : null);
+    }
+  });
 
   // Persist step 2 state
   useEffect(() => {
@@ -321,24 +345,51 @@ export default function B2BOnboarding() {
     return `mailto:${links.map((l) => l.email).join(",")}?subject=${subject}&body=${body}`;
   };
 
-  /** Calls the secure edge function to mint server-issued, expiring tokens. */
+  /** Calls the secure edge function to mint server-issued, expiring tokens.
+   *  Handles 429 rate limits and transient network errors with one safe retry.
+   */
   const requestInviteLinks = async (): Promise<GeneratedLink[] | null> => {
     if (!createdOrg) return null;
-    const { data, error } = await supabase.functions.invoke<{
-      links: GeneratedLink[];
-      expires_at: string;
-    }>("b2b-onboarding-invites", {
-      body: { org_id: createdOrg.id, emails: validEmails, ttl_hours: 72 },
-    });
-    if (error) {
+    const body = { org_id: createdOrg.id, emails: validEmails, ttl_hours: 72 };
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const { data, error } = await supabase.functions.invoke<{
+        links: GeneratedLink[];
+        expires_at: string;
+        error?: string;
+        message?: string;
+        retry_after_seconds?: number;
+      }>("b2b-onboarding-invites", { body });
+
+      // Edge function returned a structured error payload (e.g. 429)
+      const payload = data as any;
+      if (payload?.error === "rate_limited") {
+        toast({
+          title: "Slow down a moment",
+          description:
+            payload.message ??
+            "You're generating invites too quickly. Please wait a few seconds and try again.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      if (!error && payload?.links) return payload.links as GeneratedLink[];
+
+      // Retry once on transient network/5xx errors only.
+      const msg = error?.message ?? payload?.error ?? "Unknown error";
+      const transient = /network|fetch|timeout|5\d\d/i.test(msg);
+      if (attempt === 0 && transient) {
+        await new Promise((r) => setTimeout(r, 600));
+        continue;
+      }
       toast({
         title: "Could not generate invite links",
-        description: error.message,
+        description: msg,
         variant: "destructive",
       });
       return null;
     }
-    return data?.links ?? null;
+    return null;
   };
 
   const generateAndSend = async (kind: "send" | "resend") => {

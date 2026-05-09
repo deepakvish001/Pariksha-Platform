@@ -6318,6 +6318,21 @@ export type Database = {
       }
     }
     Views: {
+      b2b_onboarding_funnel: {
+        Row: {
+          copy_link_events: number | null
+          invite_resend_events: number | null
+          invite_send_events: number | null
+          orgs_created: number | null
+          pct_invite_to_copy: number | null
+          pct_orgs_skipped: number | null
+          pct_orgs_to_invite_send: number | null
+          users_copied_link: number | null
+          users_sent_invites: number | null
+          users_skipped: number | null
+        }
+        Relationships: []
+      }
       leaderboard_view: {
         Row: {
           avatar_url: string | null
