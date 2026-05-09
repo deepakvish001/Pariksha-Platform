@@ -47,13 +47,16 @@ const Index = () => {
       <LazySection><CaseStudies /></LazySection>
       {/* 8. SOCIAL PROOF — testimonials */}
       <LazySection><Testimonials /></LazySection>
-      {/* 9. OBJECTIONS — FAQ */}
+      {/* 9. SELF-SERVE ROI — interactive calculator */}
+      <LazySection><RoiCalculator /></LazySection>
+      {/* 10. OBJECTIONS — FAQ */}
       <LazySection><section id="faq"><FAQ /></section></LazySection>
-      {/* 10. CONVERT — tailored demo form */}
+      {/* 11. CONVERT — tailored demo form */}
       <LazySection><DemoRequestForm /></LazySection>
-      {/* 11. LAST PUSH — final CTA */}
+      {/* 12. LAST PUSH — final CTA */}
       <LazySection><CTA /></LazySection>
       <LazySection><Footer /></LazySection>
+      <LazySection><StickyDemoCTA /></LazySection>
     </main>
   );
 };
