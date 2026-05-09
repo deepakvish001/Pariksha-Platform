@@ -232,7 +232,7 @@ export default function B2BPricing() {
                 <span className="text-xs text-[hsl(var(--muted-foreground))]">{t.unit}</span>
               )}
             </div>
-            <ul className="mt-6 space-y-2.5 flex-1">
+            <ul className="mt-6 space-y-2.5">
               {t.features.map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm">
                   <CheckCircle2 className="h-4 w-4 text-[hsl(var(--primary))] mt-0.5 flex-shrink-0" />
@@ -240,6 +240,19 @@ export default function B2BPricing() {
                 </li>
               ))}
             </ul>
+            <div className="mt-5 pt-5 border-t border-[hsl(var(--border))] flex-1">
+              <p className="text-[11px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] font-semibold mb-2.5">
+                Demo & test inclusions
+              </p>
+              <ul className="space-y-2">
+                {t.demoIncludes.map((d) => (
+                  <li key={d} className="flex items-start gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+                    <Sparkles className="h-3 w-3 text-[hsl(var(--primary))] mt-0.5 flex-shrink-0" />
+                    <span>{d}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
             <div className="mt-7">
               {t.cta === "Get started" ? (
                 <Button
@@ -258,6 +271,70 @@ export default function B2BPricing() {
             </div>
           </div>
         ))}
+      </section>
+
+      {/* Comparison table */}
+      <section className="border-y border-[hsl(var(--border))] bg-[hsl(var(--card))]/40">
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          <div className="max-w-2xl mb-8">
+            <p className="text-xs uppercase tracking-wider text-[hsl(var(--primary))] font-medium">Compare plans</p>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight">Every feature, side by side.</h2>
+            <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+              Not sure which plan fits? Here's exactly what's included where.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead>
+                <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]">
+                  <th className="text-left py-4 px-5 font-medium text-[hsl(var(--muted-foreground))] w-2/5">Feature</th>
+                  <th className="text-center py-4 px-3 font-semibold">Starter</th>
+                  <th className="text-center py-4 px-3 font-semibold text-[hsl(var(--primary))]">
+                    Growth
+                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded-full bg-[hsl(var(--primary))]/15 text-[9px] uppercase tracking-wider">
+                      Popular
+                    </span>
+                  </th>
+                  <th className="text-center py-4 px-3 font-semibold">Enterprise</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON.map((section) => (
+                  <>
+                    <tr key={`${section.title}-h`} className="bg-[hsl(var(--card))]/60 border-y border-[hsl(var(--border))]">
+                      <td colSpan={4} className="px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-[hsl(var(--primary))]">
+                        {section.title}
+                      </td>
+                    </tr>
+                    {section.rows.map((row, idx) => (
+                      <tr
+                        key={`${section.title}-${row.feature}`}
+                        className={idx > 0 ? "border-t border-[hsl(var(--border))]/60" : ""}
+                      >
+                        <td className="py-3 px-5 text-[hsl(var(--foreground))]/90">{row.feature}</td>
+                        <td className="py-3 px-3 text-center"><CompareCell value={row.starter} /></td>
+                        <td className="py-3 px-3 text-center bg-[hsl(var(--primary))]/[0.04]"><CompareCell value={row.growth} /></td>
+                        <td className="py-3 px-3 text-center"><CompareCell value={row.enterprise} /></td>
+                      </tr>
+                    ))}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+            <Button asChild className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+              <Link to="/b2b/onboarding">
+                Start free <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <a href="#contact">Talk to sales</a>
+            </Button>
+          </div>
+        </div>
       </section>
 
       {/* Contact sales */}
