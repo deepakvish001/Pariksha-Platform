@@ -1,50 +1,77 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Calendar, ArrowRight, X } from "lucide-react";
 import { trackLeadEvent } from "@/lib/leadTracking";
 
+const DISMISS_KEY = "sticky-demo-dismissed";
+
 const StickyDemoCTA = () => {
-  const [visible, setVisible] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
+  const [demoVisible, setDemoVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [highlight, setHighlight] = useState(false);
+  const lastYRef = useRef(0);
+  const pulseTimerRef = useRef<number | null>(null);
 
+  // Initial dismiss check + scroll listener for "past hero" + scroll-velocity highlight
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (sessionStorage.getItem("sticky-demo-dismissed") === "1") {
-      setDismissed(true);
-      return;
+    try {
+      if (sessionStorage.getItem(DISMISS_KEY) === "1") setDismissed(true);
+    } catch {
+      /* sessionStorage may be blocked */
     }
 
-    let pulseTimer: number | null = null;
-    let lastY = window.scrollY;
+    lastYRef.current = window.scrollY;
 
     const onScroll = () => {
       const y = window.scrollY;
-      const past = y > window.innerHeight * 0.6;
-      setVisible(past);
+      setPastHero(y > window.innerHeight * 0.6);
 
-      // pulse highlight when user scrolls aggressively
-      const delta = Math.abs(y - lastY);
-      if (past && delta > 80) {
+      const delta = Math.abs(y - lastYRef.current);
+      if (delta > 80) {
         setHighlight(true);
-        if (pulseTimer) window.clearTimeout(pulseTimer);
-        pulseTimer = window.setTimeout(() => setHighlight(false), 1100);
+        if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
+        pulseTimerRef.current = window.setTimeout(() => setHighlight(false), 1100);
       }
-
-      // hide once they reach the demo form / footer
-      const demo = document.getElementById("demo");
-      if (demo) {
-        const rect = demo.getBoundingClientRect();
-        if (rect.top < window.innerHeight * 0.6) setVisible(false);
-      }
-      lastY = y;
+      lastYRef.current = y;
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => {
       window.removeEventListener("scroll", onScroll);
-      if (pulseTimer) window.clearTimeout(pulseTimer);
+      if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
+    };
+  }, []);
+
+  // Hide once the demo form is in view (more reliable than scroll math)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let observer: IntersectionObserver | null = null;
+    let attemptTimer: number | null = null;
+
+    const attach = () => {
+      const el = document.getElementById("demo");
+      if (!el) {
+        attemptTimer = window.setTimeout(attach, 600);
+        return;
+      }
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            setDemoVisible(entry.isIntersecting && entry.intersectionRatio > 0.15);
+          }
+        },
+        { threshold: [0, 0.15, 0.5] },
+      );
+      observer.observe(el);
+    };
+    attach();
+
+    return () => {
+      if (observer) observer.disconnect();
+      if (attemptTimer) window.clearTimeout(attemptTimer);
     };
   }, []);
 
@@ -56,14 +83,14 @@ const StickyDemoCTA = () => {
   const onDismiss = () => {
     setDismissed(true);
     try {
-      sessionStorage.setItem("sticky-demo-dismissed", "1");
+      sessionStorage.setItem(DISMISS_KEY, "1");
     } catch {
       /* noop */
     }
     void trackLeadEvent("sticky_cta_dismiss", {});
   };
 
-  if (dismissed) return null;
+  const visible = pastHero && !demoVisible && !dismissed;
 
   return (
     <AnimatePresence>
@@ -74,14 +101,23 @@ const StickyDemoCTA = () => {
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: "spring", stiffness: 220, damping: 26 }}
           className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-1.5rem)] max-w-2xl"
+          role="region"
+          aria-label="Book a tailored demo"
         >
           <motion.div
             animate={
               highlight
-                ? { scale: [1, 1.02, 1], boxShadow: "0 20px 60px -10px hsl(var(--primary) / 0.55)" }
+                ? {
+                    scale: [1, 1.03, 1],
+                    boxShadow: [
+                      "0 10px 30px -10px hsl(var(--primary) / 0.25)",
+                      "0 24px 70px -10px hsl(var(--primary) / 0.6)",
+                      "0 10px 30px -10px hsl(var(--primary) / 0.25)",
+                    ],
+                  }
                 : { scale: 1 }
             }
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.7 }}
             className={`relative flex items-center gap-3 rounded-2xl border backdrop-blur-xl px-3 sm:px-4 py-2.5 shadow-2xl transition-colors ${
               highlight
                 ? "border-primary/60 bg-gradient-to-r from-primary/15 via-card/90 to-orange-500/15"
