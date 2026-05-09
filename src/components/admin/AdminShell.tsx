@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { AdminCommandPalette } from "./AdminCommandPalette";
+import { AdminBackdrop } from "./AdminBackdrop";
 import { useAdminSidebarPrefs } from "@/hooks/admin/useAdminSidebarPrefs";
 import { useAdminBreadcrumb } from "@/hooks/admin/useAdminBreadcrumb";
 import {
