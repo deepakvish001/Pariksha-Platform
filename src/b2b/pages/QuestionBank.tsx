@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { OrgShell } from "../layouts/OrgShell";
 import { useMyOrganizations } from "../hooks/useOrg";
+import { supabase } from "@/integrations/supabase/client";
 import {
   useQuestions,
   useCreateQuestion,
@@ -37,7 +38,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Library, Search, Upload } from "lucide-react";
+import { Plus, Trash2, Library, Search, Upload, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 const TYPES: { value: QuestionType; label: string }[] = [
@@ -93,6 +94,7 @@ export default function QuestionBank() {
       title="Question Bank"
       actions={
         <div className="flex items-center gap-2">
+          <AIGenerateDialog orgId={org!.id} />
           <ImportQuestionsDialog orgId={org!.id} />
           <NewQuestionDialog orgId={org!.id} />
         </div>
@@ -106,6 +108,7 @@ export default function QuestionBank() {
             Build a reusable bank of coding, MCQ, SQL, and subjective questions.
           </p>
           <div className="mt-4 flex justify-center gap-2">
+            <AIGenerateDialog orgId={org!.id} />
             <ImportQuestionsDialog orgId={org!.id} />
             <NewQuestionDialog orgId={org!.id} />
           </div>
@@ -498,5 +501,162 @@ function TestCaseEditor({ questionId }: { questionId: string }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function AIGenerateDialog({ orgId }: { orgId: string }) {
+  const [open, setOpen] = useState(false);
+  const [topic, setTopic] = useState("");
+  const [type, setType] = useState<QuestionType>("mcq");
+  const [count, setCount] = useState(5);
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+  const [busy, setBusy] = useState(false);
+  const create = useCreateQuestion();
+  const upsertOption = useUpsertMcqOption();
+  const upsertTest = useUpsertTestCase();
+
+  const onGenerate = async () => {
+    if (!topic.trim()) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parikshaa-generate-questions", {
+        body: { topic: topic.trim(), type, count, difficulty },
+      });
+      if (error) throw error;
+      const items: any[] = data?.questions ?? [];
+      if (!items.length) {
+        toast.error("AI returned no questions");
+        return;
+      }
+      let ok = 0;
+      for (const item of items) {
+        try {
+          const q = await create.mutateAsync({
+            org_id: orgId,
+            type: (item.type as QuestionType) ?? type,
+            title: String(item.title ?? "Untitled"),
+            body_md: item.body_md ? String(item.body_md) : undefined,
+            language: item.language ? String(item.language) : undefined,
+            points: Number(item.points) || 10,
+          });
+          if (Array.isArray(item.options)) {
+            for (let i = 0; i < item.options.length; i++) {
+              const o = item.options[i];
+              await upsertOption.mutateAsync({
+                question_id: q.id,
+                body: String(o?.body ?? ""),
+                is_correct: !!o?.is_correct,
+                order_index: i,
+              });
+            }
+          }
+          if (Array.isArray(item.test_cases)) {
+            for (let i = 0; i < item.test_cases.length; i++) {
+              const t = item.test_cases[i];
+              await upsertTest.mutateAsync({
+                question_id: q.id,
+                input: String(t?.input ?? ""),
+                expected_output: String(t?.expected_output ?? ""),
+                is_hidden: t?.is_hidden ?? i > 0,
+                weight: 1,
+                order_index: i,
+              });
+            }
+          }
+          ok++;
+        } catch (e) {
+          console.error("AI import item failed", e);
+        }
+      }
+      toast.success(`Generated ${ok} of ${items.length} question${items.length === 1 ? "" : "s"}`);
+      if (ok > 0) {
+        setOpen(false);
+        setTopic("");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to generate");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="gap-1">
+          <Sparkles className="h-4 w-4" /> AI generate
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[hsl(var(--primary))]" /> Generate questions with AI
+          </DialogTitle>
+          <DialogDescription>
+            Describe a topic. AI drafts questions (with options or test cases) you can review and edit.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Topic</Label>
+            <Input
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="e.g. JavaScript closures, SQL joins, REST APIs…"
+              className="mt-1"
+              autoFocus
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label>Type</Label>
+              <Select value={type} onValueChange={(v) => setType(v as QuestionType)}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Count</Label>
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                value={count}
+                onChange={(e) => setCount(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Difficulty</Label>
+              <Select value={difficulty} onValueChange={(v) => setDifficulty(v as any)}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">Easy</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="hard">Hard</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Generation usually takes 5–20 seconds depending on count and complexity.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
+          <Button
+            disabled={!topic.trim() || busy}
+            onClick={onGenerate}
+            className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+          >
+            {busy ? "Generating…" : "Generate"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
