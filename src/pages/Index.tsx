@@ -11,10 +11,12 @@ const Outcomes = lazy(() => import("@/components/Outcomes"));
 const ManualVsParikshaa = lazy(() => import("@/components/ManualVsParikshaa"));
 const Testimonials = lazy(() => import("@/components/Testimonials"));
 const CaseStudies = lazy(() => import("@/components/CaseStudies"));
+const RoiCalculator = lazy(() => import("@/components/RoiCalculator"));
 const DemoRequestForm = lazy(() => import("@/components/DemoRequestForm"));
 const FAQ = lazy(() => import("@/components/FAQ"));
 const CTA = lazy(() => import("@/components/CTA"));
 const Footer = lazy(() => import("@/components/Footer"));
+const StickyDemoCTA = lazy(() => import("@/components/StickyDemoCTA"));
 
 const LazySection = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<div className="min-h-[200px]" />}>{children}</Suspense>
