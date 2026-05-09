@@ -868,6 +868,85 @@ export type Database = {
         }
         Relationships: []
       }
+      b2b_onboarding_events: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          metadata: Json
+          org_id: string | null
+          step: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          metadata?: Json
+          org_id?: string | null
+          step?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          metadata?: Json
+          org_id?: string | null
+          step?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "b2b_onboarding_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      b2b_org_invites: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          inviter_id: string
+          org_id: string
+          revoked: boolean
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          inviter_id: string
+          org_id: string
+          revoked?: boolean
+          token: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          inviter_id?: string
+          org_id?: string
+          revoked?: boolean
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "b2b_org_invites_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       battle_achievements: {
         Row: {
           achievement_key: string
@@ -7041,6 +7120,7 @@ export type Database = {
         }
         Returns: Json
       }
+      b2b_user_owns_org: { Args: { _org_id: string }; Returns: boolean }
       battle_accept_invite: { Args: { _invite: string }; Returns: string }
       battle_create_code: {
         Args: {

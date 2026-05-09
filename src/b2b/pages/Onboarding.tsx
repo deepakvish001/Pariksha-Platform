@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +27,7 @@ import {
   RefreshCcw,
   SkipForward,
   Link2,
+  Clock,
 } from "lucide-react";
 import { slugify } from "../hooks/useOrg";
 import "../theme.css";
@@ -84,6 +85,50 @@ const emailSchema = z
   .email({ message: "Enter a valid email address." });
 
 type CreatedOrg = { id: string; slug: string; name: string; type: "college" | "company" };
+type GeneratedLink = { email: string; url: string; expires_at: string; token?: string };
+
+const STORAGE_KEY = "b2b:onboarding:step2";
+
+type PersistedStep2 = {
+  org: CreatedOrg;
+  emails: string[];
+  links: GeneratedLink[];
+  savedAt: number;
+};
+
+/** Fire-and-forget analytics for the onboarding funnel. */
+async function trackOnboarding(
+  event: string,
+  payload: { user_id?: string | null; org_id?: string | null; step?: number; metadata?: Record<string, unknown> } = {},
+) {
+  try {
+    await supabase.from("b2b_onboarding_events").insert([
+      {
+        user_id: payload.user_id ?? null,
+        org_id: payload.org_id ?? null,
+        event,
+        step: payload.step ?? null,
+        metadata: payload.metadata ?? {},
+      },
+    ] as any);
+  } catch {
+    /* swallow — analytics must never break the flow */
+  }
+}
+
+function formatTimeLeft(iso: string): { label: string; ms: number; warn: boolean; expired: boolean } {
+  const ms = new Date(iso).getTime() - Date.now();
+  if (ms <= 0) return { label: "Expired", ms, warn: true, expired: true };
+  const hours = Math.floor(ms / 3_600_000);
+  const mins = Math.floor((ms % 3_600_000) / 60_000);
+  const label =
+    hours >= 24
+      ? `${Math.floor(hours / 24)}d ${hours % 24}h left`
+      : hours >= 1
+        ? `${hours}h ${mins}m left`
+        : `${mins}m left`;
+  return { label, ms, warn: ms < 6 * 3_600_000, expired: false };
+}
 
 export default function B2BOnboarding() {
   const { user } = useAuth();
@@ -104,14 +149,61 @@ export default function B2BOnboarding() {
   const [emails, setEmails] = useState<string[]>(["", "", ""]);
   const [emailErrors, setEmailErrors] = useState<(string | null)[]>([null, null, null]);
   const [copied, setCopied] = useState(false);
-  // Per-email invite tokens; bumping the seed regenerates every link.
-  const [linkSeed, setLinkSeed] = useState<string>(() =>
-    Math.random().toString(36).slice(2, 10),
-  );
-  const [generatedLinks, setGeneratedLinks] = useState<
-    { email: string; url: string }[] | null
-  >(null);
+  const [generatedLinks, setGeneratedLinks] = useState<GeneratedLink[] | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [sendingInvites, setSendingInvites] = useState(false);
+  // Re-render every 30s so expiry countdowns stay live.
+  const [, setNowTick] = useState(0);
+
+  // ── Hydrate from localStorage ──────────────────────────────────────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as PersistedStep2;
+      if (!parsed?.org?.id) return;
+      // Drop entries older than 7 days
+      if (Date.now() - parsed.savedAt > 7 * 24 * 3600 * 1000) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      setCreatedOrg(parsed.org);
+      if (Array.isArray(parsed.emails) && parsed.emails.length) {
+        setEmails(parsed.emails);
+        setEmailErrors(parsed.emails.map(() => null));
+      }
+      if (Array.isArray(parsed.links) && parsed.links.length) {
+        setGeneratedLinks(parsed.links);
+      }
+      setStep(2);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Persist step 2 state
+  useEffect(() => {
+    if (step !== 2 || !createdOrg) return;
+    const payload: PersistedStep2 = {
+      org: createdOrg,
+      emails,
+      links: generatedLinks ?? [],
+      savedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [step, createdOrg, emails, generatedLinks]);
+
+  // Live countdown ticker
+  useEffect(() => {
+    if (!generatedLinks?.length) return;
+    const id = window.setInterval(() => setNowTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, [generatedLinks]);
+
 
   // ── Derived validation ──────────────────────────────────────────────────
   const validation = useMemo(() => {
@@ -157,6 +249,12 @@ export default function B2BOnboarding() {
       };
       setCreatedOrg(org);
       toast({ title: "Organization created", description: org.name });
+      void trackOnboarding("org_created", {
+        user_id: user.id,
+        org_id: org.id,
+        step: 1,
+        metadata: { type: org.type },
+      });
       setStep(2);
     } catch (e: any) {
       const msg = e?.message ?? "Something went wrong. Please try again.";
@@ -210,74 +308,107 @@ export default function B2BOnboarding() {
     ? `${window.location.origin}/${createdOrg.type === "company" ? "companies" : "colleges"}/${createdOrg.slug}/team`
     : "";
 
-  /** Per-email tokenized invite link. Bumping `linkSeed` regenerates them all. */
-  const buildInviteLink = (email: string, seed = linkSeed) => {
-    const handle = email.replace(/[^a-z0-9]+/gi, "-").slice(0, 24).toLowerCase();
-    const token = `${seed}-${handle || "guest"}`;
-    return `${teamUrl}?invite=${token}`;
-  };
-
-  const buildMailto = (links: { email: string; url: string }[]) => {
+  const buildMailto = (links: GeneratedLink[]) => {
     const subject = encodeURIComponent(
       `You're invited to ${createdOrg?.name ?? "our team"} on Parikshaa`,
     );
-    const lines = links
-      .map((l) => `• ${l.email}\n  ${l.url}`)
-      .join("\n");
+    const lines = links.map((l) => `• ${l.email}\n  ${l.url}`).join("\n");
     const body = encodeURIComponent(
       `Hi,\n\nI've set up "${createdOrg?.name}" on Parikshaa for our assessments.\n` +
         `Use your personal invite link below to join the team:\n\n${lines}\n\n` +
-        `Thanks!`,
+        `Each link expires in 72 hours.\n\nThanks!`,
     );
     return `mailto:${links.map((l) => l.email).join(",")}?subject=${subject}&body=${body}`;
   };
 
-  const generateAndSend = (seed: string) => {
-    if (!validateEmails()) return false;
+  /** Calls the secure edge function to mint server-issued, expiring tokens. */
+  const requestInviteLinks = async (): Promise<GeneratedLink[] | null> => {
+    if (!createdOrg) return null;
+    const { data, error } = await supabase.functions.invoke<{
+      links: GeneratedLink[];
+      expires_at: string;
+    }>("b2b-onboarding-invites", {
+      body: { org_id: createdOrg.id, emails: validEmails, ttl_hours: 72 },
+    });
+    if (error) {
+      toast({
+        title: "Could not generate invite links",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    }
+    return data?.links ?? null;
+  };
+
+  const generateAndSend = async (kind: "send" | "resend") => {
+    if (!validateEmails()) return;
     if (validEmails.length === 0) {
       toast({
         title: "Add at least one email",
         description: "Or click 'Skip for now' to finish onboarding.",
       });
-      return false;
+      return;
     }
-    const links = validEmails.map((email) => ({
-      email,
-      url: buildInviteLink(email, seed),
-    }));
-    setGeneratedLinks(links);
-    window.location.href = buildMailto(links);
-    return true;
-  };
-
-  const handleSendInvites = () => generateAndSend(linkSeed);
-
-  const handleResendInvites = () => {
-    const fresh = Math.random().toString(36).slice(2, 10);
-    setLinkSeed(fresh);
-    if (generateAndSend(fresh)) {
-      toast({
-        title: "Invite links refreshed",
-        description: "We regenerated unique links and reopened your email client.",
+    if (sendingInvites) return;
+    setSendingInvites(true);
+    try {
+      const links = await requestInviteLinks();
+      if (!links) return;
+      setGeneratedLinks(links);
+      void trackOnboarding(kind === "send" ? "invite_send" : "invite_resend", {
+        user_id: user?.id,
+        org_id: createdOrg?.id,
+        step: 2,
+        metadata: { count: links.length },
       });
+      toast({
+        title: kind === "send" ? "Invite links ready" : "Invite links refreshed",
+        description:
+          kind === "send"
+            ? `Generated ${links.length} secure link${links.length === 1 ? "" : "s"} • opens your email client.`
+            : "We rotated tokens and reopened your email client.",
+      });
+      window.location.href = buildMailto(links);
+    } finally {
+      setSendingInvites(false);
     }
   };
+
+  const handleSendInvites = () => void generateAndSend("send");
+  const handleResendInvites = () => void generateAndSend("resend");
 
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(teamUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
+      toast({ title: "Team link copied", description: teamUrl });
+      void trackOnboarding("copy_team_link", {
+        user_id: user?.id,
+        org_id: createdOrg?.id,
+        step: 2,
+      });
     } catch {
       toast({ title: "Could not copy link", variant: "destructive" });
     }
   };
 
-  const handleCopyInviteLink = async (url: string) => {
+  const handleCopyInviteLink = async (link: GeneratedLink) => {
     try {
-      await navigator.clipboard.writeText(url);
-      setCopiedLink(url);
-      setTimeout(() => setCopiedLink(null), 1800);
+      await navigator.clipboard.writeText(link.url);
+      setCopiedLink(link.url);
+      setTimeout(() => setCopiedLink(null), 2200);
+      toast({
+        title: `Invite link copied`,
+        description: `${link.email} — expires ${formatTimeLeft(link.expires_at).label.toLowerCase()}.`,
+      });
+      void trackOnboarding("copy_invite_link", {
+        user_id: user?.id,
+        org_id: createdOrg?.id,
+        step: 2,
+        metadata: { email: link.email },
+      });
     } catch {
       toast({ title: "Could not copy link", variant: "destructive" });
     }
@@ -285,9 +416,21 @@ export default function B2BOnboarding() {
 
   const finishOnboarding = () => {
     if (!createdOrg) return;
+    void trackOnboarding("skip_invites", {
+      user_id: user?.id,
+      org_id: createdOrg.id,
+      step: 2,
+      metadata: { had_links: !!generatedLinks?.length },
+    });
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
     const base = createdOrg.type === "company" ? "/companies" : "/colleges";
     navigate(`${base}/${createdOrg.slug}`);
   };
+
 
   // ────────────────────────────────────────────────────────────────────────
   return (
@@ -735,46 +878,79 @@ export default function B2BOnboarding() {
                               size="sm"
                               variant="outline"
                               onClick={handleResendInvites}
+                              disabled={sendingInvites}
                               className="h-7 px-2 text-[11px]"
                             >
-                              <RefreshCcw className="mr-1.5 h-3 w-3" />
+                              {sendingInvites ? (
+                                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                              ) : (
+                                <RefreshCcw className="mr-1.5 h-3 w-3" />
+                              )}
                               Resend &amp; regenerate
                             </Button>
                           </div>
                           <ul className="space-y-1.5">
-                            {generatedLinks.map((l) => (
-                              <li
-                                key={l.email}
-                                className="flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))/0.6] px-2.5 py-1.5"
-                              >
-                                <div className="min-w-0 flex-1">
-                                  <div className="truncate text-xs font-medium">
-                                    {l.email}
-                                  </div>
-                                  <div className="truncate text-[10px] text-[hsl(var(--muted-foreground))]">
-                                    {l.url}
-                                  </div>
-                                </div>
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => handleCopyInviteLink(l.url)}
-                                  aria-label={`Copy invite link for ${l.email}`}
-                                  className="h-7 w-7 shrink-0"
+                            {generatedLinks.map((l) => {
+                              const t = formatTimeLeft(l.expires_at);
+                              return (
+                                <li
+                                  key={l.email}
+                                  className="flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))/0.6] px-2.5 py-1.5"
                                 >
-                                  {copiedLink === l.url ? (
-                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                                  ) : (
-                                    <Copy className="h-3.5 w-3.5" />
-                                  )}
-                                </Button>
-                              </li>
-                            ))}
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="truncate text-xs font-medium">
+                                        {l.email}
+                                      </span>
+                                      <span
+                                        className={cn(
+                                          "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider",
+                                          t.expired
+                                            ? "border-destructive/40 bg-destructive/10 text-destructive"
+                                            : t.warn
+                                              ? "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                                              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-500",
+                                        )}
+                                      >
+                                        <Clock className="h-2.5 w-2.5" />
+                                        {t.label}
+                                      </span>
+                                    </div>
+                                    <div className="truncate text-[10px] text-[hsl(var(--muted-foreground))]">
+                                      {l.url}
+                                    </div>
+                                    {copiedLink === l.url && (
+                                      <div className="mt-0.5 text-[10px] font-medium text-emerald-500">
+                                        Copied to clipboard
+                                      </div>
+                                    )}
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => handleCopyInviteLink(l)}
+                                    aria-label={`Copy invite link for ${l.email}`}
+                                    className="h-7 w-7 shrink-0"
+                                  >
+                                    {copiedLink === l.url ? (
+                                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                    ) : (
+                                      <Copy className="h-3.5 w-3.5" />
+                                    )}
+                                  </Button>
+                                </li>
+                              );
+                            })}
                           </ul>
+                          {generatedLinks.some((l) => formatTimeLeft(l.expires_at).warn) && (
+                            <p className="mt-2 flex items-start gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[10px] text-amber-600 dark:text-amber-400">
+                              <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                              Some links expire soon — use “Resend &amp; regenerate” to issue fresh tokens.
+                            </p>
+                          )}
                           <p className="mt-2 text-[10px] text-[hsl(var(--muted-foreground))]">
-                            Each link is unique to that email. Resending replaces the
-                            previous links.
+                            Each link is server-issued, unique to that email, and expires automatically. Resending revokes the previous links.
                           </p>
                         </div>
                       )}
@@ -804,18 +980,28 @@ export default function B2BOnboarding() {
                             <Button
                               type="button"
                               onClick={handleResendInvites}
+                              disabled={sendingInvites}
                               className="h-10 w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 sm:w-auto"
                             >
-                              <RefreshCcw className="mr-1.5 h-4 w-4" />
+                              {sendingInvites ? (
+                                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                              ) : (
+                                <RefreshCcw className="mr-1.5 h-4 w-4" />
+                              )}
                               Resend invites
                             </Button>
                           ) : (
                             <Button
                               type="button"
                               onClick={handleSendInvites}
+                              disabled={sendingInvites || validEmails.length === 0}
                               className="h-10 w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 sm:w-auto"
                             >
-                              <Mail className="mr-1.5 h-4 w-4" />
+                              {sendingInvites ? (
+                                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                              ) : (
+                                <Mail className="mr-1.5 h-4 w-4" />
+                              )}
                               Send invites
                               <span className="ml-1.5 rounded bg-[hsl(var(--primary-foreground))/0.2] px-1.5 text-[10px] font-semibold">
                                 {validEmails.length}
