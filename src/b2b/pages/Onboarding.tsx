@@ -24,6 +24,9 @@ import {
   Mail,
   Copy,
   CheckCircle2,
+  RefreshCcw,
+  SkipForward,
+  Link2,
 } from "lucide-react";
 import { slugify } from "../hooks/useOrg";
 import "../theme.css";
@@ -101,6 +104,14 @@ export default function B2BOnboarding() {
   const [emails, setEmails] = useState<string[]>(["", "", ""]);
   const [emailErrors, setEmailErrors] = useState<(string | null)[]>([null, null, null]);
   const [copied, setCopied] = useState(false);
+  // Per-email invite tokens; bumping the seed regenerates every link.
+  const [linkSeed, setLinkSeed] = useState<string>(() =>
+    Math.random().toString(36).slice(2, 10),
+  );
+  const [generatedLinks, setGeneratedLinks] = useState<
+    { email: string; url: string }[] | null
+  >(null);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
   // ── Derived validation ──────────────────────────────────────────────────
   const validation = useMemo(() => {
@@ -199,28 +210,57 @@ export default function B2BOnboarding() {
     ? `${window.location.origin}/${createdOrg.type === "company" ? "companies" : "colleges"}/${createdOrg.slug}/team`
     : "";
 
-  const buildMailto = () => {
+  /** Per-email tokenized invite link. Bumping `linkSeed` regenerates them all. */
+  const buildInviteLink = (email: string, seed = linkSeed) => {
+    const handle = email.replace(/[^a-z0-9]+/gi, "-").slice(0, 24).toLowerCase();
+    const token = `${seed}-${handle || "guest"}`;
+    return `${teamUrl}?invite=${token}`;
+  };
+
+  const buildMailto = (links: { email: string; url: string }[]) => {
     const subject = encodeURIComponent(
       `You're invited to ${createdOrg?.name ?? "our team"} on Parikshaa`,
     );
+    const lines = links
+      .map((l) => `• ${l.email}\n  ${l.url}`)
+      .join("\n");
     const body = encodeURIComponent(
       `Hi,\n\nI've set up "${createdOrg?.name}" on Parikshaa for our assessments.\n` +
-        `Sign up with this email and join the team here:\n${teamUrl}\n\n` +
+        `Use your personal invite link below to join the team:\n\n${lines}\n\n` +
         `Thanks!`,
     );
-    return `mailto:${validEmails.join(",")}?subject=${subject}&body=${body}`;
+    return `mailto:${links.map((l) => l.email).join(",")}?subject=${subject}&body=${body}`;
   };
 
-  const handleSendInvites = () => {
-    if (!validateEmails()) return;
+  const generateAndSend = (seed: string) => {
+    if (!validateEmails()) return false;
     if (validEmails.length === 0) {
       toast({
         title: "Add at least one email",
         description: "Or click 'Skip for now' to finish onboarding.",
       });
-      return;
+      return false;
     }
-    window.location.href = buildMailto();
+    const links = validEmails.map((email) => ({
+      email,
+      url: buildInviteLink(email, seed),
+    }));
+    setGeneratedLinks(links);
+    window.location.href = buildMailto(links);
+    return true;
+  };
+
+  const handleSendInvites = () => generateAndSend(linkSeed);
+
+  const handleResendInvites = () => {
+    const fresh = Math.random().toString(36).slice(2, 10);
+    setLinkSeed(fresh);
+    if (generateAndSend(fresh)) {
+      toast({
+        title: "Invite links refreshed",
+        description: "We regenerated unique links and reopened your email client.",
+      });
+    }
   };
 
   const handleCopyLink = async () => {
@@ -228,6 +268,16 @@ export default function B2BOnboarding() {
       await navigator.clipboard.writeText(teamUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast({ title: "Could not copy link", variant: "destructive" });
+    }
+  };
+
+  const handleCopyInviteLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedLink(url);
+      setTimeout(() => setCopiedLink(null), 1800);
     } catch {
       toast({ title: "Could not copy link", variant: "destructive" });
     }
@@ -256,7 +306,7 @@ export default function B2BOnboarding() {
       />
 
       <main className="relative z-10 flex flex-1 items-stretch pt-16">
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-[1.05fr,1fr] lg:gap-16 lg:px-8 lg:py-14">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-3 py-6 sm:gap-8 sm:px-6 sm:py-10 lg:grid-cols-[1.05fr,1fr] lg:gap-16 lg:px-8 lg:py-14">
           {/* LEFT — brand & value (hidden on mobile) */}
           <aside className="hidden flex-col justify-between lg:flex">
             <div>
@@ -368,7 +418,11 @@ export default function B2BOnboarding() {
                       </p>
                     </div>
 
-                    <div className="space-y-6">
+                    <fieldset
+                      disabled={submitting}
+                      aria-busy={submitting}
+                      className="space-y-5 disabled:opacity-60 sm:space-y-6"
+                    >
                       {/* Type selector */}
                       <div>
                         <Label className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
@@ -548,7 +602,7 @@ export default function B2BOnboarding() {
                       <p className="text-center text-[11px] text-[hsl(var(--muted-foreground))]">
                         By continuing you agree to Parikshaa's terms &amp; privacy policy.
                       </p>
-                    </div>
+                    </fieldset>
                   </>
                 )}
 
@@ -668,42 +722,115 @@ export default function B2BOnboarding() {
                         </Button>
                       </div>
 
+                      {/* Generated per-email invite links (after first send) */}
+                      {generatedLinks && generatedLinks.length > 0 && (
+                        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-500">
+                              <Link2 className="h-3.5 w-3.5" />
+                              Latest invite links
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={handleResendInvites}
+                              className="h-7 px-2 text-[11px]"
+                            >
+                              <RefreshCcw className="mr-1.5 h-3 w-3" />
+                              Resend &amp; regenerate
+                            </Button>
+                          </div>
+                          <ul className="space-y-1.5">
+                            {generatedLinks.map((l) => (
+                              <li
+                                key={l.email}
+                                className="flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))/0.6] px-2.5 py-1.5"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="truncate text-xs font-medium">
+                                    {l.email}
+                                  </div>
+                                  <div className="truncate text-[10px] text-[hsl(var(--muted-foreground))]">
+                                    {l.url}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleCopyInviteLink(l.url)}
+                                  aria-label={`Copy invite link for ${l.email}`}
+                                  className="h-7 w-7 shrink-0"
+                                >
+                                  {copiedLink === l.url ? (
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-2 text-[10px] text-[hsl(var(--muted-foreground))]">
+                            Each link is unique to that email. Resending replaces the
+                            previous links.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Action row */}
                       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <Button
                           type="button"
                           variant="ghost"
                           onClick={() => setStep(1)}
-                          className="sm:w-auto"
-                          disabled={submitting}
+                          className="h-10 w-full sm:w-auto"
                         >
                           <ArrowLeft className="mr-1.5 h-4 w-4" />
                           Back
                         </Button>
-                        <div className="flex flex-col gap-2 sm:flex-row">
+                        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row">
                           <Button
                             type="button"
                             variant="outline"
                             onClick={finishOnboarding}
+                            className="h-10 w-full sm:w-auto"
                           >
+                            <SkipForward className="mr-1.5 h-4 w-4" />
                             Skip for now
                           </Button>
-                          <Button
-                            type="button"
-                            onClick={handleSendInvites}
-                            className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-                          >
-                            <Mail className="mr-1.5 h-4 w-4" />
-                            Send invites
-                            <span className="ml-1.5 rounded bg-[hsl(var(--primary-foreground))/0.2] px-1.5 text-[10px] font-semibold">
-                              {validEmails.length}
-                            </span>
-                          </Button>
+                          {generatedLinks && generatedLinks.length > 0 ? (
+                            <Button
+                              type="button"
+                              onClick={handleResendInvites}
+                              className="h-10 w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 sm:w-auto"
+                            >
+                              <RefreshCcw className="mr-1.5 h-4 w-4" />
+                              Resend invites
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              onClick={handleSendInvites}
+                              className="h-10 w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 sm:w-auto"
+                            >
+                              <Mail className="mr-1.5 h-4 w-4" />
+                              Send invites
+                              <span className="ml-1.5 rounded bg-[hsl(var(--primary-foreground))/0.2] px-1.5 text-[10px] font-semibold">
+                                {validEmails.length}
+                              </span>
+                            </Button>
+                          )}
                         </div>
                       </div>
 
-                      <p className="text-center text-[11px] text-[hsl(var(--muted-foreground))]">
-                        Opens your email client with a pre-filled invite to{" "}
-                        <span className="font-medium">{createdOrg.name}</span>'s team page.
+                      <p className="text-center text-[11px] leading-relaxed text-[hsl(var(--muted-foreground))]">
+                        Skipping takes you straight to{" "}
+                        <span className="font-medium text-[hsl(var(--foreground))/0.8]">
+                          {createdOrg.name}
+                        </span>
+                        's dashboard — you can always invite teammates from the Team page later.
                       </p>
                     </div>
                   </>
