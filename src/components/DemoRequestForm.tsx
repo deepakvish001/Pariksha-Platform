@@ -114,8 +114,8 @@ const DemoRequestForm = () => {
       <div className="section-container">
         <div className="grid lg:grid-cols-5 gap-10 items-start max-w-6xl mx-auto">
           {/* Left: pitch */}
-          <ScrollReveal>
-            <div className="lg:col-span-2 lg:sticky lg:top-24">
+          <ScrollReveal className="lg:col-span-2">
+            <div className="lg:sticky lg:top-24">
               <div className="inline-flex items-center gap-2 mb-4 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
                 <span className="text-xs font-semibold text-primary">Book a tailored demo</span>
@@ -145,8 +145,8 @@ const DemoRequestForm = () => {
           </ScrollReveal>
 
           {/* Right: form */}
-          <ScrollReveal delay={0.1}>
-            <div className="lg:col-span-3">
+          <ScrollReveal delay={0.1} className="lg:col-span-3">
+            <div>
               <motion.form
                 onSubmit={handleSubmit}
                 className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm p-6 sm:p-8 shadow-xl"
