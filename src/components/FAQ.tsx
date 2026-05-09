@@ -49,6 +49,21 @@ const faqs = [
       "Yes. The learning experience is fully responsive across phone, tablet, and desktop, and your data syncs in real time. Proctored assessments are best taken on a laptop or desktop with a webcam.",
   },
   {
+    question: "How accurate is Parikshaa's proctoring and what does it actually detect?",
+    answer:
+      "Our proctoring stack runs entirely in-browser and detects tab switches, fullscreen exits, copy/paste, multiple faces, missing face, background voices, screen-share drops, and suspicious phone usage via the Side Eye AI side camera. Every event is timestamped, hashed, and chained — so the log itself is tamper-evident and verifiable after the test ends.",
+  },
+  {
+    question: "How does the integrity score work?",
+    answer:
+      "Each attempt produces a single integrity score from 0–100, computed from weighted signals: proctoring events, typing/coding behavior, similarity to other submissions, identity verification, and Side Eye sweep results. You see the score plus a full breakdown — no black-box flags. Thresholds are configurable per organization so you can tune strictness for placement drives vs. practice tests.",
+  },
+  {
+    question: "Can I export reports for placement cells, hiring managers, or auditors?",
+    answer:
+      "Yes. Every assessment produces exportable reports in PDF and CSV — candidate-level (score, integrity, event timeline, code submissions, viva transcript) and assessment-level (leaderboard, score distribution, integrity heatmap, similarity clusters). Public verifiable integrity reports can also be shared via signed URL so external auditors can confirm the chain of custody without a Parikshaa account.",
+  },
+  {
     question: "Do I need an account to start learning?",
     answer:
       "Most learning content is browsable as a guest. To save progress, earn XP, join contests, or attempt invited assessments you'll need a free account — sign up takes under 30 seconds with email or Google.",
