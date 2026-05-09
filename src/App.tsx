@@ -512,6 +512,7 @@ const App = () => (
                   <Route path="moderation" element={<ParikshaaModeration />} />
                   <Route path="leads" element={<ParikshaaLeads />} />
                   <Route path="demo-requests" element={<ParikshaaDemoRequests />} />
+                  <Route path="funnel" element={<ParikshaaFunnel />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
