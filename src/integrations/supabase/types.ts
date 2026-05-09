@@ -3400,6 +3400,71 @@ export type Database = {
         }
         Relationships: []
       }
+      org_members: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          role: Database["public"]["Enums"]["org_member_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          role?: Database["public"]["Enums"]["org_member_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["org_member_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string
+          slug: string
+          type: Database["public"]["Enums"]["org_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          owner_id: string
+          slug: string
+          type: Database["public"]["Enums"]["org_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          owner_id?: string
+          slug?: string
+          type?: Database["public"]["Enums"]["org_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       outreach_custom_templates: {
         Row: {
           body: string
@@ -6739,6 +6804,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_org_member: {
+        Args: {
+          _org_id: string
+          _roles?: Database["public"]["Enums"]["org_member_role"][]
+        }
+        Returns: boolean
+      }
       notify_admins: {
         Args: { _data?: Json; _message: string; _title: string; _type?: string }
         Returns: undefined
@@ -6798,6 +6870,8 @@ export type Database = {
       battle_difficulty: "easy" | "medium" | "hard"
       battle_status: "pending" | "live" | "ended" | "abandoned"
       friendship_status: "pending" | "accepted" | "blocked"
+      org_member_role: "owner" | "admin" | "recruiter" | "viewer"
+      org_type: "college" | "company"
       study_year:
         | "1st Year"
         | "2nd Year"
@@ -6946,6 +7020,8 @@ export const Constants = {
       battle_difficulty: ["easy", "medium", "hard"],
       battle_status: ["pending", "live", "ended", "abandoned"],
       friendship_status: ["pending", "accepted", "blocked"],
+      org_member_role: ["owner", "admin", "recruiter", "viewer"],
+      org_type: ["college", "company"],
       study_year: [
         "1st Year",
         "2nd Year",
