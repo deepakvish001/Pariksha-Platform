@@ -497,12 +497,27 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full bg-background">
         <AdminSidebar onOpenPalette={() => setPaletteOpen(true)} />
         <SidebarInset className="min-w-0 flex-1">
-          <div className="sticky top-0 z-10 flex h-11 items-center justify-between gap-2 border-b border-border/40 bg-background/80 px-3 backdrop-blur">
+          <div className="sticky top-0 z-20 flex h-12 items-center justify-between gap-2 border-b border-border/40 bg-background/70 px-3 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50">
+            {/* subtle amber underline glow */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+            />
             <div className="flex min-w-0 items-center gap-2">
               <SidebarTrigger />
+              <span aria-hidden className="hidden h-5 w-px bg-border/60 sm:block" />
+              <div className="hidden items-center gap-1.5 sm:flex">
+                <span className="grid h-5 w-5 place-items-center rounded-md bg-gradient-to-br from-primary to-amber-500 shadow-[0_0_12px_hsl(var(--primary)/0.45)]">
+                  <Shield className="h-3 w-3 text-primary-foreground" />
+                </span>
+                <span className="text-[11px] font-semibold tracking-wide bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+                  Control Center
+                </span>
+              </div>
+              <span aria-hidden className="hidden h-5 w-px bg-border/60 sm:block" />
               <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
                 {crumbs.map((c, i) => (
                   <span key={`${c.label}-${i}`} className="flex min-w-0 items-center gap-1">
@@ -525,7 +540,7 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setPaletteOpen(true)}
-                className="hidden h-7 gap-1.5 px-2 text-[11px] text-muted-foreground sm:inline-flex"
+                className="hidden h-7 gap-1.5 rounded-full border border-border/50 bg-card/40 px-2.5 text-[11px] text-muted-foreground backdrop-blur hover:border-primary/40 hover:text-foreground sm:inline-flex"
               >
                 <CommandIcon className="h-3 w-3" />
                 <span>Jump</span>
@@ -534,7 +549,7 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-500">
+                    <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
                       <span className="relative flex h-2 w-2">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
                         <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -550,7 +565,10 @@ export const AdminShell = ({ children }: { children: React.ReactNode }) => {
               </TooltipProvider>
             </div>
           </div>
-          <main className="min-w-0 flex-1 px-4 py-6 lg:px-8">{children}</main>
+          <main className="relative min-w-0 flex-1 px-4 py-6 lg:px-8">
+            <AdminBackdrop />
+            <div className="relative">{children}</div>
+          </main>
         </SidebarInset>
       </div>
       <AdminCommandPalette
