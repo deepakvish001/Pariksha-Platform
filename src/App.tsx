@@ -146,8 +146,6 @@ import AuditLog from "./pages/admin/AuditLog";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminRoles from "./pages/admin/AdminRoles";
 
-import AIContentModeration from "./pages/admin/AIContentModeration";
-import DailyChallengeAdmin from "./pages/admin/DailyChallengeAdmin";
 import Broadcast from "./pages/admin/Broadcast";
 import Reports from "./pages/admin/Reports";
 import ArenaModeration from "./pages/admin/ArenaModeration";
