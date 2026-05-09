@@ -86,9 +86,13 @@ export function OrgShell({
         </aside>
 
         <main className="flex-1 min-w-0">
-          <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-10">
-            <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
-            <div className="flex items-center gap-2">{actions}</div>
+          <header className="sticky top-0 z-10 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]/80 backdrop-blur-xl shadow-sm">
+            <div className="px-6 h-16 flex items-center justify-between gap-4">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight truncate">
+                {title}
+              </h1>
+              <div className="flex items-center gap-2 shrink-0">{actions}</div>
+            </div>
           </header>
           <div className="p-6">{children}</div>
         </main>
