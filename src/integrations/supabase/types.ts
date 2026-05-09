@@ -512,6 +512,113 @@ export type Database = {
           },
         ]
       }
+      assessment_attempts: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          id: string
+          integrity_score: number
+          invite_id: string | null
+          score: number | null
+          started_at: string
+          status: Database["public"]["Enums"]["attempt_status"]
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          id?: string
+          integrity_score?: number
+          invite_id?: string | null
+          score?: number | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["attempt_status"]
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          id?: string
+          integrity_score?: number
+          invite_id?: string | null
+          score?: number | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["attempt_status"]
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_attempts_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_attempts_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_invites: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          created_by: string
+          email: string
+          expires_at: string | null
+          external_id: string | null
+          id: string
+          name: string | null
+          status: Database["public"]["Enums"]["invite_status"]
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          created_by?: string
+          email: string
+          expires_at?: string | null
+          external_id?: string | null
+          id?: string
+          name?: string | null
+          status?: Database["public"]["Enums"]["invite_status"]
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          created_by?: string
+          email?: string
+          expires_at?: string | null
+          external_id?: string | null
+          id?: string
+          name?: string | null
+          status?: Database["public"]["Enums"]["invite_status"]
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_invites_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_sections: {
         Row: {
           assessment_id: string
@@ -599,6 +706,89 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attempt_answers: {
+        Row: {
+          answer: Json
+          attempt_id: string
+          auto_score: number | null
+          created_at: string
+          id: string
+          manual_score: number | null
+          question_id: string
+          run_log: Json | null
+          updated_at: string
+        }
+        Insert: {
+          answer?: Json
+          attempt_id: string
+          auto_score?: number | null
+          created_at?: string
+          id?: string
+          manual_score?: number | null
+          question_id: string
+          run_log?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          answer?: Json
+          attempt_id?: string
+          auto_score?: number | null
+          created_at?: string
+          id?: string
+          manual_score?: number | null
+          question_id?: string
+          run_log?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempt_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempt_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attempt_events: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempt_events_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
             referencedColumns: ["id"]
           },
         ]
@@ -6748,6 +6938,8 @@ export type Database = {
         Args: { _contest_id: string; _problem_slug: string }
         Returns: Json
       }
+      attempt_assessment_org: { Args: { _attempt: string }; Returns: string }
+      attempt_owner: { Args: { _attempt: string }; Returns: string }
       audit_daily_completions: { Args: never; Returns: Json }
       audit_daily_completions_all: { Args: never; Returns: Json }
       award_xp: {
@@ -6813,6 +7005,28 @@ export type Database = {
         Returns: number
       }
       can_write_org: { Args: { _org: string }; Returns: boolean }
+      claim_assessment_invite: {
+        Args: { _token: string }
+        Returns: {
+          assessment_id: string
+          created_at: string
+          id: string
+          integrity_score: number
+          invite_id: string | null
+          score: number | null
+          started_at: string
+          status: Database["public"]["Enums"]["attempt_status"]
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessment_attempts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       contest_accept_honor_code: {
         Args: { _contest_id: string }
         Returns: undefined
@@ -7134,9 +7348,15 @@ export type Database = {
         | "proctor_admin"
         | "institution_admin"
       assessment_status: "draft" | "published" | "archived"
+      attempt_status:
+        | "in_progress"
+        | "submitted"
+        | "auto_submitted"
+        | "abandoned"
       battle_difficulty: "easy" | "medium" | "hard"
       battle_status: "pending" | "live" | "ended" | "abandoned"
       friendship_status: "pending" | "accepted" | "blocked"
+      invite_status: "pending" | "claimed" | "submitted" | "expired"
       org_member_role: "owner" | "admin" | "recruiter" | "viewer"
       org_type: "college" | "company"
       question_type: "coding" | "mcq" | "sql" | "subjective"
@@ -7286,9 +7506,16 @@ export const Constants = {
         "institution_admin",
       ],
       assessment_status: ["draft", "published", "archived"],
+      attempt_status: [
+        "in_progress",
+        "submitted",
+        "auto_submitted",
+        "abandoned",
+      ],
       battle_difficulty: ["easy", "medium", "hard"],
       battle_status: ["pending", "live", "ended", "abandoned"],
       friendship_status: ["pending", "accepted", "blocked"],
+      invite_status: ["pending", "claimed", "submitted", "expired"],
       org_member_role: ["owner", "admin", "recruiter", "viewer"],
       org_type: ["college", "company"],
       question_type: ["coding", "mcq", "sql", "subjective"],
