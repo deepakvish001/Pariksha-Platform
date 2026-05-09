@@ -145,7 +145,17 @@ export default function Player() {
             <h1 className="text-sm font-semibold truncate">{paper.assessment.title}</h1>
             <p className="text-xs text-muted-foreground">{answeredCount} / {totalQ} answered</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {proctoringEnabled && (
+              <div className="hidden sm:flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                <ShieldCheck className="h-3.5 w-3.5" /> Proctored
+              </div>
+            )}
+            {proctoringEnabled && (
+              <Button size="sm" variant="outline" onClick={requestFullscreen} title="Enter fullscreen">
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+            )}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[hsl(var(--muted))] text-sm font-mono">
               <Clock className="h-4 w-4" />
               {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
