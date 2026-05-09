@@ -9,8 +9,7 @@ export type OrgMember = {
   user_id: string;
   role: OrgMemberRole;
   created_at: string;
-  email?: string | null;
-  display_name?: string | null;
+  full_name?: string | null;
   avatar_url?: string | null;
 };
 
@@ -21,23 +20,23 @@ export function useOrgMembers(orgId?: string) {
     queryFn: async (): Promise<OrgMember[]> => {
       const { data: members, error } = await supabase
         .from("org_members")
-        .select("*")
+        .select("id, org_id, user_id, role, created_at")
         .eq("org_id", orgId!)
         .order("created_at", { ascending: true });
       if (error) throw error;
       const ids = (members ?? []).map((m: any) => m.user_id);
-      if (ids.length === 0) return [];
+      if (ids.length === 0) return [] as OrgMember[];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, email, display_name, avatar_url")
-        .in("id", ids);
-      const byId = new Map<string, any>((profiles ?? []).map((p: any) => [p.id, p]));
+        .select("user_id, full_name, avatar_url")
+        .in("user_id", ids);
+      const byId = new Map<string, any>();
+      (profiles ?? []).forEach((p: any) => byId.set(p.user_id, p));
       return (members ?? []).map((m: any) => ({
         ...m,
-        email: byId.get(m.user_id)?.email ?? null,
-        display_name: byId.get(m.user_id)?.display_name ?? null,
+        full_name: byId.get(m.user_id)?.full_name ?? null,
         avatar_url: byId.get(m.user_id)?.avatar_url ?? null,
-      }));
+      })) as OrgMember[];
     },
   });
 }
@@ -58,27 +57,6 @@ export function useRemoveMember(orgId?: string) {
   return useMutation({
     mutationFn: async (memberId: string) => {
       const { error } = await supabase.from("org_members").delete().eq("id", memberId);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["b2b", "members", orgId] }),
-  });
-}
-
-export function useAddMemberByEmail(orgId?: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ email, role }: { email: string; role: OrgMemberRole }) => {
-      if (!orgId) throw new Error("No org");
-      const { data: profile, error: pErr } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", email.trim().toLowerCase())
-        .maybeSingle();
-      if (pErr) throw pErr;
-      if (!profile) throw new Error("No user with that email has signed up yet.");
-      const { error } = await supabase
-        .from("org_members")
-        .insert({ org_id: orgId, user_id: profile.id, role });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["b2b", "members", orgId] }),
