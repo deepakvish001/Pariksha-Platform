@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
 import { Textarea } from "@/components/ui/textarea";
 import { useAttempts } from "../../hooks/useAttempts";
+import { useAssessmentInsights } from "../../hooks/useInsights";
 import { Link } from "react-router-dom";
 
 const TYPE_LABEL: Record<string, string> = {
