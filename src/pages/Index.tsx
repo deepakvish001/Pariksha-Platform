@@ -19,7 +19,7 @@ const Footer = lazy(() => import("@/components/Footer"));
 const StickyDemoCTA = lazy(() => import("@/components/StickyDemoCTA"));
 
 const LazySection = ({ children }: { children: React.ReactNode }) => (
-  <Suspense fallback={<div className="min-h-[200px]" />}>{children}</Suspense>
+  <Suspense fallback={null}>{children}</Suspense>
 );
 
 const Index = () => {

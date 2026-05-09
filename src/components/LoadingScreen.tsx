@@ -7,7 +7,14 @@ interface LoadingScreenProps {
   loadingStage?: string;
 }
 
-const LoadingScreen = ({ isLoading, progress, loadingStage = "Loading..." }: LoadingScreenProps) => {
+const LoadingScreen = (_props: LoadingScreenProps) => {
+  return null;
+};
+
+*/
+
+/* Removed legacy full-page loading screen.
+const LegacyLoadingScreen = ({ isLoading, progress, loadingStage = "Loading..." }: LoadingScreenProps) => {
   return (
     <AnimatePresence>
       {isLoading && (

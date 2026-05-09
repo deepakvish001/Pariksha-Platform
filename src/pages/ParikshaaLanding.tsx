@@ -137,7 +137,7 @@ export default function ParikshaaLanding() {
 
       {/* Logos */}
       <section className="border-y border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-        <Suspense fallback={<div className="h-32" />}>
+        <Suspense fallback={null}>
           <CompanyLogos />
         </Suspense>
       </section>
