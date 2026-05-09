@@ -231,7 +231,6 @@ const App = () => (
             <BrowserRouter>
               <RouteRestorer />
               <RouteSeo />
-              <SeoPreviewPanel />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
