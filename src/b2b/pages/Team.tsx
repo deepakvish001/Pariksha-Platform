@@ -46,7 +46,7 @@ export default function B2BTeam() {
   const canManage = myRole === "owner" || myRole === "admin";
 
   return (
-    <OrgShell title={`${org.name} · Team`}>
+    <OrgShell title={<><span className="bg-gradient-to-r from-primary via-orange-500 to-amber-500 bg-clip-text text-transparent">{org.name}</span> <span className="text-[hsl(var(--muted-foreground))] font-normal">· Team</span></>}>
       <div className="b2b-card p-4 mb-4 flex items-start gap-3 text-sm">
         <Info className="h-4 w-4 mt-0.5 text-[hsl(var(--primary))]" />
         <div>
