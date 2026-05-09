@@ -21,6 +21,10 @@ const LazySection = ({ children }: { children: React.ReactNode }) => (
 );
 
 const Index = () => {
+  useEffect(() => {
+    const utm = captureUtm();
+    void trackLeadEvent("landing_page_view", { utm });
+  }, []);
   return (
     <main className="min-h-screen bg-background">
       <DelayedLoginPrompt />
