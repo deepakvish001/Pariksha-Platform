@@ -37,7 +37,8 @@ export default function B2BOnboarding() {
       return;
     }
     toast({ title: "Organization created", description: data?.name });
-    navigate("/b2b/dashboard");
+    const base = type === "company" ? "/companies" : "/colleges";
+    navigate(`${base}/${data?.slug}`);
   };
 
   return (
