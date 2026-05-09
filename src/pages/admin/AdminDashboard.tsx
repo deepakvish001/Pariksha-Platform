@@ -7,7 +7,6 @@ import {
   Plus,
   Upload,
   Megaphone,
-  CalendarClock,
   AlertTriangle,
   Users,
   Activity,
@@ -15,7 +14,6 @@ import {
   UserPlus,
   Code2,
   CheckCircle2,
-  Sparkles,
   Flag,
   type LucideIcon,
 } from "lucide-react";
@@ -110,13 +108,12 @@ const AdminDashboard = () => {
           },
         ]}
         actions={
-          <>
+          <div className="flex flex-wrap items-center gap-2">
             <Button asChild variant="outline" size="sm" className="border-border/60 bg-card/40 backdrop-blur">
               <Link to="/admin/broadcast">
                 <Megaphone className="mr-2 h-4 w-4" /> Broadcast
               </Link>
             </Button>
-            
             <Button asChild variant="outline" size="sm" className="border-border/60 bg-card/40 backdrop-blur">
               <Link to="/admin/problems/import">
                 <Upload className="mr-2 h-4 w-4" /> Import
@@ -131,7 +128,7 @@ const AdminDashboard = () => {
                 <Plus className="mr-2 h-4 w-4" /> New problem
               </Link>
             </Button>
-          </>
+          </div>
         }
       />
 
@@ -149,7 +146,7 @@ const AdminDashboard = () => {
           <Kpi label="Signups 7d" value={kpi("signups_7d")} icon={UserPlus} tone="success" />
           <Kpi label="Submissions" value={kpi("submissions_total")} icon={Code2} />
           <Kpi label="Accepted today" value={kpi("accepted_today")} icon={CheckCircle2} tone="success" />
-          <Kpi label="AI content" value={kpi("ai_content_total")} icon={Sparkles} />
+          
           <Kpi
             label="Open reports"
             value={openReports}
