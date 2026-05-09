@@ -218,13 +218,13 @@ export default function LearnOverview() {
           <h2 className="mb-3 text-sm font-semibold text-muted-foreground">Manage</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <QuickLink
-              to="/admin/learn/problems"
+              to={`/admin/learn/problems?range=${range}`}
               icon={FileCode2}
               label="Coding Problems"
               desc={`${kpi("published_problems")} published · ${kpi("draft_problems")} drafts`}
             />
             <QuickLink
-              to="/admin/learn/users"
+              to={`/admin/learn/users?range=${range}`}
               icon={Users}
               label="Users"
               desc={`${kpi("total_users")} total accounts`}
@@ -236,13 +236,13 @@ export default function LearnOverview() {
               desc="Schedule and curate the daily problem"
             />
             <QuickLink
-              to="/admin/learn/ai-content"
+              to={`/admin/learn/ai-content?range=${range}`}
               icon={Sparkles}
               label="AI Content"
               desc={`${kpi("ai_content_total")} pieces to moderate`}
             />
             <QuickLink
-              to="/admin/learn/reports"
+              to={`/admin/learn/reports?range=${range}`}
               icon={Flag}
               label="Reports"
               desc={`${kpi("open_reports")} open`}
