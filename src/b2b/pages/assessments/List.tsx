@@ -1,5 +1,5 @@
-import { OrgShell } from "../layouts/OrgShell";
-import { useMyOrganizations } from "../hooks/useOrg";
+import { OrgShell } from "../../layouts/OrgShell";
+import { useMyOrganizations } from "../../hooks/useOrg";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, FileText } from "lucide-react";
