@@ -101,6 +101,14 @@ export default function B2BOnboarding() {
   const [emails, setEmails] = useState<string[]>(["", "", ""]);
   const [emailErrors, setEmailErrors] = useState<(string | null)[]>([null, null, null]);
   const [copied, setCopied] = useState(false);
+  // Per-email invite tokens; bumping the seed regenerates every link.
+  const [linkSeed, setLinkSeed] = useState<string>(() =>
+    Math.random().toString(36).slice(2, 10),
+  );
+  const [generatedLinks, setGeneratedLinks] = useState<
+    { email: string; url: string }[] | null
+  >(null);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
   // ── Derived validation ──────────────────────────────────────────────────
   const validation = useMemo(() => {
