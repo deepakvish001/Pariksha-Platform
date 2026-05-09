@@ -240,6 +240,20 @@ function SectionQuestions({ sectionId, orgId }: { sectionId: string; orgId: stri
   );
 }
 
+function toLocalInput(value: string | null | undefined) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fromLocalInput(value: string): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 function SettingsPanel({
   assessment,
   onDelete,
@@ -251,9 +265,29 @@ function SettingsPanel({
   const [title, setTitle] = useState(assessment.title);
   const [duration, setDuration] = useState(assessment.duration_min);
   const [maxAttempts, setMaxAttempts] = useState(assessment.max_attempts);
+  const [proctoring, setProctoring] = useState<boolean>(!!assessment.proctoring_enabled);
+  const [startsAt, setStartsAt] = useState(toLocalInput(assessment.starts_at));
+  const [endsAt, setEndsAt] = useState(toLocalInput(assessment.ends_at));
+
+  const now = Date.now();
+  const startMs = startsAt ? new Date(startsAt).getTime() : null;
+  const endMs = endsAt ? new Date(endsAt).getTime() : null;
+  const windowError =
+    startMs && endMs && endMs <= startMs ? "End time must be after start time." : null;
+
+  let windowState = "Open immediately when published";
+  if (startMs && endMs) {
+    if (now < startMs) windowState = `Opens ${new Date(startMs).toLocaleString()}`;
+    else if (now > endMs) windowState = `Closed at ${new Date(endMs).toLocaleString()}`;
+    else windowState = `Live · closes ${new Date(endMs).toLocaleString()}`;
+  } else if (startMs && now < startMs) {
+    windowState = `Opens ${new Date(startMs).toLocaleString()}`;
+  } else if (endMs && now > endMs) {
+    windowState = `Closed at ${new Date(endMs).toLocaleString()}`;
+  }
 
   return (
-    <div className="b2b-card p-6 space-y-4 max-w-2xl">
+    <div className="b2b-card p-6 space-y-5 max-w-2xl">
       <div>
         <label className="text-sm font-medium">Title</label>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" />
@@ -278,13 +312,81 @@ function SettingsPanel({
           />
         </div>
       </div>
-      <div className="flex gap-2 pt-2">
+
+      <div className="border-t pt-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-medium">Schedule window</div>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              Leave empty to open immediately when published. Times are in your local timezone.
+            </p>
+          </div>
+          <Badge variant="outline" className="text-[10px]">{windowState}</Badge>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs text-[hsl(var(--muted-foreground))]">Opens at</label>
+            <Input
+              type="datetime-local"
+              value={startsAt}
+              onChange={(e) => setStartsAt(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-[hsl(var(--muted-foreground))]">Closes at</label>
+            <Input
+              type="datetime-local"
+              value={endsAt}
+              onChange={(e) => setEndsAt(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+        </div>
+        {windowError && (
+          <p className="text-xs text-destructive">{windowError}</p>
+        )}
+      </div>
+
+      <div className="border-t pt-4 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium">Proctoring</div>
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Tracks tab switches, copy/paste, and fullscreen exits. Penalties reduce integrity score.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={proctoring}
+          onClick={() => setProctoring((v) => !v)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            proctoring ? "bg-[hsl(var(--primary))]" : "bg-[hsl(var(--secondary))]"
+          }`}
+        >
+          <span
+            className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+              proctoring ? "translate-x-5" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      </div>
+
+      <div className="flex gap-2 pt-2 border-t">
         <Button
           className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+          disabled={!!windowError}
           onClick={async () => {
             await update.mutateAsync({
               id: assessment.id,
-              patch: { title, duration_min: duration, max_attempts: maxAttempts },
+              patch: {
+                title,
+                duration_min: duration,
+                max_attempts: maxAttempts,
+                proctoring_enabled: proctoring,
+                starts_at: fromLocalInput(startsAt),
+                ends_at: fromLocalInput(endsAt),
+              },
             });
             toast.success("Saved");
           }}
