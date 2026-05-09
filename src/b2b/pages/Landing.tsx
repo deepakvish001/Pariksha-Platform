@@ -15,10 +15,12 @@ import {
   Zap,
 } from "lucide-react";
 import "../theme.css";
+import { B2BBackdrop, amberGradientText } from "../components/B2BBackdrop";
 
 export default function B2BLanding() {
   return (
-    <div className="theme-b2b min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+    <div className="theme-b2b relative min-h-screen overflow-hidden bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+      <B2BBackdrop />
       {/* Nav */}
       <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]/80 backdrop-blur sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
@@ -60,7 +62,7 @@ export default function B2BLanding() {
             Trusted by placement cells and hiring teams
           </div>
           <h1 className="mt-5 text-4xl sm:text-6xl font-semibold tracking-tight max-w-4xl mx-auto leading-[1.05]">
-            Coding assessments candidates <span className="text-[hsl(var(--primary))]">actually trust</span>.
+            Coding assessments candidates <span className={amberGradientText}>actually trust</span>.
           </h1>
           <p className="mt-5 text-base sm:text-lg text-[hsl(var(--muted-foreground))] max-w-2xl mx-auto">
             Parikshaa gives placement cells and recruiters everything to create, deliver, and evaluate

@@ -15,12 +15,14 @@ import {
   Zap,
 } from "lucide-react";
 import "@/b2b/theme.css";
+import { B2BBackdrop, amberGradientText } from "@/b2b/components/B2BBackdrop";
 
 const CompanyLogos = lazy(() => import("@/components/CompanyLogos"));
 
 export default function ParikshaaLanding() {
   return (
-    <div className="theme-b2b min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+    <div className="theme-b2b relative min-h-screen overflow-hidden bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+      <B2BBackdrop />
       <SiteHeader />
 
       {/* Hero */}
@@ -43,7 +45,7 @@ export default function ParikshaaLanding() {
           </div>
           <h1 className="mt-5 text-4xl sm:text-6xl font-semibold tracking-tight max-w-4xl mx-auto leading-[1.05]">
             Learn to code.{" "}
-            <span className="text-[hsl(var(--primary))]">Get hired with proof.</span>
+            <span className={amberGradientText}>Get hired with proof.</span>
           </h1>
           <p className="mt-5 text-base sm:text-lg text-[hsl(var(--muted-foreground))] max-w-2xl mx-auto">
             Parikshaa is a free learning platform for students and a serious assessment platform
