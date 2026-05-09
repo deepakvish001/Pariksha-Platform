@@ -7,8 +7,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Clock, Send, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Clock, Send, ChevronLeft, ChevronRight, CheckCircle2, ShieldCheck, Maximize2 } from "lucide-react";
 import { usePaper, useExistingAnswers, useSaveAnswer, useSubmitAttempt, type PaperQuestion } from "../hooks/usePaper";
+import { useProctoring } from "../hooks/useProctoring";
 
 type AnswerMap = Record<string, Record<string, unknown>>;
 
@@ -19,6 +20,8 @@ export default function Player() {
   const { data: existing } = useExistingAnswers(attemptId);
   const saveAnswer = useSaveAnswer();
   const submitAttempt = useSubmitAttempt();
+  const proctoringEnabled = !!paper?.assessment.proctoring_enabled && paper.attempt.status === "in_progress";
+  const { requestFullscreen } = useProctoring(attemptId, proctoringEnabled);
 
   const flatQuestions = useMemo<PaperQuestion[]>(
     () => (paper?.sections ?? []).flatMap((s) => s.questions),
