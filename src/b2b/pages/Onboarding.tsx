@@ -872,46 +872,79 @@ export default function B2BOnboarding() {
                               size="sm"
                               variant="outline"
                               onClick={handleResendInvites}
+                              disabled={sendingInvites}
                               className="h-7 px-2 text-[11px]"
                             >
-                              <RefreshCcw className="mr-1.5 h-3 w-3" />
+                              {sendingInvites ? (
+                                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                              ) : (
+                                <RefreshCcw className="mr-1.5 h-3 w-3" />
+                              )}
                               Resend &amp; regenerate
                             </Button>
                           </div>
                           <ul className="space-y-1.5">
-                            {generatedLinks.map((l) => (
-                              <li
-                                key={l.email}
-                                className="flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))/0.6] px-2.5 py-1.5"
-                              >
-                                <div className="min-w-0 flex-1">
-                                  <div className="truncate text-xs font-medium">
-                                    {l.email}
-                                  </div>
-                                  <div className="truncate text-[10px] text-[hsl(var(--muted-foreground))]">
-                                    {l.url}
-                                  </div>
-                                </div>
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => handleCopyInviteLink(l.url)}
-                                  aria-label={`Copy invite link for ${l.email}`}
-                                  className="h-7 w-7 shrink-0"
+                            {generatedLinks.map((l) => {
+                              const t = formatTimeLeft(l.expires_at);
+                              return (
+                                <li
+                                  key={l.email}
+                                  className="flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))/0.6] px-2.5 py-1.5"
                                 >
-                                  {copiedLink === l.url ? (
-                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                                  ) : (
-                                    <Copy className="h-3.5 w-3.5" />
-                                  )}
-                                </Button>
-                              </li>
-                            ))}
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="truncate text-xs font-medium">
+                                        {l.email}
+                                      </span>
+                                      <span
+                                        className={cn(
+                                          "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider",
+                                          t.expired
+                                            ? "border-destructive/40 bg-destructive/10 text-destructive"
+                                            : t.warn
+                                              ? "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                                              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-500",
+                                        )}
+                                      >
+                                        <Clock className="h-2.5 w-2.5" />
+                                        {t.label}
+                                      </span>
+                                    </div>
+                                    <div className="truncate text-[10px] text-[hsl(var(--muted-foreground))]">
+                                      {l.url}
+                                    </div>
+                                    {copiedLink === l.url && (
+                                      <div className="mt-0.5 text-[10px] font-medium text-emerald-500">
+                                        Copied to clipboard
+                                      </div>
+                                    )}
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => handleCopyInviteLink(l)}
+                                    aria-label={`Copy invite link for ${l.email}`}
+                                    className="h-7 w-7 shrink-0"
+                                  >
+                                    {copiedLink === l.url ? (
+                                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                    ) : (
+                                      <Copy className="h-3.5 w-3.5" />
+                                    )}
+                                  </Button>
+                                </li>
+                              );
+                            })}
                           </ul>
+                          {generatedLinks.some((l) => formatTimeLeft(l.expires_at).warn) && (
+                            <p className="mt-2 flex items-start gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[10px] text-amber-600 dark:text-amber-400">
+                              <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                              Some links expire soon — use “Resend &amp; regenerate” to issue fresh tokens.
+                            </p>
+                          )}
                           <p className="mt-2 text-[10px] text-[hsl(var(--muted-foreground))]">
-                            Each link is unique to that email. Resending replaces the
-                            previous links.
+                            Each link is server-issued, unique to that email, and expires automatically. Resending revokes the previous links.
                           </p>
                         </div>
                       )}
