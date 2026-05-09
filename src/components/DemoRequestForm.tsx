@@ -302,12 +302,15 @@ const DemoRequestForm = () => {
                 <div className="space-y-2 mb-6">
                   <Label htmlFor="notes">Anything specific? <span className="text-muted-foreground font-normal">(optional)</span></Label>
                   <Textarea
+                    ref={notesRef}
                     id="notes"
                     name="notes"
-                    rows={3}
+                    rows={4}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
                     placeholder="E.g. We run 600 candidates over 2 days, need integrity reports for our auditors."
                     disabled={submitting}
-                    maxLength={600}
+                    maxLength={2000}
                   />
                 </div>
 
