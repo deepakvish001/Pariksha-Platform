@@ -89,7 +89,6 @@ export const AdminBadgeSettings = ({ onMarkAllRead }: Props) => {
               update({
                 enabled: {
                   "/admin/reports": false,
-                  "/admin/ai-content": false,
                   "/admin/system-health": false,
                   "/admin/support": false,
                 },
