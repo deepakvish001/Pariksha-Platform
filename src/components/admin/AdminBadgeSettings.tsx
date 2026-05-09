@@ -14,7 +14,6 @@ interface Props {
 
 const ITEMS: { key: BadgeKey; label: string }[] = [
  { key: "/admin/reports", label: "Pending reports" },
- { key: "/admin/ai-content", label: "New AI content (24h)" },
  { key: "/admin/system-health", label: "System alerts" },
  { key: "/admin/support", label: "Support tickets" },
 ];
