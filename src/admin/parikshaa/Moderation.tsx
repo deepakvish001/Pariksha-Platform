@@ -27,7 +27,7 @@ function ReportsPanel() {
       </div>
       <div className="rounded-lg border bg-card divide-y">
         {isLoading ? (
-          <div className="px-4 py-6 text-sm text-muted-foreground">Loading…</div>
+          <div className="px-4 py-6 text-sm text-muted-foreground"></div>
         ) : (data ?? []).length === 0 ? (
           <div className="px-4 py-6 text-sm text-muted-foreground">No reports.</div>
         ) : (
@@ -64,7 +64,7 @@ function AIContentPanel() {
       <Input placeholder="Search AI content by title…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-md" />
       <div className="rounded-lg border bg-card divide-y">
         {isLoading ? (
-          <div className="px-4 py-6 text-sm text-muted-foreground">Loading…</div>
+          <div className="px-4 py-6 text-sm text-muted-foreground"></div>
         ) : (data ?? []).length === 0 ? (
           <div className="px-4 py-6 text-sm text-muted-foreground">Nothing found.</div>
         ) : (

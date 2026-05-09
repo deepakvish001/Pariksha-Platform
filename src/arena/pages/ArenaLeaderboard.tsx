@@ -36,7 +36,7 @@ export default function ArenaLeaderboard() {
       </GlassPanel>
       <GlassPanel className="overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-muted-foreground">Loading...</div>
+          null
         ) : (
           <table className="w-full text-sm">
             <thead className="text-xs uppercase text-muted-foreground/60 border-b border-border">

@@ -108,7 +108,7 @@ export const AddProblemToContestDialog = ({ problemSlug, problemTitle, trigger }
         </div>
         <div className="max-h-[360px] overflow-y-auto rounded-md border divide-y">
           {isLoading ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">Loading contests…</div>
+            <div className="p-4 text-center text-sm text-muted-foreground"></div>
           ) : eligible.length === 0 ? (
             <div className="flex flex-col items-center gap-2 p-6 text-center text-sm text-muted-foreground">
               <p>No eligible contests yet.</p>

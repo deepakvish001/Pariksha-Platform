@@ -395,7 +395,7 @@ export default function ArenaModeration() {
           </div>
 
           <Card className="mt-3 p-4 space-y-3">
-            {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
+            {loading && <p className="text-sm text-muted-foreground"></p>}
             {!loading && reports.length === 0 && (
               <p className="text-sm text-muted-foreground/60">No matching {statusTab} reports.</p>
             )}
@@ -530,7 +530,7 @@ export default function ArenaModeration() {
           </div>
 
           <Card className="mt-3 p-4 space-y-2">
-            {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
+            {loading && <p className="text-sm text-muted-foreground"></p>}
             {!loading && blocks.length === 0 && (
               <p className="text-sm text-muted-foreground/60">No matching blocks.</p>
             )}

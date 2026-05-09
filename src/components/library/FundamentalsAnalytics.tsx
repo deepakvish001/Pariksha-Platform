@@ -192,7 +192,7 @@ const FundamentalsAnalytics: React.FC<FundamentalsAnalyticsProps> = ({ type = "a
     return (
       <Card className="bg-card/50">
         <CardContent className="p-6 text-center text-muted-foreground">
-          Loading analytics...
+          
         </CardContent>
       </Card>
     );

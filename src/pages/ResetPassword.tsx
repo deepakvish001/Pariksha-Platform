@@ -90,7 +90,7 @@ const ResetPassword = () => {
     setIsLoading(false);
   };
 
-  // Loading state
+  // 
   if (isValidSession === null) {
     return (
       <div className="min-h-screen flex flex-col">

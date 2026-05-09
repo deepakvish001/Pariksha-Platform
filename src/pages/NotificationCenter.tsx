@@ -273,7 +273,7 @@ export default function NotificationCenter() {
           <CardContent className="p-0">
             {isLoading ? (
               <div className="p-8 text-center text-muted-foreground">
-                Loading notifications...
+                
               </div>
             ) : filteredNotifications.length === 0 ? (
               <EmptyState category={activeTab} />

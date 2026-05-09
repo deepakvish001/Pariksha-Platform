@@ -323,7 +323,7 @@ const MyActivity = () => {
                             <Loader2 className="h-6 w-6 animate-spin text-primary" />
                             <div className="absolute inset-0 h-6 w-6 rounded-full border-2 border-primary/15" />
                           </div>
-                          <span className="text-sm font-medium text-white/40">Loading more activities...</span>
+                          <span className="text-sm font-medium text-white/40"></span>
                         </div>
                       )}
                       {!hasMore && activities.length > 0 && (

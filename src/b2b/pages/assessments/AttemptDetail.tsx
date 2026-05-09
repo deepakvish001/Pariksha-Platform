@@ -29,7 +29,7 @@ export default function AttemptDetail() {
     return { earned, max };
   }, [data]);
 
-  if (isLoading) return <OrgShell title="Attempt">Loading…</OrgShell>;
+  if (isLoading) return null;
   if (error) return <OrgShell title="Attempt"><div className="b2b-card p-6">Failed: {(error as Error).message}</div></OrgShell>;
   if (!data) return <Navigate to={`/b2b/assessments/${id}`} replace />;
 

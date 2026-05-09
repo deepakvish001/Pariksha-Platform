@@ -34,7 +34,7 @@ const SystemHealth = () => {
       </p>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground"></p>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

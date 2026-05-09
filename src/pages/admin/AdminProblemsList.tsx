@@ -219,7 +219,7 @@ const AdminProblemsList = () => {
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  Loading…
+                  
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (

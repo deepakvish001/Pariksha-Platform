@@ -19,7 +19,7 @@ export default function AssessmentNew() {
   const [proctoring, setProctoring] = useState(false);
   const create = useCreateAssessment();
 
-  if (isLoading) return <OrgShell title="New assessment">Loading…</OrgShell>;
+  if (isLoading) return null;
   if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
   const org = orgs[0];
 

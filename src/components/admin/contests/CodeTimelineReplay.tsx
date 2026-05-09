@@ -54,7 +54,7 @@ export function CodeTimelineReplay({ sessionId }: { sessionId: string }) {
     return { totalKeys, totalPasted, pasteCount, largePastes, deleteBursts, suspicious, ratio };
   }, [events]);
 
-  if (loading) return <Card className="p-4 text-sm text-muted-foreground">Loading timeline…</Card>;
+  if (loading) return <Card className="p-4 text-sm text-muted-foreground"></Card>;
   if (events.length === 0) return <Card className="p-4 text-sm text-muted-foreground">No provenance recorded.</Card>;
 
   const current = events[Math.min(idx, events.length - 1)];

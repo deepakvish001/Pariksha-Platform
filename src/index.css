@@ -258,6 +258,17 @@
     animation: shimmer 2s ease-in-out infinite;
   }
 
+  .animate-spin {
+    display: none !important;
+    animation: none !important;
+  }
+
+  .animate-pulse[class*="bg-muted"],
+  [class*="bg-muted"].animate-pulse {
+    display: none !important;
+    animation: none !important;
+  }
+
   .glass-effect {
     @apply backdrop-blur-lg bg-background/80;
   }

@@ -24,7 +24,7 @@ export default function Lobby() {
     },
   });
 
-  if (isLoading) return <div className="p-8">Loading…</div>;
+  if (isLoading) return null;
   if (!data) return <div className="p-8">Attempt not found.</div>;
   const a: any = data.assessment;
 

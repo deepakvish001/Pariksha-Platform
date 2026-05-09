@@ -1033,7 +1033,7 @@ export default function CodingLeaderboard() {
             {loading ? (
               <span className="inline-flex items-center gap-2">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Loading results…
+                
               </span>
             ) : (
               <>
@@ -1110,7 +1110,7 @@ export default function CodingLeaderboard() {
         <Card className="bg-card/40 backdrop-blur border-border/50">
           <CardContent className="p-2 md:p-4">
             {loading ? (
-              <ol className="space-y-1.5 list-none p-0 m-0" aria-label="Loading leaderboard">
+              <ol className="space-y-1.5 list-none p-0 m-0" aria-label="Leaderboard">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <li key={i}>
                     <RowSkeleton />

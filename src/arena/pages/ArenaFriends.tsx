@@ -827,7 +827,7 @@ export default function ArenaFriends() {
 
             <div ref={sentinelRef} className="h-6 flex items-center justify-center">
               {loadingPage && (
-                <div className="text-xs text-muted-foreground">Loading more…</div>
+                <div className="text-xs text-muted-foreground"></div>
               )}
               {!hasMore && filteredUsers.length > 0 && (
                 <div className="text-[10px] text-muted-foreground/50">End of list</div>

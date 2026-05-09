@@ -31,7 +31,7 @@ export function DailyChallengeCard() {
               <Calendar className="h-3.5 w-3.5" /> Daily Challenge
             </div>
             <h2 className="text-2xl md:text-3xl font-black tracking-tight">
-              {loading ? "Loading…" : data ? "Today's Battle Awaits" : "No challenge today"}
+              {loading ? "" : data ? "Today's Battle Awaits" : "No challenge today"}
             </h2>
             {data && (
               <p className="text-xs text-muted-foreground">

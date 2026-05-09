@@ -267,7 +267,7 @@ const AchievementsAdmin = () => {
           </Button>
           {allDetailsLoading && pickedUsers.length > 0 && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" /> Loading current state…
+              <Loader2 className="h-3 w-3 animate-spin" /> 
             </span>
           )}
         </div>

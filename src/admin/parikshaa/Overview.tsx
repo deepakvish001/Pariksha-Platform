@@ -45,7 +45,7 @@ export default function ParikshaaOverview() {
       <ShellHeader title="Overview" />
       <div className="p-6 space-y-6">
         {isLoading ? (
-          <div className="text-sm text-muted-foreground">Loading…</div>
+          <div className="text-sm text-muted-foreground"></div>
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

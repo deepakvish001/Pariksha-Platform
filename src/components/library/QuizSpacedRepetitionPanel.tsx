@@ -53,7 +53,7 @@ import { useQuizSpacedRepetition, type QuizReviewItem } from "@/hooks/useQuizSpa
      return (
        <Card>
          <CardContent className="py-8 text-center text-muted-foreground">
-           Loading review queue...
+           
          </CardContent>
        </Card>
      );
