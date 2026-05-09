@@ -34,16 +34,6 @@ import B2BSettings from "@/b2b/pages/Settings";
 import B2BPricing from "@/b2b/pages/Pricing";
 import { OrgWorkspace } from "@/b2b/context/OrgContext";
 import { ParikshaaShell } from "@/admin/parikshaa/ParikshaaShell";
-import { LearnShell } from "@/admin/learn/LearnShell";
-import LearnOverview from "@/admin/learn/Overview";
-import {
-  LearnProblems,
-  LearnUsers,
-  LearnDaily,
-  LearnAIContent,
-  LearnReports,
-  LearnBroadcast,
-} from "@/admin/learn/Pages";
 import ParikshaaOverview from "@/admin/parikshaa/Overview";
 import ParikshaaUsers from "@/admin/parikshaa/Users";
 import ParikshaaOrgs from "@/admin/parikshaa/Orgs";
