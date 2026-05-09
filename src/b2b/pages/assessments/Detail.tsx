@@ -411,7 +411,36 @@ function ResultsPanel({ assessmentId }: { assessmentId: string }) {
       </div>
     );
   }
+
+  function exportCsv() {
+    const rows = [
+      ["name", "email", "external_id", "status", "score", "integrity_score", "started_at", "submitted_at"],
+      ...attempts.map((a) => [
+        a.invite?.name ?? "",
+        a.invite?.email ?? "",
+        a.invite?.external_id ?? "",
+        a.status,
+        a.score?.toString() ?? "",
+        a.integrity_score.toString(),
+        a.started_at,
+        a.submitted_at ?? "",
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `results-${assessmentId.slice(0, 8)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" onClick={exportCsv}>Export CSV</Button>
+      </div>
     <div className="b2b-card overflow-hidden">
       <div className="grid grid-cols-12 px-4 py-2 text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))] border-b border-[hsl(var(--border))]">
         <div className="col-span-4">Candidate</div>
