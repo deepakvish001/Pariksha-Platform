@@ -36,7 +36,7 @@ import StudentJoin from "@/assessments/pages/Join";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
 import StudentPlayer from "@/assessments/pages/Player";
-import Index from "./pages/Index";
+import Index from "./pages/ParikshaaLanding";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import DashboardMatrix from "./pages/DashboardMatrix";
