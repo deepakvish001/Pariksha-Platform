@@ -80,6 +80,20 @@ export default function AttemptDetail() {
         </Card>
       </div>
 
+      {events && events.length > 0 && (
+        <Card className="mb-4">
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Proctoring log ({events.length} events)</CardTitle></CardHeader>
+          <CardContent className="max-h-56 overflow-auto text-xs space-y-1 font-mono">
+            {events.map((e: any) => (
+              <div key={e.id} className="flex gap-3">
+                <span className="text-[hsl(var(--muted-foreground))]">{new Date(e.created_at).toLocaleTimeString()}</span>
+                <span className="font-medium">{e.kind}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="space-y-4">
         {data.answers.length === 0 && (
           <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
