@@ -12,11 +12,11 @@ type OrgContextValue = {
 
 const OrgContext = createContext<OrgContextValue | null>(null);
 
-export function useCurrentOrg(): Organization | null {
+export function useCurrentOrg(): { org: Organization | null; isLoading: boolean } {
   const ctx = useContext(OrgContext);
-  const { data: orgs } = useMyOrganizations();
-  if (ctx) return ctx.org;
-  return orgs?.[0] ?? null;
+  const { data: orgs, isLoading } = useMyOrganizations();
+  if (ctx) return { org: ctx.org, isLoading: false };
+  return { org: orgs?.[0] ?? null, isLoading };
 }
 
 export function useOrgBasePath(): string {
