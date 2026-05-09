@@ -80,8 +80,8 @@ export async function trackLeadEvent(
       utm_content: utm.content ?? null,
       user_agent: navigator.userAgent,
       session_id: getSessionId(),
-      metadata,
-    });
+      metadata: metadata as never,
+    }]);
   } catch (err) {
     // Best-effort; never block the UI on tracking
     console.warn("[trackLeadEvent] failed", err);
