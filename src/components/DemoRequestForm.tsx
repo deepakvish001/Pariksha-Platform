@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Send, Loader2, Sparkles } from "lucide-react";
 import { z } from "zod";
