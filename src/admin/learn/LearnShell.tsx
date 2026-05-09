@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -9,7 +9,6 @@ import {
   Flag,
   Megaphone,
   Menu,
-  X,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -23,6 +22,8 @@ const NAV = [
   { to: "/admin/learn/reports", label: "Reports", icon: Flag },
   { to: "/admin/learn/broadcast", label: "Broadcast", icon: Megaphone },
 ];
+
+const COLLAPSE_KEY = "learn-admin:sidebar-collapsed";
 
 function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
   return (
@@ -70,7 +71,22 @@ function Brand() {
 export function LearnShell() {
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem(COLLAPSE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(COLLAPSE_KEY, desktopCollapsed ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [desktopCollapsed]);
 
   return (
     <div className="min-h-screen flex bg-background text-foreground">

@@ -24,12 +24,35 @@ import { useQueryClient } from "@tanstack/react-query";
 type Range = "24h" | "7d" | "30d";
 const RANGE_DAYS: Record<Range, number> = { "24h": 1, "7d": 7, "30d": 30 };
 
-const Kpi = ({ label, value, accent }: { label: string; value: number | string; accent?: string }) => (
-  <Card className="p-4">
-    <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-    <p className={`mt-1 text-3xl font-bold ${accent ?? ""}`}>{value ?? "—"}</p>
-  </Card>
-);
+const Kpi = ({
+  label,
+  value,
+  accent,
+  to,
+}: {
+  label: string;
+  value: number | string;
+  accent?: string;
+  to?: string;
+}) => {
+  const body = (
+    <Card
+      className={`p-4 h-full ${
+        to ? "transition hover:border-primary/50 hover:bg-secondary/40 cursor-pointer" : ""
+      }`}
+    >
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`mt-1 text-3xl font-bold ${accent ?? ""}`}>{value ?? "—"}</p>
+    </Card>
+  );
+  return to ? (
+    <Link to={to} className="block">
+      {body}
+    </Link>
+  ) : (
+    body
+  );
+};
 
 const QuickLink = ({
   to,
@@ -150,25 +173,44 @@ export default function LearnOverview() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Kpi label="Total users" value={kpi("total_users")} />
-            <Kpi label={`New signups (${range})`} value={windowSignups} accent="text-primary" />
-            <Kpi label={`Submissions (${range})`} value={windowSubs} />
+            <Kpi label="Total users" value={kpi("total_users")} to={`/admin/learn/users?range=${range}`} />
+            <Kpi
+              label={`New signups (${range})`}
+              value={windowSignups}
+              accent="text-primary"
+              to={`/admin/learn/users?range=${range}&filter=new`}
+            />
+            <Kpi
+              label={`Submissions (${range})`}
+              value={windowSubs}
+              to={`/admin/learn/problems?range=${range}`}
+            />
             <Kpi
               label="Acceptance rate"
               value={`${acceptanceRate}%`}
               accent={acceptanceRate >= 50 ? "text-primary" : ""}
+              to={`/admin/learn/problems?range=${range}`}
             />
           </div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Kpi label="DAU (24h)" value={kpi("dau")} />
-            <Kpi label="Submissions (all time)" value={kpi("submissions_total")} />
+            <Kpi label="DAU (24h)" value={kpi("dau")} to={`/admin/learn/users?range=24h`} />
+            <Kpi
+              label="Submissions (all time)"
+              value={kpi("submissions_total")}
+              to={`/admin/learn/problems`}
+            />
             <Kpi
               label="Open reports"
               value={kpi("open_reports")}
               accent={kpi("open_reports") > 0 ? "text-destructive" : ""}
+              to={`/admin/learn/reports?range=${range}`}
             />
-            <Kpi label="AI content" value={kpi("ai_content_total")} />
+            <Kpi
+              label="AI content"
+              value={kpi("ai_content_total")}
+              to={`/admin/learn/ai-content?range=${range}`}
+            />
           </div>
         </section>
 
@@ -176,13 +218,13 @@ export default function LearnOverview() {
           <h2 className="mb-3 text-sm font-semibold text-muted-foreground">Manage</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <QuickLink
-              to="/admin/learn/problems"
+              to={`/admin/learn/problems?range=${range}`}
               icon={FileCode2}
               label="Coding Problems"
               desc={`${kpi("published_problems")} published · ${kpi("draft_problems")} drafts`}
             />
             <QuickLink
-              to="/admin/learn/users"
+              to={`/admin/learn/users?range=${range}`}
               icon={Users}
               label="Users"
               desc={`${kpi("total_users")} total accounts`}
@@ -194,13 +236,13 @@ export default function LearnOverview() {
               desc="Schedule and curate the daily problem"
             />
             <QuickLink
-              to="/admin/learn/ai-content"
+              to={`/admin/learn/ai-content?range=${range}`}
               icon={Sparkles}
               label="AI Content"
               desc={`${kpi("ai_content_total")} pieces to moderate`}
             />
             <QuickLink
-              to="/admin/learn/reports"
+              to={`/admin/learn/reports?range=${range}`}
               icon={Flag}
               label="Reports"
               desc={`${kpi("open_reports")} open`}
