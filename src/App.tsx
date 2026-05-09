@@ -446,8 +446,6 @@ const App = () => (
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="roles" element={<AdminRoles />} />
                   
-                  <Route path="ai-content" element={<AIContentModeration />} />
-                  <Route path="daily-challenge" element={<DailyChallengeAdmin />} />
                   <Route path="broadcast" element={<Broadcast />} />
                   <Route path="reports" element={<Reports />} />
                   <Route path="arena-moderation" element={<ArenaModeration />} />
@@ -455,9 +453,7 @@ const App = () => (
                   <Route path="storage" element={<StorageBrowser />} />
                   <Route path="system-health" element={<SystemHealth />} />
                   <Route path="cron-jobs" element={<CronJobs />} />
-                  <Route path="featured" element={<FeaturedContent />} />
-                  
-                  <Route path="roadmaps" element={<RoadmapsManager />} />
+
                   <Route path="support" element={<SupportInbox />} />
                   <Route path="security" element={<SecurityCenter />} />
                   <Route path="achievements" element={<AchievementsAdmin />} />
