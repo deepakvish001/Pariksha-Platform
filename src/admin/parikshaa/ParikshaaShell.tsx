@@ -282,15 +282,37 @@ const ParikshaaSidebar = () => {
   );
 };
 
+/**
+ * Build breadcrumbs from the current pathname by walking the URL segments
+ * after `/admin/parikshaa`. Each intermediate crumb is clickable and the
+ * last crumb represents the current page (non-clickable, highlighted).
+ */
+const ROOT = "/admin/parikshaa";
+const SEGMENT_LABELS: Record<string, string> = {
+  users: "Users",
+  orgs: "Companies & Colleges",
+  moderation: "Moderation",
+  leads: "Leads & Growth",
+};
+
 const buildCrumbs = (pathname: string) => {
-  const flat = GROUPS.flatMap((g) => g.items);
-  const match =
-    flat.find((i) => i.end ? pathname === i.to : pathname.startsWith(i.to)) ??
-    flat[0];
   const crumbs: { label: string; to?: string }[] = [
-    { label: "Parikshaa", to: "/admin/parikshaa" },
+    { label: "Parikshaa", to: ROOT },
   ];
-  if (match && match.to !== "/admin/parikshaa") crumbs.push({ label: match.label });
+  const rest = pathname.replace(/^\/admin\/parikshaa\/?/, "");
+  if (!rest) return crumbs;
+  const segments = rest.split("/").filter(Boolean);
+  let acc = ROOT;
+  segments.forEach((seg, idx) => {
+    acc += "/" + seg;
+    const label =
+      SEGMENT_LABELS[seg] ??
+      seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    crumbs.push({
+      label,
+      to: idx < segments.length - 1 ? acc : undefined,
+    });
+  });
   return crumbs;
 };
 
