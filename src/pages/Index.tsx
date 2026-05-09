@@ -6,8 +6,6 @@ import { DelayedLoginPrompt } from "@/components/DelayedLoginPrompt";
 const CompanyLogos = lazy(() => import("@/components/CompanyLogos"));
 const ValueProps = lazy(() => import("@/components/ValueProps"));
 const HowItWorks = lazy(() => import("@/components/HowItWorks"));
-const Features = lazy(() => import("@/components/Features"));
-const WhyChooseUs = lazy(() => import("@/components/WhyChooseUs"));
 const Testimonials = lazy(() => import("@/components/Testimonials"));
 const FAQ = lazy(() => import("@/components/FAQ"));
 const CTA = lazy(() => import("@/components/CTA"));
@@ -23,19 +21,13 @@ const Index = () => {
       <DelayedLoginPrompt />
       <Navbar />
       <Hero />
-      <LazySection><ValueProps /></LazySection>
       <LazySection><CompanyLogos /></LazySection>
+      <LazySection><ValueProps /></LazySection>
       <LazySection>
         <section id="how-it-works">
           <HowItWorks />
         </section>
       </LazySection>
-      <LazySection>
-        <section id="features">
-          <Features />
-        </section>
-      </LazySection>
-      <LazySection><WhyChooseUs /></LazySection>
       <LazySection><Testimonials /></LazySection>
       <LazySection><section id="faq"><FAQ /></section></LazySection>
       <LazySection><CTA /></LazySection>
@@ -45,3 +37,4 @@ const Index = () => {
 };
 
 export default Index;
+
