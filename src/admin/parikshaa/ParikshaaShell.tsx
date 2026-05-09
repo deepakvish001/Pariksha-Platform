@@ -41,24 +41,22 @@ import { AdminBackdrop } from "@/components/admin/AdminBackdrop";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { cn } from "@/lib/utils";
 
+interface NavSubItem {
+  to: string;
+  label: string;
+}
 interface NavItem {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   end?: boolean;
+  children?: NavSubItem[];
 }
 interface NavGroup {
   label: string;
   items: NavItem[];
 }
 
-interface NavItem {
-  to: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  end?: boolean;
-  children?: { to: string; label: string }[];
-}
 
 const GROUPS: NavGroup[] = [
   {
@@ -98,8 +96,6 @@ const GROUPS: NavGroup[] = [
     ],
   },
 ];
-
-// Re-declare interface above already (local). Remove old interface.
 
 const ParikshaaSidebar = () => {
   const { pathname } = useLocation();
