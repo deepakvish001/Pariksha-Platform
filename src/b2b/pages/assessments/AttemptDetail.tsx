@@ -15,6 +15,7 @@ export default function AttemptDetail() {
   const { data, isLoading, error } = useAttemptDetail(attemptId);
   const grade = useGradeAnswer();
   const finalize = useFinalizeAttemptScore();
+  const { data: events } = useAttemptEvents(attemptId);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   const totals = useMemo(() => {
