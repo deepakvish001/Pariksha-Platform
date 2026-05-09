@@ -108,7 +108,17 @@ const FAQ = () => {
 
         <ScrollReveal delay={0.1}>
           <div className="max-w-3xl mx-auto">
-            <Accordion type="single" collapsible className="space-y-4">
+            <Accordion
+              type="single"
+              collapsible
+              className="space-y-4"
+              onValueChange={(value) => {
+                if (!value) return;
+                const idx = Number(value.replace("item-", ""));
+                const q = faqs[idx]?.question;
+                if (q) void trackLeadEvent("faq_expand", { question: q, index: idx });
+              }}
+            >
               {faqs.map((faq, index) => (
                 <AccordionItem
                   key={index}
@@ -124,6 +134,29 @@ const FAQ = () => {
                 </AccordionItem>
               ))}
             </Accordion>
+
+            <div className="mt-10 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+              <div className="flex-1">
+                <div className="inline-flex items-center gap-2 mb-2 text-primary">
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="text-xs font-semibold uppercase tracking-wide">Still have questions?</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground">
+                  Talk to a proctoring specialist
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  We'll walk you through integrity scoring, exports, and how Side Eye works on your real use case.
+                </p>
+              </div>
+              <a
+                href="#demo"
+                onClick={() => void trackLeadEvent("faq_cta_click", { target: "demo" })}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary to-orange-500 text-primary-foreground text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all hover:scale-[1.02] shrink-0"
+              >
+                Book a tailored demo
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            </div>
           </div>
         </ScrollReveal>
       </div>
