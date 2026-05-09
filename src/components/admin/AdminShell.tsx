@@ -261,12 +261,20 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
     return () => clearTimeout(t);
   }, [pathname]);
 
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
+  const toggleItemOpen = (to: string) =>
+    setOpenItems((prev) => ({ ...prev, [to]: !(prev[to] ?? false) }));
+
   const renderItem = (item: NavItem, opts?: { compact?: boolean; pinnedRow?: boolean }) => {
     const Icon = item.icon;
     const active = isActive(item.to, item.end, item.match);
     const subItems = resolveDynamicChildren(item, pathname);
     const subActive = subItems.some((s) => isActive(s.to, s.end, s.match));
-    const showSubNav = !collapsed && subItems.length > 0 && (active || subActive) && !opts?.pinnedRow;
+    const hasChildren = subItems.length > 0;
+    // Auto-open when active/sub-active; otherwise honor user toggle (default closed)
+    const userOpen = openItems[item.to];
+    const expanded = userOpen ?? (active || subActive);
+    const showSubNav = !collapsed && hasChildren && expanded && !opts?.pinnedRow;
     const detail: BadgeDetail | undefined = badges?.[item.to as BadgeKey];
     const tracked = (TRACKED as string[]).includes(item.to);
     const showSkeleton = tracked && badgesLoading && !detail;
@@ -340,6 +348,26 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
                     className={cn(
                       "h-3 w-3",
                       isPinned ? "fill-primary text-primary" : "text-muted-foreground"
+                    )}
+                  />
+                </button>
+              )}
+              {hasChildren && !opts?.pinnedRow && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleItemOpen(item.to);
+                  }}
+                  className="rounded p-0.5 hover:bg-muted-foreground/10"
+                  aria-label={expanded ? "Collapse" : "Expand"}
+                  aria-expanded={expanded}
+                >
+                  <ChevronDown
+                    className={cn(
+                      "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200",
+                      expanded ? "rotate-0" : "-rotate-90"
                     )}
                   />
                 </button>
