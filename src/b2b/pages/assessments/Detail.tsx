@@ -24,8 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, ArrowLeft, Send, Archive } from "lucide-react";
+import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
+import { Textarea } from "@/components/ui/textarea";
 
 const TYPE_LABEL: Record<string, string> = {
   coding: "Code",
@@ -84,10 +86,14 @@ export default function AssessmentDetail() {
       <Tabs defaultValue="sections" className="space-y-4">
         <TabsList>
           <TabsTrigger value="sections">Sections & Questions</TabsTrigger>
+          <TabsTrigger value="invites">Invites</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="sections">
           <SectionsPanel assessmentId={assessment.id} orgId={assessment.org_id} />
+        </TabsContent>
+        <TabsContent value="invites">
+          <InvitesPanel assessmentId={assessment.id} />
         </TabsContent>
         <TabsContent value="settings">
           <SettingsPanel assessment={assessment} onDelete={async () => {
