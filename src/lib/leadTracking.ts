@@ -69,7 +69,7 @@ export async function trackLeadEvent(
   if (typeof window === "undefined") return;
   const utm = getStoredUtm();
   try {
-    await supabase.from("lead_events").insert({
+    await supabase.from("lead_events").insert([{
       event_type: eventType,
       page: window.location.pathname + window.location.search,
       referrer: document.referrer || null,
