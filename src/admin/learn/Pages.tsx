@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { LearnHeader } from "./LearnShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   Eye,
   Send,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   useAdminProblems,
@@ -43,6 +45,96 @@ const FullLink = ({ to, children }: { to: string; children: React.ReactNode }) =
     </Link>
   </Button>
 );
+
+const RangeBadge = () => {
+  const [params] = useSearchParams();
+  const range = params.get("range");
+  if (!range) return null;
+  return (
+    <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+      Last {range}
+    </Badge>
+  );
+};
+
+/** URL-synced debounced search input. Resets page param on change. */
+function useUrlSearch(key = "q", debounceMs = 300) {
+  const [params, setParams] = useSearchParams();
+  const urlValue = params.get(key) ?? "";
+  const [value, setValue] = useState(urlValue);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const current = new URLSearchParams(window.location.search);
+      const trimmed = value.trim();
+      const before = current.get(key) ?? "";
+      if (trimmed === before) return;
+      if (trimmed) current.set(key, trimmed);
+      else current.delete(key);
+      current.delete("page");
+      setParams(current, { replace: true });
+    }, debounceMs);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return { value, setValue, applied: urlValue };
+}
+
+function usePageParam() {
+  const [params, setParams] = useSearchParams();
+  const page = Math.max(1, parseInt(params.get("page") ?? "1", 10) || 1);
+  const setPage = (p: number) => {
+    const next = new URLSearchParams(params);
+    if (p <= 1) next.delete("page");
+    else next.set("page", String(p));
+    setParams(next, { replace: true });
+  };
+  return { page, setPage };
+}
+
+const Pager = ({
+  page,
+  setPage,
+  hasPrev,
+  hasNext,
+  label,
+}: {
+  page: number;
+  setPage: (p: number) => void;
+  hasPrev: boolean;
+  hasNext: boolean;
+  label: string;
+}) => (
+  <div className="flex items-center justify-between gap-2 pt-1">
+    <p className="text-xs text-muted-foreground">{label}</p>
+    <div className="flex items-center gap-1">
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8 px-2"
+        disabled={!hasPrev}
+        onClick={() => setPage(page - 1)}
+        aria-label="Previous page"
+      >
+        <ChevronLeft className="h-3.5 w-3.5" />
+      </Button>
+      <span className="text-xs text-muted-foreground px-2">Page {page}</span>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8 px-2"
+        disabled={!hasNext}
+        onClick={() => setPage(page + 1)}
+        aria-label="Next page"
+      >
+        <ChevronRight className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  </div>
+);
+
+const PAGE_SIZE = 20;
 
 /* ────────────── Problems ────────────── */
 export function LearnProblems() {
