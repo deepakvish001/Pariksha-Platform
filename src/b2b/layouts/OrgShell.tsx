@@ -8,6 +8,7 @@ const NAV = [
   { to: "/b2b/assessments", label: "Assessments", icon: FileText },
   { to: "/b2b/question-bank", label: "Question Bank", icon: Library },
   { to: "/b2b/settings/team", label: "Team", icon: Users },
+  { to: "/b2b/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export function OrgShell({ children, title, actions }: { children: ReactNode; title?: string; actions?: ReactNode }) {
@@ -27,7 +28,10 @@ export function OrgShell({ children, title, actions }: { children: ReactNode; ti
           </div>
           <nav className="flex-1 p-2 space-y-1">
             {NAV.map((n) => {
-              const active = pathname === n.to || pathname.startsWith(n.to + "/");
+              const active =
+                n.to === "/b2b/settings"
+                  ? pathname === "/b2b/settings"
+                  : pathname === n.to || pathname.startsWith(n.to + "/");
               const Icon = n.icon;
               return (
                 <NavLink

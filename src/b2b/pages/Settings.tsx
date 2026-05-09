@@ -1,0 +1,182 @@
+import { useEffect, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { OrgShell } from "../layouts/OrgShell";
+import { useMyOrganizations, slugify } from "../hooks/useOrg";
+import { useOrgMembers } from "../hooks/useMembers";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Building2, GraduationCap, Copy, AlertTriangle, Save } from "lucide-react";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+
+export default function B2BSettings() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { data: orgs, isLoading } = useMyOrganizations();
+  const org = orgs?.[0];
+  const { data: members } = useOrgMembers(org?.id);
+
+  const [name, setName] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (org) {
+      setName(org.name);
+      setLogoUrl(org.logo_url ?? "");
+    }
+  }, [org?.id]);
+
+  if (isLoading) {
+    return (
+      <OrgShell title="Settings">
+        <div className="text-sm text-[hsl(var(--muted-foreground))]">Loading…</div>
+      </OrgShell>
+    );
+  }
+  if (!org) return <Navigate to="/b2b/onboarding" replace />;
+
+  const myRole = members?.find((m) => m.user_id === user?.id)?.role;
+  const isOwner = myRole === "owner" || org.owner_id === user?.id;
+  const canEdit = isOwner || myRole === "admin";
+  const dirty = name.trim() !== org.name || (logoUrl || "") !== (org.logo_url ?? "");
+
+  const joinUrl = `${window.location.origin}/assessments/join`;
+
+  const onSave = async () => {
+    if (!canEdit || !dirty) return;
+    setSaving(true);
+    const newSlug = slugify(name) ? `${slugify(name)}-${org.slug.split("-").pop()}` : org.slug;
+    const { error } = await supabase
+      .from("organizations")
+      .update({ name: name.trim(), logo_url: logoUrl.trim() || null, slug: newSlug })
+      .eq("id", org.id);
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Organization updated");
+    qc.invalidateQueries({ queryKey: ["b2b", "orgs"] });
+  };
+
+  const onDelete = async () => {
+    if (!isOwner) return;
+    if (!confirm(`Permanently delete "${org.name}"? This cannot be undone.`)) return;
+    if (!confirm("All assessments, invites, and attempts for this org will be removed. Continue?")) return;
+    setDeleting(true);
+    const { error } = await supabase.from("organizations").delete().eq("id", org.id);
+    setDeleting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Organization deleted");
+    qc.invalidateQueries({ queryKey: ["b2b", "orgs"] });
+    navigate("/b2b/onboarding", { replace: true });
+  };
+
+  const TypeIcon = org.type === "college" ? GraduationCap : Building2;
+
+  return (
+    <OrgShell
+      title={`${org.name} · Settings`}
+      actions={
+        canEdit && (
+          <Button
+            disabled={!dirty || saving}
+            onClick={onSave}
+            className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+          >
+            <Save className="h-4 w-4 mr-1" />
+            {saving ? "Saving…" : "Save changes"}
+          </Button>
+        )
+      }
+    >
+      <div className="space-y-6 max-w-2xl">
+        <div className="b2b-card p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <TypeIcon className="h-4 w-4" />
+            <h2 className="text-sm font-semibold">Organization profile</h2>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Display name</Label>
+              <Input
+                className="mt-1"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={!canEdit}
+                placeholder="Acme University"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Logo URL (optional)</Label>
+              <Input
+                className="mt-1"
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                disabled={!canEdit}
+                placeholder="https://…/logo.png"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Type</Label>
+                <div className="mt-1 text-sm capitalize">{org.type}</div>
+              </div>
+              <div>
+                <Label className="text-xs">Created</Label>
+                <div className="mt-1 text-sm">{new Date(org.created_at).toLocaleDateString()}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="b2b-card p-5">
+          <h2 className="text-sm font-semibold mb-1">Candidate join link</h2>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+            Share with candidates so they can enter an invite code and start their assessment.
+          </p>
+          <div className="flex gap-2">
+            <Input value={joinUrl} readOnly className="font-mono text-xs" />
+            <Button
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(joinUrl);
+                toast.success("Copied");
+              }}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="mt-3 text-xs text-[hsl(var(--muted-foreground))]">
+            Org slug: <code className="text-[hsl(var(--foreground))]">{org.slug}</code>
+          </div>
+        </div>
+
+        {isOwner && (
+          <div className="b2b-card p-5 border border-destructive/40">
+            <div className="flex items-center gap-2 mb-1 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <h2 className="text-sm font-semibold">Danger zone</h2>
+            </div>
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+              Deleting this organization will permanently remove all of its assessments, invites, attempts, and member
+              access. This cannot be undone.
+            </p>
+            <Button variant="destructive" onClick={onDelete} disabled={deleting}>
+              {deleting ? "Deleting…" : "Delete organization"}
+            </Button>
+          </div>
+        )}
+      </div>
+    </OrgShell>
+  );
+}

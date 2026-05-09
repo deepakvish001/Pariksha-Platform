@@ -24,6 +24,7 @@ import B2BAssessmentDetail from "@/b2b/pages/assessments/Detail";
 import B2BAttemptDetail from "@/b2b/pages/assessments/AttemptDetail";
 import B2BQuestionBank from "@/b2b/pages/QuestionBank";
 import B2BTeam from "@/b2b/pages/Team";
+import B2BSettings from "@/b2b/pages/Settings";
 import StudentJoin from "@/assessments/pages/Join";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
@@ -240,6 +241,7 @@ const App = () => (
                 <Route path="/b2b/assessments/:id/attempts/:attemptId" element={<ProtectedRoute><B2BAttemptDetail /></ProtectedRoute>} />
                 <Route path="/b2b/question-bank" element={<ProtectedRoute><B2BQuestionBank /></ProtectedRoute>} />
                 <Route path="/b2b/settings/team" element={<ProtectedRoute><B2BTeam /></ProtectedRoute>} />
+                <Route path="/b2b/settings" element={<ProtectedRoute><B2BSettings /></ProtectedRoute>} />
 
                 {/* Student-side assessments */}
                 <Route path="/assessments/join/:token" element={<StudentJoin />} />
