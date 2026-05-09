@@ -6,6 +6,7 @@ import {
   Building2,
   ShieldAlert,
   TrendingUp,
+  Sparkles,
   ChevronDown,
   ChevronRight,
   ArrowLeft,
@@ -93,6 +94,7 @@ const GROUPS: NavGroup[] = [
         ],
       },
       { to: "/admin/parikshaa/leads", label: "Leads & Growth", icon: TrendingUp },
+      { to: "/admin/parikshaa/demo-requests", label: "Demo Requests", icon: Sparkles },
     ],
   },
 ];
@@ -293,6 +295,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   orgs: "Companies & Colleges",
   moderation: "Moderation",
   leads: "Leads & Growth",
+  "demo-requests": "Demo Requests",
 };
 
 const buildCrumbs = (pathname: string) => {
