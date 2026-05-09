@@ -85,7 +85,7 @@ export default function B2BSettings() {
 
   return (
     <OrgShell
-      title={`${org.name} · Settings`}
+      title={<><span className="bg-gradient-to-r from-primary via-orange-500 to-amber-500 bg-clip-text text-transparent">{org.name}</span> <span className="text-[hsl(var(--muted-foreground))] font-normal">· Settings</span></>}
       actions={
         canEdit && (
           <Button

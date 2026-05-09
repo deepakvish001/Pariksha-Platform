@@ -11,7 +11,7 @@ export function OrgShell({
   actions,
 }: {
   children: ReactNode;
-  title?: string;
+  title?: ReactNode;
   actions?: ReactNode;
 }) {
   const { pathname } = useLocation();
