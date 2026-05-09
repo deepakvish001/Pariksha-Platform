@@ -28,6 +28,8 @@ import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon } from "
 import { toast } from "sonner";
 import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
 import { Textarea } from "@/components/ui/textarea";
+import { useAttempts } from "../../hooks/useAttempts";
+import { Link } from "react-router-dom";
 
 const TYPE_LABEL: Record<string, string> = {
   coding: "Code",
@@ -87,6 +89,7 @@ export default function AssessmentDetail() {
         <TabsList>
           <TabsTrigger value="sections">Sections & Questions</TabsTrigger>
           <TabsTrigger value="invites">Invites</TabsTrigger>
+          <TabsTrigger value="results">Results</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="sections">
@@ -94,6 +97,9 @@ export default function AssessmentDetail() {
         </TabsContent>
         <TabsContent value="invites">
           <InvitesPanel assessmentId={assessment.id} />
+        </TabsContent>
+        <TabsContent value="results">
+          <ResultsPanel assessmentId={assessment.id} />
         </TabsContent>
         <TabsContent value="settings">
           <SettingsPanel assessment={assessment} onDelete={async () => {
@@ -391,6 +397,47 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function ResultsPanel({ assessmentId }: { assessmentId: string }) {
+  const { data: attempts, isLoading } = useAttempts(assessmentId);
+  if (isLoading) return <div className="b2b-card p-6 text-sm">Loading results…</div>;
+  if (!attempts?.length) {
+    return (
+      <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+        No attempts yet. Once invited candidates start the assessment, their progress will appear here.
+      </div>
+    );
+  }
+  return (
+    <div className="b2b-card overflow-hidden">
+      <div className="grid grid-cols-12 px-4 py-2 text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))] border-b border-[hsl(var(--border))]">
+        <div className="col-span-4">Candidate</div>
+        <div className="col-span-2">Status</div>
+        <div className="col-span-2">Score</div>
+        <div className="col-span-2">Integrity</div>
+        <div className="col-span-2 text-right">Action</div>
+      </div>
+      <div className="divide-y">
+        {attempts.map((a) => (
+          <div key={a.id} className="grid grid-cols-12 items-center px-4 py-3 text-sm">
+            <div className="col-span-4 min-w-0">
+              <div className="font-medium truncate">{a.invite?.name ?? a.invite?.email ?? "Candidate"}</div>
+              <div className="text-xs text-[hsl(var(--muted-foreground))] truncate">{a.invite?.email}</div>
+            </div>
+            <div className="col-span-2"><Badge variant={a.status === "submitted" ? "default" : "secondary"}>{a.status}</Badge></div>
+            <div className="col-span-2">{a.score ?? <span className="text-[hsl(var(--muted-foreground))]">—</span>}</div>
+            <div className="col-span-2">{a.integrity_score}</div>
+            <div className="col-span-2 text-right">
+              <Link to={`/b2b/assessments/${assessmentId}/attempts/${a.id}`}>
+                <Button size="sm" variant="outline">Review</Button>
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
