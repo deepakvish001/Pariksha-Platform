@@ -174,10 +174,10 @@ const Hero = () => {
           transition={{ duration: 0.5, delay: 0.4 }}
           className="flex flex-wrap justify-center items-center divide-x divide-border/50 max-w-4xl mx-auto bg-card/30 backdrop-blur-sm rounded-2xl border border-border/50 py-6"
         >
-          <AnimatedCounter value={10000} suffix="+" label="Active Users" />
-          <AnimatedCounter value={500} suffix="+" label="DSA Problems" />
-          <AnimatedCounter value={95} suffix="%" label="Success Rate" />
-          <AnimatedCounter value={50} suffix="+" label="Companies Hired" />
+          <AnimatedCounter value={200} suffix="+" label="Colleges & Companies" />
+          <AnimatedCounter value={50000} suffix="+" label="Assessments Taken" />
+          <AnimatedCounter value={99} suffix="%" label="Integrity Score" />
+          <AnimatedCounter value={10000} suffix="+" label="Active Learners" />
         </motion.div>
       </div>
 
