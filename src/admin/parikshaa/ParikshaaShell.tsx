@@ -41,16 +41,22 @@ import { AdminBackdrop } from "@/components/admin/AdminBackdrop";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { cn } from "@/lib/utils";
 
+interface NavSubItem {
+  to: string;
+  label: string;
+}
 interface NavItem {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   end?: boolean;
+  children?: NavSubItem[];
 }
 interface NavGroup {
   label: string;
   items: NavItem[];
 }
+
 
 const GROUPS: NavGroup[] = [
   {
@@ -63,13 +69,29 @@ const GROUPS: NavGroup[] = [
     label: "People",
     items: [
       { to: "/admin/parikshaa/users", label: "Users", icon: Users },
-      { to: "/admin/parikshaa/orgs", label: "Companies & Colleges", icon: Building2 },
+      {
+        to: "/admin/parikshaa/orgs",
+        label: "Companies & Colleges",
+        icon: Building2,
+        children: [
+          { to: "/admin/parikshaa/orgs?tab=company", label: "Companies" },
+          { to: "/admin/parikshaa/orgs?tab=college", label: "Colleges" },
+        ],
+      },
     ],
   },
   {
     label: "Operations",
     items: [
-      { to: "/admin/parikshaa/moderation", label: "Moderation", icon: ShieldAlert },
+      {
+        to: "/admin/parikshaa/moderation",
+        label: "Moderation",
+        icon: ShieldAlert,
+        children: [
+          { to: "/admin/parikshaa/moderation?tab=reports", label: "Reports" },
+          { to: "/admin/parikshaa/moderation?tab=ai", label: "AI content" },
+        ],
+      },
       { to: "/admin/parikshaa/leads", label: "Leads & Growth", icon: TrendingUp },
     ],
   },
@@ -111,6 +133,8 @@ const ParikshaaSidebar = () => {
   const renderItem = (item: NavItem) => {
     const Icon = item.icon;
     const active = isActive(item.to, item.end);
+    const hasChildren = !!item.children?.length;
+    const showSubNav = !collapsed && hasChildren && active;
 
     const link = (
       <NavLink
@@ -158,6 +182,30 @@ const ParikshaaSidebar = () => {
           </Tooltip>
         ) : (
           button
+        )}
+
+        {showSubNav && (
+          <ul className="mt-1 ml-6 flex flex-col gap-0.5 border-l border-border/40 pl-2">
+            {item.children!.map((sub) => {
+              const subOn = pathname + (typeof window !== "undefined" ? window.location.search : "") === sub.to;
+              return (
+                <li key={sub.to}>
+                  <Link
+                    to={sub.to}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors",
+                      subOn
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <span className="h-1 w-1 rounded-full bg-current opacity-60" />
+                    <span className="truncate">{sub.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </SidebarMenuItem>
     );
@@ -234,15 +282,37 @@ const ParikshaaSidebar = () => {
   );
 };
 
+/**
+ * Build breadcrumbs from the current pathname by walking the URL segments
+ * after `/admin/parikshaa`. Each intermediate crumb is clickable and the
+ * last crumb represents the current page (non-clickable, highlighted).
+ */
+const ROOT = "/admin/parikshaa";
+const SEGMENT_LABELS: Record<string, string> = {
+  users: "Users",
+  orgs: "Companies & Colleges",
+  moderation: "Moderation",
+  leads: "Leads & Growth",
+};
+
 const buildCrumbs = (pathname: string) => {
-  const flat = GROUPS.flatMap((g) => g.items);
-  const match =
-    flat.find((i) => i.end ? pathname === i.to : pathname.startsWith(i.to)) ??
-    flat[0];
   const crumbs: { label: string; to?: string }[] = [
-    { label: "Parikshaa", to: "/admin/parikshaa" },
+    { label: "Parikshaa", to: ROOT },
   ];
-  if (match && match.to !== "/admin/parikshaa") crumbs.push({ label: match.label });
+  const rest = pathname.replace(/^\/admin\/parikshaa\/?/, "");
+  if (!rest) return crumbs;
+  const segments = rest.split("/").filter(Boolean);
+  let acc = ROOT;
+  segments.forEach((seg, idx) => {
+    acc += "/" + seg;
+    const label =
+      SEGMENT_LABELS[seg] ??
+      seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    crumbs.push({
+      label,
+      to: idx < segments.length - 1 ? acc : undefined,
+    });
+  });
   return crumbs;
 };
 
