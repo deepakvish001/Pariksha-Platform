@@ -108,6 +108,7 @@ export default function QuestionBank() {
             Build a reusable bank of coding, MCQ, SQL, and subjective questions.
           </p>
           <div className="mt-4 flex justify-center gap-2">
+            <AIGenerateDialog orgId={org!.id} />
             <ImportQuestionsDialog orgId={org!.id} />
             <NewQuestionDialog orgId={org!.id} />
           </div>
