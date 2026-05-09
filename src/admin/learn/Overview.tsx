@@ -173,25 +173,44 @@ export default function LearnOverview() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Kpi label="Total users" value={kpi("total_users")} />
-            <Kpi label={`New signups (${range})`} value={windowSignups} accent="text-primary" />
-            <Kpi label={`Submissions (${range})`} value={windowSubs} />
+            <Kpi label="Total users" value={kpi("total_users")} to={`/admin/learn/users?range=${range}`} />
+            <Kpi
+              label={`New signups (${range})`}
+              value={windowSignups}
+              accent="text-primary"
+              to={`/admin/learn/users?range=${range}&filter=new`}
+            />
+            <Kpi
+              label={`Submissions (${range})`}
+              value={windowSubs}
+              to={`/admin/learn/problems?range=${range}`}
+            />
             <Kpi
               label="Acceptance rate"
               value={`${acceptanceRate}%`}
               accent={acceptanceRate >= 50 ? "text-primary" : ""}
+              to={`/admin/learn/problems?range=${range}`}
             />
           </div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Kpi label="DAU (24h)" value={kpi("dau")} />
-            <Kpi label="Submissions (all time)" value={kpi("submissions_total")} />
+            <Kpi label="DAU (24h)" value={kpi("dau")} to={`/admin/learn/users?range=24h`} />
+            <Kpi
+              label="Submissions (all time)"
+              value={kpi("submissions_total")}
+              to={`/admin/learn/problems`}
+            />
             <Kpi
               label="Open reports"
               value={kpi("open_reports")}
               accent={kpi("open_reports") > 0 ? "text-destructive" : ""}
+              to={`/admin/learn/reports?range=${range}`}
             />
-            <Kpi label="AI content" value={kpi("ai_content_total")} />
+            <Kpi
+              label="AI content"
+              value={kpi("ai_content_total")}
+              to={`/admin/learn/ai-content?range=${range}`}
+            />
           </div>
         </section>
 
