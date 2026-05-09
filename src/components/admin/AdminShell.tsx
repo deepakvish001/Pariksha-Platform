@@ -136,9 +136,6 @@ const GROUPS: NavGroup[] = [
   { label: "Content", items: [
     { to: "/admin/problems", label: "Coding Problems", icon: FileCode2 },
     { to: "/admin/problems/import", label: "Bulk Import", icon: Upload },
-    { to: "/admin/ai-content", label: "AI Content", icon: Sparkles },
-    { to: "/admin/featured", label: "Featured / Staff Picks", icon: Star },
-    { to: "/admin/roadmaps", label: "Roadmaps Manager", icon: MapIcon },
   ]},
   { label: "People", items: [
     { to: "/admin/users", label: "Users", icon: Users },
@@ -148,10 +145,7 @@ const GROUPS: NavGroup[] = [
     { to: "/admin/security", label: "Security Center", icon: ShieldAlert },
   ]},
   { label: "Engagement", items: [
-    { to: "/admin/daily-challenge", label: "Daily Challenge", icon: CalendarClock },
     { to: "/admin/contests", label: "Contests", icon: Trophy },
-    { to: "/admin/contests/viva-queue", label: "Viva Queue", icon: ShieldAlert },
-    { to: "/admin/contests/dq-signoffs", label: "DQ Sign-offs", icon: ShieldAlert },
     { to: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
     { to: "/admin/achievements", label: "Achievements", icon: Award },
     { to: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
