@@ -468,5 +468,6 @@ function ResultsPanel({ assessmentId }: { assessmentId: string }) {
         ))}
       </div>
     </div>
+    </div>
   );
 }
