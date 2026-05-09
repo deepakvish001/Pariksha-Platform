@@ -249,6 +249,12 @@ export default function B2BOnboarding() {
       };
       setCreatedOrg(org);
       toast({ title: "Organization created", description: org.name });
+      void trackOnboarding("org_created", {
+        user_id: user.id,
+        org_id: org.id,
+        step: 1,
+        metadata: { type: org.type },
+      });
       setStep(2);
     } catch (e: any) {
       const msg = e?.message ?? "Something went wrong. Please try again.";
