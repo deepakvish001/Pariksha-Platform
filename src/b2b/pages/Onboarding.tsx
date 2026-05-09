@@ -974,18 +974,28 @@ export default function B2BOnboarding() {
                             <Button
                               type="button"
                               onClick={handleResendInvites}
+                              disabled={sendingInvites}
                               className="h-10 w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 sm:w-auto"
                             >
-                              <RefreshCcw className="mr-1.5 h-4 w-4" />
+                              {sendingInvites ? (
+                                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                              ) : (
+                                <RefreshCcw className="mr-1.5 h-4 w-4" />
+                              )}
                               Resend invites
                             </Button>
                           ) : (
                             <Button
                               type="button"
                               onClick={handleSendInvites}
+                              disabled={sendingInvites || validEmails.length === 0}
                               className="h-10 w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 sm:w-auto"
                             >
-                              <Mail className="mr-1.5 h-4 w-4" />
+                              {sendingInvites ? (
+                                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                              ) : (
+                                <Mail className="mr-1.5 h-4 w-4" />
+                              )}
                               Send invites
                               <span className="ml-1.5 rounded bg-[hsl(var(--primary-foreground))/0.2] px-1.5 text-[10px] font-semibold">
                                 {validEmails.length}
