@@ -41,7 +41,7 @@ const schema = z.object({
   org: z.string().trim().min(2, "Org name required").max(120),
   useCase: z.string().min(1, "Pick a use case"),
   candidates: z.string().min(1, "Pick a volume"),
-  notes: z.string().max(600).optional(),
+  notes: z.string().max(2000).optional(),
 });
 
 const DemoRequestForm = () => {
