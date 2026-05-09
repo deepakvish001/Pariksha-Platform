@@ -90,6 +90,7 @@ export default function AssessmentDetail() {
           <TabsTrigger value="sections">Sections & Questions</TabsTrigger>
           <TabsTrigger value="invites">Invites</TabsTrigger>
           <TabsTrigger value="results">Results</TabsTrigger>
+          <TabsTrigger value="insights">Insights</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="sections">
@@ -100,6 +101,9 @@ export default function AssessmentDetail() {
         </TabsContent>
         <TabsContent value="results">
           <ResultsPanel assessmentId={assessment.id} />
+        </TabsContent>
+        <TabsContent value="insights">
+          <InsightsPanel assessmentId={assessment.id} />
         </TabsContent>
         <TabsContent value="settings">
           <SettingsPanel assessment={assessment} onDelete={async () => {
