@@ -722,42 +722,115 @@ export default function B2BOnboarding() {
                         </Button>
                       </div>
 
+                      {/* Generated per-email invite links (after first send) */}
+                      {generatedLinks && generatedLinks.length > 0 && (
+                        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-500">
+                              <Link2 className="h-3.5 w-3.5" />
+                              Latest invite links
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={handleResendInvites}
+                              className="h-7 px-2 text-[11px]"
+                            >
+                              <RefreshCcw className="mr-1.5 h-3 w-3" />
+                              Resend &amp; regenerate
+                            </Button>
+                          </div>
+                          <ul className="space-y-1.5">
+                            {generatedLinks.map((l) => (
+                              <li
+                                key={l.email}
+                                className="flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))/0.6] px-2.5 py-1.5"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="truncate text-xs font-medium">
+                                    {l.email}
+                                  </div>
+                                  <div className="truncate text-[10px] text-[hsl(var(--muted-foreground))]">
+                                    {l.url}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleCopyInviteLink(l.url)}
+                                  aria-label={`Copy invite link for ${l.email}`}
+                                  className="h-7 w-7 shrink-0"
+                                >
+                                  {copiedLink === l.url ? (
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-2 text-[10px] text-[hsl(var(--muted-foreground))]">
+                            Each link is unique to that email. Resending replaces the
+                            previous links.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Action row */}
                       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <Button
                           type="button"
                           variant="ghost"
                           onClick={() => setStep(1)}
-                          className="sm:w-auto"
-                          disabled={submitting}
+                          className="h-10 w-full sm:w-auto"
                         >
                           <ArrowLeft className="mr-1.5 h-4 w-4" />
                           Back
                         </Button>
-                        <div className="flex flex-col gap-2 sm:flex-row">
+                        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-row">
                           <Button
                             type="button"
                             variant="outline"
                             onClick={finishOnboarding}
+                            className="h-10 w-full sm:w-auto"
                           >
+                            <SkipForward className="mr-1.5 h-4 w-4" />
                             Skip for now
                           </Button>
-                          <Button
-                            type="button"
-                            onClick={handleSendInvites}
-                            className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-                          >
-                            <Mail className="mr-1.5 h-4 w-4" />
-                            Send invites
-                            <span className="ml-1.5 rounded bg-[hsl(var(--primary-foreground))/0.2] px-1.5 text-[10px] font-semibold">
-                              {validEmails.length}
-                            </span>
-                          </Button>
+                          {generatedLinks && generatedLinks.length > 0 ? (
+                            <Button
+                              type="button"
+                              onClick={handleResendInvites}
+                              className="h-10 w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 sm:w-auto"
+                            >
+                              <RefreshCcw className="mr-1.5 h-4 w-4" />
+                              Resend invites
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              onClick={handleSendInvites}
+                              className="h-10 w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 sm:w-auto"
+                            >
+                              <Mail className="mr-1.5 h-4 w-4" />
+                              Send invites
+                              <span className="ml-1.5 rounded bg-[hsl(var(--primary-foreground))/0.2] px-1.5 text-[10px] font-semibold">
+                                {validEmails.length}
+                              </span>
+                            </Button>
+                          )}
                         </div>
                       </div>
 
-                      <p className="text-center text-[11px] text-[hsl(var(--muted-foreground))]">
-                        Opens your email client with a pre-filled invite to{" "}
-                        <span className="font-medium">{createdOrg.name}</span>'s team page.
+                      <p className="text-center text-[11px] leading-relaxed text-[hsl(var(--muted-foreground))]">
+                        Skipping takes you straight to{" "}
+                        <span className="font-medium text-[hsl(var(--foreground))/0.8]">
+                          {createdOrg.name}
+                        </span>
+                        's dashboard — you can always invite teammates from the Team page later.
                       </p>
                     </div>
                   </>
