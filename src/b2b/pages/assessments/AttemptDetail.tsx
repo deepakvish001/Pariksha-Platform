@@ -1,0 +1,201 @@
+import { useMemo, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { OrgShell } from "../../layouts/OrgShell";
+import { useAttemptDetail, useGradeAnswer, useFinalizeAttemptScore } from "../../hooks/useAttempts";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, CheckCircle2, XCircle, Save } from "lucide-react";
+import { toast } from "sonner";
+
+export default function AttemptDetail() {
+  const { id, attemptId } = useParams();
+  const navigate = useNavigate();
+  const { data, isLoading, error } = useAttemptDetail(attemptId);
+  const grade = useGradeAnswer();
+  const finalize = useFinalizeAttemptScore();
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+
+  const totals = useMemo(() => {
+    if (!data) return { earned: 0, max: 0 };
+    let earned = 0, max = 0;
+    for (const a of data.answers) {
+      max += a.question.points ?? 0;
+      const s = a.manual_score ?? a.auto_score;
+      if (typeof s === "number") earned += s;
+    }
+    return { earned, max };
+  }, [data]);
+
+  if (isLoading) return <OrgShell title="Attempt">Loading…</OrgShell>;
+  if (error) return <OrgShell title="Attempt"><div className="b2b-card p-6">Failed: {(error as Error).message}</div></OrgShell>;
+  if (!data) return <Navigate to={`/b2b/assessments/${id}`} replace />;
+
+  const cand = data.attempt.invite;
+
+  return (
+    <OrgShell
+      title={`Attempt — ${cand?.name ?? cand?.email ?? "Candidate"}`}
+      actions={
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/b2b/assessments/${id}`)}>
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back
+        </Button>
+      }
+    >
+      <div className="grid md:grid-cols-3 gap-4 mb-4">
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Candidate</CardTitle></CardHeader>
+          <CardContent className="text-sm">
+            <div className="font-medium">{cand?.name ?? "—"}</div>
+            <div className="text-[hsl(var(--muted-foreground))] truncate">{cand?.email}</div>
+            {cand?.external_id && <div className="text-xs">ID: {cand.external_id}</div>}
+          </CardContent>
+        </Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Status</CardTitle></CardHeader>
+          <CardContent className="text-sm space-y-1">
+            <Badge>{data.attempt.status}</Badge>
+            {data.attempt.submitted_at && (
+              <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                Submitted {new Date(data.attempt.submitted_at).toLocaleString()}
+              </div>
+            )}
+            <div className="text-xs">Integrity: {data.attempt.integrity_score}</div>
+          </CardContent>
+        </Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Score</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            <div className="text-2xl font-semibold">{totals.earned} <span className="text-sm text-[hsl(var(--muted-foreground))]">/ {totals.max}</span></div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                await finalize.mutateAsync({ attempt_id: data.attempt.id, total: totals.earned });
+                toast.success("Final score saved");
+              }}
+            >
+              <Save className="h-3 w-3 mr-1" /> Save total
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="space-y-4">
+        {data.answers.length === 0 && (
+          <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+            Candidate did not answer any questions.
+          </div>
+        )}
+        {data.answers.map((a, i) => {
+          const q = a.question;
+          const correctIds = new Set((q.mcq_options ?? []).filter((o) => o.is_correct).map((o) => o.id));
+          const selected = new Set<string>(((a.answer?.selected as string[]) ?? []));
+          const draft = drafts[a.id] ?? (a.manual_score?.toString() ?? "");
+
+          return (
+            <Card key={a.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="uppercase">{q.type}</Badge>
+                    <CardTitle className="text-base">Q{i + 1}. {q.title}</CardTitle>
+                  </div>
+                  <div className="text-xs text-[hsl(var(--muted-foreground))]">{q.points} pts</div>
+                </div>
+                {q.body_md && <p className="text-sm text-[hsl(var(--muted-foreground))] whitespace-pre-wrap">{q.body_md}</p>}
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {q.type === "mcq" && (
+                  <ul className="space-y-1.5">
+                    {(q.mcq_options ?? []).sort((x, y) => x.order_index - y.order_index).map((o) => {
+                      const wasSelected = selected.has(o.id);
+                      const isCorrect = correctIds.has(o.id);
+                      return (
+                        <li
+                          key={o.id}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-md border text-sm ${
+                            isCorrect
+                              ? "border-green-500/40 bg-green-500/10"
+                              : wasSelected
+                              ? "border-red-500/40 bg-red-500/10"
+                              : "border-[hsl(var(--border))]"
+                          }`}
+                        >
+                          {isCorrect ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : wasSelected ? <XCircle className="h-4 w-4 text-red-600" /> : <span className="h-4 w-4" />}
+                          <span className="flex-1">{o.body}</span>
+                          {wasSelected && <Badge variant="secondary" className="text-xs">picked</Badge>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                {q.type === "subjective" && (
+                  <pre className="p-3 rounded-md bg-[hsl(var(--muted))] text-sm whitespace-pre-wrap font-sans">
+                    {(a.answer?.text as string) ?? <em className="text-[hsl(var(--muted-foreground))]">No response</em>}
+                  </pre>
+                )}
+
+                {q.type === "sql" && (
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] mb-1">Query</p>
+                      <pre className="p-3 rounded-md bg-[hsl(var(--muted))] text-xs font-mono whitespace-pre-wrap">
+                        {(a.answer?.query as string) ?? "—"}
+                      </pre>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] mb-1">Output</p>
+                      <pre className="p-3 rounded-md bg-[hsl(var(--muted))] text-xs font-mono whitespace-pre-wrap">
+                        {(a.answer?.output as string) ?? "—"}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {q.type === "coding" && (
+                  <pre className="p-3 rounded-md bg-[hsl(var(--muted))] text-xs font-mono whitespace-pre-wrap overflow-auto max-h-96">
+                    {(a.answer?.code as string) ?? "—"}
+                  </pre>
+                )}
+
+                <div className="flex items-end justify-between gap-3 pt-2 border-t border-[hsl(var(--border))]">
+                  <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                    Auto: <b className="text-foreground">{a.auto_score ?? "—"}</b>
+                    {" · "}Manual: <b className="text-foreground">{a.manual_score ?? "—"}</b>
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <div>
+                      <label className="text-xs text-[hsl(var(--muted-foreground))]">Manual score (0–{q.points})</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={q.points}
+                        value={draft}
+                        onChange={(e) => setDrafts((d) => ({ ...d, [a.id]: e.target.value }))}
+                        className="w-28 mt-1"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        const v = draft.trim() === "" ? null : Number(draft);
+                        if (v !== null && (Number.isNaN(v) || v < 0 || v > q.points)) {
+                          toast.error(`Score must be between 0 and ${q.points}`);
+                          return;
+                        }
+                        await grade.mutateAsync({ id: a.id, manual_score: v, attempt_id: data.attempt.id });
+                        toast.success("Saved");
+                      }}
+                    >
+                      <Save className="h-3 w-3 mr-1" /> Save
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </OrgShell>
+  );
+}
