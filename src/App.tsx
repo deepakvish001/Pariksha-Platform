@@ -506,23 +506,7 @@ const App = () => (
                 </Route>
                 <Route path="/admin/arena" element={<AdminRoute><AdminArena /></AdminRoute>} />
 
-                {/* Lean Learn Admin */}
-                <Route
-                  path="/admin/learn"
-                  element={
-                    <AdminRoute>
-                      <LearnShell />
-                    </AdminRoute>
-                  }
-                >
-                  <Route index element={<LearnOverview />} />
-                  <Route path="problems" element={<LearnProblems />} />
-                  <Route path="users" element={<LearnUsers />} />
-                  <Route path="daily" element={<LearnDaily />} />
-                  <Route path="ai-content" element={<LearnAIContent />} />
-                  <Route path="reports" element={<LearnReports />} />
-                  <Route path="broadcast" element={<LearnBroadcast />} />
-                </Route>
+
 
                 {/* Parikshaa Control Center (super-admin) */}
                 <Route
