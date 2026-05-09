@@ -39,8 +39,13 @@ export function RouteRestorer() {
     );
 
     if (shouldRestore) {
-      const savedRoute = localStorage.getItem(STORAGE_KEY);
-      
+      let savedRoute = localStorage.getItem(STORAGE_KEY);
+      // One-shot migration: /dashboard/* → /learn/*
+      if (savedRoute && savedRoute.startsWith("/dashboard")) {
+        savedRoute = savedRoute.replace(/^\/dashboard/, "/learn");
+        localStorage.setItem(STORAGE_KEY, savedRoute);
+      }
+
       // Check if saved route is valid and different from current
       if (
         savedRoute &&
