@@ -13,7 +13,13 @@ export default function B2BDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !org && base === "/b2b") navigate("/b2b/onboarding", { replace: true });
+    if (isLoading || base !== "/b2b") return;
+    if (!org) {
+      navigate("/b2b/onboarding", { replace: true });
+      return;
+    }
+    const target = org.type === "company" ? `/companies/${org.slug}` : `/colleges/${org.slug}`;
+    navigate(target, { replace: true });
   }, [org, isLoading, navigate, base]);
 
   if (isLoading) {
