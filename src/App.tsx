@@ -41,6 +41,7 @@ import ParikshaaModeration from "@/admin/parikshaa/Moderation";
 import ParikshaaLeads from "@/admin/parikshaa/Leads";
 import ParikshaaDemoRequests from "@/admin/parikshaa/DemoRequests";
 import ParikshaaFunnel from "@/admin/parikshaa/Funnel";
+import ParikshaaEmailPreview from "@/admin/parikshaa/EmailPreview";
 import StudentJoin from "@/assessments/pages/Join";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
