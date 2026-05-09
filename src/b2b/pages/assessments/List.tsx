@@ -13,7 +13,7 @@ export default function B2BAssessmentsList() {
   const org = orgs?.[0];
   const { data: assessments, isLoading: aLoading } = useAssessments(org?.id);
 
-  if (isLoading) return <OrgShell title="Assessments">Loading…</OrgShell>;
+  if (isLoading) return null;
   if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
 
   return (
@@ -29,7 +29,7 @@ export default function B2BAssessmentsList() {
       }
     >
       {aLoading ? (
-        <div className="b2b-card p-8 text-sm text-[hsl(var(--muted-foreground))]">Loading…</div>
+        null
       ) : !assessments?.length ? (
         <div className="b2b-card p-12 text-center">
           <FileText className="h-8 w-8 mx-auto text-[hsl(var(--muted-foreground))]" />

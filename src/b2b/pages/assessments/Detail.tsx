@@ -46,7 +46,7 @@ export default function AssessmentDetail() {
   const update = useUpdateAssessment();
   const del = useDeleteAssessment();
 
-  if (isLoading) return <OrgShell title="Assessment">Loading…</OrgShell>;
+  if (isLoading) return null;
   if (!assessment) return <Navigate to="/b2b/assessments" replace />;
 
   const isPublished = assessment.status === "published";
@@ -510,7 +510,7 @@ function InvitesPanel({ assessmentId }: { assessmentId: string }) {
 
 function ResultsPanel({ assessmentId }: { assessmentId: string }) {
   const { data: attempts, isLoading } = useAttempts(assessmentId);
-  if (isLoading) return <div className="b2b-card p-6 text-sm">Loading results…</div>;
+  if (isLoading) return null;
   if (!attempts?.length) {
     return (
       <div className="b2b-card p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
@@ -582,7 +582,7 @@ function ResultsPanel({ assessmentId }: { assessmentId: string }) {
 function InsightsPanel({ assessmentId }: { assessmentId: string }) {
   const { data, isLoading, error } = useAssessmentInsights(assessmentId);
 
-  if (isLoading) return <div className="b2b-card p-6 text-sm">Loading insights…</div>;
+  if (isLoading) return null;
   if (error)
     return (
       <div className="b2b-card p-6 text-sm text-destructive">

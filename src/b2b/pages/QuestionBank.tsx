@@ -84,7 +84,7 @@ export default function QuestionBank() {
     return c;
   }, [questions]);
 
-  if (isLoading) return <OrgShell title="Question Bank">Loading…</OrgShell>;
+  if (isLoading) return null;
   if (!orgs?.length) return <Navigate to="/b2b/onboarding" replace />;
 
   const empty = !questions?.length;

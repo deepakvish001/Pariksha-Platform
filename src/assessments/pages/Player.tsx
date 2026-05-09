@@ -98,7 +98,7 @@ export default function Player() {
     }
   };
 
-  if (isLoading) return <div className="theme-b2b p-8 min-h-screen bg-[hsl(var(--background))]">Loading paper…</div>;
+  if (isLoading) return null;
   if (error) return <div className="theme-b2b p-8 min-h-screen">Failed to load: {(error as Error).message}</div>;
   if (!paper) return null;
 
