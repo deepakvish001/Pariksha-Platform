@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Radio,
   Filter,
+  BarChart3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -96,6 +97,7 @@ const GROUPS: NavGroup[] = [
       },
       { to: "/admin/parikshaa/leads", label: "Leads & Growth", icon: TrendingUp },
       { to: "/admin/parikshaa/demo-requests", label: "Demo Requests", icon: Sparkles },
+      { to: "/admin/parikshaa/funnel", label: "Conversion Funnel", icon: BarChart3 },
     ],
   },
 ];
@@ -297,6 +299,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   moderation: "Moderation",
   leads: "Leads & Growth",
   "demo-requests": "Demo Requests",
+  funnel: "Conversion Funnel",
 };
 
 const buildCrumbs = (pathname: string) => {
