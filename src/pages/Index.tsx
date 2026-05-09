@@ -29,16 +29,27 @@ const Index = () => {
     <main className="min-h-screen bg-background">
       <DelayedLoginPrompt />
       <Navbar />
+      {/* 1. HOOK — promise + primary CTA */}
       <Hero />
+      {/* 2. TRUST — logos band */}
       <LazySection><CompanyLogos /></LazySection>
-      <LazySection><ValueProps /></LazySection>
-      <LazySection><ProductShowcase /></LazySection>
-      <LazySection><Outcomes /></LazySection>
+      {/* 3. PROBLEM — agitate the pain of manual workflows */}
       <LazySection><ManualVsParikshaa /></LazySection>
-      <LazySection><Testimonials /></LazySection>
+      {/* 4. SOLUTION — show the product in action */}
+      <LazySection><ProductShowcase /></LazySection>
+      {/* 5. BENEFITS — distilled value props */}
+      <LazySection><ValueProps /></LazySection>
+      {/* 6. OUTCOMES — quantified ROI */}
+      <LazySection><Outcomes /></LazySection>
+      {/* 7. DEEP PROOF — case studies with metrics */}
       <LazySection><CaseStudies /></LazySection>
+      {/* 8. SOCIAL PROOF — testimonials */}
+      <LazySection><Testimonials /></LazySection>
+      {/* 9. OBJECTIONS — FAQ */}
       <LazySection><section id="faq"><FAQ /></section></LazySection>
+      {/* 10. CONVERT — tailored demo form */}
       <LazySection><DemoRequestForm /></LazySection>
+      {/* 11. LAST PUSH — final CTA */}
       <LazySection><CTA /></LazySection>
       <LazySection><Footer /></LazySection>
     </main>
