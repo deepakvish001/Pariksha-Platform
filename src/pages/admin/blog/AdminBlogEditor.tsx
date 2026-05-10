@@ -65,6 +65,116 @@ export default function AdminBlogEditor() {
 
   useEffect(() => { if (isNew && title && !slug) setSlug(slugify(title)); }, [title, slug, isNew]);
 
+  // ─── Autosave + unsaved-changes guard ────────────────────────────────────
+  const draftKey = `blog-draft:${id ?? "new"}`;
+  const initialSnapshot = useRef<string | null>(null);
+  const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [recoveredAt, setRecoveredAt] = useState<number | null>(null);
+
+  // Snapshot of the saved baseline → used to detect "dirty" state.
+  const savedSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        title, slug, excerpt, content, cover, status, scheduled,
+        seoTitle, seoDesc, featured, allowComments, catIds, tagIds,
+      }),
+    [title, slug, excerpt, content, cover, status, scheduled, seoTitle, seoDesc, featured, allowComments, catIds, tagIds],
+  );
+  if (initialSnapshot.current === null && (existing || isNew)) {
+    initialSnapshot.current = savedSnapshot;
+  }
+  const isDirty = initialSnapshot.current !== null && initialSnapshot.current !== savedSnapshot;
+
+  // Restore draft on first mount if a newer one exists in localStorage.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (!draft?.savedAt || (existing && new Date(existing.updated_at || 0).getTime() > draft.savedAt)) return;
+      // Only auto-restore when the user hasn't typed yet (matches saved baseline).
+      if (initialSnapshot.current !== savedSnapshot) return;
+      setTitle(draft.title ?? title);
+      setSlug(draft.slug ?? slug);
+      setExcerpt(draft.excerpt ?? excerpt);
+      setContent(draft.content ?? content);
+      setCover(draft.cover ?? cover);
+      setStatus(draft.status ?? status);
+      setScheduled(draft.scheduled ?? scheduled);
+      setSeoTitle(draft.seoTitle ?? seoTitle);
+      setSeoDesc(draft.seoDesc ?? seoDesc);
+      setFeatured(draft.featured ?? featured);
+      setAllowComments(draft.allowComments ?? allowComments);
+      setCatIds(draft.catIds ?? catIds);
+      setTagIds(draft.tagIds ?? tagIds);
+      setRecoveredAt(draft.savedAt);
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existing?.id]);
+
+  // Debounced autosave to localStorage.
+  useEffect(() => {
+    if (!isDirty) return;
+    setAutosaveStatus("saving");
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({
+            savedAt: Date.now(),
+            title, slug, excerpt, content, cover, status, scheduled,
+            seoTitle, seoDesc, featured, allowComments, catIds, tagIds,
+          }),
+        );
+        setAutosaveStatus("saved");
+      } catch {
+        /* quota exceeded */
+      }
+    }, 800);
+    return () => clearTimeout(t);
+  }, [savedSnapshot, isDirty, draftKey]);
+
+  // beforeunload guard.
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
+  const discardDraft = () => {
+    try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+    setRecoveredAt(null);
+    if (existing) {
+      setTitle(existing.title);
+      setSlug(existing.slug);
+      setExcerpt(existing.excerpt ?? "");
+      setContent(existing.content_md);
+      setCover(existing.cover_image_url);
+      setStatus(existing.status);
+      setScheduled(existing.scheduled_for ? existing.scheduled_for.slice(0, 16) : "");
+      setSeoTitle(existing.seo_title ?? "");
+      setSeoDesc(existing.seo_description ?? "");
+      setFeatured(existing.is_featured);
+      setAllowComments(existing.allow_comments);
+      setCatIds(existing.category_ids ?? []);
+      setTagIds(existing.tag_ids ?? []);
+    }
+  };
+
+  const openPublicPreview = () => {
+    if (!slug.trim()) {
+      toast({ title: "Save the post first", description: "A slug is required to preview." });
+      return;
+    }
+    window.open(`/blog/${slug.trim()}`, "_blank", "noopener,noreferrer");
+  };
+
   const handleSave = async (overrideStatus?: BlogPostStatus) => {
     if (!title.trim() || !slug.trim()) return alert("Title and slug are required");
     const finalStatus = overrideStatus ?? status;
@@ -84,6 +194,10 @@ export default function AdminBlogEditor() {
       category_ids: catIds,
       tag_ids: tagIds,
     });
+    // Clear draft + reset baseline.
+    try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+    initialSnapshot.current = savedSnapshot;
+    setAutosaveStatus("saved");
     if (isNew) nav(`/admin/blog/${newId}/edit`, { replace: true });
   };
 
