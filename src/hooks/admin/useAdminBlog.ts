@@ -139,9 +139,9 @@ export const useUploadBlogCover = () =>
   });
 
 // ───────── Admin comments moderation ─────────
-export type AdminCommentStatusFilter = "reported" | "hidden" | "visible" | "all";
+export type AdminCommentStatusFilter = "pending" | "reported" | "hidden" | "visible" | "all";
 
-export const useAdminBlogComments = (status: AdminCommentStatusFilter = "reported", search = "") =>
+export const useAdminBlogComments = (status: AdminCommentStatusFilter = "pending", search = "") =>
   useQuery({
     queryKey: ["admin-blog-comments", status, search],
     placeholderData: keepPreviousData,
@@ -151,7 +151,11 @@ export const useAdminBlogComments = (status: AdminCommentStatusFilter = "reporte
         .select("*, post:blog_posts(id, slug, title)")
         .order("created_at", { ascending: false })
         .limit(200);
-      if (status !== "all") q = q.eq("status", status);
+      if (status === "pending") {
+        q = q.eq("status", "visible").is("approved_at", null);
+      } else if (status !== "all") {
+        q = q.eq("status", status);
+      }
       if (search.trim()) q = q.ilike("body", `%${search.trim()}%`);
       const { data, error } = await q;
       if (error) throw error;
