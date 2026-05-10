@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Star, Sparkles, BookOpen, FileText, Map, HelpCircle, ClipboardList, Clock } from "lucide-react";
+import { Star, Sparkles, BookOpen, FileText, HelpCircle, ClipboardList, Clock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,7 +12,6 @@ const typeIcons: Record<AIContentType, React.ComponentType<{ className?: string 
   plan: ClipboardList,
   course: BookOpen,
   guide: FileText,
-  roadmap: Map,
   quiz: HelpCircle,
 };
 

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { UsersRound, TrendingUp, Clock, BookOpen, FileText, Map, HelpCircle, ClipboardList, Search } from "lucide-react";
+import { UsersRound, TrendingUp, Clock, BookOpen, FileText, HelpCircle, ClipboardList, Search } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +16,6 @@ const typeIcons: Record<AIContentType, React.ComponentType<{ className?: string 
   plan: ClipboardList,
   course: BookOpen,
   guide: FileText,
-  roadmap: Map,
   quiz: HelpCircle,
 };
 
@@ -25,7 +24,6 @@ const contentTypes: { value: string; label: string }[] = [
   { value: "plan", label: "Plans" },
   { value: "course", label: "Courses" },
   { value: "guide", label: "Guides" },
-  { value: "roadmap", label: "Roadmaps" },
   { value: "quiz", label: "Quizzes" },
 ];
 

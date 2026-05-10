@@ -73,7 +73,6 @@ const typeIcons: Record<AIContentType, React.ComponentType<{ className?: string 
   plan: ClipboardList,
   course: BookOpen,
   guide: FileText,
-  roadmap: Map,
   quiz: HelpCircle,
 };
 
@@ -81,7 +80,6 @@ const typeLabels: Record<AIContentType, string> = {
   plan: "Study Plan",
   course: "Course",
   guide: "Guide",
-  roadmap: "Roadmap",
   quiz: "Quiz",
 };
 
@@ -513,8 +511,6 @@ const AIContentDetail = () => {
         return renderSteps();
       case "plan":
         return renderPhases();
-      case "roadmap":
-        return renderStages();
       case "quiz":
         return renderQuiz();
       default:
