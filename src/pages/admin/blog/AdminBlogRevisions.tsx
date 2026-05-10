@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -17,17 +17,35 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, History, RotateCcw, Loader2, Eye, GitCompare } from "lucide-react";
+import { ArrowLeft, History, RotateCcw, Loader2, GitCompare, Eye, Activity } from "lucide-react";
 import { useBlogPostById } from "@/hooks/useBlog";
-import { useBlogRevisions, useRestoreBlogRevision, type BlogRevision } from "@/hooks/admin/useAdminBlog";
+import {
+  useBlogRevisions,
+  useRestoreBlogRevision,
+  useBlogRevisionAudit,
+  logRevisionAudit,
+  type BlogRevision,
+} from "@/hooks/admin/useAdminBlog";
 import { cn } from "@/lib/utils";
 import { diffLines } from "diff";
+
+const actionMeta = (a: string) => {
+  switch (a) {
+    case "viewed": return { label: "Viewed", cls: "bg-muted text-muted-foreground" };
+    case "compared": return { label: "Compared", cls: "bg-sky-500/15 text-sky-600 dark:text-sky-400" };
+    case "restored": return { label: "Restored", cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" };
+    case "created": return { label: "Created", cls: "bg-primary/15 text-primary" };
+    case "edited": return { label: "Edited", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400" };
+    default: return { label: a, cls: "bg-muted text-muted-foreground" };
+  }
+};
 
 export default function AdminBlogRevisions() {
   const { id } = useParams();
   const { data: post } = useBlogPostById(id);
   const { data: revisions = [], isLoading } = useBlogRevisions(id);
   const restore = useRestoreBlogRevision();
+  const { data: audit = [] } = useBlogRevisionAudit(id);
 
   // "current" pseudo-revision representing the live post
   const current: BlogRevision | null = post
@@ -52,6 +70,40 @@ export default function AdminBlogRevisions() {
     if (!left || !right) return null;
     return diffLines(right.content_md, left.content_md);
   }, [left, right]);
+
+  // Audit-log a "viewed" entry when a single revision is selected (debounced).
+  const lastViewedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!id || !left || right || left.id === "__current__") return;
+    if (lastViewedRef.current === left.id) return;
+    lastViewedRef.current = left.id;
+    const t = setTimeout(() => {
+      logRevisionAudit({ postId: id, action: "viewed", revisionId: left.id });
+    }, 600);
+    return () => clearTimeout(t);
+  }, [id, left, right]);
+
+  // Audit-log a "compared" entry when two are selected.
+  const lastComparedRef = useRef<string>("");
+  useEffect(() => {
+    if (!id || !left || !right) return;
+    const key = `${left.id}|${right.id}`;
+    if (lastComparedRef.current === key) return;
+    lastComparedRef.current = key;
+    const t = setTimeout(() => {
+      logRevisionAudit({
+        postId: id,
+        action: "compared",
+        revisionId: left.id === "__current__" ? null : left.id,
+        compareRevisionId: right.id === "__current__" ? null : right.id,
+        meta: {
+          a: left.id === "__current__" ? "current" : left.created_at,
+          b: right.id === "__current__" ? "current" : right.created_at,
+        },
+      });
+    }, 600);
+    return () => clearTimeout(t);
+  }, [id, left, right]);
 
   return (
     <AdminShell>
@@ -230,6 +282,59 @@ export default function AdminBlogRevisions() {
           )}
         </div>
       </div>
+
+      <Card className="mt-6 p-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <Activity className="h-4 w-4" />Activity log
+          <Badge variant="outline" className="ml-1 text-[10px]">{audit.length}</Badge>
+        </div>
+        {audit.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            No activity yet — comparisons, views, and restores will appear here.
+          </p>
+        ) : (
+          <ol className="space-y-2" role="list">
+            {audit.map((a) => {
+              const meta = actionMeta(a.action);
+              return (
+                <li
+                  key={a.id}
+                  className="flex items-start gap-3 rounded-md border bg-card/50 p-2 text-sm"
+                >
+                  <Avatar className="h-7 w-7 shrink-0">
+                    <AvatarImage src={a.actor?.avatar_url ?? undefined} alt={a.actor?.full_name ?? ""} />
+                    <AvatarFallback className="text-[10px]">
+                      {(a.actor?.full_name?.[0] || "?").toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{a.actor?.full_name || "Editor"}</span>
+                      <Badge variant="secondary" className={cn("text-[10px]", meta.cls)}>
+                        {meta.label}
+                      </Badge>
+                      {a.meta && Object.keys(a.meta).length > 0 && (
+                        <span className="truncate text-xs text-muted-foreground">
+                          {a.meta.restored_title
+                            ? `→ "${a.meta.restored_title}"`
+                            : a.meta.a && a.meta.b
+                              ? `${typeof a.meta.a === "string" ? a.meta.a.split("T")[0] : ""} ↔ ${
+                                  typeof a.meta.b === "string" ? a.meta.b.split("T")[0] : ""
+                                }`
+                              : ""}
+                        </span>
+                      )}
+                    </div>
+                    <time dateTime={a.created_at} className="text-[11px] text-muted-foreground">
+                      {new Date(a.created_at).toLocaleString()}
+                    </time>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </Card>
     </AdminShell>
   );
 }
