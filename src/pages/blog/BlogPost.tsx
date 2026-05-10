@@ -207,6 +207,7 @@ export default function BlogPost() {
             ))}
           </div>
         </section>
+      )}
         </div>
 
         <aside className="hidden lg:block">
