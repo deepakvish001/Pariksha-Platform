@@ -214,8 +214,29 @@ export default function AdminBlogEditor() {
       <AdminPageHeader
         title={isNew ? "New post" : "Edit post"}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                isDirty
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  : autosaveStatus === "saving"
+                    ? "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                    : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+              )}
+              aria-live="polite"
+            >
+              {autosaveStatus === "saving" ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Check className="h-3 w-3" />
+              )}
+              {isDirty ? "Unsaved" : autosaveStatus === "saving" ? "Saving…" : "Saved"}
+            </span>
             <Button asChild variant="ghost"><Link to="/admin/blog"><ArrowLeft className="mr-2 h-4 w-4" />Back</Link></Button>
+            <Button variant="outline" onClick={openPublicPreview} title="Open public preview in a new tab">
+              <ExternalLink className="mr-2 h-4 w-4" />Preview
+            </Button>
             <Button variant="outline" onClick={() => handleSave("draft")} disabled={save.isPending}>
               {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Save draft
@@ -232,6 +253,17 @@ export default function AdminBlogEditor() {
           </div>
         }
       />
+
+      {recoveredAt && (
+        <Card className="mb-3 flex flex-wrap items-center justify-between gap-2 border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+          <span className="text-amber-700 dark:text-amber-300">
+            Restored an unsaved draft from {new Date(recoveredAt).toLocaleString()}.
+          </span>
+          <Button size="sm" variant="ghost" onClick={discardDraft}>
+            <RotateCcw className="mr-1 h-3 w-3" />Discard draft
+          </Button>
+        </Card>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
