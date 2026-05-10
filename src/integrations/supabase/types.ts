@@ -4634,69 +4634,6 @@ export type Database = {
         }
         Relationships: []
       }
-      roadmap_learning_goals: {
-        Row: {
-          created_at: string
-          id: string
-          is_active: boolean
-          reminder_enabled: boolean
-          roadmap_id: string
-          target_completion_date: string
-          updated_at: string
-          user_id: string
-          weekly_topics_target: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          reminder_enabled?: boolean
-          roadmap_id: string
-          target_completion_date: string
-          updated_at?: string
-          user_id: string
-          weekly_topics_target?: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          reminder_enabled?: boolean
-          roadmap_id?: string
-          target_completion_date?: string
-          updated_at?: string
-          user_id?: string
-          weekly_topics_target?: number
-        }
-        Relationships: []
-      }
-      roadmap_overrides: {
-        Row: {
-          is_featured: boolean
-          is_published: boolean
-          roadmap_id: string
-          sort_order: number
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          is_featured?: boolean
-          is_published?: boolean
-          roadmap_id: string
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          is_featured?: boolean
-          is_published?: boolean
-          roadmap_id?: string
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
       scheduled_broadcasts: {
         Row: {
           cancelled_at: string | null
@@ -6048,102 +5985,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_roadmap_node_order: {
-        Row: {
-          created_at: string
-          id: string
-          node_order: string[]
-          roadmap_id: string
-          section_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          node_order: string[]
-          roadmap_id: string
-          section_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          node_order?: string[]
-          roadmap_id?: string
-          section_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_roadmap_notes: {
-        Row: {
-          created_at: string
-          id: string
-          node_id: string
-          note: string
-          roadmap_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          node_id: string
-          note?: string
-          roadmap_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          node_id?: string
-          note?: string
-          roadmap_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_roadmap_saved_paths: {
-        Row: {
-          created_at: string
-          custom_orders: Json
-          description: string | null
-          id: string
-          is_active: boolean
-          name: string
-          roadmap_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          custom_orders?: Json
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          roadmap_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          custom_orders?: Json
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          roadmap_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string
@@ -6538,15 +6379,6 @@ export type Database = {
           username?: string | null
           website?: string | null
           xp_this_week?: number | null
-        }
-        Relationships: []
-      }
-      roadmap_leaderboard_view: {
-        Row: {
-          completed_topics: number | null
-          last_completed_at: string | null
-          roadmaps_started: number | null
-          user_id: string | null
         }
         Relationships: []
       }
