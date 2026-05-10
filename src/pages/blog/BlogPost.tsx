@@ -87,6 +87,20 @@ export default function BlogPost() {
 
   // Build threaded comment tree
   const tree = useMemo(() => buildTree(comments), [comments]);
+  const [commentSort, setCommentSort] = useState<"newest" | "oldest" | "top">("newest");
+  const [visibleRoots, setVisibleRoots] = useState(10);
+  const sortedTree = useMemo(() => {
+    const arr = [...tree];
+    const count = (n: TreeNode): number =>
+      1 + n.children.reduce((s, c) => s + count(c), 0);
+    if (commentSort === "newest")
+      arr.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+    else if (commentSort === "oldest")
+      arr.sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
+    else arr.sort((a, b) => count(b) - count(a));
+    return arr;
+  }, [tree, commentSort]);
+  useEffect(() => setVisibleRoots(10), [commentSort, post?.id]);
 
   if (isLoading)
     return <div className="container mx-auto py-16 text-center text-muted-foreground">Loading…</div>;
