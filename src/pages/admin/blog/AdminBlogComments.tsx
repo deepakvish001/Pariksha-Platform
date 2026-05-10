@@ -75,24 +75,31 @@ export default function AdminBlogComments() {
   const { data: comments = [], isLoading } = useAdminBlogComments(status, search);
   const setStatusMut = useSetCommentStatus();
   const del = useDeleteCommentAdmin();
+  const approve = useApproveComment();
 
   const [pending, setPending] = useState<PendingAction | null>(null);
 
-  const confirmLabel: Record<string, string> = {
-    visible: "Make visible",
-    hidden: "Hide comment",
-    delete: "Delete permanently",
+  const confirmDesc = (p: PendingAction) => {
+    if (p.kind === "delete") return "This will permanently remove the comment. This action cannot be undone.";
+    if (p.kind === "approve")
+      return p.approve
+        ? "This comment will become publicly visible on the post."
+        : "This comment will be rejected and hidden from public view.";
+    return p.status === "visible"
+      ? "This comment will become publicly visible on the post again."
+      : "This comment will be hidden from public view but kept for review.";
   };
-  const confirmDesc = (p: PendingAction) =>
-    p.kind === "delete"
-      ? "This will permanently remove the comment. This action cannot be undone."
-      : p.status === "visible"
-        ? "This comment will become publicly visible on the post again."
-        : "This comment will be hidden from public view but kept for review.";
+
+  const confirmTitle = (p: PendingAction) => {
+    if (p.kind === "delete") return "Delete permanently?";
+    if (p.kind === "approve") return p.approve ? "Approve comment?" : "Reject comment?";
+    return p.status === "visible" ? "Make visible?" : "Hide comment?";
+  };
 
   const runPending = () => {
     if (!pending) return;
     if (pending.kind === "delete") del.mutate(pending.id);
+    else if (pending.kind === "approve") approve.mutate({ id: pending.id, approve: pending.approve });
     else setStatusMut.mutate({ id: pending.id, status: pending.status });
     setPending(null);
   };
