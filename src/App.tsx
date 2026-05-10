@@ -64,10 +64,6 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
 import SheetDetail from "./pages/SheetDetail";
-import FullStackRoadmap from "./pages/FullStackRoadmap";
-import DashboardRoadmaps from "./pages/DashboardRoadmaps";
-import DashboardRoadmapDetail from "./pages/DashboardRoadmapDetail";
-import DashboardRoadmapCompare from "./pages/DashboardRoadmapCompare";
 
 // Library Pages
 import PositionResources from "./pages/library/PositionResources";
@@ -101,8 +97,6 @@ import SystemDesignOverview from "./pages/system-design/SystemDesignOverview";
 // Research Pages
 import ResearchOverview from "./pages/research/Overview";
 import JobPortals from "./pages/research/JobPortals";
-import Roadmap from "./pages/research/Roadmap";
-import RoadmapDetail from "./pages/research/RoadmapDetail";
 import ResumeTemplates from "./pages/research/ResumeTemplates";
 import ResumeAnalyser from "./pages/research/ResumeAnalyser";
 import ColdOutreach from "./pages/research/ColdOutreach";
@@ -114,9 +108,7 @@ import AIGenerate from "./pages/platform/AIGenerate";
 import MyPlans from "./pages/platform/ai/MyPlans";
 import MyCourses from "./pages/platform/ai/MyCourses";
 import MyGuides from "./pages/platform/ai/MyGuides";
-import MyRoadmaps from "./pages/platform/ai/MyRoadmaps";
 import MyQuizzes from "./pages/platform/ai/MyQuizzes";
-import RoadmapChat from "./pages/platform/ai/RoadmapChat";
 import StaffPicks from "./pages/platform/ai/StaffPicks";
 import Community from "./pages/platform/ai/Community";
 import AIContentDetail from "./pages/platform/ai/AIContentDetail";
@@ -317,13 +309,6 @@ const App = () => (
                   
                   <Route path="leaderboard" element={<Leaderboard />} />
                   <Route path="submissions" element={<Leaderboard />} />
-                  <Route path="roadmaps" element={<DashboardRoadmaps />} />
-                  <Route path="roadmaps/compare" element={<DashboardRoadmapCompare />} />
-                  {/* Legacy generic detail (kept reachable for older bookmarks) */}
-                  <Route path="roadmaps/:roadmapId/list" element={<DashboardRoadmapDetail />} />
-                  {/* All roadmaps now use the interactive flow view */}
-                  <Route path="roadmaps/:roadmapId" element={<FullStackRoadmap />} />
-                  <Route path="roadmap/fullstack" element={<FullStackRoadmap />} />
                 </Route>
 
                 {/* Public profile - inside dashboard layout so it shows the sidebar */}
@@ -386,8 +371,6 @@ const App = () => (
                   <Route index element={<ResearchOverview />} />
                   <Route path="overview" element={<ResearchOverview />} />
                   <Route path="jobs" element={<JobPortals />} />
-                  <Route path="roadmap" element={<Roadmap />} />
-                  <Route path="roadmap/:roadmapId" element={<RoadmapDetail />} />
                   <Route path="resume" element={<ResumeTemplates />} />
                   <Route path="analyser" element={<ResumeAnalyser />} />
                   <Route path="outreach" element={<ColdOutreach />} />
@@ -413,9 +396,7 @@ const App = () => (
                   <Route path="ai/my-plans" element={<MyPlans />} />
                   <Route path="ai/my-courses" element={<MyCourses />} />
                   <Route path="ai/my-guides" element={<MyGuides />} />
-                  <Route path="ai/my-roadmaps" element={<MyRoadmaps />} />
                   <Route path="ai/my-quizzes" element={<MyQuizzes />} />
-                  <Route path="ai/roadmap-chat" element={<RoadmapChat />} />
                   <Route path="collections" element={<Collections />} />
                 </Route>
 

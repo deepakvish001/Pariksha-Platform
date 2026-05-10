@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { 
   BookOpen, 
   FileText, 
-  Map, 
   HelpCircle, 
   Sparkles,
   Loader2,
@@ -44,12 +43,6 @@ const formatOptions: FormatOption[] = [
     description: "Step-by-step tutorial"
   },
   { 
-    id: "roadmap", 
-    label: "Roadmap", 
-    icon: Map,
-    description: "Visual learning journey"
-  },
-  { 
     id: "quiz", 
     label: "Quiz", 
     icon: HelpCircle,
@@ -82,7 +75,6 @@ const AIGenerate = () => {
         plan: "/platform/ai/my-plans",
         course: "/platform/ai/my-courses",
         guide: "/platform/ai/my-guides",
-        roadmap: "/platform/ai/my-roadmaps",
         quiz: "/platform/ai/my-quizzes",
       };
       

@@ -108,10 +108,10 @@ export default function ParikshaaLanding() {
           icon={BookOpen}
           eyebrow="Free for students"
           title="Learn"
-          subtitle="Sheets, roadmaps, contests, AI mentor."
+          subtitle="Sheets, contests, AI mentor."
           points={[
             "DSA, SQL, system design & interview sheets",
-            "Personalised roadmaps with progress tracking",
+            "Curated learning paths with progress tracking",
             "Daily coding challenges & weekly contests",
             "AI assistant for doubts and study plans",
           ]}
@@ -150,7 +150,7 @@ export default function ParikshaaLanding() {
             icon={GraduationCap}
             steps={[
               { n: "01", t: "Sign up free", d: "Create your Parikshaa account in seconds." },
-              { n: "02", t: "Pick a sheet or roadmap", d: "DSA, SQL, system design, fundamentals — your call." },
+              { n: "02", t: "Pick a sheet", d: "DSA, SQL, system design, fundamentals — your call." },
               { n: "03", t: "Practice & track", d: "Solve, get scored, climb the leaderboard." },
             ]}
           />
@@ -183,7 +183,7 @@ export default function ParikshaaLanding() {
               { icon: ShieldCheck, t: "Browser proctoring", d: "Tab-switch, fullscreen and event monitoring built-in." },
               { icon: BarChart3, t: "Integrity scoring", d: "A single trust score per attempt, backed by event log." },
               { icon: Users, t: "Bulk invites", d: "Paste a CSV and every candidate gets a unique link." },
-              { icon: BookOpen, t: "Curated learning", d: "Free sheets, roadmaps and AI-powered study plans." },
+              { icon: BookOpen, t: "Curated learning", d: "Free sheets and AI-powered study plans." },
               { icon: Zap, t: "Zero install", d: "Runs in any modern browser. No plugins or downloads." },
             ].map((f) => (
               <div

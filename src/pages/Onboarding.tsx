@@ -70,7 +70,7 @@ const featureOptions = [
   { id: "projects", title: "Projects", description: "Build impressive projects to showcase your skills" },
   { id: "cold_dms", title: "Cold DMs/ Emails", description: "Manage and track your outreach campaigns" },
   { id: "job_portals", title: "Job Portals", description: "Find and apply to jobs from multiple platforms" },
-  { id: "roadmap", title: "Roadmap", description: "Follow structured learning paths for your goals" },
+  
   { id: "interview_copilot", title: "Interview Copilot", description: "AI-powered assistant for your interview preparation" },
   { id: "companies", title: "Companies", description: "Explore company profiles and interview experiences" },
 ];

@@ -11,7 +11,37 @@ import ResumeTemplateCard from "@/components/resume/ResumeTemplateCard";
 import ResumeStatsDashboard from "@/components/resume/ResumeStatsDashboard";
 import ResumeDownloadHistory from "@/components/resume/ResumeDownloadHistory";
 import ResumePreviewModal from "@/components/resume/ResumePreviewModal";
-import RoadmapSectionDivider from "@/components/roadmap/RoadmapSectionDivider";
+import { LucideIcon } from "lucide-react";
+
+interface SectionDividerProps {
+  icon: LucideIcon;
+  title: string;
+  subtitle: string;
+  count: number;
+  countLabel: string;
+  gradientFrom: string;
+  gradientTo: string;
+  delay?: number;
+}
+const RoadmapSectionDivider = ({ icon: Icon, title, subtitle, count, countLabel, gradientFrom, gradientTo, delay = 0 }: SectionDividerProps) => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay }}
+    className="flex items-center justify-between gap-4 mb-2"
+  >
+    <div className="flex items-center gap-3">
+      <div className={`p-2 rounded-lg bg-gradient-to-br ${gradientFrom} ${gradientTo} text-white`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <h2 className="text-xl font-semibold">{title}</h2>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
+      </div>
+    </div>
+    <span className="text-sm text-muted-foreground">{count} {countLabel}</span>
+  </motion.div>
+);
 import { resumeTemplates, getTemplateStats, ResumeTemplate } from "@/data/resumeTemplatesData";
 import { useResumeFavorites, useResumeDownloads } from "@/hooks/useResumeActions";
 import { useAuth } from "@/contexts/AuthContext";

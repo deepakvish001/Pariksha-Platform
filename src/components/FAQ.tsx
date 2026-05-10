@@ -18,7 +18,7 @@ const faqs = [
   {
     question: "Is Parikshaa free for students?",
     answer:
-      "Yes — the entire learning side is free. You get curated DSA sheets, roadmaps, daily challenges, contests, an AI mentor, progress tracking, streaks, and leaderboards with no credit card required.",
+      "Yes — the entire learning side is free. You get curated DSA sheets, daily challenges, contests, an AI mentor, progress tracking, streaks, and leaderboards with no credit card required.",
   },
   {
     question: "How does proctoring work for assessments?",

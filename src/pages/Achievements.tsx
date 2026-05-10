@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Trophy, Lock, Star, Flame, Target, Zap, Medal, CheckCircle, Loader2, Filter, Network, Map } from "lucide-react";
+import { Trophy, Lock, Star, Flame, Target, Zap, Medal, CheckCircle, Loader2, Filter, Network } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -29,7 +29,7 @@ const categories = [
   { id: "fundamentals", label: "Fundamentals", icon: Zap },
   { id: "system_design", label: "System Design", icon: Network },
   { id: "research", label: "Research", icon: Medal },
-  { id: "roadmap", label: "Roadmaps", icon: Map },
+  
 ];
 
 
@@ -43,7 +43,7 @@ const rarityFilters = [
 ];
 
 const getCategoryFromAchievement = (achievement: Achievement): string => {
-  if (achievement.requirement.type.startsWith("roadmap")) return "roadmap";
+  
   if (achievement.requirement.type.startsWith("research")) return "research";
   if (achievement.requirement.type.startsWith("system_design")) return "system_design";
   if (achievement.requirement.type.startsWith("fundamentals")) return "fundamentals";

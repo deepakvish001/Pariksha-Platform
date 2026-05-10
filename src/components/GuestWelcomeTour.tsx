@@ -6,7 +6,7 @@ import {
   FileSpreadsheet,
   BookOpen,
   Sparkles,
-  Map,
+  
   ArrowRight,
   X,
   PartyPopper,
@@ -30,11 +30,6 @@ const tourSteps: TourStep[] = [
     title: "Learning Library",
     description: "Access interview questions, CS subjects, aptitude practice, and company-specific resources.",
     icon: BookOpen,
-  },
-  {
-    title: "Roadmaps & Guides",
-    description: "Follow structured learning paths for full-stack, DSA, system design, and more.",
-    icon: Map,
   },
   {
     title: "AI-Powered Tools",
