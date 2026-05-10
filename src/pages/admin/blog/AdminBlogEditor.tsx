@@ -11,12 +11,13 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarkdownEditor } from "@/components/admin/editor/MarkdownEditor";
-import { ArrowLeft, Upload, Save, Loader2, ExternalLink, RotateCcw, Check, History } from "lucide-react";
+import { ArrowLeft, Upload, Save, Loader2, ExternalLink, RotateCcw, Check, History, ImageIcon, Send } from "lucide-react";
 import { useBlogCategories, useBlogTags, useBlogPostById } from "@/hooks/useBlog";
 import { useSaveBlogPost, useUploadBlogCover, useUpsertBlogTag } from "@/hooks/admin/useAdminBlog";
 import { slugify } from "@/types/blog";
 import type { BlogPostStatus } from "@/types/blog";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export default function AdminBlogEditor() {
