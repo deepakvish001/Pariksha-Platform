@@ -65,7 +65,7 @@ describe("CrossTabAuthSync — cross-tab sign-out", () => {
     sessionStorage.clear();
   });
 
-  const gatedPaths = ["/learn/dashboard", "/library/problems", "/arena/daily"];
+  const gatedPaths = ["/library/problems", "/arena/daily", "/settings"];
 
   it.each(gatedPaths)(
     "redirects %s to /learn when SIGNED_OUT fires from another tab",
@@ -95,8 +95,8 @@ describe("CrossTabAuthSync — cross-tab sign-out", () => {
   );
 
   it("redirects via raw `storage` event when sibling tab clears the auth token", async () => {
-    let path = "/learn/dashboard";
-    renderAt("/learn/dashboard", (p) => (path = p));
+    let path = "/library/problems";
+    renderAt("/library/problems", (p) => (path = p));
 
     await act(async () => {
       mockSession = null;
