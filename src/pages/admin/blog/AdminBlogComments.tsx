@@ -18,11 +18,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Eye, EyeOff, Flag, Trash2, ExternalLink, MessageCircle } from "lucide-react";
+import { Search, Eye, EyeOff, Flag, Trash2, ExternalLink, MessageCircle, Check, Clock } from "lucide-react";
 import {
   useAdminBlogComments,
   useSetCommentStatus,
   useDeleteCommentAdmin,
+  useApproveComment,
   type AdminCommentStatusFilter,
 } from "@/hooks/admin/useAdminBlog";
 
@@ -33,16 +34,17 @@ const statusBadge: Record<string, string> = {
   deleted: "bg-muted text-muted-foreground",
 };
 
-const VALID_TABS: AdminCommentStatusFilter[] = ["reported", "hidden", "visible", "all"];
+const VALID_TABS: AdminCommentStatusFilter[] = ["pending", "reported", "hidden", "visible", "all"];
 
 type PendingAction =
   | { kind: "status"; id: string; status: "visible" | "hidden" }
+  | { kind: "approve"; id: string; approve: boolean }
   | { kind: "delete"; id: string };
 
 export default function AdminBlogComments() {
   const [params, setParams] = useSearchParams();
   const tabParam = params.get("tab") as AdminCommentStatusFilter | null;
-  const status: AdminCommentStatusFilter = tabParam && VALID_TABS.includes(tabParam) ? tabParam : "reported";
+  const status: AdminCommentStatusFilter = tabParam && VALID_TABS.includes(tabParam) ? tabParam : "pending";
   const search = params.get("q") ?? "";
   const [searchInput, setSearchInput] = useState(search);
 
@@ -73,24 +75,31 @@ export default function AdminBlogComments() {
   const { data: comments = [], isLoading } = useAdminBlogComments(status, search);
   const setStatusMut = useSetCommentStatus();
   const del = useDeleteCommentAdmin();
+  const approve = useApproveComment();
 
   const [pending, setPending] = useState<PendingAction | null>(null);
 
-  const confirmLabel: Record<string, string> = {
-    visible: "Make visible",
-    hidden: "Hide comment",
-    delete: "Delete permanently",
+  const confirmDesc = (p: PendingAction) => {
+    if (p.kind === "delete") return "This will permanently remove the comment. This action cannot be undone.";
+    if (p.kind === "approve")
+      return p.approve
+        ? "This comment will become publicly visible on the post."
+        : "This comment will be rejected and hidden from public view.";
+    return p.status === "visible"
+      ? "This comment will become publicly visible on the post again."
+      : "This comment will be hidden from public view but kept for review.";
   };
-  const confirmDesc = (p: PendingAction) =>
-    p.kind === "delete"
-      ? "This will permanently remove the comment. This action cannot be undone."
-      : p.status === "visible"
-        ? "This comment will become publicly visible on the post again."
-        : "This comment will be hidden from public view but kept for review.";
+
+  const confirmTitle = (p: PendingAction) => {
+    if (p.kind === "delete") return "Delete permanently?";
+    if (p.kind === "approve") return p.approve ? "Approve comment?" : "Reject comment?";
+    return p.status === "visible" ? "Make visible?" : "Hide comment?";
+  };
 
   const runPending = () => {
     if (!pending) return;
     if (pending.kind === "delete") del.mutate(pending.id);
+    else if (pending.kind === "approve") approve.mutate({ id: pending.id, approve: pending.approve });
     else setStatusMut.mutate({ id: pending.id, status: pending.status });
     setPending(null);
   };
@@ -105,6 +114,9 @@ export default function AdminBlogComments() {
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <Tabs value={status} onValueChange={setTab}>
           <TabsList>
+            <TabsTrigger value="pending">
+              <Clock className="h-3.5 w-3.5 mr-1" /> Pending
+            </TabsTrigger>
             <TabsTrigger value="reported">
               <Flag className="h-3.5 w-3.5 mr-1" /> Reported
             </TabsTrigger>
@@ -148,6 +160,11 @@ export default function AdminBlogComments() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium">{c.author?.full_name || "User"}</span>
                     <Badge className={statusBadge[c.status] ?? ""}>{c.status}</Badge>
+                    {!c.approved_at && (
+                      <Badge variant="outline" className="border-amber-500/40 text-amber-500">
+                        Pending approval
+                      </Badge>
+                    )}
                     <span className="text-xs text-muted-foreground">
                       {new Date(c.created_at).toLocaleString()}
                     </span>
@@ -166,7 +183,24 @@ export default function AdminBlogComments() {
                   <p className="text-sm mt-2 whitespace-pre-wrap break-words">{c.body}</p>
 
                   <div className="flex flex-wrap gap-2 mt-3">
-                    {c.status !== "visible" && (
+                    {!c.approved_at && (
+                      <Button
+                        size="sm"
+                        onClick={() => setPending({ kind: "approve", id: c.id, approve: true })}
+                      >
+                        <Check className="h-3.5 w-3.5 mr-1" /> Approve
+                      </Button>
+                    )}
+                    {!c.approved_at && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setPending({ kind: "approve", id: c.id, approve: false })}
+                      >
+                        <EyeOff className="h-3.5 w-3.5 mr-1" /> Reject
+                      </Button>
+                    )}
+                    {c.approved_at && c.status !== "visible" && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -175,7 +209,7 @@ export default function AdminBlogComments() {
                         <Eye className="h-3.5 w-3.5 mr-1" /> Make visible
                       </Button>
                     )}
-                    {c.status !== "hidden" && (
+                    {c.approved_at && c.status !== "hidden" && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -202,12 +236,7 @@ export default function AdminBlogComments() {
       <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pending?.kind === "delete"
-                ? confirmLabel.delete
-                : confirmLabel[pending?.status ?? "visible"]}
-              ?
-            </AlertDialogTitle>
+            <AlertDialogTitle>{pending && confirmTitle(pending)}</AlertDialogTitle>
             <AlertDialogDescription>{pending && confirmDesc(pending)}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

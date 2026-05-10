@@ -339,6 +339,8 @@ export const useBlogBookmark = (postId: string | undefined) => {
 };
 
 // ───────── Comments ─────────
+export type CommentSort = "newest" | "oldest" | "top";
+
 export const useBlogComments = (postId: string | undefined) =>
   useQuery({
     queryKey: ["blog-comments", postId],
@@ -349,7 +351,9 @@ export const useBlogComments = (postId: string | undefined) =>
         .select("*")
         .eq("post_id", postId!)
         .eq("status", "visible")
-        .order("created_at", { ascending: true });
+        .not("approved_at", "is", null)
+        .order("created_at", { ascending: true })
+        .limit(1000);
       if (error) throw error;
       const rows = (data ?? []) as BlogComment[];
       const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
