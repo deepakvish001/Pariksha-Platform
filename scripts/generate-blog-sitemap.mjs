@@ -44,7 +44,7 @@ async function fetchBlogPosts() {
   }
 }
 
-function buildEntry(loc: string, lastmod?: string, changefreq = "weekly", priority = "0.7") {
+function buildEntry(loc, lastmod, changefreq = "weekly", priority = "0.7") {
   const lm = lastmod ? `<lastmod>${lastmod.split("T")[0]}</lastmod>` : "";
   return `  <url><loc>${loc}</loc>${lm}<changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;
 }
