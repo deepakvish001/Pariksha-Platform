@@ -144,6 +144,17 @@ export default function BlogPost() {
                     </div>
                     <p className="text-sm mt-1 whitespace-pre-wrap">{c.body}</p>
                   </div>
+                  {user && user.id !== c.user_id && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-muted-foreground hover:text-destructive h-7 w-7"
+                      title="Report comment"
+                      onClick={() => reportComment.mutate(c.id)}
+                    >
+                      <Flag className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                   {user?.id === c.user_id && (
                     <Button size="icon" variant="ghost" className="text-destructive h-7 w-7" onClick={() => deleteComment.mutate(c.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
@@ -151,6 +162,40 @@ export default function BlogPost() {
                   )}
                 </div>
               </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {related.length > 0 && (
+        <section className="mt-12 pt-8 border-t">
+          <h2 className="text-2xl font-bold mb-4">Related posts</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            {related.map((r: any) => (
+              <Link key={r.id} to={`/blog/${r.slug}`}>
+                <Card className="overflow-hidden h-full group hover:border-primary/50 transition-colors">
+                  {r.cover_image_url && (
+                    <div className="aspect-video overflow-hidden">
+                      <img
+                        src={r.cover_image_url}
+                        alt=""
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                  )}
+                  <div className="p-3">
+                    <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                      {r.title}
+                    </h3>
+                    <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{r.reading_time_min}m</span>
+                      <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{r.view_count}</span>
+                      <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{r.like_count}</span>
+                    </div>
+                  </div>
+                </Card>
+              </Link>
             ))}
           </div>
         </section>
