@@ -16,7 +16,16 @@ const AuthCallback = () => {
         return;
       }
 
-      const dest = await getPostLoginPath(session.user.id);
+      let dest: string | null = null;
+      try {
+        const raw = localStorage.getItem("pendingAuthAction");
+        if (raw) {
+          const parsed = JSON.parse(raw) as { path?: string };
+          if (parsed?.path) dest = parsed.path;
+        }
+      } catch { /* ignore */ }
+      try { localStorage.removeItem("pendingAuthAction"); } catch { /* ignore */ }
+      if (!dest) dest = await getPostLoginPath(session.user.id);
       navigate(dest, { replace: true });
     };
 

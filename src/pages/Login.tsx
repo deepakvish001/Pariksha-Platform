@@ -23,7 +23,18 @@ const Login = () => {
   const location = useLocation();
   const { toast } = useToast();
 
-  const from: string | undefined = location.state?.from?.pathname;
+  const stateFrom: string | undefined = location.state?.from?.pathname;
+  const readPendingPath = (): string | undefined => {
+    try {
+      const raw = localStorage.getItem("pendingAuthAction");
+      if (!raw) return undefined;
+      const parsed = JSON.parse(raw) as { path?: string };
+      return parsed?.path;
+    } catch {
+      return undefined;
+    }
+  };
+  const from: string | undefined = stateFrom ?? readPendingPath();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +60,7 @@ const Login = () => {
     // Resolve role-based redirect
     const { data: { user } } = await supabase.auth.getUser();
     const dest = from ?? (user ? await getPostLoginPath(user.id) : "/learn");
+    try { localStorage.removeItem("pendingAuthAction"); } catch { /* ignore */ }
     navigate(dest, { replace: true });
 
     setIsLoading(false);
