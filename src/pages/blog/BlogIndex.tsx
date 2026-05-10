@@ -1,21 +1,35 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Search, Clock, Eye, Heart, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Clock, Eye, Heart, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { useBlogPosts, useBlogCategories } from "@/hooks/useBlog";
+
+const PAGE_SIZE = 9;
 
 export default function BlogIndex() {
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState<string | undefined>();
+  const [page, setPage] = useState(1);
   const { data: categories = [] } = useBlogCategories();
   const { data: posts = [], isLoading } = useBlogPosts({ search, categorySlug: cat });
 
-  const featured = posts.find((p) => p.is_featured) ?? posts[0];
-  const rest = posts.filter((p) => p.id !== featured?.id);
+  // Reset page on filter change
+  useEffect(() => { setPage(1); }, [search, cat]);
+
+  const featured = !search && !cat ? posts.find((p) => p.is_featured) ?? posts[0] : undefined;
+  const rest = useMemo(
+    () => (featured ? posts.filter((p) => p.id !== featured.id) : posts),
+    [posts, featured],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paged = rest.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
