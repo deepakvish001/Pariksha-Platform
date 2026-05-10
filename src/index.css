@@ -369,7 +369,17 @@
 .prose h2:hover .heading-anchor,
 .prose h3:hover .heading-anchor,
 .prose h4:hover .heading-anchor,
-.prose .heading-anchor:focus {
+.prose .heading-anchor:focus,
+.prose .heading-anchor:focus-visible {
   opacity: 1;
 }
+.prose .heading-anchor:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 .prose .heading-anchor-icon { font-size: 0.85em; }
+.prose :target {
+  scroll-margin-top: 6rem;
+}
+
