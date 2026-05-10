@@ -175,13 +175,29 @@ export const useSetCommentStatus = () => {
     mutationFn: async ({ id, status }: { id: string; status: "visible" | "hidden" | "reported" }) => {
       const { error } = await supabase.from("blog_comments").update({ status }).eq("id", id);
       if (error) throw error;
+      return { id, status };
+    },
+    onMutate: async ({ id, status }) => {
+      await qc.cancelQueries({ queryKey: ["admin-blog-comments"] });
+      const snapshots = qc.getQueriesData<any[]>({ queryKey: ["admin-blog-comments"] });
+      qc.setQueriesData<any[]>({ queryKey: ["admin-blog-comments"] }, (old) => {
+        if (!Array.isArray(old)) return old;
+        // Update the row's status; the active filtered view will hide non-matching rows on next refetch
+        return old.map((c) => (c.id === id ? { ...c, status } : c));
+      });
+      return { snapshots };
+    },
+    onError: (e: any, _v, ctx) => {
+      if (ctx?.snapshots) {
+        for (const [key, val] of ctx.snapshots) qc.setQueryData(key, val);
+      }
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-blog-comments"] });
-      qc.invalidateQueries({ queryKey: ["blog-comments"] });
       toast({ title: "Updated" });
+      qc.invalidateQueries({ queryKey: ["blog-comments"] });
     },
-    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["admin-blog-comments"] }),
   });
 };
 
@@ -192,12 +208,25 @@ export const useDeleteCommentAdmin = () => {
       const { error } = await supabase.from("blog_comments").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-blog-comments"] });
-      qc.invalidateQueries({ queryKey: ["blog-comments"] });
-      toast({ title: "Deleted" });
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ["admin-blog-comments"] });
+      const snapshots = qc.getQueriesData<any[]>({ queryKey: ["admin-blog-comments"] });
+      qc.setQueriesData<any[]>({ queryKey: ["admin-blog-comments"] }, (old) =>
+        Array.isArray(old) ? old.filter((c) => c.id !== id) : old,
+      );
+      return { snapshots };
     },
-    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+    onError: (e: any, _v, ctx) => {
+      if (ctx?.snapshots) {
+        for (const [key, val] of ctx.snapshots) qc.setQueryData(key, val);
+      }
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
+    },
+    onSuccess: () => {
+      toast({ title: "Deleted" });
+      qc.invalidateQueries({ queryKey: ["blog-comments"] });
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["admin-blog-comments"] }),
   });
 };
 
