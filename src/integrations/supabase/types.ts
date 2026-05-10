@@ -1299,6 +1299,8 @@ export type Database = {
       }
       blog_comments: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           body: string
           created_at: string
           id: string
@@ -1309,6 +1311,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           body: string
           created_at?: string
           id?: string
@@ -1319,6 +1323,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           body?: string
           created_at?: string
           id?: string
@@ -1435,6 +1441,7 @@ export type Database = {
         Row: {
           allow_comments: boolean
           author_id: string | null
+          auto_approve_comments: boolean
           bookmark_count: number
           canonical_url: string | null
           comment_count: number
@@ -1460,6 +1467,7 @@ export type Database = {
         Insert: {
           allow_comments?: boolean
           author_id?: string | null
+          auto_approve_comments?: boolean
           bookmark_count?: number
           canonical_url?: string | null
           comment_count?: number
@@ -1485,6 +1493,7 @@ export type Database = {
         Update: {
           allow_comments?: boolean
           author_id?: string | null
+          auto_approve_comments?: boolean
           bookmark_count?: number
           canonical_url?: string | null
           comment_count?: number
@@ -1508,6 +1517,61 @@ export type Database = {
           view_count?: number
         }
         Relationships: []
+      }
+      blog_revision_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          compare_revision_id: string | null
+          created_at: string
+          id: string
+          meta: Json
+          post_id: string
+          revision_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          compare_revision_id?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          post_id: string
+          revision_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          compare_revision_id?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          post_id?: string
+          revision_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_revision_audit_compare_revision_id_fkey"
+            columns: ["compare_revision_id"]
+            isOneToOne: false
+            referencedRelation: "blog_revisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_revision_audit_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_revision_audit_revision_id_fkey"
+            columns: ["revision_id"]
+            isOneToOne: false
+            referencedRelation: "blog_revisions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       blog_revisions: {
         Row: {
