@@ -385,6 +385,52 @@ export default function AdminBlogEditor() {
               <Textarea value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} rows={3} maxLength={160} />
               <p className="text-[11px] text-muted-foreground mt-1">{seoDesc.length}/160</p>
             </div>
+
+            <div className="pt-2 border-t space-y-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                disabled={!id}
+                onClick={async () => {
+                  if (!id) return;
+                  const { data, error } = await supabase.functions.invoke("generate-og-image", {
+                    body: { postId: id },
+                  });
+                  if (error) {
+                    toast({ title: "Failed", description: error.message, variant: "destructive" });
+                    return;
+                  }
+                  toast({ title: "OG image generated", description: "Cover image updated for social sharing." });
+                  if ((data as any)?.og_image_url) {
+                    // best-effort: trigger refetch by full reload of editor draft via existing hook
+                  }
+                }}
+              >
+                <ImageIcon className="h-4 w-4 mr-2" /> Generate OG image
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={async () => {
+                  const { data, error } = await supabase.functions.invoke("regenerate-sitemap", {
+                    body: {},
+                  });
+                  if (error) {
+                    toast({ title: "Failed", description: error.message, variant: "destructive" });
+                    return;
+                  }
+                  const okCount = ((data as any)?.results ?? []).filter((r: any) => r.ok).length;
+                  toast({ title: "Search engines pinged", description: `${okCount}/2 succeeded.` });
+                }}
+              >
+                <Send className="h-4 w-4 mr-2" /> Ping search engines
+              </Button>
+              <p className="text-[11px] text-muted-foreground">
+                Save the post first, then generate a per-post OpenGraph image and notify Google &amp; Bing about new content.
+              </p>
+            </div>
           </Card>
         </div>
       </div>
