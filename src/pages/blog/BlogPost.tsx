@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,8 @@ import { ArrowLeft, Clock, Eye, Heart, Bookmark, Share2, MessageCircle, Trash2, 
 import { BlogContent } from "@/components/blog/BlogContent";
 import { ReadingProgress } from "@/components/blog/ReadingProgress";
 import { TableOfContents } from "@/components/blog/TableOfContents";
+import { FloatingActionRail } from "@/components/blog/FloatingActionRail";
 import { extractToc } from "@/lib/blog/extractToc";
-import { useMemo } from "react";
 import { useBlogPost, useTrackBlogView, useBlogLike, useBlogBookmark, useBlogComments, usePostComment, useDeleteComment, useReportComment, useRelatedPosts } from "@/hooks/useBlog";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -39,6 +39,23 @@ export default function BlogPost() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post?.id]);
 
+  // Keyboard shortcuts: t = top, c = comments
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.matches?.("input, textarea, [contenteditable]")) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "t") window.scrollTo({ top: 0, behavior: "smooth" });
+      if (e.key === "c") {
+        document
+          .querySelector('[data-section="comments"]')
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const toc = useMemo(() => extractToc(post?.content_md || ""), [post?.content_md]);
 
   if (isLoading) return <div className="container mx-auto py-16 text-center text-muted-foreground">Loading…</div>;
@@ -48,8 +65,17 @@ export default function BlogPost() {
 
   return (
     <>
-      <ReadingProgress />
-      <article className="container mx-auto px-4 py-8 max-w-6xl">
+      <ReadingProgress totalMinutes={post.reading_time_min} />
+      <FloatingActionRail
+        liked={liked}
+        bookmarked={bookmarked}
+        likeCount={post.like_count}
+        bookmarkCount={post.bookmark_count ?? 0}
+        onToggleLike={() => toggleLike()}
+        onToggleBookmark={() => toggleBookmark()}
+        url={url}
+      />
+      <article className="container mx-auto px-4 py-8 pb-24 lg:pb-8 max-w-6xl">
       <Helmet>
         <title>{post.seo_title || post.title}</title>
         <meta name="description" content={post.seo_description || post.excerpt || ""} />
@@ -121,7 +147,7 @@ export default function BlogPost() {
       )}
 
       {post.allow_comments && (
-        <section>
+        <section data-section="comments">
           <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><MessageCircle className="h-5 w-5" />Comments ({comments.length})</h2>
           {user ? (
             <Card className="p-4 mb-6">

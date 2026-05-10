@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -11,11 +11,13 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarkdownEditor } from "@/components/admin/editor/MarkdownEditor";
-import { ArrowLeft, Upload, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, Save, Loader2, ExternalLink, RotateCcw, Check } from "lucide-react";
 import { useBlogCategories, useBlogTags, useBlogPostById } from "@/hooks/useBlog";
 import { useSaveBlogPost, useUploadBlogCover, useUpsertBlogTag } from "@/hooks/admin/useAdminBlog";
 import { slugify } from "@/types/blog";
 import type { BlogPostStatus } from "@/types/blog";
+import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 export default function AdminBlogEditor() {
   const { id } = useParams();
@@ -63,6 +65,116 @@ export default function AdminBlogEditor() {
 
   useEffect(() => { if (isNew && title && !slug) setSlug(slugify(title)); }, [title, slug, isNew]);
 
+  // ─── Autosave + unsaved-changes guard ────────────────────────────────────
+  const draftKey = `blog-draft:${id ?? "new"}`;
+  const initialSnapshot = useRef<string | null>(null);
+  const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [recoveredAt, setRecoveredAt] = useState<number | null>(null);
+
+  // Snapshot of the saved baseline → used to detect "dirty" state.
+  const savedSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        title, slug, excerpt, content, cover, status, scheduled,
+        seoTitle, seoDesc, featured, allowComments, catIds, tagIds,
+      }),
+    [title, slug, excerpt, content, cover, status, scheduled, seoTitle, seoDesc, featured, allowComments, catIds, tagIds],
+  );
+  if (initialSnapshot.current === null && (existing || isNew)) {
+    initialSnapshot.current = savedSnapshot;
+  }
+  const isDirty = initialSnapshot.current !== null && initialSnapshot.current !== savedSnapshot;
+
+  // Restore draft on first mount if a newer one exists in localStorage.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (!draft?.savedAt || (existing && new Date(existing.updated_at || 0).getTime() > draft.savedAt)) return;
+      // Only auto-restore when the user hasn't typed yet (matches saved baseline).
+      if (initialSnapshot.current !== savedSnapshot) return;
+      setTitle(draft.title ?? title);
+      setSlug(draft.slug ?? slug);
+      setExcerpt(draft.excerpt ?? excerpt);
+      setContent(draft.content ?? content);
+      setCover(draft.cover ?? cover);
+      setStatus(draft.status ?? status);
+      setScheduled(draft.scheduled ?? scheduled);
+      setSeoTitle(draft.seoTitle ?? seoTitle);
+      setSeoDesc(draft.seoDesc ?? seoDesc);
+      setFeatured(draft.featured ?? featured);
+      setAllowComments(draft.allowComments ?? allowComments);
+      setCatIds(draft.catIds ?? catIds);
+      setTagIds(draft.tagIds ?? tagIds);
+      setRecoveredAt(draft.savedAt);
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existing?.id]);
+
+  // Debounced autosave to localStorage.
+  useEffect(() => {
+    if (!isDirty) return;
+    setAutosaveStatus("saving");
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({
+            savedAt: Date.now(),
+            title, slug, excerpt, content, cover, status, scheduled,
+            seoTitle, seoDesc, featured, allowComments, catIds, tagIds,
+          }),
+        );
+        setAutosaveStatus("saved");
+      } catch {
+        /* quota exceeded */
+      }
+    }, 800);
+    return () => clearTimeout(t);
+  }, [savedSnapshot, isDirty, draftKey]);
+
+  // beforeunload guard.
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
+  const discardDraft = () => {
+    try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+    setRecoveredAt(null);
+    if (existing) {
+      setTitle(existing.title);
+      setSlug(existing.slug);
+      setExcerpt(existing.excerpt ?? "");
+      setContent(existing.content_md);
+      setCover(existing.cover_image_url);
+      setStatus(existing.status);
+      setScheduled(existing.scheduled_for ? existing.scheduled_for.slice(0, 16) : "");
+      setSeoTitle(existing.seo_title ?? "");
+      setSeoDesc(existing.seo_description ?? "");
+      setFeatured(existing.is_featured);
+      setAllowComments(existing.allow_comments);
+      setCatIds(existing.category_ids ?? []);
+      setTagIds(existing.tag_ids ?? []);
+    }
+  };
+
+  const openPublicPreview = () => {
+    if (!slug.trim()) {
+      toast({ title: "Save the post first", description: "A slug is required to preview." });
+      return;
+    }
+    window.open(`/blog/${slug.trim()}`, "_blank", "noopener,noreferrer");
+  };
+
   const handleSave = async (overrideStatus?: BlogPostStatus) => {
     if (!title.trim() || !slug.trim()) return alert("Title and slug are required");
     const finalStatus = overrideStatus ?? status;
@@ -82,6 +194,10 @@ export default function AdminBlogEditor() {
       category_ids: catIds,
       tag_ids: tagIds,
     });
+    // Clear draft + reset baseline.
+    try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+    initialSnapshot.current = savedSnapshot;
+    setAutosaveStatus("saved");
     if (isNew) nav(`/admin/blog/${newId}/edit`, { replace: true });
   };
 
@@ -98,8 +214,29 @@ export default function AdminBlogEditor() {
       <AdminPageHeader
         title={isNew ? "New post" : "Edit post"}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                isDirty
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  : autosaveStatus === "saving"
+                    ? "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                    : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+              )}
+              aria-live="polite"
+            >
+              {autosaveStatus === "saving" ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Check className="h-3 w-3" />
+              )}
+              {isDirty ? "Unsaved" : autosaveStatus === "saving" ? "Saving…" : "Saved"}
+            </span>
             <Button asChild variant="ghost"><Link to="/admin/blog"><ArrowLeft className="mr-2 h-4 w-4" />Back</Link></Button>
+            <Button variant="outline" onClick={openPublicPreview} title="Open public preview in a new tab">
+              <ExternalLink className="mr-2 h-4 w-4" />Preview
+            </Button>
             <Button variant="outline" onClick={() => handleSave("draft")} disabled={save.isPending}>
               {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Save draft
@@ -116,6 +253,17 @@ export default function AdminBlogEditor() {
           </div>
         }
       />
+
+      {recoveredAt && (
+        <Card className="mb-3 flex flex-wrap items-center justify-between gap-2 border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+          <span className="text-amber-700 dark:text-amber-300">
+            Restored an unsaved draft from {new Date(recoveredAt).toLocaleString()}.
+          </span>
+          <Button size="sm" variant="ghost" onClick={discardDraft}>
+            <RotateCcw className="mr-1 h-3 w-3" />Discard draft
+          </Button>
+        </Card>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">

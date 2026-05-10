@@ -19,6 +19,13 @@ import {
   Sigma,
   Link2,
   Ruler,
+  Info,
+  Lightbulb,
+  AlertTriangle,
+  OctagonAlert,
+  CircleCheck,
+  Workflow,
+  Youtube,
 } from "lucide-react";
 import { RefObject } from "react";
 import {
@@ -178,6 +185,74 @@ export const MarkdownToolbar = ({
       >
         <Code2 className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
+
+      <Separator orientation="vertical" className="mx-1 h-5" />
+
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        aria-label="Insert mermaid diagram"
+        title="Mermaid diagram"
+        onClick={cmd((el) =>
+          insertBlock(
+            el,
+            value,
+            onChange,
+            "```mermaid\nflowchart LR\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Done]\n  B -->|No| D[Retry]\n```",
+          ),
+        )}
+      >
+        <Workflow className="h-3.5 w-3.5" aria-hidden="true" />
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        aria-label="Insert YouTube embed"
+        title="Insert YouTube / video embed"
+        onClick={cmd((el) => {
+          const url = window.prompt("Video URL (YouTube, Vimeo, Loom)");
+          if (!url) return;
+          insertBlock(el, value, onChange, url.trim());
+        })}
+      >
+        <Youtube className="h-3.5 w-3.5" aria-hidden="true" />
+      </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            aria-label="Insert callout"
+            title="Insert callout"
+          >
+            <Info className="h-3.5 w-3.5" aria-hidden="true" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={cmd((el) => insertBlock(el, value, onChange, "> [!note]\n> Helpful note for the reader."))}>
+            <Info className="mr-2 h-3.5 w-3.5" /> Note
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={cmd((el) => insertBlock(el, value, onChange, "> [!tip]\n> A pro tip worth sharing."))}>
+            <Lightbulb className="mr-2 h-3.5 w-3.5" /> Tip
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={cmd((el) => insertBlock(el, value, onChange, "> [!success]\n> What worked well."))}>
+            <CircleCheck className="mr-2 h-3.5 w-3.5" /> Success
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={cmd((el) => insertBlock(el, value, onChange, "> [!warning]\n> Be careful here."))}>
+            <AlertTriangle className="mr-2 h-3.5 w-3.5" /> Warning
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={cmd((el) => insertBlock(el, value, onChange, "> [!danger]\n> This will break things if ignored."))}>
+            <OctagonAlert className="mr-2 h-3.5 w-3.5" /> Danger
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={cmd((el) => insertBlock(el, value, onChange, "> [!note]- Collapsed by default\n> Hidden details revealed on click."))}>
+            <Quote className="mr-2 h-3.5 w-3.5" /> Collapsible
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Separator orientation="vertical" className="mx-1 h-5" />
 

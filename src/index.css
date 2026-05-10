@@ -383,3 +383,26 @@
   scroll-margin-top: 6rem;
 }
 
+/* KaTeX block-math should not overflow on small screens */
+.prose .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
+.prose .katex-display > .katex {
+  white-space: nowrap;
+}
+
+/* Print stylesheet — hide non-essential UI when printing a blog post */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  [data-section="comments"],
+  [data-embed],
+  aside[aria-label="Article actions"],
+  aside[aria-label="Table of contents"],
+  nav[aria-label="Table of contents"],
+  .lg\:hidden[aria-label="Article actions"] { display: none !important; }
+  [data-code-block] { break-inside: avoid; box-shadow: none !important; }
+  .prose a { color: inherit !important; text-decoration: underline !important; }
+}
+
