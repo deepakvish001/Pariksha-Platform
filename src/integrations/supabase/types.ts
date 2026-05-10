@@ -1261,6 +1261,42 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_comment_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          comment_id: string
+          comment_snapshot: string | null
+          created_at: string
+          id: string
+          new_status: string | null
+          old_status: string | null
+          post_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          comment_id: string
+          comment_snapshot?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          post_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          comment_id?: string
+          comment_snapshot?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          post_id?: string | null
+        }
+        Relationships: []
+      }
       blog_comments: {
         Row: {
           body: string
