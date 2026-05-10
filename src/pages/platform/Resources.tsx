@@ -6,6 +6,7 @@ import ResourcesFilterBar from "@/components/resources/ResourcesFilterBar";
 import ResourceCard from "@/components/resources/ResourceCard";
 import ResourcesEmptyState from "@/components/resources/ResourcesEmptyState";
 import { learningResources, resourceCategories, ResourceType } from "@/data/learningResourcesData";
+import FromTheBlogRail from "@/components/blog/FromTheBlogRail";
 
 const Resources = () => {
   const [searchQuery, setSearchQuery] = useState("");
