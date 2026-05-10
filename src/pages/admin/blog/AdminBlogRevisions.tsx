@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -17,9 +17,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, History, RotateCcw, Loader2, Eye, GitCompare } from "lucide-react";
+import { ArrowLeft, History, RotateCcw, Loader2, GitCompare, Eye, Activity } from "lucide-react";
 import { useBlogPostById } from "@/hooks/useBlog";
-import { useBlogRevisions, useRestoreBlogRevision, type BlogRevision } from "@/hooks/admin/useAdminBlog";
+import {
+  useBlogRevisions,
+  useRestoreBlogRevision,
+  useBlogRevisionAudit,
+  logRevisionAudit,
+  type BlogRevision,
+} from "@/hooks/admin/useAdminBlog";
 import { cn } from "@/lib/utils";
 import { diffLines } from "diff";
 
