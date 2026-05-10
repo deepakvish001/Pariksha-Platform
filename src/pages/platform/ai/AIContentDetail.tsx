@@ -6,7 +6,7 @@ import {
   ArrowLeft, 
   BookOpen, 
   FileText, 
-  Map, 
+   
   HelpCircle, 
   ClipboardList,
   Clock,
