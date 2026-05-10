@@ -203,33 +203,7 @@ interface AchievementProgress {
          const hasJobPortalPerfect = researchQuizzes.some(
            (r) => r.quiz_type.startsWith("job-portal-") && r.accuracy === 100
          );
-         const hasRoadmapPerfect = researchQuizzes.some(
-           (r) => r.quiz_type.startsWith("roadmap-") && r.accuracy === 100
-         );
           const hasJobPortalQuiz = researchQuizzes.some((r) => r.quiz_type.startsWith("job-portal-"));
-          const hasRoadmapQuiz = researchQuizzes.some((r) => r.quiz_type.startsWith("roadmap-"));
-
-          // Calculate roadmap progress
-          const roadmapData = roadmapProgressResult.data || [];
-          const roadmapByPath = new Map<string, { total: number; completed: number }>();
-          
-          roadmapData.forEach((item) => {
-            // Extract roadmap path from sheet_id like "roadmap-tree-frontend"
-            const pathMatch = item.sheet_id.match(/roadmap-tree-(\w+)/);
-            if (pathMatch) {
-              const path = pathMatch[1];
-              const existing = roadmapByPath.get(path) || { total: 0, completed: 0 };
-              existing.total += 1;
-              if (item.completed) existing.completed += 1;
-              roadmapByPath.set(path, existing);
-            }
-          });
-
-          const frontendStats = roadmapByPath.get("frontend") || { total: 0, completed: 0 };
-          const backendStats = roadmapByPath.get("backend") || { total: 0, completed: 0 };
-          const mobileStats = roadmapByPath.get("mobile") || { total: 0, completed: 0 };
-          
-          const totalRoadmapTopics = roadmapData.filter(r => r.completed).length;
 
           setProgress({
             topicsCompleted,
@@ -268,21 +242,7 @@ interface AchievementProgress {
               veryHighAccuracyCount: researchVeryHighAccuracy,
               hasPerfectScore: researchHasPerfect,
               hasJobPortalPerfect,
-              hasRoadmapPerfect,
               hasJobPortalQuiz,
-              hasRoadmapQuiz,
-            },
-            roadmapProgress: {
-              totalTopics: totalRoadmapTopics,
-              frontendComplete: frontendStats.total > 0 && frontendStats.completed === frontendStats.total,
-              backendComplete: backendStats.total > 0 && backendStats.completed === backendStats.total,
-              mobileComplete: mobileStats.total > 0 && mobileStats.completed === mobileStats.total,
-              frontendTotal: frontendStats.total,
-              frontendCompleted: frontendStats.completed,
-              backendTotal: backendStats.total,
-              backendCompleted: backendStats.completed,
-              mobileTotal: mobileStats.total,
-              mobileCompleted: mobileStats.completed,
             },
           });
      } catch (error) {
