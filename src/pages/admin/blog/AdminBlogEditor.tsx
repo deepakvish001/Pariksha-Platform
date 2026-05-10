@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -11,11 +11,13 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarkdownEditor } from "@/components/admin/editor/MarkdownEditor";
-import { ArrowLeft, Upload, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, Save, Loader2, ExternalLink, RotateCcw, Check } from "lucide-react";
 import { useBlogCategories, useBlogTags, useBlogPostById } from "@/hooks/useBlog";
 import { useSaveBlogPost, useUploadBlogCover, useUpsertBlogTag } from "@/hooks/admin/useAdminBlog";
 import { slugify } from "@/types/blog";
 import type { BlogPostStatus } from "@/types/blog";
+import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 export default function AdminBlogEditor() {
   const { id } = useParams();
