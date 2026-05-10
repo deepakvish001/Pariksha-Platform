@@ -205,6 +205,27 @@ export const useSetCommentStatus = () => {
   });
 };
 
+export const useApproveComment = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, approve }: { id: string; approve: boolean }) => {
+      const { data: u } = await supabase.auth.getUser();
+      const patch = approve
+        ? { approved_at: new Date().toISOString(), approved_by: u.user?.id ?? null, status: "visible" as const }
+        : { approved_at: null, approved_by: null, status: "hidden" as const };
+      const { error } = await supabase.from("blog_comments").update(patch).eq("id", id);
+      if (error) throw error;
+      return { id, approve };
+    },
+    onSuccess: ({ approve }) => {
+      toast({ title: approve ? "Approved" : "Rejected" });
+      qc.invalidateQueries({ queryKey: ["admin-blog-comments"] });
+      qc.invalidateQueries({ queryKey: ["blog-comments"] });
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+};
+
 export const useDeleteCommentAdmin = () => {
   const qc = useQueryClient();
   return useMutation({
