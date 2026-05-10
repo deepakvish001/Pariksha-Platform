@@ -43,9 +43,12 @@ export default function BlogPost() {
   if (!post) return <div className="container mx-auto py-16 text-center">Post not found.</div>;
 
   const url = typeof window !== "undefined" ? window.location.href : "";
+  const toc = useMemo(() => extractToc(post.content_md || ""), [post.content_md]);
 
   return (
-    <article className="container mx-auto px-4 py-8 max-w-3xl">
+    <>
+      <ReadingProgress />
+      <article className="container mx-auto px-4 py-8 max-w-6xl">
       <Helmet>
         <title>{post.seo_title || post.title}</title>
         <meta name="description" content={post.seo_description || post.excerpt || ""} />
@@ -67,33 +70,33 @@ export default function BlogPost() {
 
       <Button asChild variant="ghost" size="sm" className="mb-4"><Link to="/blog"><ArrowLeft className="mr-2 h-4 w-4" />All posts</Link></Button>
 
-      <div className="flex gap-2 mb-3 flex-wrap">
-        {post.categories?.map((c) => <Badge key={c.id} variant="outline">{c.name}</Badge>)}
-      </div>
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="min-w-0 max-w-3xl mx-auto w-full">
+          <div className="flex gap-2 mb-3 flex-wrap">
+            {post.categories?.map((c) => <Badge key={c.id} variant="outline">{c.name}</Badge>)}
+          </div>
 
-      <h1 className="text-4xl font-bold mb-3">{post.title}</h1>
-      {post.excerpt && <p className="text-lg text-muted-foreground mb-4">{post.excerpt}</p>}
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight leading-tight">{post.title}</h1>
+          {post.excerpt && <p className="text-lg text-muted-foreground mb-6 leading-relaxed">{post.excerpt}</p>}
 
-      <div className="flex items-center gap-4 mb-6 pb-6 border-b">
-        <Avatar className="h-10 w-10">
-          <AvatarImage src={post.author?.avatar_url ?? undefined} />
-          <AvatarFallback>{(post.author?.full_name?.[0] || "B").toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <p className="text-sm font-medium">{post.author?.full_name || "Byteskill"}</p>
-          <p className="text-xs text-muted-foreground flex items-center gap-3">
-            {post.published_at && <span>{new Date(post.published_at).toLocaleDateString()}</span>}
-            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.reading_time_min} min read</span>
-            <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{post.view_count}</span>
-          </p>
-        </div>
-      </div>
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={post.author?.avatar_url ?? undefined} />
+              <AvatarFallback>{(post.author?.full_name?.[0] || "B").toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <p className="text-sm font-medium">{post.author?.full_name || "Byteskill"}</p>
+              <p className="text-xs text-muted-foreground flex items-center gap-3">
+                {post.published_at && <span>{new Date(post.published_at).toLocaleDateString()}</span>}
+                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.reading_time_min} min read</span>
+                <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{post.view_count}</span>
+              </p>
+            </div>
+          </div>
 
-      {post.cover_image_url && <img src={post.cover_image_url} alt="" className="w-full rounded-lg mb-6 border" />}
+          {post.cover_image_url && <img src={post.cover_image_url} alt="" className="w-full rounded-lg mb-8 border" />}
 
-      <div className="prose prose-invert max-w-none mb-8">
-        <MarkdownPreview source={post.content_md} />
-      </div>
+          <BlogContent source={post.content_md} className="mb-8" />
 
       <div className="flex gap-2 py-4 border-y mb-8">
         <Button variant={liked ? "default" : "outline"} size="sm" onClick={() => toggleLike()}>
