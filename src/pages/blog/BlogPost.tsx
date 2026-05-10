@@ -147,7 +147,7 @@ export default function BlogPost() {
       )}
 
       {post.allow_comments && (
-        <section>
+        <section data-section="comments">
           <h2 className="text-2xl font-bold mb-4 flex items-center gap-2"><MessageCircle className="h-5 w-5" />Comments ({comments.length})</h2>
           {user ? (
             <Card className="p-4 mb-6">
