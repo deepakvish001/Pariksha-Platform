@@ -1,10 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
 import type { TocItem } from "@/lib/blog/extractToc";
 
 interface Props {
   items: TocItem[];
   className?: string;
+}
+
+function activate(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  window.history.replaceState(null, "", `#${id}`);
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  el.setAttribute("tabindex", "-1");
+  el.focus({ preventScroll: true });
 }
 
 export function TableOfContents({ items, className }: Props) {
@@ -30,44 +39,48 @@ export function TableOfContents({ items, className }: Props) {
 
   if (!items.length) return null;
 
+  const onKey = (id: string) => (e: KeyboardEvent<HTMLAnchorElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      activate(id);
+    }
+  };
+
   return (
     <nav
-      className={cn(
-        "text-sm border-l border-border/60 pl-4",
-        className,
-      )}
+      className={cn("text-sm border-l border-border pl-4", className)}
       aria-label="Table of contents"
     >
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+      <p
+        id="toc-heading"
+        className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3"
+      >
         On this page
       </p>
-      <ul className="space-y-2">
-        {items.map((i) => (
-          <li
-            key={i.id}
-            className={cn(i.depth === 3 && "pl-3")}
-          >
-            <a
-              href={`#${i.id}`}
-              onClick={(e) => {
-                e.preventDefault();
-                const el = document.getElementById(i.id);
-                if (el) {
-                  window.history.replaceState(null, "", `#${i.id}`);
-                  el.scrollIntoView({ behavior: "smooth", block: "start" });
-                }
-              }}
-              className={cn(
-                "block leading-snug transition-colors hover:text-foreground",
-                active === i.id
-                  ? "text-primary font-medium"
-                  : "text-muted-foreground",
-              )}
-            >
-              {i.text}
-            </a>
-          </li>
-        ))}
+      <ul aria-labelledby="toc-heading" className="space-y-2">
+        {items.map((i) => {
+          const isActive = active === i.id;
+          return (
+            <li key={i.id} className={cn(i.depth === 3 && "pl-3")}>
+              <a
+                href={`#${i.id}`}
+                aria-current={isActive ? "location" : undefined}
+                onClick={(e) => {
+                  e.preventDefault();
+                  activate(i.id);
+                }}
+                onKeyDown={onKey(i.id)}
+                className={cn(
+                  "block leading-snug rounded-sm transition-colors",
+                  "hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  isActive ? "text-primary font-medium" : "text-muted-foreground",
+                )}
+              >
+                {i.text}
+              </a>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );
