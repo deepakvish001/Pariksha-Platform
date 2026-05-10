@@ -520,15 +520,15 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
                     <CollapsibleTrigger asChild>
                       <SidebarGroupLabel
                         className={cn(
-                          "flex h-7 cursor-pointer items-center gap-2 rounded-md px-2 text-[11px] font-semibold uppercase tracking-wide hover:bg-muted/40",
-                          hasActive ? "text-primary" : "text-muted-foreground/70"
+                          "flex h-8 cursor-pointer items-center gap-2 rounded-md px-2.5 text-[12px] font-bold uppercase tracking-wider hover:bg-muted/40",
+                          hasActive ? "text-primary" : "text-muted-foreground/80"
                         )}
                       >
                         <span>{group.label}</span>
                         {groupCount > 0 && <Badge count={groupCount} />}
                         <ChevronDown
                           className={cn(
-                            "ml-auto h-3.5 w-3.5 transition-transform duration-200",
+                            "ml-auto h-4 w-4 transition-transform duration-200",
                             open ? "rotate-0" : "-rotate-90"
                           )}
                         />
