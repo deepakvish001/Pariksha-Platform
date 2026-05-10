@@ -381,21 +381,6 @@ const DashboardMatrix = () => {
             </CardContent>
           </Card>
 
-          <Card
-            className="cursor-pointer hover:shadow-md hover:border-purple-500/30 transition-all group"
-            onClick={() => navigate("/research/roadmap")}
-          >
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0 group-hover:bg-purple-500/20 transition-colors">
-                <MapIcon className="h-5 w-5 text-purple-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm">Explore Roadmaps</p>
-                <p className="text-xs text-muted-foreground">Career learning paths</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-purple-500 transition-colors" />
-            </CardContent>
-          </Card>
         </motion.div>
 
         {/* Goals + Weekly Activity Row */}

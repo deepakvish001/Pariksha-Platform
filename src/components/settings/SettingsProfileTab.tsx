@@ -81,7 +81,7 @@ const featureOptions = [
   { id: "projects", title: "Projects" },
   { id: "cold_dms", title: "Cold DMs" },
   { id: "job_portals", title: "Job Portals" },
-  { id: "roadmap", title: "Roadmap" },
+  
   { id: "interview_copilot", title: "Interview Copilot" },
   { id: "companies", title: "Companies" },
 ];

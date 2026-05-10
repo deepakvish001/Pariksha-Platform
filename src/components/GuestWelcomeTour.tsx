@@ -32,11 +32,6 @@ const tourSteps: TourStep[] = [
     icon: BookOpen,
   },
   {
-    title: "Roadmaps & Guides",
-    description: "Follow structured learning paths for full-stack, DSA, system design, and more.",
-    icon: Map,
-  },
-  {
     title: "AI-Powered Tools",
     description: "Generate courses, quizzes, and study plans with AI. Sign in to save your creations!",
     icon: Sparkles,

@@ -21,7 +21,7 @@ export const resolveTaskLink = (task: PlanTask): string | null => {
     case "quiz":
       return idSlug ? `/library/quiz?category=${encodeURIComponent(idSlug)}` : `/library/quiz`;
     case "concept":
-      return `/learn/roadmaps`;
+      return `/learn/sheets`;
     default:
       return null;
   }
@@ -33,7 +33,7 @@ export const taskLinkLabel = (task: PlanTask): string => {
     case "dsa": return "Open DSA";
     case "sql": return "Open SQL";
     case "quiz": return "Take quiz";
-    case "concept": return "Open roadmap";
+    case "concept": return "Open sheet";
     default: return "Open";
   }
 };

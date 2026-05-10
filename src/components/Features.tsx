@@ -64,15 +64,6 @@ const features = [
     active: false,
   },
   {
-    icon: Map,
-    title: "Learning Roadmaps",
-    description: "Structured paths for SDE, Data Science, DevOps, and more",
-    gradient: "from-indigo-500 to-purple-500",
-    bgGlow: "bg-indigo-500/20",
-    size: "medium" as const,
-    active: false,
-  },
-  {
     icon: Code2,
     title: "Core CS Subjects",
     description: "Master OS, DBMS, CN & OOPs",

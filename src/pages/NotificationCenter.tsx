@@ -63,7 +63,7 @@ const NotificationItem = ({
   const getActionLink = () => {
     switch (notification.type) {
       case "velocity_reminder":
-        return data.roadmap_id ? `/research/roadmap/${data.roadmap_id}` : null;
+        return null;
       case "new_follower":
         return profileUsername ? `/u/${profileUsername}` : null;
       case "rare_achievement":
