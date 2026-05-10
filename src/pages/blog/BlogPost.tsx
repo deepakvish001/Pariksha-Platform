@@ -22,7 +22,9 @@ import {
 } from "lucide-react";
 import { BlogContent } from "@/components/blog/BlogContent";
 import { ReadingProgress } from "@/components/blog/ReadingProgress";
+import { TableOfContents } from "@/components/blog/TableOfContents";
 import { FloatingActionRail } from "@/components/blog/FloatingActionRail";
+import { extractToc } from "@/lib/blog/extractToc";
 import {
   useBlogPost,
   useTrackBlogView,
