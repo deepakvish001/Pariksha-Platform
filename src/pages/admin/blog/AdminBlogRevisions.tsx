@@ -60,6 +60,40 @@ export default function AdminBlogRevisions() {
     return diffLines(right.content_md, left.content_md);
   }, [left, right]);
 
+  // Audit-log a "viewed" entry when a single revision is selected (debounced).
+  const lastViewedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!id || !left || right || left.id === "__current__") return;
+    if (lastViewedRef.current === left.id) return;
+    lastViewedRef.current = left.id;
+    const t = setTimeout(() => {
+      logRevisionAudit({ postId: id, action: "viewed", revisionId: left.id });
+    }, 600);
+    return () => clearTimeout(t);
+  }, [id, left, right]);
+
+  // Audit-log a "compared" entry when two are selected.
+  const lastComparedRef = useRef<string>("");
+  useEffect(() => {
+    if (!id || !left || !right) return;
+    const key = `${left.id}|${right.id}`;
+    if (lastComparedRef.current === key) return;
+    lastComparedRef.current = key;
+    const t = setTimeout(() => {
+      logRevisionAudit({
+        postId: id,
+        action: "compared",
+        revisionId: left.id === "__current__" ? null : left.id,
+        compareRevisionId: right.id === "__current__" ? null : right.id,
+        meta: {
+          a: left.id === "__current__" ? "current" : left.created_at,
+          b: right.id === "__current__" ? "current" : right.created_at,
+        },
+      });
+    }, 600);
+    return () => clearTimeout(t);
+  }, [id, left, right]);
+
   return (
     <AdminShell>
       <AdminPageHeader
