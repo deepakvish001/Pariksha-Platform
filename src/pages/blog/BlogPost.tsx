@@ -373,6 +373,9 @@ export default function BlogPost() {
               </section>
             )}
           </div>
+          <aside className="hidden lg:block">
+            <TableOfContents items={toc} />
+          </aside>
         </div>
       </article>
     </>
