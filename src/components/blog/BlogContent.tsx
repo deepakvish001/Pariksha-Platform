@@ -131,8 +131,8 @@ export function BlogContent({ source, className }: Props) {
 
           // Blockquote: detect GFM-style alerts `> [!note]`
           blockquote({ node, children, ...props }: any) {
-            const text = getAllText(children);
-            const m = text.match(/^\[!(note|tip|warning|danger|important|caution)\]\s*/i);
+            const text = getAllText(children).trim();
+            const m = text.match(/^\[!(note|tip|warning|danger|important|caution)\]/i);
             if (m) {
               const raw = m[1].toLowerCase();
               const kindMap: Record<string, CalloutKind> = {
