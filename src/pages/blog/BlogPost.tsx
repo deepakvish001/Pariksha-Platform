@@ -6,9 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Clock, Eye, Heart, Bookmark, Share2, MessageCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock, Eye, Heart, Bookmark, Share2, MessageCircle, Trash2, Flag } from "lucide-react";
 import { MarkdownPreview } from "@/components/admin/editor/MarkdownPreview";
-import { useBlogPost, useTrackBlogView, useBlogLike, useBlogBookmark, useBlogComments, usePostComment, useDeleteComment } from "@/hooks/useBlog";
+import { useBlogPost, useTrackBlogView, useBlogLike, useBlogBookmark, useBlogComments, usePostComment, useDeleteComment, useReportComment, useRelatedPosts } from "@/hooks/useBlog";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
