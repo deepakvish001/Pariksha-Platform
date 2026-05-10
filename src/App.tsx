@@ -471,6 +471,7 @@ const App = () => (
                   <Route path="blog" element={<AdminBlogList />} />
                   <Route path="blog/new" element={<AdminBlogEditor />} />
                   <Route path="blog/:id/edit" element={<AdminBlogEditor />} />
+                  <Route path="blog/comments" element={<AdminBlogComments />} />
                 </Route>
                 <Route path="/verify/:reportId" element={<PublicVerifyReport />} />
 
