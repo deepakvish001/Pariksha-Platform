@@ -99,6 +99,7 @@ export default function BlogPost() {
   const seoTitle = post.seo_title || `${post.title} — ${SITE_NAME}`;
   const seoDesc = post.seo_description || post.excerpt || `${post.title} · ${SITE_NAME} blog.`;
   const coverAlt = post.title; // alt-text fallback derived from title
+  const toc = extractToc(post.content_md || "");
 
   return (
     <>
