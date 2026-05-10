@@ -229,7 +229,7 @@ const NotificationPreferences = () => {
     {
       id: "notify_goal_milestone",
       title: "Goal Milestones",
-      description: "Celebrate hitting roadmap completion milestones",
+      description: "Celebrate hitting your learning milestones",
       icon: Target,
       color: "text-green-500",
       bgColor: "bg-green-500/10",

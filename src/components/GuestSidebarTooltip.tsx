@@ -35,7 +35,7 @@ const tooltipData: Record<string, GuestTooltipItem> = {
   "/platform/ai/community": {
     id: "community",
     label: "Community",
-    tip: "Discover AI-generated courses, quizzes & roadmaps from other learners.",
+    tip: "Discover AI-generated courses and quizzes from other learners.",
   },
   "/platform/collections": {
     id: "collections",

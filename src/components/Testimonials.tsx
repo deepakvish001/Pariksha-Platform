@@ -25,7 +25,7 @@ const testimonials = [
     role: "SDE at Microsoft",
     college: "IIM Bangalore",
     avatar: "AP",
-    content: "As someone juggling multiple prep resources, Parikshaa brought everything together. The roadmap feature helped me plan my entire preparation journey.",
+    content: "As someone juggling multiple prep resources, Parikshaa brought everything together. The curated sheets helped me plan my entire preparation journey.",
     rating: 5,
   },
   {
