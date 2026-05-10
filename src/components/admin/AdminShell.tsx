@@ -218,7 +218,7 @@ const Badge = ({ count, tone = "default" }: { count: number; tone?: "default" | 
   return (
     <span
       className={cn(
-        "ml-auto inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none",
+        "ml-auto inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[11px] font-semibold leading-none",
         tone === "alert"
           ? "bg-destructive text-destructive-foreground"
           : "bg-primary/15 text-primary"
@@ -310,9 +310,9 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         data-testid={item.testId ?? `admin-nav-${item.to.replace(/^\/admin\/?/, "") || "dashboard"}`}
         key={`${item.to}-${active ? flashKey : "x"}`}
         className={cn(
-          "group/item relative flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-all duration-150",
+          "group/item relative flex items-center gap-3 rounded-lg px-2.5 py-2.5 transition-all duration-150",
           active
-            ? "bg-primary/10 text-primary font-medium shadow-sm shadow-primary/5 admin-nav-flash"
+            ? "bg-primary/10 text-primary font-semibold shadow-sm shadow-primary/5 admin-nav-flash"
             : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         )}
       >
@@ -320,14 +320,14 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         <span
           aria-hidden
           className={cn(
-            "absolute -left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full transition-all duration-200",
+            "absolute -left-1 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full transition-all duration-200",
             active ? "bg-primary opacity-100 scale-y-100" : "opacity-0 scale-y-0"
           )}
         />
         <span className="relative flex shrink-0 items-center">
           <Icon
             className={cn(
-              "h-4 w-4 transition-transform",
+              "h-[18px] w-[18px] transition-transform",
               active ? "scale-110" : "group-hover/item:scale-105"
             )}
           />
@@ -342,7 +342,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         </span>
         {!collapsed && (
           <>
-            <span className="truncate text-[13px]">{item.label}</span>
+            <span className="truncate text-[14px] tracking-tight">{item.label}</span>
             <span className="ml-auto flex items-center gap-1">
               {showSkeleton ? (
                 <Skeleton className="h-4 w-6 rounded-full" />
@@ -365,7 +365,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
                 >
                   <Star
                     className={cn(
-                      "h-3 w-3",
+                      "h-3.5 w-3.5",
                       isPinned ? "fill-primary text-primary" : "text-muted-foreground"
                     )}
                   />
@@ -385,7 +385,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
                 >
                   <ChevronDown
                     className={cn(
-                      "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200",
+                      "h-4 w-4 text-muted-foreground transition-transform duration-200",
                       expanded ? "rotate-0" : "-rotate-90"
                     )}
                   />
@@ -433,7 +433,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         {showSubNav && (
           <ul
             data-testid={`admin-subnav-${item.to.replace(/^\/admin\/?/, "")}`}
-            className="mt-1 ml-6 flex flex-col gap-0.5 border-l border-border/40 pl-2"
+            className="mt-1 ml-7 flex flex-col gap-0.5 border-l border-border/40 pl-3"
           >
             {subItems.map((sub) => {
               const SubIcon = sub.icon;
@@ -445,13 +445,13 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
                     end={sub.end}
                     data-testid={sub.testId}
                     className={cn(
-                      "flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors",
+                      "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] transition-colors",
                       subOn
                         ? "bg-primary/10 text-primary font-medium"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                    <SubIcon className="h-4 w-4 shrink-0" />
                     <span className="truncate">{sub.label}</span>
                   </NavLink>
                 </li>
@@ -465,16 +465,16 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40 bg-gradient-to-b from-sidebar to-sidebar/95">
-      <SidebarHeader className="border-b border-border/40 px-2 py-3">
-        <div className={cn("flex items-center gap-2.5", collapsed && "justify-center")}>
-          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/60 shadow-sm shadow-primary/20">
-            <Shield className="h-4 w-4 text-primary-foreground" />
+      <SidebarHeader className="border-b border-border/40 px-2.5 py-4">
+        <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 shadow-md shadow-primary/30">
+            <Shield className="h-5 w-5 text-primary-foreground" />
           </div>
           {!collapsed && (
             <>
               <div className="flex min-w-0 flex-col leading-tight">
-                <span className="text-sm font-semibold tracking-tight">Admin Console</span>
-                <span className="text-[10px] text-muted-foreground">Platform control center</span>
+                <span className="text-base font-bold tracking-tight">Admin Console</span>
+                <span className="text-[11px] text-muted-foreground">Platform control center</span>
               </div>
               <span className="ml-auto">
                 <AdminBadgeSettings onMarkAllRead={clearAll} />
@@ -490,8 +490,8 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
           {pinnedItems.length > 0 && (
             <SidebarGroup className="py-1">
               {!collapsed && (
-                <SidebarGroupLabel className="flex h-7 items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-                  <Pin className="h-3 w-3" />
+                <SidebarGroupLabel className="flex h-8 items-center gap-2 px-2.5 text-[12px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                  <Pin className="h-3.5 w-3.5" />
                   <span>Pinned</span>
                 </SidebarGroupLabel>
               )}
@@ -520,15 +520,15 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
                     <CollapsibleTrigger asChild>
                       <SidebarGroupLabel
                         className={cn(
-                          "flex h-7 cursor-pointer items-center gap-2 rounded-md px-2 text-[11px] font-semibold uppercase tracking-wide hover:bg-muted/40",
-                          hasActive ? "text-primary" : "text-muted-foreground/70"
+                          "flex h-8 cursor-pointer items-center gap-2 rounded-md px-2.5 text-[12px] font-bold uppercase tracking-wider hover:bg-muted/40",
+                          hasActive ? "text-primary" : "text-muted-foreground/80"
                         )}
                       >
                         <span>{group.label}</span>
                         {groupCount > 0 && <Badge count={groupCount} />}
                         <ChevronDown
                           className={cn(
-                            "ml-auto h-3.5 w-3.5 transition-transform duration-200",
+                            "ml-auto h-4 w-4 transition-transform duration-200",
                             open ? "rotate-0" : "-rotate-90"
                           )}
                         />
