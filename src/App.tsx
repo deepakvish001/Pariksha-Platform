@@ -18,6 +18,7 @@ import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
 import { FaviconNotificationProvider } from "@/contexts/FaviconNotificationContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { RouteRestorer } from "@/components/RouteRestorer";
+import { CrossTabAuthSync } from "@/components/CrossTabAuthSync";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
 import RouteSeo from "@/components/RouteSeo";
@@ -232,6 +233,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <RouteRestorer />
+              <CrossTabAuthSync />
               <RouteSeo />
               <Routes>
                 <Route path="/" element={<Index />} />
