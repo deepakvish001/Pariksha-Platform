@@ -361,14 +361,55 @@ export const useReportComment = (postId: string | undefined) => {
         .update({ status: "reported" })
         .eq("id", id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["blog-comments", postId] });
-      toast({ title: "Reported", description: "Thanks — our team will review this comment." });
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: ["blog-comments", postId] });
+      const prev = qc.getQueryData<any[]>(["blog-comments", postId]);
+      qc.setQueryData<any[]>(["blog-comments", postId], (old) =>
+        (old ?? []).filter((c) => c.id !== id),
+      );
+      return { prev };
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any, _id, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["blog-comments", postId], ctx.prev);
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
+    onSuccess: (id) => {
+      sonnerToast("Reported", {
+        description: "Thanks — our team will review this comment.",
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            await supabase.from("blog_comments").update({ status: "visible" }).eq("id", id);
+            qc.invalidateQueries({ queryKey: ["blog-comments", postId] });
+          },
+        },
+        duration: 6000,
+      });
+    },
   });
 };
+
+// ───────── Batch user reactions for index/grid views ─────────
+export const useUserBlogReactions = (postIds: string[]) =>
+  useQuery({
+    queryKey: ["blog-user-reactions", [...postIds].sort().join(",")],
+    enabled: postIds.length > 0,
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return { likes: new Set<string>(), bookmarks: new Set<string>() };
+      const [likesRes, bmRes] = await Promise.all([
+        supabase.from("blog_likes").select("post_id").eq("user_id", u.user.id).in("post_id", postIds),
+        supabase.from("blog_bookmarks").select("post_id").eq("user_id", u.user.id).in("post_id", postIds),
+      ]);
+      return {
+        likes: new Set((likesRes.data ?? []).map((r: any) => r.post_id)),
+        bookmarks: new Set((bmRes.data ?? []).map((r: any) => r.post_id)),
+      };
+    },
+  });
+
 
 // ───────── Related posts (same category, exclude current) ─────────
 export const useRelatedPosts = (
