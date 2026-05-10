@@ -19,6 +19,13 @@ import {
   Sigma,
   Link2,
   Ruler,
+  Info,
+  Lightbulb,
+  AlertTriangle,
+  OctagonAlert,
+  CircleCheck,
+  Workflow,
+  Youtube,
 } from "lucide-react";
 import { RefObject } from "react";
 import {

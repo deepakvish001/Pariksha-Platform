@@ -169,6 +169,7 @@ export function CodeBlock({
           language={(language || "text").toLowerCase()}
           style={style as any}
           showLineNumbers={showLineNumbers}
+          wrapLines
           wrapLongLines={wrap}
           lineNumberStyle={{
             minWidth: "2.25em",
