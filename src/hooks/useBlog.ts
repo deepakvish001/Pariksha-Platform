@@ -158,25 +158,29 @@ export const useTrackBlogView = () =>
     },
   });
 
-// Helper to optimistically bump like_count across all cached blog-posts queries
-const bumpLikeCountInCaches = (qc: ReturnType<typeof useQueryClient>, postId: string, delta: number) => {
-  qc.setQueriesData<any>({ queryKey: ["blog-posts"] }, (old: any) => {
-    if (!Array.isArray(old)) return old;
-    return old.map((p: any) =>
-      p.id === postId ? { ...p, like_count: Math.max(0, (p.like_count ?? 0) + delta) } : p,
-    );
-  });
-  qc.setQueriesData<any>({ queryKey: ["blog-post"] }, (old: any) => {
-    if (!old || old.id !== postId) return old;
-    return { ...old, like_count: Math.max(0, (old.like_count ?? 0) + delta) };
-  });
-  qc.setQueriesData<any>({ queryKey: ["blog-related"] }, (old: any) => {
-    if (!Array.isArray(old)) return old;
-    return old.map((p: any) =>
-      p.id === postId ? { ...p, like_count: Math.max(0, (p.like_count ?? 0) + delta) } : p,
-    );
-  });
+// Helper to optimistically bump a counter field across all cached blog-posts queries
+const bumpCountInCaches = (
+  qc: ReturnType<typeof useQueryClient>,
+  postId: string,
+  field: "like_count" | "bookmark_count",
+  delta: number,
+) => {
+  const bump = (p: any) =>
+    p && p.id === postId ? { ...p, [field]: Math.max(0, (p[field] ?? 0) + delta) } : p;
+  qc.setQueriesData<any>({ queryKey: ["blog-posts"] }, (old: any) =>
+    Array.isArray(old) ? old.map(bump) : old,
+  );
+  qc.setQueriesData<any>({ queryKey: ["blog-post"] }, (old: any) =>
+    old && old.id === postId ? { ...old, [field]: Math.max(0, (old[field] ?? 0) + delta) } : old,
+  );
+  qc.setQueriesData<any>({ queryKey: ["blog-related"] }, (old: any) =>
+    Array.isArray(old) ? old.map(bump) : old,
+  );
 };
+const bumpLikeCountInCaches = (qc: ReturnType<typeof useQueryClient>, postId: string, delta: number) =>
+  bumpCountInCaches(qc, postId, "like_count", delta);
+const bumpBookmarkCountInCaches = (qc: ReturnType<typeof useQueryClient>, postId: string, delta: number) =>
+  bumpCountInCaches(qc, postId, "bookmark_count", delta);
 
 export const useBlogLike = (postId: string | undefined) => {
   const qc = useQueryClient();
