@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { 
-  Search, List, Map, Target, Trophy, TrendingUp, Users, 
+  Search, List, Target, Trophy, TrendingUp, Users, 
   Sparkles, BarChart3, Award, Flame, ArrowRight
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { jobPortalCategories, jobPortalQuestions } from "@/data/jobPortalsData";
-import { roadmapCategories, roadmapQuestions } from "@/data/roadmapsData";
 import FundamentalsLeaderboard from "@/components/library/FundamentalsLeaderboard";
 import FundamentalsAnalytics from "@/components/library/FundamentalsAnalytics";
 import AchievementBadge, { achievements } from "@/components/AchievementBadge";
@@ -22,8 +21,6 @@ import FundamentalsStreakCard from "@/components/FundamentalsStreakCard";
 interface ProgressStats {
   jobPortalsCompleted: number;
   jobPortalsTotal: number;
-  roadmapsCompleted: number;
-  roadmapsTotal: number;
   quizzesCompleted: number;
   avgAccuracy: number;
   totalXP: number;
@@ -36,8 +33,6 @@ const ResearchOverview: React.FC = () => {
   const [stats, setStats] = useState<ProgressStats>({
     jobPortalsCompleted: 0,
     jobPortalsTotal: jobPortalQuestions.length,
-    roadmapsCompleted: 0,
-    roadmapsTotal: roadmapQuestions.length,
     quizzesCompleted: 0,
     avgAccuracy: 0,
     totalXP: 0,
@@ -61,21 +56,12 @@ const ResearchOverview: React.FC = () => {
 
         const jobPortalsCompleted = jobPortalProgress?.filter((p) => p.completed).length || 0;
 
-        // Fetch topic progress for roadmaps
-        const { data: roadmapProgress } = await supabase
-          .from("user_topic_progress")
-          .select("completed")
-          .eq("user_id", user.id)
-          .like("sheet_id", "roadmap-%");
-
-        const roadmapsCompleted = roadmapProgress?.filter((p) => p.completed).length || 0;
-
         // Fetch quiz results for research
         const { data: quizResults } = await supabase
           .from("quiz_results")
           .select("accuracy, score")
           .eq("user_id", user.id)
-          .or("quiz_type.like.job-portal-%,quiz_type.like.roadmap-%");
+          .like("quiz_type", "job-portal-%");
 
         const quizzesCompleted = quizResults?.length || 0;
         const avgAccuracy = quizzesCompleted > 0
@@ -92,8 +78,6 @@ const ResearchOverview: React.FC = () => {
         setStats({
           jobPortalsCompleted,
           jobPortalsTotal: jobPortalQuestions.length,
-          roadmapsCompleted,
-          roadmapsTotal: roadmapQuestions.length,
           quizzesCompleted,
           avgAccuracy,
           totalXP: profile?.total_xp || 0,
@@ -115,8 +99,8 @@ const ResearchOverview: React.FC = () => {
 
   const earnedResearchCount = researchAchievements.filter((a) => isEarned(a.id)).length;
 
-  const totalCompleted = stats.jobPortalsCompleted + stats.roadmapsCompleted;
-  const totalQuestions = stats.jobPortalsTotal + stats.roadmapsTotal;
+  const totalCompleted = stats.jobPortalsCompleted;
+  const totalQuestions = stats.jobPortalsTotal;
   const overallProgress = totalQuestions > 0 ? Math.round((totalCompleted / totalQuestions) * 100) : 0;
 
   return (
@@ -129,7 +113,7 @@ const ResearchOverview: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold">Research Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Job search & career roadmaps</p>
+              <p className="text-sm text-muted-foreground">Job search & career resources</p>
             </div>
           </div>
         </div>
@@ -249,41 +233,6 @@ const ResearchOverview: React.FC = () => {
               </div>
               <Progress 
                 value={(stats.jobPortalsCompleted / stats.jobPortalsTotal) * 100} 
-                className="h-2" 
-              />
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all group overflow-hidden"
-            onClick={() => navigate("/research/roadmap")}
-          >
-            <div className="h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
-                    <Map className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <CardTitle className="group-hover:text-primary transition-colors">
-                      Career Roadmaps
-                    </CardTitle>
-                    <CardDescription>{roadmapCategories.length} paths • {roadmapQuestions.length} questions</CardDescription>
-                  </div>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Progress</span>
-                <span className="text-sm font-medium">
-                  {stats.roadmapsCompleted}/{stats.roadmapsTotal}
-                </span>
-              </div>
-              <Progress 
-                value={(stats.roadmapsCompleted / stats.roadmapsTotal) * 100} 
                 className="h-2" 
               />
             </CardContent>
