@@ -473,6 +473,7 @@ const App = () => (
                   <Route path="blog/new" element={<AdminBlogEditor />} />
                   <Route path="blog/:id/edit" element={<AdminBlogEditor />} />
                   <Route path="blog/comments" element={<AdminBlogComments />} />
+                  <Route path="blog/audit" element={<AdminBlogAudit />} />
                 </Route>
                 <Route path="/verify/:reportId" element={<PublicVerifyReport />} />
 
