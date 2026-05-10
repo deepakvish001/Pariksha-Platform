@@ -393,6 +393,12 @@ const App = () => (
                   <Route path="resources" element={<Resources />} />
                 </Route>
 
+                {/* Blog - public */}
+                <Route path="/blog" element={<PublicDashboardWrapper />}>
+                  <Route index element={<BlogIndex />} />
+                  <Route path=":slug" element={<BlogPost />} />
+                </Route>
+
                 {/* Platform routes - protected */}
                 <Route path="/platform" element={<ProtectedDashboardWrapper />}>
                   <Route path="ai" element={<AstraAI />} />
