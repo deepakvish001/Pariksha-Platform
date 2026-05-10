@@ -136,7 +136,7 @@ import ArenaPrivate from "@/arena/pages/ArenaPrivate";
 import ArenaHistory from "@/arena/pages/ArenaHistory";
 import ArenaRoom from "@/arena/pages/ArenaRoom";
 import ArenaJoinCode from "@/arena/pages/ArenaJoinCode";
-import AdminArena from "@/arena/pages/AdminArena";
+
 import ArenaDaily from "@/arena/pages/ArenaDaily";
 import ArenaSolo from "@/arena/pages/ArenaSolo";
 import ArenaSoloSession from "@/arena/pages/ArenaSoloSession";
@@ -496,7 +496,7 @@ const App = () => (
                   <Route path="solo/session/:id" element={<ArenaSoloSession />} />
                   <Route path="solo/session/:id/report" element={<ArenaSoloReport />} />
                 </Route>
-                <Route path="/admin/arena" element={<AdminRoute><AdminArena /></AdminRoute>} />
+                
 
 
 

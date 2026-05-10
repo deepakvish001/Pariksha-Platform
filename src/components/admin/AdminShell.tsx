@@ -6,7 +6,7 @@ import {
   ChevronDown, Star, Map as MapIcon, Inbox, ShieldAlert,
   Award, Trophy, Command as CommandIcon, ChevronRight, Pin,
   Bell, Brain, Code2,
-  GraduationCap, Building2, TrendingUp, BarChart3, Mail, Swords,
+  GraduationCap, Building2, TrendingUp, BarChart3, Mail,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -202,7 +202,7 @@ const GROUPS: NavGroup[] = [
         { to: "/admin/parikshaa/email-preview", label: "Email Preview", icon: Mail, end: true },
       ],
     },
-    { to: "/admin/arena", label: "Arena Admin", icon: Swords },
+    
   ]},
   { label: "System", items: [
     { to: "/admin/system-health", label: "System Health", icon: HeartPulse },
