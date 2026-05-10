@@ -71,28 +71,23 @@ interface AchievementProgress {
        setEarnedAchievements(achievementsData || []);
  
         // Fetch progress data for unearned achievements
-        const [topicsResult, quizResultsData, fundamentalsTopicsResult, roadmapProgressResult] = await Promise.all([
-          supabase
-            .from("user_topic_progress")
-            .select("completed, is_revision, completed_at")
-            .eq("user_id", user.id),
-          supabase
-            .from("quiz_results")
-            .select("accuracy, difficulty, quiz_type, avg_time_seconds, completed_at, category")
-            .eq("user_id", user.id)
-            .order("completed_at", { ascending: false }),
-          supabase
-            .from("user_topic_progress")
-            .select("completed_at, sheet_id")
-            .eq("user_id", user.id)
-            .eq("completed", true)
-            .or("sheet_id.like.language-%,sheet_id.eq.oops-concepts"),
-          supabase
-            .from("user_topic_progress")
-            .select("sheet_id, completed")
-            .eq("user_id", user.id)
-            .like("sheet_id", "roadmap-tree-%"),
-        ]);
+       const [topicsResult, quizResultsData, fundamentalsTopicsResult] = await Promise.all([
+         supabase
+           .from("user_topic_progress")
+           .select("completed, is_revision, completed_at")
+           .eq("user_id", user.id),
+         supabase
+           .from("quiz_results")
+           .select("accuracy, difficulty, quiz_type, avg_time_seconds, completed_at, category")
+           .eq("user_id", user.id)
+           .order("completed_at", { ascending: false }),
+         supabase
+           .from("user_topic_progress")
+           .select("completed_at, sheet_id")
+           .eq("user_id", user.id)
+           .eq("completed", true)
+           .or("sheet_id.like.language-%,sheet_id.eq.oops-concepts"),
+       ]);
  
        const topics = topicsResult.data || [];
        const quizResults = quizResultsData.data || [];
