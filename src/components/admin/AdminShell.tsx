@@ -218,7 +218,7 @@ const Badge = ({ count, tone = "default" }: { count: number; tone?: "default" | 
   return (
     <span
       className={cn(
-        "ml-auto inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none",
+        "ml-auto inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[11px] font-semibold leading-none",
         tone === "alert"
           ? "bg-destructive text-destructive-foreground"
           : "bg-primary/15 text-primary"
