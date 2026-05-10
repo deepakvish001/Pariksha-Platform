@@ -45,21 +45,7 @@ interface AchievementProgress {
     veryHighAccuracyCount: number;
     hasPerfectScore: boolean;
     hasJobPortalPerfect: boolean;
-    hasRoadmapPerfect: boolean;
     hasJobPortalQuiz: boolean;
-    hasRoadmapQuiz: boolean;
-  };
-  roadmapProgress: {
-    totalTopics: number;
-    frontendComplete: boolean;
-    backendComplete: boolean;
-    mobileComplete: boolean;
-    frontendTotal: number;
-    frontendCompleted: number;
-    backendTotal: number;
-    backendCompleted: number;
-    mobileTotal: number;
-    mobileCompleted: number;
   };
 }
  
