@@ -181,6 +181,10 @@ import PublicIntegrityReport from "./pages/contests/PublicIntegrityReport";
 import SideEyeMobile from "./pages/contests/SideEyeMobile";
 import PublicVerifyReport from "./pages/contests/PublicVerifyReport";
 import AdminSideEyeConsole from "./pages/admin/contests/AdminSideEyeConsole";
+import AdminBlogList from "./pages/admin/blog/AdminBlogList";
+import AdminBlogEditor from "./pages/admin/blog/AdminBlogEditor";
+import BlogIndex from "./pages/blog/BlogIndex";
+import BlogPost from "./pages/blog/BlogPost";
 
 const queryClient = new QueryClient({
   defaultOptions: {
