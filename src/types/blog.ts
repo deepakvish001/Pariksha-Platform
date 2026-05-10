@@ -31,6 +31,7 @@ export interface BlogPost {
   reading_time_min: number;
   view_count: number;
   like_count: number;
+  bookmark_count: number;
   comment_count: number;
   seo_title: string | null;
   seo_description: string | null;
