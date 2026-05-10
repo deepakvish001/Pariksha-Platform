@@ -6,7 +6,7 @@ import {
   ChevronDown, Star, Map as MapIcon, Inbox, ShieldAlert,
   Award, Trophy, Command as CommandIcon, ChevronRight, Pin,
   Bell, Brain, Code2,
-  GraduationCap, Building2, TrendingUp, BarChart3, Mail, Swords,
+  GraduationCap, Building2, TrendingUp, BarChart3, Mail,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
