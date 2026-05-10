@@ -365,7 +365,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
                 >
                   <Star
                     className={cn(
-                      "h-3 w-3",
+                      "h-3.5 w-3.5",
                       isPinned ? "fill-primary text-primary" : "text-muted-foreground"
                     )}
                   />
