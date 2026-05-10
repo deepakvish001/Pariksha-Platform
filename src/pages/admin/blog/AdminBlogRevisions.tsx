@@ -29,6 +29,17 @@ import {
 import { cn } from "@/lib/utils";
 import { diffLines } from "diff";
 
+const actionMeta = (a: string) => {
+  switch (a) {
+    case "viewed": return { label: "Viewed", cls: "bg-muted text-muted-foreground" };
+    case "compared": return { label: "Compared", cls: "bg-sky-500/15 text-sky-600 dark:text-sky-400" };
+    case "restored": return { label: "Restored", cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" };
+    case "created": return { label: "Created", cls: "bg-primary/15 text-primary" };
+    case "edited": return { label: "Edited", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400" };
+    default: return { label: a, cls: "bg-muted text-muted-foreground" };
+  }
+};
+
 export default function AdminBlogRevisions() {
   const { id } = useParams();
   const { data: post } = useBlogPostById(id);
