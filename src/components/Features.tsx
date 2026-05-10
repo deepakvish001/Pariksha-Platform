@@ -3,7 +3,7 @@ import {
   BarChart3, 
   Flame, 
   FileSpreadsheet,
-  Map,
+  
   Brain,
   Trophy,
   FileText,

@@ -6,7 +6,7 @@ import {
   FileSpreadsheet,
   BookOpen,
   Sparkles,
-  Map,
+  
   ArrowRight,
   X,
   PartyPopper,
