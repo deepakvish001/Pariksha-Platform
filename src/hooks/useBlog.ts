@@ -452,7 +452,7 @@ export const useRelatedPosts = (
       let q = supabase
         .from("blog_posts")
         .select(
-          "id, slug, title, excerpt, cover_image_url, reading_time_min, view_count, like_count, published_at, categories:blog_post_categories(category:blog_categories(*))",
+          "id, slug, title, excerpt, cover_image_url, reading_time_min, view_count, like_count, bookmark_count, published_at, categories:blog_post_categories(category:blog_categories(*))",
         )
         .eq("status", "published")
         .neq("id", postId!)
