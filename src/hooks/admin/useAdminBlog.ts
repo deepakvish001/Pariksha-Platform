@@ -299,9 +299,18 @@ export const useRestoreBlogRevision = () => {
         .update({ title: rev.title, content_md: rev.content_md })
         .eq("id", postId);
       if (error) throw error;
+      // Audit log entry — best effort.
+      await supabase.from("blog_revision_audit").insert({
+        post_id: postId,
+        revision_id: revisionId,
+        actor_id: u.user?.id ?? null,
+        action: "restored",
+        meta: { restored_title: rev.title },
+      });
     },
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["admin-blog-revisions", vars.postId] });
+      qc.invalidateQueries({ queryKey: ["admin-blog-revision-audit", vars.postId] });
       qc.invalidateQueries({ queryKey: ["admin-blog-posts"] });
       qc.invalidateQueries({ queryKey: ["blog-post-id", vars.postId] });
       qc.invalidateQueries({ queryKey: ["blog-post"] });
