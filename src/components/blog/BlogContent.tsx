@@ -108,7 +108,7 @@ export function BlogContent({ source, className }: Props) {
 
           // Paragraphs: detect a bare embed URL on its own line
           p({ node, children, ...props }: any) {
-            const txt = getFirstText(children).trim();
+            const txt = getAllText(children).trim();
             if (txt && /^https?:\/\/\S+$/.test(txt)) {
               const embed = detectEmbed(txt);
               if (embed) {
@@ -131,7 +131,7 @@ export function BlogContent({ source, className }: Props) {
 
           // Blockquote: detect GFM-style alerts `> [!note]`
           blockquote({ node, children, ...props }: any) {
-            const text = getFirstText(children);
+            const text = getAllText(children);
             const m = text.match(/^\[!(note|tip|warning|danger|important|caution)\]\s*/i);
             if (m) {
               const raw = m[1].toLowerCase();
