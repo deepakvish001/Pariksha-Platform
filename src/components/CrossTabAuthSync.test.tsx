@@ -44,7 +44,7 @@ function LocationProbe({ onChange }: { onChange: (p: string) => void }) {
   return null;
 }
 
-function renderAt(initialPath: string, onPath: (p: string) => void): ReactNode {
+function renderAt(initialPath: string, onPath: (p: string) => void) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <CrossTabAuthSync />
