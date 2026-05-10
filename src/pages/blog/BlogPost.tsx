@@ -291,10 +291,36 @@ export default function BlogPost() {
 
             {post.allow_comments && (
               <section data-section="comments" aria-labelledby="comments-heading">
-                <h2 id="comments-heading" className="text-2xl font-bold mb-4 flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5" />
-                  Comments ({comments.length})
-                </h2>
+                <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+                  <h2 id="comments-heading" className="text-2xl font-bold flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5" />
+                    Comments ({comments.length})
+                  </h2>
+                  {tree.length > 1 && (
+                    <div
+                      role="radiogroup"
+                      aria-label="Sort comments"
+                      className="inline-flex rounded-md border bg-muted/30 p-0.5 text-xs"
+                    >
+                      {(["newest", "top", "oldest"] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          role="radio"
+                          aria-checked={commentSort === opt}
+                          onClick={() => setCommentSort(opt)}
+                          className={cn(
+                            "px-2.5 py-1 rounded capitalize transition-colors",
+                            commentSort === opt
+                              ? "bg-background shadow-sm font-medium"
+                              : "text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {user ? (
                   <Card className="p-4 mb-6">
                     <Textarea
@@ -306,14 +332,24 @@ export default function BlogPost() {
                       aria-label="Add a comment"
                     />
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-muted-foreground">{body.length}/2000</span>
+                      <span className="text-xs text-muted-foreground">
+                        {body.length}/2000 · Comments are reviewed before they appear.
+                      </span>
                       <Button
                         size="sm"
                         disabled={!body.trim() || postComment.isPending}
                         onClick={() => {
                           postComment.mutate(
                             { body },
-                            { onSuccess: () => setBody("") },
+                            {
+                              onSuccess: () => {
+                                setBody("");
+                                toast({
+                                  title: "Submitted for review",
+                                  description: "Your comment will appear after admin approval.",
+                                });
+                              },
+                            },
                           );
                         }}
                       >
@@ -335,22 +371,35 @@ export default function BlogPost() {
                     No comments yet. Be the first to share your thoughts.
                   </p>
                 ) : (
-                  <ul className="space-y-3" role="list">
-                    {tree.map((node) => (
-                      <CommentNode
-                        key={node.id}
-                        node={node}
-                        depth={0}
-                        currentUserId={user?.id}
-                        canSignedIn={!!user}
-                        onReply={(parentId, text) =>
-                          postComment.mutate({ body: text, parentId })
-                        }
-                        onDelete={(id) => deleteComment.mutate(id)}
-                        onReport={(id) => reportComment.mutate(id)}
-                      />
-                    ))}
-                  </ul>
+                  <>
+                    <ul className="space-y-3" role="list">
+                      {sortedTree.slice(0, visibleRoots).map((node) => (
+                        <CommentNode
+                          key={node.id}
+                          node={node}
+                          depth={0}
+                          currentUserId={user?.id}
+                          canSignedIn={!!user}
+                          onReply={(parentId, text) =>
+                            postComment.mutate({ body: text, parentId })
+                          }
+                          onDelete={(id) => deleteComment.mutate(id)}
+                          onReport={(id) => reportComment.mutate(id)}
+                        />
+                      ))}
+                    </ul>
+                    {visibleRoots < sortedTree.length && (
+                      <div className="flex justify-center mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setVisibleRoots((v) => v + 10)}
+                        >
+                          Load more comments ({sortedTree.length - visibleRoots} remaining)
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </section>
             )}
