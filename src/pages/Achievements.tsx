@@ -29,7 +29,7 @@ const categories = [
   { id: "fundamentals", label: "Fundamentals", icon: Zap },
   { id: "system_design", label: "System Design", icon: Network },
   { id: "research", label: "Research", icon: Medal },
-  { id: "roadmap", label: "Roadmaps", icon: Map },
+  
 ];
 
 
@@ -43,7 +43,7 @@ const rarityFilters = [
 ];
 
 const getCategoryFromAchievement = (achievement: Achievement): string => {
-  if (achievement.requirement.type.startsWith("roadmap")) return "roadmap";
+  
   if (achievement.requirement.type.startsWith("research")) return "research";
   if (achievement.requirement.type.startsWith("system_design")) return "system_design";
   if (achievement.requirement.type.startsWith("fundamentals")) return "fundamentals";
