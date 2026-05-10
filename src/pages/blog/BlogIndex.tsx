@@ -195,6 +195,7 @@ function PostMeta({ post }: { post: any }) {
       <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.reading_time_min}m</span>
       <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{post.view_count}</span>
       <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{post.like_count}</span>
+      <span className="flex items-center gap-1"><Bookmark className="h-3 w-3" />{post.bookmark_count ?? 0}</span>
     </div>
   );
 }
