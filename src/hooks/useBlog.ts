@@ -205,7 +205,6 @@ export const useBlogLike = (postId: string | undefined) => {
     mutationFn: async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Sign in to like posts");
-      // Read current state from cache (already optimistically flipped) — invert to get target
       const targetLiked = qc.getQueryData<boolean>(["blog-like", postId]);
       if (targetLiked) {
         const { error } = await supabase
@@ -220,6 +219,7 @@ export const useBlogLike = (postId: string | undefined) => {
           .eq("user_id", u.user.id);
         if (error) throw error;
       }
+      return targetLiked;
     },
     onMutate: async () => {
       if (!postId) return;
@@ -236,6 +236,15 @@ export const useBlogLike = (postId: string | undefined) => {
         bumpLikeCountInCaches(qc, postId, ctx.prev ? 1 : -1);
       }
       toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
+    onSuccess: (nowLiked) => {
+      sonnerToast(nowLiked ? "Liked" : "Like removed", {
+        action: {
+          label: "Undo",
+          onClick: () => toggle.mutate(),
+        },
+        duration: 4000,
+      });
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["blog-like", postId] });
@@ -281,17 +290,32 @@ export const useBlogBookmark = (postId: string | undefined) => {
           .eq("user_id", u.user.id);
         if (error) throw error;
       }
+      return targetBookmarked;
     },
     onMutate: async () => {
       if (!postId) return;
       await qc.cancelQueries({ queryKey: ["blog-bookmark", postId] });
       const prev = qc.getQueryData<boolean>(["blog-bookmark", postId]);
-      qc.setQueryData(["blog-bookmark", postId], !prev);
+      const next = !prev;
+      qc.setQueryData(["blog-bookmark", postId], next);
+      bumpBookmarkCountInCaches(qc, postId, next ? 1 : -1);
       return { prev };
     },
     onError: (e: any, _v, ctx) => {
-      if (postId && ctx) qc.setQueryData(["blog-bookmark", postId], ctx.prev);
+      if (postId && ctx) {
+        qc.setQueryData(["blog-bookmark", postId], ctx.prev);
+        bumpBookmarkCountInCaches(qc, postId, ctx.prev ? 1 : -1);
+      }
       toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
+    onSuccess: (nowBookmarked) => {
+      sonnerToast(nowBookmarked ? "Bookmarked" : "Bookmark removed", {
+        action: {
+          label: "Undo",
+          onClick: () => toggle.mutate(),
+        },
+        duration: 4000,
+      });
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["blog-bookmark", postId] }),
   });
