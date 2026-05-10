@@ -34,6 +34,7 @@ export default function AdminBlogRevisions() {
   const { data: post } = useBlogPostById(id);
   const { data: revisions = [], isLoading } = useBlogRevisions(id);
   const restore = useRestoreBlogRevision();
+  const { data: audit = [] } = useBlogRevisionAudit(id);
 
   // "current" pseudo-revision representing the live post
   const current: BlogRevision | null = post
