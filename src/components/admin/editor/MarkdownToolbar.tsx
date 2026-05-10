@@ -268,9 +268,6 @@ export const MarkdownToolbar = ({
             <Heading2 className="h-3.5 w-3.5" aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
-            <Heading2 className="h-3.5 w-3.5" aria-hidden="true" />
-          </Button>
-        </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={cmd((el) => insertLine(el, value, onChange, "# "))}>
             <Heading1 className="mr-2 h-3.5 w-3.5" /> Heading 1
