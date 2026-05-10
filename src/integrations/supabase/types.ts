@@ -1399,6 +1399,7 @@ export type Database = {
         Row: {
           allow_comments: boolean
           author_id: string | null
+          bookmark_count: number
           canonical_url: string | null
           comment_count: number
           content_md: string
@@ -1423,6 +1424,7 @@ export type Database = {
         Insert: {
           allow_comments?: boolean
           author_id?: string | null
+          bookmark_count?: number
           canonical_url?: string | null
           comment_count?: number
           content_md?: string
@@ -1447,6 +1449,7 @@ export type Database = {
         Update: {
           allow_comments?: boolean
           author_id?: string | null
+          bookmark_count?: number
           canonical_url?: string | null
           comment_count?: number
           content_md?: string

@@ -96,7 +96,7 @@ export default function BlogPost() {
           <Heart className={`mr-2 h-4 w-4 ${liked ? "fill-current" : ""}`} />{post.like_count}
         </Button>
         <Button variant={bookmarked ? "default" : "outline"} size="sm" onClick={() => toggleBookmark()}>
-          <Bookmark className={`mr-2 h-4 w-4 ${bookmarked ? "fill-current" : ""}`} />Save
+          <Bookmark className={`mr-2 h-4 w-4 ${bookmarked ? "fill-current" : ""}`} />{post.bookmark_count ?? 0}
         </Button>
         <Button variant="outline" size="sm" onClick={() => {
           navigator.clipboard.writeText(url);
@@ -192,6 +192,7 @@ export default function BlogPost() {
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{r.reading_time_min}m</span>
                       <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{r.view_count}</span>
                       <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{r.like_count}</span>
+                      <span className="flex items-center gap-1"><Bookmark className="h-3 w-3" />{r.bookmark_count ?? 0}</span>
                     </div>
                   </div>
                 </Card>
