@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,8 @@ import { ArrowLeft, Clock, Eye, Heart, Bookmark, Share2, MessageCircle, Trash2, 
 import { BlogContent } from "@/components/blog/BlogContent";
 import { ReadingProgress } from "@/components/blog/ReadingProgress";
 import { TableOfContents } from "@/components/blog/TableOfContents";
+import { FloatingActionRail } from "@/components/blog/FloatingActionRail";
 import { extractToc } from "@/lib/blog/extractToc";
-import { useMemo } from "react";
 import { useBlogPost, useTrackBlogView, useBlogLike, useBlogBookmark, useBlogComments, usePostComment, useDeleteComment, useReportComment, useRelatedPosts } from "@/hooks/useBlog";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
