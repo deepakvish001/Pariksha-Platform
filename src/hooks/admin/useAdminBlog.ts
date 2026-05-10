@@ -137,3 +137,67 @@ export const useUploadBlogCover = () =>
       return data.publicUrl;
     },
   });
+
+// ───────── Admin comments moderation ─────────
+export type AdminCommentStatusFilter = "reported" | "hidden" | "visible" | "all";
+
+export const useAdminBlogComments = (status: AdminCommentStatusFilter = "reported", search = "") =>
+  useQuery({
+    queryKey: ["admin-blog-comments", status, search],
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      let q = supabase
+        .from("blog_comments")
+        .select("*, post:blog_posts(id, slug, title)")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (status !== "all") q = q.eq("status", status);
+      if (search.trim()) q = q.ilike("body", `%${search.trim()}%`);
+      const { data, error } = await q;
+      if (error) throw error;
+      const rows = (data ?? []) as any[];
+      const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+      if (userIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, avatar_url")
+          .in("user_id", userIds);
+        const m = new Map((profs ?? []).map((p: any) => [p.user_id, p]));
+        return rows.map((r) => ({ ...r, author: m.get(r.user_id) ?? null }));
+      }
+      return rows;
+    },
+  });
+
+export const useSetCommentStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "visible" | "hidden" | "reported" }) => {
+      const { error } = await supabase.from("blog_comments").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-blog-comments"] });
+      qc.invalidateQueries({ queryKey: ["blog-comments"] });
+      toast({ title: "Updated" });
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+};
+
+export const useDeleteCommentAdmin = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("blog_comments").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-blog-comments"] });
+      qc.invalidateQueries({ queryKey: ["blog-comments"] });
+      toast({ title: "Deleted" });
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+};
+

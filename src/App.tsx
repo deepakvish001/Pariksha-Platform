@@ -183,6 +183,7 @@ import PublicVerifyReport from "./pages/contests/PublicVerifyReport";
 import AdminSideEyeConsole from "./pages/admin/contests/AdminSideEyeConsole";
 import AdminBlogList from "./pages/admin/blog/AdminBlogList";
 import AdminBlogEditor from "./pages/admin/blog/AdminBlogEditor";
+import AdminBlogComments from "./pages/admin/blog/AdminBlogComments";
 import BlogIndex from "./pages/blog/BlogIndex";
 import BlogPost from "./pages/blog/BlogPost";
 
@@ -470,6 +471,7 @@ const App = () => (
                   <Route path="blog" element={<AdminBlogList />} />
                   <Route path="blog/new" element={<AdminBlogEditor />} />
                   <Route path="blog/:id/edit" element={<AdminBlogEditor />} />
+                  <Route path="blog/comments" element={<AdminBlogComments />} />
                 </Route>
                 <Route path="/verify/:reportId" element={<PublicVerifyReport />} />
 

@@ -5,7 +5,7 @@ import {
   Settings as SettingsIcon, Database, HeartPulse, Clock,
   ChevronDown, Star, Map as MapIcon, Inbox, ShieldAlert,
   Award, Trophy, Command as CommandIcon, ChevronRight, Pin,
-  Bell, Brain, Code2, Newspaper, FileText,
+  Bell, Brain, Code2, Newspaper, FileText, MessageCircle,
   GraduationCap, Building2, TrendingUp, BarChart3, Mail,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -152,6 +152,7 @@ const GROUPS: NavGroup[] = [
       children: [
         { to: "/admin/blog", label: "All posts", icon: FileText, end: true },
         { to: "/admin/blog/new", label: "New post", icon: Sparkles, end: true },
+        { to: "/admin/blog/comments", label: "Comments", icon: MessageCircle, end: true },
       ],
     },
   ]},

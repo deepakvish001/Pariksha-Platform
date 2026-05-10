@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import type { BlogPost, BlogPostWithRelations, BlogCategory, BlogTag, BlogComment, BlogPostStatus } from "@/types/blog";
 
 // ───────── Public reads ─────────
@@ -157,6 +158,26 @@ export const useTrackBlogView = () =>
     },
   });
 
+// Helper to optimistically bump like_count across all cached blog-posts queries
+const bumpLikeCountInCaches = (qc: ReturnType<typeof useQueryClient>, postId: string, delta: number) => {
+  qc.setQueriesData<any>({ queryKey: ["blog-posts"] }, (old: any) => {
+    if (!Array.isArray(old)) return old;
+    return old.map((p: any) =>
+      p.id === postId ? { ...p, like_count: Math.max(0, (p.like_count ?? 0) + delta) } : p,
+    );
+  });
+  qc.setQueriesData<any>({ queryKey: ["blog-post"] }, (old: any) => {
+    if (!old || old.id !== postId) return old;
+    return { ...old, like_count: Math.max(0, (old.like_count ?? 0) + delta) };
+  });
+  qc.setQueriesData<any>({ queryKey: ["blog-related"] }, (old: any) => {
+    if (!Array.isArray(old)) return old;
+    return old.map((p: any) =>
+      p.id === postId ? { ...p, like_count: Math.max(0, (p.like_count ?? 0) + delta) } : p,
+    );
+  });
+};
+
 export const useBlogLike = (postId: string | undefined) => {
   const qc = useQueryClient();
 
@@ -180,26 +201,41 @@ export const useBlogLike = (postId: string | undefined) => {
     mutationFn: async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Sign in to like posts");
-      if (liked.data) {
+      // Read current state from cache (already optimistically flipped) — invert to get target
+      const targetLiked = qc.getQueryData<boolean>(["blog-like", postId]);
+      if (targetLiked) {
+        const { error } = await supabase
+          .from("blog_likes")
+          .insert({ post_id: postId!, user_id: u.user.id });
+        if (error && (error as any).code !== "23505") throw error;
+      } else {
         const { error } = await supabase
           .from("blog_likes")
           .delete()
           .eq("post_id", postId!)
           .eq("user_id", u.user.id);
         if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("blog_likes")
-          .insert({ post_id: postId!, user_id: u.user.id });
-        if (error) throw error;
       }
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["blog-like", postId] });
-      qc.invalidateQueries({ queryKey: ["blog-post"] });
-      qc.invalidateQueries({ queryKey: ["blog-posts"] });
+    onMutate: async () => {
+      if (!postId) return;
+      await qc.cancelQueries({ queryKey: ["blog-like", postId] });
+      const prev = qc.getQueryData<boolean>(["blog-like", postId]);
+      const next = !prev;
+      qc.setQueryData(["blog-like", postId], next);
+      bumpLikeCountInCaches(qc, postId, next ? 1 : -1);
+      return { prev };
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any, _v, ctx) => {
+      if (postId && ctx) {
+        qc.setQueryData(["blog-like", postId], ctx.prev);
+        bumpLikeCountInCaches(qc, postId, ctx.prev ? 1 : -1);
+      }
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["blog-like", postId] });
+    },
   });
 
   return { liked: !!liked.data, toggle: toggle.mutate, isPending: toggle.isPending };
@@ -227,20 +263,33 @@ export const useBlogBookmark = (postId: string | undefined) => {
     mutationFn: async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Sign in to bookmark posts");
-      if (bookmarked.data) {
-        await supabase
+      const targetBookmarked = qc.getQueryData<boolean>(["blog-bookmark", postId]);
+      if (targetBookmarked) {
+        const { error } = await supabase
+          .from("blog_bookmarks")
+          .insert({ post_id: postId!, user_id: u.user.id });
+        if (error && (error as any).code !== "23505") throw error;
+      } else {
+        const { error } = await supabase
           .from("blog_bookmarks")
           .delete()
           .eq("post_id", postId!)
           .eq("user_id", u.user.id);
-      } else {
-        await supabase
-          .from("blog_bookmarks")
-          .insert({ post_id: postId!, user_id: u.user.id });
+        if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["blog-bookmark", postId] }),
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onMutate: async () => {
+      if (!postId) return;
+      await qc.cancelQueries({ queryKey: ["blog-bookmark", postId] });
+      const prev = qc.getQueryData<boolean>(["blog-bookmark", postId]);
+      qc.setQueryData(["blog-bookmark", postId], !prev);
+      return { prev };
+    },
+    onError: (e: any, _v, ctx) => {
+      if (postId && ctx) qc.setQueryData(["blog-bookmark", postId], ctx.prev);
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["blog-bookmark", postId] }),
   });
 
   return { bookmarked: !!bookmarked.data, toggle: toggle.mutate };
@@ -312,14 +361,55 @@ export const useReportComment = (postId: string | undefined) => {
         .update({ status: "reported" })
         .eq("id", id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["blog-comments", postId] });
-      toast({ title: "Reported", description: "Thanks — our team will review this comment." });
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: ["blog-comments", postId] });
+      const prev = qc.getQueryData<any[]>(["blog-comments", postId]);
+      qc.setQueryData<any[]>(["blog-comments", postId], (old) =>
+        (old ?? []).filter((c) => c.id !== id),
+      );
+      return { prev };
     },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any, _id, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["blog-comments", postId], ctx.prev);
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
+    onSuccess: (id) => {
+      sonnerToast("Reported", {
+        description: "Thanks — our team will review this comment.",
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            await supabase.from("blog_comments").update({ status: "visible" }).eq("id", id);
+            qc.invalidateQueries({ queryKey: ["blog-comments", postId] });
+          },
+        },
+        duration: 6000,
+      });
+    },
   });
 };
+
+// ───────── Batch user reactions for index/grid views ─────────
+export const useUserBlogReactions = (postIds: string[]) =>
+  useQuery({
+    queryKey: ["blog-user-reactions", [...postIds].sort().join(",")],
+    enabled: postIds.length > 0,
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return { likes: new Set<string>(), bookmarks: new Set<string>() };
+      const [likesRes, bmRes] = await Promise.all([
+        supabase.from("blog_likes").select("post_id").eq("user_id", u.user.id).in("post_id", postIds),
+        supabase.from("blog_bookmarks").select("post_id").eq("user_id", u.user.id).in("post_id", postIds),
+      ]);
+      return {
+        likes: new Set((likesRes.data ?? []).map((r: any) => r.post_id)),
+        bookmarks: new Set((bmRes.data ?? []).map((r: any) => r.post_id)),
+      };
+    },
+  });
+
 
 // ───────── Related posts (same category, exclude current) ─────────
 export const useRelatedPosts = (
