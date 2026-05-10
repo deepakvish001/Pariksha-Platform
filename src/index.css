@@ -355,3 +355,21 @@
   }
   .admin-nav-flash { animation: admin-nav-flash 1.4s ease-out; }
 }
+
+/* Blog post heading anchor links (rehype-autolink-headings appends a span with class .heading-anchor-icon inside an anchor.heading-anchor) */
+.prose .heading-anchor {
+  margin-left: 0.5rem;
+  opacity: 0;
+  transition: opacity 150ms ease;
+  text-decoration: none !important;
+  color: hsl(var(--primary));
+  font-weight: 400;
+}
+.prose h1:hover .heading-anchor,
+.prose h2:hover .heading-anchor,
+.prose h3:hover .heading-anchor,
+.prose h4:hover .heading-anchor,
+.prose .heading-anchor:focus {
+  opacity: 1;
+}
+.prose .heading-anchor-icon { font-size: 0.85em; }
