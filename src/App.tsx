@@ -184,6 +184,7 @@ import AdminSideEyeConsole from "./pages/admin/contests/AdminSideEyeConsole";
 import AdminBlogList from "./pages/admin/blog/AdminBlogList";
 import AdminBlogEditor from "./pages/admin/blog/AdminBlogEditor";
 import AdminBlogComments from "./pages/admin/blog/AdminBlogComments";
+import AdminBlogAudit from "./pages/admin/blog/AdminBlogAudit";
 import BlogIndex from "./pages/blog/BlogIndex";
 import BlogPost from "./pages/blog/BlogPost";
 
@@ -472,6 +473,7 @@ const App = () => (
                   <Route path="blog/new" element={<AdminBlogEditor />} />
                   <Route path="blog/:id/edit" element={<AdminBlogEditor />} />
                   <Route path="blog/comments" element={<AdminBlogComments />} />
+                  <Route path="blog/audit" element={<AdminBlogAudit />} />
                 </Route>
                 <Route path="/verify/:reportId" element={<PublicVerifyReport />} />
 
