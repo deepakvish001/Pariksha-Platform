@@ -184,6 +184,7 @@ import AdminSideEyeConsole from "./pages/admin/contests/AdminSideEyeConsole";
 import AdminBlogList from "./pages/admin/blog/AdminBlogList";
 import AdminBlogEditor from "./pages/admin/blog/AdminBlogEditor";
 import AdminBlogComments from "./pages/admin/blog/AdminBlogComments";
+import AdminBlogAudit from "./pages/admin/blog/AdminBlogAudit";
 import BlogIndex from "./pages/blog/BlogIndex";
 import BlogPost from "./pages/blog/BlogPost";
 
