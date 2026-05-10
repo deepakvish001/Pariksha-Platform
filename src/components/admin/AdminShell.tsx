@@ -6,6 +6,7 @@ import {
   ChevronDown, Star, Map as MapIcon, Inbox, ShieldAlert,
   Award, Trophy, Command as CommandIcon, ChevronRight, Pin,
   Bell, Brain, Code2,
+  GraduationCap, Building2, TrendingUp, BarChart3, Mail, Swords,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -184,6 +185,24 @@ const GROUPS: NavGroup[] = [
   { label: "Platform", items: [
     { to: "/admin/settings", label: "Settings & Flags", icon: SettingsIcon },
     { to: "/admin/storage", label: "Storage", icon: Database },
+  ]},
+  { label: "Parikshaa Suite", items: [
+    {
+      to: "/admin/parikshaa",
+      label: "Parikshaa",
+      icon: GraduationCap,
+      children: [
+        { to: "/admin/parikshaa", label: "Dashboard", icon: LayoutGrid, end: true },
+        { to: "/admin/parikshaa/users", label: "Users", icon: Users, end: true },
+        { to: "/admin/parikshaa/orgs", label: "Companies & Colleges", icon: Building2, end: true },
+        { to: "/admin/parikshaa/moderation", label: "Moderation", icon: ShieldAlert, end: true },
+        { to: "/admin/parikshaa/leads", label: "Leads & Growth", icon: TrendingUp, end: true },
+        { to: "/admin/parikshaa/demo-requests", label: "Demo Requests", icon: Sparkles, end: true },
+        { to: "/admin/parikshaa/funnel", label: "Conversion Funnel", icon: BarChart3, end: true },
+        { to: "/admin/parikshaa/email-preview", label: "Email Preview", icon: Mail, end: true },
+      ],
+    },
+    { to: "/admin/arena", label: "Arena Admin", icon: Swords },
   ]},
   { label: "System", items: [
     { to: "/admin/system-health", label: "System Health", icon: HeartPulse },
