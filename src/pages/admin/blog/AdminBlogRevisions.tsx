@@ -271,6 +271,59 @@ export default function AdminBlogRevisions() {
           )}
         </div>
       </div>
+
+      <Card className="mt-6 p-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <Activity className="h-4 w-4" />Activity log
+          <Badge variant="outline" className="ml-1 text-[10px]">{audit.length}</Badge>
+        </div>
+        {audit.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            No activity yet — comparisons, views, and restores will appear here.
+          </p>
+        ) : (
+          <ol className="space-y-2" role="list">
+            {audit.map((a) => {
+              const meta = actionMeta(a.action);
+              return (
+                <li
+                  key={a.id}
+                  className="flex items-start gap-3 rounded-md border bg-card/50 p-2 text-sm"
+                >
+                  <Avatar className="h-7 w-7 shrink-0">
+                    <AvatarImage src={a.actor?.avatar_url ?? undefined} alt={a.actor?.full_name ?? ""} />
+                    <AvatarFallback className="text-[10px]">
+                      {(a.actor?.full_name?.[0] || "?").toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{a.actor?.full_name || "Editor"}</span>
+                      <Badge variant="secondary" className={cn("text-[10px]", meta.cls)}>
+                        {meta.label}
+                      </Badge>
+                      {a.meta && Object.keys(a.meta).length > 0 && (
+                        <span className="truncate text-xs text-muted-foreground">
+                          {a.meta.restored_title
+                            ? `→ "${a.meta.restored_title}"`
+                            : a.meta.a && a.meta.b
+                              ? `${typeof a.meta.a === "string" ? a.meta.a.split("T")[0] : ""} ↔ ${
+                                  typeof a.meta.b === "string" ? a.meta.b.split("T")[0] : ""
+                                }`
+                              : ""}
+                        </span>
+                      )}
+                    </div>
+                    <time dateTime={a.created_at} className="text-[11px] text-muted-foreground">
+                      {new Date(a.created_at).toLocaleString()}
+                    </time>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </Card>
     </AdminShell>
   );
 }
