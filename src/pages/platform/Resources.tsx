@@ -86,6 +86,11 @@ const Resources = () => {
         />
 
         <main className="flex-1 p-6">
+          {/* From the Blog rail */}
+          {!searchQuery && activeType === "All" && !showFavoritesOnly && (
+            <FromTheBlogRail />
+          )}
+
           {/* Featured section */}
           {!searchQuery && activeType === "All" && !showFavoritesOnly && (
             <section className="mb-8">
