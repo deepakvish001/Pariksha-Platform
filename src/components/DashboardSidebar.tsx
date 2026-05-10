@@ -15,7 +15,7 @@ import {
   Home,
   PanelLeftClose,
   PanelLeft,
-  Route,
+  
   Terminal,
   Shield,
   Sparkles,
