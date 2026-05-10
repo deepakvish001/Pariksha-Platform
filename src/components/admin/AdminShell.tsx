@@ -145,6 +145,15 @@ const GROUPS: NavGroup[] = [
         { to: "/admin/problems/import", label: "Bulk Import", icon: Upload, end: true },
       ],
     },
+    {
+      to: "/admin/blog",
+      label: "Blog",
+      icon: Newspaper,
+      children: [
+        { to: "/admin/blog", label: "All posts", icon: FileText, end: true },
+        { to: "/admin/blog/new", label: "New post", icon: Sparkles, end: true },
+      ],
+    },
   ]},
   { label: "People", items: [
     { to: "/admin/users", label: "Users", icon: Users },
