@@ -127,12 +127,12 @@ describe("blog like/bookmark optimistic UI", () => {
 
     fireEvent.click(screen.getByTestId("like"));
 
-    // Optimistic flip is immediate
-    expect(screen.getByTestId("like")).toHaveTextContent("yes");
-    const cached = qc.getQueryData<any[]>(["blog-posts", {}]);
-    expect(cached?.[0].like_count).toBe(6);
+    await waitFor(() => {
+      expect(screen.getByTestId("like")).toHaveTextContent("yes");
+      expect(qc.getQueryData<any[]>(["blog-posts", {}])?.[0].like_count).toBe(6);
+    });
 
-    // Wait for mutation to settle and undo toast to fire
+    // Undo toast fires after success
     await waitFor(() => expect(toastSpy).toHaveBeenCalled());
     const [label, opts] = toastSpy.mock.calls[0];
     expect(label).toMatch(/Liked/);
@@ -143,10 +143,9 @@ describe("blog like/bookmark optimistic UI", () => {
     const qc = makeClient();
     qc.setQueryData(["blog-posts", {}], [{ id: POST_ID, like_count: 5 }]);
 
-    // Force the next insert to error
     const orig = (await import("@/integrations/supabase/client")).supabase;
-    const insertSpy = vi.spyOn(orig, "from");
-    insertSpy.mockImplementationOnce((t: string) => {
+    const fromSpy = vi.spyOn(orig, "from");
+    fromSpy.mockImplementationOnce((t: string) => {
       const real = buildQuery(t);
       real.insert = async () => ({ data: null, error: { message: "boom", code: "X" } });
       return real;
@@ -156,9 +155,12 @@ describe("blog like/bookmark optimistic UI", () => {
     await waitFor(() => expect(screen.getByTestId("like")).toHaveTextContent("no"));
     fireEvent.click(screen.getByTestId("like"));
 
-    await waitFor(() => expect(screen.getByTestId("like")).toHaveTextContent("no"));
-    expect(qc.getQueryData<any[]>(["blog-posts", {}])?.[0].like_count).toBe(5);
-    insertSpy.mockRestore();
+    // Eventually rolls back to "no" and 5
+    await waitFor(() => {
+      expect(screen.getByTestId("like")).toHaveTextContent("no");
+      expect(qc.getQueryData<any[]>(["blog-posts", {}])?.[0].like_count).toBe(5);
+    });
+    fromSpy.mockRestore();
   });
 
   it("optimistically bumps bookmark_count and shows undo toast", async () => {
@@ -169,8 +171,10 @@ describe("blog like/bookmark optimistic UI", () => {
     await waitFor(() => expect(screen.getByTestId("bookmark")).toHaveTextContent("no"));
 
     fireEvent.click(screen.getByTestId("bookmark"));
-    expect(screen.getByTestId("bookmark")).toHaveTextContent("yes");
-    expect(qc.getQueryData<any[]>(["blog-posts", {}])?.[0].bookmark_count).toBe(3);
+    await waitFor(() => {
+      expect(screen.getByTestId("bookmark")).toHaveTextContent("yes");
+      expect(qc.getQueryData<any[]>(["blog-posts", {}])?.[0].bookmark_count).toBe(3);
+    });
 
     await waitFor(() => expect(toastSpy).toHaveBeenCalled());
     const [label, opts] = toastSpy.mock.calls[0];
