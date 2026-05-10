@@ -202,7 +202,7 @@ const GROUPS: NavGroup[] = [
         { to: "/admin/parikshaa/email-preview", label: "Email Preview", icon: Mail, end: true },
       ],
     },
-    { to: "/admin/arena", label: "Arena Admin", icon: Swords },
+    
   ]},
   { label: "System", items: [
     { to: "/admin/system-health", label: "System Health", icon: HeartPulse },
