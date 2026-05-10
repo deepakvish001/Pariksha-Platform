@@ -310,3 +310,67 @@ export const useRestoreBlogRevision = () => {
     onError: (e: any) => toast({ title: "Restore failed", description: e.message, variant: "destructive" }),
   });
 };
+
+// ───────── Revision audit ─────────
+export type RevisionAuditAction = "viewed" | "compared" | "restored" | "created" | "edited";
+
+export interface BlogRevisionAudit {
+  id: string;
+  post_id: string;
+  revision_id: string | null;
+  compare_revision_id: string | null;
+  actor_id: string | null;
+  action: RevisionAuditAction;
+  meta: Record<string, any>;
+  created_at: string;
+  actor?: { full_name: string | null; avatar_url: string | null } | null;
+}
+
+export const useBlogRevisionAudit = (postId: string | undefined, limit = 50) =>
+  useQuery({
+    queryKey: ["admin-blog-revision-audit", postId, limit],
+    enabled: !!postId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blog_revision_audit")
+        .select("*")
+        .eq("post_id", postId!)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      const rows = (data ?? []) as BlogRevisionAudit[];
+      const userIds = Array.from(new Set(rows.map((r) => r.actor_id).filter(Boolean) as string[]));
+      if (userIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, avatar_url")
+          .in("user_id", userIds);
+        const m = new Map((profs ?? []).map((p: any) => [p.user_id, p]));
+        return rows.map((r) => ({ ...r, actor: r.actor_id ? m.get(r.actor_id) ?? null : null }));
+      }
+      return rows;
+    },
+  });
+
+export async function logRevisionAudit(input: {
+  postId: string;
+  action: RevisionAuditAction;
+  revisionId?: string | null;
+  compareRevisionId?: string | null;
+  meta?: Record<string, any>;
+}) {
+  try {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    await supabase.from("blog_revision_audit").insert({
+      post_id: input.postId,
+      action: input.action,
+      revision_id: input.revisionId ?? null,
+      compare_revision_id: input.compareRevisionId ?? null,
+      actor_id: u.user.id,
+      meta: input.meta ?? {},
+    });
+  } catch {
+    /* never block the user */
+  }
+}
