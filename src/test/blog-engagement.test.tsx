@@ -123,12 +123,12 @@ describe("blog like/bookmark optimistic UI", () => {
     qc.setQueryData(["blog-posts", {}], [{ id: POST_ID, like_count: 5, bookmark_count: 2 }]);
 
     render(withClient(qc, <PostCountsView />));
-    await waitFor(() => expect(screen.getByTestId("like")).toHaveTextContent("unliked"));
+    await waitFor(() => expect(screen.getByTestId("like")).toHaveTextContent("no"));
 
     fireEvent.click(screen.getByTestId("like"));
 
     // Optimistic flip is immediate
-    expect(screen.getByTestId("like")).toHaveTextContent("liked");
+    expect(screen.getByTestId("like")).toHaveTextContent("yes");
     const cached = qc.getQueryData<any[]>(["blog-posts", {}]);
     expect(cached?.[0].like_count).toBe(6);
 
@@ -153,10 +153,10 @@ describe("blog like/bookmark optimistic UI", () => {
     });
 
     render(withClient(qc, <PostCountsView />));
-    await waitFor(() => expect(screen.getByTestId("like")).toHaveTextContent("unliked"));
+    await waitFor(() => expect(screen.getByTestId("like")).toHaveTextContent("no"));
     fireEvent.click(screen.getByTestId("like"));
 
-    await waitFor(() => expect(screen.getByTestId("like")).toHaveTextContent("unliked"));
+    await waitFor(() => expect(screen.getByTestId("like")).toHaveTextContent("no"));
     expect(qc.getQueryData<any[]>(["blog-posts", {}])?.[0].like_count).toBe(5);
     insertSpy.mockRestore();
   });
@@ -166,10 +166,10 @@ describe("blog like/bookmark optimistic UI", () => {
     qc.setQueryData(["blog-posts", {}], [{ id: POST_ID, bookmark_count: 2 }]);
 
     render(withClient(qc, <PostCountsView />));
-    await waitFor(() => expect(screen.getByTestId("bookmark")).toHaveTextContent("no-bm"));
+    await waitFor(() => expect(screen.getByTestId("bookmark")).toHaveTextContent("no"));
 
     fireEvent.click(screen.getByTestId("bookmark"));
-    expect(screen.getByTestId("bookmark")).toHaveTextContent("bm");
+    expect(screen.getByTestId("bookmark")).toHaveTextContent("yes");
     expect(qc.getQueryData<any[]>(["blog-posts", {}])?.[0].bookmark_count).toBe(3);
 
     await waitFor(() => expect(toastSpy).toHaveBeenCalled());
