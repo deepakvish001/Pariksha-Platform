@@ -114,6 +114,9 @@ export default function AdminBlogComments() {
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <Tabs value={status} onValueChange={setTab}>
           <TabsList>
+            <TabsTrigger value="pending">
+              <Clock className="h-3.5 w-3.5 mr-1" /> Pending
+            </TabsTrigger>
             <TabsTrigger value="reported">
               <Flag className="h-3.5 w-3.5 mr-1" /> Reported
             </TabsTrigger>
