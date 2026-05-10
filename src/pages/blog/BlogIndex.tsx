@@ -1,21 +1,35 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Search, Clock, Eye, Heart, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Clock, Eye, Heart, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { useBlogPosts, useBlogCategories } from "@/hooks/useBlog";
+
+const PAGE_SIZE = 9;
 
 export default function BlogIndex() {
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState<string | undefined>();
+  const [page, setPage] = useState(1);
   const { data: categories = [] } = useBlogCategories();
   const { data: posts = [], isLoading } = useBlogPosts({ search, categorySlug: cat });
 
-  const featured = posts.find((p) => p.is_featured) ?? posts[0];
-  const rest = posts.filter((p) => p.id !== featured?.id);
+  // Reset page on filter change
+  useEffect(() => { setPage(1); }, [search, cat]);
+
+  const featured = !search && !cat ? posts.find((p) => p.is_featured) ?? posts[0] : undefined;
+  const rest = useMemo(
+    () => (featured ? posts.filter((p) => p.id !== featured.id) : posts),
+    [posts, featured],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paged = rest.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -78,7 +92,7 @@ export default function BlogIndex() {
           )}
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {rest.map((p) => (
+            {paged.map((p) => (
               <Link key={p.id} to={`/blog/${p.slug}`}>
                 <Card className="overflow-hidden group hover:border-primary/50 transition-colors h-full flex flex-col">
                   {p.cover_image_url && (
@@ -98,6 +112,30 @@ export default function BlogIndex() {
               </Link>
             ))}
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+              </Button>
+              <span className="text-sm text-muted-foreground px-2">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              >
+                Next <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
         </>
       )}
     </div>

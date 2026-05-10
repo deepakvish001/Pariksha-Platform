@@ -104,7 +104,15 @@ export default function AdminBlogEditor() {
               {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Save draft
             </Button>
-            <Button onClick={() => handleSave("published")} disabled={save.isPending}>Publish</Button>
+            {status === "scheduled" && scheduled ? (
+              <Button onClick={() => handleSave("scheduled")} disabled={save.isPending}>
+                Schedule
+              </Button>
+            ) : (
+              <Button onClick={() => handleSave("published")} disabled={save.isPending}>
+                Publish now
+              </Button>
+            )}
           </div>
         }
       />
