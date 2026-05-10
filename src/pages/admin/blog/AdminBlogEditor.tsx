@@ -1,0 +1,229 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import { AdminShell } from "@/components/admin/AdminShell";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MarkdownEditor } from "@/components/admin/editor/MarkdownEditor";
+import { ArrowLeft, Upload, Save, Loader2 } from "lucide-react";
+import { useBlogCategories, useBlogTags, useBlogPostById } from "@/hooks/useBlog";
+import { useSaveBlogPost, useUploadBlogCover, useUpsertBlogTag } from "@/hooks/admin/useAdminBlog";
+import { slugify } from "@/types/blog";
+import type { BlogPostStatus } from "@/types/blog";
+
+export default function AdminBlogEditor() {
+  const { id } = useParams();
+  const nav = useNavigate();
+  const isNew = !id;
+  const { data: existing } = useBlogPostById(id);
+  const { data: categories = [] } = useBlogCategories();
+  const { data: tags = [] } = useBlogTags();
+  const save = useSaveBlogPost();
+  const uploadCover = useUploadBlogCover();
+  const upsertTag = useUpsertBlogTag();
+
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [excerpt, setExcerpt] = useState("");
+  const [content, setContent] = useState("");
+  const [cover, setCover] = useState<string | null>(null);
+  const [status, setStatus] = useState<BlogPostStatus>("draft");
+  const [scheduled, setScheduled] = useState("");
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDesc, setSeoDesc] = useState("");
+  const [featured, setFeatured] = useState(false);
+  const [allowComments, setAllowComments] = useState(true);
+  const [catIds, setCatIds] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
+
+  useEffect(() => {
+    if (existing) {
+      setTitle(existing.title);
+      setSlug(existing.slug);
+      setExcerpt(existing.excerpt ?? "");
+      setContent(existing.content_md);
+      setCover(existing.cover_image_url);
+      setStatus(existing.status);
+      setScheduled(existing.scheduled_for ? existing.scheduled_for.slice(0, 16) : "");
+      setSeoTitle(existing.seo_title ?? "");
+      setSeoDesc(existing.seo_description ?? "");
+      setFeatured(existing.is_featured);
+      setAllowComments(existing.allow_comments);
+      setCatIds(existing.category_ids ?? []);
+      setTagIds(existing.tag_ids ?? []);
+    }
+  }, [existing]);
+
+  useEffect(() => { if (isNew && title && !slug) setSlug(slugify(title)); }, [title, slug, isNew]);
+
+  const handleSave = async (overrideStatus?: BlogPostStatus) => {
+    if (!title.trim() || !slug.trim()) return alert("Title and slug are required");
+    const finalStatus = overrideStatus ?? status;
+    const newId = await save.mutateAsync({
+      id,
+      title: title.trim(),
+      slug: slug.trim(),
+      excerpt: excerpt.trim() || null,
+      content_md: content,
+      cover_image_url: cover,
+      status: finalStatus,
+      scheduled_for: finalStatus === "scheduled" && scheduled ? new Date(scheduled).toISOString() : null,
+      seo_title: seoTitle.trim() || null,
+      seo_description: seoDesc.trim() || null,
+      is_featured: featured,
+      allow_comments: allowComments,
+      category_ids: catIds,
+      tag_ids: tagIds,
+    });
+    if (isNew) nav(`/admin/blog/${newId}/edit`, { replace: true });
+  };
+
+  const handleAddTag = async () => {
+    const name = newTag.trim();
+    if (!name) return;
+    const slug = slugify(name);
+    await upsertTag.mutateAsync({ name, slug });
+    setNewTag("");
+  };
+
+  return (
+    <AdminShell>
+      <AdminPageHeader
+        title={isNew ? "New post" : "Edit post"}
+        actions={
+          <div className="flex gap-2">
+            <Button asChild variant="ghost"><Link to="/admin/blog"><ArrowLeft className="mr-2 h-4 w-4" />Back</Link></Button>
+            <Button variant="outline" onClick={() => handleSave("draft")} disabled={save.isPending}>
+              {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save draft
+            </Button>
+            <Button onClick={() => handleSave("published")} disabled={save.isPending}>Publish</Button>
+          </div>
+        }
+      />
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-4">
+          <Card className="p-4 space-y-3">
+            <div>
+              <Label>Title</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="An awesome blog post title" className="text-lg" />
+            </div>
+            <div>
+              <Label>Slug (URL)</Label>
+              <Input value={slug} onChange={(e) => setSlug(slugify(e.target.value))} placeholder="my-awesome-post" />
+              <p className="text-xs text-muted-foreground mt-1">/blog/{slug || "your-slug"}</p>
+            </div>
+            <div>
+              <Label>Excerpt</Label>
+              <Textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} rows={2} placeholder="Short summary shown in cards and search." />
+            </div>
+          </Card>
+
+          <div>
+            <Label className="mb-2 block">Content (Markdown)</Label>
+            <MarkdownEditor value={content} onChange={setContent} slug={slug || "blog-post"} />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <Card className="p-4 space-y-3">
+            <h3 className="font-semibold">Publish</h3>
+            <div>
+              <Label>Status</Label>
+              <Select value={status} onValueChange={(v) => setStatus(v as BlogPostStatus)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {status === "scheduled" && (
+              <div>
+                <Label>Publish at</Label>
+                <Input type="datetime-local" value={scheduled} onChange={(e) => setScheduled(e.target.value)} />
+              </div>
+            )}
+            <div className="flex items-center justify-between"><Label htmlFor="featured">Featured</Label><Switch id="featured" checked={featured} onCheckedChange={setFeatured} /></div>
+            <div className="flex items-center justify-between"><Label htmlFor="comments">Allow comments</Label><Switch id="comments" checked={allowComments} onCheckedChange={setAllowComments} /></div>
+          </Card>
+
+          <Card className="p-4 space-y-3">
+            <h3 className="font-semibold">Cover image</h3>
+            {cover && <img src={cover} alt="" className="w-full rounded border" />}
+            <label className="flex items-center justify-center gap-2 border-2 border-dashed rounded-md p-4 cursor-pointer hover:bg-muted/50 text-sm text-muted-foreground">
+              <Upload className="h-4 w-4" />
+              {uploadCover.isPending ? "Uploading…" : "Upload cover"}
+              <input type="file" accept="image/*" hidden onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  const url = await uploadCover.mutateAsync(f);
+                  setCover(url);
+                }
+              }} />
+            </label>
+            {cover && <Button size="sm" variant="ghost" onClick={() => setCover(null)}>Remove</Button>}
+          </Card>
+
+          <Card className="p-4 space-y-3">
+            <h3 className="font-semibold">Categories</h3>
+            <div className="flex flex-wrap gap-1">
+              {categories.map((c) => {
+                const on = catIds.includes(c.id);
+                return (
+                  <Badge key={c.id} variant={on ? "default" : "outline"} className="cursor-pointer"
+                    onClick={() => setCatIds((p) => on ? p.filter((x) => x !== c.id) : [...p, c.id])}>
+                    {c.name}
+                  </Badge>
+                );
+              })}
+            </div>
+          </Card>
+
+          <Card className="p-4 space-y-3">
+            <h3 className="font-semibold">Tags</h3>
+            <div className="flex flex-wrap gap-1">
+              {tags.map((t) => {
+                const on = tagIds.includes(t.id);
+                return (
+                  <Badge key={t.id} variant={on ? "default" : "outline"} className="cursor-pointer"
+                    onClick={() => setTagIds((p) => on ? p.filter((x) => x !== t.id) : [...p, t.id])}>
+                    {t.name}
+                  </Badge>
+                );
+              })}
+            </div>
+            <div className="flex gap-2">
+              <Input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="New tag" className="h-8" />
+              <Button size="sm" variant="outline" onClick={handleAddTag}>Add</Button>
+            </div>
+          </Card>
+
+          <Card className="p-4 space-y-3">
+            <h3 className="font-semibold">SEO</h3>
+            <div>
+              <Label>SEO title</Label>
+              <Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} maxLength={60} />
+              <p className="text-[11px] text-muted-foreground mt-1">{seoTitle.length}/60</p>
+            </div>
+            <div>
+              <Label>Meta description</Label>
+              <Textarea value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} rows={3} maxLength={160} />
+              <p className="text-[11px] text-muted-foreground mt-1">{seoDesc.length}/160</p>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </AdminShell>
+  );
+}
