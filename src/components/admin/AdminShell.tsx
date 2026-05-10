@@ -433,7 +433,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         {showSubNav && (
           <ul
             data-testid={`admin-subnav-${item.to.replace(/^\/admin\/?/, "")}`}
-            className="mt-1 ml-6 flex flex-col gap-0.5 border-l border-border/40 pl-2"
+            className="mt-1 ml-7 flex flex-col gap-0.5 border-l border-border/40 pl-3"
           >
             {subItems.map((sub) => {
               const SubIcon = sub.icon;
@@ -445,13 +445,13 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
                     end={sub.end}
                     data-testid={sub.testId}
                     className={cn(
-                      "flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors",
+                      "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] transition-colors",
                       subOn
                         ? "bg-primary/10 text-primary font-medium"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                    <SubIcon className="h-4 w-4 shrink-0" />
                     <span className="truncate">{sub.label}</span>
                   </NavLink>
                 </li>
