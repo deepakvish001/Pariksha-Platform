@@ -490,8 +490,8 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
           {pinnedItems.length > 0 && (
             <SidebarGroup className="py-1">
               {!collapsed && (
-                <SidebarGroupLabel className="flex h-7 items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-                  <Pin className="h-3 w-3" />
+                <SidebarGroupLabel className="flex h-8 items-center gap-2 px-2.5 text-[12px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                  <Pin className="h-3.5 w-3.5" />
                   <span>Pinned</span>
                 </SidebarGroupLabel>
               )}
