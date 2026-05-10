@@ -2,8 +2,8 @@
 // Reads the static public/sitemap.xml that's already copied to dist/, then appends
 // /blog and /blog/<slug> entries fetched from the public Supabase REST API.
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
 const BASE_URL =
   process.env.SITE_URL ||
@@ -73,6 +73,7 @@ const cleaned = xml
 const newBlock = [blogIndexEntry, ...postEntries].join("\n");
 const enriched = cleaned.replace("</urlset>", `${newBlock}\n</urlset>`);
 
+mkdirSync(dirname(distPath), { recursive: true });
 writeFileSync(distPath, enriched);
 console.log(
   `[sitemap] Wrote ${distPath} with ${posts.length} blog post${posts.length === 1 ? "" : "s"}.`,
