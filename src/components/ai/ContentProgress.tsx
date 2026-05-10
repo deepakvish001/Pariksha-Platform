@@ -29,7 +29,9 @@ export const ContentProgressCheckbox = ({
         size="icon"
         onClick={(e) => {
           e.stopPropagation();
-          requireAuth(() => toggleItemComplete(itemId));
+          requireAuth(() => toggleItemComplete(itemId), {
+            action: "track your progress on this item",
+          });
         }}
         disabled={isUpdating}
         className={cn("h-6 w-6 p-0", className)}
