@@ -152,7 +152,7 @@ export function DashboardSidebar() {
       title: "Signed out",
       description: "You've been successfully signed out.",
     });
-    navigate("/");
+    navigate("/learn", { replace: true });
   };
 
   const getInitials = (name: string | null | undefined) => {

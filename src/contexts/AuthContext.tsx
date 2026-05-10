@@ -170,8 +170,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    // Clear session storage flags
-    sessionStorage.removeItem("skippedOnboarding");
+    // Clear all client-side auth/session artifacts so gated pages can't be re-opened
+    try {
+      sessionStorage.removeItem("skippedOnboarding");
+      sessionStorage.removeItem("delayedLoginSkipped");
+      localStorage.removeItem("lastVisitedRoute");
+      localStorage.removeItem("pendingAuthAction");
+    } catch {
+      // ignore storage errors
+    }
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

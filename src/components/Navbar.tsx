@@ -90,7 +90,7 @@ const Navbar = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/");
+    navigate("/learn", { replace: true });
   };
 
   const getInitials = (name: string | null | undefined) => {
