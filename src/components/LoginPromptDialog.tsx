@@ -53,21 +53,30 @@ export const LoginPromptDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        aria-labelledby="login-prompt-title"
+        aria-describedby="login-prompt-description"
+      >
         <DialogHeader>
-          <DialogTitle className="text-xl flex items-center gap-2">
-            <Lock className="h-5 w-5 text-primary" />
+          <DialogTitle id="login-prompt-title" className="text-xl flex items-center gap-2">
+            <Lock aria-hidden="true" className="h-5 w-5 text-primary" />
             Sign in to continue
           </DialogTitle>
-          <DialogDescription className="text-base pt-1">
+          <DialogDescription id="login-prompt-description" className="text-base pt-1">
             {message ??
               "Sign in to save your work, sync progress across devices, and unlock all features."}
           </DialogDescription>
         </DialogHeader>
 
         {attemptedAction && (
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-start gap-2">
-            <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <div
+            role="status"
+            aria-live="polite"
+            aria-label={`You tried to ${attemptedAction}`}
+            className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-start gap-2"
+          >
+            <Sparkles aria-hidden="true" className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="text-sm">
               <p className="text-muted-foreground text-xs">You tried to</p>
               <p className="font-medium text-foreground">{attemptedAction}</p>
@@ -78,9 +87,18 @@ export const LoginPromptDialog = ({
           </div>
         )}
 
-        <div className="flex flex-col gap-3 pt-2">
-          <Button size="lg" onClick={() => go("/login")} className="w-full gap-2">
-            <LogIn className="h-4 w-4" />
+        <div
+          role="group"
+          aria-label="Authentication options"
+          className="flex flex-col gap-3 pt-2"
+        >
+          <Button
+            size="lg"
+            onClick={() => go("/login")}
+            className="w-full gap-2"
+            aria-label="Sign in to your existing account"
+          >
+            <LogIn aria-hidden="true" className="h-4 w-4" />
             Sign In
           </Button>
           <Button
@@ -88,8 +106,9 @@ export const LoginPromptDialog = ({
             variant="outline"
             onClick={() => go("/signup")}
             className="w-full gap-2"
+            aria-label="Create a new account"
           >
-            <UserPlus className="h-4 w-4" />
+            <UserPlus aria-hidden="true" className="h-4 w-4" />
             Create Account
           </Button>
         </div>
