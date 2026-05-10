@@ -105,8 +105,8 @@ function PostCountsView() {
   const { bookmarked, toggle: toggleBookmark } = useBlogBookmark(POST_ID);
   return (
     <div>
-      <button data-testid="like" onClick={() => toggleLike()}>{liked ? "liked" : "unliked"}</button>
-      <button data-testid="bookmark" onClick={() => toggleBookmark()}>{bookmarked ? "bm" : "no-bm"}</button>
+      <button data-testid="like" onClick={() => toggleLike()}>{liked ? "yes" : "no"}</button>
+      <button data-testid="bookmark" onClick={() => toggleBookmark()}>{bookmarked ? "yes" : "no"}</button>
     </div>
   );
 }
