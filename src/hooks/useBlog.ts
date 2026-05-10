@@ -30,14 +30,18 @@ export const useBlogTags = () =>
     staleTime: 5 * 60 * 1000,
   });
 
+export type BlogSort = "recent" | "popular" | "liked" | "oldest";
+
 interface UseBlogPostsOpts {
   status?: BlogPostStatus | "all";
   categorySlug?: string;
   tagSlug?: string;
+  tagSlugs?: string[];
   authorId?: string;
   search?: string;
   featured?: boolean;
   limit?: number;
+  sort?: BlogSort;
 }
 
 export const useBlogPosts = (opts: UseBlogPostsOpts = {}) =>
@@ -49,15 +53,22 @@ export const useBlogPosts = (opts: UseBlogPostsOpts = {}) =>
         .from("blog_posts")
         .select(
           "*, categories:blog_post_categories(category:blog_categories(*)), tags:blog_post_tags(tag:blog_tags(*))",
-        )
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false });
+        );
+
+      const sort = opts.sort ?? "recent";
+      if (sort === "popular") q = q.order("view_count", { ascending: false });
+      else if (sort === "liked") q = q.order("like_count", { ascending: false });
+      else if (sort === "oldest") q = q.order("published_at", { ascending: true, nullsFirst: false });
+      else q = q.order("published_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
 
       const status = opts.status ?? "published";
       if (status !== "all") q = q.eq("status", status);
       if (opts.featured) q = q.eq("is_featured", true);
       if (opts.authorId) q = q.eq("author_id", opts.authorId);
-      if (opts.search?.trim()) q = q.ilike("title", `%${opts.search.trim()}%`);
+      if (opts.search?.trim()) {
+        const s = opts.search.trim().replace(/[%_]/g, " ");
+        q = q.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%`);
+      }
       if (opts.limit) q = q.limit(opts.limit);
 
       const { data, error } = await q;
@@ -71,6 +82,10 @@ export const useBlogPosts = (opts: UseBlogPostsOpts = {}) =>
       }
       if (opts.tagSlug) {
         rows = rows.filter((r) => (r.tags ?? []).some((t: any) => t.tag?.slug === opts.tagSlug));
+      }
+      if (opts.tagSlugs && opts.tagSlugs.length) {
+        const set = new Set(opts.tagSlugs);
+        rows = rows.filter((r) => (r.tags ?? []).some((t: any) => set.has(t.tag?.slug)));
       }
       return rows.map((r) => ({
         ...r,

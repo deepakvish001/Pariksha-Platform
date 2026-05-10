@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarkdownEditor } from "@/components/admin/editor/MarkdownEditor";
-import { ArrowLeft, Upload, Save, Loader2, ExternalLink, RotateCcw, Check } from "lucide-react";
+import { ArrowLeft, Upload, Save, Loader2, ExternalLink, RotateCcw, Check, History } from "lucide-react";
 import { useBlogCategories, useBlogTags, useBlogPostById } from "@/hooks/useBlog";
 import { useSaveBlogPost, useUploadBlogCover, useUpsertBlogTag } from "@/hooks/admin/useAdminBlog";
 import { slugify } from "@/types/blog";
@@ -234,6 +234,13 @@ export default function AdminBlogEditor() {
               {isDirty ? "Unsaved" : autosaveStatus === "saving" ? "Saving…" : "Saved"}
             </span>
             <Button asChild variant="ghost"><Link to="/admin/blog"><ArrowLeft className="mr-2 h-4 w-4" />Back</Link></Button>
+            {!isNew && id && (
+              <Button asChild variant="outline" title="View version history">
+                <Link to={`/admin/blog/${id}/revisions`}>
+                  <History className="mr-2 h-4 w-4" />History
+                </Link>
+              </Button>
+            )}
             <Button variant="outline" onClick={openPublicPreview} title="Open public preview in a new tab">
               <ExternalLink className="mr-2 h-4 w-4" />Preview
             </Button>
