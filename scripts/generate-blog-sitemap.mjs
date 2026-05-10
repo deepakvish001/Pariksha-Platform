@@ -37,9 +37,9 @@ async function fetchBlogPosts() {
       console.warn(`[sitemap] Blog fetch returned ${res.status}; skipping blog entries.`);
       return [];
     }
-    return (await res.json()) as Array<{ slug: string; updated_at: string; published_at: string }>;
+    return await res.json();
   } catch (err) {
-    console.warn(`[sitemap] Blog fetch failed: ${(err as Error).message}`);
+    console.warn(`[sitemap] Blog fetch failed: ${err?.message ?? err}`);
     return [];
   }
 }
