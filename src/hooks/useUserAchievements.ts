@@ -45,21 +45,7 @@ interface AchievementProgress {
     veryHighAccuracyCount: number;
     hasPerfectScore: boolean;
     hasJobPortalPerfect: boolean;
-    hasRoadmapPerfect: boolean;
     hasJobPortalQuiz: boolean;
-    hasRoadmapQuiz: boolean;
-  };
-  roadmapProgress: {
-    totalTopics: number;
-    frontendComplete: boolean;
-    backendComplete: boolean;
-    mobileComplete: boolean;
-    frontendTotal: number;
-    frontendCompleted: number;
-    backendTotal: number;
-    backendCompleted: number;
-    mobileTotal: number;
-    mobileCompleted: number;
   };
 }
  
@@ -85,28 +71,23 @@ interface AchievementProgress {
        setEarnedAchievements(achievementsData || []);
  
         // Fetch progress data for unearned achievements
-        const [topicsResult, quizResultsData, fundamentalsTopicsResult, roadmapProgressResult] = await Promise.all([
-          supabase
-            .from("user_topic_progress")
-            .select("completed, is_revision, completed_at")
-            .eq("user_id", user.id),
-          supabase
-            .from("quiz_results")
-            .select("accuracy, difficulty, quiz_type, avg_time_seconds, completed_at, category")
-            .eq("user_id", user.id)
-            .order("completed_at", { ascending: false }),
-          supabase
-            .from("user_topic_progress")
-            .select("completed_at, sheet_id")
-            .eq("user_id", user.id)
-            .eq("completed", true)
-            .or("sheet_id.like.language-%,sheet_id.eq.oops-concepts"),
-          supabase
-            .from("user_topic_progress")
-            .select("sheet_id, completed")
-            .eq("user_id", user.id)
-            .like("sheet_id", "roadmap-tree-%"),
-        ]);
+       const [topicsResult, quizResultsData, fundamentalsTopicsResult] = await Promise.all([
+         supabase
+           .from("user_topic_progress")
+           .select("completed, is_revision, completed_at")
+           .eq("user_id", user.id),
+         supabase
+           .from("quiz_results")
+           .select("accuracy, difficulty, quiz_type, avg_time_seconds, completed_at, category")
+           .eq("user_id", user.id)
+           .order("completed_at", { ascending: false }),
+         supabase
+           .from("user_topic_progress")
+           .select("completed_at, sheet_id")
+           .eq("user_id", user.id)
+           .eq("completed", true)
+           .or("sheet_id.like.language-%,sheet_id.eq.oops-concepts"),
+       ]);
  
        const topics = topicsResult.data || [];
        const quizResults = quizResultsData.data || [];
@@ -222,33 +203,7 @@ interface AchievementProgress {
          const hasJobPortalPerfect = researchQuizzes.some(
            (r) => r.quiz_type.startsWith("job-portal-") && r.accuracy === 100
          );
-         const hasRoadmapPerfect = researchQuizzes.some(
-           (r) => r.quiz_type.startsWith("roadmap-") && r.accuracy === 100
-         );
           const hasJobPortalQuiz = researchQuizzes.some((r) => r.quiz_type.startsWith("job-portal-"));
-          const hasRoadmapQuiz = researchQuizzes.some((r) => r.quiz_type.startsWith("roadmap-"));
-
-          // Calculate roadmap progress
-          const roadmapData = roadmapProgressResult.data || [];
-          const roadmapByPath = new Map<string, { total: number; completed: number }>();
-          
-          roadmapData.forEach((item) => {
-            // Extract roadmap path from sheet_id like "roadmap-tree-frontend"
-            const pathMatch = item.sheet_id.match(/roadmap-tree-(\w+)/);
-            if (pathMatch) {
-              const path = pathMatch[1];
-              const existing = roadmapByPath.get(path) || { total: 0, completed: 0 };
-              existing.total += 1;
-              if (item.completed) existing.completed += 1;
-              roadmapByPath.set(path, existing);
-            }
-          });
-
-          const frontendStats = roadmapByPath.get("frontend") || { total: 0, completed: 0 };
-          const backendStats = roadmapByPath.get("backend") || { total: 0, completed: 0 };
-          const mobileStats = roadmapByPath.get("mobile") || { total: 0, completed: 0 };
-          
-          const totalRoadmapTopics = roadmapData.filter(r => r.completed).length;
 
           setProgress({
             topicsCompleted,
@@ -287,21 +242,7 @@ interface AchievementProgress {
               veryHighAccuracyCount: researchVeryHighAccuracy,
               hasPerfectScore: researchHasPerfect,
               hasJobPortalPerfect,
-              hasRoadmapPerfect,
               hasJobPortalQuiz,
-              hasRoadmapQuiz,
-            },
-            roadmapProgress: {
-              totalTopics: totalRoadmapTopics,
-              frontendComplete: frontendStats.total > 0 && frontendStats.completed === frontendStats.total,
-              backendComplete: backendStats.total > 0 && backendStats.completed === backendStats.total,
-              mobileComplete: mobileStats.total > 0 && mobileStats.completed === mobileStats.total,
-              frontendTotal: frontendStats.total,
-              frontendCompleted: frontendStats.completed,
-              backendTotal: backendStats.total,
-              backendCompleted: backendStats.completed,
-              mobileTotal: mobileStats.total,
-              mobileCompleted: mobileStats.completed,
             },
           });
      } catch (error) {
@@ -384,17 +325,11 @@ interface AchievementProgress {
         return { current: Math.min(progress.researchQuizResults.total, value), target: value };
       case "research_accuracy":
         return { current: Math.min(progress.researchQuizResults.veryHighAccuracyCount, value), target: value };
-      case "research_mastery":
-        if (value === 2) {
-          // Research Explorer - need quizzes in both categories
-          const explorerCount = (progress.researchQuizResults.hasJobPortalQuiz ? 1 : 0) + 
-                                (progress.researchQuizResults.hasRoadmapQuiz ? 1 : 0);
-          return { current: explorerCount, target: 2 };
-        }
-        // Career Master (value: 3) - need perfect in both
-        const researchMasteryCount = (progress.researchQuizResults.hasJobPortalPerfect ? 1 : 0) + 
-                                     (progress.researchQuizResults.hasRoadmapPerfect ? 1 : 0);
-        return { current: researchMasteryCount, target: 2 };
+      case "research_mastery": {
+        const researchMasteryCount = (progress.researchQuizResults.hasJobPortalQuiz ? 1 : 0) +
+                                     (progress.researchQuizResults.hasJobPortalPerfect ? 1 : 0);
+        return { current: researchMasteryCount, target: value };
+      }
       
       
       default:

@@ -378,30 +378,6 @@ export const achievements: Achievement[] = [
     color: 'from-rose-500 to-pink-500',
     requirement: { type: 'research_quiz_count', value: 5 }
   },
-  {
-    id: 'research_accuracy_90',
-    name: 'Career Navigator',
-    description: 'Score 90%+ on a Roadmap quiz',
-    icon: 'target',
-    color: 'from-emerald-500 to-teal-500',
-    requirement: { type: 'research_accuracy', value: 1 }
-  },
-  {
-    id: 'research_explorer',
-    name: 'Research Explorer',
-    description: 'Complete quizzes in both Job Portals and Roadmaps',
-    icon: 'sparkles',
-    color: 'from-violet-500 to-purple-500',
-    requirement: { type: 'research_mastery', value: 2 }
-  },
-  {
-    id: 'research_master',
-    name: 'Career Master',
-    description: 'Score 100% on both Job Portals and Roadmap quizzes',
-    icon: 'crown',
-    color: 'from-yellow-400 to-amber-500',
-    requirement: { type: 'research_mastery', value: 3 }
-  },
 ];
 
 
