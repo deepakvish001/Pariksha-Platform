@@ -310,9 +310,9 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         data-testid={item.testId ?? `admin-nav-${item.to.replace(/^\/admin\/?/, "") || "dashboard"}`}
         key={`${item.to}-${active ? flashKey : "x"}`}
         className={cn(
-          "group/item relative flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-all duration-150",
+          "group/item relative flex items-center gap-3 rounded-lg px-2.5 py-2.5 transition-all duration-150",
           active
-            ? "bg-primary/10 text-primary font-medium shadow-sm shadow-primary/5 admin-nav-flash"
+            ? "bg-primary/10 text-primary font-semibold shadow-sm shadow-primary/5 admin-nav-flash"
             : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         )}
       >
@@ -320,14 +320,14 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         <span
           aria-hidden
           className={cn(
-            "absolute -left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full transition-all duration-200",
+            "absolute -left-1 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full transition-all duration-200",
             active ? "bg-primary opacity-100 scale-y-100" : "opacity-0 scale-y-0"
           )}
         />
         <span className="relative flex shrink-0 items-center">
           <Icon
             className={cn(
-              "h-4 w-4 transition-transform",
+              "h-[18px] w-[18px] transition-transform",
               active ? "scale-110" : "group-hover/item:scale-105"
             )}
           />
@@ -342,7 +342,7 @@ const AdminSidebar = ({ onOpenPalette }: AdminSidebarProps) => {
         </span>
         {!collapsed && (
           <>
-            <span className="truncate text-[13px]">{item.label}</span>
+            <span className="truncate text-[14px] tracking-tight">{item.label}</span>
             <span className="ml-auto flex items-center gap-1">
               {showSkeleton ? (
                 <Skeleton className="h-4 w-6 rounded-full" />
