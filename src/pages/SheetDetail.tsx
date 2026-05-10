@@ -81,7 +81,7 @@ import { striverSDESections, striverSDEMeta } from "@/data/striverSDEData";
 import { striverSDSections, striverSDMeta } from "@/data/striverSDData";
 import { sqlPracticeSections, sqlPracticeMeta } from "@/data/sqlPracticeData";
 import { advSqlSections, advSqlMeta } from "@/data/advSqlData";
-import RoadmapFAQ from "@/components/roadmap/RoadmapFAQ";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -1743,7 +1743,17 @@ function SheetDetailContent({ sheetId }: { sheetId: string }) {
       {currentSheetId === "acm-icpc-training" && (
         <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 space-y-6">
           <ACMChecklistCard checklist={acmIcpcChecklist} />
-          <RoadmapFAQ faqs={acmIcpcFaqs} title="ACM-ICPC Training FAQ" />
+          <div className="rounded-lg border border-border/40 bg-card/40 p-6">
+            <h3 className="text-lg font-semibold mb-4">ACM-ICPC Training FAQ</h3>
+            <Accordion type="single" collapsible className="w-full">
+              {acmIcpcFaqs.map((faq, i) => (
+                <AccordionItem key={i} value={`item-${i}`}>
+                  <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
+                  <AccordionContent>{faq.answer}</AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
         </main>
       )}
 
