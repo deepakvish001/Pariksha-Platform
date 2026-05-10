@@ -230,3 +230,83 @@ export const useDeleteCommentAdmin = () => {
   });
 };
 
+
+// ───────── Revisions ─────────
+export interface BlogRevision {
+  id: string;
+  post_id: string;
+  title: string;
+  content_md: string;
+  saved_by: string | null;
+  created_at: string;
+  author?: { full_name: string | null; avatar_url: string | null } | null;
+}
+
+export const useBlogRevisions = (postId: string | undefined) =>
+  useQuery({
+    queryKey: ["admin-blog-revisions", postId],
+    enabled: !!postId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blog_revisions")
+        .select("*")
+        .eq("post_id", postId!)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      const rows = (data ?? []) as BlogRevision[];
+      const userIds = Array.from(new Set(rows.map((r) => r.saved_by).filter(Boolean) as string[]));
+      if (userIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, avatar_url")
+          .in("user_id", userIds);
+        const m = new Map((profs ?? []).map((p: any) => [p.user_id, p]));
+        return rows.map((r) => ({ ...r, author: r.saved_by ? m.get(r.saved_by) ?? null : null }));
+      }
+      return rows;
+    },
+  });
+
+export const useRestoreBlogRevision = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ postId, revisionId }: { postId: string; revisionId: string }) => {
+      const { data: rev, error: rErr } = await supabase
+        .from("blog_revisions")
+        .select("title, content_md")
+        .eq("id", revisionId)
+        .maybeSingle();
+      if (rErr) throw rErr;
+      if (!rev) throw new Error("Revision not found");
+      const { data: u } = await supabase.auth.getUser();
+      // Save current as a snapshot first (so restore is reversible)
+      const { data: cur } = await supabase
+        .from("blog_posts")
+        .select("title, content_md")
+        .eq("id", postId)
+        .maybeSingle();
+      if (cur) {
+        await supabase.from("blog_revisions").insert({
+          post_id: postId,
+          title: cur.title,
+          content_md: cur.content_md,
+          saved_by: u.user?.id ?? null,
+        });
+      }
+      const { error } = await supabase
+        .from("blog_posts")
+        .update({ title: rev.title, content_md: rev.content_md })
+        .eq("id", postId);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["admin-blog-revisions", vars.postId] });
+      qc.invalidateQueries({ queryKey: ["admin-blog-posts"] });
+      qc.invalidateQueries({ queryKey: ["blog-post-id", vars.postId] });
+      qc.invalidateQueries({ queryKey: ["blog-post"] });
+      toast({ title: "Restored", description: "The selected revision is now live." });
+    },
+    onError: (e: any) => toast({ title: "Restore failed", description: e.message, variant: "destructive" }),
+  });
+};
