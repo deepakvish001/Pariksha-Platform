@@ -68,7 +68,7 @@ const homeNavItems = [
   { title: "Dashboard", url: "/learn", icon: LayoutGrid },
   { title: "My Plan", url: "/learn/my-plan", icon: Sparkles },
   { title: "Sheets", url: "/learn/sheets", icon: FileSpreadsheet },
-  { title: "Roadmap", url: "/learn/roadmaps", icon: Route },
+  
   { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "Contests", url: "/contests", icon: Trophy },
   { title: "Leaderboard", url: "/learn/leaderboard", icon: Trophy },
@@ -300,25 +300,7 @@ export function DashboardSidebar() {
                         ? "/onboarding"
                         : "/login"
                     : item.url;
-                  const isRoadmap = item.url === "/learn/roadmaps";
-                  const handleClick = isRoadmap
-                    ? (e: React.MouseEvent) => {
-                        // Restore last opened roadmap if available
-                        try {
-                          const lastId = localStorage.getItem("last-opened-roadmap-id");
-                          if (lastId) {
-                            e.preventDefault();
-                            const target =
-                              lastId === "fullstack"
-                                ? "/learn/roadmap/fullstack"
-                                : `/learn/roadmaps/${lastId}`;
-                            navigate(target);
-                          }
-                        } catch {
-                          /* ignore */
-                        }
-                      }
-                    : undefined;
+                  const handleClick: ((e: React.MouseEvent) => void) | undefined = undefined;
                   const isActive = isProfile
                     ? location.pathname.startsWith("/u/") &&
                       !!username &&
