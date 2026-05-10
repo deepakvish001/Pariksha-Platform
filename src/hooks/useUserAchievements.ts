@@ -325,17 +325,11 @@ interface AchievementProgress {
         return { current: Math.min(progress.researchQuizResults.total, value), target: value };
       case "research_accuracy":
         return { current: Math.min(progress.researchQuizResults.veryHighAccuracyCount, value), target: value };
-      case "research_mastery":
-        if (value === 2) {
-          // Research Explorer - need quizzes in both categories
-          const explorerCount = (progress.researchQuizResults.hasJobPortalQuiz ? 1 : 0) + 
-                                (progress.researchQuizResults.hasRoadmapQuiz ? 1 : 0);
-          return { current: explorerCount, target: 2 };
-        }
-        // Career Master (value: 3) - need perfect in both
-        const researchMasteryCount = (progress.researchQuizResults.hasJobPortalPerfect ? 1 : 0) + 
-                                     (progress.researchQuizResults.hasRoadmapPerfect ? 1 : 0);
-        return { current: researchMasteryCount, target: 2 };
+      case "research_mastery": {
+        const researchMasteryCount = (progress.researchQuizResults.hasJobPortalQuiz ? 1 : 0) +
+                                     (progress.researchQuizResults.hasJobPortalPerfect ? 1 : 0);
+        return { current: researchMasteryCount, target: value };
+      }
       
       
       default:
