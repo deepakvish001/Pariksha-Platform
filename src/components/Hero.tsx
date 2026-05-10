@@ -150,7 +150,7 @@ const Hero = () => {
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-5"
         >
           <Link
-            to="/signup"
+            to="/learn"
             className="group relative inline-flex items-center gap-2 px-10 py-5 rounded-full bg-gradient-to-r from-primary to-orange-500 text-primary-foreground font-bold text-lg shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 hover:scale-105"
           >
             <span>Start Free — No Card Required</span>
