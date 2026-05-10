@@ -22,6 +22,12 @@ export default function BlogPost() {
   const { data: comments = [] } = useBlogComments(post?.id);
   const postComment = usePostComment(post?.id);
   const deleteComment = useDeleteComment(post?.id);
+  const reportComment = useReportComment(post?.id);
+  const { data: related = [] } = useRelatedPosts(
+    post?.id,
+    post?.categories?.map((c) => c.slug),
+    3,
+  );
   const [body, setBody] = useState("");
 
   useEffect(() => {
