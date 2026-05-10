@@ -39,11 +39,12 @@ export default function BlogPost() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post?.id]);
 
+  const toc = useMemo(() => extractToc(post?.content_md || ""), [post?.content_md]);
+
   if (isLoading) return <div className="container mx-auto py-16 text-center text-muted-foreground">Loading…</div>;
   if (!post) return <div className="container mx-auto py-16 text-center">Post not found.</div>;
 
   const url = typeof window !== "undefined" ? window.location.href : "";
-  const toc = useMemo(() => extractToc(post.content_md || ""), [post.content_md]);
 
   return (
     <>
