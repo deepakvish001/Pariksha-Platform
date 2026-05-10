@@ -23,16 +23,12 @@ const CALLOUTS = {
 
 type CalloutKind = keyof typeof CALLOUTS;
 
-/** Walk react children to find the first text content. */
-function getFirstText(node: any): string {
-  if (typeof node === "string") return node;
-  if (Array.isArray(node)) {
-    for (const c of node) {
-      const t = getFirstText(c);
-      if (t) return t;
-    }
-  }
-  if (node?.props?.children) return getFirstText(node.props.children);
+/** Recursively collect all text content from react children. */
+function getAllText(node: any): string {
+  if (node == null || node === false) return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(getAllText).join("");
+  if (node?.props?.children !== undefined) return getAllText(node.props.children);
   return "";
 }
 
