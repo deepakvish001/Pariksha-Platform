@@ -396,38 +396,6 @@ interface AchievementProgress {
                                      (progress.researchQuizResults.hasRoadmapPerfect ? 1 : 0);
         return { current: researchMasteryCount, target: 2 };
       
-      // Roadmap achievements
-      case "roadmap_topics":
-        return { current: Math.min(progress.roadmapProgress.totalTopics, value), target: value };
-      case "roadmap_path_complete":
-        if (value === 1) {
-          // Frontend Master
-          return { current: progress.roadmapProgress.frontendComplete ? 1 : 0, target: 1 };
-        }
-        if (value === 2) {
-          // Backend Master
-          return { current: progress.roadmapProgress.backendComplete ? 1 : 0, target: 1 };
-        }
-        if (value === 3) {
-          // Mobile Master
-          return { current: progress.roadmapProgress.mobileComplete ? 1 : 0, target: 1 };
-        }
-        return { current: 0, target: 1 };
-      case "roadmap_mastery":
-        if (value === 2) {
-          // Full Stack Hero - Frontend + Backend
-          const fullStackCount = (progress.roadmapProgress.frontendComplete ? 1 : 0) + 
-                                 (progress.roadmapProgress.backendComplete ? 1 : 0);
-          return { current: fullStackCount, target: 2 };
-        }
-        if (value === 3) {
-          // Triple Threat - all three
-          const tripleCount = (progress.roadmapProgress.frontendComplete ? 1 : 0) + 
-                              (progress.roadmapProgress.backendComplete ? 1 : 0) +
-                              (progress.roadmapProgress.mobileComplete ? 1 : 0);
-          return { current: tripleCount, target: 3 };
-        }
-        return { current: 0, target: value };
       
       default:
         return { current: 0, target: value };
