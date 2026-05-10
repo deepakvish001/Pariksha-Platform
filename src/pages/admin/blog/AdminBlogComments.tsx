@@ -160,6 +160,11 @@ export default function AdminBlogComments() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium">{c.author?.full_name || "User"}</span>
                     <Badge className={statusBadge[c.status] ?? ""}>{c.status}</Badge>
+                    {!c.approved_at && (
+                      <Badge variant="outline" className="border-amber-500/40 text-amber-500">
+                        Pending approval
+                      </Badge>
+                    )}
                     <span className="text-xs text-muted-foreground">
                       {new Date(c.created_at).toLocaleString()}
                     </span>
@@ -178,7 +183,24 @@ export default function AdminBlogComments() {
                   <p className="text-sm mt-2 whitespace-pre-wrap break-words">{c.body}</p>
 
                   <div className="flex flex-wrap gap-2 mt-3">
-                    {c.status !== "visible" && (
+                    {!c.approved_at && (
+                      <Button
+                        size="sm"
+                        onClick={() => setPending({ kind: "approve", id: c.id, approve: true })}
+                      >
+                        <Check className="h-3.5 w-3.5 mr-1" /> Approve
+                      </Button>
+                    )}
+                    {!c.approved_at && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setPending({ kind: "approve", id: c.id, approve: false })}
+                      >
+                        <EyeOff className="h-3.5 w-3.5 mr-1" /> Reject
+                      </Button>
+                    )}
+                    {c.approved_at && c.status !== "visible" && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -187,7 +209,7 @@ export default function AdminBlogComments() {
                         <Eye className="h-3.5 w-3.5 mr-1" /> Make visible
                       </Button>
                     )}
-                    {c.status !== "hidden" && (
+                    {c.approved_at && c.status !== "hidden" && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -214,12 +236,7 @@ export default function AdminBlogComments() {
       <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pending?.kind === "delete"
-                ? confirmLabel.delete
-                : confirmLabel[pending?.status ?? "visible"]}
-              ?
-            </AlertDialogTitle>
+            <AlertDialogTitle>{pending && confirmTitle(pending)}</AlertDialogTitle>
             <AlertDialogDescription>{pending && confirmDesc(pending)}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
