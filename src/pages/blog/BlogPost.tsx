@@ -39,6 +39,23 @@ export default function BlogPost() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post?.id]);
 
+  // Keyboard shortcuts: t = top, c = comments
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.matches?.("input, textarea, [contenteditable]")) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "t") window.scrollTo({ top: 0, behavior: "smooth" });
+      if (e.key === "c") {
+        document
+          .querySelector('[data-section="comments"]')
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const toc = useMemo(() => extractToc(post?.content_md || ""), [post?.content_md]);
 
   if (isLoading) return <div className="container mx-auto py-16 text-center text-muted-foreground">Loading…</div>;
@@ -48,8 +65,17 @@ export default function BlogPost() {
 
   return (
     <>
-      <ReadingProgress />
-      <article className="container mx-auto px-4 py-8 max-w-6xl">
+      <ReadingProgress totalMinutes={post.reading_time_min} />
+      <FloatingActionRail
+        liked={liked}
+        bookmarked={bookmarked}
+        likeCount={post.like_count}
+        bookmarkCount={post.bookmark_count ?? 0}
+        onToggleLike={() => toggleLike()}
+        onToggleBookmark={() => toggleBookmark()}
+        url={url}
+      />
+      <article className="container mx-auto px-4 py-8 pb-24 lg:pb-8 max-w-6xl">
       <Helmet>
         <title>{post.seo_title || post.title}</title>
         <meta name="description" content={post.seo_description || post.excerpt || ""} />
