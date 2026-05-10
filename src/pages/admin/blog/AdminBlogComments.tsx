@@ -18,11 +18,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Eye, EyeOff, Flag, Trash2, ExternalLink, MessageCircle } from "lucide-react";
+import { Search, Eye, EyeOff, Flag, Trash2, ExternalLink, MessageCircle, Check, Clock } from "lucide-react";
 import {
   useAdminBlogComments,
   useSetCommentStatus,
   useDeleteCommentAdmin,
+  useApproveComment,
   type AdminCommentStatusFilter,
 } from "@/hooks/admin/useAdminBlog";
 
@@ -33,16 +34,17 @@ const statusBadge: Record<string, string> = {
   deleted: "bg-muted text-muted-foreground",
 };
 
-const VALID_TABS: AdminCommentStatusFilter[] = ["reported", "hidden", "visible", "all"];
+const VALID_TABS: AdminCommentStatusFilter[] = ["pending", "reported", "hidden", "visible", "all"];
 
 type PendingAction =
   | { kind: "status"; id: string; status: "visible" | "hidden" }
+  | { kind: "approve"; id: string; approve: boolean }
   | { kind: "delete"; id: string };
 
 export default function AdminBlogComments() {
   const [params, setParams] = useSearchParams();
   const tabParam = params.get("tab") as AdminCommentStatusFilter | null;
-  const status: AdminCommentStatusFilter = tabParam && VALID_TABS.includes(tabParam) ? tabParam : "reported";
+  const status: AdminCommentStatusFilter = tabParam && VALID_TABS.includes(tabParam) ? tabParam : "pending";
   const search = params.get("q") ?? "";
   const [searchInput, setSearchInput] = useState(search);
 
