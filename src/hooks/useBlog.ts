@@ -302,3 +302,58 @@ export const useDeleteComment = (postId: string | undefined) => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["blog-comments", postId] }),
   });
 };
+
+export const useReportComment = (postId: string | undefined) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("blog_comments")
+        .update({ status: "reported" })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["blog-comments", postId] });
+      toast({ title: "Reported", description: "Thanks — our team will review this comment." });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+};
+
+// ───────── Related posts (same category, exclude current) ─────────
+export const useRelatedPosts = (
+  postId: string | undefined,
+  categorySlugs: string[] | undefined,
+  limit = 3,
+) =>
+  useQuery({
+    queryKey: ["blog-related", postId, categorySlugs],
+    enabled: !!postId,
+    queryFn: async () => {
+      let q = supabase
+        .from("blog_posts")
+        .select(
+          "id, slug, title, excerpt, cover_image_url, reading_time_min, view_count, like_count, published_at, categories:blog_post_categories(category:blog_categories(*))",
+        )
+        .eq("status", "published")
+        .neq("id", postId!)
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .limit(20);
+      const { data, error } = await q;
+      if (error) throw error;
+      let rows = (data ?? []) as any[];
+      if (categorySlugs && categorySlugs.length) {
+        rows = rows.filter((r) =>
+          (r.categories ?? []).some((c: any) => categorySlugs.includes(c.category?.slug)),
+        );
+      }
+      return rows
+        .slice(0, limit)
+        .map((r) => ({
+          ...r,
+          categories: (r.categories ?? []).map((c: any) => c.category).filter(Boolean),
+        }));
+    },
+  });
+
