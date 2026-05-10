@@ -207,7 +207,15 @@ export default function BlogPost() {
             ))}
           </div>
         </section>
-      )}
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-24">
+            <TableOfContents items={toc} />
+          </div>
+        </aside>
+      </div>
     </article>
+    </>
   );
 }
