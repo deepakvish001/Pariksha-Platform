@@ -23,8 +23,7 @@ describe("parseTabsPayload", () => {
   it("returns null for malformed JSON", () => {
     expect(parseTabsPayload("{not json")).toBeNull();
     expect(parseTabsPayload("")).toBeNull();
-    // @ts-expect-error
-    expect(parseTabsPayload(null)).toBeNull();
+    expect(parseTabsPayload(null as unknown as string)).toBeNull();
   });
 
   it("returns null when variants is missing or empty", () => {
