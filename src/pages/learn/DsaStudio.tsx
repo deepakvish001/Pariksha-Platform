@@ -118,6 +118,13 @@ export default function DsaStudio() {
   const [activeTab, setActiveTab] = useState(initial.activeTab);
   const [search, setSearch] = useState(initial.search);
   const [priority, setPriority] = useState<PriorityFilter>(initial.priority);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const qaMode = searchParams.get("qa") === "1";
+  const toggleQa = () => {
+    const next = new URLSearchParams(searchParams);
+    if (qaMode) next.delete("qa"); else next.set("qa", "1");
+    setSearchParams(next, { replace: true });
+  };
 
   const [solved, setSolved] = useState<Set<string>>(
     () => new Set(loadJSON<string[]>(LS_SOLVED, [])),
