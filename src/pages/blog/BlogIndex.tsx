@@ -127,13 +127,36 @@ export default function BlogIndex() {
     sort,
   });
 
+  // Languages used by each post (memoised; cheap regex scan).
+  const postLangs = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const p of posts) m.set(p.id, extractLanguages((p as any).content));
+    return m;
+  }, [posts]);
+
+  const availableLangs = useMemo(() => {
+    const set = new Set<string>();
+    for (const langs of postLangs.values()) langs.forEach((l) => set.add(l));
+    return Array.from(set).sort((a, b) => langDisplay(a).localeCompare(langDisplay(b)));
+  }, [postLangs]);
+
+  const langFiltered = useMemo(() => {
+    if (selectedLangs.length === 0) return posts;
+    const want = new Set(selectedLangs);
+    return posts.filter((p) => {
+      const langs = postLangs.get(p.id) ?? [];
+      return langs.some((l) => want.has(l));
+    });
+  }, [posts, postLangs, selectedLangs]);
+
   const featured =
-    !search && !cat && !tag && sort === "recent"
-      ? posts.find((p) => p.is_featured) ?? posts[0]
+    !search && !cat && !tag && sort === "recent" && selectedLangs.length === 0
+      ? langFiltered.find((p) => p.is_featured) ?? langFiltered[0]
       : undefined;
   const rest = useMemo(
-    () => (featured ? posts.filter((p) => p.id !== featured.id) : posts),
-    [posts, featured],
+    () =>
+      featured ? langFiltered.filter((p) => p.id !== featured.id) : langFiltered,
+    [langFiltered, featured],
   );
 
   const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
@@ -145,7 +168,16 @@ export default function BlogIndex() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const hasFilters = !!(search || cat || tag) || sort !== "recent";
+  const toggleLang = (lang: string) => {
+    const next = new Set(selectedLangs);
+    if (next.has(lang)) next.delete(lang);
+    else next.add(lang);
+    const value = Array.from(next).join(",");
+    updateParam("langs", value || undefined);
+  };
+
+  const hasFilters =
+    !!(search || cat || tag) || sort !== "recent" || selectedLangs.length > 0;
 
   // Show top ~12 tags by usage signal (alphabetical fallback)
   const visibleTags = useMemo(() => tags.slice(0, 18), [tags]);
