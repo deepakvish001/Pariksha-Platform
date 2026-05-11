@@ -42,6 +42,12 @@ import { detectMarkdownFeatures, type DetectedFeatures } from "@/lib/admin/paste
 
 type Mode = "edit" | "split" | "preview";
 
+interface FrontMatterResult {
+  applied: number;
+  /** Optional: roll back the field changes the parent just performed. */
+  undo?: () => void;
+}
+
 interface Props {
   value: string;
   onChange: (next: string) => void;
@@ -54,10 +60,10 @@ interface Props {
   rows?: number;
   /** Optional callback for "Insert examples" toolbar action. */
   onInsertExamples?: () => void;
-  /** Called when the pasted content begins with YAML/TOML front-matter so the
-   *  parent editor can auto-fill matching fields. Should return how many
-   *  fields it applied (for the user-facing toast). */
-  onFrontMatter?: (fm: FrontMatterApply) => number;
+  /** Called when pasted content begins with YAML/TOML front-matter. May
+   *  return either a number of applied fields, or a `{ applied, undo }`
+   *  object so the editor can offer an "Undo" button. */
+  onFrontMatter?: (fm: FrontMatterApply) => number | FrontMatterResult | void;
 }
 
 export interface MarkdownEditorHandle {
