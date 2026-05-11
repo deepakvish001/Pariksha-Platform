@@ -23,8 +23,11 @@ import {
 import { BlogContent } from "@/components/blog/BlogContent";
 import { ReadingProgress } from "@/components/blog/ReadingProgress";
 import { TableOfContents } from "@/components/blog/TableOfContents";
+import { InlineToc } from "@/components/blog/InlineToc";
+import { MobileTocSheet } from "@/components/blog/MobileTocSheet";
 import { FloatingActionRail } from "@/components/blog/FloatingActionRail";
 import { extractToc } from "@/lib/blog/extractToc";
+import { useActiveHeading } from "@/hooks/useActiveHeading";
 import {
   useBlogPost,
   useTrackBlogView,
@@ -107,6 +110,11 @@ export default function BlogPost() {
   }, [tree, commentSort]);
   useEffect(() => setVisibleRoots(10), [commentSort, post?.id]);
 
+  // TOC extraction must happen before early returns so the active-heading
+  // hook below runs unconditionally.
+  const toc = useMemo(() => extractToc(post?.content_md || ""), [post?.content_md]);
+  const activeHeadingId = useActiveHeading(toc);
+
   if (isLoading)
     return <div className="container mx-auto py-16 text-center text-muted-foreground">Loading…</div>;
   if (!post)
@@ -118,7 +126,6 @@ export default function BlogPost() {
   const seoTitle = post.seo_title || `${post.title} — ${SITE_NAME}`;
   const seoDesc = post.seo_description || post.excerpt || `${post.title} · ${SITE_NAME} blog.`;
   const coverAlt = post.title; // alt-text fallback derived from title
-  const toc = extractToc(post.content_md || "");
 
   return (
     <>
@@ -132,6 +139,7 @@ export default function BlogPost() {
         onToggleBookmark={() => toggleBookmark()}
         url={url}
       />
+      <MobileTocSheet items={toc} activeId={activeHeadingId} />
       <article className="container mx-auto px-4 py-8 pb-24 lg:pb-8 max-w-6xl">
         <Helmet prioritizeSeoTags>
           <title>{seoTitle}</title>
@@ -253,6 +261,12 @@ export default function BlogPost() {
                 className="w-full h-auto rounded-lg mb-8 border bg-muted/30 object-cover"
               />
             )}
+
+            <InlineToc
+              items={toc}
+              readingTimeMin={post.reading_time_min}
+              activeId={activeHeadingId}
+            />
 
             <BlogContent source={post.content_md} className="mb-8" />
 
@@ -470,7 +484,9 @@ export default function BlogPost() {
             )}
           </div>
           <aside className="hidden lg:block">
-            <TableOfContents items={toc} />
+            <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1 [scrollbar-width:thin]">
+              <TableOfContents items={toc} activeId={activeHeadingId} />
+            </div>
           </aside>
         </div>
       </article>
