@@ -74,6 +74,10 @@ const SHORT_LANG_LABELS: Record<string, string> = {
   cs: "C#", csharp: "C#", "c#": "C#",
   rb: "Ruby", ruby: "Ruby", php: "PHP",
   dart: "Dart", scala: "Scala", r: "R", lua: "Lua",
+  dockerfile: "Docker", docker: "Docker",
+  makefile: "Make", make: "Make",
+  toml: "TOML", ini: "INI", nginx: "Nginx", graphql: "GraphQL",
+  xml: "XML", powershell: "PS", ps1: "PS",
   text: "Text", txt: "Text", plaintext: "Text",
 };
 
@@ -96,8 +100,9 @@ export function CodeBlock(props: CodeBlockProps) {
   } = props;
 
   // Normalise single-block usage into a one-element variants array, and
-  // auto-detect missing/`text` languages from the snippet body.
-  const variants: CodeVariant[] = useMemo(() => {
+  // auto-detect missing/`text` languages from the snippet body. We also
+  // preserve a `detected` flag so the UI can surface an "Auto" badge.
+  const variants: (CodeVariant & { detected?: boolean })[] = useMemo(() => {
     const raw =
       variantsProp && variantsProp.length > 0
         ? variantsProp
@@ -113,14 +118,19 @@ export function CodeBlock(props: CodeBlockProps) {
       const lang = (v.language || "").toLowerCase();
       if (!lang || lang === "text" || lang === "txt" || lang === "plaintext") {
         const detected = detectLanguage(v.code);
-        if (detected) return { ...v, language: detected };
+        if (detected) return { ...v, language: detected, detected: true };
       }
       return v;
     });
   }, [variantsProp, language, filename, highlightLines, children]);
 
   const hasTabs = variants.length > 1;
-  const storageKey = group ? `codeblock:tab:${group}` : null;
+  // Per-section unique key: namespace by current pathname so the same
+  // markdown `group=install` on different articles (and different sections)
+  // restores independently across visits.
+  const pathScope =
+    typeof window !== "undefined" ? window.location.pathname : "";
+  const storageKey = group ? `codeblock:tab:${pathScope}:${group}` : null;
 
   const [activeIdx, setActiveIdx] = useState<number>(() => {
     const fallback = (() => {
@@ -415,10 +425,25 @@ export function CodeBlock(props: CodeBlockProps) {
                           )}
                         >
                           <span>{shortLabel}</span>
+                          {v.detected && (
+                            <span
+                              aria-label="Language auto-detected"
+                              className="rounded-sm bg-primary/15 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-primary"
+                            >
+                              Auto
+                            </span>
+                          )}
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="text-xs">
-                        <div className="font-medium">{langLabel}</div>
+                        <div className="font-medium">
+                          {langLabel}
+                          {v.detected && (
+                            <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                              (detected)
+                            </span>
+                          )}
+                        </div>
                         {v.filename && (
                           <div className="font-mono text-[11px] opacity-80">
                             {v.filename}
@@ -475,6 +500,14 @@ export function CodeBlock(props: CodeBlockProps) {
             <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
               {active.language || "code"}
             </span>
+            {(active as any).detected && (
+              <span
+                title="Language auto-detected from snippet content"
+                className="rounded-sm bg-primary/15 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-primary"
+              >
+                Auto
+              </span>
+            )}
             {active.filename && (
               <span className="ml-1 truncate font-mono text-[11px] text-foreground/80">
                 {active.filename}

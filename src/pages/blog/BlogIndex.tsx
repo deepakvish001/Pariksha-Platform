@@ -322,6 +322,30 @@ export default function BlogIndex() {
               </FilterChip>
             );
           })}
+          {selectedLangs.length > 0 && (
+            <>
+              <span
+                className="ml-2 text-[11px] text-muted-foreground"
+                aria-live="polite"
+              >
+                Showing {langFiltered.length} post
+                {langFiltered.length === 1 ? "" : "s"}
+                {" · "}
+                {selectedLangs.length} language
+                {selectedLangs.length === 1 ? "" : "s"} selected
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                onClick={() => updateParam("langs", undefined)}
+                aria-label="Clear language filter"
+              >
+                <X className="mr-1 h-3 w-3" />
+                Clear
+              </Button>
+            </>
+          )}
         </div>
       )}
 

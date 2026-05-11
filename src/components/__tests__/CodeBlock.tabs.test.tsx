@@ -46,7 +46,9 @@ describe("CodeBlock tabs — persistence & a11y", () => {
       <CodeBlock group="install" variants={variants} />,
     );
     await user.click(screen.getAllByRole("tab")[1]);
-    expect(window.localStorage.getItem("codeblock:tab:install")).toBe("js");
+    // Storage key is namespaced by pathname so each article/section persists
+    // independently. In jsdom the path is "/".
+    expect(window.localStorage.getItem("codeblock:tab:/:install")).toBe("js");
     unmount();
     render(<CodeBlock group="install" variants={variants} />);
     const tabs = screen.getAllByRole("tab");
@@ -65,8 +67,8 @@ describe("CodeBlock tabs — persistence & a11y", () => {
     // alpha has indices 0..2, beta has 3..5
     await user.click(allTabs[1]); // alpha → js
     await user.click(allTabs[5]); // beta → bash
-    expect(window.localStorage.getItem("codeblock:tab:alpha")).toBe("js");
-    expect(window.localStorage.getItem("codeblock:tab:beta")).toBe("bash");
+    expect(window.localStorage.getItem("codeblock:tab:/:alpha")).toBe("js");
+    expect(window.localStorage.getItem("codeblock:tab:/:beta")).toBe("bash");
   });
 
   it("persists collapsed/expanded state per group + tab", async () => {
