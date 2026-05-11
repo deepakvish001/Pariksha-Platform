@@ -172,6 +172,80 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
         slug,
       });
 
+    /** Insert text at the current cursor position (or replace selection). */
+    const insertText = (snippet: string) => {
+      const el = textareaRef.current;
+      if (!el) {
+        onChange((value ? value + "\n" : "") + snippet);
+        return;
+      }
+      const start = el.selectionStart ?? value.length;
+      const end = el.selectionEnd ?? value.length;
+      const next = value.slice(0, start) + snippet + value.slice(end);
+      onChange(next);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.selectionStart = el.selectionEnd = start + snippet.length;
+      });
+    };
+
+    /** Smart paste: HTML→Markdown, front-matter parsing, normalization. */
+    const handleSmartPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      // Image-paste handler runs first; it calls preventDefault when it consumes the event.
+      onPaste(e);
+      if (e.defaultPrevented) return;
+
+      const cd = e.clipboardData;
+      if (!cd) return;
+      const html = cd.getData("text/html");
+      const plain = cd.getData("text/plain");
+      if (!html && !plain) return;
+
+      let md: string;
+      let convertedFromHtml = false;
+      if (html && isRichHtml(html, plain)) {
+        md = htmlToMarkdown(html);
+        convertedFromHtml = true;
+      } else {
+        md = plain;
+      }
+      if (!md) return;
+
+      const normalized = normalizePastedText(md);
+      const fm = parseFrontMatter(normalized);
+      const body = fm.body;
+      let appliedFmCount = 0;
+      if (fm.found && onFrontMatter) {
+        try {
+          appliedFmCount = onFrontMatter(mapFrontMatter(fm.data)) || 0;
+        } catch {
+          /* swallow */
+        }
+      }
+
+      e.preventDefault();
+      insertText(body);
+
+      const features = detectMarkdownFeatures(body);
+      setDetected(features);
+
+      const parts: string[] = [];
+      if (convertedFromHtml) parts.push("HTML → Markdown");
+      else parts.push("Markdown");
+      if (fm.found) parts.push(`front-matter (${appliedFmCount} field${appliedFmCount === 1 ? "" : "s"})`);
+      const detail: string[] = [];
+      if (features.headings) detail.push(`${features.headings} headings`);
+      if (features.codeBlocks) detail.push(`${features.codeBlocks} code`);
+      if (features.tables) detail.push(`${features.tables} tables`);
+      if (features.images) detail.push(`${features.images} images`);
+      if (features.math) detail.push(`${features.math} math`);
+      if (features.callouts) detail.push(`${features.callouts} callouts`);
+      toast({
+        title: `Pasted ${parts.join(" + ")}`,
+        description: detail.length ? detail.join(" · ") : undefined,
+      });
+    };
+
     const handlePickImage = () => fileInputRef.current?.click();
 
     const handleInsertImageUrl = () => {
