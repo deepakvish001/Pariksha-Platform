@@ -183,6 +183,30 @@ export default function DsaStudio() {
       .filter((g) => g.problems.length);
   }, [topic, search, priority]);
 
+  const renderedCount = useMemo(
+    () => filteredGroups.reduce((sum, g) => sum + g.problems.length, 0),
+    [filteredGroups],
+  );
+  const topicTotal = useMemo(
+    () => topic.groups.reduce((sum, g) => sum + g.problems.length, 0),
+    [topic],
+  );
+  const grandTotal = useMemo(
+    () => TOPICS.reduce((s, t) => s + t.groups.reduce((x, g) => x + g.problems.length, 0), 0),
+    [],
+  );
+  const qaMismatches = useMemo(
+    () =>
+      TOPICS
+        .map((t) => {
+          const actual = t.groups.reduce((x, g) => x + g.problems.length, 0);
+          return { id: t.id, label: t.label, expected: t.count, actual };
+        })
+        .filter((r) => r.expected !== r.actual),
+    [],
+  );
+  const topicHasMismatch = qaMismatches.some((m) => m.id === topic.id);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
