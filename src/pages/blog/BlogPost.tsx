@@ -23,8 +23,11 @@ import {
 import { BlogContent } from "@/components/blog/BlogContent";
 import { ReadingProgress } from "@/components/blog/ReadingProgress";
 import { TableOfContents } from "@/components/blog/TableOfContents";
+import { InlineToc } from "@/components/blog/InlineToc";
+import { MobileTocSheet } from "@/components/blog/MobileTocSheet";
 import { FloatingActionRail } from "@/components/blog/FloatingActionRail";
 import { extractToc } from "@/lib/blog/extractToc";
+import { useActiveHeading } from "@/hooks/useActiveHeading";
 import {
   useBlogPost,
   useTrackBlogView,
