@@ -287,16 +287,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
         toast({ title: "Paste undone", description: "Restored content and reverted applied fields." });
       };
       setCanUndo(true);
-        onChange(valueBefore);
-        try {
-          fmUndo?.();
-        } catch {
-          /* ignore */
-        }
-        setDetected(null);
-        writeDetected(null);
-        toast({ title: "Paste undone", description: "Restored content and reverted applied fields." });
-      };
 
       const parts: string[] = [];
       if (convertedFromHtml) parts.push("HTML → Markdown");
@@ -331,6 +321,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
         setDetected(null);
         writeDetected(null);
         lastUndoRef.current = null;
+        setCanUndo(false);
       }
     }, [value, detected]);
 
