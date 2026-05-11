@@ -172,22 +172,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
         slug,
       });
 
-    /** Insert text at the current cursor position (or replace selection). */
-    const insertText = (snippet: string) => {
-      const el = textareaRef.current;
-      if (!el) {
-        onChange((value ? value + "\n" : "") + snippet);
-        return;
-      }
-      const start = el.selectionStart ?? value.length;
-      const end = el.selectionEnd ?? value.length;
-      const next = value.slice(0, start) + snippet + value.slice(end);
-      onChange(next);
-      requestAnimationFrame(() => {
-        el.focus();
-        el.selectionStart = el.selectionEnd = start + snippet.length;
-      });
-    };
+    /** Insert text at the current cursor position (alias of insertAtCursor). */
+    const insertText = (snippet: string) => insertAtCursor(snippet);
+
 
     /** Smart paste: HTML→Markdown, front-matter parsing, normalization. */
     const handleSmartPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
