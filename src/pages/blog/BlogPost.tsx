@@ -116,6 +116,14 @@ export default function BlogPost() {
   const toc = useMemo(() => extractToc(post?.content_md || ""), [post?.content_md]);
   const activeHeadingId = useActiveHeading(toc);
 
+  // Deep-link: when the post + content render, honour the URL hash.
+  useEffect(() => {
+    if (!post?.content_md || !window.location.hash) return;
+    // Wait a tick for BlogContent to render headings, then jump with offset.
+    const t = setTimeout(() => scrollToHashOnLoad(88), 60);
+    return () => clearTimeout(t);
+  }, [post?.id, post?.content_md]);
+
   if (isLoading)
     return <div className="container mx-auto py-16 text-center text-muted-foreground">Loading…</div>;
   if (!post)
