@@ -218,51 +218,32 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
     const insertText = (snippet: string) => insertAtCursor(snippet);
 
 
-    /** Smart paste: HTML→Markdown, front-matter parsing, normalization. */
-    const handleSmartPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      // Image-paste handler runs first; it calls preventDefault when it consumes the event.
-      onPaste(e);
-      if (e.defaultPrevented) return;
+    /** Pending table-cleanup confirmation. While set, the editor shows the
+     *  TablePreviewDialog and waits for Apply / Cancel before mutating state. */
+    const [tablePreview, setTablePreview] = useState<{
+      cleaned: string;
+      original: string;
+      report: TableReport;
+      apply: () => void;
+    } | null>(null);
 
-      const cd = e.clipboardData;
-      if (!cd) return;
-      const html = cd.getData("text/html");
-      const plain = cd.getData("text/plain");
-      if (!html && !plain) return;
+    /** Commit an already-converted Markdown body: insert into the editor,
+     *  apply front-matter, build the detected summary + undo entry, and toast. */
+    const commitPaste = (
+      body: string,
+      ctx: {
+        valueBefore: string;
+        convertedFromHtml: boolean;
+        fmFound: boolean;
+        fmApply: () => { applied: number; undo?: () => void };
+        tableReport?: TableReport;
+      },
+    ) => {
+      const { valueBefore, convertedFromHtml, fmFound, fmApply, tableReport } = ctx;
+      const fmRes = fmFound ? fmApply() : { applied: 0, undo: undefined as undefined | (() => void) };
+      const appliedFmCount = fmRes.applied;
+      const fmUndo = fmRes.undo;
 
-      let md: string;
-      let convertedFromHtml = false;
-      if (html && isRichHtml(html, plain)) {
-        md = htmlToMarkdown(html);
-        convertedFromHtml = true;
-      } else {
-        md = plain;
-      }
-      if (!md) return;
-
-      const normalized = normalizePastedText(md);
-      const fm = parseFrontMatter(normalized);
-      const body = fm.body;
-
-      // Snapshot before mutation so the user can undo.
-      const valueBefore = value;
-      let appliedFmCount = 0;
-      let fmUndo: (() => void) | undefined;
-      if (fm.found && onFrontMatter) {
-        try {
-          const r = onFrontMatter(mapFrontMatter(fm.data));
-          if (typeof r === "number") {
-            appliedFmCount = r;
-          } else if (r && typeof r === "object") {
-            appliedFmCount = r.applied || 0;
-            fmUndo = r.undo;
-          }
-        } catch {
-          /* swallow */
-        }
-      }
-
-      e.preventDefault();
       insertText(body);
 
       const features = detectMarkdownFeatures(body);
@@ -293,7 +274,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       const parts: string[] = [];
       if (convertedFromHtml) parts.push("HTML → Markdown");
       else parts.push("Markdown");
-      if (fm.found) parts.push(`front-matter (${appliedFmCount} field${appliedFmCount === 1 ? "" : "s"})`);
+      if (fmFound)
+        parts.push(`front-matter (${appliedFmCount} field${appliedFmCount === 1 ? "" : "s"})`);
+      if (tableReport && tableReport.tablesNormalized > 0)
+        parts.push(
+          `${tableReport.tablesNormalized} table${tableReport.tablesNormalized === 1 ? "" : "s"} cleaned`,
+        );
       const detail: string[] = [];
       if (features.headings) detail.push(`${features.headings} headings`);
       if (features.codeBlocks) detail.push(`${features.codeBlocks} code`);
@@ -309,6 +295,76 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
             Undo
           </ToastAction>
         ),
+      });
+    };
+
+    /** Smart paste: HTML→Markdown, front-matter parsing, table sanitization. */
+    const handleSmartPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      // Image-paste handler runs first; it calls preventDefault when it consumes the event.
+      onPaste(e);
+      if (e.defaultPrevented) return;
+
+      const cd = e.clipboardData;
+      if (!cd) return;
+      const html = cd.getData("text/html");
+      const plain = cd.getData("text/plain");
+      if (!html && !plain) return;
+
+      let md: string;
+      let convertedFromHtml = false;
+      if (html && isRichHtml(html, plain)) {
+        md = htmlToMarkdown(html);
+        convertedFromHtml = true;
+      } else {
+        md = plain;
+      }
+      if (!md) return;
+
+      const normalized = normalizePastedText(md);
+      const fm = parseFrontMatter(normalized);
+      const rawBody = fm.body;
+
+      // Sanitize any GFM tables before insertion.
+      const { markdown: cleanedBody, report } = sanitizeGfmTables(rawBody);
+
+      e.preventDefault();
+      const valueBefore = value;
+      const fmApply = () => {
+        if (!fm.found || !onFrontMatter) return { applied: 0 };
+        try {
+          const r = onFrontMatter(mapFrontMatter(fm.data));
+          if (typeof r === "number") return { applied: r };
+          if (r && typeof r === "object") return { applied: r.applied || 0, undo: r.undo };
+        } catch {
+          /* ignore */
+        }
+        return { applied: 0 };
+      };
+
+      // Show preview + confirmation when at least one table needed cleanup.
+      if (report.tablesNormalized > 0) {
+        setTablePreview({
+          cleaned: cleanedBody,
+          original: rawBody,
+          report,
+          apply: () =>
+            commitPaste(cleanedBody, {
+              valueBefore,
+              convertedFromHtml,
+              fmFound: fm.found,
+              fmApply,
+              tableReport: report,
+            }),
+        });
+        return;
+      }
+
+      commitPaste(cleanedBody, {
+        valueBefore,
+        convertedFromHtml,
+        fmFound: fm.found,
+        fmApply,
+        tableReport: report,
       });
     };
 
