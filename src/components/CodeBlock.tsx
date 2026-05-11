@@ -252,11 +252,28 @@ export function CodeBlock(props: CodeBlockProps) {
     return s;
   }, [isDark]);
 
+  const [copiedTabIdx, setCopiedTabIdx] = useState<number | null>(null);
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(active.code);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
+  const handleCopyVariant = async (i: number) => {
+    const v = variants[i];
+    if (!v) return;
+    try {
+      await navigator.clipboard.writeText(v.code);
+      setCopiedTabIdx(i);
+      setTimeout(
+        () => setCopiedTabIdx((cur) => (cur === i ? null : cur)),
+        1800,
+      );
     } catch {
       /* clipboard unavailable */
     }
