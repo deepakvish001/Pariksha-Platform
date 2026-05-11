@@ -275,6 +275,7 @@ export default function BlogPost() {
               items={toc}
               readingTimeMin={post.reading_time_min}
               activeId={activeHeadingId}
+              storageKey={post.slug}
             />
 
             <BlogContent source={post.content_md} className="mb-8" />
