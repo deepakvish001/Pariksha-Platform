@@ -21,6 +21,7 @@ import {
   Sparkles,
   Swords,
   BookOpen,
+  Brain,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -69,6 +70,7 @@ const homeNavItems = [
   { title: "Dashboard", url: "/learn", icon: LayoutGrid },
   { title: "My Plan", url: "/learn/my-plan", icon: Sparkles },
   { title: "Sheets", url: "/learn/sheets", icon: FileSpreadsheet },
+  { title: "DSA Studio", url: "/learn/dsa-studio", icon: Brain },
   
   { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "Contests", url: "/contests", icon: Trophy },
