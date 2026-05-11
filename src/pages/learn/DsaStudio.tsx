@@ -39,77 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type Diff = "Easy" | "Medium" | "Hard";
-type Priority = "P1" | "P2" | "P3";
-
-interface Problem {
-  id: number;
-  title: string;
-  tag: string;
-  difficulty: Diff;
-  priority: Priority;
-  free?: boolean;
-  slug: string;
-}
-
-interface Topic {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  count: number;
-  groups: { name: string; problems: Problem[] }[];
-  patterns: string[];
-}
-
-
-
-const TOPICS: Topic[] = [
-  {
-    id: "arrays",
-    label: "Arrays",
-    icon: Box,
-    count: 18,
-    patterns: ["Basics", "Two Pointers", "Subarray", "Hashing", "Rotation", "Sorting", "Sliding Window"],
-    groups: [
-      {
-        name: "Basics",
-        problems: [
-          { id: 1929, title: "Concatenation of Array", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "concatenation-of-array" },
-          { id: 1480, title: "Running Sum of 1d Array", tag: "prefix sum", difficulty: "Easy", priority: "P2", free: true, slug: "running-sum-of-1d-array" },
-          { id: 1672, title: "Richest Customer Wealth", tag: "2D array", difficulty: "Easy", priority: "P3", free: true, slug: "richest-customer-wealth" },
-          { id: 1470, title: "Shuffle the Array", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "shuffle-the-array" },
-          { id: 832, title: "Flipping an Image", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "flipping-an-image" },
-          { id: 2239, title: "Find Closest Number to Zero", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "find-closest-number-to-zero" },
-        ],
-      },
-      {
-        name: "Two Pointers",
-        problems: [
-          { id: 88, title: "Merge Sorted Array", tag: "two pointers", difficulty: "Easy", priority: "P1", free: true, slug: "merge-sorted-arrays" },
-          { id: 26, title: "Remove Duplicates from Sorted Array", tag: "two pointers", difficulty: "Easy", priority: "P1", free: true, slug: "remove-duplicates-from-sorted-array" },
-          { id: 977, title: "Squares of a Sorted Array", tag: "two pointers", difficulty: "Easy", priority: "P2", free: true, slug: "squares-of-a-sorted-array" },
-          { id: 15, title: "Three Sum", tag: "two pointers", difficulty: "Medium", priority: "P1", slug: "three-sum" },
-        ],
-      },
-    ],
-  },
-  { id: "strings", label: "Strings", icon: TypeIcon, count: 17, patterns: ["Basics", "Palindromes", "Sliding Window"], groups: [] },
-  { id: "matrix", label: "Matrix", icon: Grid3x3, count: 9, patterns: ["Traversal", "Rotation"], groups: [] },
-  { id: "stack", label: "Stack", icon: Layers, count: 8, patterns: ["Monotonic", "Valid Parentheses"], groups: [] },
-  { id: "queue", label: "Queue", icon: Activity, count: 1, patterns: ["Deque"], groups: [] },
-  { id: "binary-search", label: "Binary Search", icon: SearchIcon, count: 13, patterns: ["Lower bound", "Search Space"], groups: [] },
-  { id: "linked-list", label: "Linked List", icon: Link2, count: 13, patterns: ["Reverse", "Cycle"], groups: [] },
-  { id: "greedy", label: "Greedy", icon: Lightbulb, count: 5, patterns: ["Intervals"], groups: [] },
-  { id: "intervals", label: "Intervals", icon: CalendarRange, count: 5, patterns: ["Merge", "Insert"], groups: [] },
-  { id: "backtracking", label: "Backtracking", icon: Shuffle, count: 9, patterns: ["Permutations"], groups: [] },
-  { id: "tree", label: "Tree", icon: GitBranch, count: 20, patterns: ["DFS", "BFS"], groups: [] },
-  { id: "heap", label: "Heap", icon: Flame, count: 6, patterns: ["Top K"], groups: [] },
-  { id: "graph", label: "Graph", icon: Network, count: 11, patterns: ["BFS", "DFS", "Union Find"], groups: [] },
-  { id: "dp", label: "Dynamic Prog.", icon: Cpu, count: 15, patterns: ["1D", "2D", "Knapsack"], groups: [] },
-  { id: "bit", label: "Bit Manip.", icon: Zap, count: 8, patterns: ["XOR Tricks"], groups: [] },
-  { id: "trie", label: "Trie", icon: KeyRound, count: 2, patterns: ["Prefix"], groups: [] },
-  { id: "design", label: "Design", icon: Hammer, count: 1, patterns: ["LRU"], groups: [] },
-];
+import { DSA_TOPICS as TOPICS, type Diff, type DsaProblem as Problem } from "@/data/dsaStudioData";
 
 const REFERENCE = [
   { id: "patterns", label: "Common Patterns", icon: Puzzle, count: 43 },
@@ -467,7 +397,7 @@ export default function DsaStudio() {
                 {topic.label}
               </h2>
               <p className="text-xs text-muted-foreground mt-1">
-                {topic.patterns.join(" · ")}
+                {topic.subtitle}
               </p>
             </div>
             <span className="text-sm text-muted-foreground">{topic.count} problems</span>
