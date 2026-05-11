@@ -44,6 +44,44 @@ describe("detectLanguage", () => {
     expect(detectLanguage(`{ "name": "byteskill", "version": 1 }`)).toBe("json");
   });
 
+  it("detects Dockerfile from FROM + RUN directives", () => {
+    expect(
+      detectLanguage(`FROM node:20-alpine\nWORKDIR /app\nCOPY . .\nRUN npm ci\nCMD ["node","server.js"]`),
+    ).toBe("dockerfile");
+  });
+
+  it("detects Makefile from target + tab-indented recipe", () => {
+    expect(
+      detectLanguage(`.PHONY: build\nbuild:\n\tgo build -o app ./...\n`),
+    ).toBe("makefile");
+  });
+
+  it("detects GitHub Actions YAML workflow", () => {
+    expect(
+      detectLanguage(
+        `name: CI\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n`,
+      ),
+    ).toBe("yaml");
+  });
+
+  it("detects TOML from section header + key=value", () => {
+    expect(
+      detectLanguage(`[package]\nname = "byteskill"\nversion = "0.1.0"`),
+    ).toBe("toml");
+  });
+
+  it("detects nginx config", () => {
+    expect(
+      detectLanguage(`server {\n  listen 80;\n  location /api {\n    proxy_pass http://app;\n  }\n}`),
+    ).toBe("nginx");
+  });
+
+  it("detects GraphQL schema", () => {
+    expect(
+      detectLanguage(`type User {\n  id: ID!\n  name: String\n}\n`),
+    ).toBe("graphql");
+  });
+
   it("returns null on too-short / opaque input", () => {
     expect(detectLanguage("")).toBeNull();
     expect(detectLanguage("abc")).toBeNull();
