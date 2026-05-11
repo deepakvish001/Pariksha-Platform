@@ -125,6 +125,10 @@ export function CodeBlock(props: CodeBlockProps) {
 
   const [copied, setCopied] = useState(false);
   const [wrap, setWrap] = useState(false);
+  const reactId = useId();
+  const tabIdBase = group ? `codeblock-${group}` : `codeblock-${reactId.replace(/[:]/g, "")}`;
+  const tabId = (i: number) => `${tabIdBase}-tab-${i}`;
+  const panelId = (i: number) => `${tabIdBase}-panel-${i}`;
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
 
