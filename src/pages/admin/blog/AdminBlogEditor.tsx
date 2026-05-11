@@ -301,6 +301,7 @@ export default function AdminBlogEditor() {
               onChange={setContent}
               slug={slug || "blog-post"}
               onFrontMatter={(fm) => {
+                const before = { title, excerpt, cover, slug, seoTitle, seoDesc };
                 let n = 0;
                 if (fm.title && !title) { setTitle(fm.title); n++; }
                 if (fm.excerpt && !excerpt) { setExcerpt(fm.excerpt); n++; }
@@ -308,7 +309,17 @@ export default function AdminBlogEditor() {
                 if (fm.slug && !slug) { setSlug(slugify(fm.slug)); n++; }
                 if (fm.seoTitle && !seoTitle) { setSeoTitle(fm.seoTitle); n++; }
                 if (fm.seoDescription && !seoDesc) { setSeoDesc(fm.seoDescription); n++; }
-                return n;
+                return {
+                  applied: n,
+                  undo: () => {
+                    setTitle(before.title);
+                    setExcerpt(before.excerpt);
+                    setCover(before.cover);
+                    setSlug(before.slug);
+                    setSeoTitle(before.seoTitle);
+                    setSeoDesc(before.seoDesc);
+                  },
+                };
               }}
             />
           </div>
