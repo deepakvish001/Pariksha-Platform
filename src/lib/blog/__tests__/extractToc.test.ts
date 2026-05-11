@@ -6,14 +6,16 @@ describe("extractToc", () => {
     expect(extractToc("")).toEqual([]);
   });
 
-  it("parses H2 and H3 only and slugifies", () => {
+  it("parses H2, H3 and H4 and slugifies", () => {
     const md = `# Title
 ## First
 ### Sub one
+#### Deep
 ## Second`;
     expect(extractToc(md)).toEqual([
       { depth: 2, text: "First", id: "first" },
       { depth: 3, text: "Sub one", id: "sub-one" },
+      { depth: 4, text: "Deep", id: "deep" },
       { depth: 2, text: "Second", id: "second" },
     ]);
   });
