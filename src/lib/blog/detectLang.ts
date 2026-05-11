@@ -47,10 +47,30 @@ interface Rule {
 
 // Higher-weight rules are stronger signals. Multiple matches accumulate.
 const RULES: Rule[] = [
-  // JSON / YAML / Markdown — structural, check first.
+  // JSON / YAML / TOML / INI / Markdown — structural, check first.
   { lang: "json", weight: 6, re: /^\s*[\[{][\s\S]*[\]}]\s*$/ },
+  // GitHub Actions / CI YAML — strong signal via `on:` + `jobs:` or `steps:`.
+  { lang: "yaml", weight: 7, re: /^(on|jobs|steps|runs-on)\s*:/m },
   { lang: "yaml", weight: 4, re: /^[a-z0-9_-]+\s*:\s*[^\n]+$/im },
+  { lang: "yaml", weight: 3, re: /^\s*-\s+\w+\s*:\s*\S/m },
+  { lang: "toml", weight: 5, re: /^\s*\[[\w.-]+\]\s*$[\s\S]*?^[\w-]+\s*=/m },
+  { lang: "ini", weight: 4, re: /^\s*\[[\w.\s-]+\]\s*$\n(?:[^=\n]+=[^\n]*\n?)+/m },
   { lang: "md", weight: 3, re: /^#{1,6}\s+\S|^\s*[-*]\s+\S/m },
+
+  // Dockerfile — strong signals via FROM/RUN/CMD/etc directives.
+  { lang: "dockerfile", weight: 7, re: /^\s*FROM\s+\S+/m },
+  { lang: "dockerfile", weight: 4, re: /^\s*(RUN|CMD|ENTRYPOINT|WORKDIR|COPY|ADD|EXPOSE|ENV|ARG|LABEL|VOLUME|USER|HEALTHCHECK)\s+/m },
+
+  // Makefile — tab-indented recipe under a target line.
+  { lang: "makefile", weight: 7, re: /^[A-Za-z_.][\w./-]*\s*:(?!=)[^\n]*\n\t/m },
+  { lang: "makefile", weight: 4, re: /^\.PHONY\s*:/m },
+  { lang: "makefile", weight: 3, re: /^[A-Z_][A-Z0-9_]*\s*[:?]?=/m },
+
+  // Nginx / GraphQL / XML / PowerShell / Regex
+  { lang: "nginx", weight: 6, re: /^\s*(server|location|http|upstream)\s*\{/m },
+  { lang: "graphql", weight: 6, re: /^\s*(type|input|enum|interface|schema|fragment|query|mutation|subscription)\s+\w+/m },
+  { lang: "xml", weight: 5, re: /<\?xml\b|<\/?[a-z][\w:-]*[\s>]/i },
+  { lang: "powershell", weight: 5, re: /\$\w+\s*=|^\s*(Get|Set|New|Remove|Invoke)-[A-Z]\w+/m },
 
   // HTML / CSS
   { lang: "html", weight: 5, re: /<\/?(html|body|head|div|span|p|a|img|h[1-6])\b/i },
