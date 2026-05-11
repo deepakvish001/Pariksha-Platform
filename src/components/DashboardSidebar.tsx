@@ -20,6 +20,7 @@ import {
   Shield,
   Sparkles,
   Swords,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -71,6 +72,7 @@ const homeNavItems = [
   
   { title: "Coding Problems", url: "/library/problems", icon: Terminal },
   { title: "Contests", url: "/contests", icon: Trophy },
+  { title: "Blog", url: "/blog", icon: BookOpen },
   { title: "Leaderboard", url: "/learn/leaderboard", icon: Trophy },
   { title: "Profile", url: PROFILE_SENTINEL, icon: User },
   { title: "Settings", url: "/settings", icon: Settings },

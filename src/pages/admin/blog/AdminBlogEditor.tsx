@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarkdownEditor } from "@/components/admin/editor/MarkdownEditor";
-import { ArrowLeft, Upload, Save, Loader2, ExternalLink, RotateCcw, Check, History, ImageIcon, Send } from "lucide-react";
+import { ArrowLeft, Upload, Save, Loader2, ExternalLink, RotateCcw, Check, History, ImageIcon, Send, Copy } from "lucide-react";
 import { useBlogCategories, useBlogTags, useBlogPostById } from "@/hooks/useBlog";
 import { useSaveBlogPost, useUploadBlogCover, useUpsertBlogTag } from "@/hooks/admin/useAdminBlog";
 import { slugify } from "@/types/blog";
@@ -45,6 +45,8 @@ export default function AdminBlogEditor() {
   const [catIds, setCatIds] = useState<string[]>([]);
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
+  const [ogImageUrl, setOgImageUrl] = useState<string | null>(null);
+  const [ogGenerating, setOgGenerating] = useState(false);
 
   useEffect(() => {
     if (existing) {
@@ -61,6 +63,7 @@ export default function AdminBlogEditor() {
       setAllowComments(existing.allow_comments);
       setCatIds(existing.category_ids ?? []);
       setTagIds(existing.tag_ids ?? []);
+      setOgImageUrl((existing as any).og_image_url ?? null);
     }
   }, [existing]);
 
@@ -391,24 +394,82 @@ export default function AdminBlogEditor() {
                 size="sm"
                 variant="outline"
                 className="w-full"
-                disabled={!id}
+                disabled={!id || ogGenerating}
                 onClick={async () => {
                   if (!id) return;
+                  setOgGenerating(true);
                   const { data, error } = await supabase.functions.invoke("generate-og-image", {
                     body: { postId: id },
                   });
+                  setOgGenerating(false);
                   if (error) {
                     toast({ title: "Failed", description: error.message, variant: "destructive" });
                     return;
                   }
+                  const url = (data as any)?.og_image_url as string | undefined;
+                  if (url) setOgImageUrl(`${url}?t=${Date.now()}`);
                   toast({ title: "OG image generated", description: "Cover image updated for social sharing." });
-                  if ((data as any)?.og_image_url) {
-                    // best-effort: trigger refetch by full reload of editor draft via existing hook
-                  }
                 }}
               >
-                <ImageIcon className="h-4 w-4 mr-2" /> Generate OG image
+                {ogGenerating ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                )}
+                {ogImageUrl ? "Regenerate OG image" : "Generate OG image"}
               </Button>
+
+              {ogImageUrl && (
+                <div className="space-y-2 rounded-md border bg-muted/20 p-2">
+                  <div className="aspect-[1200/630] w-full overflow-hidden rounded border bg-background">
+                    <img
+                      src={ogImageUrl}
+                      alt="OG preview"
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="flex gap-1">
+                    <Input
+                      readOnly
+                      value={ogImageUrl.split("?")[0]}
+                      onFocus={(e) => e.currentTarget.select()}
+                      className="h-8 text-xs font-mono"
+                      aria-label="OG image URL"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-2"
+                      onClick={async () => {
+                        const u = ogImageUrl.split("?")[0];
+                        try {
+                          await navigator.clipboard.writeText(u);
+                          toast({ title: "Copied", description: "OG image URL copied to clipboard." });
+                        } catch {
+                          toast({ title: "Copy failed", variant: "destructive" });
+                        }
+                      }}
+                      aria-label="Copy OG image URL"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-2"
+                      asChild
+                    >
+                      <a href={ogImageUrl} target="_blank" rel="noreferrer" aria-label="Open OG image">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <Button
                 size="sm"
                 variant="outline"
