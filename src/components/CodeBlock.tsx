@@ -500,6 +500,14 @@ export function CodeBlock(props: CodeBlockProps) {
             <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
               {active.language || "code"}
             </span>
+            {(active as any).detected && (
+              <span
+                title="Language auto-detected from snippet content"
+                className="rounded-sm bg-primary/15 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-primary"
+              >
+                Auto
+              </span>
+            )}
             {active.filename && (
               <span className="ml-1 truncate font-mono text-[11px] text-foreground/80">
                 {active.filename}
