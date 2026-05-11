@@ -278,17 +278,26 @@ export function CodeBlock(props: CodeBlockProps) {
         {hasTabs ? (
           <div
             role="tablist"
-            aria-label="Code language"
+            aria-label={group ? `Code examples for ${group}` : "Code examples"}
+            aria-orientation="horizontal"
             className="flex h-full items-stretch gap-0.5 overflow-x-auto"
           >
             {variants.map((v, i) => {
               const selected = i === activeIdx;
+              const langLabel = labelFor(v.language);
+              const title = v.filename || langLabel;
+              const ariaLabel = v.filename
+                ? `${v.filename} (${langLabel})`
+                : langLabel;
               return (
                 <button
                   key={`${v.language}-${i}`}
                   type="button"
                   role="tab"
+                  id={tabId(i)}
                   aria-selected={selected}
+                  aria-controls={panelId(i)}
+                  aria-label={ariaLabel}
                   tabIndex={selected ? 0 : -1}
                   onClick={() => setActiveIdx(i)}
                   onKeyDown={(e) => {
@@ -312,18 +321,21 @@ export function CodeBlock(props: CodeBlockProps) {
                     "relative inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 text-[11px] font-medium tracking-wide transition-colors",
                     "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                     selected
-                      ? isDark
-                        ? "text-foreground"
-                        : "text-foreground"
+                      ? "text-foreground"
                       : isDark
                         ? "text-muted-foreground/70 hover:text-foreground/90 hover:bg-white/[0.03]"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                   )}
                 >
-                  <span>{labelFor(v.language)}</span>
+                  <span className={v.filename ? "font-mono text-[11px]" : ""}>
+                    {title}
+                  </span>
                   {v.filename && (
-                    <span className="font-mono text-[10px] text-muted-foreground/80">
-                      {v.filename}
+                    <span
+                      aria-hidden
+                      className="rounded-sm bg-muted/40 px-1 py-px font-mono text-[9px] uppercase tracking-wider text-muted-foreground/80"
+                    >
+                      {langLabel}
                     </span>
                   )}
                   <span
