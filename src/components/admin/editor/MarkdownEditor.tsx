@@ -363,7 +363,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onDrop={onDrop}
-              onPaste={onPaste}
+              onPaste={handleSmartPaste}
               onKeyDown={handleKeyDown}
               rows={fullscreen ? 30 : rows}
               spellCheck
