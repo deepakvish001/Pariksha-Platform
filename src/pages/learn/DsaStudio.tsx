@@ -195,6 +195,11 @@ export default function DsaStudio() {
     () => TOPICS.reduce((s, t) => s + t.groups.reduce((x, g) => x + g.problems.length, 0), 0),
     [],
   );
+  const difficultyTotals = useMemo(() => {
+    const counts = { Easy: 0, Medium: 0, Hard: 0 } as Record<Diff, number>;
+    for (const t of TOPICS) for (const g of t.groups) for (const p of g.problems) counts[p.difficulty]++;
+    return counts;
+  }, []);
   const qaMismatches = useMemo(
     () =>
       TOPICS
@@ -218,14 +223,14 @@ export default function DsaStudio() {
               DSA Studio
             </h1>
           </Link>
-          <div className="hidden md:flex items-center gap-3 text-sm text-muted-foreground">
-            <span>Total: <span className="text-foreground font-semibold">170+</span></span>
+          <div className="hidden sm:flex items-center gap-2 md:gap-3 text-xs md:text-sm text-muted-foreground">
+            <span>Total: <span className="text-foreground font-semibold">{grandTotal}</span></span>
             <span className="opacity-40">|</span>
-            <span>Easy: <span className="text-emerald-400 font-semibold">60+</span></span>
+            <span>Easy: <span className="text-emerald-400 font-semibold">{difficultyTotals.Easy}</span></span>
             <span className="opacity-40">|</span>
-            <span>Medium: <span className="text-amber-400 font-semibold">85+</span></span>
+            <span>Medium: <span className="text-amber-400 font-semibold">{difficultyTotals.Medium}</span></span>
             <span className="opacity-40">|</span>
-            <span>Hard: <span className="text-rose-400 font-semibold">25+</span></span>
+            <span>Hard: <span className="text-rose-400 font-semibold">{difficultyTotals.Hard}</span></span>
           </div>
           <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-500 to-sky-500 grid place-items-center text-sm font-bold text-white">
             DV
