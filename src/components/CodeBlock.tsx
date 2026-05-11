@@ -130,11 +130,46 @@ export function CodeBlock(props: CodeBlockProps) {
 
   const lines = useMemo(() => active.code.split("\n"), [active.code]);
   const isLong = lines.length > 25;
-  const [collapsed, setCollapsed] = useState(isLong);
-  // Reset collapse when switching tabs.
+  const collapseStorageKey = group
+    ? `codeblock:collapsed:${group}:${active.language}`
+    : null;
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined" || !collapseStorageKey) return isLong;
+    try {
+      const saved = window.localStorage.getItem(collapseStorageKey);
+      if (saved === "1") return true;
+      if (saved === "0") return false;
+    } catch {
+      /* noop */
+    }
+    return isLong;
+  });
+  // Re-sync collapsed when switching tabs (read persisted, else default).
   useEffect(() => {
-    setCollapsed(lines.length > 25);
-  }, [active.language, lines.length]);
+    const defaultCollapsed = lines.length > 25;
+    if (typeof window === "undefined" || !collapseStorageKey) {
+      setCollapsed(defaultCollapsed);
+      return;
+    }
+    try {
+      const saved = window.localStorage.getItem(collapseStorageKey);
+      if (saved === "1") setCollapsed(true);
+      else if (saved === "0") setCollapsed(false);
+      else setCollapsed(defaultCollapsed);
+    } catch {
+      setCollapsed(defaultCollapsed);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active.language, collapseStorageKey]);
+  // Persist on change.
+  useEffect(() => {
+    if (typeof window === "undefined" || !collapseStorageKey) return;
+    try {
+      window.localStorage.setItem(collapseStorageKey, collapsed ? "1" : "0");
+    } catch {
+      /* noop */
+    }
+  }, [collapsed, collapseStorageKey]);
 
   const visibleSrc = collapsed ? lines.slice(0, 18).join("\n") : active.code;
   const showLineNumbers = lines.length > 3;
