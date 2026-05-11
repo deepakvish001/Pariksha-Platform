@@ -517,7 +517,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
                       {f.links} links
                     </span>
                   )}
-                  {lastUndoRef.current && (
+                  {canUndo && (
                     <button
                       type="button"
                       onClick={() => lastUndoRef.current?.()}
@@ -534,7 +534,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
                     }}
                     className={cn(
                       "text-muted-foreground/70 hover:text-foreground",
-                      lastUndoRef.current ? "" : "ml-auto",
+                      canUndo ? "" : "ml-auto",
                     )}
                     aria-label="Dismiss detected paste summary"
                   >
