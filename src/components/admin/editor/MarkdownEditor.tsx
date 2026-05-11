@@ -168,6 +168,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
     const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
     const [detected, setDetected] = useState<DetectedSummary | null>(() => readDetected());
     const lastUndoRef = useRef<null | (() => void)>(null);
+    const [canUndo, setCanUndo] = useState(false);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -273,6 +274,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       writeDetected(summary);
 
       lastUndoRef.current = () => {
+        onChange(valueBefore);
+        try {
+          fmUndo?.();
+        } catch {
+          /* ignore */
+        }
+        setDetected(null);
+        writeDetected(null);
+        setCanUndo(false);
+        lastUndoRef.current = null;
+        toast({ title: "Paste undone", description: "Restored content and reverted applied fields." });
+      };
+      setCanUndo(true);
         onChange(valueBefore);
         try {
           fmUndo?.();
