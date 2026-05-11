@@ -40,6 +40,8 @@ import { htmlToMarkdown, isRichHtml } from "@/lib/admin/paste/htmlToMarkdown";
 import { parseFrontMatter, mapFrontMatter, type FrontMatterApply } from "@/lib/admin/paste/frontMatter";
 import { normalizePastedText } from "@/lib/admin/paste/normalize";
 import { detectMarkdownFeatures, type DetectedFeatures } from "@/lib/admin/paste/detectFeatures";
+import { sanitizeGfmTables, type TableReport } from "@/lib/admin/paste/sanitizeTables";
+import { TablePreviewDialog } from "./TablePreviewDialog";
 
 type Mode = "edit" | "split" | "preview";
 
