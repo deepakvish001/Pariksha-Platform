@@ -420,19 +420,73 @@ export default function DsaStudio() {
             </div>
           </div>
 
+          {/* QA mode banner */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <button
+              onClick={toggleQa}
+              data-testid="dsa-qa-toggle"
+              className={cn(
+                "text-[11px] font-mono px-2 py-1 rounded border transition-colors",
+                qaMode
+                  ? "border-amber-500/60 bg-amber-500/15 text-amber-300"
+                  : "border-border/50 text-muted-foreground hover:text-foreground",
+              )}
+            >
+              QA mode: {qaMode ? "ON" : "OFF"}
+            </button>
+            <span
+              data-testid="dsa-grand-total"
+              className="text-[11px] font-mono text-muted-foreground"
+            >
+              Total indexed: <span className="text-foreground font-semibold">{grandTotal}</span>/171
+            </span>
+          </div>
+          {qaMode && qaMismatches.length > 0 && (
+            <div
+              data-testid="dsa-qa-mismatches"
+              className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs space-y-1"
+            >
+              <div className="font-semibold text-amber-300">QA mismatches detected:</div>
+              <ul className="text-muted-foreground space-y-0.5">
+                {qaMismatches.map((m) => (
+                  <li key={m.id}>
+                    <span className="text-foreground">{m.label}</span>: expected {m.expected}, rendered {m.actual}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Topic header */}
           <div className="flex items-end justify-between flex-wrap gap-2 pt-2">
             <div>
               <h2 className="flex items-center gap-2 text-2xl font-bold">
-                <topic.icon className="h-6 w-6 text-primary" />
+                <topic.icon className={cn("h-6 w-6", qaMode && topicHasMismatch ? "text-amber-400" : "text-primary")} />
                 {topic.label}
+                {qaMode && topicHasMismatch && (
+                  <Badge className="h-5 text-[10px] bg-amber-500/20 text-amber-300 border-amber-500/40">
+                    mismatch
+                  </Badge>
+                )}
               </h2>
               <p className="text-xs text-muted-foreground mt-1">
                 {topic.subtitle}
               </p>
             </div>
-            <span className="text-sm text-muted-foreground">{topic.count} problems</span>
+            <div className="flex flex-col items-end gap-0.5">
+              <span className="text-sm text-muted-foreground">{topic.count} problems</span>
+              <span
+                data-testid="dsa-rendered-indicator"
+                className={cn(
+                  "text-[11px] font-mono",
+                  renderedCount === topicTotal ? "text-emerald-400" : "text-amber-400",
+                )}
+              >
+                Rendered: {renderedCount}/{topicTotal}
+              </span>
+            </div>
           </div>
+
 
           {/* Groups */}
           {filteredGroups.length === 0 && (
