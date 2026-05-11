@@ -432,13 +432,29 @@ export default function DsaStudio() {
               />
             </div>
             <div className="flex flex-wrap gap-2">
-              {[
+              {([
                 { id: "all", label: "All" },
                 { id: "p1", label: "P1 Only", dot: "bg-rose-500" },
                 { id: "p1p2", label: "P1 + P2", dot: "bg-amber-400" },
                 { id: "p3", label: "P3 Only", dot: "bg-zinc-500" },
                 { id: "free", label: "Free Only", icon: Lock },
-              ].map((b) => {
+              ] as { id: PriorityFilter; label: string; dot?: string; icon?: typeof Lock }[]).map((b) => {
+                const active = priority === b.id;
+                const Icon = b.icon;
+                return (
+                  <Button
+                    key={b.id}
+                    size="sm"
+                    variant={active ? "default" : "outline"}
+                    onClick={() => setPriority(b.id)}
+                    className="h-10 gap-1.5"
+                  >
+                    {b.dot && <span className={cn("h-2 w-2 rounded-full", b.dot)} />}
+                    {Icon && <Icon className="h-3.5 w-3.5" />}
+                    {b.label}
+                  </Button>
+                );
+              })}
                 const active = priority === (b.id as typeof priority);
                 const Icon = b.icon;
                 return (
