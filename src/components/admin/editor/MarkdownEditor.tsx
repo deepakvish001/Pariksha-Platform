@@ -783,6 +783,16 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
           onCancel={() => setPendingInsert(null)}
           onConfirm={handleConfirmInsert}
         />
+
+        <TablePreviewDialog
+          open={!!tablePreview}
+          report={tablePreview?.report ?? null}
+          onCancel={() => setTablePreview(null)}
+          onApply={() => {
+            tablePreview?.apply();
+            setTablePreview(null);
+          }}
+        />
       </>
     );
   },
