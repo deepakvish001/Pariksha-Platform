@@ -25,6 +25,7 @@ import { ReadingProgress } from "@/components/blog/ReadingProgress";
 import { TableOfContents } from "@/components/blog/TableOfContents";
 import { InlineToc } from "@/components/blog/InlineToc";
 import { MobileTocSheet } from "@/components/blog/MobileTocSheet";
+import { TocLiveAnnouncer } from "@/components/blog/TocLiveAnnouncer";
 import { FloatingActionRail } from "@/components/blog/FloatingActionRail";
 import { extractToc } from "@/lib/blog/extractToc";
 import { scrollToHashOnLoad } from "@/lib/blog/scrollToHeading";
