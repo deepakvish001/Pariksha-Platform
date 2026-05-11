@@ -464,58 +464,80 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
                 </span>
               )}
             </div>
-            {detected && (
-              <div
-                className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground"
-                role="status"
-                aria-live="polite"
-              >
-                <span className="font-medium text-foreground/80">Detected in paste:</span>
-                {detected.headings > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.headings} headings
-                  </span>
-                )}
-                {detected.codeBlocks > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.codeBlocks} code
-                  </span>
-                )}
-                {detected.tables > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.tables} tables
-                  </span>
-                )}
-                {detected.images > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.images} images
-                  </span>
-                )}
-                {detected.math > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.math} math
-                  </span>
-                )}
-                {detected.callouts > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.callouts} callouts
-                  </span>
-                )}
-                {detected.links > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.links} links
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setDetected(null)}
-                  className="ml-auto text-muted-foreground/70 hover:text-foreground"
-                  aria-label="Dismiss detected paste summary"
+            {detected && (() => {
+              const f = detected.features;
+              return (
+                <div
+                  className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground"
+                  role="status"
+                  aria-live="polite"
                 >
-                  ×
-                </button>
-              </div>
-            )}
+                  <span className="font-medium text-foreground/80">
+                    {detected.convertedFromHtml ? "HTML → Markdown" : "Markdown"} pasted
+                    {detected.fmApplied > 0 ? ` · ${detected.fmApplied} field${detected.fmApplied === 1 ? "" : "s"}` : ""}
+                    :
+                  </span>
+                  {f.headings > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.headings} headings
+                    </span>
+                  )}
+                  {f.codeBlocks > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.codeBlocks} code
+                    </span>
+                  )}
+                  {f.tables > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.tables} tables
+                    </span>
+                  )}
+                  {f.images > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.images} images
+                    </span>
+                  )}
+                  {f.math > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.math} math
+                    </span>
+                  )}
+                  {f.callouts > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.callouts} callouts
+                    </span>
+                  )}
+                  {f.links > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.links} links
+                    </span>
+                  )}
+                  {lastUndoRef.current && (
+                    <button
+                      type="button"
+                      onClick={() => lastUndoRef.current?.()}
+                      className="ml-auto rounded-md border border-border bg-background px-2 py-0.5 text-foreground hover:bg-muted"
+                    >
+                      Undo paste
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDetected(null);
+                      writeDetected(null);
+                    }}
+                    className={cn(
+                      "text-muted-foreground/70 hover:text-foreground",
+                      lastUndoRef.current ? "" : "ml-auto",
+                    )}
+                    aria-label="Dismiss detected paste summary"
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })()}
             <input
               ref={fileInputRef}
               type="file"
