@@ -315,6 +315,7 @@ const App = () => (
                   <Route index element={<DashboardMatrix />} />
                   <Route path="sheets" element={<DashboardSheets />} />
                   <Route path="dsa-studio" element={<DsaStudio />} />
+                  <Route path="dsa-studio/:slug" element={<DsaStudioProblem />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
                   
                   <Route path="leaderboard" element={<Leaderboard />} />
