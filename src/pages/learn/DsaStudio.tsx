@@ -489,38 +489,83 @@ export default function DsaStudio() {
                 {g.name}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
-                {g.problems.map((p, idx) => (
-                  <motion.div
-                    key={p.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.02 }}
-                    className={cn(
-                      "group flex items-center gap-3 rounded-lg border bg-card/40 px-3 py-2.5 hover:border-primary/40 hover:bg-card/60 transition-all cursor-pointer",
-                      idx === 0 ? "border-primary/40" : "border-border/40",
-                    )}
-                  >
-                    <button className="text-muted-foreground hover:text-amber-400 transition-colors">
-                      <Star className="h-4 w-4" />
-                    </button>
-                    <span className="text-xs text-muted-foreground font-mono shrink-0">#{p.id}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{p.title}</div>
-                      <div className="text-[11px] text-muted-foreground truncate">{p.tag}</div>
-                    </div>
-                    <Badge variant="outline" className={cn("h-5 text-[10px]", diffStyles[p.difficulty])}>
-                      {p.difficulty}
-                    </Badge>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10">
-                      <Play className="h-3 w-3 fill-current" />
-                      <span className="text-[11px]">viz</span>
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10">
-                      <ExternalLink className="h-3 w-3" />
-                      <span className="text-[11px] ml-1">LC</span>
-                    </Button>
-                  </motion.div>
-                ))}
+                {g.problems.map((p, idx) => {
+                  const isSolved = solved.has(p.slug);
+                  const isSaved = saved.has(p.slug);
+                  const stop = (e: React.MouseEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  };
+                  return (
+                    <motion.div
+                      key={p.slug}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.02 }}
+                    >
+                      <Link
+                        to={`/library/problems/${p.slug}`}
+                        state={{ from: "/learn/dsa-studio" }}
+                        className={cn(
+                          "group flex items-center gap-2 rounded-lg border bg-card/40 px-3 py-2.5 hover:border-primary/40 hover:bg-card/60 transition-all",
+                          isSolved
+                            ? "border-emerald-500/40"
+                            : idx === 0
+                              ? "border-primary/40"
+                              : "border-border/40",
+                        )}
+                      >
+                        <button
+                          onClick={(e) => { stop(e); toggleSaved(p.slug); }}
+                          aria-label={isSaved ? "Remove from saved" : "Save for later"}
+                          title={isSaved ? "Remove from saved" : "Save for later"}
+                          className={cn(
+                            "transition-colors",
+                            isSaved ? "text-amber-400" : "text-muted-foreground hover:text-amber-400",
+                          )}
+                        >
+                          <Star className={cn("h-4 w-4", isSaved && "fill-current")} />
+                        </button>
+                        <button
+                          onClick={(e) => { stop(e); toggleSolved(p.slug); }}
+                          aria-label={isSolved ? "Mark as unsolved" : "Mark as solved"}
+                          title={isSolved ? "Mark as unsolved" : "Mark as solved"}
+                          className={cn(
+                            "h-5 w-5 grid place-items-center rounded-full border transition-colors",
+                            isSolved
+                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
+                              : "border-border/60 text-muted-foreground hover:text-emerald-400 hover:border-emerald-500/40",
+                          )}
+                        >
+                          <Check className="h-3 w-3" />
+                        </button>
+                        <span className="text-xs text-muted-foreground font-mono shrink-0">#{p.id}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className={cn("text-sm font-medium truncate", isSolved && "line-through text-muted-foreground")}>
+                            {p.title}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5">
+                            <span>{p.tag}</span>
+                            <span className="opacity-50">·</span>
+                            <span className={cn(
+                              "font-semibold",
+                              p.priority === "P1" && "text-rose-400",
+                              p.priority === "P2" && "text-amber-400",
+                              p.priority === "P3" && "text-zinc-400",
+                            )}>{p.priority}</span>
+                            {p.free && <Lock className="h-2.5 w-2.5 opacity-40" />}
+                          </div>
+                        </div>
+                        <Badge variant="outline" className={cn("h-5 text-[10px]", diffStyles[p.difficulty])}>
+                          {p.difficulty}
+                        </Badge>
+                        {isSaved && (
+                          <BookmarkCheck className="h-3.5 w-3.5 text-amber-400" />
+                        )}
+                      </Link>
+                    </motion.div>
+                  );
+                })}
               </div>
             </section>
           ))}
