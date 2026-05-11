@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
@@ -125,16 +125,55 @@ export function CodeBlock(props: CodeBlockProps) {
 
   const [copied, setCopied] = useState(false);
   const [wrap, setWrap] = useState(false);
+  const reactId = useId();
+  const tabIdBase = group ? `codeblock-${group}` : `codeblock-${reactId.replace(/[:]/g, "")}`;
+  const tabId = (i: number) => `${tabIdBase}-tab-${i}`;
+  const panelId = (i: number) => `${tabIdBase}-panel-${i}`;
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
 
   const lines = useMemo(() => active.code.split("\n"), [active.code]);
   const isLong = lines.length > 25;
-  const [collapsed, setCollapsed] = useState(isLong);
-  // Reset collapse when switching tabs.
+  const collapseStorageKey = group
+    ? `codeblock:collapsed:${group}:${active.language}`
+    : null;
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined" || !collapseStorageKey) return isLong;
+    try {
+      const saved = window.localStorage.getItem(collapseStorageKey);
+      if (saved === "1") return true;
+      if (saved === "0") return false;
+    } catch {
+      /* noop */
+    }
+    return isLong;
+  });
+  // Re-sync collapsed when switching tabs (read persisted, else default).
   useEffect(() => {
-    setCollapsed(lines.length > 25);
-  }, [active.language, lines.length]);
+    const defaultCollapsed = lines.length > 25;
+    if (typeof window === "undefined" || !collapseStorageKey) {
+      setCollapsed(defaultCollapsed);
+      return;
+    }
+    try {
+      const saved = window.localStorage.getItem(collapseStorageKey);
+      if (saved === "1") setCollapsed(true);
+      else if (saved === "0") setCollapsed(false);
+      else setCollapsed(defaultCollapsed);
+    } catch {
+      setCollapsed(defaultCollapsed);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active.language, collapseStorageKey]);
+  // Persist on change.
+  useEffect(() => {
+    if (typeof window === "undefined" || !collapseStorageKey) return;
+    try {
+      window.localStorage.setItem(collapseStorageKey, collapsed ? "1" : "0");
+    } catch {
+      /* noop */
+    }
+  }, [collapsed, collapseStorageKey]);
 
   const visibleSrc = collapsed ? lines.slice(0, 18).join("\n") : active.code;
   const showLineNumbers = lines.length > 3;
@@ -239,17 +278,26 @@ export function CodeBlock(props: CodeBlockProps) {
         {hasTabs ? (
           <div
             role="tablist"
-            aria-label="Code language"
+            aria-label={group ? `Code examples for ${group}` : "Code examples"}
+            aria-orientation="horizontal"
             className="flex h-full items-stretch gap-0.5 overflow-x-auto"
           >
             {variants.map((v, i) => {
               const selected = i === activeIdx;
+              const langLabel = labelFor(v.language);
+              const title = v.filename || langLabel;
+              const ariaLabel = v.filename
+                ? `${v.filename} (${langLabel})`
+                : langLabel;
               return (
                 <button
                   key={`${v.language}-${i}`}
                   type="button"
                   role="tab"
+                  id={tabId(i)}
                   aria-selected={selected}
+                  aria-controls={panelId(i)}
+                  aria-label={ariaLabel}
                   tabIndex={selected ? 0 : -1}
                   onClick={() => setActiveIdx(i)}
                   onKeyDown={(e) => {
@@ -273,18 +321,21 @@ export function CodeBlock(props: CodeBlockProps) {
                     "relative inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 text-[11px] font-medium tracking-wide transition-colors",
                     "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                     selected
-                      ? isDark
-                        ? "text-foreground"
-                        : "text-foreground"
+                      ? "text-foreground"
                       : isDark
                         ? "text-muted-foreground/70 hover:text-foreground/90 hover:bg-white/[0.03]"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                   )}
                 >
-                  <span>{labelFor(v.language)}</span>
+                  <span className={v.filename ? "font-mono text-[11px]" : ""}>
+                    {title}
+                  </span>
                   {v.filename && (
-                    <span className="font-mono text-[10px] text-muted-foreground/80">
-                      {v.filename}
+                    <span
+                      aria-hidden
+                      className="rounded-sm bg-muted/40 px-1 py-px font-mono text-[9px] uppercase tracking-wider text-muted-foreground/80"
+                    >
+                      {langLabel}
                     </span>
                   )}
                   <span
@@ -361,10 +412,15 @@ export function CodeBlock(props: CodeBlockProps) {
       </span>
 
       <div
+        role={hasTabs ? "tabpanel" : undefined}
+        id={hasTabs ? panelId(activeIdx) : undefined}
+        aria-labelledby={hasTabs ? tabId(activeIdx) : undefined}
+        tabIndex={hasTabs ? 0 : undefined}
         className={cn(
           "relative",
           isDark && "bg-[hsl(220_14%_4%)]",
           collapsed && "max-h-[420px] overflow-hidden",
+          hasTabs && "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         )}
       >
         <SyntaxHighlighter

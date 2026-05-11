@@ -22,7 +22,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { CodeBlock } from "@/components/CodeBlock";
-import remarkCodeTabs, { TABS_LANG_TOKEN, type CodeTabsPayload } from "@/lib/blog/remarkCodeTabs";
+import remarkCodeTabs, { TABS_LANG_TOKEN } from "@/lib/blog/remarkCodeTabs";
+import { parseTabsPayload } from "@/lib/blog/tabsPayload";
 import { Mermaid } from "@/components/blog/Mermaid";
 import { ImageLightbox } from "@/components/blog/ImageLightbox";
 import { detectEmbed } from "@/lib/blog/embeds";
@@ -304,8 +305,8 @@ export function BlogContent({ source, className }: Props) {
           const lang = match[1].toLowerCase();
           const raw = String(children).replace(/\n$/, "");
           if (lang === TABS_LANG_TOKEN.toLowerCase() || lang === "__tabs__") {
-            try {
-              const payload: CodeTabsPayload = JSON.parse(raw);
+            const payload = parseTabsPayload(raw);
+            if (payload) {
               return (
                 <CodeBlock
                   group={payload.group}
@@ -317,9 +318,8 @@ export function BlogContent({ source, className }: Props) {
                   }))}
                 />
               );
-            } catch {
-              /* fall through to plain code */
             }
+            // Malformed payload — fall through to plain code rendering.
           }
           if (lang === "mermaid") {
             return <Mermaid chart={raw} />;
