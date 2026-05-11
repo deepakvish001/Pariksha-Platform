@@ -22,6 +22,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { CodeBlock } from "@/components/CodeBlock";
+import remarkCodeTabs, { TABS_LANG_TOKEN, type CodeTabsPayload } from "@/lib/blog/remarkCodeTabs";
 import { Mermaid } from "@/components/blog/Mermaid";
 import { ImageLightbox } from "@/components/blog/ImageLightbox";
 import { detectEmbed } from "@/lib/blog/embeds";
