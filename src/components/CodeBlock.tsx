@@ -412,10 +412,15 @@ export function CodeBlock(props: CodeBlockProps) {
       </span>
 
       <div
+        role={hasTabs ? "tabpanel" : undefined}
+        id={hasTabs ? panelId(activeIdx) : undefined}
+        aria-labelledby={hasTabs ? tabId(activeIdx) : undefined}
+        tabIndex={hasTabs ? 0 : undefined}
         className={cn(
           "relative",
           isDark && "bg-[hsl(220_14%_4%)]",
           collapsed && "max-h-[420px] overflow-hidden",
+          hasTabs && "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         )}
       >
         <SyntaxHighlighter
