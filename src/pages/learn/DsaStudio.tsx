@@ -397,7 +397,7 @@ export default function DsaStudio() {
                 {topic.label}
               </h2>
               <p className="text-xs text-muted-foreground mt-1">
-                {topic.patterns.join(" · ")}
+                {topic.subtitle}
               </p>
             </div>
             <span className="text-sm text-muted-foreground">{topic.count} problems</span>
