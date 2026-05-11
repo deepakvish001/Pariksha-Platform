@@ -1,8 +1,15 @@
+import { getHeaderOffset } from "./headerOffset";
+
 /** Smooth-scroll to a heading id with header offset; updates the URL hash without jump. */
-export function scrollToHeading(id: string, offset = 88, behavior: ScrollBehavior = "smooth") {
+export function scrollToHeading(
+  id: string,
+  offset?: number,
+  behavior: ScrollBehavior = "smooth",
+) {
   const el = document.getElementById(id);
   if (!el) return;
-  const top = el.getBoundingClientRect().top + window.scrollY - offset;
+  const off = offset ?? getHeaderOffset();
+  const top = el.getBoundingClientRect().top + window.scrollY - off;
   window.scrollTo({ top, behavior });
   history.replaceState(null, "", `#${id}`);
   // Move keyboard focus for a11y, but don't yank the viewport.
@@ -14,7 +21,7 @@ export function scrollToHeading(id: string, offset = 88, behavior: ScrollBehavio
  * Scrolls to the URL hash (if present) with the correct header offset.
  * Polls briefly because markdown content may render after mount.
  */
-export function scrollToHashOnLoad(offset = 88, maxWaitMs = 1500) {
+export function scrollToHashOnLoad(offset?: number, maxWaitMs = 1500) {
   if (typeof window === "undefined") return;
   const raw = window.location.hash;
   if (!raw || raw.length < 2) return;
@@ -23,7 +30,8 @@ export function scrollToHashOnLoad(offset = 88, maxWaitMs = 1500) {
   const tick = () => {
     const el = document.getElementById(id);
     if (el) {
-      const top = el.getBoundingClientRect().top + window.scrollY - offset;
+      const off = offset ?? getHeaderOffset();
+      const top = el.getBoundingClientRect().top + window.scrollY - off;
       window.scrollTo({ top, behavior: "auto" });
       el.setAttribute("tabindex", "-1");
       (el as HTMLElement).focus({ preventScroll: true });

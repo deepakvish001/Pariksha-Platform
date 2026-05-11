@@ -25,6 +25,7 @@ import { ReadingProgress } from "@/components/blog/ReadingProgress";
 import { TableOfContents } from "@/components/blog/TableOfContents";
 import { InlineToc } from "@/components/blog/InlineToc";
 import { MobileTocSheet } from "@/components/blog/MobileTocSheet";
+import { TocLiveAnnouncer } from "@/components/blog/TocLiveAnnouncer";
 import { FloatingActionRail } from "@/components/blog/FloatingActionRail";
 import { extractToc } from "@/lib/blog/extractToc";
 import { scrollToHashOnLoad } from "@/lib/blog/scrollToHeading";
@@ -120,7 +121,7 @@ export default function BlogPost() {
   useEffect(() => {
     if (!post?.content_md || !window.location.hash) return;
     // Wait a tick for BlogContent to render headings, then jump with offset.
-    const t = setTimeout(() => scrollToHashOnLoad(88), 60);
+    const t = setTimeout(() => scrollToHashOnLoad(), 60);
     return () => clearTimeout(t);
   }, [post?.id, post?.content_md]);
 
@@ -149,6 +150,7 @@ export default function BlogPost() {
         url={url}
       />
       <MobileTocSheet items={toc} activeId={activeHeadingId} storageKey={post.slug} />
+      <TocLiveAnnouncer items={toc} activeId={activeHeadingId} />
       <article className="container mx-auto px-4 py-8 pb-24 lg:pb-8 max-w-6xl">
         <Helmet prioritizeSeoTags>
           <title>{seoTitle}</title>
