@@ -1,5 +1,5 @@
 import TurndownService from "turndown";
-// @ts-expect-error - no types shipped for the GFM plugin
+// @ts-ignore - no types shipped for the GFM plugin
 import { gfm } from "turndown-plugin-gfm";
 
 let _service: TurndownService | null = null;
