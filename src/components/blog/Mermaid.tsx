@@ -37,9 +37,19 @@ export function Mermaid({ chart, className }: Props) {
           theme: resolvedTheme === "light" ? "default" : "dark",
           securityLevel: "strict",
           fontFamily: "inherit",
-        });
+          suppressErrorRendering: true,
+        } as any);
         const id = `mmd-${++idCounter}`;
+        try {
+          await mermaid.parse(chart);
+        } catch (parseErr: any) {
+          throw new Error(parseErr?.message || "Invalid Mermaid syntax");
+        }
         const { svg } = await mermaid.render(id, chart);
+        // Clean up any stray error SVGs Mermaid may have appended to <body>
+        document.querySelectorAll(`#d${id}, #${id}`).forEach((n) => {
+          if (n.parentElement === document.body) n.remove();
+        });
         if (!cancelled) setSvg(svg);
       } catch (e: any) {
         if (!cancelled) setError(e?.message || "Failed to render diagram");
