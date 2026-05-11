@@ -798,8 +798,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
           open={!!tablePreview}
           report={tablePreview?.report ?? null}
           onCancel={() => setTablePreview(null)}
-          onApply={() => {
-            tablePreview?.apply();
+          onApply={(edits) => {
+            tablePreview?.apply(edits);
             setTablePreview(null);
           }}
         />
