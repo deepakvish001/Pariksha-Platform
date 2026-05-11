@@ -155,21 +155,99 @@ const diffStyles: Record<Diff, string> = {
   Hard: "text-rose-400 border-rose-500/30 bg-rose-500/10",
 };
 
+type PriorityFilter = "all" | "p1" | "p1p2" | "p3" | "free";
+
+const LS_PREFS = "dsaStudio:prefs:v1";
+const LS_SOLVED = "dsaStudio:solved:v1";
+const LS_SAVED = "dsaStudio:saved:v1";
+
+const loadJSON = <T,>(key: string, fallback: T): T => {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+interface Prefs {
+  activeTopic: string;
+  activeTab: string;
+  search: string;
+  priority: PriorityFilter;
+}
+
+const DEFAULT_PREFS: Prefs = {
+  activeTopic: "arrays",
+  activeTab: "problems",
+  search: "",
+  priority: "all",
+};
+
 export default function DsaStudio() {
-  const [activeTopic, setActiveTopic] = useState("arrays");
-  const [activeTab, setActiveTab] = useState("problems");
-  const [search, setSearch] = useState("");
-  const [priority, setPriority] = useState<"all" | "p1" | "p1p2" | "p3" | "free">("all");
+  const initial = loadJSON<Prefs>(LS_PREFS, DEFAULT_PREFS);
+  const [activeTopic, setActiveTopic] = useState(initial.activeTopic);
+  const [activeTab, setActiveTab] = useState(initial.activeTab);
+  const [search, setSearch] = useState(initial.search);
+  const [priority, setPriority] = useState<PriorityFilter>(initial.priority);
+
+  const [solved, setSolved] = useState<Set<string>>(
+    () => new Set(loadJSON<string[]>(LS_SOLVED, [])),
+  );
+  const [saved, setSaved] = useState<Set<string>>(
+    () => new Set(loadJSON<string[]>(LS_SAVED, [])),
+  );
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      LS_PREFS,
+      JSON.stringify({ activeTopic, activeTab, search, priority }),
+    );
+  }, [activeTopic, activeTab, search, priority]);
+
+  useEffect(() => {
+    window.localStorage.setItem(LS_SOLVED, JSON.stringify(Array.from(solved)));
+  }, [solved]);
+  useEffect(() => {
+    window.localStorage.setItem(LS_SAVED, JSON.stringify(Array.from(saved)));
+  }, [saved]);
+
+  const toggleSet = (setter: typeof setSolved) => (slug: string) =>
+    setter((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  const toggleSolved = toggleSet(setSolved);
+  const toggleSaved = toggleSet(setSaved);
 
   const topic = useMemo(() => TOPICS.find((t) => t.id === activeTopic) ?? TOPICS[0], [activeTopic]);
 
+  const matchesPriority = (p: Problem) => {
+    switch (priority) {
+      case "all": return true;
+      case "p1": return p.priority === "P1";
+      case "p1p2": return p.priority === "P1" || p.priority === "P2";
+      case "p3": return p.priority === "P3";
+      case "free": return !!p.free;
+    }
+  };
+
   const filteredGroups = useMemo(() => {
-    if (!search) return topic.groups;
-    const q = search.toLowerCase();
+    const q = search.trim().toLowerCase();
     return topic.groups
-      .map((g) => ({ ...g, problems: g.problems.filter((p) => p.title.toLowerCase().includes(q) || String(p.id).includes(q)) }))
+      .map((g) => ({
+        ...g,
+        problems: g.problems.filter((p) => {
+          if (!matchesPriority(p)) return false;
+          if (!q) return true;
+          return p.title.toLowerCase().includes(q) || String(p.id).includes(q);
+        }),
+      }))
       .filter((g) => g.problems.length);
-  }, [topic, search]);
+  }, [topic, search, priority]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
