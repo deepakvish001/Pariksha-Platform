@@ -95,17 +95,28 @@ export function CodeBlock(props: CodeBlockProps) {
     defaultTab,
   } = props;
 
-  // Normalise single-block usage into a one-element variants array.
+  // Normalise single-block usage into a one-element variants array, and
+  // auto-detect missing/`text` languages from the snippet body.
   const variants: CodeVariant[] = useMemo(() => {
-    if (variantsProp && variantsProp.length > 0) return variantsProp;
-    return [
-      {
-        language: language || "text",
-        filename,
-        highlightLines,
-        code: children ?? "",
-      },
-    ];
+    const raw =
+      variantsProp && variantsProp.length > 0
+        ? variantsProp
+        : [
+            {
+              language: language || "",
+              filename,
+              highlightLines,
+              code: children ?? "",
+            },
+          ];
+    return raw.map((v) => {
+      const lang = (v.language || "").toLowerCase();
+      if (!lang || lang === "text" || lang === "txt" || lang === "plaintext") {
+        const detected = detectLanguage(v.code);
+        if (detected) return { ...v, language: detected };
+      }
+      return v;
+    });
   }, [variantsProp, language, filename, highlightLines, children]);
 
   const hasTabs = variants.length > 1;
@@ -121,14 +132,30 @@ export function CodeBlock(props: CodeBlockProps) {
       }
       return 0;
     })();
-    if (typeof window === "undefined" || !storageKey) return fallback;
+    if (typeof window === "undefined") return fallback;
     try {
-      const saved = window.localStorage.getItem(storageKey);
-      if (!saved) return fallback;
-      const i = variants.findIndex(
-        (v) => v.language.toLowerCase() === saved.toLowerCase(),
-      );
-      return i >= 0 ? i : fallback;
+      // 1. Per-group saved choice wins.
+      if (storageKey) {
+        const saved = window.localStorage.getItem(storageKey);
+        if (saved) {
+          const i = variants.findIndex(
+            (v) => v.language.toLowerCase() === saved.toLowerCase(),
+          );
+          if (i >= 0) return i;
+        }
+      }
+      // 2. Otherwise fall back to the user's globally preferred language so
+      //    selecting "Python" once carries across articles & sections.
+      if (hasTabs) {
+        const preferred = window.localStorage.getItem(PREFERRED_LANG_KEY);
+        if (preferred) {
+          const i = variants.findIndex(
+            (v) => v.language.toLowerCase() === preferred.toLowerCase(),
+          );
+          if (i >= 0) return i;
+        }
+      }
+      return fallback;
     } catch {
       return fallback;
     }
@@ -141,15 +168,16 @@ export function CodeBlock(props: CodeBlockProps) {
 
   const active = variants[Math.min(activeIdx, variants.length - 1)];
 
-  // Persist tab choice per group.
+  // Persist tab choice per group + global preferred language for tabbed blocks.
   useEffect(() => {
-    if (!storageKey || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem(storageKey, active.language);
+      if (storageKey) window.localStorage.setItem(storageKey, active.language);
+      if (hasTabs) window.localStorage.setItem(PREFERRED_LANG_KEY, active.language);
     } catch {
       /* noop */
     }
-  }, [storageKey, active.language]);
+  }, [storageKey, hasTabs, active.language]);
 
   const [copied, setCopied] = useState(false);
   const [wrap, setWrap] = useState(false);
