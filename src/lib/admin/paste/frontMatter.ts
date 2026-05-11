@@ -83,29 +83,105 @@ const ARR = (v: unknown): string[] | undefined => {
   return undefined;
 };
 
-/** Map common front-matter keys (Hugo, Jekyll, Hexo, Dev.to, etc.) to editor fields. */
+/** Look up a value across many synonym keys, case-insensitive. */
+function pickStr(d: Record<string, unknown>, keys: string[]): string | undefined {
+  const lookup = new Map<string, unknown>();
+  for (const [k, v] of Object.entries(d)) lookup.set(k.toLowerCase(), v);
+  for (const k of keys) {
+    const v = STR(lookup.get(k.toLowerCase()));
+    if (v) return v;
+  }
+  return undefined;
+}
+
+function pickArr(d: Record<string, unknown>, keys: string[]): string[] | undefined {
+  const lookup = new Map<string, unknown>();
+  for (const [k, v] of Object.entries(d)) lookup.set(k.toLowerCase(), v);
+  for (const k of keys) {
+    const v = ARR(lookup.get(k.toLowerCase()));
+    if (v && v.length) return v;
+  }
+  return undefined;
+}
+
+/** Walk nested taxonomy objects (Hugo-style `taxonomies.tags`). */
+function nestedArr(d: Record<string, unknown>, parents: string[], leafKeys: string[]): string[] | undefined {
+  for (const p of parents) {
+    const node = (d as any)[p];
+    if (node && typeof node === "object" && !Array.isArray(node)) {
+      const sub = pickArr(node as Record<string, unknown>, leafKeys);
+      if (sub && sub.length) return sub;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Map common front-matter keys (Hugo, Jekyll, Hexo, Dev.to, Gatsby, Notion,
+ * Astro, Ghost, Medium, Zola, Eleventy, ...) to editor field names.
+ */
 export function mapFrontMatter(data: Record<string, unknown>): FrontMatterApply {
   return {
-    title: STR(data.title) ?? STR((data as any).Title),
-    excerpt:
-      STR(data.excerpt) ??
-      STR(data.description) ??
-      STR(data.summary) ??
-      STR((data as any).subtitle),
-    cover:
-      STR(data.cover) ??
-      STR(data.cover_image) ??
-      STR((data as any).coverImage) ??
-      STR((data as any).image) ??
-      STR((data as any).thumbnail) ??
-      STR((data as any).hero_image),
-    slug: STR(data.slug) ?? STR((data as any).permalink),
-    seoTitle: STR((data as any).seo_title) ?? STR((data as any).seoTitle),
-    seoDescription:
-      STR((data as any).seo_description) ?? STR((data as any).seoDescription),
-    canonicalUrl:
-      STR((data as any).canonical_url) ?? STR((data as any).canonicalUrl),
-    tags: ARR(data.tags) ?? ARR((data as any).keywords),
-    categories: ARR((data as any).categories) ?? ARR((data as any).category),
+    title: pickStr(data, ["title", "name", "post_title", "headline"]),
+    excerpt: pickStr(data, [
+      "excerpt",
+      "description",
+      "summary",
+      "subtitle",
+      "lede",
+      "lead",
+      "abstract",
+      "tagline",
+      "blurb",
+      "preview",
+      "intro",
+    ]),
+    cover: pickStr(data, [
+      "cover",
+      "cover_image",
+      "coverImage",
+      "image",
+      "thumbnail",
+      "thumbnail_url",
+      "hero",
+      "hero_image",
+      "header",
+      "header_image",
+      "banner",
+      "banner_image",
+      "og_image",
+      "ogImage",
+      "social_image",
+      "socialImage",
+      "featured_image",
+      "featuredImage",
+    ]),
+    slug: pickStr(data, ["slug", "permalink", "url", "path"]),
+    seoTitle: pickStr(data, [
+      "seo_title",
+      "seoTitle",
+      "meta_title",
+      "metaTitle",
+      "page_title",
+    ]),
+    seoDescription: pickStr(data, [
+      "seo_description",
+      "seoDescription",
+      "meta_description",
+      "metaDescription",
+      "page_description",
+    ]),
+    canonicalUrl: pickStr(data, [
+      "canonical_url",
+      "canonicalUrl",
+      "canonical",
+      "canonical_link",
+    ]),
+    tags:
+      pickArr(data, ["tags", "tag", "keywords", "labels", "topics"]) ??
+      nestedArr(data, ["taxonomies", "meta"], ["tags", "keywords"]),
+    categories:
+      pickArr(data, ["categories", "category", "sections", "section", "collection"]) ??
+      nestedArr(data, ["taxonomies", "meta"], ["categories", "category"]),
   };
 }
