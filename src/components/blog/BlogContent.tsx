@@ -5,6 +5,7 @@ import remarkBreaks from "remark-breaks";
 import remarkMath from "remark-math";
 import remarkDeflist from "remark-deflist";
 import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import "katex/dist/katex.min.css";
