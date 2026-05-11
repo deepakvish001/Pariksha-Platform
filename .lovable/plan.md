@@ -1,80 +1,85 @@
 ## Goal
+Upgrade `src/components/CodeBlock.tsx` so a single block can host **multiple language variants behind tabs** (e.g. JS / TS / Python), and refresh the dark theme to feel more like a premium IDE (deeper obsidian background, subtler chrome, better syntax contrast).
 
-When you paste any blog content into the Markdown editor — whether it's plain Markdown, HTML copied from Notion / Medium / Google Docs / a website, or a Markdown file with front-matter — the editor should auto-detect the format, convert it cleanly, and the preview should render every element correctly (headings, code blocks with language, callouts, tables, math, images, embeds).
+## 1. Multi-language tabs
 
-## Current state
+### Markdown authoring pattern
+Authors group consecutive fenced code blocks by adding a `tabs` meta flag and a shared `group` id to the fence info string:
 
-- The editor (`MarkdownEditor` → `MarkdownPreview` → `BlogContent`) already renders a full feature set live: GFM, KaTeX math, Mermaid, callouts (`> [!note]`), code with language + filename + line highlights, YouTube/Vimeo/CodePen/Twitter embeds, tables, footnotes, image lightbox.
-- The current `onPaste` handler only intercepts **image files** for upload. Any other paste (HTML, rich text, Markdown with front-matter) falls through to the browser's default `text/plain` insertion, which loses formatting and dumps front-matter into the body.
+````md
+```ts tabs group=install filename=setup.ts
+// typescript variant
+```
 
-So the pipeline already "renders everything correctly" — the gap is the **paste step**, which doesn't translate non-Markdown clipboard payloads into Markdown the renderer can understand.
+```js tabs group=install filename=setup.js
+// javascript variant
+```
 
-## What to build
+```bash tabs group=install
+npm i byteskill
+```
+````
 
-### 1. Smart paste in the Markdown textarea
+A small remark-style preprocessor (new file `src/lib/blog/remarkCodeTabs.ts`) walks the MDAST, finds adjacent `code` nodes that share the same `group=` token, and merges them into a single custom node `codeTabs` with a `variants: [{ lang, filename, highlightLines, code }]` array. Non-tabbed blocks pass through untouched.
 
-Extend the existing `onPaste` chain (without breaking image paste) with these stages, in order:
+The renderer (where `ReactMarkdown` is configured for blog posts and `AnswerPanel`) maps that node to the upgraded `CodeBlock`.
 
-1. **Image files** → existing upload flow (unchanged).
-2. **HTML clipboard** (`text/html` present and richer than the plain fallback) → convert to Markdown using `turndown` + `turndown-plugin-gfm`, with custom rules for:
-   - Code blocks → fenced ``` with language inferred from `class="language-xxx"` / `data-lang` / `<pre><code>` hints.
-   - Notion / Medium callout blocks (`<aside>`, `<div class="callout">`, colored blockquotes) → `> [!note] Title`.
-   - Notion toggles → `> [!note]- Title` (collapsible).
-   - `<figure><img><figcaption>` → `![alt](src "caption")`.
-   - `<table>` → GFM pipe table.
-   - `<kbd>`, `<mark>`, `<sub>`, `<sup>` preserved as raw HTML (already supported by the renderer).
-3. **Plain text that looks like Markdown** (heuristic: contains `#`, ` ``` `, `|`, `- [ ]`, `> `, etc.) → insert as-is, but normalized (see step 3).
-4. **Plain text** → insert as-is (default).
+### CodeBlock API change
+`CodeBlock` accepts either the existing single-language props **or** a new `variants` prop:
 
-A small toast confirms what happened: "Pasted HTML — converted to Markdown" / "Pasted Markdown" / "Front-matter applied".
+```ts
+type Variant = { language: string; filename?: string; highlightLines?: number[]; code: string };
+interface CodeBlockProps {
+  variants?: Variant[];      // when provided, renders tabs
+  defaultTab?: string;       // language id of initial tab
+  // ...existing single-block props remain for backwards compat
+}
+```
 
-### 2. Front-matter auto-fill
+Internally it normalises single-block usage into a one-element `variants` array so the rendering path is unified.
 
-If the pasted content starts with a YAML (`---`) or TOML (`+++`) front-matter block:
+### Tab UI
+- Tab strip lives in the existing chrome row, replacing the static language label when `variants.length > 1`.
+- Built on the existing `@/components/ui/tabs` primitives for consistent focus styling and keyboard nav (Arrow keys + Home/End come for free from Radix).
+- Active tab gets the orange underline (`border-b-2 border-primary`), inactive tabs are muted; macOS dots stay on the left, action buttons (wrap / download / copy) stay on the right and operate on the **active variant**.
+- Selected tab is remembered per `group` id in `localStorage` (`codeblock:tab:<group>`) so a reader's "I prefer Python" choice persists across the post.
+- `sr-only` live region announces "Switched to TypeScript example" on tab change.
 
-- Parse it with a minimal YAML parser (no new heavy dep — small inline parser, or use `js-yaml` which is already small).
-- Strip it from the inserted body.
-- Auto-fill the matching editor fields when they're currently empty: `title`, `excerpt` / `description`, `cover` / `cover_image`, `tags`, `categories`, `slug`, `seo_title`, `seo_description`, `canonical_url`.
-- Never overwrite fields the user already filled in.
-- Toast: "Front-matter detected — applied 4 fields."
+### Behaviour details
+- Copy / download use the active variant's text and filename (extension auto-derived as today).
+- Collapse / "Show all N lines" recomputes from the active variant.
+- Highlight-lines and diff styling continue to work per variant.
 
-### 3. Content normalization
+## 2. Refined dark theme
 
-Run on every paste (after HTML→MD, before insertion):
+Goals: less "GitHub light port", more "obsidian IDE".
 
-- CRLF / CR → LF.
-- Smart quotes (`" " ' '`), en/em dashes from Word, NBSP (`\u00A0`), zero-width chars → ASCII equivalents.
-- Strip Notion-style "Open in Notion" / share footers and Google Docs comment markers.
-- Collapse 3+ blank lines to 2.
-- Ensure code fences have a trailing newline.
+- **Surface**: switch dark background from `#0a0a0c` to a layered look — outer card `hsl(220 15% 6%)`, inner code area `hsl(220 14% 4%)`, with a 1px inner highlight (`shadow-[inset_0_1px_0_hsl(0_0%_100%/0.04)]`) for that subtle "glass lip".
+- **Chrome row**: thinner (28px), `bg-white/[0.025]` with a hairline `border-white/[0.06]` divider; macOS dots get a soft inner glow so they read on darker bg.
+- **Tabs**: inactive `text-muted-foreground/70`, hover `text-foreground/90 bg-white/[0.03]`, active `text-foreground bg-white/[0.05]` with a 2px primary underline that animates in (`transition-[background,color] duration-150`).
+- **Syntax palette**: replace `oneDark` with a custom token map tuned for the new bg — keywords `hsl(265 90% 78%)`, strings `hsl(150 60% 70%)`, numbers `hsl(28 95% 70%)`, comments `hsl(220 10% 45%) italic`, functions `hsl(200 95% 72%)`, punctuation `hsl(220 10% 65%)`. Defined once in a new `src/components/codeblock/obsidianTheme.ts` so it's easy to tweak.
+- **Line numbers**: `text-white/25`, right-aligned, with a 1px right border `border-white/[0.04]` separating the gutter from code.
+- **Selection**: `selection:bg-primary/25 selection:text-foreground`.
+- **Highlight-line band**: stronger primary tint (`bg-primary/[0.08]`) plus a 2px left bar — keeps current behaviour, just tuned to the new bg.
+- **Diff lines**: keep red/green but desaturate slightly (`emerald-400/15` & `rose-400/15`) for the darker surface.
+- **Collapsed gradient**: re-tune the fade to the new outer card colour so it actually blends.
+- Light mode is preserved (only the dark token map and a couple of layered classes change behind the `isDark` check).
 
-### 4. Preview accuracy verification
+## 3. Tests
+Add `src/components/__tests__/CodeBlock.test.tsx` covering:
+- renders tabs when `variants.length > 1`, hides tab strip otherwise
+- switching tab changes copy payload and filename
+- active tab persisted to `localStorage` under the supplied `group` id
 
-The preview already covers everything BlogContent supports. To make sure pasted content "shows correctly", add:
+Add `src/lib/blog/__tests__/remarkCodeTabs.test.ts` covering:
+- groups two adjacent fences with same `group=`
+- leaves un-grouped fences alone
+- preserves `filename` and `{1,3-5}` highlight meta per variant
 
-- A small "Detected" chip row under the editor header showing what the pasted source contained: `Headings · Code (3) · Tables · Math · Images (5)`. This gives the author instant confidence the paste landed.
-- Re-run TOC / reading-time stats on every change (already happens via the controlled `value`).
+## Files
+- **New**: `src/components/codeblock/obsidianTheme.ts`, `src/lib/blog/remarkCodeTabs.ts`, the two test files above.
+- **Edited**: `src/components/CodeBlock.tsx` (variants + theme), the blog `ReactMarkdown` setup that registers remark plugins and the `code`/`codeTabs` renderers (likely `src/pages/blog/BlogPost.tsx` and `src/components/library/AnswerPanel.tsx`).
+- **Untouched**: Tailwind config, design tokens — all colour tweaks live inside the component / theme map and use existing semantic tokens (`--primary`, `--foreground`, `--muted-foreground`) where possible.
 
-### 5. Tests
-
-- Unit test for the HTML→Markdown converter with fixtures: a Notion export snippet, a Medium snippet, a GitHub README HTML snippet.
-- Unit test for the front-matter parser: applies fields, strips body, ignores when fields already set.
-- Unit test for the normalizer (smart quotes, NBSP, CRLF).
-
-## Out of scope
-
-- Pasting from Word `.docx` binary (clipboard already exposes HTML for Word; covered).
-- MDX / JSX components (the renderer is Markdown-only by design).
-- Bulk import of multiple posts.
-- Remote URL fetching ("paste a URL → import the article").
-
-## Technical notes
-
-- New dep: `turndown` + `turndown-plugin-gfm` (~25 KB gz, tree-shakeable, only loaded in the admin editor).
-- New util files:
-  - `src/lib/admin/paste/htmlToMarkdown.ts` — turndown setup + custom rules.
-  - `src/lib/admin/paste/frontMatter.ts` — parse + strip + map to field names.
-  - `src/lib/admin/paste/normalize.ts` — text normalization.
-  - `src/lib/admin/paste/detectFeatures.ts` — chip data (counts headings, code, tables, math, images).
-- Wire into `MarkdownEditor` by composing a new `onPaste` that calls the existing image handler first, then runs the new pipeline if no images were consumed. Front-matter callback is passed in as a prop from `AdminBlogEditor` so it can update its own state.
-- No changes to `BlogContent` / `MarkdownPreview` — the renderer is already correct.
+## Open question
+Authoring syntax for grouping — happy with `tabs group=install` in the fence meta, or do you prefer a wrapper directive like `:::tabs install` … `:::`? The `tabs group=` form is zero-config for plain Markdown pastes; the directive form reads nicer but needs `remark-directive`.
