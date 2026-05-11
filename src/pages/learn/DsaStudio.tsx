@@ -4,11 +4,8 @@ import { motion } from "framer-motion";
 import {
   Search,
   Star,
-  Play,
-  ExternalLink,
   Lock,
   Check,
-  Bookmark,
   BookmarkCheck,
   ListChecks,
   Puzzle,
@@ -64,7 +61,7 @@ interface Topic {
   patterns: string[];
 }
 
-const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
 
 const TOPICS: Topic[] = [
   {
