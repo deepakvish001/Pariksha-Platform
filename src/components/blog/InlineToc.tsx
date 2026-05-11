@@ -30,8 +30,21 @@ const SIZE: Record<number, string> = {
  * Notion-style inline TOC card placed before the article body.
  * Auto-collapses for long TOCs (>8 items); always-expanded for short ones.
  */
-export function InlineToc({ items, readingTimeMin, activeId, className }: Props) {
-  const [open, setOpen] = useState(items.length <= 8);
+export function InlineToc({ items, readingTimeMin, activeId, className, storageKey }: Props) {
+  const lsKey = storageKey ? `blog:toc:inline:${storageKey}` : null;
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && lsKey) {
+      const v = window.localStorage.getItem(lsKey);
+      if (v === "1") return true;
+      if (v === "0") return false;
+    }
+    return items.length <= 8;
+  });
+  useEffect(() => {
+    if (lsKey && typeof window !== "undefined") {
+      window.localStorage.setItem(lsKey, open ? "1" : "0");
+    }
+  }, [open, lsKey]);
   const reduced = useReducedMotion();
 
   if (items.length < 3) return null;
