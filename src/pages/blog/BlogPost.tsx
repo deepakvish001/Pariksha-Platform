@@ -121,7 +121,7 @@ export default function BlogPost() {
   useEffect(() => {
     if (!post?.content_md || !window.location.hash) return;
     // Wait a tick for BlogContent to render headings, then jump with offset.
-    const t = setTimeout(() => scrollToHashOnLoad(88), 60);
+    const t = setTimeout(() => scrollToHashOnLoad(), 60);
     return () => clearTimeout(t);
   }, [post?.id, post?.content_md]);
 
