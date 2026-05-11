@@ -22,6 +22,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { CodeBlock } from "@/components/CodeBlock";
+import remarkCodeTabs, { TABS_LANG_TOKEN, type CodeTabsPayload } from "@/lib/blog/remarkCodeTabs";
 import { Mermaid } from "@/components/blog/Mermaid";
 import { ImageLightbox } from "@/components/blog/ImageLightbox";
 import { detectEmbed } from "@/lib/blog/embeds";
@@ -298,10 +299,28 @@ export function BlogContent({ source, className }: Props) {
       ),
 
       code({ inline, className, children, node, ...props }: any) {
-        const match = /language-(\w+)/.exec(className || "");
+        const match = /language-(\w+|__tabs__)/.exec(className || "");
         if (!inline && match) {
           const lang = match[1].toLowerCase();
           const raw = String(children).replace(/\n$/, "");
+          if (lang === TABS_LANG_TOKEN.toLowerCase() || lang === "__tabs__") {
+            try {
+              const payload: CodeTabsPayload = JSON.parse(raw);
+              return (
+                <CodeBlock
+                  group={payload.group}
+                  variants={payload.variants.map((v) => ({
+                    language: v.language,
+                    filename: v.filename,
+                    highlightLines: v.highlightLines,
+                    code: v.code,
+                  }))}
+                />
+              );
+            } catch {
+              /* fall through to plain code */
+            }
+          }
           if (lang === "mermaid") {
             return <Mermaid chart={raw} />;
           }
@@ -526,7 +545,7 @@ export function BlogContent({ source, className }: Props) {
         )}
       >
         <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkBreaks, remarkMath, remarkDeflist]}
+          remarkPlugins={[remarkGfm, remarkBreaks, remarkMath, remarkDeflist, remarkCodeTabs]}
           rehypePlugins={[
             rehypeSlug,
             [rehypeKatex, { strict: "ignore" }],
