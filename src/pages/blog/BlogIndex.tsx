@@ -285,7 +285,7 @@ export default function BlogIndex() {
 
       {/* Tags */}
       {visibleTags.length > 0 && (
-        <div role="group" aria-label="Filter by tag" className="flex gap-1 mb-6 flex-wrap">
+        <div role="group" aria-label="Filter by tag" className="flex gap-1 mb-3 flex-wrap">
           {visibleTags.map((t) => (
             <FilterChip
               key={t.id}
@@ -296,6 +296,32 @@ export default function BlogIndex() {
               #{t.name}
             </FilterChip>
           ))}
+        </div>
+      )}
+
+      {/* Languages */}
+      {availableLangs.length > 0 && (
+        <div
+          role="group"
+          aria-label="Filter by code language"
+          className="flex items-center gap-1 mb-6 flex-wrap"
+        >
+          <span className="mr-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+            Lang
+          </span>
+          {availableLangs.map((l) => {
+            const active = selectedLangs.includes(l);
+            return (
+              <FilterChip
+                key={l}
+                active={active}
+                variant="tag"
+                onClick={() => toggleLang(l)}
+              >
+                {langDisplay(l)}
+              </FilterChip>
+            );
+          })}
         </div>
       )}
 
