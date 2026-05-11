@@ -165,7 +165,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       readBoolKey(GALLERY_OPEN_KEY, false),
     );
     const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
-    const [detected, setDetected] = useState<DetectedFeatures | null>(null);
+    const [detected, setDetected] = useState<DetectedSummary | null>(() => readDetected());
+    const lastUndoRef = useRef<null | (() => void)>(null);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -238,10 +239,20 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       const normalized = normalizePastedText(md);
       const fm = parseFrontMatter(normalized);
       const body = fm.body;
+
+      // Snapshot before mutation so the user can undo.
+      const valueBefore = value;
       let appliedFmCount = 0;
+      let fmUndo: (() => void) | undefined;
       if (fm.found && onFrontMatter) {
         try {
-          appliedFmCount = onFrontMatter(mapFrontMatter(fm.data)) || 0;
+          const r = onFrontMatter(mapFrontMatter(fm.data));
+          if (typeof r === "number") {
+            appliedFmCount = r;
+          } else if (r && typeof r === "object") {
+            appliedFmCount = r.applied || 0;
+            fmUndo = r.undo;
+          }
         } catch {
           /* swallow */
         }
@@ -251,7 +262,26 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       insertText(body);
 
       const features = detectMarkdownFeatures(body);
-      setDetected(features);
+      const summary: DetectedSummary = {
+        features,
+        pastedLength: (valueBefore?.length || 0) + body.length,
+        convertedFromHtml,
+        fmApplied: appliedFmCount,
+      };
+      setDetected(summary);
+      writeDetected(summary);
+
+      lastUndoRef.current = () => {
+        onChange(valueBefore);
+        try {
+          fmUndo?.();
+        } catch {
+          /* ignore */
+        }
+        setDetected(null);
+        writeDetected(null);
+        toast({ title: "Paste undone", description: "Restored content and reverted applied fields." });
+      };
 
       const parts: string[] = [];
       if (convertedFromHtml) parts.push("HTML → Markdown");
@@ -267,8 +297,27 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       toast({
         title: `Pasted ${parts.join(" + ")}`,
         description: detail.length ? detail.join(" · ") : undefined,
+        action: (
+          <ToastAction altText="Undo paste" onClick={() => lastUndoRef.current?.()}>
+            Undo
+          </ToastAction>
+        ),
       });
     };
+
+    /** Auto-clear the detected summary when the document drifts substantially
+     *  from the post-paste snapshot (more than 40% length change or fully cleared). */
+    useEffect(() => {
+      if (!detected) return;
+      const len = value.length;
+      const base = detected.pastedLength || 1;
+      const drift = Math.abs(len - base) / base;
+      if (len === 0 || drift > 0.4) {
+        setDetected(null);
+        writeDetected(null);
+        lastUndoRef.current = null;
+      }
+    }, [value, detected]);
 
     const handlePickImage = () => fileInputRef.current?.click();
 
