@@ -348,14 +348,23 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
           cleaned: cleanedBody,
           original: rawBody,
           report,
-          apply: () =>
-            commitPaste(cleanedBody, {
+          apply: (edits) => {
+            // Substitute any user-edited tables back into the cleaned body.
+            let finalBody = cleanedBody;
+            for (const d of report.diffs) {
+              const edited = edits[d.index];
+              if (edited !== undefined && edited !== d.after) {
+                finalBody = finalBody.replace(d.after, edited);
+              }
+            }
+            commitPaste(finalBody, {
               valueBefore,
               convertedFromHtml,
               fmFound: fm.found,
               fmApply,
               tableReport: report,
-            }),
+            });
+          },
         });
         return;
       }
