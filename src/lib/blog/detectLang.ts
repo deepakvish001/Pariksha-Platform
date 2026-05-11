@@ -28,7 +28,16 @@ export type DetectedLang =
   | "json"
   | "yaml"
   | "bash"
-  | "md";
+  | "md"
+  | "dockerfile"
+  | "makefile"
+  | "toml"
+  | "ini"
+  | "nginx"
+  | "graphql"
+  | "xml"
+  | "powershell"
+  | "regex";
 
 interface Rule {
   lang: DetectedLang;
