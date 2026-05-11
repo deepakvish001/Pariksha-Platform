@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search,
   Star,
-  Play,
-  ExternalLink,
   Lock,
+  Check,
+  BookmarkCheck,
   ListChecks,
   Puzzle,
   Cpu,
@@ -40,13 +40,16 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 type Diff = "Easy" | "Medium" | "Hard";
+type Priority = "P1" | "P2" | "P3";
 
 interface Problem {
   id: number;
   title: string;
   tag: string;
   difficulty: Diff;
+  priority: Priority;
   free?: boolean;
+  slug: string;
 }
 
 interface Topic {
@@ -57,6 +60,8 @@ interface Topic {
   groups: { name: string; problems: Problem[] }[];
   patterns: string[];
 }
+
+
 
 const TOPICS: Topic[] = [
   {
@@ -69,21 +74,21 @@ const TOPICS: Topic[] = [
       {
         name: "Basics",
         problems: [
-          { id: 1929, title: "Concatenation of Array", tag: "basics", difficulty: "Easy", free: true },
-          { id: 1480, title: "Running Sum of 1d Array", tag: "prefix sum", difficulty: "Easy", free: true },
-          { id: 1672, title: "Richest Customer Wealth", tag: "2D array", difficulty: "Easy", free: true },
-          { id: 1470, title: "Shuffle the Array", tag: "basics", difficulty: "Easy", free: true },
-          { id: 832, title: "Flipping an Image", tag: "basics", difficulty: "Easy", free: true },
-          { id: 2239, title: "Find Closest Number to Zero", tag: "basics", difficulty: "Easy", free: true },
+          { id: 1929, title: "Concatenation of Array", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "concatenation-of-array" },
+          { id: 1480, title: "Running Sum of 1d Array", tag: "prefix sum", difficulty: "Easy", priority: "P2", free: true, slug: "running-sum-of-1d-array" },
+          { id: 1672, title: "Richest Customer Wealth", tag: "2D array", difficulty: "Easy", priority: "P3", free: true, slug: "richest-customer-wealth" },
+          { id: 1470, title: "Shuffle the Array", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "shuffle-the-array" },
+          { id: 832, title: "Flipping an Image", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "flipping-an-image" },
+          { id: 2239, title: "Find Closest Number to Zero", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "find-closest-number-to-zero" },
         ],
       },
       {
         name: "Two Pointers",
         problems: [
-          { id: 88, title: "Merge Sorted Array", tag: "two pointers", difficulty: "Easy", free: true },
-          { id: 26, title: "Remove Duplicates from Sorted Array", tag: "two pointers", difficulty: "Easy", free: true },
-          { id: 977, title: "Squares of a Sorted Array", tag: "two pointers", difficulty: "Easy", free: true },
-          { id: 15, title: "Three Sum", tag: "two pointers", difficulty: "Medium" },
+          { id: 88, title: "Merge Sorted Array", tag: "two pointers", difficulty: "Easy", priority: "P1", free: true, slug: "merge-sorted-arrays" },
+          { id: 26, title: "Remove Duplicates from Sorted Array", tag: "two pointers", difficulty: "Easy", priority: "P1", free: true, slug: "remove-duplicates-from-sorted-array" },
+          { id: 977, title: "Squares of a Sorted Array", tag: "two pointers", difficulty: "Easy", priority: "P2", free: true, slug: "squares-of-a-sorted-array" },
+          { id: 15, title: "Three Sum", tag: "two pointers", difficulty: "Medium", priority: "P1", slug: "three-sum" },
         ],
       },
     ],
@@ -147,21 +152,99 @@ const diffStyles: Record<Diff, string> = {
   Hard: "text-rose-400 border-rose-500/30 bg-rose-500/10",
 };
 
+type PriorityFilter = "all" | "p1" | "p1p2" | "p3" | "free";
+
+const LS_PREFS = "dsaStudio:prefs:v1";
+const LS_SOLVED = "dsaStudio:solved:v1";
+const LS_SAVED = "dsaStudio:saved:v1";
+
+const loadJSON = <T,>(key: string, fallback: T): T => {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+interface Prefs {
+  activeTopic: string;
+  activeTab: string;
+  search: string;
+  priority: PriorityFilter;
+}
+
+const DEFAULT_PREFS: Prefs = {
+  activeTopic: "arrays",
+  activeTab: "problems",
+  search: "",
+  priority: "all",
+};
+
 export default function DsaStudio() {
-  const [activeTopic, setActiveTopic] = useState("arrays");
-  const [activeTab, setActiveTab] = useState("problems");
-  const [search, setSearch] = useState("");
-  const [priority, setPriority] = useState<"all" | "p1" | "p1p2" | "p3" | "free">("all");
+  const initial = loadJSON<Prefs>(LS_PREFS, DEFAULT_PREFS);
+  const [activeTopic, setActiveTopic] = useState(initial.activeTopic);
+  const [activeTab, setActiveTab] = useState(initial.activeTab);
+  const [search, setSearch] = useState(initial.search);
+  const [priority, setPriority] = useState<PriorityFilter>(initial.priority);
+
+  const [solved, setSolved] = useState<Set<string>>(
+    () => new Set(loadJSON<string[]>(LS_SOLVED, [])),
+  );
+  const [saved, setSaved] = useState<Set<string>>(
+    () => new Set(loadJSON<string[]>(LS_SAVED, [])),
+  );
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      LS_PREFS,
+      JSON.stringify({ activeTopic, activeTab, search, priority }),
+    );
+  }, [activeTopic, activeTab, search, priority]);
+
+  useEffect(() => {
+    window.localStorage.setItem(LS_SOLVED, JSON.stringify(Array.from(solved)));
+  }, [solved]);
+  useEffect(() => {
+    window.localStorage.setItem(LS_SAVED, JSON.stringify(Array.from(saved)));
+  }, [saved]);
+
+  const toggleSet = (setter: typeof setSolved) => (slug: string) =>
+    setter((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  const toggleSolved = toggleSet(setSolved);
+  const toggleSaved = toggleSet(setSaved);
 
   const topic = useMemo(() => TOPICS.find((t) => t.id === activeTopic) ?? TOPICS[0], [activeTopic]);
 
+  const matchesPriority = (p: Problem) => {
+    switch (priority) {
+      case "all": return true;
+      case "p1": return p.priority === "P1";
+      case "p1p2": return p.priority === "P1" || p.priority === "P2";
+      case "p3": return p.priority === "P3";
+      case "free": return !!p.free;
+    }
+  };
+
   const filteredGroups = useMemo(() => {
-    if (!search) return topic.groups;
-    const q = search.toLowerCase();
+    const q = search.trim().toLowerCase();
     return topic.groups
-      .map((g) => ({ ...g, problems: g.problems.filter((p) => p.title.toLowerCase().includes(q) || String(p.id).includes(q)) }))
+      .map((g) => ({
+        ...g,
+        problems: g.problems.filter((p) => {
+          if (!matchesPriority(p)) return false;
+          if (!q) return true;
+          return p.title.toLowerCase().includes(q) || String(p.id).includes(q);
+        }),
+      }))
       .filter((g) => g.problems.length);
-  }, [topic, search]);
+  }, [topic, search, priority]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -346,21 +429,21 @@ export default function DsaStudio() {
               />
             </div>
             <div className="flex flex-wrap gap-2">
-              {[
+              {([
                 { id: "all", label: "All" },
                 { id: "p1", label: "P1 Only", dot: "bg-rose-500" },
                 { id: "p1p2", label: "P1 + P2", dot: "bg-amber-400" },
                 { id: "p3", label: "P3 Only", dot: "bg-zinc-500" },
                 { id: "free", label: "Free Only", icon: Lock },
-              ].map((b) => {
-                const active = priority === (b.id as typeof priority);
+              ] as { id: PriorityFilter; label: string; dot?: string; icon?: typeof Lock }[]).map((b) => {
+                const active = priority === b.id;
                 const Icon = b.icon;
                 return (
                   <Button
                     key={b.id}
                     size="sm"
                     variant={active ? "default" : "outline"}
-                    onClick={() => setPriority(b.id as typeof priority)}
+                    onClick={() => setPriority(b.id)}
                     className="h-10 gap-1.5"
                   >
                     {b.dot && <span className={cn("h-2 w-2 rounded-full", b.dot)} />}
@@ -403,38 +486,83 @@ export default function DsaStudio() {
                 {g.name}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
-                {g.problems.map((p, idx) => (
-                  <motion.div
-                    key={p.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.02 }}
-                    className={cn(
-                      "group flex items-center gap-3 rounded-lg border bg-card/40 px-3 py-2.5 hover:border-primary/40 hover:bg-card/60 transition-all cursor-pointer",
-                      idx === 0 ? "border-primary/40" : "border-border/40",
-                    )}
-                  >
-                    <button className="text-muted-foreground hover:text-amber-400 transition-colors">
-                      <Star className="h-4 w-4" />
-                    </button>
-                    <span className="text-xs text-muted-foreground font-mono shrink-0">#{p.id}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{p.title}</div>
-                      <div className="text-[11px] text-muted-foreground truncate">{p.tag}</div>
-                    </div>
-                    <Badge variant="outline" className={cn("h-5 text-[10px]", diffStyles[p.difficulty])}>
-                      {p.difficulty}
-                    </Badge>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10">
-                      <Play className="h-3 w-3 fill-current" />
-                      <span className="text-[11px]">viz</span>
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10">
-                      <ExternalLink className="h-3 w-3" />
-                      <span className="text-[11px] ml-1">LC</span>
-                    </Button>
-                  </motion.div>
-                ))}
+                {g.problems.map((p, idx) => {
+                  const isSolved = solved.has(p.slug);
+                  const isSaved = saved.has(p.slug);
+                  const stop = (e: React.MouseEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  };
+                  return (
+                    <motion.div
+                      key={p.slug}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.02 }}
+                    >
+                      <Link
+                        to={`/library/problems/${p.slug}`}
+                        state={{ from: "/learn/dsa-studio" }}
+                        className={cn(
+                          "group flex items-center gap-2 rounded-lg border bg-card/40 px-3 py-2.5 hover:border-primary/40 hover:bg-card/60 transition-all",
+                          isSolved
+                            ? "border-emerald-500/40"
+                            : idx === 0
+                              ? "border-primary/40"
+                              : "border-border/40",
+                        )}
+                      >
+                        <button
+                          onClick={(e) => { stop(e); toggleSaved(p.slug); }}
+                          aria-label={isSaved ? "Remove from saved" : "Save for later"}
+                          title={isSaved ? "Remove from saved" : "Save for later"}
+                          className={cn(
+                            "transition-colors",
+                            isSaved ? "text-amber-400" : "text-muted-foreground hover:text-amber-400",
+                          )}
+                        >
+                          <Star className={cn("h-4 w-4", isSaved && "fill-current")} />
+                        </button>
+                        <button
+                          onClick={(e) => { stop(e); toggleSolved(p.slug); }}
+                          aria-label={isSolved ? "Mark as unsolved" : "Mark as solved"}
+                          title={isSolved ? "Mark as unsolved" : "Mark as solved"}
+                          className={cn(
+                            "h-5 w-5 grid place-items-center rounded-full border transition-colors",
+                            isSolved
+                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
+                              : "border-border/60 text-muted-foreground hover:text-emerald-400 hover:border-emerald-500/40",
+                          )}
+                        >
+                          <Check className="h-3 w-3" />
+                        </button>
+                        <span className="text-xs text-muted-foreground font-mono shrink-0">#{p.id}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className={cn("text-sm font-medium truncate", isSolved && "line-through text-muted-foreground")}>
+                            {p.title}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5">
+                            <span>{p.tag}</span>
+                            <span className="opacity-50">·</span>
+                            <span className={cn(
+                              "font-semibold",
+                              p.priority === "P1" && "text-rose-400",
+                              p.priority === "P2" && "text-amber-400",
+                              p.priority === "P3" && "text-zinc-400",
+                            )}>{p.priority}</span>
+                            {p.free && <Lock className="h-2.5 w-2.5 opacity-40" />}
+                          </div>
+                        </div>
+                        <Badge variant="outline" className={cn("h-5 text-[10px]", diffStyles[p.difficulty])}>
+                          {p.difficulty}
+                        </Badge>
+                        {isSaved && (
+                          <BookmarkCheck className="h-3.5 w-3.5 text-amber-400" />
+                        )}
+                      </Link>
+                    </motion.div>
+                  );
+                })}
               </div>
             </section>
           ))}
