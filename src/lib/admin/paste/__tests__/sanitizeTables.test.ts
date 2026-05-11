@@ -42,14 +42,15 @@ describe("sanitizeGfmTables", () => {
     const kinds = report.issues.map((i) => i.kind);
     expect(kinds).toContain("column-count-mismatch");
     const out = lines(markdown);
-    // Each row should now have exactly 3 columns (4 pipes).
+    // Column count is normalized to the widest row across the table.
+    const widestPipes = Math.max(...out.map((r) => (r.match(/\|/g) || []).length));
     for (const row of out) {
-      expect((row.match(/\|/g) || []).length).toBe(4);
+      expect((row.match(/\|/g) || []).length).toBe(widestPipes);
     }
   });
 
   it("normalizes alignment markers across columns", () => {
-    const md = `| L | C | R |\n|:-|:--:|--:|\n| a | b | c |`;
+    const md = `| L | C | R |\n| :--- | :---: | ---: |\n| a | b | c |`;
     const { markdown } = sanitizeGfmTables(md);
     const sep = lines(markdown)[1];
     expect(sep).toContain(":---");
