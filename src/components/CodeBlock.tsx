@@ -1,19 +1,39 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Check, ChevronsDown, ChevronsUp, Copy, Download, WrapText } from "lucide-react";
+import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+  Check,
+  ChevronsDown,
+  ChevronsUp,
+  Copy,
+  Download,
+  WrapText,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { obsidianDarkTheme } from "@/components/codeblock/obsidianTheme";
+
+export interface CodeVariant {
+  language: string;
+  filename?: string;
+  highlightLines?: number[];
+  code: string;
+}
 
 interface CodeBlockProps {
+  /** Single-block API (back-compat). */
   language?: string;
-  /** Optional filename or title shown above the code (parsed from fence meta). */
   filename?: string;
-  /** 1-based line numbers to highlight (parsed from `{1,3-5}` fence meta). */
   highlightLines?: number[];
-  children: string;
+  children?: string;
   className?: string;
+  /** Multi-language tabs API. When provided, a tab strip is rendered. */
+  variants?: CodeVariant[];
+  /** Stable id used to persist the active tab in localStorage. */
+  group?: string;
+  /** Initial tab — language id (e.g. "ts"). Falls back to first variant. */
+  defaultTab?: string;
 }
 
 const LANG_TO_EXT: Record<string, string> = {
@@ -24,29 +44,108 @@ const LANG_TO_EXT: Record<string, string> = {
   diff: "diff", text: "txt",
 };
 
-export function CodeBlock({
-  language,
-  filename,
-  highlightLines = [],
-  children,
-  className,
-}: CodeBlockProps) {
+const LANG_LABELS: Record<string, string> = {
+  ts: "TypeScript", tsx: "TSX", js: "JavaScript", jsx: "JSX",
+  py: "Python", python: "Python", sh: "Shell", bash: "Bash", zsh: "Zsh",
+  json: "JSON", html: "HTML", css: "CSS", sql: "SQL", yaml: "YAML",
+  yml: "YAML", md: "Markdown", diff: "Diff", rust: "Rust", rs: "Rust",
+  go: "Go", java: "Java", c: "C", cpp: "C++", rb: "Ruby",
+};
+
+const labelFor = (lang: string) =>
+  LANG_LABELS[lang.toLowerCase()] || lang.toUpperCase();
+
+export function CodeBlock(props: CodeBlockProps) {
+  const {
+    language,
+    filename,
+    highlightLines = [],
+    children,
+    className,
+    variants: variantsProp,
+    group,
+    defaultTab,
+  } = props;
+
+  // Normalise single-block usage into a one-element variants array.
+  const variants: CodeVariant[] = useMemo(() => {
+    if (variantsProp && variantsProp.length > 0) return variantsProp;
+    return [
+      {
+        language: language || "text",
+        filename,
+        highlightLines,
+        code: children ?? "",
+      },
+    ];
+  }, [variantsProp, language, filename, highlightLines, children]);
+
+  const hasTabs = variants.length > 1;
+  const storageKey = group ? `codeblock:tab:${group}` : null;
+
+  const [activeIdx, setActiveIdx] = useState<number>(() => {
+    const fallback = (() => {
+      if (defaultTab) {
+        const i = variants.findIndex(
+          (v) => v.language.toLowerCase() === defaultTab.toLowerCase(),
+        );
+        if (i >= 0) return i;
+      }
+      return 0;
+    })();
+    if (typeof window === "undefined" || !storageKey) return fallback;
+    try {
+      const saved = window.localStorage.getItem(storageKey);
+      if (!saved) return fallback;
+      const i = variants.findIndex(
+        (v) => v.language.toLowerCase() === saved.toLowerCase(),
+      );
+      return i >= 0 ? i : fallback;
+    } catch {
+      return fallback;
+    }
+  });
+
+  // Clamp if variants change.
+  useEffect(() => {
+    if (activeIdx >= variants.length) setActiveIdx(0);
+  }, [variants.length, activeIdx]);
+
+  const active = variants[Math.min(activeIdx, variants.length - 1)];
+
+  // Persist tab choice per group.
+  useEffect(() => {
+    if (!storageKey || typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(storageKey, active.language);
+    } catch {
+      /* noop */
+    }
+  }, [storageKey, active.language]);
+
   const [copied, setCopied] = useState(false);
   const [wrap, setWrap] = useState(false);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
 
-  const lines = useMemo(() => children.split("\n"), [children]);
+  const lines = useMemo(() => active.code.split("\n"), [active.code]);
   const isLong = lines.length > 25;
   const [collapsed, setCollapsed] = useState(isLong);
-  const visibleSrc = collapsed ? lines.slice(0, 18).join("\n") : children;
-  const showLineNumbers = lines.length > 3;
-  const highlightSet = useMemo(() => new Set(highlightLines), [highlightLines]);
+  // Reset collapse when switching tabs.
+  useEffect(() => {
+    setCollapsed(lines.length > 25);
+  }, [active.language, lines.length]);
 
-  const baseStyle = isDark ? oneDark : oneLight;
+  const visibleSrc = collapsed ? lines.slice(0, 18).join("\n") : active.code;
+  const showLineNumbers = lines.length > 3;
+  const highlightSet = useMemo(
+    () => new Set(active.highlightLines || []),
+    [active.highlightLines],
+  );
+
   const style = useMemo(() => {
-    const s: any = { ...baseStyle };
-    // Patch background to a deeper black in dark mode for the "obsidian" look.
+    if (isDark) return obsidianDarkTheme as any;
+    const s: any = { ...oneLight };
     s['pre[class*="language-"]'] = {
       ...(s['pre[class*="language-"]'] || {}),
       background: "transparent",
@@ -56,11 +155,11 @@ export function CodeBlock({
       background: "transparent",
     };
     return s;
-  }, [baseStyle]);
+  }, [isDark]);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(children);
+      await navigator.clipboard.writeText(active.code);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
@@ -69,9 +168,11 @@ export function CodeBlock({
   };
 
   const handleDownload = () => {
-    const ext = LANG_TO_EXT[(language || "text").toLowerCase()] || "txt";
-    const name = filename || `snippet.${ext}`;
-    const blob = new Blob([children], { type: "text/plain;charset=utf-8" });
+    const ext = LANG_TO_EXT[active.language.toLowerCase()] || "txt";
+    const name = active.filename || `snippet.${ext}`;
+    const blob = new Blob([active.code], {
+      type: "text/plain;charset=utf-8",
+    });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = name;
@@ -81,44 +182,135 @@ export function CodeBlock({
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
-  const isDiff = (language || "").toLowerCase() === "diff";
+  const isDiff = active.language.toLowerCase() === "diff";
 
   return (
     <div
       data-code-block
+      data-has-tabs={hasTabs ? "true" : undefined}
       className={cn(
-        "not-prose relative my-5 rounded-xl overflow-hidden border",
-        "border-border/80 shadow-sm",
+        "not-prose group/codeblock relative my-5 rounded-xl overflow-hidden border",
         isDark
-          ? "bg-[#0a0a0c] ring-1 ring-white/5 shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_8px_30px_-12px_rgba(0,0,0,0.6)]"
-          : "bg-[#fafafa]",
+          ? "border-white/[0.07] bg-[hsl(220_15%_6%)] shadow-[0_1px_0_hsl(0_0%_100%/0.04)_inset,0_10px_40px_-12px_rgba(0,0,0,0.7)]"
+          : "border-border/80 bg-[#fafafa] shadow-sm",
+        "selection:bg-primary/25 selection:text-foreground",
         className,
       )}
     >
       {/* Header / chrome */}
       <div
         className={cn(
-          "flex items-center gap-2 px-3 py-2 text-xs",
+          "flex items-center gap-2 px-3 text-xs",
+          hasTabs ? "h-9 pr-2" : "h-8 py-2",
           "border-b",
           isDark
-            ? "border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent"
+            ? "border-white/[0.06] bg-white/[0.025]"
             : "border-border/70 bg-muted/40",
         )}
       >
         {/* macOS dots */}
         <div className="flex items-center gap-1.5 pr-1" aria-hidden>
-          <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]/80" />
-          <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]/80" />
-          <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]/80" />
+          <span
+            className={cn(
+              "h-2.5 w-2.5 rounded-full bg-[#ff5f56]",
+              isDark
+                ? "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.4)]"
+                : "shadow-inner",
+            )}
+          />
+          <span
+            className={cn(
+              "h-2.5 w-2.5 rounded-full bg-[#ffbd2e]",
+              isDark
+                ? "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.4)]"
+                : "shadow-inner",
+            )}
+          />
+          <span
+            className={cn(
+              "h-2.5 w-2.5 rounded-full bg-[#27c93f]",
+              isDark
+                ? "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.4)]"
+                : "shadow-inner",
+            )}
+          />
         </div>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-          {language || "code"}
-        </span>
-        {filename && (
-          <span className="ml-1 truncate font-mono text-[11px] text-foreground/80">
-            {filename}
-          </span>
+
+        {hasTabs ? (
+          <div
+            role="tablist"
+            aria-label="Code language"
+            className="flex h-full items-stretch gap-0.5 overflow-x-auto"
+          >
+            {variants.map((v, i) => {
+              const selected = i === activeIdx;
+              return (
+                <button
+                  key={`${v.language}-${i}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => setActiveIdx(i)}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowRight") {
+                      e.preventDefault();
+                      setActiveIdx((i + 1) % variants.length);
+                    } else if (e.key === "ArrowLeft") {
+                      e.preventDefault();
+                      setActiveIdx(
+                        (i - 1 + variants.length) % variants.length,
+                      );
+                    } else if (e.key === "Home") {
+                      e.preventDefault();
+                      setActiveIdx(0);
+                    } else if (e.key === "End") {
+                      e.preventDefault();
+                      setActiveIdx(variants.length - 1);
+                    }
+                  }}
+                  className={cn(
+                    "relative inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 text-[11px] font-medium tracking-wide transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    selected
+                      ? isDark
+                        ? "text-foreground"
+                        : "text-foreground"
+                      : isDark
+                        ? "text-muted-foreground/70 hover:text-foreground/90 hover:bg-white/[0.03]"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+                  )}
+                >
+                  <span>{labelFor(v.language)}</span>
+                  {v.filename && (
+                    <span className="font-mono text-[10px] text-muted-foreground/80">
+                      {v.filename}
+                    </span>
+                  )}
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "absolute inset-x-1 bottom-0 h-0.5 rounded-t-sm transition-opacity",
+                      selected ? "bg-primary opacity-100" : "opacity-0",
+                    )}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              {active.language || "code"}
+            </span>
+            {active.filename && (
+              <span className="ml-1 truncate font-mono text-[11px] text-foreground/80">
+                {active.filename}
+              </span>
+            )}
+          </>
         )}
+
         <div className="ml-auto flex items-center gap-0.5">
           <Button
             type="button"
@@ -161,21 +353,37 @@ export function CodeBlock({
       </div>
 
       <span className="sr-only" role="status" aria-live="polite">
-        {copied ? "Code copied to clipboard" : ""}
+        {copied
+          ? "Code copied to clipboard"
+          : hasTabs
+            ? `Showing ${labelFor(active.language)} example`
+            : ""}
       </span>
 
-      <div className={cn("relative", collapsed && "max-h-[420px] overflow-hidden")}>
+      <div
+        className={cn(
+          "relative",
+          isDark && "bg-[hsl(220_14%_4%)]",
+          collapsed && "max-h-[420px] overflow-hidden",
+        )}
+      >
         <SyntaxHighlighter
-          language={(language || "text").toLowerCase()}
+          language={active.language.toLowerCase()}
           style={style as any}
           showLineNumbers={showLineNumbers}
           wrapLines
           wrapLongLines={wrap}
           lineNumberStyle={{
-            minWidth: "2.25em",
-            paddingRight: "0.75em",
-            opacity: 0.4,
+            minWidth: "2.5em",
+            paddingRight: "1em",
+            marginRight: "0.5em",
+            color: isDark ? "hsl(220 10% 35%)" : undefined,
+            opacity: isDark ? 1 : 0.4,
+            borderRight: isDark
+              ? "1px solid hsl(0 0% 100% / 0.04)"
+              : undefined,
             userSelect: "none",
+            textAlign: "right" as const,
           }}
           lineProps={(lineNumber: number) => {
             const highlighted = highlightSet.has(lineNumber);
@@ -190,15 +398,19 @@ export function CodeBlock({
             };
             if (highlighted) {
               styleObj.background = isDark
-                ? "rgba(244, 114, 22, 0.08)"
+                ? "hsl(var(--primary) / 0.10)"
                 : "rgba(244, 114, 22, 0.10)";
               styleObj.borderLeftColor = "hsl(var(--primary))";
             } else if (diffPlus) {
-              styleObj.background = "rgba(34,197,94,0.10)";
-              styleObj.borderLeftColor = "rgb(34,197,94)";
+              styleObj.background = isDark
+                ? "hsl(150 60% 45% / 0.12)"
+                : "rgba(34,197,94,0.10)";
+              styleObj.borderLeftColor = "hsl(150 60% 55%)";
             } else if (diffMinus) {
-              styleObj.background = "rgba(239,68,68,0.10)";
-              styleObj.borderLeftColor = "rgb(239,68,68)";
+              styleObj.background = isDark
+                ? "hsl(355 75% 55% / 0.12)"
+                : "rgba(239,68,68,0.10)";
+              styleObj.borderLeftColor = "hsl(355 75% 65%)";
             }
             return { style: styleObj };
           }}
@@ -210,7 +422,10 @@ export function CodeBlock({
             background: "transparent",
           }}
           codeTagProps={{
-            style: { fontFamily: 'ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, monospace' },
+            style: {
+              fontFamily:
+                'ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, monospace',
+            },
           }}
         >
           {visibleSrc}
@@ -221,7 +436,7 @@ export function CodeBlock({
             className={cn(
               "pointer-events-none absolute inset-x-0 bottom-0 h-24",
               isDark
-                ? "bg-gradient-to-t from-[#0a0a0c] to-transparent"
+                ? "bg-gradient-to-t from-[hsl(220_14%_4%)] to-transparent"
                 : "bg-gradient-to-t from-[#fafafa] to-transparent",
             )}
             aria-hidden
@@ -236,13 +451,14 @@ export function CodeBlock({
           className={cn(
             "flex w-full items-center justify-center gap-1 border-t py-1.5 text-xs font-medium transition-colors",
             isDark
-              ? "border-white/5 bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+              ? "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
               : "border-border/70 bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground",
           )}
         >
           {collapsed ? (
             <>
-              <ChevronsDown className="h-3.5 w-3.5" /> Show all {lines.length} lines
+              <ChevronsDown className="h-3.5 w-3.5" /> Show all {lines.length}{" "}
+              lines
             </>
           ) : (
             <>
