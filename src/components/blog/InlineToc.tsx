@@ -1,4 +1,4 @@
-import { useState, KeyboardEvent } from "react";
+import { useState, useEffect, KeyboardEvent } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ChevronDown, List, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,8 @@ interface Props {
   readingTimeMin?: number;
   activeId?: string;
   className?: string;
+  /** Stable key (e.g. post slug) used to persist collapsed/expanded state. */
+  storageKey?: string;
 }
 
 const INDENT: Record<number, string> = {
