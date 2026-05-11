@@ -262,6 +262,12 @@ export default function BlogPost() {
               />
             )}
 
+            <InlineToc
+              items={toc}
+              readingTimeMin={post.reading_time_min}
+              activeId={activeHeadingId}
+            />
+
             <BlogContent source={post.content_md} className="mb-8" />
 
             <div className="flex gap-2 py-4 border-y mb-8">
