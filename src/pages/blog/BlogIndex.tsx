@@ -58,6 +58,15 @@ export default function BlogIndex() {
   const tag = params.get("tag") ?? undefined;
   const sort = (params.get("sort") as BlogSort) || "recent";
   const page = Math.max(1, Number(params.get("page") ?? "1"));
+  const langsParam = params.get("langs") ?? "";
+  const selectedLangs = useMemo(
+    () =>
+      langsParam
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean),
+    [langsParam],
+  );
   const [searchInput, setSearchInput] = useState(search);
   const searchRef = useRef<HTMLInputElement>(null);
 
