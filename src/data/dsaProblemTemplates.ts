@@ -17,8 +17,8 @@ export interface ProblemTemplate {
   stepLogic: string[];
 }
 
-const t = (topicTag: string, body: Record<string, unknown>): ProblemTemplate =>
-  ({ ...(body as ProblemTemplate), approachTitle: (body as any).approachTitle ?? topicTag });
+const t = (_topicTag: string, body: Omit<ProblemTemplate, "approachTitle"> & { approachTitle?: string }): ProblemTemplate =>
+  ({ ...body, approachTitle: body.approachTitle ?? _topicTag });
 
 export const TOPIC_TEMPLATES: Record<string, ProblemTemplate> = {
   arrays: t("Index Mapping — Iterate Once", {
