@@ -219,12 +219,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
 
 
     /** Pending table-cleanup confirmation. While set, the editor shows the
-     *  TablePreviewDialog and waits for Apply / Cancel before mutating state. */
+     *  TablePreviewDialog and waits for Apply / Cancel before mutating state.
+     *  `apply` accepts user edits keyed by table index from the dialog. */
     const [tablePreview, setTablePreview] = useState<{
       cleaned: string;
       original: string;
       report: TableReport;
-      apply: () => void;
+      apply: (edits: Record<number, string>) => void;
     } | null>(null);
 
     /** Commit an already-converted Markdown body: insert into the editor,
@@ -347,14 +348,23 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
           cleaned: cleanedBody,
           original: rawBody,
           report,
-          apply: () =>
-            commitPaste(cleanedBody, {
+          apply: (edits) => {
+            // Substitute any user-edited tables back into the cleaned body.
+            let finalBody = cleanedBody;
+            for (const d of report.diffs) {
+              const edited = edits[d.index];
+              if (edited !== undefined && edited !== d.after) {
+                finalBody = finalBody.replace(d.after, edited);
+              }
+            }
+            commitPaste(finalBody, {
               valueBefore,
               convertedFromHtml,
               fmFound: fm.found,
               fmApply,
               tableReport: report,
-            }),
+            });
+          },
         });
         return;
       }
@@ -788,8 +798,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
           open={!!tablePreview}
           report={tablePreview?.report ?? null}
           onCancel={() => setTablePreview(null)}
-          onApply={() => {
-            tablePreview?.apply();
+          onApply={(edits) => {
+            tablePreview?.apply(edits);
             setTablePreview(null);
           }}
         />
