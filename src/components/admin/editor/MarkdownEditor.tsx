@@ -35,6 +35,10 @@ import { deleteProblemImage } from "@/lib/admin/uploadProblemImage";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { GalleryImage } from "@/hooks/useProblemAssetGallery";
+import { htmlToMarkdown, isRichHtml } from "@/lib/admin/paste/htmlToMarkdown";
+import { parseFrontMatter, mapFrontMatter, type FrontMatterApply } from "@/lib/admin/paste/frontMatter";
+import { normalizePastedText } from "@/lib/admin/paste/normalize";
+import { detectMarkdownFeatures, type DetectedFeatures } from "@/lib/admin/paste/detectFeatures";
 
 type Mode = "edit" | "split" | "preview";
 
@@ -50,6 +54,10 @@ interface Props {
   rows?: number;
   /** Optional callback for "Insert examples" toolbar action. */
   onInsertExamples?: () => void;
+  /** Called when the pasted content begins with YAML/TOML front-matter so the
+   *  parent editor can auto-fill matching fields. Should return how many
+   *  fields it applied (for the user-facing toast). */
+  onFrontMatter?: (fm: FrontMatterApply) => number;
 }
 
 export interface MarkdownEditorHandle {
