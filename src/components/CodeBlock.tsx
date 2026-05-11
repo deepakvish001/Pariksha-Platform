@@ -52,8 +52,27 @@ const LANG_LABELS: Record<string, string> = {
   go: "Go", java: "Java", c: "C", cpp: "C++", rb: "Ruby",
 };
 
+// Short, badge-friendly tab labels (e.g. CPP, JS, PY).
+const SHORT_LANG_LABELS: Record<string, string> = {
+  ts: "TS", tsx: "TSX", js: "JS", jsx: "JSX",
+  py: "Python", python: "Python",
+  sh: "Shell", bash: "Bash", zsh: "Zsh",
+  json: "JSON", html: "HTML", css: "CSS", scss: "SCSS",
+  sql: "SQL", yaml: "YAML", yml: "YAML", md: "MD", diff: "Diff",
+  rust: "Rust", rs: "Rust", go: "Go",
+  java: "Java", kotlin: "Kotlin", kt: "Kotlin", swift: "Swift",
+  c: "C", cpp: "CPP", "c++": "CPP", cxx: "CPP",
+  cs: "C#", csharp: "C#", "c#": "C#",
+  rb: "Ruby", ruby: "Ruby", php: "PHP",
+  dart: "Dart", scala: "Scala", r: "R", lua: "Lua",
+  text: "Text", txt: "Text", plaintext: "Text",
+};
+
 const labelFor = (lang: string) =>
   LANG_LABELS[lang.toLowerCase()] || lang.toUpperCase();
+
+const shortLabelFor = (lang: string) =>
+  SHORT_LANG_LABELS[lang.toLowerCase()] || lang.toUpperCase();
 
 export function CodeBlock(props: CodeBlockProps) {
   const {
