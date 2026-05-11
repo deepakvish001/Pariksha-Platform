@@ -33,6 +33,17 @@ import {
   type BlogSort,
 } from "@/hooks/useBlog";
 import { cn } from "@/lib/utils";
+import { extractLanguages } from "@/lib/blog/extractLanguages";
+
+const LANG_DISPLAY: Record<string, string> = {
+  ts: "TS", tsx: "TSX", js: "JS", jsx: "JSX",
+  py: "Python", java: "Java", cpp: "CPP", c: "C", cs: "C#",
+  go: "Go", rust: "Rust", php: "PHP", ruby: "Ruby",
+  kotlin: "Kotlin", swift: "Swift",
+  sql: "SQL", html: "HTML", css: "CSS", json: "JSON",
+  yaml: "YAML", bash: "Bash", md: "Markdown",
+};
+const langDisplay = (l: string) => LANG_DISPLAY[l] ?? l.toUpperCase();
 
 const PAGE_SIZE = 9;
 const SITE_NAME = "Byteskill";
