@@ -72,6 +72,37 @@ export interface MarkdownEditorHandle {
 
 const GALLERY_OPEN_KEY = "admin.markdownEditor.galleryOpen.v1";
 const MODE_KEY = "admin.markdownEditor.mode.v1";
+const DETECTED_KEY = "admin.markdownEditor.detected.v1";
+
+interface DetectedSummary {
+  features: DetectedFeatures;
+  /** Length of the document right after paste — used to clear the chip
+   *  when the content drifts substantially from the pasted snapshot. */
+  pastedLength: number;
+  convertedFromHtml: boolean;
+  fmApplied: number;
+}
+
+const readDetected = (): DetectedSummary | null => {
+  try {
+    const raw = localStorage.getItem(DETECTED_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && parsed.features) return parsed;
+  } catch {
+    /* ignore */
+  }
+  return null;
+};
+
+const writeDetected = (s: DetectedSummary | null) => {
+  try {
+    if (s) localStorage.setItem(DETECTED_KEY, JSON.stringify(s));
+    else localStorage.removeItem(DETECTED_KEY);
+  } catch {
+    /* ignore */
+  }
+};
 
 const readBoolKey = (k: string, fallback: boolean): boolean => {
   try {
