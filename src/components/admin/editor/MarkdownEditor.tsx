@@ -33,6 +33,7 @@ import { AltTextDialog, type InsertImageDetails } from "./AltTextDialog";
 import { useMarkdownImageUpload } from "@/hooks/useMarkdownImageUpload";
 import { deleteProblemImage } from "@/lib/admin/uploadProblemImage";
 import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import type { GalleryImage } from "@/hooks/useProblemAssetGallery";
 import { htmlToMarkdown, isRichHtml } from "@/lib/admin/paste/htmlToMarkdown";
