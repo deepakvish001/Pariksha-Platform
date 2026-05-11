@@ -219,12 +219,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
 
 
     /** Pending table-cleanup confirmation. While set, the editor shows the
-     *  TablePreviewDialog and waits for Apply / Cancel before mutating state. */
+     *  TablePreviewDialog and waits for Apply / Cancel before mutating state.
+     *  `apply` accepts user edits keyed by table index from the dialog. */
     const [tablePreview, setTablePreview] = useState<{
       cleaned: string;
       original: string;
       report: TableReport;
-      apply: () => void;
+      apply: (edits: Record<number, string>) => void;
     } | null>(null);
 
     /** Commit an already-converted Markdown body: insert into the editor,
