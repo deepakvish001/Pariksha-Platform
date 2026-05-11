@@ -1,103 +1,79 @@
 ## Goal
 
-Push the blog markdown system to "best-in-class CMS" territory: deeper rich features, a true dark-black code experience, and meaningful UX wins for both **readers** and **admins**. No backend/schema changes — purely frontend additions on top of `BlogContent`, `CodeBlock`, `TableOfContents`, and `MarkdownEditor`.
+Give every blog post an auto-generated, Notion/Mintlify-grade Table of Contents with three coordinated surfaces:
 
----
+1. **Inline TOC** — a collapsible card placed before the content (top of the article).
+2. **Sticky rail TOC** — refined right-side sticky with an animated active indicator, nested H2–H4, and per-section progress.
+3. **Mobile "On this page" button** — opens a bottom sheet with the full TOC (replaces the current right-rail-only desktop UX on small screens).
 
-## 1. Code block — premium dark-black experience
+All three are auto-generated from the post's markdown — no admin work required.
 
-Upgrade `src/components/CodeBlock.tsx`:
+## What changes
 
-- **Forced dark "obsidian" palette** in dark mode (deep `#0a0a0c` background, subtle border glow), light mode keeps `oneLight`. Use semantic CSS vars so it adapts cleanly.
-- **macOS-style window chrome** (3 dots) + language pill + filename support: ` ```ts title="src/index.ts" ` parsed as caption above the code.
-- **Line numbers** (toggle, default on for >3 lines).
-- **Line highlighting**: ` ```ts {2,4-6} ` highlights those lines with a left accent bar.
-- **Diff highlighting** for `language="diff"` (green/red gutters).
-- **Word-wrap toggle** + **collapse/expand** for blocks > 25 lines (with "Show all" button).
-- **Copy** stays, plus **Download as file** (uses filename or `snippet.<ext>`).
-- Persistent toolbar visible on hover/focus, always visible on touch.
+### 1. Heading extraction (`src/lib/blog/extractToc.ts`)
+- Extend regex to capture `H2 / H3 / H4` (currently only H2/H3).
+- Keep ignoring fenced code blocks.
+- Keep `github-slugger` IDs so existing in-content anchors still match.
 
-## 2. Richer markdown features in `BlogContent.tsx`
+### 2. New component: `InlineToc` (`src/components/blog/InlineToc.tsx`)
+- Notion-style collapsible card rendered between the excerpt and cover image.
+- Header row: `📑 On this page · N items · ~M min read` with a chevron toggle.
+- Default state: **expanded** when `items.length ≤ 8`, **collapsed** otherwise (Notion behavior).
+- Keyboard accessible (`button` with `aria-expanded`, `aria-controls`).
+- Lists items with depth-based indent (H2 flush, H3 indent-4, H4 indent-8) and subtle bullet/dash markers.
+- Click → smooth-scroll with 80px header offset; updates URL hash without jump.
 
-- **More callout kinds**: `note`, `tip`, `warning`, `danger`, `info`, `success`, `question`, `quote` — each with icon + accent. Support optional custom title: `> [!tip] Pro tip — keep it small`.
-- **Collapsible callouts**: `> [!note]+` (open) / `> [!note]-` (collapsed) like Obsidian.
-- **Footnotes** (already via remark-gfm) — style with hover preview popover on the superscript.
-- **Definition lists** via `remark-deflist`.
-- **Math** via `remark-math` + `rehype-katex` (KaTeX CSS imported lazily) for `$inline$` and `$$block$$`.
-- **Mermaid diagrams** for ` ```mermaid ` blocks (lazy-loaded `mermaid` package; renders to SVG; theme-aware).
-- **Keyboard keys**: ` ```kbd ` and inline `<kbd>` styled as physical keys.
-- **Task list progress**: detect `- [ ]` / `- [x]` lists and show a small progress bar above the list.
-- **More embeds** (extend `lib/blog/embeds.ts`): Twitter/X, GitHub Gist, Loom, Spotify, Figma, generic OEmbed fallback for known patterns.
-- **Image lightbox**: clicking content images opens a full-screen viewer with arrow-key nav between images in the post.
-- **Image zoom/pan** in lightbox; ESC to close.
-- **Responsive iframe wrapper** + lazy + skeleton placeholder.
+### 3. Refactored `TableOfContents` (sticky rail)
+- Animated **active indicator**: a 2px vertical bar that slides between items (Mintlify/Linear pattern) using a measured `top/height` transition.
+- Nested rendering: H2 (bold, base), H3 (indent + smaller), H4 (further indent + muted).
+- **Section progress**: compute % of viewport scrolled past each section; subtle progress-fill behind the active item.
+- Smarter scroll-spy using `IntersectionObserver` with weighted thresholds so the "active" section matches what the reader actually sees (current implementation can flicker when multiple headings sit near the fold).
+- Header chip: "Reading · X min left" derived from total reading_time_min and scroll progress.
+- Optional **filter input** (auto-shows when items > 12) to type-filter headings.
+- Keep existing keyboard support (Enter/Space).
 
-## 3. Reader UX upgrades
+### 4. Mobile "On this page" sheet
+- New floating pill button (lg:hidden, anchored above the existing mobile bottom action bar) labeled `On this page · N`.
+- Clicking opens a shadcn `Sheet` from the bottom containing the same nested list with active highlighting.
+- Auto-closes on item click.
 
-- **Floating action rail** (left side, sticky on lg+): like, bookmark, share, copy-link, scroll-to-top, scroll-to-comments — with counts and tooltips. Mobile: collapses to a bottom action bar.
-- **Estimated reading time remaining** in `ReadingProgress` (e.g., "3 min left").
-- **TOC improvements**: auto-collapse deep H3 children under their parent until active; "Back to top" link; show H2 progress dot fill; smooth `IntersectionObserver` debouncing.
-- **"Copy section link" toast** already exists — add a tiny inline `#` icon hint and a keyboard shortcut (`?` opens help, `t` jumps to top, `c` jumps to comments).
-- **Print stylesheet**: hide TOC/rail/comments, expand all collapsibles, force light theme for code blocks.
-- **Accessibility**: every interactive control has aria labels; respect `prefers-reduced-motion` (no smooth scroll, no transitions).
-- **Comment UX**: show character counter, Cmd/Ctrl+Enter to submit, optimistic insert with "posting…" pill.
+### 5. Layout integration in `BlogPost.tsx`
+- Hide TOC surfaces entirely when `toc.length < 3` (avoids noise on short posts).
+- Keep the right-rail grid (`lg:grid-cols-[minmax(0,1fr)_220px]`); replace its content with the new sticky TOC.
+- Render `<InlineToc items={toc} readingTimeMin={post.reading_time_min} />` after the excerpt block, before the cover image.
+- Add the new mobile sheet trigger inside the existing FAB/mobile bar area (or as a sibling rendered from `BlogPost`).
 
-## 4. Admin UX upgrades (`AdminBlogEditor` + `MarkdownEditor`)
+### 6. No DB / no admin changes
+- Pure presentation. No migrations, no editor changes, no API changes.
 
-- **Live preview parity**: switch `MarkdownPreview` (or wire admin preview) to render via the same `BlogContent` so admins see exactly what readers see (callouts, embeds, mermaid, math, code chrome).
-- **Slash command menu** in the textarea: typing `/` at line-start pops a command palette (Insert: callout, code block, table, image, embed, mermaid, math, divider, TOC marker).
-- **Toolbar additions**: callout dropdown (note/tip/warning/danger), insert code block w/ language picker, insert mermaid template, insert math, insert table builder (rows × cols), insert YouTube embed.
-- **Drag-and-drop image paste**: already partially via `useMarkdownImageUpload` — extend to drag-drop on the textarea and clipboard image paste.
-- **Word/char/reading-time counter** in the editor footer; warn when SEO desc/title exceed limits (already there, make it color-coded).
-- **Auto-save draft to localStorage** every 5s with "Restored from draft" banner if browser was closed mid-edit.
-- **Unsaved-changes guard** (`beforeunload` + react-router blocker) when content is dirty.
-- **"Open public preview"** button — opens `/blog/<slug>?preview=1` in a new tab so admins can QA the actual reader layout before publishing.
-- **Keyboard shortcuts**: Cmd/Ctrl+S save, Cmd/Ctrl+B/I bold/italic, Cmd/Ctrl+K link, Cmd/Ctrl+Shift+P toggle preview mode.
-- **Status pill** in header showing autosave state (Saved · Saving · Unsaved).
+## Technical notes
 
-## 5. Theming polish
+- Use existing `framer-motion` (already a project dep) for the sliding active bar and smooth expand/collapse on the inline card.
+- IDs come from the same `github-slugger` instance the renderer already uses, so anchor links stay stable.
+- Active section is tracked once at the page level (in `BlogPost`) and passed to both Inline + Rail + Mobile sheet to avoid three separate observers fighting each other.
+- Respect `prefers-reduced-motion`: disable the sliding bar animation, fall back to instant active-state changes.
 
-- Replace remaining hardcoded color classes in callouts with CSS-var driven tokens (`--callout-note-bg`, `--callout-tip-bg`, ...) defined in `index.css` for both themes — gives us one source of truth and lets future themes override.
-- Add a deep-black `.code-obsidian` token block in `index.css` used by CodeBlock so the "true black" look is consistent.
-- Verify all new surfaces in both light and dark themes (callouts, mermaid, katex, lightbox, action rail).
+## Out of scope (can follow later if you want)
 
-## 6. Tests
+- Auto-numbering headings (1, 1.1, 1.1.1) — Notion doesn't do this.
+- TOC search across the whole post body (only headings are filterable).
+- Persisting collapsed/expanded state across visits.
 
-- Unit: callout variants (info/success/question/quote, collapsible, custom title); CodeBlock filename/line-numbers/highlight/diff/wrap/collapse; embed detectors (twitter, gist, loom, spotify, figma); mermaid lazy mount; math renders; lightbox open/close + keyboard nav.
-- Component: floating action rail (counts, tooltips, mobile collapse); TOC auto-collapse + keyboard shortcuts; ReadingProgress "min left" calc.
-- Editor: slash menu opens/inserts; toolbar callout/table/embed insert correct markdown; autosave restore; unsaved-changes guard fires.
-- E2E (`blog-markdown-showcase.spec.ts`): extend showcase markdown with new features and assert they render.
-
-## Files
-
-**Edit**
-- `src/components/CodeBlock.tsx` — chrome, line numbers, highlights, wrap/collapse, download
-- `src/components/blog/BlogContent.tsx` — new callouts, mermaid, math, kbd, deflist, task progress, lightbox
-- `src/components/blog/TableOfContents.tsx` — auto-collapse, back-to-top, debounce
-- `src/components/blog/ReadingProgress.tsx` — "min left"
-- `src/lib/blog/embeds.ts` — twitter/gist/loom/spotify/figma
-- `src/pages/blog/BlogPost.tsx` — mount FloatingActionRail, ImageLightbox, keyboard shortcuts
-- `src/pages/admin/blog/AdminBlogEditor.tsx` — autosave, unsaved guard, public preview, status pill
-- `src/components/admin/editor/MarkdownEditor.tsx` — slash menu, drag/paste images, shortcuts
-- `src/components/admin/editor/MarkdownToolbar.tsx` — callout/table/embed/mermaid/math actions
-- `src/components/admin/editor/MarkdownPreview.tsx` — render via shared `BlogContent`
-- `src/index.css` — callout/code CSS vars, print styles
-- `tailwind.config.ts` — none expected
-
-**Create**
-- `src/components/blog/FloatingActionRail.tsx`
-- `src/components/blog/ImageLightbox.tsx`
-- `src/components/blog/Mermaid.tsx`
-- `src/components/blog/KeyboardShortcuts.tsx`
-- `src/components/admin/editor/SlashMenu.tsx`
-- `src/components/admin/editor/TableBuilderDialog.tsx`
-- `src/hooks/useAutosaveDraft.ts`
-- `src/hooks/useUnsavedChangesGuard.ts`
-- Tests: `src/components/blog/__tests__/CodeBlock.test.tsx`, `FloatingActionRail.test.tsx`, `ImageLightbox.test.tsx`, `Mermaid.test.tsx`, `src/hooks/__tests__/useAutosaveDraft.test.ts`, plus extending existing `BlogContent.test.tsx` and `e2e/blog-markdown-showcase.spec.ts`
-
-**Dependencies (new)**
-- `remark-math`, `rehype-katex`, `katex` (math)
-- `mermaid` (lazy-imported only when a mermaid block is detected)
-- `remark-deflist` (definition lists)
-
-No DB or edge function changes.
+```text
+┌─────────────────────────────────────────────────────────┐
+│  Title · meta · author                                  │
+│  Excerpt                                                │
+│  ┌───────────────────────────────────────────────┐  │   │
+│  │ 📑 On this page · 9 items · 8 min     [v]     │  │ S │
+│  │   • Introduction                              │  │ T │
+│  │     – Why it matters                          │  │ I │
+│  │   • Setup                                     │  │ C │
+│  │   • ...                                       │  │ K │
+│  └───────────────────────────────────────────────┘  │ Y │
+│  Cover image                                            │
+│  Article body...                                        │
+└─────────────────────────────────────────────────────────┘
+                                                 ▲
+                                       sticky rail TOC
+                                       (animated active bar)
+```
