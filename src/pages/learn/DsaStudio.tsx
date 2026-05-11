@@ -517,6 +517,8 @@ export default function DsaStudio() {
                     >
                       <Link
                         to={`/library/problems/${p.slug}`}
+                        data-testid="dsa-problem-card"
+                        data-slug={p.slug}
                         state={{ from: "/learn/dsa-studio" }}
                         className={cn(
                           "group flex items-center gap-2 rounded-lg border bg-card/40 px-3 py-2.5 hover:border-primary/40 hover:bg-card/60 transition-all",
