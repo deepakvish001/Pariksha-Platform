@@ -82,7 +82,7 @@ describe("DSA Studio — every problem renders to its detail route", () => {
       for (const p of expected) {
         expect(renderedSlugs.has(p.slug)).toBe(true);
         const card = cards.find((c) => c.getAttribute("data-slug") === p.slug)!;
-        expect(card.getAttribute("href")).toBe(`/library/problems/${p.slug}`);
+        expect(card.getAttribute("href")).toBe(`/learn/dsa-studio/${p.slug}`);
       }
       unmount();
     },
@@ -108,7 +108,7 @@ describe("DSA Studio — filters preserved when navigating to a problem", () => 
     expect(cards.length).toBeGreaterThan(0);
     for (const c of cards) {
       const slug = c.getAttribute("data-slug")!;
-      expect(c.getAttribute("href")).toBe(`/library/problems/${slug}`);
+      expect(c.getAttribute("href")).toBe(`/learn/dsa-studio/${slug}`);
     }
   });
 });

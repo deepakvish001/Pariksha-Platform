@@ -521,7 +521,7 @@ export default function DsaStudio() {
                       transition={{ delay: idx * 0.02 }}
                     >
                       <Link
-                        to={`/library/problems/${p.slug}`}
+                        to={`/learn/dsa-studio/${p.slug}`}
                         data-testid="dsa-problem-card"
                         data-slug={p.slug}
                         state={{ from: "/learn/dsa-studio" }}

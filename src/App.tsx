@@ -56,6 +56,7 @@ import Leaderboard from "./pages/dashboard/Leaderboard";
 import MyPlan from "./pages/dashboard/MyPlan";
 import DashboardSheets from "./pages/DashboardSheets";
 import DsaStudio from "./pages/learn/DsaStudio";
+import DsaStudioProblem from "./pages/learn/DsaStudioProblem";
 
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
@@ -314,6 +315,7 @@ const App = () => (
                   <Route index element={<DashboardMatrix />} />
                   <Route path="sheets" element={<DashboardSheets />} />
                   <Route path="dsa-studio" element={<DsaStudio />} />
+                  <Route path="dsa-studio/:slug" element={<DsaStudioProblem />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
                   
                   <Route path="leaderboard" element={<Leaderboard />} />
