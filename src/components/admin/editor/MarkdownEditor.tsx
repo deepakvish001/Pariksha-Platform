@@ -118,6 +118,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       highlightClassName,
       rows = 20,
       onInsertExamples,
+      onFrontMatter,
     },
     ref,
   ) => {
@@ -127,6 +128,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       readBoolKey(GALLERY_OPEN_KEY, false),
     );
     const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
+    const [detected, setDetected] = useState<DetectedFeatures | null>(null);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
