@@ -74,6 +74,10 @@ const SHORT_LANG_LABELS: Record<string, string> = {
   cs: "C#", csharp: "C#", "c#": "C#",
   rb: "Ruby", ruby: "Ruby", php: "PHP",
   dart: "Dart", scala: "Scala", r: "R", lua: "Lua",
+  dockerfile: "Docker", docker: "Docker",
+  makefile: "Make", make: "Make",
+  toml: "TOML", ini: "INI", nginx: "Nginx", graphql: "GraphQL",
+  xml: "XML", powershell: "PS", ps1: "PS",
   text: "Text", txt: "Text", plaintext: "Text",
 };
 
