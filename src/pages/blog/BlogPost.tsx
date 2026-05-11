@@ -110,6 +110,11 @@ export default function BlogPost() {
   }, [tree, commentSort]);
   useEffect(() => setVisibleRoots(10), [commentSort, post?.id]);
 
+  // TOC extraction must happen before early returns so the active-heading
+  // hook below runs unconditionally.
+  const toc = useMemo(() => extractToc(post?.content_md || ""), [post?.content_md]);
+  const activeHeadingId = useActiveHeading(toc);
+
   if (isLoading)
     return <div className="container mx-auto py-16 text-center text-muted-foreground">Loading…</div>;
   if (!post)
@@ -121,7 +126,6 @@ export default function BlogPost() {
   const seoTitle = post.seo_title || `${post.title} — ${SITE_NAME}`;
   const seoDesc = post.seo_description || post.excerpt || `${post.title} · ${SITE_NAME} blog.`;
   const coverAlt = post.title; // alt-text fallback derived from title
-  const toc = extractToc(post.content_md || "");
 
   return (
     <>
