@@ -62,6 +62,11 @@ export default function BlogPost() {
     3,
   );
   const [body, setBody] = useState("");
+  // Honeypot: a hidden field that bots tend to fill in. If non-empty on submit,
+  // we silently drop the comment without telling the bot.
+  const [hp, setHp] = useState("");
+  // Also require a minimum dwell time on the form before accepting submissions.
+  const [formMountedAt] = useState(() => Date.now());
 
   useEffect(() => {
     if (post?.id) trackView.mutate(post.id);
@@ -331,6 +336,24 @@ export default function BlogPost() {
                       maxLength={2000}
                       aria-label="Add a comment"
                     />
+                    {/* Honeypot — visually hidden, off-screen, ignored by screen readers */}
+                    <input
+                      type="text"
+                      name="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      value={hp}
+                      onChange={(e) => setHp(e.target.value)}
+                      style={{
+                        position: "absolute",
+                        left: "-10000px",
+                        width: "1px",
+                        height: "1px",
+                        opacity: 0,
+                        pointerEvents: "none",
+                      }}
+                    />
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-muted-foreground">
                         {body.length}/2000 · Comments are reviewed before they appear.
@@ -339,6 +362,16 @@ export default function BlogPost() {
                         size="sm"
                         disabled={!body.trim() || postComment.isPending}
                         onClick={() => {
+                          // Spam guards: honeypot filled OR form submitted in <3s.
+                          if (hp || Date.now() - formMountedAt < 3000) {
+                            // Pretend it worked so bots don't retry.
+                            setBody("");
+                            toast({
+                              title: "Submitted for review",
+                              description: "Your comment will appear after admin approval.",
+                            });
+                            return;
+                          }
                           postComment.mutate(
                             { body },
                             {
