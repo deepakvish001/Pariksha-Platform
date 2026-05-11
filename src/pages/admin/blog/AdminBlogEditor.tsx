@@ -296,7 +296,21 @@ export default function AdminBlogEditor() {
 
           <div>
             <Label className="mb-2 block">Content (Markdown)</Label>
-            <MarkdownEditor value={content} onChange={setContent} slug={slug || "blog-post"} />
+            <MarkdownEditor
+              value={content}
+              onChange={setContent}
+              slug={slug || "blog-post"}
+              onFrontMatter={(fm) => {
+                let n = 0;
+                if (fm.title && !title) { setTitle(fm.title); n++; }
+                if (fm.excerpt && !excerpt) { setExcerpt(fm.excerpt); n++; }
+                if (fm.cover && !cover) { setCover(fm.cover); n++; }
+                if (fm.slug && !slug) { setSlug(slugify(fm.slug)); n++; }
+                if (fm.seoTitle && !seoTitle) { setSeoTitle(fm.seoTitle); n++; }
+                if (fm.seoDescription && !seoDesc) { setSeoDesc(fm.seoDescription); n++; }
+                return n;
+              }}
+            />
           </div>
         </div>
 
