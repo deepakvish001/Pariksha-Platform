@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,8 @@ import type { TocItem } from "@/lib/blog/extractToc";
 interface Props {
   items: TocItem[];
   activeId?: string;
+  /** Stable key (e.g. post slug) used to persist last open/closed state. */
+  storageKey?: string;
 }
 
 const INDENT: Record<number, string> = {
