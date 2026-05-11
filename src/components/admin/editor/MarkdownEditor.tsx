@@ -33,6 +33,7 @@ import { AltTextDialog, type InsertImageDetails } from "./AltTextDialog";
 import { useMarkdownImageUpload } from "@/hooks/useMarkdownImageUpload";
 import { deleteProblemImage } from "@/lib/admin/uploadProblemImage";
 import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import type { GalleryImage } from "@/hooks/useProblemAssetGallery";
 import { htmlToMarkdown, isRichHtml } from "@/lib/admin/paste/htmlToMarkdown";
@@ -41,6 +42,12 @@ import { normalizePastedText } from "@/lib/admin/paste/normalize";
 import { detectMarkdownFeatures, type DetectedFeatures } from "@/lib/admin/paste/detectFeatures";
 
 type Mode = "edit" | "split" | "preview";
+
+interface FrontMatterResult {
+  applied: number;
+  /** Optional: roll back the field changes the parent just performed. */
+  undo?: () => void;
+}
 
 interface Props {
   value: string;
@@ -54,10 +61,10 @@ interface Props {
   rows?: number;
   /** Optional callback for "Insert examples" toolbar action. */
   onInsertExamples?: () => void;
-  /** Called when the pasted content begins with YAML/TOML front-matter so the
-   *  parent editor can auto-fill matching fields. Should return how many
-   *  fields it applied (for the user-facing toast). */
-  onFrontMatter?: (fm: FrontMatterApply) => number;
+  /** Called when pasted content begins with YAML/TOML front-matter. May
+   *  return either a number of applied fields, or a `{ applied, undo }`
+   *  object so the editor can offer an "Undo" button. */
+  onFrontMatter?: (fm: FrontMatterApply) => number | FrontMatterResult | void;
 }
 
 export interface MarkdownEditorHandle {
@@ -66,6 +73,37 @@ export interface MarkdownEditorHandle {
 
 const GALLERY_OPEN_KEY = "admin.markdownEditor.galleryOpen.v1";
 const MODE_KEY = "admin.markdownEditor.mode.v1";
+const DETECTED_KEY = "admin.markdownEditor.detected.v1";
+
+interface DetectedSummary {
+  features: DetectedFeatures;
+  /** Length of the document right after paste — used to clear the chip
+   *  when the content drifts substantially from the pasted snapshot. */
+  pastedLength: number;
+  convertedFromHtml: boolean;
+  fmApplied: number;
+}
+
+const readDetected = (): DetectedSummary | null => {
+  try {
+    const raw = localStorage.getItem(DETECTED_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && parsed.features) return parsed;
+  } catch {
+    /* ignore */
+  }
+  return null;
+};
+
+const writeDetected = (s: DetectedSummary | null) => {
+  try {
+    if (s) localStorage.setItem(DETECTED_KEY, JSON.stringify(s));
+    else localStorage.removeItem(DETECTED_KEY);
+  } catch {
+    /* ignore */
+  }
+};
 
 const readBoolKey = (k: string, fallback: boolean): boolean => {
   try {
@@ -128,7 +166,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       readBoolKey(GALLERY_OPEN_KEY, false),
     );
     const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
-    const [detected, setDetected] = useState<DetectedFeatures | null>(null);
+    const [detected, setDetected] = useState<DetectedSummary | null>(() => readDetected());
+    const lastUndoRef = useRef<null | (() => void)>(null);
+    const [canUndo, setCanUndo] = useState(false);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -201,10 +241,20 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       const normalized = normalizePastedText(md);
       const fm = parseFrontMatter(normalized);
       const body = fm.body;
+
+      // Snapshot before mutation so the user can undo.
+      const valueBefore = value;
       let appliedFmCount = 0;
+      let fmUndo: (() => void) | undefined;
       if (fm.found && onFrontMatter) {
         try {
-          appliedFmCount = onFrontMatter(mapFrontMatter(fm.data)) || 0;
+          const r = onFrontMatter(mapFrontMatter(fm.data));
+          if (typeof r === "number") {
+            appliedFmCount = r;
+          } else if (r && typeof r === "object") {
+            appliedFmCount = r.applied || 0;
+            fmUndo = r.undo;
+          }
         } catch {
           /* swallow */
         }
@@ -214,7 +264,29 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       insertText(body);
 
       const features = detectMarkdownFeatures(body);
-      setDetected(features);
+      const summary: DetectedSummary = {
+        features,
+        pastedLength: (valueBefore?.length || 0) + body.length,
+        convertedFromHtml,
+        fmApplied: appliedFmCount,
+      };
+      setDetected(summary);
+      writeDetected(summary);
+
+      lastUndoRef.current = () => {
+        onChange(valueBefore);
+        try {
+          fmUndo?.();
+        } catch {
+          /* ignore */
+        }
+        setDetected(null);
+        writeDetected(null);
+        setCanUndo(false);
+        lastUndoRef.current = null;
+        toast({ title: "Paste undone", description: "Restored content and reverted applied fields." });
+      };
+      setCanUndo(true);
 
       const parts: string[] = [];
       if (convertedFromHtml) parts.push("HTML → Markdown");
@@ -230,8 +302,28 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       toast({
         title: `Pasted ${parts.join(" + ")}`,
         description: detail.length ? detail.join(" · ") : undefined,
+        action: (
+          <ToastAction altText="Undo paste" onClick={() => lastUndoRef.current?.()}>
+            Undo
+          </ToastAction>
+        ),
       });
     };
+
+    /** Auto-clear the detected summary when the document drifts substantially
+     *  from the post-paste snapshot (more than 40% length change or fully cleared). */
+    useEffect(() => {
+      if (!detected) return;
+      const len = value.length;
+      const base = detected.pastedLength || 1;
+      const drift = Math.abs(len - base) / base;
+      if (len === 0 || drift > 0.4) {
+        setDetected(null);
+        writeDetected(null);
+        lastUndoRef.current = null;
+        setCanUndo(false);
+      }
+    }, [value, detected]);
 
     const handlePickImage = () => fileInputRef.current?.click();
 
@@ -377,58 +469,80 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
                 </span>
               )}
             </div>
-            {detected && (
-              <div
-                className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground"
-                role="status"
-                aria-live="polite"
-              >
-                <span className="font-medium text-foreground/80">Detected in paste:</span>
-                {detected.headings > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.headings} headings
-                  </span>
-                )}
-                {detected.codeBlocks > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.codeBlocks} code
-                  </span>
-                )}
-                {detected.tables > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.tables} tables
-                  </span>
-                )}
-                {detected.images > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.images} images
-                  </span>
-                )}
-                {detected.math > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.math} math
-                  </span>
-                )}
-                {detected.callouts > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.callouts} callouts
-                  </span>
-                )}
-                {detected.links > 0 && (
-                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
-                    {detected.links} links
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setDetected(null)}
-                  className="ml-auto text-muted-foreground/70 hover:text-foreground"
-                  aria-label="Dismiss detected paste summary"
+            {detected && (() => {
+              const f = detected.features;
+              return (
+                <div
+                  className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground"
+                  role="status"
+                  aria-live="polite"
                 >
-                  ×
-                </button>
-              </div>
-            )}
+                  <span className="font-medium text-foreground/80">
+                    {detected.convertedFromHtml ? "HTML → Markdown" : "Markdown"} pasted
+                    {detected.fmApplied > 0 ? ` · ${detected.fmApplied} field${detected.fmApplied === 1 ? "" : "s"}` : ""}
+                    :
+                  </span>
+                  {f.headings > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.headings} headings
+                    </span>
+                  )}
+                  {f.codeBlocks > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.codeBlocks} code
+                    </span>
+                  )}
+                  {f.tables > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.tables} tables
+                    </span>
+                  )}
+                  {f.images > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.images} images
+                    </span>
+                  )}
+                  {f.math > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.math} math
+                    </span>
+                  )}
+                  {f.callouts > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.callouts} callouts
+                    </span>
+                  )}
+                  {f.links > 0 && (
+                    <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                      {f.links} links
+                    </span>
+                  )}
+                  {canUndo && (
+                    <button
+                      type="button"
+                      onClick={() => lastUndoRef.current?.()}
+                      className="ml-auto rounded-md border border-border bg-background px-2 py-0.5 text-foreground hover:bg-muted"
+                    >
+                      Undo paste
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDetected(null);
+                      writeDetected(null);
+                    }}
+                    className={cn(
+                      "text-muted-foreground/70 hover:text-foreground",
+                      canUndo ? "" : "ml-auto",
+                    )}
+                    aria-label="Dismiss detected paste summary"
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })()}
             <input
               ref={fileInputRef}
               type="file"
