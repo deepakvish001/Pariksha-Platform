@@ -545,7 +545,7 @@ export function BlogContent({ source, className }: Props) {
         )}
       >
         <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkBreaks, remarkMath, remarkDeflist]}
+          remarkPlugins={[remarkGfm, remarkBreaks, remarkMath, remarkDeflist, remarkCodeTabs]}
           rehypePlugins={[
             rehypeSlug,
             [rehypeKatex, { strict: "ignore" }],
