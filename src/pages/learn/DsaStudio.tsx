@@ -195,6 +195,11 @@ export default function DsaStudio() {
     () => TOPICS.reduce((s, t) => s + t.groups.reduce((x, g) => x + g.problems.length, 0), 0),
     [],
   );
+  const difficultyTotals = useMemo(() => {
+    const counts = { Easy: 0, Medium: 0, Hard: 0 } as Record<Diff, number>;
+    for (const t of TOPICS) for (const g of t.groups) for (const p of g.problems) counts[p.difficulty]++;
+    return counts;
+  }, []);
   const qaMismatches = useMemo(
     () =>
       TOPICS
