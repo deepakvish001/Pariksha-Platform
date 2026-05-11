@@ -11,8 +11,17 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { obsidianDarkTheme } from "@/components/codeblock/obsidianTheme";
+import { detectLanguage } from "@/lib/blog/detectLang";
+
+const PREFERRED_LANG_KEY = "codeblock:preferred-lang";
 
 export interface CodeVariant {
   language: string;
