@@ -31,11 +31,13 @@ describe("CodeBlock tabs — persistence & a11y", () => {
     expect(tabs[2].getAttribute("tabindex")).toBe("-1");
   });
 
-  it("uses filename as the human-friendly tab title when present", () => {
+  it("shows the short language name on each tab and exposes filename via aria-label", () => {
     render(<CodeBlock group="g1" variants={variants} />);
     const tabs = screen.getAllByRole("tab");
-    expect(tabs[0].textContent).toContain("setup.ts");
+    expect(tabs[0].textContent).toContain("TS");
     expect(tabs[2].textContent?.toLowerCase()).toContain("bash");
+    // Filename still surfaced for screen readers when provided.
+    expect(tabs[0].getAttribute("aria-label")).toContain("setup.ts");
   });
 
   it("persists active tab choice per group across re-mount (refresh)", async () => {
