@@ -32,7 +32,7 @@ export const DSA_TOPICS: DsaTopic[] = [
     id: "arrays",
     label: "Arrays",
     icon: Box,
-    count: 18,
+    count: 28,
     subtitle: "Basics · Two Pointers · Subarray · Hashing · Rotation · Sorting · Sliding Window",
     groups: [
       {
