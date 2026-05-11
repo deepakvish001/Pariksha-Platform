@@ -33,6 +33,17 @@ import {
   type BlogSort,
 } from "@/hooks/useBlog";
 import { cn } from "@/lib/utils";
+import { extractLanguages } from "@/lib/blog/extractLanguages";
+
+const LANG_DISPLAY: Record<string, string> = {
+  ts: "TS", tsx: "TSX", js: "JS", jsx: "JSX",
+  py: "Python", java: "Java", cpp: "CPP", c: "C", cs: "C#",
+  go: "Go", rust: "Rust", php: "PHP", ruby: "Ruby",
+  kotlin: "Kotlin", swift: "Swift",
+  sql: "SQL", html: "HTML", css: "CSS", json: "JSON",
+  yaml: "YAML", bash: "Bash", md: "Markdown",
+};
+const langDisplay = (l: string) => LANG_DISPLAY[l] ?? l.toUpperCase();
 
 const PAGE_SIZE = 9;
 const SITE_NAME = "Byteskill";
@@ -47,6 +58,15 @@ export default function BlogIndex() {
   const tag = params.get("tag") ?? undefined;
   const sort = (params.get("sort") as BlogSort) || "recent";
   const page = Math.max(1, Number(params.get("page") ?? "1"));
+  const langsParam = params.get("langs") ?? "";
+  const selectedLangs = useMemo(
+    () =>
+      langsParam
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean),
+    [langsParam],
+  );
   const [searchInput, setSearchInput] = useState(search);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -107,13 +127,36 @@ export default function BlogIndex() {
     sort,
   });
 
+  // Languages used by each post (memoised; cheap regex scan).
+  const postLangs = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const p of posts) m.set(p.id, extractLanguages((p as any).content));
+    return m;
+  }, [posts]);
+
+  const availableLangs = useMemo(() => {
+    const set = new Set<string>();
+    for (const langs of postLangs.values()) langs.forEach((l) => set.add(l));
+    return Array.from(set).sort((a, b) => langDisplay(a).localeCompare(langDisplay(b)));
+  }, [postLangs]);
+
+  const langFiltered = useMemo(() => {
+    if (selectedLangs.length === 0) return posts;
+    const want = new Set(selectedLangs);
+    return posts.filter((p) => {
+      const langs = postLangs.get(p.id) ?? [];
+      return langs.some((l) => want.has(l));
+    });
+  }, [posts, postLangs, selectedLangs]);
+
   const featured =
-    !search && !cat && !tag && sort === "recent"
-      ? posts.find((p) => p.is_featured) ?? posts[0]
+    !search && !cat && !tag && sort === "recent" && selectedLangs.length === 0
+      ? langFiltered.find((p) => p.is_featured) ?? langFiltered[0]
       : undefined;
   const rest = useMemo(
-    () => (featured ? posts.filter((p) => p.id !== featured.id) : posts),
-    [posts, featured],
+    () =>
+      featured ? langFiltered.filter((p) => p.id !== featured.id) : langFiltered,
+    [langFiltered, featured],
   );
 
   const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
@@ -125,7 +168,16 @@ export default function BlogIndex() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const hasFilters = !!(search || cat || tag) || sort !== "recent";
+  const toggleLang = (lang: string) => {
+    const next = new Set(selectedLangs);
+    if (next.has(lang)) next.delete(lang);
+    else next.add(lang);
+    const value = Array.from(next).join(",");
+    updateParam("langs", value || undefined);
+  };
+
+  const hasFilters =
+    !!(search || cat || tag) || sort !== "recent" || selectedLangs.length > 0;
 
   // Show top ~12 tags by usage signal (alphabetical fallback)
   const visibleTags = useMemo(() => tags.slice(0, 18), [tags]);
@@ -233,7 +285,7 @@ export default function BlogIndex() {
 
       {/* Tags */}
       {visibleTags.length > 0 && (
-        <div role="group" aria-label="Filter by tag" className="flex gap-1 mb-6 flex-wrap">
+        <div role="group" aria-label="Filter by tag" className="flex gap-1 mb-3 flex-wrap">
           {visibleTags.map((t) => (
             <FilterChip
               key={t.id}
@@ -244,6 +296,32 @@ export default function BlogIndex() {
               #{t.name}
             </FilterChip>
           ))}
+        </div>
+      )}
+
+      {/* Languages */}
+      {availableLangs.length > 0 && (
+        <div
+          role="group"
+          aria-label="Filter by code language"
+          className="flex items-center gap-1 mb-6 flex-wrap"
+        >
+          <span className="mr-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+            Lang
+          </span>
+          {availableLangs.map((l) => {
+            const active = selectedLangs.includes(l);
+            return (
+              <FilterChip
+                key={l}
+                active={active}
+                variant="tag"
+                onClick={() => toggleLang(l)}
+              >
+                {langDisplay(l)}
+              </FilterChip>
+            );
+          })}
         </div>
       )}
 

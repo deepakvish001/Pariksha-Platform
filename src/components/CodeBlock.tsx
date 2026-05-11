@@ -11,8 +11,17 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { obsidianDarkTheme } from "@/components/codeblock/obsidianTheme";
+import { detectLanguage } from "@/lib/blog/detectLang";
+
+const PREFERRED_LANG_KEY = "codeblock:preferred-lang";
 
 export interface CodeVariant {
   language: string;
@@ -86,17 +95,28 @@ export function CodeBlock(props: CodeBlockProps) {
     defaultTab,
   } = props;
 
-  // Normalise single-block usage into a one-element variants array.
+  // Normalise single-block usage into a one-element variants array, and
+  // auto-detect missing/`text` languages from the snippet body.
   const variants: CodeVariant[] = useMemo(() => {
-    if (variantsProp && variantsProp.length > 0) return variantsProp;
-    return [
-      {
-        language: language || "text",
-        filename,
-        highlightLines,
-        code: children ?? "",
-      },
-    ];
+    const raw =
+      variantsProp && variantsProp.length > 0
+        ? variantsProp
+        : [
+            {
+              language: language || "",
+              filename,
+              highlightLines,
+              code: children ?? "",
+            },
+          ];
+    return raw.map((v) => {
+      const lang = (v.language || "").toLowerCase();
+      if (!lang || lang === "text" || lang === "txt" || lang === "plaintext") {
+        const detected = detectLanguage(v.code);
+        if (detected) return { ...v, language: detected };
+      }
+      return v;
+    });
   }, [variantsProp, language, filename, highlightLines, children]);
 
   const hasTabs = variants.length > 1;
@@ -112,14 +132,30 @@ export function CodeBlock(props: CodeBlockProps) {
       }
       return 0;
     })();
-    if (typeof window === "undefined" || !storageKey) return fallback;
+    if (typeof window === "undefined") return fallback;
     try {
-      const saved = window.localStorage.getItem(storageKey);
-      if (!saved) return fallback;
-      const i = variants.findIndex(
-        (v) => v.language.toLowerCase() === saved.toLowerCase(),
-      );
-      return i >= 0 ? i : fallback;
+      // 1. Per-group saved choice wins.
+      if (storageKey) {
+        const saved = window.localStorage.getItem(storageKey);
+        if (saved) {
+          const i = variants.findIndex(
+            (v) => v.language.toLowerCase() === saved.toLowerCase(),
+          );
+          if (i >= 0) return i;
+        }
+      }
+      // 2. Otherwise fall back to the user's globally preferred language so
+      //    selecting "Python" once carries across articles & sections.
+      if (hasTabs) {
+        const preferred = window.localStorage.getItem(PREFERRED_LANG_KEY);
+        if (preferred) {
+          const i = variants.findIndex(
+            (v) => v.language.toLowerCase() === preferred.toLowerCase(),
+          );
+          if (i >= 0) return i;
+        }
+      }
+      return fallback;
     } catch {
       return fallback;
     }
@@ -132,15 +168,16 @@ export function CodeBlock(props: CodeBlockProps) {
 
   const active = variants[Math.min(activeIdx, variants.length - 1)];
 
-  // Persist tab choice per group.
+  // Persist tab choice per group + global preferred language for tabbed blocks.
   useEffect(() => {
-    if (!storageKey || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem(storageKey, active.language);
+      if (storageKey) window.localStorage.setItem(storageKey, active.language);
+      if (hasTabs) window.localStorage.setItem(PREFERRED_LANG_KEY, active.language);
     } catch {
       /* noop */
     }
-  }, [storageKey, active.language]);
+  }, [storageKey, hasTabs, active.language]);
 
   const [copied, setCopied] = useState(false);
   const [wrap, setWrap] = useState(false);
@@ -215,11 +252,28 @@ export function CodeBlock(props: CodeBlockProps) {
     return s;
   }, [isDark]);
 
+  const [copiedTabIdx, setCopiedTabIdx] = useState<number | null>(null);
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(active.code);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
+  const handleCopyVariant = async (i: number) => {
+    const v = variants[i];
+    if (!v) return;
+    try {
+      await navigator.clipboard.writeText(v.code);
+      setCopiedTabIdx(i);
+      setTimeout(
+        () => setCopiedTabIdx((cur) => (cur === i ? null : cur)),
+        1800,
+      );
     } catch {
       /* clipboard unavailable */
     }
@@ -295,70 +349,127 @@ export function CodeBlock(props: CodeBlockProps) {
         </div>
 
         {hasTabs ? (
-          <div
-            role="tablist"
-            aria-label={group ? `Code examples for ${group}` : "Code examples"}
-            aria-orientation="horizontal"
-            className="flex h-full items-stretch gap-0.5 overflow-x-auto"
-          >
-            {variants.map((v, i) => {
-              const selected = i === activeIdx;
-              const langLabel = labelFor(v.language);
-              const shortLabel = shortLabelFor(v.language);
-              const ariaLabel = v.filename
-                ? `${langLabel} (${v.filename})`
-                : langLabel;
-              return (
-                <button
-                  key={`${v.language}-${i}`}
-                  type="button"
-                  role="tab"
-                  id={tabId(i)}
-                  aria-selected={selected}
-                  aria-controls={panelId(i)}
-                  aria-label={ariaLabel}
-                  title={ariaLabel}
-                  tabIndex={selected ? 0 : -1}
-                  onClick={() => setActiveIdx(i)}
-                  onKeyDown={(e) => {
-                    if (e.key === "ArrowRight") {
-                      e.preventDefault();
-                      setActiveIdx((i + 1) % variants.length);
-                    } else if (e.key === "ArrowLeft") {
-                      e.preventDefault();
-                      setActiveIdx(
-                        (i - 1 + variants.length) % variants.length,
-                      );
-                    } else if (e.key === "Home") {
-                      e.preventDefault();
-                      setActiveIdx(0);
-                    } else if (e.key === "End") {
-                      e.preventDefault();
-                      setActiveIdx(variants.length - 1);
-                    }
-                  }}
-                  className={cn(
-                    "relative inline-flex items-center gap-1.5 whitespace-nowrap px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    selected
-                      ? "text-foreground"
-                      : isDark
-                        ? "text-muted-foreground/70 hover:text-foreground/90 hover:bg-white/[0.03]"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
-                  )}
-                >
-                  <span>{shortLabel}</span>
-                  <span
-                    aria-hidden
+          <TooltipProvider delayDuration={200}>
+            <div
+              role="tablist"
+              aria-label={group ? `Code examples for ${group}` : "Code examples"}
+              aria-orientation="horizontal"
+              className="flex h-full items-stretch gap-0.5 overflow-x-auto"
+            >
+              {variants.map((v, i) => {
+                const selected = i === activeIdx;
+                const langLabel = labelFor(v.language);
+                const shortLabel = shortLabelFor(v.language);
+                const ariaLabel = v.filename
+                  ? `${langLabel} — ${v.filename}`
+                  : langLabel;
+                const tabCopied = copiedTabIdx === i;
+                return (
+                  <div
+                    key={`${v.language}-${i}`}
                     className={cn(
-                      "absolute inset-x-1 bottom-0 h-0.5 rounded-t-sm transition-opacity",
-                      selected ? "bg-primary opacity-100" : "opacity-0",
+                      "group/tab relative flex items-stretch",
+                      selected
+                        ? ""
+                        : isDark
+                          ? "hover:bg-white/[0.03]"
+                          : "hover:bg-muted/60",
                     )}
-                  />
-                </button>
-              );
-            })}
-          </div>
+                  >
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          role="tab"
+                          id={tabId(i)}
+                          aria-selected={selected}
+                          aria-controls={panelId(i)}
+                          aria-label={ariaLabel}
+                          tabIndex={selected ? 0 : -1}
+                          onClick={() => setActiveIdx(i)}
+                          onKeyDown={(e) => {
+                            if (e.key === "ArrowRight") {
+                              e.preventDefault();
+                              setActiveIdx((i + 1) % variants.length);
+                            } else if (e.key === "ArrowLeft") {
+                              e.preventDefault();
+                              setActiveIdx(
+                                (i - 1 + variants.length) % variants.length,
+                              );
+                            } else if (e.key === "Home") {
+                              e.preventDefault();
+                              setActiveIdx(0);
+                            } else if (e.key === "End") {
+                              e.preventDefault();
+                              setActiveIdx(variants.length - 1);
+                            }
+                          }}
+                          className={cn(
+                            "relative inline-flex items-center gap-1.5 whitespace-nowrap pl-3 pr-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
+                            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                            selected
+                              ? "text-foreground"
+                              : isDark
+                                ? "text-muted-foreground/70 hover:text-foreground/90"
+                                : "text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          <span>{shortLabel}</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        <div className="font-medium">{langLabel}</div>
+                        {v.filename && (
+                          <div className="font-mono text-[11px] opacity-80">
+                            {v.filename}
+                          </div>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={
+                            tabCopied
+                              ? `Copied ${langLabel}`
+                              : `Copy ${langLabel} code`
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopyVariant(i);
+                          }}
+                          className={cn(
+                            "inline-flex items-center justify-center px-1.5 text-muted-foreground/70 transition-opacity",
+                            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                            "opacity-0 group-hover/tab:opacity-100 focus-visible:opacity-100",
+                            selected && "opacity-60",
+                            tabCopied && "opacity-100 text-primary",
+                          )}
+                        >
+                          {tabCopied ? (
+                            <Check className="h-3 w-3" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        {tabCopied ? "Copied!" : `Copy ${langLabel}`}
+                      </TooltipContent>
+                    </Tooltip>
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "pointer-events-none absolute inset-x-1 bottom-0 h-0.5 rounded-t-sm transition-opacity",
+                        selected ? "bg-primary opacity-100" : "opacity-0",
+                      )}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </TooltipProvider>
         ) : (
           <>
             <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
