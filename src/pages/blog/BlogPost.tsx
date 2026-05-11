@@ -139,6 +139,7 @@ export default function BlogPost() {
         onToggleBookmark={() => toggleBookmark()}
         url={url}
       />
+      <MobileTocSheet items={toc} activeId={activeHeadingId} />
       <article className="container mx-auto px-4 py-8 pb-24 lg:pb-8 max-w-6xl">
         <Helmet prioritizeSeoTags>
           <title>{seoTitle}</title>
