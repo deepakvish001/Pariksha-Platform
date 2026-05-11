@@ -56,6 +56,7 @@ import Leaderboard from "./pages/dashboard/Leaderboard";
 import MyPlan from "./pages/dashboard/MyPlan";
 import DashboardSheets from "./pages/DashboardSheets";
 import DsaStudio from "./pages/learn/DsaStudio";
+import DsaStudioProblem from "./pages/learn/DsaStudioProblem";
 
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
