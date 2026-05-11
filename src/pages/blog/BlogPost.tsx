@@ -27,6 +27,7 @@ import { InlineToc } from "@/components/blog/InlineToc";
 import { MobileTocSheet } from "@/components/blog/MobileTocSheet";
 import { FloatingActionRail } from "@/components/blog/FloatingActionRail";
 import { extractToc } from "@/lib/blog/extractToc";
+import { scrollToHashOnLoad } from "@/lib/blog/scrollToHeading";
 import { useActiveHeading } from "@/hooks/useActiveHeading";
 import {
   useBlogPost,
@@ -115,6 +116,14 @@ export default function BlogPost() {
   const toc = useMemo(() => extractToc(post?.content_md || ""), [post?.content_md]);
   const activeHeadingId = useActiveHeading(toc);
 
+  // Deep-link: when the post + content render, honour the URL hash.
+  useEffect(() => {
+    if (!post?.content_md || !window.location.hash) return;
+    // Wait a tick for BlogContent to render headings, then jump with offset.
+    const t = setTimeout(() => scrollToHashOnLoad(88), 60);
+    return () => clearTimeout(t);
+  }, [post?.id, post?.content_md]);
+
   if (isLoading)
     return <div className="container mx-auto py-16 text-center text-muted-foreground">Loading…</div>;
   if (!post)
@@ -139,7 +148,7 @@ export default function BlogPost() {
         onToggleBookmark={() => toggleBookmark()}
         url={url}
       />
-      <MobileTocSheet items={toc} activeId={activeHeadingId} />
+      <MobileTocSheet items={toc} activeId={activeHeadingId} storageKey={post.slug} />
       <article className="container mx-auto px-4 py-8 pb-24 lg:pb-8 max-w-6xl">
         <Helmet prioritizeSeoTags>
           <title>{seoTitle}</title>
@@ -266,6 +275,7 @@ export default function BlogPost() {
               items={toc}
               readingTimeMin={post.reading_time_min}
               activeId={activeHeadingId}
+              storageKey={post.slug}
             />
 
             <BlogContent source={post.content_md} className="mb-8" />

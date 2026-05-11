@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,8 @@ import type { TocItem } from "@/lib/blog/extractToc";
 interface Props {
   items: TocItem[];
   activeId?: string;
+  /** Stable key (e.g. post slug) used to persist last open/closed state. */
+  storageKey?: string;
 }
 
 const INDENT: Record<number, string> = {
@@ -24,14 +26,36 @@ const INDENT: Record<number, string> = {
 };
 
 /** Mobile-only floating button + bottom sheet TOC. */
-export function MobileTocSheet({ items, activeId }: Props) {
-  const [open, setOpen] = useState(false);
+export function MobileTocSheet({ items, activeId, storageKey }: Props) {
+  const lsKey = storageKey ? `blog:toc:mobile:${storageKey}` : null;
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && lsKey) {
+      return window.localStorage.getItem(lsKey) === "1";
+    }
+    return false;
+  });
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const wasOpen = useRef(open);
+
+  useEffect(() => {
+    if (lsKey && typeof window !== "undefined") {
+      window.localStorage.setItem(lsKey, open ? "1" : "0");
+    }
+    // Return focus to the trigger after closing for keyboard users.
+    if (wasOpen.current && !open) {
+      // Wait for the sheet's close animation/portal cleanup.
+      setTimeout(() => triggerRef.current?.focus(), 150);
+    }
+    wasOpen.current = open;
+  }, [open, lsKey]);
+
   if (items.length < 3) return null;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
+          ref={triggerRef}
           size="sm"
           variant="secondary"
           className={cn(
@@ -39,6 +63,8 @@ export function MobileTocSheet({ items, activeId }: Props) {
             "border border-border bg-card/95 backdrop-blur",
           )}
           aria-label={`On this page · ${items.length} sections`}
+          aria-haspopup="dialog"
+          aria-expanded={open}
         >
           <List className="h-4 w-4 mr-1.5" />
           On this page
