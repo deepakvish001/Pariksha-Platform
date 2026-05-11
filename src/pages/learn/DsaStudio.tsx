@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -7,6 +7,9 @@ import {
   Play,
   ExternalLink,
   Lock,
+  Check,
+  Bookmark,
+  BookmarkCheck,
   ListChecks,
   Puzzle,
   Cpu,
@@ -40,13 +43,16 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 type Diff = "Easy" | "Medium" | "Hard";
+type Priority = "P1" | "P2" | "P3";
 
 interface Problem {
   id: number;
   title: string;
   tag: string;
   difficulty: Diff;
+  priority: Priority;
   free?: boolean;
+  slug: string;
 }
 
 interface Topic {
@@ -57,6 +63,8 @@ interface Topic {
   groups: { name: string; problems: Problem[] }[];
   patterns: string[];
 }
+
+const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 const TOPICS: Topic[] = [
   {
@@ -69,21 +77,21 @@ const TOPICS: Topic[] = [
       {
         name: "Basics",
         problems: [
-          { id: 1929, title: "Concatenation of Array", tag: "basics", difficulty: "Easy", free: true },
-          { id: 1480, title: "Running Sum of 1d Array", tag: "prefix sum", difficulty: "Easy", free: true },
-          { id: 1672, title: "Richest Customer Wealth", tag: "2D array", difficulty: "Easy", free: true },
-          { id: 1470, title: "Shuffle the Array", tag: "basics", difficulty: "Easy", free: true },
-          { id: 832, title: "Flipping an Image", tag: "basics", difficulty: "Easy", free: true },
-          { id: 2239, title: "Find Closest Number to Zero", tag: "basics", difficulty: "Easy", free: true },
+          { id: 1929, title: "Concatenation of Array", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "concatenation-of-array" },
+          { id: 1480, title: "Running Sum of 1d Array", tag: "prefix sum", difficulty: "Easy", priority: "P2", free: true, slug: "running-sum-of-1d-array" },
+          { id: 1672, title: "Richest Customer Wealth", tag: "2D array", difficulty: "Easy", priority: "P3", free: true, slug: "richest-customer-wealth" },
+          { id: 1470, title: "Shuffle the Array", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "shuffle-the-array" },
+          { id: 832, title: "Flipping an Image", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "flipping-an-image" },
+          { id: 2239, title: "Find Closest Number to Zero", tag: "basics", difficulty: "Easy", priority: "P3", free: true, slug: "find-closest-number-to-zero" },
         ],
       },
       {
         name: "Two Pointers",
         problems: [
-          { id: 88, title: "Merge Sorted Array", tag: "two pointers", difficulty: "Easy", free: true },
-          { id: 26, title: "Remove Duplicates from Sorted Array", tag: "two pointers", difficulty: "Easy", free: true },
-          { id: 977, title: "Squares of a Sorted Array", tag: "two pointers", difficulty: "Easy", free: true },
-          { id: 15, title: "Three Sum", tag: "two pointers", difficulty: "Medium" },
+          { id: 88, title: "Merge Sorted Array", tag: "two pointers", difficulty: "Easy", priority: "P1", free: true, slug: "merge-sorted-arrays" },
+          { id: 26, title: "Remove Duplicates from Sorted Array", tag: "two pointers", difficulty: "Easy", priority: "P1", free: true, slug: "remove-duplicates-from-sorted-array" },
+          { id: 977, title: "Squares of a Sorted Array", tag: "two pointers", difficulty: "Easy", priority: "P2", free: true, slug: "squares-of-a-sorted-array" },
+          { id: 15, title: "Three Sum", tag: "two pointers", difficulty: "Medium", priority: "P1", slug: "three-sum" },
         ],
       },
     ],
