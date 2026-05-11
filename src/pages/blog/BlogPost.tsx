@@ -27,6 +27,7 @@ import { InlineToc } from "@/components/blog/InlineToc";
 import { MobileTocSheet } from "@/components/blog/MobileTocSheet";
 import { FloatingActionRail } from "@/components/blog/FloatingActionRail";
 import { extractToc } from "@/lib/blog/extractToc";
+import { scrollToHashOnLoad } from "@/lib/blog/scrollToHeading";
 import { useActiveHeading } from "@/hooks/useActiveHeading";
 import {
   useBlogPost,
