@@ -425,10 +425,25 @@ export function CodeBlock(props: CodeBlockProps) {
                           )}
                         >
                           <span>{shortLabel}</span>
+                          {v.detected && (
+                            <span
+                              aria-label="Language auto-detected"
+                              className="rounded-sm bg-primary/15 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-primary"
+                            >
+                              Auto
+                            </span>
+                          )}
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="text-xs">
-                        <div className="font-medium">{langLabel}</div>
+                        <div className="font-medium">
+                          {langLabel}
+                          {v.detected && (
+                            <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                              (detected)
+                            </span>
+                          )}
+                        </div>
                         {v.filename && (
                           <div className="font-mono text-[11px] opacity-80">
                             {v.filename}
