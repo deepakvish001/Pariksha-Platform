@@ -304,9 +304,9 @@ export function CodeBlock(props: CodeBlockProps) {
             {variants.map((v, i) => {
               const selected = i === activeIdx;
               const langLabel = labelFor(v.language);
-              const title = v.filename || langLabel;
+              const shortLabel = shortLabelFor(v.language);
               const ariaLabel = v.filename
-                ? `${v.filename} (${langLabel})`
+                ? `${langLabel} (${v.filename})`
                 : langLabel;
               return (
                 <button
@@ -317,6 +317,7 @@ export function CodeBlock(props: CodeBlockProps) {
                   aria-selected={selected}
                   aria-controls={panelId(i)}
                   aria-label={ariaLabel}
+                  title={ariaLabel}
                   tabIndex={selected ? 0 : -1}
                   onClick={() => setActiveIdx(i)}
                   onKeyDown={(e) => {
@@ -337,7 +338,7 @@ export function CodeBlock(props: CodeBlockProps) {
                     }
                   }}
                   className={cn(
-                    "relative inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 text-[11px] font-medium tracking-wide transition-colors",
+                    "relative inline-flex items-center gap-1.5 whitespace-nowrap px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors",
                     "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                     selected
                       ? "text-foreground"
@@ -346,17 +347,7 @@ export function CodeBlock(props: CodeBlockProps) {
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                   )}
                 >
-                  <span className={v.filename ? "font-mono text-[11px]" : ""}>
-                    {title}
-                  </span>
-                  {v.filename && (
-                    <span
-                      aria-hidden
-                      className="rounded-sm bg-muted/40 px-1 py-px font-mono text-[9px] uppercase tracking-wider text-muted-foreground/80"
-                    >
-                      {langLabel}
-                    </span>
-                  )}
+                  <span>{shortLabel}</span>
                   <span
                     aria-hidden
                     className={cn(
