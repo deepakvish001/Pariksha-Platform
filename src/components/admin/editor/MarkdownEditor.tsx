@@ -35,6 +35,10 @@ import { deleteProblemImage } from "@/lib/admin/uploadProblemImage";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { GalleryImage } from "@/hooks/useProblemAssetGallery";
+import { htmlToMarkdown, isRichHtml } from "@/lib/admin/paste/htmlToMarkdown";
+import { parseFrontMatter, mapFrontMatter, type FrontMatterApply } from "@/lib/admin/paste/frontMatter";
+import { normalizePastedText } from "@/lib/admin/paste/normalize";
+import { detectMarkdownFeatures, type DetectedFeatures } from "@/lib/admin/paste/detectFeatures";
 
 type Mode = "edit" | "split" | "preview";
 
@@ -50,6 +54,10 @@ interface Props {
   rows?: number;
   /** Optional callback for "Insert examples" toolbar action. */
   onInsertExamples?: () => void;
+  /** Called when the pasted content begins with YAML/TOML front-matter so the
+   *  parent editor can auto-fill matching fields. Should return how many
+   *  fields it applied (for the user-facing toast). */
+  onFrontMatter?: (fm: FrontMatterApply) => number;
 }
 
 export interface MarkdownEditorHandle {
@@ -110,6 +118,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       highlightClassName,
       rows = 20,
       onInsertExamples,
+      onFrontMatter,
     },
     ref,
   ) => {
@@ -119,6 +128,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
       readBoolKey(GALLERY_OPEN_KEY, false),
     );
     const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
+    const [detected, setDetected] = useState<DetectedFeatures | null>(null);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -161,6 +171,67 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
         onChange,
         slug,
       });
+
+    /** Insert text at the current cursor position (alias of insertAtCursor). */
+    const insertText = (snippet: string) => insertAtCursor(snippet);
+
+
+    /** Smart paste: HTML→Markdown, front-matter parsing, normalization. */
+    const handleSmartPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      // Image-paste handler runs first; it calls preventDefault when it consumes the event.
+      onPaste(e);
+      if (e.defaultPrevented) return;
+
+      const cd = e.clipboardData;
+      if (!cd) return;
+      const html = cd.getData("text/html");
+      const plain = cd.getData("text/plain");
+      if (!html && !plain) return;
+
+      let md: string;
+      let convertedFromHtml = false;
+      if (html && isRichHtml(html, plain)) {
+        md = htmlToMarkdown(html);
+        convertedFromHtml = true;
+      } else {
+        md = plain;
+      }
+      if (!md) return;
+
+      const normalized = normalizePastedText(md);
+      const fm = parseFrontMatter(normalized);
+      const body = fm.body;
+      let appliedFmCount = 0;
+      if (fm.found && onFrontMatter) {
+        try {
+          appliedFmCount = onFrontMatter(mapFrontMatter(fm.data)) || 0;
+        } catch {
+          /* swallow */
+        }
+      }
+
+      e.preventDefault();
+      insertText(body);
+
+      const features = detectMarkdownFeatures(body);
+      setDetected(features);
+
+      const parts: string[] = [];
+      if (convertedFromHtml) parts.push("HTML → Markdown");
+      else parts.push("Markdown");
+      if (fm.found) parts.push(`front-matter (${appliedFmCount} field${appliedFmCount === 1 ? "" : "s"})`);
+      const detail: string[] = [];
+      if (features.headings) detail.push(`${features.headings} headings`);
+      if (features.codeBlocks) detail.push(`${features.codeBlocks} code`);
+      if (features.tables) detail.push(`${features.tables} tables`);
+      if (features.images) detail.push(`${features.images} images`);
+      if (features.math) detail.push(`${features.math} math`);
+      if (features.callouts) detail.push(`${features.callouts} callouts`);
+      toast({
+        title: `Pasted ${parts.join(" + ")}`,
+        description: detail.length ? detail.join(" · ") : undefined,
+      });
+    };
 
     const handlePickImage = () => fileInputRef.current?.click();
 
@@ -279,7 +350,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onDrop={onDrop}
-              onPaste={onPaste}
+              onPaste={handleSmartPaste}
               onKeyDown={handleKeyDown}
               rows={fullscreen ? 30 : rows}
               spellCheck
@@ -306,6 +377,58 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(
                 </span>
               )}
             </div>
+            {detected && (
+              <div
+                className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="font-medium text-foreground/80">Detected in paste:</span>
+                {detected.headings > 0 && (
+                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                    {detected.headings} headings
+                  </span>
+                )}
+                {detected.codeBlocks > 0 && (
+                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                    {detected.codeBlocks} code
+                  </span>
+                )}
+                {detected.tables > 0 && (
+                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                    {detected.tables} tables
+                  </span>
+                )}
+                {detected.images > 0 && (
+                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                    {detected.images} images
+                  </span>
+                )}
+                {detected.math > 0 && (
+                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                    {detected.math} math
+                  </span>
+                )}
+                {detected.callouts > 0 && (
+                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                    {detected.callouts} callouts
+                  </span>
+                )}
+                {detected.links > 0 && (
+                  <span className="rounded-full border border-border bg-muted px-2 py-0.5">
+                    {detected.links} links
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setDetected(null)}
+                  className="ml-auto text-muted-foreground/70 hover:text-foreground"
+                  aria-label="Dismiss detected paste summary"
+                >
+                  ×
+                </button>
+              </div>
+            )}
             <input
               ref={fileInputRef}
               type="file"
