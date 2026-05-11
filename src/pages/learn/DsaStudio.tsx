@@ -455,22 +455,6 @@ export default function DsaStudio() {
                   </Button>
                 );
               })}
-                const active = priority === (b.id as typeof priority);
-                const Icon = b.icon;
-                return (
-                  <Button
-                    key={b.id}
-                    size="sm"
-                    variant={active ? "default" : "outline"}
-                    onClick={() => setPriority(b.id as typeof priority)}
-                    className="h-10 gap-1.5"
-                  >
-                    {b.dot && <span className={cn("h-2 w-2 rounded-full", b.dot)} />}
-                    {Icon && <Icon className="h-3.5 w-3.5" />}
-                    {b.label}
-                  </Button>
-                );
-              })}
               <Button variant="outline" size="sm" className="h-10 gap-2">
                 <span className="text-xs text-muted-foreground">STATUS</span>
                 <span className="text-xs font-medium">All</span>
