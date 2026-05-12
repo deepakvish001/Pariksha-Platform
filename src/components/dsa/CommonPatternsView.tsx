@@ -844,6 +844,15 @@ export default function CommonPatternsView() {
         onToggleBookmark={toggleBookmark}
         onToggleDone={toggleDone}
       />
+
+      {/* Badge details drawer */}
+      <BadgeDetailsDrawer
+        target={badgeTarget}
+        onClose={() => setBadgeTarget(null)}
+        done={done}
+        history={history.entries}
+        onOpenPattern={(p) => setOpenPattern(p)}
+      />
     </div>
   );
 }
