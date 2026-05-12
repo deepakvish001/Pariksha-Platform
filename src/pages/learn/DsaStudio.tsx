@@ -180,6 +180,25 @@ export default function DsaStudio() {
     };
   }, []);
 
+  // Measure header height -> CSS var so sticky offsets adapt to viewport
+  const headerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const apply = () => {
+      const h = el.getBoundingClientRect().height;
+      document.documentElement.style.setProperty("--dsa-header-h", `${Math.round(h)}px`);
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+    };
+  }, []);
+
   const toggleSet = (setter: typeof setSolved) => (slug: string) =>
     setter((prev) => {
       const next = new Set(prev);
