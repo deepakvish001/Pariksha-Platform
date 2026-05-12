@@ -444,7 +444,7 @@ export default function DsaStudio() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground" style={{ paddingTop: "var(--dsa-header-h, 57px)" }}>
       {/* Skip to content link (a11y) */}
       <a
         href="#dsa-main-content"
