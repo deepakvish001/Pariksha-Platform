@@ -637,17 +637,21 @@ export default function DsaStudioProblem() {
               {/* Step search */}
               {(() => {
                 const q = algoQuery.trim().toLowerCase();
-                const matches = template.algorithm
-                  .map((s, i) => ({
-                    i,
-                    hit:
-                      !!q &&
-                      (s.toLowerCase().includes(q) ||
-                        (template.stepLogic[i % template.stepLogic.length] || "")
-                          .toLowerCase()
-                          .includes(q)),
-                  }))
-                  .filter((x) => x.hit)
+                // Fuzzy-score every step (title + step-logic preview) and keep > 0.
+                const scored = template.algorithm
+                  .map((s, i) => {
+                    const preview = template.stepLogic[i % template.stepLogic.length] || "";
+                    const score = q ? Math.max(scoreText(s) * 1.2, scoreText(preview)) : 0;
+                    return { i, score };
+                  })
+                  .filter((x) => x.score > 0);
+                // Ranked list for the dropdown — best matches first.
+                const ranked = [...scored].sort(
+                  (a, b) => b.score - a.score || a.i - b.i,
+                );
+                // In-list iteration order — keeps Enter-to-jump intuitive (next step after current).
+                const matches = [...scored]
+                  .sort((a, b) => a.i - b.i)
                   .map((x) => x.i);
                 const matchCount = matches.length;
                 const renderHighlight = highlightQuery;
