@@ -451,10 +451,10 @@ export default function DsaStudio() {
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar */}
+      <div className="flex lg:pl-64">
+        {/* Sidebar - fixed so it never scrolls with main content (immune to ancestor transforms) */}
         <aside
-          className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky z-10 overflow-y-auto bg-background"
+          className="hidden lg:block w-64 border-r border-border/40 fixed left-0 z-10 overflow-y-auto overscroll-contain bg-background"
           style={{
             top: "var(--dsa-header-h, 57px)",
             height: "calc(100vh - var(--dsa-header-h, 57px))",
