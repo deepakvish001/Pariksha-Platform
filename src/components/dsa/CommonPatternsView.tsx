@@ -29,7 +29,10 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useDsaPatternHistory } from "@/hooks/useDsaPatternHistory";
+import { useDsaPatternSettings } from "@/hooks/useDsaPatternSettings";
+import { useDsaPatternAchievements } from "@/hooks/useDsaPatternAchievements";
 import PatternAchievementsPanel from "./PatternAchievementsPanel";
+import BadgeDetailsDrawer, { type BadgeDrawerTarget } from "./BadgeDetailsDrawer";
 import {
   COMMON_PATTERNS,
   PATTERN_TOTAL,
@@ -135,8 +138,13 @@ export default function CommonPatternsView() {
   const [sortMode, setSortMode] = useState<"default" | "progress_desc" | "progress_asc">("default");
   const [openPattern, setOpenPatternState] = useState<CommonPattern | null>(null);
 
+  const [masteryFilter, setMasteryFilter] = useState<"all" | "Bronze" | "Silver" | "Gold">("all");
+  const [badgeTarget, setBadgeTarget] = useState<BadgeDrawerTarget | null>(null);
+
   const { bookmarks, done, toggleBookmark, toggleDone } = usePatternStorage();
-  const history = useDsaPatternHistory();
+  const { settings, update: updateSettings } = useDsaPatternSettings();
+  const history = useDsaPatternHistory(settings);
+  const { feed, clearFeed } = useDsaPatternAchievements(done, history.currentStreak);
 
   // Log new completions to history (diff vs previous done set)
   const prevDoneRef = useRef<Set<string>>(done);
@@ -268,15 +276,20 @@ export default function CommonPatternsView() {
   const totalProblemsDone = difficultyDone.Easy + difficultyDone.Medium + difficultyDone.Hard;
   const completedCategories = [...categoryStats.values()].filter((s) => s.pct === 100).length;
 
-  // Apply category sort to the filtered output
+  // Apply mastery quick filter + category sort to the filtered output
+  const masteryThreshold = masteryFilter === "Bronze" ? 25 : masteryFilter === "Silver" ? 50 : masteryFilter === "Gold" ? 100 : 0;
   const displayed = useMemo(() => {
-    if (sortMode === "default") return filtered;
-    return [...filtered].sort((a, b) => {
+    let list = filtered;
+    if (masteryFilter !== "all") {
+      list = list.filter((c) => (categoryStats.get(c.id)?.pct ?? 0) >= masteryThreshold);
+    }
+    if (sortMode === "default") return list;
+    return [...list].sort((a, b) => {
       const pa = categoryStats.get(a.id)?.pct ?? 0;
       const pb = categoryStats.get(b.id)?.pct ?? 0;
       return sortMode === "progress_desc" ? pb - pa : pa - pb;
     });
-  }, [filtered, sortMode, categoryStats]);
+  }, [filtered, sortMode, categoryStats, masteryFilter, masteryThreshold]);
 
   const clearFilters = () => {
     setActiveCategories(new Set());
@@ -286,6 +299,7 @@ export default function CommonPatternsView() {
     setShowOnlyTodo(false);
     setStatusFilter("all");
     setSortMode("default");
+    setMasteryFilter("all");
     setSearch("");
   };
 
@@ -297,7 +311,8 @@ export default function CommonPatternsView() {
     showOnlyBookmarked ||
     showOnlyTodo ||
     statusFilter !== "all" ||
-    sortMode !== "default";
+    sortMode !== "default" ||
+    masteryFilter !== "all";
 
   return (
     <div className="relative -mx-4 md:-mx-6">
@@ -525,6 +540,37 @@ export default function CommonPatternsView() {
             })}
           </div>
 
+          {/* Mastery quick filter */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mr-1">
+              Mastery
+            </span>
+            {(
+              [
+                { id: "all", label: "All", color: "" },
+                { id: "Bronze", label: "Bronze ≥25%", color: "border-amber-700/50 bg-amber-700/15 text-amber-300" },
+                { id: "Silver", label: "Silver ≥50%", color: "border-zinc-400/50 bg-zinc-400/15 text-zinc-200" },
+                { id: "Gold", label: "Gold 100%", color: "border-yellow-500/60 bg-yellow-500/20 text-yellow-300" },
+              ] as const
+            ).map((m) => {
+              const active = masteryFilter === m.id;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => setMasteryFilter(m.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs border transition-colors",
+                    active
+                      ? m.color || "border-primary/50 bg-primary/15 text-primary"
+                      : "border-border/40 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border",
+                  )}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Quick toggles + sort */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <Button
@@ -593,7 +639,15 @@ export default function CommonPatternsView() {
 
       {/* Scrollable pattern list */}
       <div className="px-4 md:px-6 py-5 space-y-6">
-        <PatternAchievementsPanel done={done} history={history} />
+        <PatternAchievementsPanel
+          done={done}
+          history={history}
+          settings={settings}
+          onUpdateSettings={updateSettings}
+          feed={feed}
+          onClearFeed={clearFeed}
+          onOpenBadge={setBadgeTarget}
+        />
 
         {displayed.map((cat, ci) => (
           <section key={cat.id} id={`pat-${cat.id}`} className="space-y-3 scroll-mt-[260px]">
@@ -789,6 +843,15 @@ export default function CommonPatternsView() {
         done={done}
         onToggleBookmark={toggleBookmark}
         onToggleDone={toggleDone}
+      />
+
+      {/* Badge details drawer */}
+      <BadgeDetailsDrawer
+        target={badgeTarget}
+        onClose={() => setBadgeTarget(null)}
+        done={done}
+        history={history.entries}
+        onOpenPattern={(p) => setOpenPattern(p)}
       />
     </div>
   );

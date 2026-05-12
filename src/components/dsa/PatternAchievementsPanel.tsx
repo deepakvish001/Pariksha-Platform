@@ -9,27 +9,60 @@ import {
   Sparkles,
   CheckCircle2,
   Lock,
+  Settings as SettingsIcon,
+  Bell,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { COMMON_PATTERNS, PATTERN_TOTAL } from "@/data/dsaCommonPatternsData";
 import type { PatternHistoryStats } from "@/hooks/useDsaPatternHistory";
+import type { DsaPatternSettings } from "@/hooks/useDsaPatternSettings";
+import type { AchievementFeedItem } from "@/hooks/useDsaPatternAchievements";
+import type { BadgeDrawerTarget } from "./BadgeDetailsDrawer";
 
 const TIERS = [
-  { pct: 25, label: "Bronze",   color: "border-amber-700/50 bg-amber-700/10 text-amber-400" },
-  { pct: 50, label: "Silver",   color: "border-zinc-400/50 bg-zinc-400/10 text-zinc-200" },
-  { pct: 100, label: "Gold",    color: "border-yellow-500/60 bg-yellow-500/15 text-yellow-300" },
-] as const;
+  { pct: 25, label: "Bronze" as const, color: "border-amber-700/50 bg-amber-700/10 text-amber-400" },
+  { pct: 50, label: "Silver" as const, color: "border-zinc-400/50 bg-zinc-400/10 text-zinc-200" },
+  { pct: 100, label: "Gold" as const, color: "border-yellow-500/60 bg-yellow-500/15 text-yellow-300" },
+];
 
 interface Props {
   done: Set<string>;
   history: PatternHistoryStats;
+  settings: DsaPatternSettings;
+  onUpdateSettings: (patch: Partial<DsaPatternSettings>) => void;
+  feed: AchievementFeedItem[];
+  onClearFeed: () => void;
+  onOpenBadge: (target: BadgeDrawerTarget) => void;
 }
 
-export default function PatternAchievementsPanel({ done, history }: Props) {
+export default function PatternAchievementsPanel({
+  done,
+  history,
+  settings,
+  onUpdateSettings,
+  feed,
+  onClearFeed,
+  onOpenBadge,
+}: Props) {
   const [open, setOpen] = useState(false);
 
-  // Per-category percentage
   const categoryPct = useMemo(() => {
     const m = new Map<string, number>();
     COMMON_PATTERNS.forEach((cat) => {
@@ -42,7 +75,6 @@ export default function PatternAchievementsPanel({ done, history }: Props) {
 
   const overallPct = PATTERN_TOTAL > 0 ? (done.size / PATTERN_TOTAL) * 100 : 0;
 
-  // Count unlocked badges
   const unlockedCount = useMemo(() => {
     let n = 0;
     categoryPct.forEach((pct) => TIERS.forEach((t) => pct >= t.pct && (n += 1)));
@@ -51,7 +83,6 @@ export default function PatternAchievementsPanel({ done, history }: Props) {
   }, [categoryPct, overallPct]);
   const totalBadges = COMMON_PATTERNS.length * TIERS.length + 1;
 
-  // Heatmap intensity
   const maxDay = Math.max(1, ...history.last30Days.map((d) => d.count));
   const intensity = (n: number) => {
     if (n === 0) return "bg-muted/30";
@@ -64,13 +95,13 @@ export default function PatternAchievementsPanel({ done, history }: Props) {
 
   return (
     <section className="rounded-xl border border-border/40 bg-card/40 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-card/60 transition-colors"
-        aria-expanded={open}
-      >
-        <div className="flex items-center gap-2">
+      <div className="w-full flex items-center justify-between gap-3 px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-2 flex-1 hover:opacity-90 transition-opacity"
+          aria-expanded={open}
+        >
           {open ? (
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           ) : (
@@ -78,7 +109,7 @@ export default function PatternAchievementsPanel({ done, history }: Props) {
           )}
           <Trophy className="h-4 w-4 text-yellow-400" />
           <span className="font-semibold text-sm">Achievements & Streaks</span>
-        </div>
+        </button>
         <div className="flex items-center gap-2">
           <Badge className="bg-yellow-500/15 text-yellow-300 border-yellow-500/30">
             <Award className="h-3 w-3 mr-1" />
@@ -88,17 +119,57 @@ export default function PatternAchievementsPanel({ done, history }: Props) {
             <Flame className="h-3 w-3 mr-1" />
             {history.currentStreak}d streak
           </Badge>
+          <SettingsPopover settings={settings} onUpdate={onUpdateSettings} />
         </div>
-      </button>
+      </div>
 
       {open && (
         <div className="border-t border-border/40 p-4 space-y-5">
+          {/* Recent unlocks feed */}
+          {feed.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                  <Bell className="h-3 w-3" /> Recent unlocks
+                </h4>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={onClearFeed}
+                  className="h-6 px-2 text-[11px] text-muted-foreground"
+                >
+                  <Trash2 className="h-3 w-3 mr-1" /> Clear
+                </Button>
+              </div>
+              <ul className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                {feed.slice(0, 8).map((it) => (
+                  <li
+                    key={it.id}
+                    className="flex items-center gap-2 rounded-md border border-border/40 bg-card/40 px-2.5 py-1.5"
+                  >
+                    <span className="text-base" aria-hidden>
+                      {it.emoji}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium truncate">{it.title}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{it.detail}</div>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      {new Date(it.ts).toLocaleDateString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Streak stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <StatTile
               icon={<Flame className="h-4 w-4 text-orange-400" />}
               label="Current streak"
               value={`${history.currentStreak}d`}
+              hint={settings.dailyThreshold > 1 ? `≥${settings.dailyThreshold}/day` : undefined}
             />
             <StatTile
               icon={<Sparkles className="h-4 w-4 text-yellow-400" />}
@@ -128,7 +199,7 @@ export default function PatternAchievementsPanel({ done, history }: Props) {
                 {history.last30Days.reduce((s, d) => s + d.count, 0)} completions
               </span>
             </div>
-            <div className="grid grid-cols-15 gap-1" style={{ gridTemplateColumns: "repeat(30, minmax(0, 1fr))" }}>
+            <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(30, minmax(0, 1fr))" }}>
               {history.last30Days.map((d) => (
                 <div
                   key={d.day}
@@ -148,13 +219,17 @@ export default function PatternAchievementsPanel({ done, history }: Props) {
               Mastery badges
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {/* Overall mastery first */}
-              <div
+              {/* Overall */}
+              <button
+                type="button"
+                onClick={() =>
+                  onOpenBadge({ scope: "overall", tier: overallPct >= 100 ? "Gold" : null })
+                }
                 className={cn(
-                  "rounded-lg border p-3 flex items-center gap-3",
+                  "rounded-lg border p-3 flex items-center gap-3 text-left hover:opacity-95 transition-opacity",
                   overallPct >= 100
                     ? "border-yellow-500/60 bg-yellow-500/10"
-                    : "border-border/40 bg-card/40 opacity-70",
+                    : "border-border/40 bg-card/40 opacity-80",
                 )}
               >
                 <div
@@ -171,19 +246,21 @@ export default function PatternAchievementsPanel({ done, history }: Props) {
                     100% of all patterns • {Math.round(overallPct)}% complete
                   </div>
                 </div>
-              </div>
+              </button>
 
               {COMMON_PATTERNS.map((cat) => {
                 const pct = categoryPct.get(cat.id) || 0;
                 const highest = [...TIERS].reverse().find((t) => pct >= t.pct);
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={cat.id}
+                    onClick={() =>
+                      onOpenBadge({ scope: cat.id, tier: highest?.label ?? null })
+                    }
                     className={cn(
-                      "rounded-lg border p-3 flex items-center gap-3",
-                      highest
-                        ? highest.color
-                        : "border-border/40 bg-card/40 opacity-70",
+                      "rounded-lg border p-3 flex items-center gap-3 text-left hover:opacity-95 transition-opacity",
+                      highest ? highest.color : "border-border/40 bg-card/40 opacity-80",
                     )}
                   >
                     <div
@@ -198,10 +275,7 @@ export default function PatternAchievementsPanel({ done, history }: Props) {
                       <div className="text-sm font-semibold flex items-center gap-1.5">
                         <span className="truncate">{cat.title}</span>
                         {highest && (
-                          <Badge
-                            variant="outline"
-                            className="text-[9px] h-4 px-1 border-current/40"
-                          >
+                          <Badge variant="outline" className="text-[9px] h-4 px-1 border-current/40">
                             {highest.label}
                           </Badge>
                         )}
@@ -222,7 +296,7 @@ export default function PatternAchievementsPanel({ done, history }: Props) {
                         ))}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -253,5 +327,74 @@ function StatTile({
       <div className="text-lg font-bold mt-0.5">{value}</div>
       {hint && <div className="text-[10px] text-muted-foreground">{hint}</div>}
     </div>
+  );
+}
+
+function SettingsPopover({
+  settings,
+  onUpdate,
+}: {
+  settings: DsaPatternSettings;
+  onUpdate: (patch: Partial<DsaPatternSettings>) => void;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+          aria-label="Streak settings"
+        >
+          <SettingsIcon className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72 space-y-4">
+        <div>
+          <h4 className="text-sm font-semibold mb-1">Streak settings</h4>
+          <p className="text-[11px] text-muted-foreground">
+            Customize how streaks and weekly stats are computed.
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="dsa-threshold" className="text-xs">
+            Daily completion threshold
+          </Label>
+          <Input
+            id="dsa-threshold"
+            type="number"
+            min={1}
+            max={20}
+            value={settings.dailyThreshold}
+            onChange={(e) =>
+              onUpdate({
+                dailyThreshold: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
+              })
+            }
+            className="h-8 text-sm"
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Patterns to complete in a day for it to count toward your streak.
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs">Week starts on</Label>
+          <Select
+            value={String(settings.weekStart)}
+            onValueChange={(v) => onUpdate({ weekStart: v === "0" ? 0 : 1 })}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">Monday</SelectItem>
+              <SelectItem value="0">Sunday</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
