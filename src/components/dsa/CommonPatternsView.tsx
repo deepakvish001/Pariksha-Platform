@@ -770,7 +770,7 @@ export default function CommonPatternsView() {
           </section>
         ))}
 
-        {filtered.length === 0 && (
+        {displayed.length === 0 && (
           <div className="rounded-xl border border-dashed border-border/40 bg-card/20 p-10 text-center text-muted-foreground">
             No patterns match your filters.
             <div className="mt-3">
