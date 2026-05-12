@@ -608,7 +608,15 @@ export default function CommonPatternsView() {
 
       {/* Scrollable pattern list */}
       <div className="px-4 md:px-6 py-5 space-y-6">
-        <PatternAchievementsPanel done={done} history={history} />
+        <PatternAchievementsPanel
+          done={done}
+          history={history}
+          settings={settings}
+          onUpdateSettings={updateSettings}
+          feed={feed}
+          onClearFeed={clearFeed}
+          onOpenBadge={setBadgeTarget}
+        />
 
         {displayed.map((cat, ci) => (
           <section key={cat.id} id={`pat-${cat.id}`} className="space-y-3 scroll-mt-[260px]">
