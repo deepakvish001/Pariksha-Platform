@@ -12,6 +12,7 @@ import {
   Circle,
   ExternalLink,
   Link2,
+  RotateCcw,
   Sparkles,
   SquareArrowOutUpRight,
 } from "lucide-react";
