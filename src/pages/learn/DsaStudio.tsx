@@ -380,7 +380,13 @@ export default function DsaStudio() {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky top-[57px] z-10 h-[calc(100vh-57px)] overflow-y-auto bg-background">
+        <aside
+          className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky z-10 overflow-y-auto bg-background"
+          style={{
+            top: "var(--dsa-header-h, 57px)",
+            height: "calc(100vh - var(--dsa-header-h, 57px))",
+          }}
+        >
           {sidebarContent}
         </aside>
 
