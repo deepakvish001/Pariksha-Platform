@@ -205,7 +205,38 @@ export default function DsaStudio() {
         .filter((r) => r.expected !== r.actual),
     [],
   );
-  const topicHasMismatch = qaMismatches.some((m) => m.id === topic.id);
+  const mismatchIds = useMemo(() => new Set(qaMismatches.map((m) => m.id)), [qaMismatches]);
+
+  // Scroll-spy: track which topic section is most visible and highlight in sidebar
+  const topicSectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const isProgrammaticScroll = useRef(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isProgrammaticScroll.current) return;
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]) {
+          const id = (visible[0].target as HTMLElement).dataset.topicId;
+          if (id) setActiveTopic(id);
+        }
+      },
+      { rootMargin: "-80px 0px -60% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    Object.values(topicSectionRefs.current).forEach((el) => el && observer.observe(el));
+    return () => observer.disconnect();
+  }, [filteredByTopic]);
+
+  const handleTopicClick = (id: string) => {
+    setActiveTopic(id);
+    const el = topicSectionRefs.current[id];
+    if (el) {
+      isProgrammaticScroll.current = true;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.setTimeout(() => { isProgrammaticScroll.current = false; }, 800);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
