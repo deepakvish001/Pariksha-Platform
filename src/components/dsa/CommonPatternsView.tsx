@@ -215,6 +215,14 @@ export default function CommonPatternsView() {
           return false;
         if (showOnlyBookmarked && !bookmarks.has(p.id)) return false;
         if (showOnlyTodo && done.has(p.id)) return false;
+        // Status: done | in_progress (bookmarked, not done) | not_started (neither)
+        if (statusFilter !== "all") {
+          const isDone = done.has(p.id);
+          const isMarked = bookmarks.has(p.id);
+          if (statusFilter === "done" && !isDone) return false;
+          if (statusFilter === "in_progress" && !(isMarked && !isDone)) return false;
+          if (statusFilter === "not_started" && (isDone || isMarked)) return false;
+        }
         if (!q) return true;
         return (
           p.title.toLowerCase().includes(q) ||
@@ -227,7 +235,7 @@ export default function CommonPatternsView() {
         );
       }),
     })).filter((c) => c.patterns.length > 0);
-  }, [search, activeCategories, activeTags, activeComplexities, showOnlyBookmarked, showOnlyTodo, bookmarks, done]);
+  }, [search, activeCategories, activeTags, activeComplexities, showOnlyBookmarked, showOnlyTodo, statusFilter, bookmarks, done]);
 
   const totalShown = filtered.reduce((s, c) => s + c.patterns.length, 0);
   const totalDone = done.size;
