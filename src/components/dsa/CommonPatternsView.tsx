@@ -230,7 +230,7 @@ export default function CommonPatternsView() {
       {/* Sticky header (sticks within DSA Studio main scroller) */}
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-xl border-b border-border/40 px-4 md:px-6 py-4 space-y-4">
         {/* Title row */}
-        <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-card/40 to-card/40 p-4">
+        <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-card/40 to-card/40 p-4 space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="flex items-center gap-2 text-xl md:text-2xl font-bold">
@@ -255,6 +255,77 @@ export default function CommonPatternsView() {
                 {totalBookmarks} saved
               </Badge>
             </div>
+          </div>
+
+          {/* Overall progress */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Overall mastery</span>
+              <span className="font-mono text-foreground">
+                {totalDone}/{PATTERN_TOTAL} • <span className="text-emerald-400 font-semibold">{overallPct}%</span>
+              </span>
+            </div>
+            <Progress
+              value={overallPct}
+              className="h-2 bg-muted/40"
+              indicatorClassName="bg-gradient-to-r from-emerald-500 to-sky-400"
+            />
+            <div className="flex flex-wrap gap-3 pt-1 text-[11px] text-muted-foreground">
+              <span>
+                Categories complete:{" "}
+                <span className="text-foreground font-semibold">
+                  {completedCategories}/{COMMON_PATTERNS.length}
+                </span>
+              </span>
+              <span className="opacity-40">•</span>
+              <span>
+                LeetCode unlocked:{" "}
+                <span className="text-foreground font-semibold">{totalProblemsDone}</span>
+              </span>
+              <span className="opacity-40">•</span>
+              <span className="text-emerald-400">{difficultyDone.Easy} Easy</span>
+              <span className="text-amber-400">{difficultyDone.Medium} Medium</span>
+              <span className="text-rose-400">{difficultyDone.Hard} Hard</span>
+            </div>
+          </div>
+
+          {/* Per-category progress grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pt-1">
+            {COMMON_PATTERNS.map((cat) => {
+              const s = categoryStats.get(cat.id)!;
+              return (
+                <a
+                  key={cat.id}
+                  href={`#pat-${cat.id}`}
+                  className="group rounded-lg border border-border/40 bg-card/40 px-2.5 py-2 hover:border-emerald-500/40 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="flex items-center gap-1 min-w-0">
+                      <span className="shrink-0">{cat.emoji}</span>
+                      <span className="truncate text-[11px] font-medium text-foreground">
+                        {cat.title}
+                      </span>
+                    </span>
+                    <span className="text-[10px] font-mono text-muted-foreground shrink-0">
+                      {s.done}/{s.total}
+                    </span>
+                  </div>
+                  <Progress
+                    value={s.pct}
+                    className="h-1 bg-muted/40"
+                    indicatorClassName={cn(
+                      s.pct === 100
+                        ? "bg-emerald-500"
+                        : s.pct >= 50
+                          ? "bg-sky-400"
+                          : s.pct > 0
+                            ? "bg-amber-400"
+                            : "bg-muted-foreground/30",
+                    )}
+                  />
+                </a>
+              );
+            })}
           </div>
         </div>
 
