@@ -316,8 +316,8 @@ export default function CommonPatternsView() {
 
   return (
     <div className="relative -mx-4 md:-mx-6">
-      {/* Sticky header (sticks within DSA Studio main scroller) */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-xl border-b border-border/40 px-4 md:px-6 py-4 space-y-4">
+      {/* Header (scrolls with content; only the title bar sticks) */}
+      <div className="px-4 md:px-6 py-4 space-y-4 border-b border-border/40">
         {/* Title row */}
         <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-card/40 to-card/40 p-4 space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
