@@ -378,68 +378,16 @@ export default function DsaStudio() {
       <div className="flex">
         {/* Sidebar */}
         <aside className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky top-[57px] z-10 h-[calc(100vh-57px)] overflow-y-auto bg-background">
-          <div className="p-4 space-y-6">
-            <div>
-              <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                Learning Path
-              </p>
-              <ul className="space-y-0.5">
-                {TOPICS.map((t) => {
-                  const Icon = t.icon;
-                  const active = t.id === activeTopic;
-                  return (
-                    <li key={t.id}>
-                      <button
-                        onClick={() => handleTopicClick(t.id)}
-                        className={cn(
-                          "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-                          active
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-                        )}
-                      >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        <span className="flex-1 text-left truncate">{t.label}</span>
-                        <span className={cn("text-xs", active ? "text-primary" : "text-muted-foreground/70")}>
-                          {t.count}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
-            <div>
-              <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                Reference
-              </p>
-              <ul className="space-y-0.5">
-                {REFERENCE.map((r) => {
-                  const Icon = r.icon;
-                  return (
-                    <li key={r.id}>
-                      <button
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
-                      >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        <span className="flex-1 text-left truncate">{r.label}</span>
-                        {r.count !== undefined && (
-                          <span className="text-xs text-muted-foreground/70">{r.count}</span>
-                        )}
-                        {r.badge && (
-                          <Badge className="h-4 px-1.5 text-[9px] bg-amber-500/20 text-amber-400 border-amber-500/30">
-                            {r.badge}
-                          </Badge>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
+          {sidebarContent}
         </aside>
+
+        {/* Mobile sidebar drawer */}
+        <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+          <SheetContent side="left" className="w-72 p-0 lg:hidden overflow-y-auto">
+            <SheetTitle className="sr-only">Topics</SheetTitle>
+            {sidebarContent}
+          </SheetContent>
+        </Sheet>
 
         {/* Main */}
         <main className="flex-1 min-w-0 p-4 md:p-6 space-y-5">
