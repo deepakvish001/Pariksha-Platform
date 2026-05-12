@@ -46,6 +46,7 @@ import { cn } from "@/lib/utils";
 
 import { DSA_TOPICS as TOPICS, type Diff, type DsaProblem as Problem } from "@/data/dsaStudioData";
 import CommonPatternsView from "@/components/dsa/CommonPatternsView";
+import CodeTricksView from "@/components/dsa/CodeTricksView";
 
 const REFERENCE = [
   { id: "patterns", label: "Common Patterns", icon: Puzzle, count: 43 },
