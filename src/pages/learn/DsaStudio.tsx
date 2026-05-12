@@ -360,12 +360,6 @@ export default function DsaStudio() {
               </h1>
             </Link>
           </div>
-          <Link to="/learn" className="flex items-center gap-2">
-            <span className="text-xl">🧠</span>
-            <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-violet-400 to-sky-400 bg-clip-text text-transparent">
-              DSA Studio
-            </h1>
-          </Link>
           <div className="hidden sm:flex items-center gap-2 md:gap-3 text-xs md:text-sm text-muted-foreground">
             <span>Total: <span className="text-foreground font-semibold">{grandTotal}</span></span>
             <span className="opacity-40">|</span>
