@@ -240,6 +240,13 @@ export default function PatternDetailContent({
 
   return (
     <div className="min-h-full">
+      {/* Reading progress bar */}
+      <div aria-hidden className="fixed top-0 left-0 right-0 z-30 h-0.5 pointer-events-none">
+        <div
+          className="h-full bg-gradient-to-r from-sky-400 via-sky-300 to-emerald-400 transition-[width] duration-150 ease-out"
+          style={{ width: `${readProgress}%` }}
+        />
+      </div>
       {/* Top breadcrumb bar — sticks to viewport, scrolls with the page */}
       <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-border/40 px-4 md:px-6 py-3 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center gap-3 min-w-0">
