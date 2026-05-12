@@ -180,6 +180,25 @@ export default function DsaStudio() {
     };
   }, []);
 
+  // Measure header height -> CSS var so sticky offsets adapt to viewport
+  const headerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const apply = () => {
+      const h = el.getBoundingClientRect().height;
+      document.documentElement.style.setProperty("--dsa-header-h", `${Math.round(h)}px`);
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+    };
+  }, []);
+
   const toggleSet = (setter: typeof setSolved) => (slug: string) =>
     setter((prev) => {
       const next = new Set(prev);
@@ -342,7 +361,10 @@ export default function DsaStudio() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
-      <header className="sticky top-0 z-30 border-b border-border/40 bg-background/95 backdrop-blur-xl">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-30 border-b border-border/40 bg-background/95 backdrop-blur-xl"
+      >
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-2">
             <button
@@ -377,7 +399,13 @@ export default function DsaStudio() {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky top-[57px] z-10 h-[calc(100vh-57px)] overflow-y-auto bg-background">
+        <aside
+          className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky z-10 overflow-y-auto bg-background"
+          style={{
+            top: "var(--dsa-header-h, 57px)",
+            height: "calc(100vh - var(--dsa-header-h, 57px))",
+          }}
+        >
           {sidebarContent}
         </aside>
 
@@ -390,7 +418,10 @@ export default function DsaStudio() {
         </Sheet>
 
         {/* Main */}
-        <main className="flex-1 min-w-0 px-4 md:px-6 pt-6 md:pt-8 pb-4 md:pb-6 space-y-5 [scroll-padding-top:5rem]">
+        <main
+          className="flex-1 min-w-0 px-4 md:px-6 pb-4 md:pb-6 space-y-5"
+          style={{ paddingTop: "calc(var(--dsa-header-h, 57px) * 0.35 + 1rem)", scrollPaddingTop: "calc(var(--dsa-header-h, 57px) + 1rem)" }}
+        >
           {/* Tabs row */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -556,7 +587,8 @@ export default function DsaStudio() {
                 key={t.id}
                 data-topic-id={t.id}
                 ref={(el) => { topicSectionRefs.current[t.id] = el; }}
-                className="space-y-5 scroll-mt-20"
+                className="space-y-5"
+                style={{ scrollMarginTop: "calc(var(--dsa-header-h, 57px) + 0.75rem)" }}
               >
                 {/* Topic header */}
                 <div className="flex items-end justify-between flex-wrap gap-2 pt-2">
