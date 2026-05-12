@@ -582,29 +582,7 @@ export default function DsaStudioProblem() {
                   .filter((x) => x.hit)
                   .map((x) => x.i);
                 const matchCount = matches.length;
-                const renderHighlight = (text: string) => {
-                  if (!q) return text;
-                  const lower = text.toLowerCase();
-                  const out: React.ReactNode[] = [];
-                  let from = 0;
-                  let idx = lower.indexOf(q);
-                  let key = 0;
-                  while (idx !== -1) {
-                    if (idx > from) out.push(text.slice(from, idx));
-                    out.push(
-                      <mark
-                        key={key++}
-                        className="rounded-sm bg-amber-400/30 text-amber-200 px-0.5"
-                      >
-                        {text.slice(idx, idx + q.length)}
-                      </mark>,
-                    );
-                    from = idx + q.length;
-                    idx = lower.indexOf(q, from);
-                  }
-                  if (from < text.length) out.push(text.slice(from));
-                  return out;
-                };
+                const renderHighlight = highlightQuery;
 
                 return (
                   <>
