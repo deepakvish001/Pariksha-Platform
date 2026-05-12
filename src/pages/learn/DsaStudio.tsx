@@ -399,7 +399,10 @@ export default function DsaStudio() {
         </Sheet>
 
         {/* Main */}
-        <main className="flex-1 min-w-0 px-4 md:px-6 pt-6 md:pt-8 pb-4 md:pb-6 space-y-5 [scroll-padding-top:5rem]">
+        <main
+          className="flex-1 min-w-0 px-4 md:px-6 pb-4 md:pb-6 space-y-5"
+          style={{ paddingTop: "calc(var(--dsa-header-h, 57px) * 0.35 + 1rem)", scrollPaddingTop: "calc(var(--dsa-header-h, 57px) + 1rem)" }}
+        >
           {/* Tabs row */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
