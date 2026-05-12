@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -20,13 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+// Detail view now lives at /learn/dsa-studio/pattern/:patternId
 import { cn } from "@/lib/utils";
 import { useDsaPatternHistory } from "@/hooks/useDsaPatternHistory";
 import { useDsaPatternSettings } from "@/hooks/useDsaPatternSettings";
@@ -136,7 +130,8 @@ export default function CommonPatternsView() {
   const [showOnlyTodo, setShowOnlyTodo] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "done" | "in_progress" | "not_started">("all");
   const [sortMode, setSortMode] = useState<"default" | "progress_desc" | "progress_asc">("default");
-  const [openPattern, setOpenPatternState] = useState<CommonPattern | null>(null);
+  const navigate = useNavigate();
+  const openPattern = (p: CommonPattern) => navigate(`/learn/dsa-studio/pattern/${p.id}`);
 
   const [masteryFilter, setMasteryFilter] = useState<"all" | "Bronze" | "Silver" | "Gold">("all");
   const [badgeTarget, setBadgeTarget] = useState<BadgeDrawerTarget | null>(null);
@@ -160,39 +155,13 @@ export default function CommonPatternsView() {
 
   // Deep-link sync: ?pattern=<id> opens the detail dialog
   const [searchParams, setSearchParams] = useSearchParams();
-  const patternIndex = useMemo(() => {
-    const m = new Map<string, CommonPattern>();
-    COMMON_PATTERNS.forEach((cat) => cat.patterns.forEach((p) => m.set(p.id, p)));
-    return m;
-  }, []);
+  // Category lookup (kept for badge drawer deep-link support)
   const categoryByPattern = useMemo(() => {
     const m = new Map<string, PatternCategory>();
     COMMON_PATTERNS.forEach((cat) => cat.patterns.forEach((p) => m.set(p.id, cat)));
     return m;
   }, []);
-
-  const setOpenPattern = useCallback(
-    (p: CommonPattern | null) => {
-      setOpenPatternState(p);
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          if (p) next.set("pattern", p.id);
-          else next.delete("pattern");
-          return next;
-        },
-        { replace: true },
-      );
-    },
-    [setSearchParams],
-  );
-
-  // Sync URL → state (initial load + back/forward navigation)
-  useEffect(() => {
-    const id = searchParams.get("pattern");
-    const target = id ? patternIndex.get(id) ?? null : null;
-    setOpenPatternState((curr) => (curr?.id === target?.id ? curr : target));
-  }, [searchParams, patternIndex]);
+  void categoryByPattern;
 
   // Build tag + complexity universes
   const { allTags, allComplexities } = useMemo(() => {
