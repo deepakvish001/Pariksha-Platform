@@ -328,8 +328,22 @@ export default function DsaStudio() {
     handleTopicClick(id);
   };
 
+  const sidebarItemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  // Keep the active sidebar item visible inside its scroll container
+  useEffect(() => {
+    const btn = sidebarItemRefs.current[activeTopic];
+    if (!btn) return;
+    const parent = btn.closest("[data-dsa-sidebar-scroll]") as HTMLElement | null;
+    if (!parent) return;
+    const bRect = btn.getBoundingClientRect();
+    const pRect = parent.getBoundingClientRect();
+    if (bRect.top < pRect.top + 8 || bRect.bottom > pRect.bottom - 8) {
+      btn.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [activeTopic]);
+
   const sidebarContent = (
-    <div className="p-4 space-y-6">
+    <nav aria-label="Learning path topics" className="p-4 space-y-6">
       <div>
         <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
           Learning Path
@@ -341,9 +355,11 @@ export default function DsaStudio() {
             return (
               <li key={t.id}>
                 <button
+                  ref={(el) => { sidebarItemRefs.current[t.id] = el; }}
                   onClick={() => handleSidebarTopicClick(t.id)}
+                  aria-current={active ? "true" : undefined}
                   className={cn(
-                    "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                    "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     active
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
