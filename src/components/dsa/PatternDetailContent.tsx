@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
@@ -6,10 +6,12 @@ import {
   BookmarkCheck,
   Check,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Circle,
   ExternalLink,
   Link2,
+  Sparkles,
   SquareArrowOutUpRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -88,6 +90,74 @@ export default function PatternDetailContent({
   const isDone = done.has(pattern.id);
   const cx = splitComplexity(pattern.complexity);
   const whenToUse = deriveWhenToUse(pattern);
+
+  // Per-problem completion (separate from per-pattern done state)
+  const PROBLEMS_LS = "dsaPatterns:problemsDone:v1";
+  const [problemsDone, setProblemsDone] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = localStorage.getItem(PROBLEMS_LS);
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      return new Set();
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(PROBLEMS_LS, JSON.stringify([...problemsDone]));
+    } catch {
+      /* ignore */
+    }
+  }, [problemsDone]);
+  const toggleProblem = (key: string) =>
+    setProblemsDone((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
+  const problemKey = (prId: string, url: string) => `${pattern.id}::${prId}::${url}`;
+  const completedProblems = pattern.problems.filter((pr) =>
+    problemsDone.has(problemKey(pr.id, pr.url)),
+  ).length;
+  const totalProblems = pattern.problems.length;
+  const completionPct = totalProblems
+    ? Math.round((completedProblems / totalProblems) * 100)
+    : 0;
+
+  const difficultyCounts = useMemo(() => {
+    const c = { Easy: 0, Medium: 0, Hard: 0 } as Record<PatternProblem["difficulty"], number>;
+    pattern.problems.forEach((p) => (c[p.difficulty] += 1));
+    return c;
+  }, [pattern.problems]);
+
+  // Sibling navigation within the same category
+  const { prev, next } = useMemo(() => {
+    if (!category) return { prev: null, next: null };
+    const idx = category.patterns.findIndex((p) => p.id === pattern.id);
+    return {
+      prev: idx > 0 ? category.patterns[idx - 1] : null,
+      next: idx >= 0 && idx < category.patterns.length - 1 ? category.patterns[idx + 1] : null,
+    };
+  }, [category, pattern.id]);
+
+  const relatedPatterns = useMemo(
+    () => (category ? category.patterns.filter((p) => p.id !== pattern.id).slice(0, 6) : []),
+    [category, pattern.id],
+  );
+
+  // Reading progress for the page
+  const [readProgress, setReadProgress] = useState(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const h = document.documentElement;
+      const total = h.scrollHeight - h.clientHeight;
+      setReadProgress(total > 0 ? Math.min(100, Math.max(0, (h.scrollTop / total) * 100)) : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const [copied, setCopied] = useState(false);
   const handleCopyLink = async () => {
@@ -170,6 +240,13 @@ export default function PatternDetailContent({
 
   return (
     <div className="min-h-full">
+      {/* Reading progress bar */}
+      <div aria-hidden className="fixed top-0 left-0 right-0 z-30 h-0.5 pointer-events-none">
+        <div
+          className="h-full bg-gradient-to-r from-sky-400 via-sky-300 to-emerald-400 transition-[width] duration-150 ease-out"
+          style={{ width: `${readProgress}%` }}
+        />
+      </div>
       {/* Top breadcrumb bar — sticks to viewport, scrolls with the page */}
       <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-border/40 px-4 md:px-6 py-3 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center gap-3 min-w-0">
@@ -410,39 +487,94 @@ export default function PatternDetailContent({
 
           {/* Practice problems */}
           <section id="section-problems" className="scroll-mt-32 rounded-xl border border-border/40 bg-card/40 p-5">
-            <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
               <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-1.5">
                 🎯 Practice Problems
                 <span className="ml-1 text-muted-foreground/70 normal-case tracking-normal">
-                  ({pattern.problems.length})
+                  ({completedProblems}/{totalProblems})
                 </span>
               </h3>
-              <button
-                type="button"
-                onClick={() => handleCopySectionLink("problems")}
-                className="text-muted-foreground/70 hover:text-foreground transition-colors"
-                aria-label="Copy link to Practice Problems"
-                title="Copy link to this section"
-              >
-                <Link2 className="h-3.5 w-3.5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-medium">
+                  <span className="px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+                    {difficultyCounts.Easy} Easy
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-300">
+                    {difficultyCounts.Medium} Med
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-300">
+                    {difficultyCounts.Hard} Hard
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopySectionLink("problems")}
+                  className="text-muted-foreground/70 hover:text-foreground transition-colors"
+                  aria-label="Copy link to Practice Problems"
+                  title="Copy link to this section"
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
+
+            {/* Progress meter */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1.5">
+                <span>Your progress</span>
+                <span className="font-mono text-foreground/80">{completionPct}%</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-[width] duration-500 ease-out"
+                  style={{ width: `${completionPct}%` }}
+                />
+              </div>
+            </div>
+
             <ul className="space-y-2">
-              {pattern.problems.map((pr) => (
-                <li key={pr.id + pr.url}>
-                  <a
-                    href={pr.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-border/40 bg-background/40 hover:border-sky-500/40 hover:bg-card/60 transition-colors group"
+              {pattern.problems.map((pr) => {
+                const key = problemKey(pr.id, pr.url);
+                const checked = problemsDone.has(key);
+                return (
+                  <li
+                    key={pr.id + pr.url}
+                    className={cn(
+                      "flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border bg-background/40 transition-colors group",
+                      checked
+                        ? "border-emerald-500/40 bg-emerald-500/5"
+                        : "border-border/40 hover:border-sky-500/40 hover:bg-card/60",
+                    )}
                   >
-                    <span className="flex items-center gap-3 min-w-0">
+                    <span className="flex items-center gap-3 min-w-0 flex-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleProblem(key)}
+                        aria-label={checked ? "Mark as not done" : "Mark as done"}
+                        aria-pressed={checked}
+                        className={cn(
+                          "h-5 w-5 rounded-md border grid place-items-center shrink-0 transition-colors",
+                          checked
+                            ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                            : "border-border/60 text-transparent hover:border-sky-500/50 hover:text-sky-400",
+                        )}
+                      >
+                        <Check className="h-3 w-3" />
+                      </button>
                       <span className="font-mono text-xs text-muted-foreground w-12 shrink-0">
                         {pr.id}
                       </span>
-                      <span className="font-medium text-sm truncate group-hover:text-sky-300">
+                      <a
+                        href={pr.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(
+                          "font-medium text-sm truncate hover:text-sky-300 transition-colors",
+                          checked && "line-through text-muted-foreground",
+                        )}
+                      >
                         {pr.title}
-                      </span>
+                      </a>
                     </span>
                     <span className="flex items-center gap-2 shrink-0">
                       <Badge
@@ -451,13 +583,104 @@ export default function PatternDetailContent({
                       >
                         {pr.difficulty}
                       </Badge>
-                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                      <a
+                        href={pr.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Open ${pr.title} on LeetCode`}
+                        className="text-muted-foreground hover:text-sky-300 transition-colors"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
                     </span>
-                  </a>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           </section>
+
+          {/* Sibling navigation */}
+          {(prev || next) && (
+            <nav
+              aria-label="Pattern navigation"
+              className="grid gap-3 sm:grid-cols-2"
+            >
+              {prev ? (
+                <Link
+                  to={`/learn/dsa-studio/pattern/${prev.id}`}
+                  className="group rounded-xl border border-border/40 bg-card/40 p-4 hover:border-sky-500/40 hover:bg-card/60 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <ChevronLeft className="h-3 w-3" /> Previous
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span aria-hidden className="text-lg">{prev.emoji}</span>
+                    <span className="font-semibold text-sm group-hover:text-sky-300 truncate">
+                      {prev.title}
+                    </span>
+                  </div>
+                </Link>
+              ) : (
+                <span />
+              )}
+              {next ? (
+                <Link
+                  to={`/learn/dsa-studio/pattern/${next.id}`}
+                  className="group rounded-xl border border-border/40 bg-card/40 p-4 hover:border-sky-500/40 hover:bg-card/60 transition-colors text-right"
+                >
+                  <div className="flex items-center justify-end gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Next <ChevronRight className="h-3 w-3" />
+                  </div>
+                  <div className="mt-1.5 flex items-center justify-end gap-2">
+                    <span className="font-semibold text-sm group-hover:text-sky-300 truncate">
+                      {next.title}
+                    </span>
+                    <span aria-hidden className="text-lg">{next.emoji}</span>
+                  </div>
+                </Link>
+              ) : (
+                <span />
+              )}
+            </nav>
+          )}
+
+          {/* Related patterns */}
+          {relatedPatterns.length > 0 && category && (
+            <section className="rounded-xl border border-border/40 bg-card/40 p-5">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-sky-400" />
+                  More in {category.title}
+                </h3>
+                <Link
+                  to={`/learn/dsa-studio?tab=patterns#pat-${category.id}`}
+                  className="text-[11px] text-sky-400 hover:text-sky-300 transition-colors"
+                >
+                  View all →
+                </Link>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {relatedPatterns.map((rp) => (
+                  <Link
+                    key={rp.id}
+                    to={`/learn/dsa-studio/pattern/${rp.id}`}
+                    className="group flex items-start gap-3 px-3 py-2.5 rounded-lg border border-border/40 bg-background/40 hover:border-sky-500/40 hover:bg-card/60 transition-colors"
+                  >
+                    <span aria-hidden className="text-xl shrink-0">{rp.emoji}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium text-sm truncate group-hover:text-sky-300">
+                        {rp.title}
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground truncate">
+                        {rp.subtitle}
+                      </span>
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 self-center" />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </div>
