@@ -77,8 +77,9 @@ export const useDsaPatternAchievements = (done: Set<string>, currentStreak: numb
   const [feed, setFeed] = useState<AchievementFeedItem[]>(() => loadArr<AchievementFeedItem>(LS_FEED));
   const knownBadgesRef = useRef<Set<string>>(new Set(loadArr<string>(LS_UNLOCKED)));
   const lastStreakRef = useRef<number>(loadNum(LS_STREAK_MAX));
-  /** Skip the very first effect run so we don't toast pre-existing unlocks. */
-  const hydratedRef = useRef(false);
+  /** Skip the very first effect run for each detector so we don't toast pre-existing state. */
+  const badgeHydratedRef = useRef(false);
+  const streakHydratedRef = useRef(false);
 
   useEffect(() => save(LS_FEED, feed.slice(0, 50)), [feed]);
 
