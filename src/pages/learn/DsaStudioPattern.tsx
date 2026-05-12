@@ -51,7 +51,7 @@ export default function DsaStudioPattern() {
   }
 
   return (
-    <div className="-mx-4 md:-mx-6 h-[calc(100vh-4rem)]">
+    <div className="-mx-4 md:-mx-6">
       <Helmet>
         <title>{found.pattern.title} · Common Patterns · DSA Studio</title>
         <meta name="description" content={found.pattern.subtitle || found.pattern.description.slice(0, 150)} />
