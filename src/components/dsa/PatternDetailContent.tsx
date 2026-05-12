@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Bookmark,
@@ -16,6 +16,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { CommonPattern, PatternCategory, PatternProblem } from "@/data/dsaCommonPatternsData";
+
+const SECTIONS = [
+  { id: "overview", label: "Overview" },
+  { id: "when-to-use", label: "When to use" },
+  { id: "complexity", label: "Complexity" },
+  { id: "problems", label: "Problems" },
+] as const;
+type SectionId = (typeof SECTIONS)[number]["id"];
 
 const diffStyles: Record<PatternProblem["difficulty"], string> = {
   Easy: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
@@ -92,6 +100,74 @@ export default function PatternDetailContent({
     }
   };
 
+  const location = useLocation();
+  const initialHash = (location.hash || "").replace(/^#/, "") as SectionId | "";
+  const [activeSection, setActiveSection] = useState<SectionId>(
+    SECTIONS.some((s) => s.id === initialHash) ? (initialHash as SectionId) : "overview",
+  );
+
+  // Scroll to the section referenced in the URL hash on mount + hash change.
+  useEffect(() => {
+    const raw = (location.hash || "").replace(/^#/, "");
+    if (!raw || !SECTIONS.some((s) => s.id === raw)) return;
+    let attempts = 0;
+    const tryScroll = () => {
+      attempts += 1;
+      const el = document.getElementById(`section-${raw}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "auto", block: "start" });
+        setActiveSection(raw as SectionId);
+        return;
+      }
+      if (attempts < 20) requestAnimationFrame(tryScroll);
+    };
+    requestAnimationFrame(tryScroll);
+  }, [location.hash, pattern.id]);
+
+  // Track active section as the user scrolls so the jump nav highlights correctly.
+  useEffect(() => {
+    const els = SECTIONS
+      .map((s) => document.getElementById(`section-${s.id}`))
+      .filter((e): e is HTMLElement => !!e);
+    if (!els.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]) {
+          const id = visible[0].target.id.replace(/^section-/, "") as SectionId;
+          setActiveSection(id);
+        }
+      },
+      { rootMargin: "-120px 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [pattern.id]);
+
+  const goToSection = (id: SectionId) => {
+    const el = document.getElementById(`section-${id}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Update the URL hash without adding a new history entry per click.
+    if (typeof window !== "undefined") {
+      const url = `${window.location.pathname}${window.location.search}#${id}`;
+      window.history.replaceState(window.history.state, "", url);
+    }
+    setActiveSection(id);
+  };
+
+  const handleCopySectionLink = async (id: SectionId) => {
+    const url = `${window.location.origin}${window.location.pathname}${window.location.search}#${id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
     <div className="min-h-full">
       {/* Top breadcrumb bar — sticks to viewport, scrolls with the page */}
@@ -154,12 +230,40 @@ export default function PatternDetailContent({
         </div>
       </div>
 
+      {/* Section jump nav — keeps deep links discoverable and reflects the active section */}
+      <div className="sticky top-[57px] z-10 border-b border-border/40 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50">
+        <nav
+          aria-label="Pattern sections"
+          className="mx-auto w-full max-w-5xl px-4 md:px-8 py-2 flex flex-wrap items-center gap-1.5 overflow-x-auto"
+        >
+          {SECTIONS.map((s) => {
+            const active = activeSection === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => goToSection(s.id)}
+                className={cn(
+                  "h-7 px-2.5 rounded-md text-xs border transition-colors whitespace-nowrap",
+                  active
+                    ? "border-sky-500/50 bg-sky-500/15 text-sky-200"
+                    : "border-border/40 bg-card/40 text-muted-foreground hover:text-foreground hover:border-sky-500/30",
+                )}
+                aria-current={active ? "true" : undefined}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
       {/* Body */}
       {/* Body — uses natural document scroll so all viewport sizes behave */}
       <div className="w-full">
         <div className="mx-auto w-full max-w-5xl px-4 md:px-8 py-6 space-y-6">
           {/* Hero */}
-          <section className="rounded-xl border border-sky-500/30 bg-gradient-to-br from-sky-500/10 via-card/40 to-card/40 p-5 md:p-6">
+          <section id="section-overview" className="scroll-mt-32 rounded-xl border border-sky-500/30 bg-gradient-to-br from-sky-500/10 via-card/40 to-card/40 p-5 md:p-6">
             <div className="flex items-start gap-4">
               <span
                 aria-hidden
@@ -226,10 +330,21 @@ export default function PatternDetailContent({
 
           {/* When to use + Complexity */}
           <section className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-border/40 bg-card/40 p-5">
-              <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
-                📋 When to use
-              </h3>
+            <div id="section-when-to-use" className="scroll-mt-32 rounded-xl border border-border/40 bg-card/40 p-5">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-1.5">
+                  📋 When to use
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => handleCopySectionLink("when-to-use")}
+                  className="text-muted-foreground/70 hover:text-foreground transition-colors"
+                  aria-label="Copy link to When to use"
+                  title="Copy link to this section"
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
               <ul className="space-y-2.5">
                 {whenToUse.map((line, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm">
@@ -240,10 +355,21 @@ export default function PatternDetailContent({
               </ul>
             </div>
 
-            <div className="rounded-xl border border-border/40 bg-card/40 p-5">
-              <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
-                ⚡ Complexity
-              </h3>
+            <div id="section-complexity" className="scroll-mt-32 rounded-xl border border-border/40 bg-card/40 p-5">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-1.5">
+                  ⚡ Complexity
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => handleCopySectionLink("complexity")}
+                  className="text-muted-foreground/70 hover:text-foreground transition-colors"
+                  aria-label="Copy link to Complexity"
+                  title="Copy link to this section"
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 text-center">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Time</div>
@@ -283,13 +409,24 @@ export default function PatternDetailContent({
           </div>
 
           {/* Practice problems */}
-          <section className="rounded-xl border border-border/40 bg-card/40 p-5">
-            <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
-              🎯 Practice Problems
-              <span className="ml-1 text-muted-foreground/70 normal-case tracking-normal">
-                ({pattern.problems.length})
-              </span>
-            </h3>
+          <section id="section-problems" className="scroll-mt-32 rounded-xl border border-border/40 bg-card/40 p-5">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-1.5">
+                🎯 Practice Problems
+                <span className="ml-1 text-muted-foreground/70 normal-case tracking-normal">
+                  ({pattern.problems.length})
+                </span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => handleCopySectionLink("problems")}
+                className="text-muted-foreground/70 hover:text-foreground transition-colors"
+                aria-label="Copy link to Practice Problems"
+                title="Copy link to this section"
+              >
+                <Link2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
             <ul className="space-y-2">
               {pattern.problems.map((pr) => (
                 <li key={pr.id + pr.url}>
