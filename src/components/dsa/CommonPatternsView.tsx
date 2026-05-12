@@ -540,6 +540,37 @@ export default function CommonPatternsView() {
             })}
           </div>
 
+          {/* Mastery quick filter */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mr-1">
+              Mastery
+            </span>
+            {(
+              [
+                { id: "all", label: "All", color: "" },
+                { id: "Bronze", label: "Bronze ≥25%", color: "border-amber-700/50 bg-amber-700/15 text-amber-300" },
+                { id: "Silver", label: "Silver ≥50%", color: "border-zinc-400/50 bg-zinc-400/15 text-zinc-200" },
+                { id: "Gold", label: "Gold 100%", color: "border-yellow-500/60 bg-yellow-500/20 text-yellow-300" },
+              ] as const
+            ).map((m) => {
+              const active = masteryFilter === m.id;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => setMasteryFilter(m.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs border transition-colors",
+                    active
+                      ? m.color || "border-primary/50 bg-primary/15 text-primary"
+                      : "border-border/40 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border",
+                  )}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Quick toggles + sort */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <Button
