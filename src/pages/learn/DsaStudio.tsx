@@ -468,6 +468,8 @@ export default function DsaStudio() {
       <div className="flex lg:pl-64">
         {/* Sidebar - fixed so it never scrolls with main content (immune to ancestor transforms) */}
         <aside
+          aria-label="Topics navigation"
+          data-dsa-sidebar-scroll
           className="hidden lg:block w-64 border-r border-border/40 fixed left-0 z-10 overflow-y-auto overscroll-contain bg-background"
           style={{
             top: "var(--dsa-header-h, 57px)",
@@ -479,7 +481,11 @@ export default function DsaStudio() {
 
         {/* Mobile sidebar drawer */}
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-          <SheetContent side="left" className="w-72 p-0 lg:hidden overflow-y-auto">
+          <SheetContent
+            side="left"
+            data-dsa-sidebar-scroll
+            className="w-[85vw] max-w-xs p-0 lg:hidden overflow-y-auto"
+          >
             <SheetTitle className="sr-only">Topics</SheetTitle>
             {sidebarContent}
           </SheetContent>
