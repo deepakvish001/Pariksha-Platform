@@ -263,7 +263,7 @@ export default function PatternDetailContent({
       <div className="w-full">
         <div className="mx-auto w-full max-w-5xl px-4 md:px-8 py-6 space-y-6">
           {/* Hero */}
-          <section className="rounded-xl border border-sky-500/30 bg-gradient-to-br from-sky-500/10 via-card/40 to-card/40 p-5 md:p-6">
+          <section id="section-overview" className="scroll-mt-32 rounded-xl border border-sky-500/30 bg-gradient-to-br from-sky-500/10 via-card/40 to-card/40 p-5 md:p-6">
             <div className="flex items-start gap-4">
               <span
                 aria-hidden
