@@ -165,6 +165,11 @@ export default function CommonPatternsView() {
     COMMON_PATTERNS.forEach((cat) => cat.patterns.forEach((p) => m.set(p.id, p)));
     return m;
   }, []);
+  const categoryByPattern = useMemo(() => {
+    const m = new Map<string, PatternCategory>();
+    COMMON_PATTERNS.forEach((cat) => cat.patterns.forEach((p) => m.set(p.id, cat)));
+    return m;
+  }, []);
 
   const setOpenPattern = useCallback(
     (p: CommonPattern | null) => {
