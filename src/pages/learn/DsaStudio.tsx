@@ -195,12 +195,14 @@ export default function DsaStudio() {
 
   // Measure header height -> CSS var so sticky offsets adapt to viewport
   const headerRef = useRef<HTMLElement | null>(null);
+  const [headerH, setHeaderH] = useState(57);
   useEffect(() => {
     const el = headerRef.current;
     if (!el) return;
     const apply = () => {
-      const h = el.getBoundingClientRect().height;
-      document.documentElement.style.setProperty("--dsa-header-h", `${Math.round(h)}px`);
+      const h = Math.round(el.getBoundingClientRect().height);
+      document.documentElement.style.setProperty("--dsa-header-h", `${h}px`);
+      setHeaderH((prev) => (prev === h ? prev : h));
     };
     apply();
     const ro = new ResizeObserver(apply);
