@@ -276,6 +276,10 @@ export default function DsaStudio() {
   const topicSectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const isProgrammaticScroll = useRef(false);
   useEffect(() => {
+    const headerVar = getComputedStyle(document.documentElement)
+      .getPropertyValue("--dsa-header-h")
+      .trim();
+    const headerH = parseInt(headerVar, 10) || 57;
     const observer = new IntersectionObserver(
       (entries) => {
         if (isProgrammaticScroll.current) return;
@@ -285,9 +289,21 @@ export default function DsaStudio() {
         if (visible[0]) {
           const id = (visible[0].target as HTMLElement).dataset.topicId;
           if (id) setActiveTopic(id);
+          return;
         }
+        // Fallback: pick the last section whose top crossed just below the header.
+        const triggerY = headerH + 16;
+        const candidates = Object.entries(topicSectionRefs.current)
+          .filter(([, el]) => !!el)
+          .map(([id, el]) => ({ id, top: (el as HTMLElement).getBoundingClientRect().top }))
+          .filter((c) => c.top <= triggerY)
+          .sort((a, b) => b.top - a.top);
+        if (candidates[0]) setActiveTopic(candidates[0].id);
       },
-      { rootMargin: "-80px 0px -60% 0px", threshold: [0, 0.25, 0.5, 1] },
+      {
+        rootMargin: `-${headerH + 8}px 0px -55% 0px`,
+        threshold: [0, 0.1, 0.25, 0.5, 1],
+      },
     );
     Object.values(topicSectionRefs.current).forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
