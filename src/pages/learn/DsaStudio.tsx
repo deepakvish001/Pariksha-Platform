@@ -518,17 +518,17 @@ export default function DsaStudio() {
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar - fixed so it never scrolls with main content (immune to ancestor transforms) */}
+      <div className={desktopNavOpen ? "flex lg:pl-64" : "flex"}>
+        {/* Sidebar - truly fixed to viewport so it never scrolls with main content */}
         {desktopNavOpen && (
           <aside
             id="dsa-desktop-sidebar"
             aria-label="Topics navigation"
             data-dsa-sidebar-scroll
-            className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky z-10 overflow-y-auto overscroll-contain bg-background"
+            className="hidden lg:block fixed left-0 w-64 border-r border-border/40 z-20 overflow-y-auto overscroll-contain bg-background"
             style={{
               top: "var(--dsa-header-h, 57px)",
-              height: "calc(100vh - var(--dsa-header-h, 57px))",
+              height: "calc(100dvh - var(--dsa-header-h, 57px))",
             }}
           >
             {sidebarContent}
