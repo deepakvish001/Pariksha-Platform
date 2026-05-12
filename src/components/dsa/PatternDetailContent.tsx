@@ -146,18 +146,78 @@ export default function PatternDetailContent({
     [category, pattern.id],
   );
 
-  // Reading progress for the page
+  // Reading progress for the page (persisted per pattern in localStorage)
+  const READ_LS = `dsaPatterns:readProgress:v1:${pattern.id}`;
   const [readProgress, setReadProgress] = useState(0);
+
+  // Restore saved scroll position on mount / when pattern changes.
+  // Skips restoration if URL has a section hash (deep link wins).
   useEffect(() => {
-    const onScroll = () => {
+    const hash = (window.location.hash || "").replace(/^#/, "");
+    if (hash) return;
+    let raw: string | null = null;
+    try {
+      raw = localStorage.getItem(READ_LS);
+    } catch {
+      /* ignore */
+    }
+    if (!raw) return;
+    let saved: { y?: number; pct?: number } = {};
+    try {
+      saved = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    const targetY = typeof saved.y === "number" ? saved.y : 0;
+    if (targetY <= 0) return;
+
+    let attempts = 0;
+    const tryRestore = () => {
+      attempts += 1;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (max >= targetY || attempts > 30) {
+        window.scrollTo({ top: Math.min(targetY, Math.max(0, max)), behavior: "auto" });
+        return;
+      }
+      requestAnimationFrame(tryRestore);
+    };
+    requestAnimationFrame(tryRestore);
+  }, [pattern.id, READ_LS]);
+
+  // Track + persist progress on scroll (throttled with rAF, debounced save).
+  useEffect(() => {
+    let raf = 0;
+    let saveTimer: ReturnType<typeof setTimeout> | null = null;
+    const compute = () => {
+      raf = 0;
       const h = document.documentElement;
       const total = h.scrollHeight - h.clientHeight;
-      setReadProgress(total > 0 ? Math.min(100, Math.max(0, (h.scrollTop / total) * 100)) : 0);
+      const y = h.scrollTop;
+      const pct = total > 0 ? Math.min(100, Math.max(0, (y / total) * 100)) : 0;
+      setReadProgress(pct);
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        try {
+          localStorage.setItem(READ_LS, JSON.stringify({ y, pct: Math.round(pct) }));
+        } catch {
+          /* ignore */
+        }
+      }, 200);
     };
-    onScroll();
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(compute);
+    };
+    compute();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+      if (saveTimer) clearTimeout(saveTimer);
+    };
+  }, [pattern.id, READ_LS]);
 
   const [copied, setCopied] = useState(false);
   const handleCopyLink = async () => {
