@@ -163,6 +163,19 @@ export default function DsaStudio() {
     }
   }, []);
 
+  // Enable smooth scrolling and header-aware scroll padding while this page is mounted
+  useEffect(() => {
+    const root = document.documentElement;
+    const prevBehavior = root.style.scrollBehavior;
+    const prevPadding = root.style.scrollPaddingTop;
+    root.style.scrollBehavior = "smooth";
+    root.style.scrollPaddingTop = "calc(var(--dsa-header-h, 57px) + 12px)";
+    return () => {
+      root.style.scrollBehavior = prevBehavior;
+      root.style.scrollPaddingTop = prevPadding;
+    };
+  }, []);
+
   useEffect(() => {
     let ticking = false;
     const onScroll = () => {
