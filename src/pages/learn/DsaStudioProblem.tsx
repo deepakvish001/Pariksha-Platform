@@ -779,7 +779,11 @@ export default function DsaStudioProblem() {
                           const isMatch = q ? matches.includes(i) : false;
                           const dimmed = q && !isMatch;
                           return (
-                            <li key={i} className={cn(dimmed && "opacity-40")}>
+                            <li
+                              key={i}
+                              ref={(el) => { stepItemRefs.current[i] = el; }}
+                              className={cn(dimmed && "opacity-40")}
+                            >
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <button
