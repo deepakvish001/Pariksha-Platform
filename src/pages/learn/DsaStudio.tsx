@@ -163,6 +163,19 @@ export default function DsaStudio() {
     }
   }, []);
 
+  // Enable smooth scrolling and header-aware scroll padding while this page is mounted
+  useEffect(() => {
+    const root = document.documentElement;
+    const prevBehavior = root.style.scrollBehavior;
+    const prevPadding = root.style.scrollPaddingTop;
+    root.style.scrollBehavior = "smooth";
+    root.style.scrollPaddingTop = "calc(var(--dsa-header-h, 57px) + 12px)";
+    return () => {
+      root.style.scrollBehavior = prevBehavior;
+      root.style.scrollPaddingTop = prevPadding;
+    };
+  }, []);
+
   useEffect(() => {
     let ticking = false;
     const onScroll = () => {
@@ -283,11 +296,16 @@ export default function DsaStudio() {
   const handleTopicClick = (id: string) => {
     setActiveTopic(id);
     const el = topicSectionRefs.current[id];
-    if (el) {
-      isProgrammaticScroll.current = true;
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      window.setTimeout(() => { isProgrammaticScroll.current = false; }, 800);
-    }
+    if (!el) return;
+    const headerVar = getComputedStyle(document.documentElement)
+      .getPropertyValue("--dsa-header-h")
+      .trim();
+    const headerH = parseInt(headerVar, 10) || 57;
+    const offset = headerH + 12;
+    const y = el.getBoundingClientRect().top + window.scrollY - offset;
+    isProgrammaticScroll.current = true;
+    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    window.setTimeout(() => { isProgrammaticScroll.current = false; }, 800);
   };
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
