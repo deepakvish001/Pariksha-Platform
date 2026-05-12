@@ -153,14 +153,16 @@ export default function DsaStudio() {
     window.localStorage.setItem(LS_SAVED, JSON.stringify(Array.from(saved)));
   }, [saved]);
 
+  // Ref to scrollable main container (the right-side scroll area)
+  const mainScrollRef = useRef<HTMLElement | null>(null);
+
   // Restore scroll position on mount; persist on scroll & unmount
   useEffect(() => {
     const raw = window.localStorage.getItem(LS_SCROLL);
     const y = raw ? parseInt(raw, 10) : 0;
     if (Number.isFinite(y) && y > 0) {
-      // Defer to allow content to render
       const id = window.setTimeout(() => {
-        window.scrollTo({ top: y, behavior: "auto" });
+        mainScrollRef.current?.scrollTo({ top: y, behavior: "auto" });
       }, 50);
       return () => window.clearTimeout(id);
     }
@@ -170,29 +172,28 @@ export default function DsaStudio() {
   useEffect(() => {
     const root = document.documentElement;
     const prevBehavior = root.style.scrollBehavior;
-    const prevPadding = root.style.scrollPaddingTop;
     root.style.scrollBehavior = "smooth";
-    root.style.scrollPaddingTop = "calc(var(--dsa-header-h, 57px) + 12px)";
     return () => {
       root.style.scrollBehavior = prevBehavior;
-      root.style.scrollPaddingTop = prevPadding;
     };
   }, []);
 
   useEffect(() => {
+    const el = mainScrollRef.current;
+    if (!el) return;
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
       window.requestAnimationFrame(() => {
-        window.localStorage.setItem(LS_SCROLL, String(window.scrollY));
+        window.localStorage.setItem(LS_SCROLL, String(el.scrollTop));
         ticking = false;
       });
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
+    el.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.localStorage.setItem(LS_SCROLL, String(window.scrollY));
+      el.removeEventListener("scroll", onScroll);
+      window.localStorage.setItem(LS_SCROLL, String(el.scrollTop));
     };
   }, []);
 
