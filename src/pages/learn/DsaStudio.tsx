@@ -46,6 +46,7 @@ import { cn } from "@/lib/utils";
 
 import { DSA_TOPICS as TOPICS, type Diff, type DsaProblem as Problem } from "@/data/dsaStudioData";
 import CommonPatternsView from "@/components/dsa/CommonPatternsView";
+import CodeTricksView from "@/components/dsa/CodeTricksView";
 
 const REFERENCE = [
   { id: "patterns", label: "Common Patterns", icon: Puzzle, count: 43 },
@@ -617,7 +618,7 @@ export default function DsaStudio() {
             })}
           </div>
 
-          {activeTab === "patterns" ? <CommonPatternsView /> : (<>
+          {activeTab === "patterns" ? <CommonPatternsView /> : activeTab === "tricks" ? <CodeTricksView /> : (<>
           {/* Recommended sequence */}
           <section className="rounded-xl border border-border/40 bg-card/40 p-4 md:p-5">
             <h2 className="flex items-center gap-2 text-base font-semibold text-emerald-400 mb-3">
