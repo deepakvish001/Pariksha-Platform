@@ -68,20 +68,85 @@ export default function DsaStudioProblem() {
   };
 
   if (!found) {
+    const needle = slug.toLowerCase();
+    const suggestions = DSA_TOPICS
+      .flatMap((t) => t.groups.flatMap((g) => g.problems.map((p) => ({ ...p, topicLabel: t.label }))))
+      .map((p) => {
+        const s = p.slug.toLowerCase();
+        let score = 0;
+        if (s === needle) score = 100;
+        else if (s.includes(needle) || needle.includes(s)) score = 60;
+        else {
+          const tokens = needle.split(/[-_\s]+/).filter(Boolean);
+          score = tokens.reduce((acc, tok) => acc + (s.includes(tok) ? 10 : 0), 0);
+        }
+        return { p, score };
+      })
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map((x) => x.p);
+
     return (
-      <div className="min-h-screen grid place-items-center bg-background text-foreground p-6">
-        <div className="text-center space-y-3">
-          <h1 className="text-2xl font-bold">Problem not found</h1>
-          <p className="text-muted-foreground text-sm">
-            The slug <span className="font-mono text-foreground">{slug}</span> is not in the DSA Studio index.
-          </p>
-          <Button asChild variant="outline">
-            <Link to="/learn/dsa-studio">
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back to DSA Studio
-            </Link>
-          </Button>
+      <main
+        role="main"
+        className="min-h-screen grid place-items-center bg-background text-foreground p-6"
+      >
+        <Helmet>
+          <title>Problem not found · DSA Studio</title>
+          <meta name="robots" content="noindex,follow" />
+        </Helmet>
+        <div className="w-full max-w-lg text-center space-y-5 rounded-2xl border border-border/40 bg-card/40 backdrop-blur-xl p-8">
+          <div className="mx-auto h-14 w-14 grid place-items-center rounded-2xl bg-rose-500/10 border border-rose-500/30">
+            <span className="text-rose-300 font-mono text-lg font-bold">404</span>
+          </div>
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-bold">Problem not found</h1>
+            <p className="text-muted-foreground text-sm">
+              We couldn’t find a DSA Studio problem with the slug{" "}
+              <span className="font-mono text-foreground break-all">“{slug || "—"}”</span>.
+            </p>
+          </div>
+
+          {suggestions.length > 0 && (
+            <div className="text-left space-y-2">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                Did you mean
+              </div>
+              <ul className="space-y-1">
+                {suggestions.map((p) => (
+                  <li key={p.slug}>
+                    <Link
+                      to={`/learn/dsa-studio/${p.slug}`}
+                      className="flex items-center justify-between gap-3 rounded-md border border-border/40 bg-background/40 px-3 py-2 text-xs hover:bg-violet-500/10 hover:border-violet-500/40 transition-colors"
+                    >
+                      <span className="truncate text-foreground">{p.title}</span>
+                      <Badge variant="outline" className={cn("h-5 text-[10px]", diffStyles[p.difficulty])}>
+                        {p.difficulty}
+                      </Badge>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/learn/dsa-studio">
+                <ArrowLeft className="h-4 w-4 mr-1.5" /> Back to DSA Studio
+              </Link>
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              className="bg-violet-500/90 hover:bg-violet-500 text-violet-50"
+            >
+              <Link to="/library/problems">Browse all problems</Link>
+            </Button>
+          </div>
         </div>
-      </div>
+      </main>
     );
   }
 
