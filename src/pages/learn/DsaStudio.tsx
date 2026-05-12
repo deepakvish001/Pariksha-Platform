@@ -157,8 +157,6 @@ export default function DsaStudio() {
   const toggleSolved = toggleSet(setSolved);
   const toggleSaved = toggleSet(setSaved);
 
-  const topic = useMemo(() => TOPICS.find((t) => t.id === activeTopic) ?? TOPICS[0], [activeTopic]);
-
   const matchesPriority = (p: Problem) => {
     switch (priority) {
       case "all": return true;
@@ -169,28 +167,25 @@ export default function DsaStudio() {
     }
   };
 
-  const filteredGroups = useMemo(() => {
+  const filteredByTopic = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return topic.groups
-      .map((g) => ({
-        ...g,
-        problems: g.problems.filter((p) => {
-          if (!matchesPriority(p)) return false;
-          if (!q) return true;
-          return p.title.toLowerCase().includes(q) || String(p.id).includes(q);
-        }),
-      }))
-      .filter((g) => g.problems.length);
-  }, [topic, search, priority]);
+    return TOPICS.map((t) => {
+      const groups = t.groups
+        .map((g) => ({
+          ...g,
+          problems: g.problems.filter((p) => {
+            if (!matchesPriority(p)) return false;
+            if (!q) return true;
+            return p.title.toLowerCase().includes(q) || String(p.id).includes(q);
+          }),
+        }))
+        .filter((g) => g.problems.length);
+      const rendered = groups.reduce((s, g) => s + g.problems.length, 0);
+      const total = t.groups.reduce((s, g) => s + g.problems.length, 0);
+      return { topic: t, groups, rendered, total };
+    });
+  }, [search, priority]);
 
-  const renderedCount = useMemo(
-    () => filteredGroups.reduce((sum, g) => sum + g.problems.length, 0),
-    [filteredGroups],
-  );
-  const topicTotal = useMemo(
-    () => topic.groups.reduce((sum, g) => sum + g.problems.length, 0),
-    [topic],
-  );
   const grandTotal = useMemo(
     () => TOPICS.reduce((s, t) => s + t.groups.reduce((x, g) => x + g.problems.length, 0), 0),
     [],
