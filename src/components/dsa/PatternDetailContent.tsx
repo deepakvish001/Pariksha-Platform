@@ -92,9 +92,9 @@ export default function PatternDetailContent({
   };
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Top breadcrumb bar */}
-      <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border/40 px-4 md:px-6 py-3 bg-background/80 backdrop-blur">
+    <div className="min-h-full">
+      {/* Top breadcrumb bar — sticks to viewport, scrolls with the page */}
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-border/40 px-4 md:px-6 py-3 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center gap-3 min-w-0">
           <Button size="sm" variant="outline" onClick={onBack} className="h-8 gap-1.5 text-xs">
             <ArrowLeft className="h-3.5 w-3.5" /> {backLabel}
@@ -138,7 +138,8 @@ export default function PatternDetailContent({
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Body — uses natural document scroll so all viewport sizes behave */}
+      <div className="w-full">
         <div className="mx-auto w-full max-w-5xl px-4 md:px-8 py-6 space-y-6">
           {/* Hero */}
           <section className="rounded-xl border border-sky-500/30 bg-gradient-to-br from-sky-500/10 via-card/40 to-card/40 p-5 md:p-6">
