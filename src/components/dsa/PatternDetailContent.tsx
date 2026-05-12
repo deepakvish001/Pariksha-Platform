@@ -628,7 +628,15 @@ export default function PatternDetailContent({
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={markAllProblemsDone}
+                  onClick={() => {
+                    const remaining = totalProblems - completedProblems;
+                    if (remaining <= 0) return;
+                    const msg =
+                      remaining === 1
+                        ? "Mark the remaining problem as done for this pattern?"
+                        : `Mark all ${remaining} remaining problems as done for this pattern?`;
+                    if (window.confirm(msg)) markAllProblemsDone();
+                  }}
                   disabled={completedProblems === totalProblems || totalProblems === 0}
                   className="h-7 px-2.5 gap-1.5 text-[11px]"
                   aria-label="Mark all problems as done"
