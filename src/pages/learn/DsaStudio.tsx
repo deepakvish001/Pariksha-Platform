@@ -568,6 +568,7 @@ export default function DsaStudio() {
 
         {/* Main */}
         <main
+          ref={mainScrollRef}
           id="dsa-main-content"
           tabIndex={-1}
           className="flex-1 min-w-0 h-full overflow-y-auto px-4 md:px-6 pt-4 pb-4 md:pb-6 space-y-5 outline-none"
