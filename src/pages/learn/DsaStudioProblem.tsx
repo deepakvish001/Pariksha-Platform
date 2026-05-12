@@ -93,12 +93,17 @@ export default function DsaStudioProblem() {
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="flex items-center gap-3 px-4 md:px-6 py-3 flex-wrap">
-          <Link
-            to="/learn/dsa-studio"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 border-violet-500/40 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 hover:text-violet-100"
+            title="Returns to DSA Studio with your search, topic, tab, and priority filters preserved"
           >
-            <ArrowLeft className="h-4 w-4" /> Back to DSA Studio
-          </Link>
+            <Link to="/learn/dsa-studio" aria-label="Back to DSA Studio (filters preserved)">
+              <ArrowLeft className="h-4 w-4" /> Back to DSA Studio
+            </Link>
+          </Button>
           <h1 className="text-base md:text-lg font-bold bg-gradient-to-r from-violet-400 to-sky-400 bg-clip-text text-transparent ml-1">
             {problem.title}
           </h1>
