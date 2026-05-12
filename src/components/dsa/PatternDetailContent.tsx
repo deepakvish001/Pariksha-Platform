@@ -734,6 +734,7 @@ export default function PatternDetailContent({
                 );
               })}
             </ul>
+            )}
           </section>
 
           {/* Sibling navigation */}
