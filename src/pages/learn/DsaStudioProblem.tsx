@@ -49,6 +49,7 @@ export default function DsaStudioProblem() {
   const [speed, setSpeed] = useState(1); // 0.5 .. 2
   const [status, setStatus] = useState<typeof STATUSES[number]>("In progress");
   const [custom, setCustom] = useState("");
+  const [algoQuery, setAlgoQuery] = useState("");
   const totalSteps = template.algorithm.length;
 
   // Restore last viewed step for this slug from localStorage
