@@ -153,14 +153,16 @@ export default function DsaStudio() {
     window.localStorage.setItem(LS_SAVED, JSON.stringify(Array.from(saved)));
   }, [saved]);
 
+  // Ref to scrollable main container (the right-side scroll area)
+  const mainScrollRef = useRef<HTMLElement | null>(null);
+
   // Restore scroll position on mount; persist on scroll & unmount
   useEffect(() => {
     const raw = window.localStorage.getItem(LS_SCROLL);
     const y = raw ? parseInt(raw, 10) : 0;
     if (Number.isFinite(y) && y > 0) {
-      // Defer to allow content to render
       const id = window.setTimeout(() => {
-        window.scrollTo({ top: y, behavior: "auto" });
+        mainScrollRef.current?.scrollTo({ top: y, behavior: "auto" });
       }, 50);
       return () => window.clearTimeout(id);
     }
@@ -170,29 +172,28 @@ export default function DsaStudio() {
   useEffect(() => {
     const root = document.documentElement;
     const prevBehavior = root.style.scrollBehavior;
-    const prevPadding = root.style.scrollPaddingTop;
     root.style.scrollBehavior = "smooth";
-    root.style.scrollPaddingTop = "calc(var(--dsa-header-h, 57px) + 12px)";
     return () => {
       root.style.scrollBehavior = prevBehavior;
-      root.style.scrollPaddingTop = prevPadding;
     };
   }, []);
 
   useEffect(() => {
+    const el = mainScrollRef.current;
+    if (!el) return;
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
       window.requestAnimationFrame(() => {
-        window.localStorage.setItem(LS_SCROLL, String(window.scrollY));
+        window.localStorage.setItem(LS_SCROLL, String(el.scrollTop));
         ticking = false;
       });
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
+    el.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.localStorage.setItem(LS_SCROLL, String(window.scrollY));
+      el.removeEventListener("scroll", onScroll);
+      window.localStorage.setItem(LS_SCROLL, String(el.scrollTop));
     };
   }, []);
 
@@ -281,6 +282,7 @@ export default function DsaStudio() {
   const topicSectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const isProgrammaticScroll = useRef(false);
   useEffect(() => {
+    const rootEl = mainScrollRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
         if (isProgrammaticScroll.current) return;
@@ -292,8 +294,7 @@ export default function DsaStudio() {
           if (id) setActiveTopic(id);
           return;
         }
-        // Fallback: pick the last section whose top crossed just below the header.
-        const triggerY = headerH + 16;
+        const triggerY = 16;
         const candidates = Object.entries(topicSectionRefs.current)
           .filter(([, el]) => !!el)
           .map(([id, el]) => ({ id, top: (el as HTMLElement).getBoundingClientRect().top }))
@@ -302,7 +303,8 @@ export default function DsaStudio() {
         if (candidates[0]) setActiveTopic(candidates[0].id);
       },
       {
-        rootMargin: `-${headerH + 8}px 0px -55% 0px`,
+        root: rootEl ?? null,
+        rootMargin: `0px 0px -55% 0px`,
         threshold: [0, 0.1, 0.25, 0.5, 1],
       },
     );
@@ -313,12 +315,12 @@ export default function DsaStudio() {
   const handleTopicClick = (id: string) => {
     setActiveTopic(id);
     const el = topicSectionRefs.current[id];
-    if (!el) return;
-    const offset = headerH + 12;
-    const y = el.getBoundingClientRect().top + window.scrollY - offset;
+    const scroller = mainScrollRef.current;
+    if (!el || !scroller) return;
+    const offset = 12;
+    const y = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - offset;
     isProgrammaticScroll.current = true;
-    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
-    // Move keyboard focus to the section so screen-reader / keyboard users land there
+    scroller.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
     window.setTimeout(() => {
       try { el.focus({ preventScroll: true }); } catch { /* noop */ }
       isProgrammaticScroll.current = false;
@@ -444,20 +446,15 @@ export default function DsaStudio() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="h-[100dvh] flex flex-col overflow-hidden bg-background text-foreground">
       {/* Skip to content link (a11y) */}
       <a
         href="#dsa-main-content"
         onClick={(e) => {
           e.preventDefault();
-          const el = document.getElementById("dsa-main-content");
+          const el = mainScrollRef.current;
           if (!el) return;
-          const headerVar = getComputedStyle(document.documentElement)
-            .getPropertyValue("--dsa-header-h")
-            .trim();
-          const headerH = parseInt(headerVar, 10) || 57;
-          const y = el.getBoundingClientRect().top + window.scrollY - (headerH + 12);
-          window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+          el.scrollTo({ top: 0, behavior: "smooth" });
           el.focus({ preventScroll: true });
         }}
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-2 focus:z-[60] focus:px-3 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring"
@@ -468,7 +465,7 @@ export default function DsaStudio() {
       {/* Top bar */}
       <header
         ref={headerRef}
-        className="sticky top-0 z-30 border-b border-border/40 bg-background/95 backdrop-blur-xl"
+        className="flex-none z-30 border-b border-border/40 bg-background/95 backdrop-blur-xl"
       >
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-2">
@@ -518,18 +515,14 @@ export default function DsaStudio() {
         </div>
       </header>
 
-      <div className={desktopNavOpen ? "flex lg:pl-64" : "flex"}>
-        {/* Sidebar - truly fixed to viewport so it never scrolls with main content */}
+      <div className="flex-1 min-h-0 flex">
+        {/* Sidebar - independent scroll, sits beside main */}
         {desktopNavOpen && (
           <aside
             id="dsa-desktop-sidebar"
             aria-label="Topics navigation"
             data-dsa-sidebar-scroll
-            className="hidden lg:block fixed left-0 w-64 border-r border-border/40 z-20 overflow-y-auto overscroll-contain bg-background"
-            style={{
-              top: "var(--dsa-header-h, 57px)",
-              height: "calc(100dvh - var(--dsa-header-h, 57px))",
-            }}
+            className="hidden lg:block flex-none w-64 h-full border-r border-border/40 overflow-y-auto overscroll-contain bg-background"
           >
             {sidebarContent}
           </aside>
@@ -570,10 +563,11 @@ export default function DsaStudio() {
 
         {/* Main */}
         <main
+          ref={mainScrollRef}
           id="dsa-main-content"
           tabIndex={-1}
-          className="flex-1 min-w-0 px-4 md:px-6 pb-4 md:pb-6 space-y-5 outline-none"
-          style={{ paddingTop: "calc(var(--dsa-header-h, 57px) * 0.35 + 1rem)", scrollPaddingTop: "calc(var(--dsa-header-h, 57px) + 1rem)" }}
+          className="flex-1 min-w-0 h-full overflow-y-auto px-4 md:px-6 pt-4 pb-4 md:pb-6 space-y-5 outline-none"
+          style={{ scrollPaddingTop: "1rem" }}
         >
           {/* Tabs row */}
           <motion.div
