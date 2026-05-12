@@ -50,11 +50,58 @@ export default function DsaStudioPattern() {
     );
   }
 
+  const path = `/learn/dsa-studio/pattern/${found.pattern.id}`;
+  const origin =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "https://exact-web-sight.lovable.app";
+  const canonical = `${origin}${path}`;
+  const pageTitle = `${found.pattern.title} · Common Patterns · DSA Studio`;
+  const description = (
+    found.pattern.subtitle ||
+    found.pattern.description ||
+    "DSA pattern reference with complexity, when-to-use guidance, and curated practice problems."
+  ).slice(0, 200);
+  const ogImage = `${origin}/og-image.png`;
+
   return (
     <div className="-mx-4 md:-mx-6">
       <Helmet>
-        <title>{found.pattern.title} · Common Patterns · DSA Studio</title>
-        <meta name="description" content={found.pattern.subtitle || found.pattern.description.slice(0, 150)} />
+        <title>{pageTitle}</title>
+        <meta name="description" content={description} />
+        <link rel="canonical" href={canonical} />
+
+        {/* Open Graph */}
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="Byteskill" />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="article:section" content={found.category.title} />
+        {found.pattern.tags.slice(0, 6).map((t) => (
+          <meta key={t} property="article:tag" content={t} />
+        ))}
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={description} />
+        <meta name="twitter:image" content={ogImage} />
+
+        {/* Structured data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "TechArticle",
+            headline: found.pattern.title,
+            description,
+            url: canonical,
+            articleSection: found.category.title,
+            keywords: found.pattern.tags.join(", "),
+            image: ogImage,
+          })}
+        </script>
       </Helmet>
       <PatternDetailContent
         pattern={found.pattern}
