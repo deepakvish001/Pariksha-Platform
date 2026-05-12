@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  DEFAULT_SETTINGS,
+  type DsaPatternSettings,
+  type WeekStart,
+} from "./useDsaPatternSettings";
 
 const LS_HISTORY = "dsaPatterns:history:v1";
 
@@ -30,10 +35,9 @@ const save = (entries: PatternHistoryEntry[]) => {
 const dayKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-const startOfWeek = (d: Date) => {
-  // Monday-based week
+const startOfWeek = (d: Date, weekStart: WeekStart) => {
   const x = new Date(d);
-  const day = (x.getDay() + 6) % 7; // 0 = Mon
+  const day = (x.getDay() - weekStart + 7) % 7;
   x.setHours(0, 0, 0, 0);
   x.setDate(x.getDate() - day);
   return x;
@@ -41,28 +45,20 @@ const startOfWeek = (d: Date) => {
 
 export interface PatternHistoryStats {
   entries: PatternHistoryEntry[];
-  /** Map of "yyyy-mm-dd" -> count of patterns logged that day */
   byDay: Map<string, number>;
-  /** Patterns logged this calendar week (Mon–Sun) */
   thisWeekCount: number;
-  /** Patterns logged previous week */
   lastWeekCount: number;
-  /** Consecutive days ending today (or yesterday if nothing today yet) */
   currentStreak: number;
-  /** Best consecutive-day streak ever */
   longestStreak: number;
-  /** Last 30 calendar days, oldest first */
   last30Days: { day: string; date: Date; count: number }[];
-  /** Total distinct days with activity */
   activeDays: number;
 }
 
-export const useDsaPatternHistory = () => {
+export const useDsaPatternHistory = (settings: DsaPatternSettings = DEFAULT_SETTINGS) => {
   const [entries, setEntries] = useState<PatternHistoryEntry[]>(() => load());
 
   useEffect(() => save(entries), [entries]);
 
-  // Cross-tab sync
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === LS_HISTORY) setEntries(load());
@@ -78,34 +74,37 @@ export const useDsaPatternHistory = () => {
   const clearHistory = useCallback(() => setEntries([]), []);
 
   const stats: PatternHistoryStats = useMemo(() => {
+    const threshold = Math.max(1, settings.dailyThreshold || 1);
     const byDay = new Map<string, number>();
     entries.forEach((e) => {
       const k = dayKey(new Date(e.ts));
       byDay.set(k, (byDay.get(k) || 0) + 1);
     });
 
+    /** Returns true when a day's completions meet the streak threshold. */
+    const isActive = (k: string) => (byDay.get(k) || 0) >= threshold;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Streaks: walk back from today
+    // Current streak (walk back from today; allow start at yesterday if today not yet active)
     let currentStreak = 0;
     {
       const cursor = new Date(today);
-      // Allow streak to count if today has no activity yet but yesterday did
-      if (!byDay.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
-      while (byDay.has(dayKey(cursor))) {
+      if (!isActive(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+      while (isActive(dayKey(cursor))) {
         currentStreak += 1;
         cursor.setDate(cursor.getDate() - 1);
       }
     }
 
-    // Longest: scan all keys sorted ascending
+    // Longest streak across all active days
     let longestStreak = 0;
     {
-      const sortedKeys = [...byDay.keys()].sort();
+      const sortedActive = [...byDay.keys()].filter(isActive).sort();
       let run = 0;
       let prev: Date | null = null;
-      for (const k of sortedKeys) {
+      for (const k of sortedActive) {
         const [y, m, d] = k.split("-").map(Number);
         const cur = new Date(y, m - 1, d);
         if (prev) {
@@ -119,8 +118,8 @@ export const useDsaPatternHistory = () => {
       }
     }
 
-    // This/last week counts
-    const weekStart = startOfWeek(today);
+    // Week boundaries based on configured week-start day
+    const weekStart = startOfWeek(today, settings.weekStart);
     const lastWeekStart = new Date(weekStart);
     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
     let thisWeekCount = 0;
@@ -131,7 +130,6 @@ export const useDsaPatternHistory = () => {
       else if (t >= lastWeekStart.getTime()) lastWeekCount += 1;
     });
 
-    // Last 30 days (oldest first)
     const last30Days: PatternHistoryStats["last30Days"] = [];
     for (let i = 29; i >= 0; i--) {
       const d = new Date(today);
@@ -150,7 +148,7 @@ export const useDsaPatternHistory = () => {
       last30Days,
       activeDays: byDay.size,
     };
-  }, [entries]);
+  }, [entries, settings.dailyThreshold, settings.weekStart]);
 
   return { ...stats, logCompletion, clearHistory };
 };
