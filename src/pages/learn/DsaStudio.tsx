@@ -452,14 +452,9 @@ export default function DsaStudio() {
         href="#dsa-main-content"
         onClick={(e) => {
           e.preventDefault();
-          const el = document.getElementById("dsa-main-content");
+          const el = mainScrollRef.current;
           if (!el) return;
-          const headerVar = getComputedStyle(document.documentElement)
-            .getPropertyValue("--dsa-header-h")
-            .trim();
-          const headerH = parseInt(headerVar, 10) || 57;
-          const y = el.getBoundingClientRect().top + window.scrollY - (headerH + 12);
-          window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+          el.scrollTo({ top: 0, behavior: "smooth" });
           el.focus({ preventScroll: true });
         }}
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-2 focus:z-[60] focus:px-3 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring"
