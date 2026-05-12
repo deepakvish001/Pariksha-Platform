@@ -33,10 +33,12 @@ import {
   Zap,
   KeyRound,
   Hammer,
+  Menu,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 import { DSA_TOPICS as TOPICS, type Diff, type DsaProblem as Problem } from "@/data/dsaStudioData";
@@ -269,17 +271,95 @@ export default function DsaStudio() {
     }
   };
 
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const handleSidebarTopicClick = (id: string) => {
+    setMobileNavOpen(false);
+    handleTopicClick(id);
+  };
+
+  const sidebarContent = (
+    <div className="p-4 space-y-6">
+      <div>
+        <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+          Learning Path
+        </p>
+        <ul className="space-y-0.5">
+          {TOPICS.map((t) => {
+            const Icon = t.icon;
+            const active = t.id === activeTopic;
+            return (
+              <li key={t.id}>
+                <button
+                  onClick={() => handleSidebarTopicClick(t.id)}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                    active
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1 text-left truncate">{t.label}</span>
+                  <span className={cn("text-xs", active ? "text-primary" : "text-muted-foreground/70")}>
+                    {t.count}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      <div>
+        <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+          Reference
+        </p>
+        <ul className="space-y-0.5">
+          {REFERENCE.map((r) => {
+            const Icon = r.icon;
+            return (
+              <li key={r.id}>
+                <button className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors">
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1 text-left truncate">{r.label}</span>
+                  {r.count !== undefined && (
+                    <span className="text-xs text-muted-foreground/70">{r.count}</span>
+                  )}
+                  {r.badge && (
+                    <Badge className="h-4 px-1.5 text-[9px] bg-amber-500/20 text-amber-400 border-amber-500/30">
+                      {r.badge}
+                    </Badge>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-border/40 bg-background/95 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
-          <Link to="/learn" className="flex items-center gap-2">
-            <span className="text-xl">🧠</span>
-            <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-violet-400 to-sky-400 bg-clip-text text-transparent">
-              DSA Studio
-            </h1>
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open topics menu"
+              className="lg:hidden inline-flex items-center justify-center h-9 w-9 rounded-md border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+            <Link to="/learn" className="flex items-center gap-2">
+              <span className="text-xl">🧠</span>
+              <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-violet-400 to-sky-400 bg-clip-text text-transparent">
+                DSA Studio
+              </h1>
+            </Link>
+          </div>
           <div className="hidden sm:flex items-center gap-2 md:gap-3 text-xs md:text-sm text-muted-foreground">
             <span>Total: <span className="text-foreground font-semibold">{grandTotal}</span></span>
             <span className="opacity-40">|</span>
@@ -298,68 +378,16 @@ export default function DsaStudio() {
       <div className="flex">
         {/* Sidebar */}
         <aside className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky top-[57px] z-10 h-[calc(100vh-57px)] overflow-y-auto bg-background">
-          <div className="p-4 space-y-6">
-            <div>
-              <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                Learning Path
-              </p>
-              <ul className="space-y-0.5">
-                {TOPICS.map((t) => {
-                  const Icon = t.icon;
-                  const active = t.id === activeTopic;
-                  return (
-                    <li key={t.id}>
-                      <button
-                        onClick={() => handleTopicClick(t.id)}
-                        className={cn(
-                          "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-                          active
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-                        )}
-                      >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        <span className="flex-1 text-left truncate">{t.label}</span>
-                        <span className={cn("text-xs", active ? "text-primary" : "text-muted-foreground/70")}>
-                          {t.count}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
-            <div>
-              <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                Reference
-              </p>
-              <ul className="space-y-0.5">
-                {REFERENCE.map((r) => {
-                  const Icon = r.icon;
-                  return (
-                    <li key={r.id}>
-                      <button
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
-                      >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        <span className="flex-1 text-left truncate">{r.label}</span>
-                        {r.count !== undefined && (
-                          <span className="text-xs text-muted-foreground/70">{r.count}</span>
-                        )}
-                        {r.badge && (
-                          <Badge className="h-4 px-1.5 text-[9px] bg-amber-500/20 text-amber-400 border-amber-500/30">
-                            {r.badge}
-                          </Badge>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
+          {sidebarContent}
         </aside>
+
+        {/* Mobile sidebar drawer */}
+        <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+          <SheetContent side="left" className="w-72 p-0 lg:hidden overflow-y-auto">
+            <SheetTitle className="sr-only">Topics</SheetTitle>
+            {sidebarContent}
+          </SheetContent>
+        </Sheet>
 
         {/* Main */}
         <main className="flex-1 min-w-0 p-4 md:p-6 space-y-5">
