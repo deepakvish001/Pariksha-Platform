@@ -131,6 +131,18 @@ export default function PatternDetailContent({
     return c;
   }, [pattern.problems]);
 
+  type ProblemFilter = "all" | "remaining" | "completed";
+  const [problemFilter, setProblemFilter] = useState<ProblemFilter>("all");
+  const filteredProblems = useMemo(() => {
+    if (problemFilter === "all") return pattern.problems;
+    return pattern.problems.filter((pr) => {
+      const isDoneNow = problemsDone.has(problemKey(pr.id, pr.url));
+      return problemFilter === "completed" ? isDoneNow : !isDoneNow;
+    });
+    // problemKey is stable (depends on pattern.id which is in deps via pattern.problems)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pattern.problems, problemFilter, problemsDone]);
+
   // Sibling navigation within the same category
   const { prev, next } = useMemo(() => {
     if (!category) return { prev: null, next: null };
