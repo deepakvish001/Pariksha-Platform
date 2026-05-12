@@ -437,11 +437,13 @@ export default function DsaStudio() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setMobileNavOpen(true)}
-              aria-label="Open topics menu"
+              onClick={() => setMobileNavOpen((v) => !v)}
+              aria-label={mobileNavOpen ? "Close topics menu" : "Open topics menu"}
+              aria-expanded={mobileNavOpen}
+              aria-controls="dsa-mobile-sidebar"
               className="lg:hidden inline-flex items-center justify-center h-9 w-9 rounded-md border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
             >
-              <Menu className="h-4 w-4" />
+              {mobileNavOpen ? <XIcon className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
             <Link to="/learn" className="flex items-center gap-2">
               <span className="text-xl">🧠</span>
