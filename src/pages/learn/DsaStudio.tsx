@@ -457,7 +457,9 @@ export default function DsaStudio() {
 
         {/* Main */}
         <main
-          className="flex-1 min-w-0 px-4 md:px-6 pb-4 md:pb-6 space-y-5"
+          id="dsa-main-content"
+          tabIndex={-1}
+          className="flex-1 min-w-0 px-4 md:px-6 pb-4 md:pb-6 space-y-5 outline-none"
           style={{ paddingTop: "calc(var(--dsa-header-h, 57px) * 0.35 + 1rem)", scrollPaddingTop: "calc(var(--dsa-header-h, 57px) + 1rem)" }}
         >
           {/* Tabs row */}
