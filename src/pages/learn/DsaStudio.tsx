@@ -279,7 +279,7 @@ export default function DsaStudio() {
                   return (
                     <li key={t.id}>
                       <button
-                        onClick={() => setActiveTopic(t.id)}
+                        onClick={() => handleTopicClick(t.id)}
                         className={cn(
                           "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
                           active
