@@ -468,7 +468,7 @@ export default function DsaStudio() {
       {/* Top bar */}
       <header
         ref={headerRef}
-        className="sticky top-0 z-30 border-b border-border/40 bg-background/95 backdrop-blur-xl"
+        className="flex-none z-30 border-b border-border/40 bg-background/95 backdrop-blur-xl"
       >
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-2">
