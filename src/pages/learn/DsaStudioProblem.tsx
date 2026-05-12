@@ -713,10 +713,11 @@ export default function DsaStudioProblem() {
                           aria-label="Matching steps"
                           className="rounded-md border border-amber-400/30 bg-background/80 backdrop-blur-sm divide-y divide-border/30 max-h-48 overflow-y-auto shadow-lg"
                         >
-                          {matches.map((mi) => {
+                          {ranked.map(({ i: mi, score }, rank) => {
                             const ms = Math.round(mi * stepMs);
                             const text = template.algorithm[mi];
                             const preview = template.stepLogic[mi % template.stepLogic.length] || "";
+                            const isTop = rank === 0;
                             return (
                               <button
                                 key={mi}
@@ -729,6 +730,7 @@ export default function DsaStudioProblem() {
                                   "hover:bg-amber-400/10 focus-visible:outline-none focus-visible:bg-amber-400/10",
                                   mi === step && "bg-violet-500/10",
                                 )}
+                                title={`Relevance score: ${score}`}
                               >
                                 <span className={cn(
                                   "h-5 w-5 grid place-items-center rounded-full text-[10px] font-bold shrink-0",
@@ -738,6 +740,11 @@ export default function DsaStudioProblem() {
                                   {highlightQuery(text)}
                                   <span className="text-muted-foreground/70"> — {highlightQuery(preview)}</span>
                                 </span>
+                                {isTop && (
+                                  <span className="shrink-0 text-[9px] uppercase tracking-widest text-amber-300/90 border border-amber-400/40 rounded px-1 py-0.5">
+                                    Best
+                                  </span>
+                                )}
                                 <span className="shrink-0 font-mono text-[10px] tabular-nums text-violet-300">
                                   {fmt(ms)}
                                 </span>
