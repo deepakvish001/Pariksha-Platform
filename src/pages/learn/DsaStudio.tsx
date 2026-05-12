@@ -344,6 +344,22 @@ export default function DsaStudio() {
       {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-border/40 bg-background/95 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open topics menu"
+              className="lg:hidden inline-flex items-center justify-center h-9 w-9 rounded-md border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+            <Link to="/learn" className="flex items-center gap-2">
+              <span className="text-xl">🧠</span>
+              <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-violet-400 to-sky-400 bg-clip-text text-transparent">
+                DSA Studio
+              </h1>
+            </Link>
+          </div>
           <Link to="/learn" className="flex items-center gap-2">
             <span className="text-xl">🧠</span>
             <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-violet-400 to-sky-400 bg-clip-text text-transparent">
