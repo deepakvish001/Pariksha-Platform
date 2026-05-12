@@ -608,8 +608,8 @@ export default function DsaStudio() {
                 <span className="text-xs text-muted-foreground">STATUS</span>
                 <span className="text-xs font-medium">All</span>
               </Button>
-            </div>
-          </div>
+      </div>
+    </nav>
 
           {/* QA mode banner */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
