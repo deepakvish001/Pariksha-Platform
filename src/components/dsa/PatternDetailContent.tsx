@@ -116,6 +116,22 @@ export default function PatternDetailContent({
       return next;
     });
 
+  const problemKeyFor = (prId: string, url: string) => `${pattern.id}::${prId}::${url}`;
+  const markAllProblemsDone = () => {
+    setProblemsDone((prev) => {
+      const next = new Set(prev);
+      pattern.problems.forEach((pr) => next.add(problemKeyFor(pr.id, pr.url)));
+      return next;
+    });
+  };
+  const resetProblemsProgress = () => {
+    setProblemsDone((prev) => {
+      const next = new Set(prev);
+      pattern.problems.forEach((pr) => next.delete(problemKeyFor(pr.id, pr.url)));
+      return next;
+    });
+  };
+
   const problemKey = (prId: string, url: string) => `${pattern.id}::${prId}::${url}`;
   const completedProblems = pattern.problems.filter((pr) =>
     problemsDone.has(problemKey(pr.id, pr.url)),
