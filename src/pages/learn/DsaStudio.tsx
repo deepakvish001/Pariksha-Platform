@@ -486,6 +486,7 @@ export default function DsaStudio() {
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
           <SheetContent
             side="left"
+            id="dsa-mobile-sidebar"
             data-dsa-sidebar-scroll
             className="w-[85vw] max-w-xs p-0 lg:hidden overflow-y-auto"
           >
