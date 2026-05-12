@@ -378,6 +378,26 @@ export default function DsaStudio() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Skip to content link (a11y) */}
+      <a
+        href="#dsa-main-content"
+        onClick={(e) => {
+          e.preventDefault();
+          const el = document.getElementById("dsa-main-content");
+          if (!el) return;
+          const headerVar = getComputedStyle(document.documentElement)
+            .getPropertyValue("--dsa-header-h")
+            .trim();
+          const headerH = parseInt(headerVar, 10) || 57;
+          const y = el.getBoundingClientRect().top + window.scrollY - (headerH + 12);
+          window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+          el.focus({ preventScroll: true });
+        }}
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-2 focus:z-[60] focus:px-3 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        Skip to content
+      </a>
+
       {/* Top bar */}
       <header
         ref={headerRef}
@@ -437,7 +457,9 @@ export default function DsaStudio() {
 
         {/* Main */}
         <main
-          className="flex-1 min-w-0 px-4 md:px-6 pb-4 md:pb-6 space-y-5"
+          id="dsa-main-content"
+          tabIndex={-1}
+          className="flex-1 min-w-0 px-4 md:px-6 pb-4 md:pb-6 space-y-5 outline-none"
           style={{ paddingTop: "calc(var(--dsa-header-h, 57px) * 0.35 + 1rem)", scrollPaddingTop: "calc(var(--dsa-header-h, 57px) + 1rem)" }}
         >
           {/* Tabs row */}
