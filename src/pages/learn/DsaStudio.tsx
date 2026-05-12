@@ -87,6 +87,7 @@ type PriorityFilter = "all" | "p1" | "p1p2" | "p3" | "free";
 const LS_PREFS = "dsaStudio:prefs:v1";
 const LS_SOLVED = "dsaStudio:solved:v1";
 const LS_SAVED = "dsaStudio:saved:v1";
+const LS_SCROLL = "dsaStudio:scroll:v1";
 
 const loadJSON = <T,>(key: string, fallback: T): T => {
   if (typeof window === "undefined") return fallback;
