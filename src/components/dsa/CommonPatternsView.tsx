@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -12,6 +12,9 @@ import {
   Circle,
   X as XIcon,
   Filter,
+  ArrowDownAZ,
+  TrendingDown,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +28,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useDsaPatternHistory } from "@/hooks/useDsaPatternHistory";
+import PatternAchievementsPanel from "./PatternAchievementsPanel";
 import {
   COMMON_PATTERNS,
   PATTERN_TOTAL,
@@ -126,9 +131,24 @@ export default function CommonPatternsView() {
   const [activeComplexities, setActiveComplexities] = useState<Set<string>>(new Set());
   const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
   const [showOnlyTodo, setShowOnlyTodo] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "done" | "in_progress" | "not_started">("all");
+  const [sortMode, setSortMode] = useState<"default" | "progress_desc" | "progress_asc">("default");
   const [openPattern, setOpenPatternState] = useState<CommonPattern | null>(null);
 
   const { bookmarks, done, toggleBookmark, toggleDone } = usePatternStorage();
+  const history = useDsaPatternHistory();
+
+  // Log new completions to history (diff vs previous done set)
+  const prevDoneRef = useRef<Set<string>>(done);
+  useEffect(() => {
+    const prev = prevDoneRef.current;
+    done.forEach((id) => {
+      if (!prev.has(id)) history.logCompletion(id);
+    });
+    prevDoneRef.current = new Set(done);
+    // history.logCompletion is stable via useCallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
 
   // Deep-link sync: ?pattern=<id> opens the detail dialog
   const [searchParams, setSearchParams] = useSearchParams();
@@ -194,6 +214,14 @@ export default function CommonPatternsView() {
           return false;
         if (showOnlyBookmarked && !bookmarks.has(p.id)) return false;
         if (showOnlyTodo && done.has(p.id)) return false;
+        // Status: done | in_progress (bookmarked, not done) | not_started (neither)
+        if (statusFilter !== "all") {
+          const isDone = done.has(p.id);
+          const isMarked = bookmarks.has(p.id);
+          if (statusFilter === "done" && !isDone) return false;
+          if (statusFilter === "in_progress" && !(isMarked && !isDone)) return false;
+          if (statusFilter === "not_started" && (isDone || isMarked)) return false;
+        }
         if (!q) return true;
         return (
           p.title.toLowerCase().includes(q) ||
@@ -206,7 +234,7 @@ export default function CommonPatternsView() {
         );
       }),
     })).filter((c) => c.patterns.length > 0);
-  }, [search, activeCategories, activeTags, activeComplexities, showOnlyBookmarked, showOnlyTodo, bookmarks, done]);
+  }, [search, activeCategories, activeTags, activeComplexities, showOnlyBookmarked, showOnlyTodo, statusFilter, bookmarks, done]);
 
   const totalShown = filtered.reduce((s, c) => s + c.patterns.length, 0);
   const totalDone = done.size;
@@ -240,12 +268,24 @@ export default function CommonPatternsView() {
   const totalProblemsDone = difficultyDone.Easy + difficultyDone.Medium + difficultyDone.Hard;
   const completedCategories = [...categoryStats.values()].filter((s) => s.pct === 100).length;
 
+  // Apply category sort to the filtered output
+  const displayed = useMemo(() => {
+    if (sortMode === "default") return filtered;
+    return [...filtered].sort((a, b) => {
+      const pa = categoryStats.get(a.id)?.pct ?? 0;
+      const pb = categoryStats.get(b.id)?.pct ?? 0;
+      return sortMode === "progress_desc" ? pb - pa : pa - pb;
+    });
+  }, [filtered, sortMode, categoryStats]);
+
   const clearFilters = () => {
     setActiveCategories(new Set());
     setActiveTags(new Set());
     setActiveComplexities(new Set());
     setShowOnlyBookmarked(false);
     setShowOnlyTodo(false);
+    setStatusFilter("all");
+    setSortMode("default");
     setSearch("");
   };
 
@@ -255,7 +295,9 @@ export default function CommonPatternsView() {
     activeTags.size > 0 ||
     activeComplexities.size > 0 ||
     showOnlyBookmarked ||
-    showOnlyTodo;
+    showOnlyTodo ||
+    statusFilter !== "all" ||
+    sortMode !== "default";
 
   return (
     <div className="relative -mx-4 md:-mx-6">
@@ -450,7 +492,40 @@ export default function CommonPatternsView() {
             </div>
           </details>
 
-          {/* Quick toggles */}
+          {/* Status filter */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mr-1">
+              Status
+            </span>
+            {(
+              [
+                { id: "all", label: "All", icon: null, color: "" },
+                { id: "done", label: "Done", icon: CheckCircle2, color: "border-emerald-500/50 bg-emerald-500/15 text-emerald-300" },
+                { id: "in_progress", label: "In progress", icon: Loader2, color: "border-amber-500/50 bg-amber-500/15 text-amber-300" },
+                { id: "not_started", label: "Not started", icon: Circle, color: "border-zinc-500/50 bg-zinc-500/15 text-zinc-300" },
+              ] as const
+            ).map((s) => {
+              const active = statusFilter === s.id;
+              const Icon = s.icon;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setStatusFilter(s.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs border transition-colors",
+                    active
+                      ? s.color || "border-primary/50 bg-primary/15 text-primary"
+                      : "border-border/40 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border",
+                  )}
+                >
+                  {Icon && <Icon className="h-3 w-3" />}
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick toggles + sort */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <Button
               size="sm"
@@ -470,6 +545,38 @@ export default function CommonPatternsView() {
               <Circle className="h-3.5 w-3.5" />
               To do
             </Button>
+
+            <div className="ml-auto flex items-center gap-1">
+              <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mr-1">
+                Sort
+              </span>
+              {(
+                [
+                  { id: "default", label: "Default", icon: ArrowDownAZ },
+                  { id: "progress_desc", label: "Highest progress", icon: TrendingDown },
+                  { id: "progress_asc", label: "Lowest progress", icon: TrendingDown },
+                ] as const
+              ).map((s) => {
+                const active = sortMode === s.id;
+                const Icon = s.icon;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setSortMode(s.id)}
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs border transition-colors",
+                      active
+                        ? "border-sky-500/50 bg-sky-500/15 text-sky-300"
+                        : "border-border/40 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border",
+                    )}
+                  >
+                    <Icon className={cn("h-3 w-3", s.id === "progress_asc" && "rotate-180")} />
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+
             {hasActiveFilters && (
               <Button
                 size="sm"
@@ -486,7 +593,9 @@ export default function CommonPatternsView() {
 
       {/* Scrollable pattern list */}
       <div className="px-4 md:px-6 py-5 space-y-6">
-        {filtered.map((cat, ci) => (
+        <PatternAchievementsPanel done={done} history={history} />
+
+        {displayed.map((cat, ci) => (
           <section key={cat.id} id={`pat-${cat.id}`} className="space-y-3 scroll-mt-[260px]">
             <div className="flex items-end justify-between flex-wrap gap-2 pt-1">
               <div>
@@ -660,7 +769,7 @@ export default function CommonPatternsView() {
           </section>
         ))}
 
-        {filtered.length === 0 && (
+        {displayed.length === 0 && (
           <div className="rounded-xl border border-dashed border-border/40 bg-card/20 p-10 text-center text-muted-foreground">
             No patterns match your filters.
             <div className="mt-3">
