@@ -126,9 +126,40 @@ export default function CommonPatternsView() {
   const [activeComplexities, setActiveComplexities] = useState<Set<string>>(new Set());
   const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
   const [showOnlyTodo, setShowOnlyTodo] = useState(false);
-  const [openPattern, setOpenPattern] = useState<CommonPattern | null>(null);
+  const [openPattern, setOpenPatternState] = useState<CommonPattern | null>(null);
 
   const { bookmarks, done, toggleBookmark, toggleDone } = usePatternStorage();
+
+  // Deep-link sync: ?pattern=<id> opens the detail dialog
+  const [searchParams, setSearchParams] = useSearchParams();
+  const patternIndex = useMemo(() => {
+    const m = new Map<string, CommonPattern>();
+    COMMON_PATTERNS.forEach((cat) => cat.patterns.forEach((p) => m.set(p.id, p)));
+    return m;
+  }, []);
+
+  const setOpenPattern = useCallback(
+    (p: CommonPattern | null) => {
+      setOpenPatternState(p);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (p) next.set("pattern", p.id);
+          else next.delete("pattern");
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  // Sync URL → state (initial load + back/forward navigation)
+  useEffect(() => {
+    const id = searchParams.get("pattern");
+    const target = id ? patternIndex.get(id) ?? null : null;
+    setOpenPatternState((curr) => (curr?.id === target?.id ? curr : target));
+  }, [searchParams, patternIndex]);
 
   // Build tag + complexity universes
   const { allTags, allComplexities } = useMemo(() => {
