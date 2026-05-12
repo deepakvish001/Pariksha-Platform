@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw, Copy, Check,
-  Lightbulb, ListChecks, Layers, Variable as VarIcon, Sparkles, Clock, Database,
+  Lightbulb, ListChecks, Layers, Variable as VarIcon, Sparkles, Clock, Database, Search, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
