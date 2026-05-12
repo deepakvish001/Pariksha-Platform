@@ -52,29 +52,97 @@ export default function DsaStudioProblem() {
   const [algoQuery, setAlgoQuery] = useState("");
   const totalSteps = template.algorithm.length;
 
-  // Shared keyword-highlight helper used across the step title, step-logic preview,
-  // and the tooltip — keeps highlighting consistent everywhere.
-  const highlightQuery = (text: string): React.ReactNode => {
-    const q = algoQuery.trim().toLowerCase();
-    if (!q) return text;
+  // Tokenize the user's search query for fuzzy matching.
+  const queryTokens = useMemo(
+    () =>
+      algoQuery
+        .toLowerCase()
+        .split(/[\s,]+/)
+        .map((t) => t.trim())
+        .filter(Boolean),
+    [algoQuery],
+  );
+
+  // Subsequence match: returns indices in `text` where each char of `token` was found
+  // in order, or null if not all chars matched. Used for typo / partial-word tolerance.
+  const subseqIndices = (text: string, token: string): number[] | null => {
+    const out: number[] = [];
+    let ti = 0;
+    for (let i = 0; i < text.length && ti < token.length; i++) {
+      if (text[i] === token[ti]) {
+        out.push(i);
+        ti++;
+      }
+    }
+    return ti === token.length ? out : null;
+  };
+
+  // Score a candidate string against the current query tokens.
+  // Higher = more relevant. Returns 0 if nothing matched.
+  const scoreText = (text: string): number => {
+    if (queryTokens.length === 0) return 0;
     const lower = text.toLowerCase();
+    let score = 0;
+    const fullPhrase = queryTokens.join(" ");
+    if (fullPhrase.length > 1 && lower.includes(fullPhrase)) score += 200;
+    for (const tok of queryTokens) {
+      if (!tok) continue;
+      const idx = lower.indexOf(tok);
+      if (idx !== -1) {
+        score += 100;
+        // Bonus for word-prefix matches.
+        if (idx === 0 || /\W/.test(lower[idx - 1] ?? "")) score += 25;
+      } else {
+        const seq = subseqIndices(lower, tok);
+        if (seq) {
+          // Reward compactness: smaller span = closer to a real word match.
+          const span = seq[seq.length - 1] - seq[0] + 1;
+          const density = tok.length / Math.max(span, tok.length);
+          score += Math.round(20 + density * 30);
+        }
+      }
+    }
+    return score;
+  };
+
+  // Highlight any matching token substrings inside `text`.
+  // Tokens are sorted longest-first so overlapping highlights prefer the longer match.
+  const highlightQuery = (text: string): React.ReactNode => {
+    if (queryTokens.length === 0) return text;
+    const lower = text.toLowerCase();
+    const tokens = [...queryTokens].sort((a, b) => b.length - a.length);
+    type Range = { start: number; end: number };
+    const ranges: Range[] = [];
+    for (const tok of tokens) {
+      let from = 0;
+      let idx = lower.indexOf(tok, from);
+      while (idx !== -1) {
+        const end = idx + tok.length;
+        if (!ranges.some((r) => idx < r.end && end > r.start)) {
+          ranges.push({ start: idx, end });
+        }
+        from = end;
+        idx = lower.indexOf(tok, from);
+      }
+    }
+    if (ranges.length === 0) return text;
+    ranges.sort((a, b) => a.start - b.start);
     const out: React.ReactNode[] = [];
-    let from = 0;
-    let idx = lower.indexOf(q);
+    let cursor = 0;
     let key = 0;
-    while (idx !== -1) {
-      if (idx > from) out.push(text.slice(from, idx));
+    for (const r of ranges) {
+      if (r.start > cursor) out.push(text.slice(cursor, r.start));
       out.push(
         <mark key={key++} className="rounded-sm bg-amber-400/30 text-amber-200 px-0.5">
-          {text.slice(idx, idx + q.length)}
+          {text.slice(r.start, r.end)}
         </mark>,
       );
-      from = idx + q.length;
-      idx = lower.indexOf(q, from);
+      cursor = r.end;
     }
-    if (from < text.length) out.push(text.slice(from));
+    if (cursor < text.length) out.push(text.slice(cursor));
     return out;
   };
+
 
   // Restore last viewed step for this slug from localStorage
   useEffect(() => {
@@ -415,8 +483,8 @@ export default function DsaStudioProblem() {
               </div>
               <ol className="space-y-2">
                 {template.stepLogic.map((s, i) => {
-                  const q = algoQuery.trim().toLowerCase();
-                  const isMatch = q ? s.toLowerCase().includes(q) : false;
+                  const q = algoQuery.trim();
+                  const isMatch = q ? scoreText(s) > 0 : false;
                   const isActive = i === step % template.stepLogic.length;
                   return (
                     <li
@@ -569,17 +637,21 @@ export default function DsaStudioProblem() {
               {/* Step search */}
               {(() => {
                 const q = algoQuery.trim().toLowerCase();
-                const matches = template.algorithm
-                  .map((s, i) => ({
-                    i,
-                    hit:
-                      !!q &&
-                      (s.toLowerCase().includes(q) ||
-                        (template.stepLogic[i % template.stepLogic.length] || "")
-                          .toLowerCase()
-                          .includes(q)),
-                  }))
-                  .filter((x) => x.hit)
+                // Fuzzy-score every step (title + step-logic preview) and keep > 0.
+                const scored = template.algorithm
+                  .map((s, i) => {
+                    const preview = template.stepLogic[i % template.stepLogic.length] || "";
+                    const score = q ? Math.max(scoreText(s) * 1.2, scoreText(preview)) : 0;
+                    return { i, score };
+                  })
+                  .filter((x) => x.score > 0);
+                // Ranked list for the dropdown — best matches first.
+                const ranked = [...scored].sort(
+                  (a, b) => b.score - a.score || a.i - b.i,
+                );
+                // In-list iteration order — keeps Enter-to-jump intuitive (next step after current).
+                const matches = [...scored]
+                  .sort((a, b) => a.i - b.i)
                   .map((x) => x.i);
                 const matchCount = matches.length;
                 const renderHighlight = highlightQuery;
@@ -641,10 +713,11 @@ export default function DsaStudioProblem() {
                           aria-label="Matching steps"
                           className="rounded-md border border-amber-400/30 bg-background/80 backdrop-blur-sm divide-y divide-border/30 max-h-48 overflow-y-auto shadow-lg"
                         >
-                          {matches.map((mi) => {
+                          {ranked.map(({ i: mi, score }, rank) => {
                             const ms = Math.round(mi * stepMs);
                             const text = template.algorithm[mi];
                             const preview = template.stepLogic[mi % template.stepLogic.length] || "";
+                            const isTop = rank === 0;
                             return (
                               <button
                                 key={mi}
@@ -657,6 +730,7 @@ export default function DsaStudioProblem() {
                                   "hover:bg-amber-400/10 focus-visible:outline-none focus-visible:bg-amber-400/10",
                                   mi === step && "bg-violet-500/10",
                                 )}
+                                title={`Relevance score: ${score}`}
                               >
                                 <span className={cn(
                                   "h-5 w-5 grid place-items-center rounded-full text-[10px] font-bold shrink-0",
@@ -666,6 +740,11 @@ export default function DsaStudioProblem() {
                                   {highlightQuery(text)}
                                   <span className="text-muted-foreground/70"> — {highlightQuery(preview)}</span>
                                 </span>
+                                {isTop && (
+                                  <span className="shrink-0 text-[9px] uppercase tracking-widest text-amber-300/90 border border-amber-400/40 rounded px-1 py-0.5">
+                                    Best
+                                  </span>
+                                )}
                                 <span className="shrink-0 font-mono text-[10px] tabular-nums text-violet-300">
                                   {fmt(ms)}
                                 </span>
