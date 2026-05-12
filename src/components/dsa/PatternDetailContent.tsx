@@ -607,7 +607,7 @@ export default function PatternDetailContent({
             </div>
 
             {/* Progress meter */}
-            <div className="mb-4">
+            <div className="mb-3">
               <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1.5">
                 <span>Your progress</span>
                 <span className="font-mono text-foreground/80">{completionPct}%</span>
@@ -620,8 +620,57 @@ export default function PatternDetailContent({
               </div>
             </div>
 
+            {/* Filter chips */}
+            <div
+              role="tablist"
+              aria-label="Filter practice problems by status"
+              className="flex flex-wrap items-center gap-1.5 mb-3"
+            >
+              {([
+                { id: "all", label: "All", count: totalProblems },
+                { id: "remaining", label: "Remaining", count: totalProblems - completedProblems },
+                { id: "completed", label: "Completed", count: completedProblems },
+              ] as const).map((f) => {
+                const active = problemFilter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setProblemFilter(f.id)}
+                    className={cn(
+                      "h-7 px-2.5 rounded-full text-[11px] border transition-colors flex items-center gap-1.5",
+                      active
+                        ? "border-sky-500/50 bg-sky-500/15 text-sky-200"
+                        : "border-border/40 bg-background/40 text-muted-foreground hover:text-foreground hover:border-sky-500/30",
+                    )}
+                  >
+                    {f.label}
+                    <span
+                      className={cn(
+                        "font-mono text-[10px] px-1.5 py-0.5 rounded",
+                        active ? "bg-sky-500/20 text-sky-100" : "bg-muted/40 text-muted-foreground",
+                      )}
+                    >
+                      {f.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {filteredProblems.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border/40 bg-background/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                {problemFilter === "completed"
+                  ? "No problems completed yet — check one off to see it here."
+                  : problemFilter === "remaining"
+                    ? "All problems completed. Nice work! 🎉"
+                    : "No problems available."}
+              </div>
+            ) : (
             <ul className="space-y-2">
-              {pattern.problems.map((pr) => {
+              {filteredProblems.map((pr) => {
                 const key = problemKey(pr.id, pr.url);
                 const checked = problemsDone.has(key);
                 return (
