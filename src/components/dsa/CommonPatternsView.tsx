@@ -269,12 +269,24 @@ export default function CommonPatternsView() {
   const totalProblemsDone = difficultyDone.Easy + difficultyDone.Medium + difficultyDone.Hard;
   const completedCategories = [...categoryStats.values()].filter((s) => s.pct === 100).length;
 
+  // Apply category sort to the filtered output
+  const displayed = useMemo(() => {
+    if (sortMode === "default") return filtered;
+    return [...filtered].sort((a, b) => {
+      const pa = categoryStats.get(a.id)?.pct ?? 0;
+      const pb = categoryStats.get(b.id)?.pct ?? 0;
+      return sortMode === "progress_desc" ? pb - pa : pa - pb;
+    });
+  }, [filtered, sortMode, categoryStats]);
+
   const clearFilters = () => {
     setActiveCategories(new Set());
     setActiveTags(new Set());
     setActiveComplexities(new Set());
     setShowOnlyBookmarked(false);
     setShowOnlyTodo(false);
+    setStatusFilter("all");
+    setSortMode("default");
     setSearch("");
   };
 
@@ -284,7 +296,9 @@ export default function CommonPatternsView() {
     activeTags.size > 0 ||
     activeComplexities.size > 0 ||
     showOnlyBookmarked ||
-    showOnlyTodo;
+    showOnlyTodo ||
+    statusFilter !== "all" ||
+    sortMode !== "default";
 
   return (
     <div className="relative -mx-4 md:-mx-6">
