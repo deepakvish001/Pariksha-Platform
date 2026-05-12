@@ -342,7 +342,10 @@ export default function DsaStudio() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
-      <header className="sticky top-0 z-30 border-b border-border/40 bg-background/95 backdrop-blur-xl">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-30 border-b border-border/40 bg-background/95 backdrop-blur-xl"
+      >
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-2">
             <button
