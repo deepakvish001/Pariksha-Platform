@@ -449,73 +449,164 @@ export default function DsaStudioProblem() {
                 <ListChecks className="h-3.5 w-3.5 text-emerald-400" />
                 ALGORITHM
               </div>
-              <ol className="space-y-1.5">
-                <TooltipProvider delayDuration={150}>
-                  {template.algorithm.map((s, i) => {
-                    const stepMs = 1400 / speed;
-                    const ms = Math.round(i * stepMs);
-                    const totalMs = Math.round((totalSteps - 1) * stepMs);
-                    const fmt = (m: number) => {
-                      const sec = Math.floor(m / 1000);
-                      return `${String(Math.floor(sec / 60)).padStart(1, "0")}:${String(sec % 60).padStart(2, "0")}.${String(Math.floor((m % 1000) / 100))}`;
-                    };
-                    const preview = template.stepLogic[i % template.stepLogic.length];
-                    return (
-                      <li key={i}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={() => { setStep(i); setPlaying(false); }}
-                              aria-current={i === step ? "step" : undefined}
-                              aria-label={`Jump to step ${i + 1} at ${fmt(ms)}: ${s}`}
-                              className={cn(
-                                "w-full flex items-center gap-2 text-left text-xs rounded-md px-1.5 py-1 transition-colors",
-                                "hover:bg-violet-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60",
-                                i === step && "bg-violet-500/10 ring-1 ring-violet-500/30",
-                              )}
-                            >
-                              <span className={cn(
-                                "h-5 w-5 grid place-items-center rounded-full text-[10px] font-bold shrink-0 transition-colors",
-                                i === step ? "bg-violet-500 text-white" : "bg-muted/40 text-muted-foreground",
-                              )}>{i + 1}</span>
-                              <span className={cn("flex-1 min-w-0", i === step ? "text-foreground" : "text-muted-foreground")}>{s}</span>
-                              <span
-                                className={cn(
-                                  "shrink-0 font-mono text-[10px] tabular-nums px-1.5 py-0.5 rounded",
-                                  "border border-border/40 bg-background/60 text-muted-foreground",
-                                  i === step && "border-violet-500/40 text-violet-300 bg-violet-500/10",
-                                )}
-                                title={`Jump to ${fmt(ms)} of ${fmt(totalMs)}`}
-                              >
-                                {fmt(ms)}
-                              </span>
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent
-                            side="left"
-                            align="center"
-                            className="max-w-[260px] text-xs"
-                          >
-                            <div className="space-y-1.5">
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="font-semibold text-foreground">Step {i + 1} / {totalSteps}</span>
-                                <span className="font-mono text-[10px] text-violet-300">{fmt(ms)}</span>
-                              </div>
-                              <div className="text-foreground/90">{s}</div>
-                              <div className="pt-1 border-t border-border/40 text-muted-foreground">
-                                <span className="text-[10px] uppercase tracking-widest mr-1">Will show</span>
-                                {preview}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground/80">Click to jump here</div>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </li>
+
+              {/* Step search */}
+              {(() => {
+                const q = algoQuery.trim().toLowerCase();
+                const matches = template.algorithm
+                  .map((s, i) => ({
+                    i,
+                    hit:
+                      !!q &&
+                      (s.toLowerCase().includes(q) ||
+                        (template.stepLogic[i % template.stepLogic.length] || "")
+                          .toLowerCase()
+                          .includes(q)),
+                  }))
+                  .filter((x) => x.hit)
+                  .map((x) => x.i);
+                const matchCount = matches.length;
+                const renderHighlight = (text: string) => {
+                  if (!q) return text;
+                  const lower = text.toLowerCase();
+                  const out: React.ReactNode[] = [];
+                  let from = 0;
+                  let idx = lower.indexOf(q);
+                  let key = 0;
+                  while (idx !== -1) {
+                    if (idx > from) out.push(text.slice(from, idx));
+                    out.push(
+                      <mark
+                        key={key++}
+                        className="rounded-sm bg-amber-400/30 text-amber-200 px-0.5"
+                      >
+                        {text.slice(idx, idx + q.length)}
+                      </mark>,
                     );
-                  })}
-                </TooltipProvider>
-              </ol>
+                    from = idx + q.length;
+                    idx = lower.indexOf(q, from);
+                  }
+                  if (from < text.length) out.push(text.slice(from));
+                  return out;
+                };
+
+                return (
+                  <>
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <input
+                        type="search"
+                        value={algoQuery}
+                        onChange={(e) => setAlgoQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && matches.length > 0) {
+                            e.preventDefault();
+                            const after = matches.find((m) => m > step) ?? matches[0];
+                            setStep(after);
+                            setPlaying(false);
+                          } else if (e.key === "Escape") {
+                            setAlgoQuery("");
+                          }
+                        }}
+                        placeholder="Search steps… (Enter to jump)"
+                        aria-label="Search algorithm steps"
+                        className="w-full h-8 rounded-md border border-border/50 bg-background/40 pl-7 pr-7 text-xs placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-violet-400/50"
+                      />
+                      {algoQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setAlgoQuery("")}
+                          aria-label="Clear search"
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 h-5 w-5 grid place-items-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    {q && (
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span>
+                          {matchCount === 0
+                            ? "No matching steps"
+                            : `${matchCount} match${matchCount === 1 ? "" : "es"}`}
+                        </span>
+                        {matchCount > 0 && (
+                          <span className="text-muted-foreground/70">Enter ⏎ to jump</span>
+                        )}
+                      </div>
+                    )}
+
+                    <ol className="space-y-1.5">
+                      <TooltipProvider delayDuration={150}>
+                        {template.algorithm.map((s, i) => {
+                          const stepMs = 1400 / speed;
+                          const ms = Math.round(i * stepMs);
+                          const totalMs = Math.round((totalSteps - 1) * stepMs);
+                          const fmt = (m: number) => {
+                            const sec = Math.floor(m / 1000);
+                            return `${String(Math.floor(sec / 60)).padStart(1, "0")}:${String(sec % 60).padStart(2, "0")}.${String(Math.floor((m % 1000) / 100))}`;
+                          };
+                          const preview = template.stepLogic[i % template.stepLogic.length];
+                          const isMatch = q ? matches.includes(i) : false;
+                          const dimmed = q && !isMatch;
+                          return (
+                            <li key={i} className={cn(dimmed && "opacity-40")}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setStep(i); setPlaying(false); }}
+                                    aria-current={i === step ? "step" : undefined}
+                                    aria-label={`Jump to step ${i + 1} at ${fmt(ms)}: ${s}`}
+                                    className={cn(
+                                      "w-full flex items-center gap-2 text-left text-xs rounded-md px-1.5 py-1 transition-colors",
+                                      "hover:bg-violet-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60",
+                                      i === step && "bg-violet-500/10 ring-1 ring-violet-500/30",
+                                      isMatch && "ring-1 ring-amber-400/50 bg-amber-400/5",
+                                    )}
+                                  >
+                                    <span className={cn(
+                                      "h-5 w-5 grid place-items-center rounded-full text-[10px] font-bold shrink-0 transition-colors",
+                                      i === step ? "bg-violet-500 text-white" : "bg-muted/40 text-muted-foreground",
+                                    )}>{i + 1}</span>
+                                    <span className={cn("flex-1 min-w-0", i === step ? "text-foreground" : "text-muted-foreground")}>
+                                      {renderHighlight(s)}
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        "shrink-0 font-mono text-[10px] tabular-nums px-1.5 py-0.5 rounded",
+                                        "border border-border/40 bg-background/60 text-muted-foreground",
+                                        i === step && "border-violet-500/40 text-violet-300 bg-violet-500/10",
+                                      )}
+                                      title={`Jump to ${fmt(ms)} of ${fmt(totalMs)}`}
+                                    >
+                                      {fmt(ms)}
+                                    </span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" align="center" className="max-w-[260px] text-xs">
+                                  <div className="space-y-1.5">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <span className="font-semibold text-foreground">Step {i + 1} / {totalSteps}</span>
+                                      <span className="font-mono text-[10px] text-violet-300">{fmt(ms)}</span>
+                                    </div>
+                                    <div className="text-foreground/90">{s}</div>
+                                    <div className="pt-1 border-t border-border/40 text-muted-foreground">
+                                      <span className="text-[10px] uppercase tracking-widest mr-1">Will show</span>
+                                      {preview}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground/80">Click to jump here</div>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </li>
+                          );
+                        })}
+                      </TooltipProvider>
+                    </ol>
+                  </>
+                );
+              })()}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <div className="rounded-lg border border-border/40 bg-background/40 p-2.5 text-center">
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center justify-center gap-1">
