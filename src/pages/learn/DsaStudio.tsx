@@ -35,6 +35,8 @@ import {
   KeyRound,
   Hammer,
   Menu,
+  PanelLeft,
+  PanelLeftClose,
   X as XIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -324,6 +326,7 @@ export default function DsaStudio() {
   };
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [desktopNavOpen, setDesktopNavOpen] = useState(true);
   const mobileToggleRef = useRef<HTMLButtonElement | null>(null);
   const mobileCloseRef = useRef<HTMLButtonElement | null>(null);
 
@@ -483,6 +486,16 @@ export default function DsaStudio() {
             >
               {mobileNavOpen ? <XIcon className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
+            <button
+              type="button"
+              onClick={() => setDesktopNavOpen((v) => !v)}
+              aria-label={desktopNavOpen ? "Hide learning path" : "Show learning path"}
+              aria-expanded={desktopNavOpen}
+              aria-controls="dsa-desktop-sidebar"
+              className="hidden lg:inline-flex items-center justify-center h-9 w-9 rounded-md border border-border/50 bg-background text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {desktopNavOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+            </button>
             <Link to="/learn" className="flex items-center gap-2">
               <span className="text-xl">🧠</span>
               <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-violet-400 to-sky-400 bg-clip-text text-transparent">
@@ -505,19 +518,22 @@ export default function DsaStudio() {
         </div>
       </header>
 
-      <div className="flex lg:pl-64">
+      <div className="flex">
         {/* Sidebar - fixed so it never scrolls with main content (immune to ancestor transforms) */}
-        <aside
-          aria-label="Topics navigation"
-          data-dsa-sidebar-scroll
-          className="hidden lg:block w-64 border-r border-border/40 fixed left-0 z-10 overflow-y-auto overscroll-contain bg-background"
-          style={{
-            top: "var(--dsa-header-h, 57px)",
-            height: "calc(100vh - var(--dsa-header-h, 57px))",
-          }}
-        >
-          {sidebarContent}
-        </aside>
+        {desktopNavOpen && (
+          <aside
+            id="dsa-desktop-sidebar"
+            aria-label="Topics navigation"
+            data-dsa-sidebar-scroll
+            className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky z-10 overflow-y-auto overscroll-contain bg-background"
+            style={{
+              top: "var(--dsa-header-h, 57px)",
+              height: "calc(100vh - var(--dsa-header-h, 57px))",
+            }}
+          >
+            {sidebarContent}
+          </aside>
+        )}
 
         {/* Mobile sidebar drawer */}
         {mobileNavOpen && typeof document !== "undefined" && createPortal(
