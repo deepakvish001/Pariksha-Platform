@@ -403,7 +403,7 @@ export default function DsaStudio() {
           })}
         </ul>
       </div>
-    </div>
+    </nav>
   );
 
   return (
