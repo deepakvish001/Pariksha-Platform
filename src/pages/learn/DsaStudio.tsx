@@ -195,12 +195,14 @@ export default function DsaStudio() {
 
   // Measure header height -> CSS var so sticky offsets adapt to viewport
   const headerRef = useRef<HTMLElement | null>(null);
+  const [headerH, setHeaderH] = useState(57);
   useEffect(() => {
     const el = headerRef.current;
     if (!el) return;
     const apply = () => {
-      const h = el.getBoundingClientRect().height;
-      document.documentElement.style.setProperty("--dsa-header-h", `${Math.round(h)}px`);
+      const h = Math.round(el.getBoundingClientRect().height);
+      document.documentElement.style.setProperty("--dsa-header-h", `${h}px`);
+      setHeaderH((prev) => (prev === h ? prev : h));
     };
     apply();
     const ro = new ResizeObserver(apply);
@@ -276,10 +278,6 @@ export default function DsaStudio() {
   const topicSectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const isProgrammaticScroll = useRef(false);
   useEffect(() => {
-    const headerVar = getComputedStyle(document.documentElement)
-      .getPropertyValue("--dsa-header-h")
-      .trim();
-    const headerH = parseInt(headerVar, 10) || 57;
     const observer = new IntersectionObserver(
       (entries) => {
         if (isProgrammaticScroll.current) return;
@@ -307,21 +305,21 @@ export default function DsaStudio() {
     );
     Object.values(topicSectionRefs.current).forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
-  }, [filteredByTopic]);
+  }, [filteredByTopic, headerH]);
 
   const handleTopicClick = (id: string) => {
     setActiveTopic(id);
     const el = topicSectionRefs.current[id];
     if (!el) return;
-    const headerVar = getComputedStyle(document.documentElement)
-      .getPropertyValue("--dsa-header-h")
-      .trim();
-    const headerH = parseInt(headerVar, 10) || 57;
     const offset = headerH + 12;
     const y = el.getBoundingClientRect().top + window.scrollY - offset;
     isProgrammaticScroll.current = true;
     window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
-    window.setTimeout(() => { isProgrammaticScroll.current = false; }, 800);
+    // Move keyboard focus to the section so screen-reader / keyboard users land there
+    window.setTimeout(() => {
+      try { el.focus({ preventScroll: true }); } catch { /* noop */ }
+      isProgrammaticScroll.current = false;
+    }, 600);
   };
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -330,8 +328,22 @@ export default function DsaStudio() {
     handleTopicClick(id);
   };
 
+  const sidebarItemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  // Keep the active sidebar item visible inside its scroll container
+  useEffect(() => {
+    const btn = sidebarItemRefs.current[activeTopic];
+    if (!btn) return;
+    const parent = btn.closest("[data-dsa-sidebar-scroll]") as HTMLElement | null;
+    if (!parent) return;
+    const bRect = btn.getBoundingClientRect();
+    const pRect = parent.getBoundingClientRect();
+    if (bRect.top < pRect.top + 8 || bRect.bottom > pRect.bottom - 8) {
+      btn.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [activeTopic]);
+
   const sidebarContent = (
-    <div className="p-4 space-y-6">
+    <nav aria-label="Learning path topics" className="p-4 space-y-6">
       <div>
         <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
           Learning Path
@@ -343,9 +355,11 @@ export default function DsaStudio() {
             return (
               <li key={t.id}>
                 <button
+                  ref={(el) => { sidebarItemRefs.current[t.id] = el; }}
                   onClick={() => handleSidebarTopicClick(t.id)}
+                  aria-current={active ? "true" : undefined}
                   className={cn(
-                    "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                    "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     active
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
@@ -389,7 +403,7 @@ export default function DsaStudio() {
           })}
         </ul>
       </div>
-    </div>
+    </nav>
   );
 
   return (
@@ -454,6 +468,8 @@ export default function DsaStudio() {
       <div className="flex lg:pl-64">
         {/* Sidebar - fixed so it never scrolls with main content (immune to ancestor transforms) */}
         <aside
+          aria-label="Topics navigation"
+          data-dsa-sidebar-scroll
           className="hidden lg:block w-64 border-r border-border/40 fixed left-0 z-10 overflow-y-auto overscroll-contain bg-background"
           style={{
             top: "var(--dsa-header-h, 57px)",
@@ -465,7 +481,11 @@ export default function DsaStudio() {
 
         {/* Mobile sidebar drawer */}
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-          <SheetContent side="left" className="w-72 p-0 lg:hidden overflow-y-auto">
+          <SheetContent
+            side="left"
+            data-dsa-sidebar-scroll
+            className="w-[85vw] max-w-xs p-0 lg:hidden overflow-y-auto"
+          >
             <SheetTitle className="sr-only">Topics</SheetTitle>
             {sidebarContent}
           </SheetContent>
@@ -594,8 +614,8 @@ export default function DsaStudio() {
                 <span className="text-xs text-muted-foreground">STATUS</span>
                 <span className="text-xs font-medium">All</span>
               </Button>
-            </div>
-          </div>
+      </div>
+    </div>
 
           {/* QA mode banner */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
@@ -643,13 +663,15 @@ export default function DsaStudio() {
                 key={t.id}
                 data-topic-id={t.id}
                 ref={(el) => { topicSectionRefs.current[t.id] = el; }}
-                className="space-y-5"
+                tabIndex={-1}
+                aria-labelledby={`dsa-topic-${t.id}-heading`}
+                className="space-y-5 outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:rounded-md"
                 style={{ scrollMarginTop: "calc(var(--dsa-header-h, 57px) + 0.75rem)" }}
               >
                 {/* Topic header */}
                 <div className="flex items-end justify-between flex-wrap gap-2 pt-2">
                   <div>
-                    <h2 className="flex items-center gap-2 text-2xl font-bold">
+                    <h2 id={`dsa-topic-${t.id}-heading`} className="flex items-center gap-2 text-2xl font-bold">
                       <TIcon className={cn("h-6 w-6", qaMode && hasMismatch ? "text-amber-400" : "text-primary")} />
                       {t.label}
                       {qaMode && hasMismatch && (
