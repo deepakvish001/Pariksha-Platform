@@ -282,6 +282,7 @@ export default function DsaStudio() {
   const topicSectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const isProgrammaticScroll = useRef(false);
   useEffect(() => {
+    const rootEl = mainScrollRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
         if (isProgrammaticScroll.current) return;
@@ -293,8 +294,7 @@ export default function DsaStudio() {
           if (id) setActiveTopic(id);
           return;
         }
-        // Fallback: pick the last section whose top crossed just below the header.
-        const triggerY = headerH + 16;
+        const triggerY = 16;
         const candidates = Object.entries(topicSectionRefs.current)
           .filter(([, el]) => !!el)
           .map(([id, el]) => ({ id, top: (el as HTMLElement).getBoundingClientRect().top }))
@@ -303,7 +303,8 @@ export default function DsaStudio() {
         if (candidates[0]) setActiveTopic(candidates[0].id);
       },
       {
-        rootMargin: `-${headerH + 8}px 0px -55% 0px`,
+        root: rootEl ?? null,
+        rootMargin: `0px 0px -55% 0px`,
         threshold: [0, 0.1, 0.25, 0.5, 1],
       },
     );
@@ -314,12 +315,12 @@ export default function DsaStudio() {
   const handleTopicClick = (id: string) => {
     setActiveTopic(id);
     const el = topicSectionRefs.current[id];
-    if (!el) return;
-    const offset = headerH + 12;
-    const y = el.getBoundingClientRect().top + window.scrollY - offset;
+    const scroller = mainScrollRef.current;
+    if (!el || !scroller) return;
+    const offset = 12;
+    const y = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - offset;
     isProgrammaticScroll.current = true;
-    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
-    // Move keyboard focus to the section so screen-reader / keyboard users land there
+    scroller.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
     window.setTimeout(() => {
       try { el.focus({ preventScroll: true }); } catch { /* noop */ }
       isProgrammaticScroll.current = false;
