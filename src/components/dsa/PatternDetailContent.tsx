@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Bookmark,
@@ -16,6 +16,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { CommonPattern, PatternCategory, PatternProblem } from "@/data/dsaCommonPatternsData";
+
+const SECTIONS = [
+  { id: "overview", label: "Overview" },
+  { id: "when-to-use", label: "When to use" },
+  { id: "complexity", label: "Complexity" },
+  { id: "problems", label: "Problems" },
+] as const;
+type SectionId = (typeof SECTIONS)[number]["id"];
 
 const diffStyles: Record<PatternProblem["difficulty"], string> = {
   Easy: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
