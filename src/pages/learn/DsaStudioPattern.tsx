@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -20,7 +20,16 @@ export default function DsaStudioPattern() {
     return null;
   }, [patternId]);
 
-  const goBack = () => navigate("/learn/dsa-studio?tab=patterns");
+  const location = useLocation() as { state?: { from?: string } };
+  const goBack = () => {
+    // If we got here from the patterns list in this session, go back so the
+    // browser restores the previous DsaStudio state (active tab + scroll).
+    if (location.state?.from === "patterns" && window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate("/learn/dsa-studio?tab=patterns");
+  };
 
   if (!found) {
     return (

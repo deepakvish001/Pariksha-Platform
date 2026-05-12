@@ -131,7 +131,8 @@ export default function CommonPatternsView() {
   const [statusFilter, setStatusFilter] = useState<"all" | "done" | "in_progress" | "not_started">("all");
   const [sortMode, setSortMode] = useState<"default" | "progress_desc" | "progress_asc">("default");
   const navigate = useNavigate();
-  const openPattern = (p: CommonPattern) => navigate(`/learn/dsa-studio/pattern/${p.id}`);
+  const openPattern = (p: CommonPattern) =>
+    navigate(`/learn/dsa-studio/pattern/${p.id}`, { state: { from: "patterns" } });
 
   const [masteryFilter, setMasteryFilter] = useState<"all" | "Bronze" | "Silver" | "Gold">("all");
   const [badgeTarget, setBadgeTarget] = useState<BadgeDrawerTarget | null>(null);
