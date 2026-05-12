@@ -375,7 +375,7 @@ export default function DsaStudio() {
             );
           })}
         </ul>
-    </nav>
+      </div>
 
       <div>
         <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
