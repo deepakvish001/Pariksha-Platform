@@ -625,10 +625,56 @@ export default function DsaStudioProblem() {
                             : `${matchCount} match${matchCount === 1 ? "" : "es"}`}
                         </span>
                         {matchCount > 0 && (
-                          <span className="text-muted-foreground/70">Enter ⏎ to jump</span>
+                          <span className="text-muted-foreground/70">Enter ⏎ to jump · click below</span>
                         )}
                       </div>
                     )}
+                    {q && matchCount > 0 && (() => {
+                      const stepMs = 1400 / speed;
+                      const fmt = (m: number) => {
+                        const sec = Math.floor(m / 1000);
+                        return `${String(Math.floor(sec / 60)).padStart(1, "0")}:${String(sec % 60).padStart(2, "0")}.${String(Math.floor((m % 1000) / 100))}`;
+                      };
+                      return (
+                        <div
+                          role="listbox"
+                          aria-label="Matching steps"
+                          className="rounded-md border border-amber-400/30 bg-background/80 backdrop-blur-sm divide-y divide-border/30 max-h-48 overflow-y-auto shadow-lg"
+                        >
+                          {matches.map((mi) => {
+                            const ms = Math.round(mi * stepMs);
+                            const text = template.algorithm[mi];
+                            const preview = template.stepLogic[mi % template.stepLogic.length] || "";
+                            return (
+                              <button
+                                key={mi}
+                                type="button"
+                                role="option"
+                                aria-selected={mi === step}
+                                onClick={() => { setStep(mi); setPlaying(false); }}
+                                className={cn(
+                                  "w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs",
+                                  "hover:bg-amber-400/10 focus-visible:outline-none focus-visible:bg-amber-400/10",
+                                  mi === step && "bg-violet-500/10",
+                                )}
+                              >
+                                <span className={cn(
+                                  "h-5 w-5 grid place-items-center rounded-full text-[10px] font-bold shrink-0",
+                                  mi === step ? "bg-violet-500 text-white" : "bg-amber-400/20 text-amber-200",
+                                )}>{mi + 1}</span>
+                                <span className="flex-1 min-w-0 truncate text-foreground">
+                                  {highlightQuery(text)}
+                                  <span className="text-muted-foreground/70"> — {highlightQuery(preview)}</span>
+                                </span>
+                                <span className="shrink-0 font-mono text-[10px] tabular-nums text-violet-300">
+                                  {fmt(ms)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
 
                     <ol className="space-y-1.5">
                       <TooltipProvider delayDuration={150}>
