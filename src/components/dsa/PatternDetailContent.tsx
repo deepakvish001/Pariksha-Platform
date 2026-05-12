@@ -230,6 +230,34 @@ export default function PatternDetailContent({
         </div>
       </div>
 
+      {/* Section jump nav — keeps deep links discoverable and reflects the active section */}
+      <div className="sticky top-[57px] z-10 border-b border-border/40 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50">
+        <nav
+          aria-label="Pattern sections"
+          className="mx-auto w-full max-w-5xl px-4 md:px-8 py-2 flex flex-wrap items-center gap-1.5 overflow-x-auto"
+        >
+          {SECTIONS.map((s) => {
+            const active = activeSection === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => goToSection(s.id)}
+                className={cn(
+                  "h-7 px-2.5 rounded-md text-xs border transition-colors whitespace-nowrap",
+                  active
+                    ? "border-sky-500/50 bg-sky-500/15 text-sky-200"
+                    : "border-border/40 bg-card/40 text-muted-foreground hover:text-foreground hover:border-sky-500/30",
+                )}
+                aria-current={active ? "true" : undefined}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
       {/* Body */}
       {/* Body — uses natural document scroll so all viewport sizes behave */}
       <div className="w-full">
