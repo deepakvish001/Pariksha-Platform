@@ -131,8 +131,47 @@ export default function CommonPatternsView() {
   const [statusFilter, setStatusFilter] = useState<"all" | "done" | "in_progress" | "not_started">("all");
   const [sortMode, setSortMode] = useState<"default" | "progress_desc" | "progress_asc">("default");
   const navigate = useNavigate();
-  const openPattern = (p: CommonPattern) =>
+  const SCROLL_KEY = "dsaPatterns:scrollY";
+  const openPattern = (p: CommonPattern) => {
+    try {
+      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY || window.pageYOffset || 0));
+    } catch {
+      /* ignore */
+    }
     navigate(`/learn/dsa-studio/pattern/${p.id}`, { state: { from: "patterns" } });
+  };
+
+  // Restore scroll position when returning from a pattern detail page.
+  useEffect(() => {
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(SCROLL_KEY);
+    } catch {
+      raw = null;
+    }
+    if (raw == null) return;
+    const y = Number(raw);
+    if (!Number.isFinite(y) || y <= 0) {
+      try { sessionStorage.removeItem(SCROLL_KEY); } catch { /* ignore */ }
+      return;
+    }
+    // Wait for layout/content to paint before restoring.
+    let attempts = 0;
+    const tryRestore = () => {
+      attempts += 1;
+      const max = Math.max(
+        document.documentElement.scrollHeight - window.innerHeight,
+        0,
+      );
+      if (max >= y || attempts > 20) {
+        window.scrollTo({ top: y, left: 0, behavior: "auto" });
+        try { sessionStorage.removeItem(SCROLL_KEY); } catch { /* ignore */ }
+        return;
+      }
+      requestAnimationFrame(tryRestore);
+    };
+    requestAnimationFrame(tryRestore);
+  }, []);
 
   const [masteryFilter, setMasteryFilter] = useState<"all" | "Bronze" | "Silver" | "Gold">("all");
   const [badgeTarget, setBadgeTarget] = useState<BadgeDrawerTarget | null>(null);
