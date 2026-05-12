@@ -1,11 +1,15 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ArrowLeft,
   Bookmark,
   BookmarkCheck,
+  Check,
   CheckCircle2,
   ChevronRight,
   Circle,
   ExternalLink,
+  Link2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,6 +80,17 @@ export default function PatternDetailContent({
   const cx = splitComplexity(pattern.complexity);
   const whenToUse = deriveWhenToUse(pattern);
 
+  const [copied, setCopied] = useState(false);
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
     <div className="flex h-full flex-col">
       {/* Top breadcrumb bar */}
@@ -84,19 +99,42 @@ export default function PatternDetailContent({
           <Button size="sm" variant="outline" onClick={onBack} className="h-8 gap-1.5 text-xs">
             <ArrowLeft className="h-3.5 w-3.5" /> {backLabel}
           </Button>
-          <div className="text-sm text-muted-foreground truncate">
+          <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground truncate">
+            <Link to="/learn/dsa-studio?tab=patterns" className="hover:text-foreground transition-colors">
+              Patterns
+            </Link>
+            <ChevronRight className="inline h-3.5 w-3.5 mx-1 opacity-60" />
             {category && (
               <>
-                <span>{category.title}</span>
+                <Link
+                  to={`/learn/dsa-studio?tab=patterns#pat-${category.id}`}
+                  className="hover:text-foreground transition-colors"
+                >
+                  {category.title}
+                </Link>
                 <ChevronRight className="inline h-3.5 w-3.5 mx-1 opacity-60" />
               </>
             )}
-            <span className="text-sky-400 font-medium">{pattern.title}</span>
-          </div>
+            <span className="text-sky-400 font-medium" aria-current="page">
+              {pattern.title}
+            </span>
+          </nav>
         </div>
-        <Badge className="bg-sky-500/15 text-sky-300 border-sky-500/30 uppercase tracking-wider text-[10px] gap-1.5">
-          <span>{pattern.emoji}</span> Pattern
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCopyLink}
+            className="h-8 gap-1.5 text-xs"
+            aria-label="Copy link to this pattern"
+          >
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Link2 className="h-3.5 w-3.5" />}
+            {copied ? "Copied" : "Copy link"}
+          </Button>
+          <Badge className="bg-sky-500/15 text-sky-300 border-sky-500/30 uppercase tracking-wider text-[10px] gap-1.5">
+            <span>{pattern.emoji}</span> Pattern
+          </Badge>
+        </div>
       </div>
 
       {/* Body */}
