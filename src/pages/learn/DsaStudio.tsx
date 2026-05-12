@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -39,7 +40,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 import { DSA_TOPICS as TOPICS, type Diff, type DsaProblem as Problem } from "@/data/dsaStudioData";
@@ -324,6 +324,39 @@ export default function DsaStudio() {
   };
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const mobileToggleRef = useRef<HTMLButtonElement | null>(null);
+  const mobileCloseRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => {
+      if (desktopQuery.matches) setMobileNavOpen(false);
+    };
+    closeOnDesktop();
+    desktopQuery.addEventListener("change", closeOnDesktop);
+    return () => desktopQuery.removeEventListener("change", closeOnDesktop);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const focusTimer = window.setTimeout(() => mobileCloseRef.current?.focus(), 0);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileNavOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+      mobileToggleRef.current?.focus({ preventScroll: true });
+    };
+  }, [mobileNavOpen]);
+
   const handleSidebarTopicClick = (id: string) => {
     setMobileNavOpen(false);
     handleTopicClick(id);
@@ -437,6 +470,7 @@ export default function DsaStudio() {
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-2">
             <button
+              ref={mobileToggleRef}
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
@@ -486,17 +520,37 @@ export default function DsaStudio() {
         </aside>
 
         {/* Mobile sidebar drawer */}
-        <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-          <SheetContent
-            side="left"
-            id="dsa-mobile-sidebar"
-            data-dsa-sidebar-scroll
-            className="w-[85vw] max-w-xs p-0 lg:hidden overflow-y-auto"
-          >
-            <SheetTitle className="sr-only">Topics</SheetTitle>
-            {sidebarContent}
-          </SheetContent>
-        </Sheet>
+        {mobileNavOpen && typeof document !== "undefined" && createPortal(
+          <div className="fixed inset-0 z-50 lg:hidden" role="presentation">
+            <button
+              type="button"
+              aria-label="Close topics menu"
+              className="absolute inset-0 h-full w-full bg-background/80 backdrop-blur-sm"
+              onClick={() => setMobileNavOpen(false)}
+            />
+            <aside
+              id="dsa-mobile-sidebar"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="dsa-mobile-sidebar-title"
+              data-dsa-sidebar-scroll
+              className="relative z-10 h-[100dvh] w-[85vw] max-w-xs overflow-y-auto border-r border-border/40 bg-background shadow-2xl"
+            >
+              <h2 id="dsa-mobile-sidebar-title" className="sr-only">Topics</h2>
+              <button
+                ref={mobileCloseRef}
+                type="button"
+                aria-label="Close topics menu"
+                className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => setMobileNavOpen(false)}
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+              {sidebarContent}
+            </aside>
+          </div>,
+          document.body,
+        )}
 
         {/* Main */}
         <main
