@@ -29,7 +29,10 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useDsaPatternHistory } from "@/hooks/useDsaPatternHistory";
+import { useDsaPatternSettings } from "@/hooks/useDsaPatternSettings";
+import { useDsaPatternAchievements } from "@/hooks/useDsaPatternAchievements";
 import PatternAchievementsPanel from "./PatternAchievementsPanel";
+import BadgeDetailsDrawer, { type BadgeDrawerTarget } from "./BadgeDetailsDrawer";
 import {
   COMMON_PATTERNS,
   PATTERN_TOTAL,
