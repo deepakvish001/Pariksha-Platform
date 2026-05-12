@@ -390,7 +390,7 @@ export default function DsaStudio() {
         </Sheet>
 
         {/* Main */}
-        <main className="flex-1 min-w-0 p-4 md:p-6 space-y-5">
+        <main className="flex-1 min-w-0 px-4 md:px-6 pt-6 md:pt-8 pb-4 md:pb-6 space-y-5 [scroll-padding-top:5rem]">
           {/* Tabs row */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
