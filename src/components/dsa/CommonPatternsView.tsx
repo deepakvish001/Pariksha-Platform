@@ -29,6 +29,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useDsaPatternHistory } from "@/hooks/useDsaPatternHistory";
+import PatternAchievementsPanel from "./PatternAchievementsPanel";
 import {
   COMMON_PATTERNS,
   PATTERN_TOTAL,
