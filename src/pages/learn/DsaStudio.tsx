@@ -568,7 +568,8 @@ export default function DsaStudio() {
                 key={t.id}
                 data-topic-id={t.id}
                 ref={(el) => { topicSectionRefs.current[t.id] = el; }}
-                className="space-y-5 scroll-mt-20"
+                className="space-y-5"
+                style={{ scrollMarginTop: "calc(var(--dsa-header-h, 57px) + 0.75rem)" }}
               >
                 {/* Topic header */}
                 <div className="flex items-end justify-between flex-wrap gap-2 pt-2">
