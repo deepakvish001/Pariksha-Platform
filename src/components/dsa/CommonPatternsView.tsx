@@ -843,6 +843,7 @@ export default function CommonPatternsView() {
       {/* Detail dialog */}
       <PatternDetailDialog
         pattern={openPattern}
+        category={openPattern ? categoryByPattern.get(openPattern.id) ?? null : null}
         onClose={() => setOpenPattern(null)}
         bookmarks={bookmarks}
         done={done}
