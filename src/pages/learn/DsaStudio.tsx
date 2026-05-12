@@ -641,7 +641,9 @@ export default function DsaStudio() {
                 key={t.id}
                 data-topic-id={t.id}
                 ref={(el) => { topicSectionRefs.current[t.id] = el; }}
-                className="space-y-5"
+                tabIndex={-1}
+                aria-labelledby={`dsa-topic-${t.id}-heading`}
+                className="space-y-5 outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:rounded-md"
                 style={{ scrollMarginTop: "calc(var(--dsa-header-h, 57px) + 0.75rem)" }}
               >
                 {/* Topic header */}
