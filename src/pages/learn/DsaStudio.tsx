@@ -215,7 +215,7 @@ export default function DsaStudio() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-border/40 bg-background/95 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
           <Link to="/learn" className="flex items-center gap-2">
             <span className="text-xl">🧠</span>
@@ -240,7 +240,7 @@ export default function DsaStudio() {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
+        <aside className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky top-[57px] z-10 h-[calc(100vh-57px)] overflow-y-auto bg-background">
           <div className="p-4 space-y-6">
             <div>
               <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
