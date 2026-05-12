@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw, Copy, Check,
-  Lightbulb, ListChecks, Layers, Variable as VarIcon, Sparkles, Clock, Database, Search, X,
+  Lightbulb, ListChecks, Layers, Variable as VarIcon, Sparkles, Clock, Database, Search, X, ChevronUp, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -668,46 +668,83 @@ export default function DsaStudioProblem() {
 
                 return (
                   <>
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <input
-                        type="search"
-                        value={algoQuery}
-                        onChange={(e) => setAlgoQuery(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && matches.length > 0) {
-                            e.preventDefault();
-                            const after = matches.find((m) => m > step) ?? matches[0];
-                            setStep(after);
-                            setPlaying(false);
-                          } else if (e.key === "Escape") {
-                            setAlgoQuery("");
-                          }
-                        }}
-                        placeholder="Search steps… (Enter to jump)"
-                        aria-label="Search algorithm steps"
-                        className="w-full h-8 rounded-md border border-border/50 bg-background/40 pl-7 pr-7 text-xs placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-violet-400/50"
-                      />
-                      {algoQuery && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                        <input
+                          type="search"
+                          value={algoQuery}
+                          onChange={(e) => setAlgoQuery(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && matches.length > 0) {
+                              e.preventDefault();
+                              const target = e.shiftKey
+                                ? ([...matches].reverse().find((m) => m < step) ?? matches[matches.length - 1])
+                                : (matches.find((m) => m > step) ?? matches[0]);
+                              setStep(target);
+                              setPlaying(false);
+                            } else if (e.key === "Escape") {
+                              setAlgoQuery("");
+                            }
+                          }}
+                          placeholder="Search steps… (Enter to jump)"
+                          aria-label="Search algorithm steps"
+                          className="w-full h-8 rounded-md border border-border/50 bg-background/40 pl-7 pr-7 text-xs placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-violet-400/50"
+                        />
+                        {algoQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setAlgoQuery("")}
+                            aria-label="Clear search"
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-5 w-5 grid place-items-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center rounded-md border border-border/50 bg-background/40 overflow-hidden">
                         <button
                           type="button"
-                          onClick={() => setAlgoQuery("")}
-                          aria-label="Clear search"
-                          className="absolute right-1.5 top-1/2 -translate-y-1/2 h-5 w-5 grid place-items-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          onClick={() => {
+                            if (!matches.length) return;
+                            const prev = [...matches].reverse().find((m) => m < step) ?? matches[matches.length - 1];
+                            setStep(prev);
+                            setPlaying(false);
+                          }}
+                          disabled={matchCount === 0}
+                          aria-label="Previous match"
+                          title="Previous match (Shift+Enter)"
+                          className="h-8 w-7 grid place-items-center text-muted-foreground hover:text-foreground hover:bg-violet-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
-                          <X className="h-3 w-3" />
+                          <ChevronUp className="h-3.5 w-3.5" />
                         </button>
-                      )}
+                        <div className="w-px h-5 bg-border/50" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!matches.length) return;
+                            const next = matches.find((m) => m > step) ?? matches[0];
+                            setStep(next);
+                            setPlaying(false);
+                          }}
+                          disabled={matchCount === 0}
+                          aria-label="Next match"
+                          title="Next match (Enter)"
+                          className="h-8 w-7 grid place-items-center text-muted-foreground hover:text-foreground hover:bg-violet-500/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     {q && (
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                         <span>
                           {matchCount === 0
                             ? "No matching steps"
-                            : `${matchCount} match${matchCount === 1 ? "" : "es"}`}
+                            : `${matchCount} match${matchCount === 1 ? "" : "es"} · current step ${matches.indexOf(step) >= 0 ? matches.indexOf(step) + 1 : "—"}/${matchCount}`}
                         </span>
                         {matchCount > 0 && (
-                          <span className="text-muted-foreground/70">Enter ⏎ to jump · click below</span>
+                          <span className="text-muted-foreground/70">↑/↓ or Enter / Shift+Enter</span>
                         )}
                       </div>
                     )}
