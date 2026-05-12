@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { DSA_TOPICS, type Diff } from "@/data/dsaStudioData";
 import { TOPIC_TEMPLATES, FALLBACK_TEMPLATE, type LangId } from "@/data/dsaProblemTemplates";
