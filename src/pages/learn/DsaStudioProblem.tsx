@@ -52,6 +52,30 @@ export default function DsaStudioProblem() {
   const [algoQuery, setAlgoQuery] = useState("");
   const totalSteps = template.algorithm.length;
 
+  // Shared keyword-highlight helper used across the step title, step-logic preview,
+  // and the tooltip — keeps highlighting consistent everywhere.
+  const highlightQuery = (text: string): React.ReactNode => {
+    const q = algoQuery.trim().toLowerCase();
+    if (!q) return text;
+    const lower = text.toLowerCase();
+    const out: React.ReactNode[] = [];
+    let from = 0;
+    let idx = lower.indexOf(q);
+    let key = 0;
+    while (idx !== -1) {
+      if (idx > from) out.push(text.slice(from, idx));
+      out.push(
+        <mark key={key++} className="rounded-sm bg-amber-400/30 text-amber-200 px-0.5">
+          {text.slice(idx, idx + q.length)}
+        </mark>,
+      );
+      from = idx + q.length;
+      idx = lower.indexOf(q, from);
+    }
+    if (from < text.length) out.push(text.slice(from));
+    return out;
+  };
+
   // Restore last viewed step for this slug from localStorage
   useEffect(() => {
     if (!slug || totalSteps === 0) return;
@@ -390,17 +414,29 @@ export default function DsaStudioProblem() {
                 STEP LOGIC
               </div>
               <ol className="space-y-2">
-                {template.stepLogic.map((s, i) => (
-                  <li key={i} className={cn(
-                    "text-sm border-l-2 pl-3 py-0.5 transition-colors",
-                    i === step % template.stepLogic.length
-                      ? "border-violet-400 text-foreground"
-                      : "border-border/40 text-muted-foreground",
-                  )}>
-                    <span className="font-semibold text-violet-300 mr-1.5">{["Init","Step","Final"][i] ?? `Step ${i+1}`}:</span>
-                    {s}
-                  </li>
-                ))}
+                {template.stepLogic.map((s, i) => {
+                  const q = algoQuery.trim().toLowerCase();
+                  const isMatch = q ? s.toLowerCase().includes(q) : false;
+                  const isActive = i === step % template.stepLogic.length;
+                  return (
+                    <li
+                      key={i}
+                      className={cn(
+                        "text-sm border-l-2 pl-3 py-0.5 transition-colors",
+                        isActive
+                          ? "border-violet-400 text-foreground"
+                          : "border-border/40 text-muted-foreground",
+                        isMatch && "border-amber-400 bg-amber-400/5 text-foreground",
+                        q && !isMatch && !isActive && "opacity-50",
+                      )}
+                    >
+                      <span className="font-semibold text-violet-300 mr-1.5">
+                        {["Init", "Step", "Final"][i] ?? `Step ${i + 1}`}:
+                      </span>
+                      {highlightQuery(s)}
+                    </li>
+                  );
+                })}
               </ol>
             </section>
           </div>
@@ -546,29 +582,7 @@ export default function DsaStudioProblem() {
                   .filter((x) => x.hit)
                   .map((x) => x.i);
                 const matchCount = matches.length;
-                const renderHighlight = (text: string) => {
-                  if (!q) return text;
-                  const lower = text.toLowerCase();
-                  const out: React.ReactNode[] = [];
-                  let from = 0;
-                  let idx = lower.indexOf(q);
-                  let key = 0;
-                  while (idx !== -1) {
-                    if (idx > from) out.push(text.slice(from, idx));
-                    out.push(
-                      <mark
-                        key={key++}
-                        className="rounded-sm bg-amber-400/30 text-amber-200 px-0.5"
-                      >
-                        {text.slice(idx, idx + q.length)}
-                      </mark>,
-                    );
-                    from = idx + q.length;
-                    idx = lower.indexOf(q, from);
-                  }
-                  if (from < text.length) out.push(text.slice(from));
-                  return out;
-                };
+                const renderHighlight = highlightQuery;
 
                 return (
                   <>
@@ -670,10 +684,10 @@ export default function DsaStudioProblem() {
                                       <span className="font-semibold text-foreground">Step {i + 1} / {totalSteps}</span>
                                       <span className="font-mono text-[10px] text-violet-300">{fmt(ms)}</span>
                                     </div>
-                                    <div className="text-foreground/90">{s}</div>
+                                    <div className="text-foreground/90">{renderHighlight(s)}</div>
                                     <div className="pt-1 border-t border-border/40 text-muted-foreground">
                                       <span className="text-[10px] uppercase tracking-widest mr-1">Will show</span>
-                                      {preview}
+                                      {renderHighlight(preview)}
                                     </div>
                                     <div className="text-[10px] text-muted-foreground/80">Click to jump here</div>
                                   </div>
