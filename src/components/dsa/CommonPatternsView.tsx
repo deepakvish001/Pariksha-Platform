@@ -276,15 +276,20 @@ export default function CommonPatternsView() {
   const totalProblemsDone = difficultyDone.Easy + difficultyDone.Medium + difficultyDone.Hard;
   const completedCategories = [...categoryStats.values()].filter((s) => s.pct === 100).length;
 
-  // Apply category sort to the filtered output
+  // Apply mastery quick filter + category sort to the filtered output
+  const masteryThreshold = masteryFilter === "Bronze" ? 25 : masteryFilter === "Silver" ? 50 : masteryFilter === "Gold" ? 100 : 0;
   const displayed = useMemo(() => {
-    if (sortMode === "default") return filtered;
-    return [...filtered].sort((a, b) => {
+    let list = filtered;
+    if (masteryFilter !== "all") {
+      list = list.filter((c) => (categoryStats.get(c.id)?.pct ?? 0) >= masteryThreshold);
+    }
+    if (sortMode === "default") return list;
+    return [...list].sort((a, b) => {
       const pa = categoryStats.get(a.id)?.pct ?? 0;
       const pb = categoryStats.get(b.id)?.pct ?? 0;
       return sortMode === "progress_desc" ? pb - pa : pa - pb;
     });
-  }, [filtered, sortMode, categoryStats]);
+  }, [filtered, sortMode, categoryStats, masteryFilter, masteryThreshold]);
 
   const clearFilters = () => {
     setActiveCategories(new Set());
@@ -294,6 +299,7 @@ export default function CommonPatternsView() {
     setShowOnlyTodo(false);
     setStatusFilter("all");
     setSortMode("default");
+    setMasteryFilter("all");
     setSearch("");
   };
 
@@ -305,7 +311,8 @@ export default function CommonPatternsView() {
     showOnlyBookmarked ||
     showOnlyTodo ||
     statusFilter !== "all" ||
-    sortMode !== "default";
+    sortMode !== "default" ||
+    masteryFilter !== "all";
 
   return (
     <div className="relative -mx-4 md:-mx-6">
