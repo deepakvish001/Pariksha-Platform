@@ -153,15 +153,7 @@ export default function CommonPatternsView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
 
-  // Deep-link sync: ?pattern=<id> opens the detail dialog
-  const [searchParams, setSearchParams] = useSearchParams();
-  // Category lookup (kept for badge drawer deep-link support)
-  const categoryByPattern = useMemo(() => {
-    const m = new Map<string, PatternCategory>();
-    COMMON_PATTERNS.forEach((cat) => cat.patterns.forEach((p) => m.set(p.id, cat)));
-    return m;
-  }, []);
-  void categoryByPattern;
+  // (Detail view is rendered on its own page; no deep-link sync needed here.)
 
   // Build tag + complexity universes
   const { allTags, allComplexities } = useMemo(() => {
@@ -678,7 +670,7 @@ export default function CommonPatternsView() {
                         ? "border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10"
                         : "border-border/40 bg-card/40 hover:border-emerald-500/40 hover:bg-card/60",
                     )}
-                    onClick={() => setOpenPattern(p)}
+                    onClick={() => openPattern(p)}
                   >
                     <header className="flex items-start gap-3 mb-2">
                       <span
