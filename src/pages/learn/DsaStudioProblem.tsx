@@ -51,6 +51,35 @@ export default function DsaStudioProblem() {
   const [custom, setCustom] = useState("");
   const totalSteps = template.algorithm.length;
 
+  // Restore last viewed step for this slug from localStorage
+  useEffect(() => {
+    if (!slug || totalSteps === 0) return;
+    try {
+      const raw = localStorage.getItem("dsaStudio:lastStep:v1");
+      const map = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+      const saved = map[slug];
+      if (typeof saved === "number" && saved >= 0 && saved < totalSteps) {
+        setStep(saved);
+      } else {
+        setStep(0);
+      }
+    } catch {
+      setStep(0);
+    }
+    setPlaying(false);
+  }, [slug, totalSteps]);
+
+  // Persist current step per slug
+  useEffect(() => {
+    if (!slug) return;
+    try {
+      const raw = localStorage.getItem("dsaStudio:lastStep:v1");
+      const map = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+      map[slug] = step;
+      localStorage.setItem("dsaStudio:lastStep:v1", JSON.stringify(map));
+    } catch {}
+  }, [slug, step]);
+
   // animation auto-advance
   useEffect(() => {
     if (!playing) return;
