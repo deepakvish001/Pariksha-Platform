@@ -5,12 +5,14 @@ import {
   Bookmark,
   BookmarkCheck,
   Check,
+  CheckCheck,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Circle,
   ExternalLink,
   Link2,
+  RotateCcw,
   Sparkles,
   SquareArrowOutUpRight,
 } from "lucide-react";
@@ -115,6 +117,22 @@ export default function PatternDetailContent({
       next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
+
+  const problemKeyFor = (prId: string, url: string) => `${pattern.id}::${prId}::${url}`;
+  const markAllProblemsDone = () => {
+    setProblemsDone((prev) => {
+      const next = new Set(prev);
+      pattern.problems.forEach((pr) => next.add(problemKeyFor(pr.id, pr.url)));
+      return next;
+    });
+  };
+  const resetProblemsProgress = () => {
+    setProblemsDone((prev) => {
+      const next = new Set(prev);
+      pattern.problems.forEach((pr) => next.delete(problemKeyFor(pr.id, pr.url)));
+      return next;
+    });
+  };
 
   const problemKey = (prId: string, url: string) => `${pattern.id}::${prId}::${url}`;
   const completedProblems = pattern.problems.filter((pr) =>
@@ -606,6 +624,37 @@ export default function PatternDetailContent({
                     {difficultyCounts.Hard} Hard
                   </span>
                 </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={markAllProblemsDone}
+                  disabled={completedProblems === totalProblems || totalProblems === 0}
+                  className="h-7 px-2.5 gap-1.5 text-[11px]"
+                  aria-label="Mark all problems as done"
+                  title="Mark all problems as done"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Mark all done</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (completedProblems === 0) return;
+                    if (window.confirm("Reset your progress for this pattern's problems?")) {
+                      resetProblemsProgress();
+                    }
+                  }}
+                  disabled={completedProblems === 0}
+                  className="h-7 px-2.5 gap-1.5 text-[11px] text-muted-foreground"
+                  aria-label="Reset problems progress for this pattern"
+                  title="Reset progress"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Reset</span>
+                </Button>
                 <button
                   type="button"
                   onClick={() => handleCopySectionLink("problems")}
