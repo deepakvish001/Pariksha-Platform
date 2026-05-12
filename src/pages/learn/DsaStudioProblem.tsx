@@ -438,9 +438,63 @@ export default function DsaStudioProblem() {
                   </button>
                 ))}
               </div>
-              <pre className="text-[12px] leading-relaxed font-mono p-3 overflow-x-auto bg-background/40 max-h-[420px]">
-                <code>{template.code[lang]}</code>
-              </pre>
+              {(() => {
+                const codeStr = template.code[lang];
+                const lines = codeStr.split("\n");
+                // Identify executable (non-trivial) line indices
+                const isExec = (raw: string) => {
+                  const t = raw.trim();
+                  if (!t) return false;
+                  if (t === "{" || t === "}" || t === "};" || t === "});") return false;
+                  if (t.startsWith("//") || t.startsWith("#") || t.startsWith("/*") || t.startsWith("*")) return false;
+                  return true;
+                };
+                const execIdx = lines.map((l, i) => (isExec(l) ? i : -1)).filter((i) => i >= 0);
+                const buckets: number[][] = Array.from({ length: totalSteps }, () => []);
+                if (execIdx.length && totalSteps) {
+                  execIdx.forEach((lineIdx, k) => {
+                    const b = Math.min(totalSteps - 1, Math.floor((k * totalSteps) / execIdx.length));
+                    buckets[b].push(lineIdx);
+                  });
+                }
+                const highlighted = new Set(buckets[step] ?? []);
+                const firstHl = buckets[step]?.[0];
+
+                return (
+                  <pre
+                    className="text-[12px] leading-relaxed font-mono p-0 overflow-auto bg-background/40 max-h-[420px]"
+                    aria-label={`Code lines for step ${step + 1}`}
+                  >
+                    <code className="block">
+                      {lines.map((l, i) => (
+                        <div
+                          key={i}
+                          ref={
+                            i === firstHl
+                              ? (el) => {
+                                  if (el && typeof el.scrollIntoView === "function") {
+                                    el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                                  }
+                                }
+                              : undefined
+                          }
+                          className={cn(
+                            "flex items-start gap-3 px-3 transition-colors",
+                            highlighted.has(i)
+                              ? "bg-violet-500/15 border-l-2 border-violet-400 text-foreground"
+                              : "border-l-2 border-transparent text-muted-foreground/80",
+                          )}
+                        >
+                          <span className="select-none w-7 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground/60 pt-[1px]">
+                            {i + 1}
+                          </span>
+                          <span className="whitespace-pre">{l || " "}</span>
+                        </div>
+                      ))}
+                    </code>
+                  </pre>
+                );
+              })()}
             </section>
 
             {/* Algorithm */}
