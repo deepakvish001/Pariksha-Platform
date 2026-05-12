@@ -444,7 +444,7 @@ export default function DsaStudio() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="h-[100dvh] flex flex-col overflow-hidden bg-background text-foreground">
       {/* Skip to content link (a11y) */}
       <a
         href="#dsa-main-content"
