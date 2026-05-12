@@ -278,10 +278,6 @@ export default function DsaStudio() {
   const topicSectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const isProgrammaticScroll = useRef(false);
   useEffect(() => {
-    const headerVar = getComputedStyle(document.documentElement)
-      .getPropertyValue("--dsa-header-h")
-      .trim();
-    const headerH = parseInt(headerVar, 10) || 57;
     const observer = new IntersectionObserver(
       (entries) => {
         if (isProgrammaticScroll.current) return;
@@ -309,21 +305,21 @@ export default function DsaStudio() {
     );
     Object.values(topicSectionRefs.current).forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
-  }, [filteredByTopic]);
+  }, [filteredByTopic, headerH]);
 
   const handleTopicClick = (id: string) => {
     setActiveTopic(id);
     const el = topicSectionRefs.current[id];
     if (!el) return;
-    const headerVar = getComputedStyle(document.documentElement)
-      .getPropertyValue("--dsa-header-h")
-      .trim();
-    const headerH = parseInt(headerVar, 10) || 57;
     const offset = headerH + 12;
     const y = el.getBoundingClientRect().top + window.scrollY - offset;
     isProgrammaticScroll.current = true;
     window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
-    window.setTimeout(() => { isProgrammaticScroll.current = false; }, 800);
+    // Move keyboard focus to the section so screen-reader / keyboard users land there
+    window.setTimeout(() => {
+      try { el.focus({ preventScroll: true }); } catch { /* noop */ }
+      isProgrammaticScroll.current = false;
+    }, 600);
   };
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
