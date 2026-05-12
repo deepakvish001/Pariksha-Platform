@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
@@ -6,10 +6,12 @@ import {
   BookmarkCheck,
   Check,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Circle,
   ExternalLink,
   Link2,
+  Sparkles,
   SquareArrowOutUpRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
