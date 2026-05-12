@@ -483,8 +483,8 @@ export default function DsaStudioProblem() {
               </div>
               <ol className="space-y-2">
                 {template.stepLogic.map((s, i) => {
-                  const q = algoQuery.trim().toLowerCase();
-                  const isMatch = q ? s.toLowerCase().includes(q) : false;
+                  const q = algoQuery.trim();
+                  const isMatch = q ? scoreText(s) > 0 : false;
                   const isActive = i === step % template.stepLogic.length;
                   return (
                     <li
