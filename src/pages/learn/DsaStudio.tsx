@@ -240,7 +240,7 @@ export default function DsaStudio() {
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
+        <aside className="hidden lg:block w-64 shrink-0 border-r border-border/40 sticky top-[57px] z-10 h-[calc(100vh-57px)] overflow-y-auto bg-background">
           <div className="p-4 space-y-6">
             <div>
               <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
