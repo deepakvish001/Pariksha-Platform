@@ -91,6 +91,74 @@ export default function PatternDetailContent({
   const cx = splitComplexity(pattern.complexity);
   const whenToUse = deriveWhenToUse(pattern);
 
+  // Per-problem completion (separate from per-pattern done state)
+  const PROBLEMS_LS = "dsaPatterns:problemsDone:v1";
+  const [problemsDone, setProblemsDone] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = localStorage.getItem(PROBLEMS_LS);
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      return new Set();
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(PROBLEMS_LS, JSON.stringify([...problemsDone]));
+    } catch {
+      /* ignore */
+    }
+  }, [problemsDone]);
+  const toggleProblem = (key: string) =>
+    setProblemsDone((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
+  const problemKey = (prId: string, url: string) => `${pattern.id}::${prId}::${url}`;
+  const completedProblems = pattern.problems.filter((pr) =>
+    problemsDone.has(problemKey(pr.id, pr.url)),
+  ).length;
+  const totalProblems = pattern.problems.length;
+  const completionPct = totalProblems
+    ? Math.round((completedProblems / totalProblems) * 100)
+    : 0;
+
+  const difficultyCounts = useMemo(() => {
+    const c = { Easy: 0, Medium: 0, Hard: 0 } as Record<PatternProblem["difficulty"], number>;
+    pattern.problems.forEach((p) => (c[p.difficulty] += 1));
+    return c;
+  }, [pattern.problems]);
+
+  // Sibling navigation within the same category
+  const { prev, next } = useMemo(() => {
+    if (!category) return { prev: null, next: null };
+    const idx = category.patterns.findIndex((p) => p.id === pattern.id);
+    return {
+      prev: idx > 0 ? category.patterns[idx - 1] : null,
+      next: idx >= 0 && idx < category.patterns.length - 1 ? category.patterns[idx + 1] : null,
+    };
+  }, [category, pattern.id]);
+
+  const relatedPatterns = useMemo(
+    () => (category ? category.patterns.filter((p) => p.id !== pattern.id).slice(0, 6) : []),
+    [category, pattern.id],
+  );
+
+  // Reading progress for the page
+  const [readProgress, setReadProgress] = useState(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const h = document.documentElement;
+      const total = h.scrollHeight - h.clientHeight;
+      setReadProgress(total > 0 ? Math.min(100, Math.max(0, (h.scrollTop / total) * 100)) : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const [copied, setCopied] = useState(false);
   const handleCopyLink = async () => {
     try {
