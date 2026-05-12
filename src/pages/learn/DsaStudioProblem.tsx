@@ -414,17 +414,29 @@ export default function DsaStudioProblem() {
                 STEP LOGIC
               </div>
               <ol className="space-y-2">
-                {template.stepLogic.map((s, i) => (
-                  <li key={i} className={cn(
-                    "text-sm border-l-2 pl-3 py-0.5 transition-colors",
-                    i === step % template.stepLogic.length
-                      ? "border-violet-400 text-foreground"
-                      : "border-border/40 text-muted-foreground",
-                  )}>
-                    <span className="font-semibold text-violet-300 mr-1.5">{["Init","Step","Final"][i] ?? `Step ${i+1}`}:</span>
-                    {s}
-                  </li>
-                ))}
+                {template.stepLogic.map((s, i) => {
+                  const q = algoQuery.trim().toLowerCase();
+                  const isMatch = q ? s.toLowerCase().includes(q) : false;
+                  const isActive = i === step % template.stepLogic.length;
+                  return (
+                    <li
+                      key={i}
+                      className={cn(
+                        "text-sm border-l-2 pl-3 py-0.5 transition-colors",
+                        isActive
+                          ? "border-violet-400 text-foreground"
+                          : "border-border/40 text-muted-foreground",
+                        isMatch && "border-amber-400 bg-amber-400/5 text-foreground",
+                        q && !isMatch && !isActive && "opacity-50",
+                      )}
+                    >
+                      <span className="font-semibold text-violet-300 mr-1.5">
+                        {["Init", "Step", "Final"][i] ?? `Step ${i + 1}`}:
+                      </span>
+                      {highlightQuery(s)}
+                    </li>
+                  );
+                })}
               </ol>
             </section>
           </div>
