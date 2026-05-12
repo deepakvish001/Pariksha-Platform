@@ -140,7 +140,13 @@ export const useDsaPatternAchievements = (done: Set<string>, currentStreak: numb
 
   // Detect new streak milestones
   useEffect(() => {
-    if (!badgeHydratedRef.current) return;
+    if (!streakHydratedRef.current) {
+      streakHydratedRef.current = true;
+      // Seed last-known max so existing streak doesn't re-toast
+      const reached = STREAK_MILESTONES.filter((m) => currentStreak >= m);
+      lastStreakRef.current = reached.length > 0 ? reached[reached.length - 1] : lastStreakRef.current;
+      return;
+    }
     const reached = STREAK_MILESTONES.filter((m) => currentStreak >= m);
     const newMax = reached.length > 0 ? reached[reached.length - 1] : 0;
     if (newMax > lastStreakRef.current) {
