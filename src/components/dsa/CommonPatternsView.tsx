@@ -138,8 +138,13 @@ export default function CommonPatternsView() {
   const [sortMode, setSortMode] = useState<"default" | "progress_desc" | "progress_asc">("default");
   const [openPattern, setOpenPatternState] = useState<CommonPattern | null>(null);
 
+  const [masteryFilter, setMasteryFilter] = useState<"all" | "Bronze" | "Silver" | "Gold">("all");
+  const [badgeTarget, setBadgeTarget] = useState<BadgeDrawerTarget | null>(null);
+
   const { bookmarks, done, toggleBookmark, toggleDone } = usePatternStorage();
-  const history = useDsaPatternHistory();
+  const { settings, update: updateSettings } = useDsaPatternSettings();
+  const history = useDsaPatternHistory(settings);
+  const { feed, clearFeed } = useDsaPatternAchievements(done, history.currentStreak);
 
   // Log new completions to history (diff vs previous done set)
   const prevDoneRef = useRef<Set<string>>(done);
