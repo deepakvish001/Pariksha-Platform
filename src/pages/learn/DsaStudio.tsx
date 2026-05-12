@@ -488,132 +488,144 @@ export default function DsaStudio() {
             </div>
           )}
 
-          {/* Topic header */}
-          <div className="flex items-end justify-between flex-wrap gap-2 pt-2">
-            <div>
-              <h2 className="flex items-center gap-2 text-2xl font-bold">
-                <topic.icon className={cn("h-6 w-6", qaMode && topicHasMismatch ? "text-amber-400" : "text-primary")} />
-                {topic.label}
-                {qaMode && topicHasMismatch && (
-                  <Badge className="h-5 text-[10px] bg-amber-500/20 text-amber-300 border-amber-500/40">
-                    mismatch
-                  </Badge>
-                )}
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                {topic.subtitle}
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-0.5">
-              <span className="text-sm text-muted-foreground">{topic.count} problems</span>
-              <span
-                data-testid="dsa-rendered-indicator"
-                className={cn(
-                  "text-[11px] font-mono",
-                  renderedCount === topicTotal ? "text-emerald-400" : "text-amber-400",
-                )}
+          {/* All topics rendered as scroll-spy sections */}
+          {filteredByTopic.map(({ topic: t, groups, rendered, total }) => {
+            const TIcon = t.icon;
+            const hasMismatch = mismatchIds.has(t.id);
+            return (
+              <section
+                key={t.id}
+                data-topic-id={t.id}
+                ref={(el) => { topicSectionRefs.current[t.id] = el; }}
+                className="space-y-5 scroll-mt-20"
               >
-                Rendered: {renderedCount}/{topicTotal}
-              </span>
-            </div>
-          </div>
-
-
-          {/* Groups */}
-          {filteredGroups.length === 0 && (
-            <div className="rounded-xl border border-dashed border-border/40 bg-card/20 p-10 text-center text-muted-foreground">
-              No problems indexed for <span className="text-foreground font-medium">{topic.label}</span> yet — coming soon.
-            </div>
-          )}
-
-          {filteredGroups.map((g) => (
-            <section key={g.name} className="space-y-3">
-              <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                {g.name}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
-                {g.problems.map((p, idx) => {
-                  const isSolved = solved.has(p.slug);
-                  const isSaved = saved.has(p.slug);
-                  const stop = (e: React.MouseEvent) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  };
-                  return (
-                    <motion.div
-                      key={p.slug}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.02 }}
-                    >
-                      <Link
-                        to={`/learn/dsa-studio/${p.slug}`}
-                        data-testid="dsa-problem-card"
-                        data-slug={p.slug}
-                        state={{ from: "/learn/dsa-studio" }}
-                        className={cn(
-                          "group flex items-center gap-2 rounded-lg border bg-card/40 px-3 py-2.5 hover:border-primary/40 hover:bg-card/60 transition-all",
-                          isSolved
-                            ? "border-emerald-500/40"
-                            : idx === 0
-                              ? "border-primary/40"
-                              : "border-border/40",
-                        )}
-                      >
-                        <button
-                          onClick={(e) => { stop(e); toggleSaved(p.slug); }}
-                          aria-label={isSaved ? "Remove from saved" : "Save for later"}
-                          title={isSaved ? "Remove from saved" : "Save for later"}
-                          className={cn(
-                            "transition-colors",
-                            isSaved ? "text-amber-400" : "text-muted-foreground hover:text-amber-400",
-                          )}
-                        >
-                          <Star className={cn("h-4 w-4", isSaved && "fill-current")} />
-                        </button>
-                        <button
-                          onClick={(e) => { stop(e); toggleSolved(p.slug); }}
-                          aria-label={isSolved ? "Mark as unsolved" : "Mark as solved"}
-                          title={isSolved ? "Mark as unsolved" : "Mark as solved"}
-                          className={cn(
-                            "h-5 w-5 grid place-items-center rounded-full border transition-colors",
-                            isSolved
-                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
-                              : "border-border/60 text-muted-foreground hover:text-emerald-400 hover:border-emerald-500/40",
-                          )}
-                        >
-                          <Check className="h-3 w-3" />
-                        </button>
-                        <span className="text-xs text-muted-foreground font-mono shrink-0">#{p.id}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className={cn("text-sm font-medium truncate", isSolved && "line-through text-muted-foreground")}>
-                            {p.title}
-                          </div>
-                          <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5">
-                            <span>{p.tag}</span>
-                            <span className="opacity-50">·</span>
-                            <span className={cn(
-                              "font-semibold",
-                              p.priority === "P1" && "text-rose-400",
-                              p.priority === "P2" && "text-amber-400",
-                              p.priority === "P3" && "text-zinc-400",
-                            )}>{p.priority}</span>
-                            {p.free && <Lock className="h-2.5 w-2.5 opacity-40" />}
-                          </div>
-                        </div>
-                        <Badge variant="outline" className={cn("h-5 text-[10px]", diffStyles[p.difficulty])}>
-                          {p.difficulty}
+                {/* Topic header */}
+                <div className="flex items-end justify-between flex-wrap gap-2 pt-2">
+                  <div>
+                    <h2 className="flex items-center gap-2 text-2xl font-bold">
+                      <TIcon className={cn("h-6 w-6", qaMode && hasMismatch ? "text-amber-400" : "text-primary")} />
+                      {t.label}
+                      {qaMode && hasMismatch && (
+                        <Badge className="h-5 text-[10px] bg-amber-500/20 text-amber-300 border-amber-500/40">
+                          mismatch
                         </Badge>
-                        {isSaved && (
-                          <BookmarkCheck className="h-3.5 w-3.5 text-amber-400" />
-                        )}
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                      )}
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t.subtitle}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="text-sm text-muted-foreground">{t.count} problems</span>
+                    <span
+                      data-testid="dsa-rendered-indicator"
+                      className={cn(
+                        "text-[11px] font-mono",
+                        rendered === total ? "text-emerald-400" : "text-amber-400",
+                      )}
+                    >
+                      Rendered: {rendered}/{total}
+                    </span>
+                  </div>
+                </div>
+
+                {groups.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-border/40 bg-card/20 p-10 text-center text-muted-foreground">
+                    No problems indexed for <span className="text-foreground font-medium">{t.label}</span> yet — coming soon.
+                  </div>
+                )}
+
+                {groups.map((g) => (
+                  <section key={g.name} className="space-y-3">
+                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      {g.name}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                      {g.problems.map((p, idx) => {
+                        const isSolved = solved.has(p.slug);
+                        const isSaved = saved.has(p.slug);
+                        const stop = (e: React.MouseEvent) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        };
+                        return (
+                          <motion.div
+                            key={p.slug}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.02 }}
+                          >
+                            <Link
+                              to={`/learn/dsa-studio/${p.slug}`}
+                              data-testid="dsa-problem-card"
+                              data-slug={p.slug}
+                              state={{ from: "/learn/dsa-studio" }}
+                              className={cn(
+                                "group flex items-center gap-2 rounded-lg border bg-card/40 px-3 py-2.5 hover:border-primary/40 hover:bg-card/60 transition-all",
+                                isSolved
+                                  ? "border-emerald-500/40"
+                                  : idx === 0
+                                    ? "border-primary/40"
+                                    : "border-border/40",
+                              )}
+                            >
+                              <button
+                                onClick={(e) => { stop(e); toggleSaved(p.slug); }}
+                                aria-label={isSaved ? "Remove from saved" : "Save for later"}
+                                title={isSaved ? "Remove from saved" : "Save for later"}
+                                className={cn(
+                                  "transition-colors",
+                                  isSaved ? "text-amber-400" : "text-muted-foreground hover:text-amber-400",
+                                )}
+                              >
+                                <Star className={cn("h-4 w-4", isSaved && "fill-current")} />
+                              </button>
+                              <button
+                                onClick={(e) => { stop(e); toggleSolved(p.slug); }}
+                                aria-label={isSolved ? "Mark as unsolved" : "Mark as solved"}
+                                title={isSolved ? "Mark as unsolved" : "Mark as solved"}
+                                className={cn(
+                                  "h-5 w-5 grid place-items-center rounded-full border transition-colors",
+                                  isSolved
+                                    ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
+                                    : "border-border/60 text-muted-foreground hover:text-emerald-400 hover:border-emerald-500/40",
+                                )}
+                              >
+                                <Check className="h-3 w-3" />
+                              </button>
+                              <span className="text-xs text-muted-foreground font-mono shrink-0">#{p.id}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className={cn("text-sm font-medium truncate", isSolved && "line-through text-muted-foreground")}>
+                                  {p.title}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5">
+                                  <span>{p.tag}</span>
+                                  <span className="opacity-50">·</span>
+                                  <span className={cn(
+                                    "font-semibold",
+                                    p.priority === "P1" && "text-rose-400",
+                                    p.priority === "P2" && "text-amber-400",
+                                    p.priority === "P3" && "text-zinc-400",
+                                  )}>{p.priority}</span>
+                                  {p.free && <Lock className="h-2.5 w-2.5 opacity-40" />}
+                                </div>
+                              </div>
+                              <Badge variant="outline" className={cn("h-5 text-[10px]", diffStyles[p.difficulty])}>
+                                {p.difficulty}
+                              </Badge>
+                              {isSaved && (
+                                <BookmarkCheck className="h-3.5 w-3.5 text-amber-400" />
+                              )}
+                            </Link>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+              </section>
+            );
+          })}
         </main>
       </div>
     </div>
