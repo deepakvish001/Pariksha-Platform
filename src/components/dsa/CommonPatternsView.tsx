@@ -493,7 +493,40 @@ export default function CommonPatternsView() {
             </div>
           </details>
 
-          {/* Quick toggles */}
+          {/* Status filter */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mr-1">
+              Status
+            </span>
+            {(
+              [
+                { id: "all", label: "All", icon: null, color: "" },
+                { id: "done", label: "Done", icon: CheckCircle2, color: "border-emerald-500/50 bg-emerald-500/15 text-emerald-300" },
+                { id: "in_progress", label: "In progress", icon: Loader2, color: "border-amber-500/50 bg-amber-500/15 text-amber-300" },
+                { id: "not_started", label: "Not started", icon: Circle, color: "border-zinc-500/50 bg-zinc-500/15 text-zinc-300" },
+              ] as const
+            ).map((s) => {
+              const active = statusFilter === s.id;
+              const Icon = s.icon;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setStatusFilter(s.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs border transition-colors",
+                    active
+                      ? s.color || "border-primary/50 bg-primary/15 text-primary"
+                      : "border-border/40 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border",
+                  )}
+                >
+                  {Icon && <Icon className="h-3 w-3" />}
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick toggles + sort */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <Button
               size="sm"
@@ -513,6 +546,38 @@ export default function CommonPatternsView() {
               <Circle className="h-3.5 w-3.5" />
               To do
             </Button>
+
+            <div className="ml-auto flex items-center gap-1">
+              <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mr-1">
+                Sort
+              </span>
+              {(
+                [
+                  { id: "default", label: "Default", icon: ArrowDownAZ },
+                  { id: "progress_desc", label: "Highest progress", icon: TrendingDown },
+                  { id: "progress_asc", label: "Lowest progress", icon: TrendingDown },
+                ] as const
+              ).map((s) => {
+                const active = sortMode === s.id;
+                const Icon = s.icon;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setSortMode(s.id)}
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs border transition-colors",
+                      active
+                        ? "border-sky-500/50 bg-sky-500/15 text-sky-300"
+                        : "border-border/40 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border",
+                    )}
+                  >
+                    <Icon className={cn("h-3 w-3", s.id === "progress_asc" && "rotate-180")} />
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+
             {hasActiveFilters && (
               <Button
                 size="sm"
@@ -529,7 +594,9 @@ export default function CommonPatternsView() {
 
       {/* Scrollable pattern list */}
       <div className="px-4 md:px-6 py-5 space-y-6">
-        {filtered.map((cat, ci) => (
+        <PatternAchievementsPanel done={done} history={history} />
+
+        {displayed.map((cat, ci) => (
           <section key={cat.id} id={`pat-${cat.id}`} className="space-y-3 scroll-mt-[260px]">
             <div className="flex items-end justify-between flex-wrap gap-2 pt-1">
               <div>
