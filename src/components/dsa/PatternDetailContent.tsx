@@ -10,6 +10,7 @@ import {
   Circle,
   ExternalLink,
   Link2,
+  SquareArrowOutUpRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -130,6 +131,22 @@ export default function PatternDetailContent({
           >
             {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Link2 className="h-3.5 w-3.5" />}
             {copied ? "Copied" : "Copy link"}
+          </Button>
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5 text-xs"
+          >
+            <a
+              href={`/learn/dsa-studio/pattern/${pattern.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open this pattern in a new tab"
+            >
+              <SquareArrowOutUpRight className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Open in new tab</span>
+            </a>
           </Button>
           <Badge className="bg-sky-500/15 text-sky-300 border-sky-500/30 uppercase tracking-wider text-[10px] gap-1.5">
             <span>{pattern.emoji}</span> Pattern
