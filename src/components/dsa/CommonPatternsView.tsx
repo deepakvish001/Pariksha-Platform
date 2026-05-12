@@ -179,6 +179,34 @@ export default function CommonPatternsView() {
   const totalShown = filtered.reduce((s, c) => s + c.patterns.length, 0);
   const totalDone = done.size;
   const totalBookmarks = bookmarks.size;
+  const overallPct = PATTERN_TOTAL > 0 ? Math.round((totalDone / PATTERN_TOTAL) * 100) : 0;
+
+  // Per-category completion stats
+  const categoryStats = useMemo(() => {
+    const map = new Map<string, { done: number; total: number; pct: number }>();
+    COMMON_PATTERNS.forEach((cat) => {
+      const total = cat.patterns.length;
+      const d = cat.patterns.reduce((n, p) => n + (done.has(p.id) ? 1 : 0), 0);
+      map.set(cat.id, { done: d, total, pct: total > 0 ? Math.round((d / total) * 100) : 0 });
+    });
+    return map;
+  }, [done]);
+
+  // Difficulty breakdown across all linked LeetCode problems in completed patterns
+  const difficultyDone = useMemo(() => {
+    const counts = { Easy: 0, Medium: 0, Hard: 0 };
+    COMMON_PATTERNS.forEach((cat) =>
+      cat.patterns.forEach((p) => {
+        if (!done.has(p.id)) return;
+        p.problems.forEach((pr) => {
+          counts[pr.difficulty] += 1;
+        });
+      }),
+    );
+    return counts;
+  }, [done]);
+  const totalProblemsDone = difficultyDone.Easy + difficultyDone.Medium + difficultyDone.Hard;
+  const completedCategories = [...categoryStats.values()].filter((s) => s.pct === 100).length;
 
   const clearFilters = () => {
     setActiveCategories(new Set());
