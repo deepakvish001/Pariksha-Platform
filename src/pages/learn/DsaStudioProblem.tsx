@@ -52,6 +52,30 @@ export default function DsaStudioProblem() {
   const [algoQuery, setAlgoQuery] = useState("");
   const totalSteps = template.algorithm.length;
 
+  // Shared keyword-highlight helper used across the step title, step-logic preview,
+  // and the tooltip — keeps highlighting consistent everywhere.
+  const highlightQuery = (text: string): React.ReactNode => {
+    const q = algoQuery.trim().toLowerCase();
+    if (!q) return text;
+    const lower = text.toLowerCase();
+    const out: React.ReactNode[] = [];
+    let from = 0;
+    let idx = lower.indexOf(q);
+    let key = 0;
+    while (idx !== -1) {
+      if (idx > from) out.push(text.slice(from, idx));
+      out.push(
+        <mark key={key++} className="rounded-sm bg-amber-400/30 text-amber-200 px-0.5">
+          {text.slice(idx, idx + q.length)}
+        </mark>,
+      );
+      from = idx + q.length;
+      idx = lower.indexOf(q, from);
+    }
+    if (from < text.length) out.push(text.slice(from));
+    return out;
+  };
+
   // Restore last viewed step for this slug from localStorage
   useEffect(() => {
     if (!slug || totalSteps === 0) return;
