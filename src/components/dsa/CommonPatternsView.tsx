@@ -464,9 +464,33 @@ export default function CommonPatternsView() {
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">{cat.subtitle}</p>
               </div>
-              <span className="text-xs text-muted-foreground">
-                {cat.patterns.length} pattern{cat.patterns.length === 1 ? "" : "s"}
-              </span>
+              {(() => {
+                const s = categoryStats.get(cat.id);
+                return (
+                  <div className="flex items-center gap-2 min-w-[180px]">
+                    {s && (
+                      <>
+                        <Progress
+                          value={s.pct}
+                          className="h-1.5 w-24 bg-muted/40"
+                          indicatorClassName={cn(
+                            s.pct === 100
+                              ? "bg-emerald-500"
+                              : s.pct >= 50
+                                ? "bg-sky-400"
+                                : s.pct > 0
+                                  ? "bg-amber-400"
+                                  : "bg-muted-foreground/30",
+                          )}
+                        />
+                        <span className="text-[11px] font-mono text-muted-foreground">
+                          {s.done}/{s.total} • {s.pct}%
+                        </span>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
