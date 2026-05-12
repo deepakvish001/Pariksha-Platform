@@ -374,6 +374,34 @@ export default function PatternDetailContent({
                   <span className="text-[11px] font-mono px-2 py-0.5 rounded border border-violet-500/30 bg-violet-500/10 text-violet-300">
                     Space {cx.space}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => goToSection("problems")}
+                    aria-label={`Practice progress: ${completedProblems} of ${totalProblems} problems done (${completionPct}%)`}
+                    className="group flex items-center gap-2 pl-1.5 pr-2 py-0.5 rounded-full border border-sky-500/30 bg-sky-500/5 hover:bg-sky-500/10 hover:border-sky-500/50 transition-colors"
+                  >
+                    <span className="relative grid place-items-center h-5 w-5">
+                      <svg className="h-5 w-5 -rotate-90" viewBox="0 0 20 20" aria-hidden>
+                        <circle cx="10" cy="10" r="8" fill="none" stroke="hsl(var(--muted))" strokeWidth="2" />
+                        <circle
+                          cx="10"
+                          cy="10"
+                          r="8"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeDasharray={`${(completionPct / 100) * 50.27} 50.27`}
+                          className="text-sky-400 transition-[stroke-dasharray] duration-500 ease-out"
+                        />
+                      </svg>
+                    </span>
+                    <span className="text-[11px] font-medium text-sky-200">
+                      <span className="font-mono">{completedProblems}/{totalProblems}</span>
+                      <span className="text-muted-foreground/70 mx-1">·</span>
+                      <span className="font-mono">{completionPct}%</span>
+                    </span>
+                  </button>
                 </div>
               </div>
               <div className="hidden md:flex flex-col gap-2 shrink-0">
