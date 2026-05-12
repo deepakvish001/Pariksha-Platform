@@ -684,10 +684,10 @@ export default function DsaStudioProblem() {
                                       <span className="font-semibold text-foreground">Step {i + 1} / {totalSteps}</span>
                                       <span className="font-mono text-[10px] text-violet-300">{fmt(ms)}</span>
                                     </div>
-                                    <div className="text-foreground/90">{s}</div>
+                                    <div className="text-foreground/90">{renderHighlight(s)}</div>
                                     <div className="pt-1 border-t border-border/40 text-muted-foreground">
                                       <span className="text-[10px] uppercase tracking-widest mr-1">Will show</span>
-                                      {preview}
+                                      {renderHighlight(preview)}
                                     </div>
                                     <div className="text-[10px] text-muted-foreground/80">Click to jump here</div>
                                   </div>
