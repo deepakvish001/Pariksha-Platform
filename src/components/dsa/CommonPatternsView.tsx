@@ -132,9 +132,24 @@ export default function CommonPatternsView() {
   const [activeComplexities, setActiveComplexities] = useState<Set<string>>(new Set());
   const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
   const [showOnlyTodo, setShowOnlyTodo] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "done" | "in_progress" | "not_started">("all");
+  const [sortMode, setSortMode] = useState<"default" | "progress_desc" | "progress_asc">("default");
   const [openPattern, setOpenPatternState] = useState<CommonPattern | null>(null);
 
   const { bookmarks, done, toggleBookmark, toggleDone } = usePatternStorage();
+  const history = useDsaPatternHistory();
+
+  // Log new completions to history (diff vs previous done set)
+  const prevDoneRef = useRef<Set<string>>(done);
+  useEffect(() => {
+    const prev = prevDoneRef.current;
+    done.forEach((id) => {
+      if (!prev.has(id)) history.logCompletion(id);
+    });
+    prevDoneRef.current = new Set(done);
+    // history.logCompletion is stable via useCallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
 
   // Deep-link sync: ?pattern=<id> opens the detail dialog
   const [searchParams, setSearchParams] = useSearchParams();
