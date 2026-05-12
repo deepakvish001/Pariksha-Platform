@@ -100,6 +100,74 @@ export default function PatternDetailContent({
     }
   };
 
+  const location = useLocation();
+  const initialHash = (location.hash || "").replace(/^#/, "") as SectionId | "";
+  const [activeSection, setActiveSection] = useState<SectionId>(
+    SECTIONS.some((s) => s.id === initialHash) ? (initialHash as SectionId) : "overview",
+  );
+
+  // Scroll to the section referenced in the URL hash on mount + hash change.
+  useEffect(() => {
+    const raw = (location.hash || "").replace(/^#/, "");
+    if (!raw || !SECTIONS.some((s) => s.id === raw)) return;
+    let attempts = 0;
+    const tryScroll = () => {
+      attempts += 1;
+      const el = document.getElementById(`section-${raw}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "auto", block: "start" });
+        setActiveSection(raw as SectionId);
+        return;
+      }
+      if (attempts < 20) requestAnimationFrame(tryScroll);
+    };
+    requestAnimationFrame(tryScroll);
+  }, [location.hash, pattern.id]);
+
+  // Track active section as the user scrolls so the jump nav highlights correctly.
+  useEffect(() => {
+    const els = SECTIONS
+      .map((s) => document.getElementById(`section-${s.id}`))
+      .filter((e): e is HTMLElement => !!e);
+    if (!els.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]) {
+          const id = visible[0].target.id.replace(/^section-/, "") as SectionId;
+          setActiveSection(id);
+        }
+      },
+      { rootMargin: "-120px 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [pattern.id]);
+
+  const goToSection = (id: SectionId) => {
+    const el = document.getElementById(`section-${id}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Update the URL hash without adding a new history entry per click.
+    if (typeof window !== "undefined") {
+      const url = `${window.location.pathname}${window.location.search}#${id}`;
+      window.history.replaceState(window.history.state, "", url);
+    }
+    setActiveSection(id);
+  };
+
+  const handleCopySectionLink = async (id: SectionId) => {
+    const url = `${window.location.origin}${window.location.pathname}${window.location.search}#${id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
     <div className="min-h-full">
       {/* Top breadcrumb bar — sticks to viewport, scrolls with the page */}
