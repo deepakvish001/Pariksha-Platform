@@ -354,12 +354,24 @@ export default function DsaStudioProblem() {
               </div>
               <ol className="space-y-1.5">
                 {template.algorithm.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs">
-                    <span className={cn(
-                      "h-5 w-5 grid place-items-center rounded-full text-[10px] font-bold shrink-0",
-                      i === step ? "bg-violet-500 text-white" : "bg-muted/40 text-muted-foreground",
-                    )}>{i + 1}</span>
-                    <span className={cn(i === step ? "text-foreground" : "text-muted-foreground")}>{s}</span>
+                  <li key={i}>
+                    <button
+                      type="button"
+                      onClick={() => { setStep(i); setPlaying(false); }}
+                      aria-current={i === step ? "step" : undefined}
+                      aria-label={`Jump to step ${i + 1}: ${s}`}
+                      className={cn(
+                        "w-full flex items-start gap-2 text-left text-xs rounded-md px-1.5 py-1 transition-colors",
+                        "hover:bg-violet-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60",
+                        i === step && "bg-violet-500/10 ring-1 ring-violet-500/30",
+                      )}
+                    >
+                      <span className={cn(
+                        "h-5 w-5 grid place-items-center rounded-full text-[10px] font-bold shrink-0 transition-colors",
+                        i === step ? "bg-violet-500 text-white" : "bg-muted/40 text-muted-foreground",
+                      )}>{i + 1}</span>
+                      <span className={cn(i === step ? "text-foreground" : "text-muted-foreground")}>{s}</span>
+                    </button>
                   </li>
                 ))}
               </ol>
