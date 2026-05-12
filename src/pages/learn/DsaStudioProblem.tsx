@@ -52,29 +52,97 @@ export default function DsaStudioProblem() {
   const [algoQuery, setAlgoQuery] = useState("");
   const totalSteps = template.algorithm.length;
 
-  // Shared keyword-highlight helper used across the step title, step-logic preview,
-  // and the tooltip — keeps highlighting consistent everywhere.
-  const highlightQuery = (text: string): React.ReactNode => {
-    const q = algoQuery.trim().toLowerCase();
-    if (!q) return text;
+  // Tokenize the user's search query for fuzzy matching.
+  const queryTokens = useMemo(
+    () =>
+      algoQuery
+        .toLowerCase()
+        .split(/[\s,]+/)
+        .map((t) => t.trim())
+        .filter(Boolean),
+    [algoQuery],
+  );
+
+  // Subsequence match: returns indices in `text` where each char of `token` was found
+  // in order, or null if not all chars matched. Used for typo / partial-word tolerance.
+  const subseqIndices = (text: string, token: string): number[] | null => {
+    const out: number[] = [];
+    let ti = 0;
+    for (let i = 0; i < text.length && ti < token.length; i++) {
+      if (text[i] === token[ti]) {
+        out.push(i);
+        ti++;
+      }
+    }
+    return ti === token.length ? out : null;
+  };
+
+  // Score a candidate string against the current query tokens.
+  // Higher = more relevant. Returns 0 if nothing matched.
+  const scoreText = (text: string): number => {
+    if (queryTokens.length === 0) return 0;
     const lower = text.toLowerCase();
+    let score = 0;
+    const fullPhrase = queryTokens.join(" ");
+    if (fullPhrase.length > 1 && lower.includes(fullPhrase)) score += 200;
+    for (const tok of queryTokens) {
+      if (!tok) continue;
+      const idx = lower.indexOf(tok);
+      if (idx !== -1) {
+        score += 100;
+        // Bonus for word-prefix matches.
+        if (idx === 0 || /\W/.test(lower[idx - 1] ?? "")) score += 25;
+      } else {
+        const seq = subseqIndices(lower, tok);
+        if (seq) {
+          // Reward compactness: smaller span = closer to a real word match.
+          const span = seq[seq.length - 1] - seq[0] + 1;
+          const density = tok.length / Math.max(span, tok.length);
+          score += Math.round(20 + density * 30);
+        }
+      }
+    }
+    return score;
+  };
+
+  // Highlight any matching token substrings inside `text`.
+  // Tokens are sorted longest-first so overlapping highlights prefer the longer match.
+  const highlightQuery = (text: string): React.ReactNode => {
+    if (queryTokens.length === 0) return text;
+    const lower = text.toLowerCase();
+    const tokens = [...queryTokens].sort((a, b) => b.length - a.length);
+    type Range = { start: number; end: number };
+    const ranges: Range[] = [];
+    for (const tok of tokens) {
+      let from = 0;
+      let idx = lower.indexOf(tok, from);
+      while (idx !== -1) {
+        const end = idx + tok.length;
+        if (!ranges.some((r) => idx < r.end && end > r.start)) {
+          ranges.push({ start: idx, end });
+        }
+        from = end;
+        idx = lower.indexOf(tok, from);
+      }
+    }
+    if (ranges.length === 0) return text;
+    ranges.sort((a, b) => a.start - b.start);
     const out: React.ReactNode[] = [];
-    let from = 0;
-    let idx = lower.indexOf(q);
+    let cursor = 0;
     let key = 0;
-    while (idx !== -1) {
-      if (idx > from) out.push(text.slice(from, idx));
+    for (const r of ranges) {
+      if (r.start > cursor) out.push(text.slice(cursor, r.start));
       out.push(
         <mark key={key++} className="rounded-sm bg-amber-400/30 text-amber-200 px-0.5">
-          {text.slice(idx, idx + q.length)}
+          {text.slice(r.start, r.end)}
         </mark>,
       );
-      from = idx + q.length;
-      idx = lower.indexOf(q, from);
+      cursor = r.end;
     }
-    if (from < text.length) out.push(text.slice(from));
+    if (cursor < text.length) out.push(text.slice(cursor));
     return out;
   };
+
 
   // Restore last viewed step for this slug from localStorage
   useEffect(() => {
