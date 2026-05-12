@@ -868,6 +868,7 @@ export default function DsaStudio() {
               </section>
             );
           })}
+          </>)}
         </main>
       </div>
     </div>
