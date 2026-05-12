@@ -420,27 +420,71 @@ export default function DsaStudioProblem() {
                 ALGORITHM
               </div>
               <ol className="space-y-1.5">
-                {template.algorithm.map((s, i) => (
-                  <li key={i}>
-                    <button
-                      type="button"
-                      onClick={() => { setStep(i); setPlaying(false); }}
-                      aria-current={i === step ? "step" : undefined}
-                      aria-label={`Jump to step ${i + 1}: ${s}`}
-                      className={cn(
-                        "w-full flex items-start gap-2 text-left text-xs rounded-md px-1.5 py-1 transition-colors",
-                        "hover:bg-violet-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60",
-                        i === step && "bg-violet-500/10 ring-1 ring-violet-500/30",
-                      )}
-                    >
-                      <span className={cn(
-                        "h-5 w-5 grid place-items-center rounded-full text-[10px] font-bold shrink-0 transition-colors",
-                        i === step ? "bg-violet-500 text-white" : "bg-muted/40 text-muted-foreground",
-                      )}>{i + 1}</span>
-                      <span className={cn(i === step ? "text-foreground" : "text-muted-foreground")}>{s}</span>
-                    </button>
-                  </li>
-                ))}
+                <TooltipProvider delayDuration={150}>
+                  {template.algorithm.map((s, i) => {
+                    const stepMs = 1400 / speed;
+                    const ms = Math.round(i * stepMs);
+                    const totalMs = Math.round((totalSteps - 1) * stepMs);
+                    const fmt = (m: number) => {
+                      const sec = Math.floor(m / 1000);
+                      return `${String(Math.floor(sec / 60)).padStart(1, "0")}:${String(sec % 60).padStart(2, "0")}.${String(Math.floor((m % 1000) / 100))}`;
+                    };
+                    const preview = template.stepLogic[i % template.stepLogic.length];
+                    return (
+                      <li key={i}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => { setStep(i); setPlaying(false); }}
+                              aria-current={i === step ? "step" : undefined}
+                              aria-label={`Jump to step ${i + 1} at ${fmt(ms)}: ${s}`}
+                              className={cn(
+                                "w-full flex items-center gap-2 text-left text-xs rounded-md px-1.5 py-1 transition-colors",
+                                "hover:bg-violet-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60",
+                                i === step && "bg-violet-500/10 ring-1 ring-violet-500/30",
+                              )}
+                            >
+                              <span className={cn(
+                                "h-5 w-5 grid place-items-center rounded-full text-[10px] font-bold shrink-0 transition-colors",
+                                i === step ? "bg-violet-500 text-white" : "bg-muted/40 text-muted-foreground",
+                              )}>{i + 1}</span>
+                              <span className={cn("flex-1 min-w-0", i === step ? "text-foreground" : "text-muted-foreground")}>{s}</span>
+                              <span
+                                className={cn(
+                                  "shrink-0 font-mono text-[10px] tabular-nums px-1.5 py-0.5 rounded",
+                                  "border border-border/40 bg-background/60 text-muted-foreground",
+                                  i === step && "border-violet-500/40 text-violet-300 bg-violet-500/10",
+                                )}
+                                title={`Jump to ${fmt(ms)} of ${fmt(totalMs)}`}
+                              >
+                                {fmt(ms)}
+                              </span>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="left"
+                            align="center"
+                            className="max-w-[260px] text-xs"
+                          >
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="font-semibold text-foreground">Step {i + 1} / {totalSteps}</span>
+                                <span className="font-mono text-[10px] text-violet-300">{fmt(ms)}</span>
+                              </div>
+                              <div className="text-foreground/90">{s}</div>
+                              <div className="pt-1 border-t border-border/40 text-muted-foreground">
+                                <span className="text-[10px] uppercase tracking-widest mr-1">Will show</span>
+                                {preview}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground/80">Click to jump here</div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </li>
+                    );
+                  })}
+                </TooltipProvider>
               </ol>
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <div className="rounded-lg border border-border/40 bg-background/40 p-2.5 text-center">
