@@ -501,7 +501,33 @@ export default function DsaStudioProblem() {
             <section className="rounded-xl border border-border/40 bg-card/40 p-4 space-y-3">
               <div className="text-xs font-semibold flex items-center gap-2">
                 <ListChecks className="h-3.5 w-3.5 text-emerald-400" />
-                ALGORITHM
+                <span>ALGORITHM</span>
+                <span className="ml-auto flex items-center gap-1.5 text-[10px] font-normal text-muted-foreground">
+                  <span>Step {step + 1}/{totalSteps}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        const raw = localStorage.getItem("dsaStudio:lastStep:v1");
+                        const map = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+                        delete map[slug];
+                        localStorage.setItem("dsaStudio:lastStep:v1", JSON.stringify(map));
+                      } catch {}
+                      setStep(0);
+                      setPlaying(false);
+                    }}
+                    disabled={step === 0}
+                    title="Clear saved step for this problem and restart from step 1"
+                    aria-label="Reset to step 1"
+                    className={cn(
+                      "inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border/50 bg-background/40 transition-colors",
+                      "hover:bg-violet-500/10 hover:border-violet-500/40 hover:text-violet-200",
+                      "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-background/40 disabled:hover:border-border/50 disabled:hover:text-muted-foreground",
+                    )}
+                  >
+                    <RotateCcw className="h-3 w-3" /> Reset
+                  </button>
+                </span>
               </div>
 
               {/* Step search */}
