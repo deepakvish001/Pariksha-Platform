@@ -649,7 +649,7 @@ export default function DsaStudio() {
                 {/* Topic header */}
                 <div className="flex items-end justify-between flex-wrap gap-2 pt-2">
                   <div>
-                    <h2 className="flex items-center gap-2 text-2xl font-bold">
+                    <h2 id={`dsa-topic-${t.id}-heading`} className="flex items-center gap-2 text-2xl font-bold">
                       <TIcon className={cn("h-6 w-6", qaMode && hasMismatch ? "text-amber-400" : "text-primary")} />
                       {t.label}
                       {qaMode && hasMismatch && (
