@@ -50,6 +50,16 @@ export default function DsaStudioProblem() {
   const [status, setStatus] = useState<typeof STATUSES[number]>("In progress");
   const [custom, setCustom] = useState("");
   const [algoQuery, setAlgoQuery] = useState("");
+  const stepItemRefs = useRef<Array<HTMLLIElement | null>>([]);
+
+  // Auto-scroll the active algorithm step into view when `step` changes
+  // (e.g. after jumping via search, dropdown, or keyboard).
+  useEffect(() => {
+    const el = stepItemRefs.current[step];
+    if (el && typeof el.scrollIntoView === "function") {
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [step]);
   const totalSteps = template.algorithm.length;
 
   // Tokenize the user's search query for fuzzy matching.
