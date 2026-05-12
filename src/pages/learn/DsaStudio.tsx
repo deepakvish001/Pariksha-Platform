@@ -87,6 +87,7 @@ type PriorityFilter = "all" | "p1" | "p1p2" | "p3" | "free";
 const LS_PREFS = "dsaStudio:prefs:v1";
 const LS_SOLVED = "dsaStudio:solved:v1";
 const LS_SAVED = "dsaStudio:saved:v1";
+const LS_SCROLL = "dsaStudio:scroll:v1";
 
 const loadJSON = <T,>(key: string, fallback: T): T => {
   if (typeof window === "undefined") return fallback;
@@ -146,6 +147,36 @@ export default function DsaStudio() {
   useEffect(() => {
     window.localStorage.setItem(LS_SAVED, JSON.stringify(Array.from(saved)));
   }, [saved]);
+
+  // Restore scroll position on mount; persist on scroll & unmount
+  useEffect(() => {
+    const raw = window.localStorage.getItem(LS_SCROLL);
+    const y = raw ? parseInt(raw, 10) : 0;
+    if (Number.isFinite(y) && y > 0) {
+      // Defer to allow content to render
+      const id = window.setTimeout(() => {
+        window.scrollTo({ top: y, behavior: "auto" });
+      }, 50);
+      return () => window.clearTimeout(id);
+    }
+  }, []);
+
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        window.localStorage.setItem(LS_SCROLL, String(window.scrollY));
+        ticking = false;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.localStorage.setItem(LS_SCROLL, String(window.scrollY));
+    };
+  }, []);
 
   const toggleSet = (setter: typeof setSolved) => (slug: string) =>
     setter((prev) => {
