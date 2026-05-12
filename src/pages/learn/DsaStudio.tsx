@@ -518,18 +518,14 @@ export default function DsaStudio() {
         </div>
       </header>
 
-      <div className={desktopNavOpen ? "flex lg:pl-64" : "flex"}>
-        {/* Sidebar - truly fixed to viewport so it never scrolls with main content */}
+      <div className="flex-1 min-h-0 flex">
+        {/* Sidebar - independent scroll, sits beside main */}
         {desktopNavOpen && (
           <aside
             id="dsa-desktop-sidebar"
             aria-label="Topics navigation"
             data-dsa-sidebar-scroll
-            className="hidden lg:block fixed left-0 w-64 border-r border-border/40 z-20 overflow-y-auto overscroll-contain bg-background"
-            style={{
-              top: "var(--dsa-header-h, 57px)",
-              height: "calc(100dvh - var(--dsa-header-h, 57px))",
-            }}
+            className="hidden lg:block flex-none w-64 h-full border-r border-border/40 overflow-y-auto overscroll-contain bg-background"
           >
             {sidebarContent}
           </aside>
@@ -572,8 +568,8 @@ export default function DsaStudio() {
         <main
           id="dsa-main-content"
           tabIndex={-1}
-          className="flex-1 min-w-0 px-4 md:px-6 pb-4 md:pb-6 space-y-5 outline-none"
-          style={{ paddingTop: "calc(var(--dsa-header-h, 57px) * 0.35 + 1rem)", scrollPaddingTop: "calc(var(--dsa-header-h, 57px) + 1rem)" }}
+          className="flex-1 min-w-0 h-full overflow-y-auto px-4 md:px-6 pt-4 pb-4 md:pb-6 space-y-5 outline-none"
+          style={{ scrollPaddingTop: "1rem" }}
         >
           {/* Tabs row */}
           <motion.div
