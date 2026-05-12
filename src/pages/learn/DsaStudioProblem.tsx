@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
@@ -50,6 +50,16 @@ export default function DsaStudioProblem() {
   const [status, setStatus] = useState<typeof STATUSES[number]>("In progress");
   const [custom, setCustom] = useState("");
   const [algoQuery, setAlgoQuery] = useState("");
+  const stepItemRefs = useRef<Array<HTMLLIElement | null>>([]);
+
+  // Auto-scroll the active algorithm step into view when `step` changes
+  // (e.g. after jumping via search, dropdown, or keyboard).
+  useEffect(() => {
+    const el = stepItemRefs.current[step];
+    if (el && typeof el.scrollIntoView === "function") {
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [step]);
   const totalSteps = template.algorithm.length;
 
   // Tokenize the user's search query for fuzzy matching.
@@ -769,7 +779,11 @@ export default function DsaStudioProblem() {
                           const isMatch = q ? matches.includes(i) : false;
                           const dimmed = q && !isMatch;
                           return (
-                            <li key={i} className={cn(dimmed && "opacity-40")}>
+                            <li
+                              key={i}
+                              ref={(el) => { stepItemRefs.current[i] = el; }}
+                              className={cn(dimmed && "opacity-40")}
+                            >
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <button
