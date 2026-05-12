@@ -88,11 +88,11 @@ export const useDsaPatternAchievements = (done: Set<string>, currentStreak: numb
     const currentList = computeUnlocked(done);
     const current = new Set(currentList);
 
-    if (!hydratedRef.current) {
+    if (!badgeHydratedRef.current) {
       // Seed ref from previously unlocked + anything that already qualifies
       currentList.forEach((id) => knownBadgesRef.current.add(id));
       save(LS_UNLOCKED, [...knownBadgesRef.current]);
-      hydratedRef.current = true;
+      badgeHydratedRef.current = true;
       return;
     }
 
@@ -140,7 +140,7 @@ export const useDsaPatternAchievements = (done: Set<string>, currentStreak: numb
 
   // Detect new streak milestones
   useEffect(() => {
-    if (!hydratedRef.current) return;
+    if (!badgeHydratedRef.current) return;
     const reached = STREAK_MILESTONES.filter((m) => currentStreak >= m);
     const newMax = reached.length > 0 ? reached[reached.length - 1] : 0;
     if (newMax > lastStreakRef.current) {
