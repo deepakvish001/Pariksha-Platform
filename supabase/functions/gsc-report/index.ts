@@ -1,5 +1,9 @@
 // Search Console proxy via the connector gateway.
-// POST body: { report: "summary" | "queries" | "pages" | "countries" | "devices" | "timeseries", days?: number, siteUrl?: string }
+// POST body: {
+//   report: "summary" | "queries" | "pages" | "countries" | "devices" | "timeseries",
+//   startDate?: string, endDate?: string, days?: number,
+//   siteUrl?: string (must be allowlisted)
+// }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -16,7 +20,11 @@ const GSC_API_KEY = Deno.env.get("GOOGLE_SEARCH_CONSOLE_API_KEY");
 
 const GATEWAY = "https://connector-gateway.lovable.dev/google_search_console/webmasters/v3";
 const DEFAULT_SITE = "https://www.parikshaa.org/";
+const SITE_ALLOWLIST = (Deno.env.get("GSC_SITE_URLS") || DEFAULT_SITE)
+  .split(",").map((s) => s.trim()).filter(Boolean);
+
 const CACHE_TTL_SECONDS = 60 * 60;
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
 function isoDaysAgo(days: number) {
   const d = new Date();
@@ -24,24 +32,15 @@ function isoDaysAgo(days: number) {
   return d.toISOString().slice(0, 10);
 }
 
-function buildBody(report: string, days: number) {
-  const startDate = isoDaysAgo(days);
-  const endDate = isoDaysAgo(2); // GSC has ~2 day lag
+function buildBody(report: string, startDate: string, endDate: string) {
   switch (report) {
-    case "summary":
-      return { startDate, endDate, dimensions: [] };
-    case "queries":
-      return { startDate, endDate, dimensions: ["query"], rowLimit: 25 };
-    case "pages":
-      return { startDate, endDate, dimensions: ["page"], rowLimit: 25 };
-    case "countries":
-      return { startDate, endDate, dimensions: ["country"], rowLimit: 10 };
-    case "devices":
-      return { startDate, endDate, dimensions: ["device"] };
-    case "timeseries":
-      return { startDate, endDate, dimensions: ["date"], rowLimit: 1000 };
-    default:
-      throw new Error(`Unknown report: ${report}`);
+    case "summary": return { startDate, endDate, dimensions: [] };
+    case "queries": return { startDate, endDate, dimensions: ["query"], rowLimit: 25 };
+    case "pages": return { startDate, endDate, dimensions: ["page"], rowLimit: 25 };
+    case "countries": return { startDate, endDate, dimensions: ["country"], rowLimit: 10 };
+    case "devices": return { startDate, endDate, dimensions: ["device"] };
+    case "timeseries": return { startDate, endDate, dimensions: ["date"], rowLimit: 1000 };
+    default: throw new Error(`Unknown report: ${report}`);
   }
 }
 
@@ -70,22 +69,47 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { report = "summary", days = 28, siteUrl = DEFAULT_SITE } = await req.json().catch(() => ({}));
-    const safeDays = Math.max(3, Math.min(90, Number(days) || 28));
-    const cacheKey = `gsc:${siteUrl}:${report}:${safeDays}`;
+    const body = await req.json().catch(() => ({}));
+    const report = String(body.report ?? "summary");
+    const siteUrl = String(body.siteUrl || SITE_ALLOWLIST[0]);
+    if (!SITE_ALLOWLIST.includes(siteUrl)) {
+      return new Response(JSON.stringify({ error: "Site not allowed" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
+    let startDate: string;
+    let endDate: string;
+    if (body.startDate && body.endDate && ISO.test(body.startDate) && ISO.test(body.endDate)) {
+      startDate = body.startDate; endDate = body.endDate;
+    } else {
+      const safeDays = Math.max(3, Math.min(365, Number(body.days) || 28));
+      startDate = isoDaysAgo(safeDays);
+      endDate = isoDaysAgo(2); // ~2 day lag
+    }
+
+    const cacheKey = `gsc:${siteUrl}:${report}:${startDate}:${endDate}`;
     const { data: cached } = await admin
       .from("analytics_cache")
       .select("payload, expires_at")
       .eq("cache_key", cacheKey)
       .maybeSingle();
+
+    await admin.from("admin_audit_log").insert({
+      actor_id: userData.user.id,
+      action: "view_analytics",
+      entity_type: "gsc",
+      entity_slug: siteUrl,
+      diff: { report, startDate, endDate, cached: !!cached },
+    });
+
     if (cached && new Date(cached.expires_at).getTime() > Date.now()) {
       return new Response(JSON.stringify({ cached: true, ...cached.payload }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const body = buildBody(report, safeDays);
+    const reqBody = buildBody(report, startDate, endDate);
     const url = `${GATEWAY}/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`;
     const gsc = await fetch(url, {
       method: "POST",
@@ -94,12 +118,12 @@ Deno.serve(async (req) => {
         "X-Connection-Api-Key": GSC_API_KEY,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(reqBody),
     });
     const json = await gsc.json();
     if (!gsc.ok) throw new Error(`GSC API failed [${gsc.status}]: ${JSON.stringify(json)}`);
 
-    const payload = { report, days: safeDays, siteUrl, data: json };
+    const payload = { report, siteUrl, startDate, endDate, data: json };
     await admin.from("analytics_cache").upsert({
       cache_key: cacheKey,
       payload,
