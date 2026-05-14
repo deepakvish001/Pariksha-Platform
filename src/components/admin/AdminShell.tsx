@@ -216,6 +216,7 @@ const GROUPS: NavGroup[] = [
     
   ]},
   { label: "System", items: [
+    { to: "/admin/analytics", label: "Site Analytics", icon: BarChart3 },
     { to: "/admin/system-health", label: "System Health", icon: HeartPulse },
     { to: "/admin/cron-jobs", label: "Scheduled Jobs", icon: Clock },
     { to: "/admin/audit", label: "Audit Log", icon: ScrollText },
