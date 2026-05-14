@@ -24,26 +24,53 @@ interface Report {
 export default function PublicIntegrityReport() {
   const { contestId } = useParams<{ contestId: string }>();
   const [report, setReport] = useState<Report | null>(null);
+  const [contestTitle, setContestTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!contestId) return;
     (async () => {
-      const { data } = await supabase
-        .from("contest_integrity_reports")
-        .select("*")
-        .eq("contest_id", contestId)
-        .eq("is_published", true)
-        .maybeSingle();
+      const [{ data }, { data: c }] = await Promise.all([
+        supabase
+          .from("contest_integrity_reports")
+          .select("*")
+          .eq("contest_id", contestId)
+          .eq("is_published", true)
+          .maybeSingle(),
+        supabase.from("contests").select("title").eq("id", contestId).maybeSingle(),
+      ]);
       setReport(data as Report | null);
+      setContestTitle((c as { title?: string } | null)?.title ?? null);
       setLoading(false);
     })();
   }, [contestId]);
 
+  const pageTitle = contestTitle
+    ? `Integrity Report — ${contestTitle} | Parikshaa`
+    : "Contest Integrity Report | Parikshaa";
+  const pageDesc = contestTitle
+    ? `Public integrity report for the ${contestTitle} contest on Parikshaa — proctoring signals, flagged attempts, and audit summary.`
+    : "Public integrity report for a Parikshaa contest — proctoring signals, flagged attempts, and audit summary.";
+  const canonical = `https://www.parikshaa.org/contests/${contestId}/integrity`;
+
+  const sharedHead = (
+    <Helmet>
+      <title>{pageTitle}</title>
+      <meta name="description" content={pageDesc} />
+      <link rel="canonical" href={canonical} />
+      <meta property="og:title" content={pageTitle} />
+      <meta property="og:description" content={pageDesc} />
+      <meta property="og:url" content={canonical} />
+      <meta property="og:type" content="article" />
+      <meta name="twitter:title" content={pageTitle} />
+      <meta name="twitter:description" content={pageDesc} />
+    </Helmet>
+  );
+
   if (loading) return <Skeleton className="m-6 h-64" />;
   if (!report) return (
     <div className="mx-auto max-w-2xl p-6">
-      <Helmet><title>Integrity Report</title></Helmet>
+      {sharedHead}
       <Card className="p-6">
         <h1 className="text-xl font-bold">No public report</h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -56,7 +83,7 @@ export default function PublicIntegrityReport() {
   const { total_participants, flagged_count, dq_count, viva_count, summary, published_at } = report;
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <Helmet><title>Contest Integrity Report</title></Helmet>
+      {sharedHead}
       <header>
         <h1 className="text-3xl font-bold">Contest Integrity Report</h1>
         <p className="text-sm text-muted-foreground">
