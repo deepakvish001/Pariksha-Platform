@@ -7872,6 +7872,10 @@ export type Database = {
           weighted_score: number
         }[]
       }
+      get_contest_registered_count: {
+        Args: { _contest_id: string }
+        Returns: number
+      }
       get_daily_challenge_leaderboard: {
         Args: { _limit?: number }
         Returns: {
