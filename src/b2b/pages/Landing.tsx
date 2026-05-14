@@ -52,6 +52,26 @@ export default function B2BLanding() {
 
   return (
     <div className="theme-b2b relative min-h-screen overflow-hidden bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+      <Helmet>
+        <title>Parikshaa for Teams — AI-Proctored Hiring Assessments</title>
+        <meta name="description" content="Run secure, AI-proctored coding and aptitude assessments at scale. Trusted by colleges and recruiters for campus drives and hiring." />
+        <link rel="canonical" href="https://www.parikshaa.org/b2b" />
+        <meta property="og:title" content="Parikshaa for Teams — AI-Proctored Hiring Assessments" />
+        <meta property="og:description" content="Screen 1,000+ candidates in days, not weeks. AI proctoring, integrity reports, and 4 question types in one assessment." />
+        <meta property="og:url" content="https://www.parikshaa.org/b2b" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:title" content="Parikshaa for Teams — AI-Proctored Hiring Assessments" />
+        <meta name="twitter:description" content="Screen 1,000+ candidates in days, not weeks. AI proctoring and integrity reports for campus drives and hiring." />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: B2B_FAQS.map((f) => ({
+            "@type": "Question",
+            name: f.q,
+            acceptedAnswer: { "@type": "Answer", text: f.a },
+          })),
+        })}</script>
+      </Helmet>
       <B2BBackdrop />
       <B2BSiteHeader
         links={[
