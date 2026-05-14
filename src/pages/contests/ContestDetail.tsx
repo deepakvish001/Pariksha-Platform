@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { useContest, useContestProblems, useMyRegistration, useRegisterForContest, useWithdrawFromContest, useContestRegistrations, lifecycleStatus } from "@/hooks/useContests";
+import { useContest, useContestProblems, useMyRegistration, useRegisterForContest, useWithdrawFromContest, useContestRegisteredCount, lifecycleStatus } from "@/hooks/useContests";
 import { useContestClock } from "@/hooks/useContestClock";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
