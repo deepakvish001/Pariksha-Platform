@@ -7564,6 +7564,7 @@ export type Database = {
       attempt_owner: { Args: { _attempt: string }; Returns: string }
       audit_daily_completions: { Args: never; Returns: Json }
       audit_daily_completions_all: { Args: never; Returns: Json }
+      award_earned_achievements: { Args: never; Returns: string[] }
       award_xp: {
         Args: {
           _amount: number
@@ -7882,6 +7883,41 @@ export type Database = {
           user_id: string
           username: string
           weekly_completions: number
+        }[]
+      }
+      get_fundamentals_leaderboard: {
+        Args: { p_limit?: number; p_since?: string; p_type?: string }
+        Returns: {
+          avatar_url: string
+          avg_accuracy: number
+          best_accuracy: number
+          full_name: string
+          total_questions: number
+          total_quizzes: number
+          total_score: number
+          user_id: string
+        }[]
+      }
+      get_quiz_leaderboard: {
+        Args: {
+          p_difficulty?: string
+          p_limit?: number
+          p_order_by_total?: boolean
+          p_quiz_type: string
+          p_since?: string
+        }
+        Returns: {
+          accuracy: number
+          avatar_url: string
+          avg_time_seconds: number
+          completed_at: string
+          full_name: string
+          id: string
+          quiz_type: string
+          score: number
+          total_questions: number
+          total_time_seconds: number
+          user_id: string
         }[]
       }
       get_submission_percentiles: {
