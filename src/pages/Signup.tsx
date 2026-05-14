@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import AuthLayout from "@/components/AuthLayout";
+import { Helmet } from "react-helmet-async";
 
 const Signup = () => {
   const [fullName, setFullName] = useState("");
