@@ -51,78 +51,70 @@ const QuizLeaderboard: React.FC<QuizLeaderboardProps> = ({ quizType, currentUser
    const [isLoading, setIsLoading] = useState(true);
    const [timeFilter, setTimeFilter] = useState<"all" | "week" | "today">("all");
  
-   useEffect(() => {
-     const fetchLeaderboard = async () => {
-       setIsLoading(true);
-       try {
-         let query = supabase
-           .from("quiz_results")
-           .select("*")
-           .eq("quiz_type", quizType)
-           .limit(20);
- 
-        // For challenges, filter by difficulty and sort by total time (speed matters!)
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      setIsLoading(true);
+      try {
+        let difficultyFilter: string | null = null;
+        let orderByTotal = false;
         if (challengeId) {
           const difficultyMap: Record<string, string> = {
             "easy-sprint": "Easy",
             "medium-blitz": "Medium",
             "hard-gauntlet": "Hard",
           };
-          const difficulty = difficultyMap[challengeId];
-          if (difficulty) {
-            query = query.eq("difficulty", difficulty);
-          }
-          // For challenges, prioritize accuracy first, then speed
-          query = query
-            .order("accuracy", { ascending: false })
-            .order("total_time_seconds", { ascending: true });
-        } else {
-          query = query
-            .order("accuracy", { ascending: false })
-            .order("avg_time_seconds", { ascending: true });
+          difficultyFilter = difficultyMap[challengeId] ?? null;
+          orderByTotal = true;
         }
 
-         if (timeFilter === "today") {
-           const today = new Date();
-           today.setHours(0, 0, 0, 0);
-           query = query.gte("completed_at", today.toISOString());
-         } else if (timeFilter === "week") {
-           const weekAgo = new Date();
-           weekAgo.setDate(weekAgo.getDate() - 7);
-           query = query.gte("completed_at", weekAgo.toISOString());
-         }
- 
-         const { data: results, error } = await query;
- 
-         if (error) {
-           console.error("Error fetching leaderboard:", error);
-           return;
-         }
- 
-         // Fetch profile info for each user
-         const userIds = [...new Set(results?.map((r) => r.user_id) || [])];
-         const { data: profiles } = await supabase
-           .from("profiles")
-           .select("user_id, full_name, avatar_url")
-           .in("user_id", userIds);
- 
-         const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
- 
-         const enrichedEntries = results?.map((r) => ({
-           ...r,
-           full_name: profileMap.get(r.user_id)?.full_name || "Anonymous",
-           avatar_url: profileMap.get(r.user_id)?.avatar_url,
-         })) || [];
- 
-         setEntries(enrichedEntries);
-       } catch (err) {
-         console.error("Error:", err);
-       } finally {
-         setIsLoading(false);
-       }
-     };
- 
-     fetchLeaderboard();
+        let since: string | null = null;
+        if (timeFilter === "today") {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          since = today.toISOString();
+        } else if (timeFilter === "week") {
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          since = weekAgo.toISOString();
+        }
+
+        const { data: results, error } = await supabase.rpc("get_quiz_leaderboard", {
+          p_quiz_type: quizType,
+          p_difficulty: difficultyFilter,
+          p_since: since,
+          p_order_by_total: orderByTotal,
+          p_limit: 20,
+        });
+
+        if (error) {
+          console.error("Error fetching leaderboard:", error);
+          setEntries([]);
+          return;
+        }
+
+        const enrichedEntries: LeaderboardEntry[] = (results ?? []).map((r: any) => ({
+          id: r.id,
+          user_id: r.user_id,
+          quiz_type: r.quiz_type,
+          score: r.score,
+          total_questions: r.total_questions,
+          accuracy: Number(r.accuracy),
+          avg_time_seconds: r.avg_time_seconds,
+          total_time_seconds: r.total_time_seconds,
+          completed_at: r.completed_at,
+          full_name: r.full_name || "Anonymous",
+          avatar_url: r.avatar_url || undefined,
+        }));
+
+        setEntries(enrichedEntries);
+      } catch (err) {
+        console.error("Error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
   }, [quizType, timeFilter, challengeId]);
  
    const getRankIcon = (index: number) => {

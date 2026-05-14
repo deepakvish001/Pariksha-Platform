@@ -199,36 +199,27 @@ const DashboardMatrix = () => {
   }, [user]);
 
   const checkAndAwardAchievements = async (
-    topicsCompleted: number, streakDays: number, revisionTopics: number, alreadyEarned: string[]
+    _topicsCompleted: number, _streakDays: number, _revisionTopics: number, alreadyEarned: string[]
   ) => {
     if (!user) return;
-    const newAchievements: string[] = [];
-    for (const achievement of achievements) {
-      if (alreadyEarned.includes(achievement.id)) continue;
-      let earned = false;
-      switch (achievement.requirement.type) {
-        case 'topics_completed': earned = topicsCompleted >= achievement.requirement.value; break;
-        case 'streak_days': earned = streakDays >= achievement.requirement.value; break;
-        case 'revision_topics': earned = revisionTopics >= achievement.requirement.value; break;
-      }
-      if (earned) newAchievements.push(achievement.id);
+    // Server-side validator computes eligibility from authoritative data.
+    const { data: newIds, error } = await supabase.rpc("award_earned_achievements");
+    if (error) {
+      console.error("award_earned_achievements failed:", error);
+      return;
     }
-
+    const newAchievements = (newIds ?? []).filter((id: string) => !alreadyEarned.includes(id));
     if (newAchievements.length > 0) {
-      const inserts = newAchievements.map(id => ({ user_id: user.id, achievement_id: id }));
-      const { error } = await supabase.from("user_achievements").insert(inserts);
-      if (!error) {
-        const newMap = new Map(earnedAchievements);
-        newAchievements.forEach(id => newMap.set(id, new Date().toISOString()));
-        setEarnedAchievements(newMap);
-        newAchievements.forEach(id => {
-          const achievement = achievements.find(a => a.id === id);
-          if (achievement) {
-            confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 }, colors: ["#fbbf24", "#f59e0b", "#d97706", "#10b981", "#8b5cf6"] });
-            toast({ title: `🏆 Achievement Unlocked!`, description: `${achievement.name}: ${achievement.description}` });
-          }
-        });
-      }
+      const newMap = new Map(earnedAchievements);
+      newAchievements.forEach((id: string) => newMap.set(id, new Date().toISOString()));
+      setEarnedAchievements(newMap);
+      newAchievements.forEach((id: string) => {
+        const achievement = achievements.find(a => a.id === id);
+        if (achievement) {
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 }, colors: ["#fbbf24", "#f59e0b", "#d97706", "#10b981", "#8b5cf6"] });
+          toast({ title: `🏆 Achievement Unlocked!`, description: `${achievement.name}: ${achievement.description}` });
+        }
+      });
     }
   };
 
