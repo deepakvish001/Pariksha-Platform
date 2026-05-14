@@ -21,4 +21,4 @@ Disallow: /onboarding
 Disallow: /contests/*/play
 Disallow: /contests/sideeye/
 
-Sitemap: https://exact-web-sight.lovable.app/sitemap.xml
+Sitemap: https://www.parikshaa.org/sitemap.xml
