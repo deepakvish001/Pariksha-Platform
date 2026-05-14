@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import AuthLayout from "@/components/AuthLayout";
 import { getPostLoginPath } from "@/lib/postLoginRedirect";
 import { supabase } from "@/integrations/supabase/client";
+import { Helmet } from "react-helmet-async";
 
 const Login = () => {
   const [email, setEmail] = useState("");
