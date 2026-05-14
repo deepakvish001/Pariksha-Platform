@@ -180,7 +180,8 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const report = String(body.report ?? "summary");
-    const propertyId = String(body.propertyId || PROPERTY_ALLOWLIST[0]);
+    const requestedPropertyId = String(body.propertyId || PROPERTY_ALLOWLIST[0]);
+    const propertyId = requestedPropertyId === "default" ? PROPERTY_ALLOWLIST[0] : requestedPropertyId;
     if (!PROPERTY_ALLOWLIST.includes(propertyId)) {
       return ga4SetupError(`Property ${propertyId} is not configured in the GA4 allowlist.`);
     }
