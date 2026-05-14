@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import "../theme.css";
 import { B2BBackdrop, amberGradientText } from "../components/B2BBackdrop";
 import { B2BSiteHeader } from "../components/B2BSiteHeader";
+import { Helmet } from "react-helmet-async";
 
 type Tier = {
   name: string;
