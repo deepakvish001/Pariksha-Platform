@@ -181,7 +181,7 @@ export default function Analytics() {
         setGa({});
         setGaSetupError(setupError);
       } else {
-      setGa({ summary: s.data, ts: t.data, pages: p.data, sources: src.data, devices: dev.data, countries: ctr.data, prevSummary: ps?.data });
+        setGa({ summary: s.data, ts: t.data, pages: p.data, sources: src.data, devices: dev.data, countries: ctr.data, prevSummary: ps?.data });
       }
     } catch (e) {
       toast.error(`GA4: ${(e as Error).message}`);
