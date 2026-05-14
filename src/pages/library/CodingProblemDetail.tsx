@@ -938,6 +938,24 @@ const CodingProblemDetail = () => {
       <Helmet>
         <title>{problem.title} — Coding Problem | Parikshaa</title>
         <meta name="description" content={problem.description.slice(0, 155)} />
+        <link rel="canonical" href={`https://www.parikshaa.org/library/problems/${problem.slug}`} />
+        <meta property="og:title" content={`${problem.title} — Coding Problem | Parikshaa`} />
+        <meta property="og:description" content={problem.description.slice(0, 155)} />
+        <meta property="og:url" content={`https://www.parikshaa.org/library/problems/${problem.slug}`} />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:title" content={`${problem.title} — Coding Problem | Parikshaa`} />
+        <meta name="twitter:description" content={problem.description.slice(0, 155)} />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "TechArticle",
+          headline: problem.title,
+          name: problem.title,
+          description: problem.description.slice(0, 300),
+          url: `https://www.parikshaa.org/library/problems/${problem.slug}`,
+          articleSection: "Coding Problems",
+          keywords: ["coding problem", problem.difficulty, "DSA", "algorithm"].join(", "),
+          author: { "@type": "Organization", name: "Parikshaa" },
+        })}</script>
       </Helmet>
 
       {contestError && (
