@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import "../theme.css";
 import { B2BBackdrop, amberGradientText } from "../components/B2BBackdrop";
 import { B2BSiteHeader } from "../components/B2BSiteHeader";
+import { Helmet } from "react-helmet-async";
 
 type Tier = {
   name: string;
@@ -188,6 +189,17 @@ export default function B2BPricing() {
 
   return (
     <div className="theme-b2b relative min-h-screen overflow-hidden bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+      <Helmet>
+        <title>Pricing — Parikshaa for Teams & Colleges</title>
+        <meta name="description" content="Transparent pricing for AI-proctored assessments. Free 14-day trial, per-candidate or unlimited plans for colleges and recruiters." />
+        <link rel="canonical" href="https://www.parikshaa.org/pricing" />
+        <meta property="og:title" content="Pricing — Parikshaa for Teams & Colleges" />
+        <meta property="og:description" content="Transparent pricing for AI-proctored assessments. Free 14-day trial, per-candidate or unlimited plans." />
+        <meta property="og:url" content="https://www.parikshaa.org/pricing" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:title" content="Pricing — Parikshaa for Teams & Colleges" />
+        <meta name="twitter:description" content="Transparent pricing for AI-proctored assessments. Free 14-day trial included." />
+      </Helmet>
       <B2BBackdrop variant="subtle" />
       <B2BSiteHeader />
       <div className="pt-16">

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import AuthLayout from "@/components/AuthLayout";
 import { getPostLoginPath } from "@/lib/postLoginRedirect";
 import { supabase } from "@/integrations/supabase/client";
+import { Helmet } from "react-helmet-async";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -83,6 +84,17 @@ const Login = () => {
   };
 
   return (
+    <>
+      <Helmet>
+        <title>Sign in — Parikshaa</title>
+        <meta name="description" content="Sign in to Parikshaa to continue your proctored assessments, track your progress, and access your learning dashboard." />
+        <link rel="canonical" href="https://www.parikshaa.org/login" />
+        <meta property="og:title" content="Sign in — Parikshaa" />
+        <meta property="og:description" content="Sign in to continue your proctored assessments and learning progress on Parikshaa." />
+        <meta property="og:url" content="https://www.parikshaa.org/login" />
+        <meta name="twitter:title" content="Sign in — Parikshaa" />
+        <meta name="twitter:description" content="Sign in to continue your proctored assessments on Parikshaa." />
+      </Helmet>
     <AuthLayout
       title="Welcome back to Parikshaa"
       subtitle="Sign in to continue tracking your academic journey and unlock your full potential."
@@ -202,6 +214,7 @@ const Login = () => {
         </Link>
       </p>
     </AuthLayout>
+    </>
   );
 };
 
