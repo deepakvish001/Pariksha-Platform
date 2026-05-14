@@ -412,7 +412,10 @@ export default function B2BLanding() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <a href="mailto:sales@parikshaa.app" onClick={() => trackLeadEvent("b2b_footer_cta_click", { cta: "talk_sales" })}>
+                <a href="mailto:sales@parikshaa.app" onClick={() => {
+                  trackLeadEvent("b2b_footer_cta_click", { cta: "talk_sales" });
+                  import("@/lib/analytics/track").then((m) => m.trackContactClick("email", "b2b_footer"));
+                }}>
                   Talk to sales
                 </a>
               </Button>
@@ -430,7 +433,10 @@ export default function B2BLanding() {
           <div className="flex items-center gap-5">
             <Link to="/login" className="hover:text-[hsl(var(--foreground))]">Sign in</Link>
             <Link to="/b2b/onboarding" className="hover:text-[hsl(var(--foreground))]">Get started</Link>
-            <a href="mailto:sales@parikshaa.app" className="hover:text-[hsl(var(--foreground))]">Contact sales</a>
+            <a href="mailto:sales@parikshaa.app" className="hover:text-[hsl(var(--foreground))]"
+              onClick={() => import("@/lib/analytics/track").then((m) => m.trackContactClick("email", "b2b_footer_nav"))}>
+              Contact sales
+            </a>
           </div>
         </div>
       </footer>
