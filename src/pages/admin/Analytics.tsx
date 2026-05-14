@@ -153,6 +153,7 @@ export default function Analytics() {
   const [loading, setLoading] = useState(false);
   const [ga, setGa] = useState<{ summary?: any; ts?: any; pages?: any; sources?: any; devices?: any; countries?: any; prevSummary?: any }>({});
   const [gsc, setGsc] = useState<{ summary?: any; ts?: any; queries?: any; pages?: any; devices?: any; countries?: any; prevSummary?: any }>({});
+  const [gaSetupError, setGaSetupError] = useState<string | null>(null);
 
   const prev = useMemo(() => previousRange(range), [range]);
 
@@ -164,6 +165,7 @@ export default function Analytics() {
     const baseGscPrev = { siteUrl, startDate: iso(prev.start), endDate: iso(prev.end) };
 
     try {
+      setGaSetupError(null);
       const reqs: Promise<GAResponse>[] = [
         callFn<GAResponse>("ga4-report", { ...baseGa, report: "summary" }),
         callFn<GAResponse>("ga4-report", { ...baseGa, report: "timeseries" }),
@@ -174,7 +176,13 @@ export default function Analytics() {
       ];
       if (compare) reqs.push(callFn<GAResponse>("ga4-report", { ...baseGaPrev, report: "summary" }));
       const [s, t, p, src, dev, ctr, ps] = await Promise.all(reqs);
+      const setupError = [s, t, p, src, dev, ctr, ps].find((res) => res?.setupRequired)?.error;
+      if (setupError) {
+        setGa({});
+        setGaSetupError(setupError);
+      } else {
       setGa({ summary: s.data, ts: t.data, pages: p.data, sources: src.data, devices: dev.data, countries: ctr.data, prevSummary: ps?.data });
+      }
     } catch (e) {
       toast.error(`GA4: ${(e as Error).message}`);
     }
@@ -307,6 +315,14 @@ export default function Analytics() {
         <p className="text-xs text-muted-foreground -mt-3">
           Comparing to {format(prev.start, "MMM d")} – {format(prev.end, "MMM d, yyyy")}.
         </p>
+      )}
+
+      {gaSetupError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>GA4 setup needs attention</AlertTitle>
+          <AlertDescription>{gaSetupError}</AlertDescription>
+        </Alert>
       )}
 
       <Tabs defaultValue="ga4" className="w-full">
