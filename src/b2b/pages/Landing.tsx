@@ -28,6 +28,16 @@ import { B2BSiteHeader } from "../components/B2BSiteHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { captureUtm, getStoredUtm, trackLeadEvent } from "@/lib/leadTracking";
 import { toast } from "sonner";
+import { Helmet } from "react-helmet-async";
+
+const B2B_FAQS = [
+  { q: "How long does setup take?", a: "Under 60 seconds. Sign up, create your org, build (or import) an assessment, and invite candidates by CSV." },
+  { q: "Is there a free trial?", a: "Yes — 14 days, all features included, no credit card required. Cancel anytime." },
+  { q: "How does proctoring work?", a: "Browser-level: tab-switch, fullscreen exit, copy/paste, right-click and focus loss are all logged with timestamps. You get a per-attempt integrity score." },
+  { q: "Can candidates use ChatGPT?", a: "We detect copy/paste, paste velocity and tab switches. Our integrity score surfaces likely AI-assisted attempts so you can review them." },
+  { q: "Do you support custom branding?", a: "Yes. Add your logo, colors and a custom subdomain on Pro plans." },
+  { q: "Is my data secure?", a: "All data is encrypted in transit and at rest. We follow SOC2-aligned controls and provide full audit trails." },
+];
 
 export default function B2BLanding() {
   const [showStickyCta, setShowStickyCta] = useState(false);
