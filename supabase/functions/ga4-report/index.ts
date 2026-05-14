@@ -30,6 +30,17 @@ const CACHE_TTL_SECONDS = 60 * 60;
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
+function jsonResponse(payload: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function ga4SetupError(message: string) {
+  return jsonResponse({ error: message, setupRequired: true }, 200);
+}
+
 function b64url(buf: ArrayBuffer | Uint8Array): string {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
   let s = "";
@@ -171,9 +182,7 @@ Deno.serve(async (req) => {
     const report = String(body.report ?? "summary");
     const propertyId = String(body.propertyId || PROPERTY_ALLOWLIST[0]);
     if (!PROPERTY_ALLOWLIST.includes(propertyId)) {
-      return new Response(JSON.stringify({ error: "Property not allowed" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ga4SetupError(`Property ${propertyId} is not configured in the GA4 allowlist.`);
     }
 
     let startDate: string;
@@ -217,7 +226,15 @@ Deno.serve(async (req) => {
       body: JSON.stringify(reqBody),
     });
     const json = await ga.json();
-    if (!ga.ok) throw new Error(`GA4 API failed [${ga.status}]: ${JSON.stringify(json)}`);
+    if (!ga.ok) {
+      const apiMessage = json?.error?.message || JSON.stringify(json);
+      if (ga.status === 403) {
+        return ga4SetupError(
+          `GA4 permission denied for property ${propertyId}. Grant Viewer access in GA4 Property access management to the configured service account (${SA_EMAIL}). Google response: ${apiMessage}`,
+        );
+      }
+      throw new Error(`GA4 API failed [${ga.status}]: ${JSON.stringify(json)}`);
+    }
 
     const payload = { report, propertyId, startDate, endDate, data: json };
     await admin.from("analytics_cache").upsert({
