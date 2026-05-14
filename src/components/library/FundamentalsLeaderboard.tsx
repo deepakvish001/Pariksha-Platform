@@ -36,93 +36,39 @@ const FundamentalsLeaderboard: React.FC<FundamentalsLeaderboardProps> = ({
     const fetchLeaderboard = async () => {
       setIsLoading(true);
       try {
-        let query = supabase
-          .from("quiz_results")
-          .select("user_id, score, total_questions, accuracy, completed_at, quiz_type");
-
-        // Filter by quiz type
-        if (typeFilter === "languages") {
-          query = query.like("quiz_type", "language-%");
-        } else if (typeFilter === "oops") {
-          query = query.like("quiz_type", "oops-%");
-        } else {
-          // All fundamentals - both language and oops
-          query = query.or("quiz_type.like.language-%,quiz_type.like.oops-%");
-        }
-
-        // Time filter
+        let since: string | null = null;
         if (timeFilter === "today") {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          query = query.gte("completed_at", today.toISOString());
+          since = today.toISOString();
         } else if (timeFilter === "week") {
           const weekAgo = new Date();
           weekAgo.setDate(weekAgo.getDate() - 7);
-          query = query.gte("completed_at", weekAgo.toISOString());
+          since = weekAgo.toISOString();
         }
 
-        const { data: results, error } = await query;
+        const { data: results, error } = await supabase.rpc("get_fundamentals_leaderboard", {
+          p_type: typeFilter,
+          p_since: since,
+          p_limit: 20,
+        });
 
         if (error) {
           console.error("Error fetching leaderboard:", error);
-          return;
-        }
-
-        // Aggregate by user
-        const userStats = new Map<string, {
-          total_quizzes: number;
-          total_score: number;
-          total_questions: number;
-          accuracies: number[];
-        }>();
-
-        results?.forEach((r) => {
-          const existing = userStats.get(r.user_id) || {
-            total_quizzes: 0,
-            total_score: 0,
-            total_questions: 0,
-            accuracies: [],
-          };
-          existing.total_quizzes++;
-          existing.total_score += r.score;
-          existing.total_questions += r.total_questions;
-          existing.accuracies.push(r.accuracy);
-          userStats.set(r.user_id, existing);
-        });
-
-        // Fetch profile info
-        const userIds = Array.from(userStats.keys());
-        if (userIds.length === 0) {
           setEntries([]);
-          setIsLoading(false);
           return;
         }
 
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, avatar_url")
-          .in("user_id", userIds);
-
-        const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
-
-        // Build leaderboard entries
-        const leaderboardEntries: LeaderboardEntry[] = Array.from(userStats.entries())
-          .map(([userId, stats]) => ({
-            user_id: userId,
-            full_name: profileMap.get(userId)?.full_name || "Anonymous",
-            avatar_url: profileMap.get(userId)?.avatar_url || null,
-            total_quizzes: stats.total_quizzes,
-            total_score: stats.total_score,
-            total_questions: stats.total_questions,
-            avg_accuracy: Math.round(stats.accuracies.reduce((a, b) => a + b, 0) / stats.accuracies.length),
-            best_accuracy: Math.max(...stats.accuracies),
-          }))
-          .sort((a, b) => {
-            // Sort by avg accuracy first, then by total quizzes
-            if (b.avg_accuracy !== a.avg_accuracy) return b.avg_accuracy - a.avg_accuracy;
-            return b.total_quizzes - a.total_quizzes;
-          })
-          .slice(0, 20);
+        const leaderboardEntries: LeaderboardEntry[] = (results ?? []).map((r: any) => ({
+          user_id: r.user_id,
+          full_name: r.full_name || "Anonymous",
+          avatar_url: r.avatar_url || null,
+          total_quizzes: Number(r.total_quizzes),
+          total_score: Number(r.total_score),
+          total_questions: Number(r.total_questions),
+          avg_accuracy: r.avg_accuracy,
+          best_accuracy: r.best_accuracy,
+        }));
 
         setEntries(leaderboardEntries);
       } catch (err) {
