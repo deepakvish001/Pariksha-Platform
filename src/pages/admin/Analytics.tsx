@@ -10,6 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { format, subDays, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -18,12 +19,12 @@ import {
 } from "recharts";
 import {
   RefreshCw, TrendingUp, TrendingDown, Users, Eye, MousePointerClick,
-  Search, Globe, CalendarIcon,
+  Search, Globe, CalendarIcon, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
-type GAResponse = { cached: boolean; data: any; startDate?: string; endDate?: string };
-type GSCResponse = { cached: boolean; data: any; startDate?: string; endDate?: string };
+type GAResponse = { cached?: boolean; data?: any; startDate?: string; endDate?: string; error?: string; setupRequired?: boolean };
+type GSCResponse = { cached?: boolean; data?: any; startDate?: string; endDate?: string; error?: string; setupRequired?: boolean };
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2, var(--accent)))", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
@@ -86,6 +87,7 @@ function gaRows(data: any) {
 async function callFn<T>(name: string, body: object): Promise<T> {
   const { data, error } = await supabase.functions.invoke(name, { body });
   if (error) throw new Error(error.message);
+  if ((data as any)?.error && (data as any)?.setupRequired) return data as T;
   if ((data as any)?.error) throw new Error((data as any).error);
   return data as T;
 }
@@ -151,6 +153,7 @@ export default function Analytics() {
   const [loading, setLoading] = useState(false);
   const [ga, setGa] = useState<{ summary?: any; ts?: any; pages?: any; sources?: any; devices?: any; countries?: any; prevSummary?: any }>({});
   const [gsc, setGsc] = useState<{ summary?: any; ts?: any; queries?: any; pages?: any; devices?: any; countries?: any; prevSummary?: any }>({});
+  const [gaSetupError, setGaSetupError] = useState<string | null>(null);
 
   const prev = useMemo(() => previousRange(range), [range]);
 
@@ -162,6 +165,7 @@ export default function Analytics() {
     const baseGscPrev = { siteUrl, startDate: iso(prev.start), endDate: iso(prev.end) };
 
     try {
+      setGaSetupError(null);
       const reqs: Promise<GAResponse>[] = [
         callFn<GAResponse>("ga4-report", { ...baseGa, report: "summary" }),
         callFn<GAResponse>("ga4-report", { ...baseGa, report: "timeseries" }),
@@ -172,7 +176,13 @@ export default function Analytics() {
       ];
       if (compare) reqs.push(callFn<GAResponse>("ga4-report", { ...baseGaPrev, report: "summary" }));
       const [s, t, p, src, dev, ctr, ps] = await Promise.all(reqs);
-      setGa({ summary: s.data, ts: t.data, pages: p.data, sources: src.data, devices: dev.data, countries: ctr.data, prevSummary: ps?.data });
+      const setupError = [s, t, p, src, dev, ctr, ps].find((res) => res?.setupRequired)?.error;
+      if (setupError) {
+        setGa({});
+        setGaSetupError(setupError);
+      } else {
+        setGa({ summary: s.data, ts: t.data, pages: p.data, sources: src.data, devices: dev.data, countries: ctr.data, prevSummary: ps?.data });
+      }
     } catch (e) {
       toast.error(`GA4: ${(e as Error).message}`);
     }
@@ -305,6 +315,14 @@ export default function Analytics() {
         <p className="text-xs text-muted-foreground -mt-3">
           Comparing to {format(prev.start, "MMM d")} – {format(prev.end, "MMM d, yyyy")}.
         </p>
+      )}
+
+      {gaSetupError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>GA4 setup needs attention</AlertTitle>
+          <AlertDescription>{gaSetupError}</AlertDescription>
+        </Alert>
       )}
 
       <Tabs defaultValue="ga4" className="w-full">
