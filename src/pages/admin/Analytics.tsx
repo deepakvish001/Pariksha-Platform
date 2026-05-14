@@ -10,6 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { format, subDays, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -18,12 +19,12 @@ import {
 } from "recharts";
 import {
   RefreshCw, TrendingUp, TrendingDown, Users, Eye, MousePointerClick,
-  Search, Globe, CalendarIcon,
+  Search, Globe, CalendarIcon, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
-type GAResponse = { cached: boolean; data: any; startDate?: string; endDate?: string };
-type GSCResponse = { cached: boolean; data: any; startDate?: string; endDate?: string };
+type GAResponse = { cached?: boolean; data?: any; startDate?: string; endDate?: string; error?: string; setupRequired?: boolean };
+type GSCResponse = { cached?: boolean; data?: any; startDate?: string; endDate?: string; error?: string; setupRequired?: boolean };
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2, var(--accent)))", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
@@ -86,6 +87,7 @@ function gaRows(data: any) {
 async function callFn<T>(name: string, body: object): Promise<T> {
   const { data, error } = await supabase.functions.invoke(name, { body });
   if (error) throw new Error(error.message);
+  if ((data as any)?.error && (data as any)?.setupRequired) return data as T;
   if ((data as any)?.error) throw new Error((data as any).error);
   return data as T;
 }
