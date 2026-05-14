@@ -241,6 +241,7 @@ const Signup = () => {
         </Link>
       </p>
     </AuthLayout>
+    </>
   );
 };
 
