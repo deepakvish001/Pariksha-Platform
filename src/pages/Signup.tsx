@@ -83,6 +83,17 @@ const Signup = () => {
   };
 
   return (
+    <>
+      <Helmet>
+        <title>Sign up — Parikshaa</title>
+        <meta name="description" content="Create your free Parikshaa account to start practising for proctored contests, track DSA progress, and unlock structured learning sheets." />
+        <link rel="canonical" href="https://www.parikshaa.org/signup" />
+        <meta property="og:title" content="Sign up — Parikshaa" />
+        <meta property="og:description" content="Create your free account and start preparing with Parikshaa's proctored contests and structured learning." />
+        <meta property="og:url" content="https://www.parikshaa.org/signup" />
+        <meta name="twitter:title" content="Sign up — Parikshaa" />
+        <meta name="twitter:description" content="Create your free Parikshaa account to start preparing." />
+      </Helmet>
     <AuthLayout
       title="Start your journey with Parikshaa"
       subtitle="Join thousands of students who are already improving their academic performance."
