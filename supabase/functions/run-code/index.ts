@@ -317,6 +317,19 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Require authentication to prevent quota abuse against Fermion
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return respond<RunResult>({ ok: false, error: "Unauthorized", diagnostics: { error_stage: "validation" } });
+    }
+    const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: authData, error: authErr } = await authClient.auth.getUser();
+    if (authErr || !authData?.user) {
+      return respond<RunResult>({ ok: false, error: "Unauthorized", diagnostics: { error_stage: "validation" } });
+    }
+
     if (!FERMION_KEY) {
       return respond<RunResult>({
         ok: false,
