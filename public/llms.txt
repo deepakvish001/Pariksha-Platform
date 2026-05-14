@@ -1,0 +1,41 @@
+# Parikshaa
+
+> Industry-grade proctored contests and structured learning platform for colleges and students. AI-powered integrity monitoring with Side Eye proctoring, real-time analytics, and verifiable integrity reports.
+
+Parikshaa helps colleges run secure online assessments and contests, while giving students a structured path through DSA, SQL, system design, interview prep, and curated company-specific resources.
+
+## Pages
+
+- [Home](/): Platform overview and value proposition.
+- [B2B for Colleges](/b2b): Proctored assessments, analytics, and integrity reports for institutions.
+- [Pricing](/pricing): Plans for colleges and teams.
+- [Contests](/contests): Live and upcoming proctored coding contests.
+- [Coding Problems](/library/problems): Practice problems with submissions and leaderboard.
+- [DSA Questions](/library/dsa): Curated DSA problem sets with spaced repetition.
+- [SQL Questions](/library/sql): SQL practice with difficulty filters.
+- [Interview Questions](/library/interview): Role-based interview prep.
+- [Companies](/library/companies): Company-specific question banks and resources.
+- [Roles & Positions](/library/positions): Position-based prep tracks.
+- [Mass Recruitment](/library/recruitment): Mass-hiring company prep.
+- [Aptitude](/library/aptitude): Quantitative and logical reasoning practice.
+- [Core CS](/library/cs): OS, DBMS, networks, and core CS subjects.
+- [Handwritten Notes](/library/notes): Curated study notes.
+- [Quizzes](/library/quiz): Topic quizzes with SRS.
+- [Fundamentals](/fundamentals/overview): Programming language and OOPs fundamentals.
+- [System Design](/system-design/overview): HLD and LLD concepts.
+- [Resume Templates](/research/resume): Curated resume templates.
+- [Resume Analyser](/research/analyser): AI-powered resume scoring.
+- [Job Portals](/research/jobs): Curated job portal directory.
+- [Cold Outreach](/research/outreach): Outreach templates and AI personalization.
+- [AI Community](/platform/ai/community): Public gallery of AI-generated learning content.
+- [AI Staff Picks](/platform/ai/staff-picks): Editor-picked AI courses and guides.
+- [Resources](/platform/resources): Curated learning resources hub.
+- [Blog](/blog): Articles and updates.
+- [Arena](/arena): Competitive coding arena.
+- [Daily Challenge](/arena/daily): Daily problem with streaks and rewards.
+- [Leaderboard](/arena/leaderboard): Global arena rankings.
+
+## Optional
+
+- [Login](/login): Sign in.
+- [Signup](/signup): Create an account.
