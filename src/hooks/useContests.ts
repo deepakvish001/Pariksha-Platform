@@ -186,6 +186,9 @@ export const useContestRegistrations = (contestId: string | undefined) => {
     enabled: !!contestId,
     placeholderData: keepPreviousData,
     queryFn: async () => {
+      // Public-read on contest_registrations was removed for privacy (exposed
+      // disqualification data). Non-admin/non-self callers only get the count
+      // via RPC; full rows are visible via separate admin/self queries.
       const { data, error } = await supabase
         .from("contest_registrations")
         .select("*")
@@ -193,6 +196,21 @@ export const useContestRegistrations = (contestId: string | undefined) => {
         .order("registered_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as ContestRegistration[];
+    },
+  });
+};
+
+export const useContestRegisteredCount = (contestId: string | undefined) => {
+  return useQuery({
+    queryKey: ["contest-registered-count", contestId],
+    enabled: !!contestId,
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_contest_registered_count", {
+        _contest_id: contestId!,
+      });
+      if (error) throw error;
+      return (data as number) ?? 0;
     },
   });
 };
