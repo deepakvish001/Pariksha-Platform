@@ -56,7 +56,26 @@ const ContestDetail = () => {
     <>
       <Helmet>
         <title>{contest.title} | Parikshaa Contests</title>
-        <meta name="description" content={contest.description?.slice(0, 150) ?? "Coding contest"} />
+        <meta name="description" content={contest.description?.slice(0, 150) ?? `Join the ${contest.title} coding contest on Parikshaa.`} />
+        <link rel="canonical" href={`https://www.parikshaa.org/contests/${contest.slug}`} />
+        <meta property="og:title" content={`${contest.title} | Parikshaa Contests`} />
+        <meta property="og:description" content={contest.description?.slice(0, 150) ?? `Join the ${contest.title} coding contest on Parikshaa.`} />
+        <meta property="og:url" content={`https://www.parikshaa.org/contests/${contest.slug}`} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:title" content={`${contest.title} | Parikshaa Contests`} />
+        <meta name="twitter:description" content={contest.description?.slice(0, 150) ?? `Join the ${contest.title} coding contest on Parikshaa.`} />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Event",
+          name: contest.title,
+          description: contest.description ?? `${contest.title} coding contest on Parikshaa.`,
+          startDate: contest.starts_at,
+          endDate: contest.ends_at,
+          eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
+          eventStatus: "https://schema.org/EventScheduled",
+          url: `https://www.parikshaa.org/contests/${contest.slug}`,
+          organizer: { "@type": "Organization", name: "Parikshaa", url: "https://www.parikshaa.org" },
+        })}</script>
       </Helmet>
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         {contest.banner_url && (
