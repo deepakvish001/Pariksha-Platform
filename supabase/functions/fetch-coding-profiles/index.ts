@@ -188,6 +188,20 @@ function scrapeError(platform: Platform, handle: string, e: unknown): Normalized
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    // Require authentication to prevent abuse as a free SSRF-like proxy
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.49.4");
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user }, error: authErr } = await userClient.auth.getUser();
+    if (authErr || !user) return json({ error: "Unauthorized" }, 401);
+
     const body = await req.json();
     const platform = String(body?.platform ?? "").toLowerCase() as Platform;
     const handle = String(body?.handle ?? "").trim();
