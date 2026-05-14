@@ -151,6 +151,8 @@ import ArenaModeration from "./pages/admin/ArenaModeration";
 import SettingsAndFlags from "./pages/admin/SettingsAndFlags";
 import StorageBrowser from "./pages/admin/StorageBrowser";
 import SystemHealth from "./pages/admin/SystemHealth";
+import Analytics from "./pages/admin/Analytics";
+import PageviewTracker from "@/components/PageviewTracker";
 import CronJobs from "./pages/admin/CronJobs";
 
 import SupportInbox from "./pages/admin/SupportInbox";
@@ -237,6 +239,7 @@ const App = () => (
               <RouteRestorer />
               <CrossTabAuthSync />
               <RouteSeo />
+              <PageviewTracker />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
@@ -460,6 +463,7 @@ const App = () => (
 
                   <Route path="support" element={<SupportInbox />} />
                   <Route path="security" element={<SecurityCenter />} />
+                  <Route path="analytics" element={<Analytics />} />
                   <Route path="achievements" element={<AchievementsAdmin />} />
                   <Route path="leaderboards" element={<LeaderboardsAdmin />} />
                   
