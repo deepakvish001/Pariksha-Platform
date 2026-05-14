@@ -1,5 +1,10 @@
 // GA4 Data API proxy via Google service-account JWT.
-// POST body: { report: "summary" | "topPages" | "trafficSources" | "timeseries", days?: number }
+// POST body: {
+//   report: "summary" | "topPages" | "trafficSources" | "timeseries" | "countries" | "devices",
+//   startDate?: string (YYYY-MM-DD), endDate?: string (YYYY-MM-DD),
+//   days?: number (used if startDate/endDate not provided),
+//   propertyId?: string (must be allowlisted)
+// }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -12,11 +17,18 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const PROPERTY_ID = Deno.env.get("GA4_PROPERTY_ID");
+const DEFAULT_PROPERTY_ID = Deno.env.get("GA4_PROPERTY_ID");
+// Optional: comma-separated allowlist of property ids the dashboard can query.
+// Falls back to [DEFAULT_PROPERTY_ID] when unset.
+const PROPERTY_ALLOWLIST = (Deno.env.get("GA4_PROPERTY_IDS") || DEFAULT_PROPERTY_ID || "")
+  .split(",").map((s) => s.trim()).filter(Boolean);
+
 const SA_EMAIL = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_EMAIL");
 const SA_KEY = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY");
 
-const CACHE_TTL_SECONDS = 60 * 60; // 1 hour
+const CACHE_TTL_SECONDS = 60 * 60;
+
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
 function b64url(buf: ArrayBuffer | Uint8Array): string {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
@@ -40,26 +52,20 @@ let cachedToken: { token: string; exp: number } | null = null;
 
 async function getAccessToken(): Promise<string> {
   if (cachedToken && cachedToken.exp > Date.now() / 1000 + 60) return cachedToken.token;
-
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
   const claim = {
     iss: SA_EMAIL,
     scope: "https://www.googleapis.com/auth/analytics.readonly",
     aud: "https://oauth2.googleapis.com/token",
-    iat: now,
-    exp: now + 3600,
+    iat: now, exp: now + 3600,
   };
   const enc = new TextEncoder();
   const unsigned = `${b64url(enc.encode(JSON.stringify(header)))}.${b64url(enc.encode(JSON.stringify(claim)))}`;
-
   const pem = (SA_KEY || "").replace(/\\n/g, "\n");
   const key = await crypto.subtle.importKey(
-    "pkcs8",
-    pemToDer(pem),
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"],
+    "pkcs8", pemToDer(pem),
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"],
   );
   const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, enc.encode(unsigned));
   const jwt = `${unsigned}.${b64url(sig)}`;
@@ -75,19 +81,15 @@ async function getAccessToken(): Promise<string> {
   return cachedToken.token;
 }
 
-function buildRequest(report: string, days: number) {
-  const dateRanges = [{ startDate: `${days}daysAgo`, endDate: "today" }];
+function buildRequest(report: string, startDate: string, endDate: string) {
+  const dateRanges = [{ startDate, endDate }];
   switch (report) {
     case "summary":
       return {
         dateRanges,
         metrics: [
-          { name: "activeUsers" },
-          { name: "newUsers" },
-          { name: "sessions" },
-          { name: "screenPageViews" },
-          { name: "averageSessionDuration" },
-          { name: "bounceRate" },
+          { name: "activeUsers" }, { name: "newUsers" }, { name: "sessions" },
+          { name: "screenPageViews" }, { name: "averageSessionDuration" }, { name: "bounceRate" },
         ],
       };
     case "timeseries":
@@ -132,15 +134,21 @@ function buildRequest(report: string, days: number) {
   }
 }
 
+function isoDaysAgo(days: number) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+function todayIso() { return new Date().toISOString().slice(0, 10); }
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    if (!PROPERTY_ID) throw new Error("GA4_PROPERTY_ID is not configured");
+    if (PROPERTY_ALLOWLIST.length === 0) throw new Error("GA4_PROPERTY_ID is not configured");
     if (!SA_EMAIL) throw new Error("GOOGLE_SERVICE_ACCOUNT_EMAIL is not configured");
     if (!SA_KEY) throw new Error("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY is not configured");
 
-    // Auth: verify caller is admin
     const authHeader = req.headers.get("Authorization") ?? "";
     const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
@@ -159,16 +167,41 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { report = "summary", days = 28 } = await req.json().catch(() => ({}));
-    const safeDays = Math.max(1, Math.min(365, Number(days) || 28));
-    const cacheKey = `ga4:${report}:${safeDays}`;
+    const body = await req.json().catch(() => ({}));
+    const report = String(body.report ?? "summary");
+    const propertyId = String(body.propertyId || PROPERTY_ALLOWLIST[0]);
+    if (!PROPERTY_ALLOWLIST.includes(propertyId)) {
+      return new Response(JSON.stringify({ error: "Property not allowed" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // Cache lookup
+    let startDate: string;
+    let endDate: string;
+    if (body.startDate && body.endDate && ISO.test(body.startDate) && ISO.test(body.endDate)) {
+      startDate = body.startDate; endDate = body.endDate;
+    } else {
+      const safeDays = Math.max(1, Math.min(365, Number(body.days) || 28));
+      startDate = isoDaysAgo(safeDays);
+      endDate = todayIso();
+    }
+
+    const cacheKey = `ga4:${propertyId}:${report}:${startDate}:${endDate}`;
     const { data: cached } = await admin
       .from("analytics_cache")
       .select("payload, expires_at")
       .eq("cache_key", cacheKey)
       .maybeSingle();
+
+    // Audit every read (cache hit or miss)
+    await admin.from("admin_audit_log").insert({
+      actor_id: userData.user.id,
+      action: "view_analytics",
+      entity_type: "ga4",
+      entity_slug: propertyId,
+      diff: { report, startDate, endDate, cached: !!cached },
+    });
+
     if (cached && new Date(cached.expires_at).getTime() > Date.now()) {
       return new Response(JSON.stringify({ cached: true, ...cached.payload }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -176,17 +209,17 @@ Deno.serve(async (req) => {
     }
 
     const token = await getAccessToken();
-    const body = buildRequest(report, safeDays);
-    const url = `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport`;
+    const reqBody = buildRequest(report, startDate, endDate);
+    const url = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
     const ga = await fetch(url, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(reqBody),
     });
     const json = await ga.json();
     if (!ga.ok) throw new Error(`GA4 API failed [${ga.status}]: ${JSON.stringify(json)}`);
 
-    const payload = { report, days: safeDays, data: json };
+    const payload = { report, propertyId, startDate, endDate, data: json };
     await admin.from("analytics_cache").upsert({
       cache_key: cacheKey,
       payload,

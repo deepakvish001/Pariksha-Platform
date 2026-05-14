@@ -49,9 +49,14 @@ const Login = () => {
         title: "Login failed",
         description: error.message,
       });
+      const { trackEvent } = await import("@/lib/analytics/track");
+      trackEvent("login_failed", { method: "email", reason: error.message });
       setIsLoading(false);
       return;
     }
+
+    const { trackLogin } = await import("@/lib/analytics/track");
+    trackLogin("email");
 
     toast({
       title: "Welcome back!",
@@ -69,6 +74,8 @@ const Login = () => {
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
+    const { trackLogin } = await import("@/lib/analytics/track");
+    trackLogin("google");
     const { error } = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
