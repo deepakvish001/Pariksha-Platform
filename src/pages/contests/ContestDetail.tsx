@@ -27,7 +27,7 @@ const ContestDetail = () => {
   const { data: contest, isLoading } = useContest(slug);
   const { data: problems = [] } = useContestProblems(contest?.id);
   const { data: myReg } = useMyRegistration(contest?.id);
-  const { data: registrations = [] } = useContestRegistrations(contest?.id);
+  const { data: registeredCount = 0 } = useContestRegisteredCount(contest?.id);
   const register = useRegisterForContest();
   const withdraw = useWithdrawFromContest();
   const clock = useContestClock(contest?.starts_at, contest?.ends_at);
@@ -139,7 +139,7 @@ const ContestDetail = () => {
         <div className="grid gap-3 md:grid-cols-4">
           <Stat icon={CalendarDays} label="Starts" value={fmtDate(contest.starts_at)} />
           <Stat icon={CalendarDays} label="Ends" value={fmtDate(contest.ends_at)} />
-          <Stat icon={Users} label="Registered" value={String(registrations.filter(r => r.status === "registered").length)} />
+          <Stat icon={Users} label="Registered" value={String(registeredCount)} />
           <Stat icon={Trophy} label="Problems" value={String(problems.length)} />
         </div>
 
@@ -148,7 +148,7 @@ const ContestDetail = () => {
             contestId={contest.id}
             contestSlug={contest.slug}
             startsAt={contest.starts_at}
-            registeredCount={registrations.filter((r) => r.status === "registered").length}
+            registeredCount={registeredCount}
             honorAccepted={honorAccepted}
             onHonorAccepted={() => setHonorAccepted(true)}
             hasStarted={clock.phase === "live" || clock.phase === "ended"}
