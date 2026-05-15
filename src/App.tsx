@@ -320,9 +320,9 @@ const App = () => (
                   <Route path="sheets" element={<DashboardSheets />} />
                   <Route path="dsa-studio" element={<DsaStudio />} />
                   <Route path="dsa-studio/problems" element={<DsaStudio />} />
-                  <Route path="dsa-studio/patterns" element={<DsaStudio />} />
-                  <Route path="dsa-studio/tricks" element={<DsaStudio />} />
-                  <Route path="dsa-studio/edge" element={<DsaStudio />} />
+                  <Route path="dsa-studio/patterns" element={<DsaStudioPatternsPage />} />
+                  <Route path="dsa-studio/tricks" element={<DsaStudioTricksPage />} />
+                  <Route path="dsa-studio/edge" element={<DsaStudioEdgePage />} />
                   <Route path="dsa-studio/pattern/:patternId" element={<DsaStudioPattern />} />
                   <Route path="dsa-studio/:slug" element={<DsaStudioProblem />} />
                   <Route path="sheets/:sheetId" element={<SheetDetail />} />
