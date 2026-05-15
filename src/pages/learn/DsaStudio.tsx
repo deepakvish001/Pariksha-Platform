@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { createPortal } from "react-dom";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -62,9 +62,19 @@ const TABS: { id: string; label: string; icon: any; accent: string; badge?: stri
   { id: "edge", label: "Edge Cases", icon: AlertTriangle, accent: "text-orange-400" },
 ];
 
-const SUB_TABS: { id: string; label: string; icon: any; accent: string; badge?: string }[] = [
-  { id: "focus", label: "Focus", icon: Flame, accent: "text-orange-400" },
-];
+const TAB_PATHS: Record<string, string> = {
+  problems: "/learn/dsa-studio/problems",
+  patterns: "/learn/dsa-studio/patterns",
+  tricks: "/learn/dsa-studio/tricks",
+  edge: "/learn/dsa-studio/edge",
+};
+
+const pathToTab = (pathname: string): string => {
+  if (pathname.endsWith("/patterns")) return "patterns";
+  if (pathname.endsWith("/tricks")) return "tricks";
+  if (pathname.endsWith("/edge")) return "edge";
+  return "problems";
+};
 
 const SEQUENCE = [
   "Arrays", "Strings", "Matrix", "Stack", "Queue", "Binary Search", "Linked List", "Greedy",
@@ -117,7 +127,12 @@ const DEFAULT_PREFS: Prefs = {
 export default function DsaStudio() {
   const initial = loadJSON<Prefs>(LS_PREFS, DEFAULT_PREFS);
   const [activeTopic, setActiveTopic] = useState(initial.activeTopic);
-  const [activeTab, setActiveTab] = useState(initial.activeTab);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeTab = pathToTab(location.pathname);
+  const setActiveTab = (id: string) => {
+    navigate(TAB_PATHS[id] ?? TAB_PATHS.problems);
+  };
   const [search, setSearch] = useState(initial.search);
   const [priority, setPriority] = useState<PriorityFilter>(initial.priority);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -599,27 +614,17 @@ export default function DsaStudio() {
             })}
           </motion.div>
 
-          <div className="flex flex-wrap gap-2">
-            {SUB_TABS.map((t) => {
-              const Icon = t.icon;
-              return (
-                <button
-                  key={t.id}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-border/50 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border transition-all"
-                >
-                  <Icon className={cn("h-4 w-4", t.accent)} />
-                  <span className="font-medium">{t.label}</span>
-                  {t.badge && (
-                    <Badge className="h-4 px-1.5 text-[9px] bg-violet-500/20 text-violet-400 border-violet-500/30">
-                      {t.badge}
-                    </Badge>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {activeTab === "patterns" ? <CommonPatternsView /> : activeTab === "tricks" ? <CodeTricksView /> : (<>
+          {activeTab === "patterns" ? <CommonPatternsView /> : activeTab === "tricks" ? <CodeTricksView /> : activeTab === "edge" ? (
+            <section className="rounded-xl border border-border/40 bg-card/40 p-6 md:p-8">
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-orange-400 mb-3">
+                <AlertTriangle className="h-5 w-5" />
+                Edge Cases
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                A curated list of tricky inputs, boundary conditions and gotchas across DSA topics. Coming soon.
+              </p>
+            </section>
+          ) : (<>
           {/* Recommended sequence */}
           <section className="rounded-xl border border-border/40 bg-card/40 p-4 md:p-5">
             <h2 className="flex items-center gap-2 text-base font-semibold text-emerald-400 mb-3">
