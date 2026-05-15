@@ -58,6 +58,9 @@ import DashboardSheets from "./pages/DashboardSheets";
 import DsaStudio from "./pages/learn/DsaStudio";
 import DsaStudioProblem from "./pages/learn/DsaStudioProblem";
 import DsaStudioPattern from "./pages/learn/DsaStudioPattern";
+import DsaStudioPatternsPage from "./pages/learn/dsa-studio/PatternsPage";
+import DsaStudioTricksPage from "./pages/learn/dsa-studio/TricksPage";
+import DsaStudioEdgePage from "./pages/learn/dsa-studio/EdgePage";
 
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
