@@ -127,7 +127,12 @@ const DEFAULT_PREFS: Prefs = {
 export default function DsaStudio() {
   const initial = loadJSON<Prefs>(LS_PREFS, DEFAULT_PREFS);
   const [activeTopic, setActiveTopic] = useState(initial.activeTopic);
-  const [activeTab, setActiveTab] = useState(initial.activeTab);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeTab = pathToTab(location.pathname);
+  const setActiveTab = (id: string) => {
+    navigate(TAB_PATHS[id] ?? TAB_PATHS.problems);
+  };
   const [search, setSearch] = useState(initial.search);
   const [priority, setPriority] = useState<PriorityFilter>(initial.priority);
   const [searchParams, setSearchParams] = useSearchParams();
