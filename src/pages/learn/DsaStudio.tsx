@@ -73,7 +73,8 @@ const pathToTab = (pathname: string): string => {
   if (pathname.endsWith("/patterns")) return "patterns";
   if (pathname.endsWith("/tricks")) return "tricks";
   if (pathname.endsWith("/edge")) return "edge";
-  return "problems";
+  if (pathname.endsWith("/problems")) return "problems";
+  return "hub";
 };
 
 const SEQUENCE = [
