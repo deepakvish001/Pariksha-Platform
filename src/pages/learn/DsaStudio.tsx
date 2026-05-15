@@ -339,6 +339,7 @@ export default function DsaStudio() {
     }, 600);
   };
 
+  const showSidebar = activeTab === "problems";
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [desktopNavOpen, setDesktopNavOpen] = useState(true);
   const mobileToggleRef = useRef<HTMLButtonElement | null>(null);
@@ -488,30 +489,34 @@ export default function DsaStudio() {
       >
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-2">
-            <button
-              ref={mobileToggleRef}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setMobileNavOpen((v) => !v);
-              }}
-              aria-label={mobileNavOpen ? "Close topics menu" : "Open topics menu"}
-              aria-expanded={mobileNavOpen}
-              aria-controls="dsa-mobile-sidebar"
-              className="lg:hidden relative z-[60] inline-flex items-center justify-center h-9 w-9 rounded-md border border-border/50 bg-background text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-            >
-              {mobileNavOpen ? <XIcon className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-            </button>
-            <button
-              type="button"
-              onClick={() => setDesktopNavOpen((v) => !v)}
-              aria-label={desktopNavOpen ? "Hide learning path" : "Show learning path"}
-              aria-expanded={desktopNavOpen}
-              aria-controls="dsa-desktop-sidebar"
-              className="hidden lg:inline-flex items-center justify-center h-9 w-9 rounded-md border border-border/50 bg-background text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {desktopNavOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
-            </button>
+            {showSidebar && (
+              <>
+                <button
+                  ref={mobileToggleRef}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMobileNavOpen((v) => !v);
+                  }}
+                  aria-label={mobileNavOpen ? "Close topics menu" : "Open topics menu"}
+                  aria-expanded={mobileNavOpen}
+                  aria-controls="dsa-mobile-sidebar"
+                  className="lg:hidden relative z-[60] inline-flex items-center justify-center h-9 w-9 rounded-md border border-border/50 bg-background text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                >
+                  {mobileNavOpen ? <XIcon className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDesktopNavOpen((v) => !v)}
+                  aria-label={desktopNavOpen ? "Hide learning path" : "Show learning path"}
+                  aria-expanded={desktopNavOpen}
+                  aria-controls="dsa-desktop-sidebar"
+                  className="hidden lg:inline-flex items-center justify-center h-9 w-9 rounded-md border border-border/50 bg-background text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {desktopNavOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+                </button>
+              </>
+            )}
             <Link to="/learn" className="flex items-center gap-2">
               <span className="text-xl">🧠</span>
               <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-violet-400 to-sky-400 bg-clip-text text-transparent">
@@ -535,8 +540,8 @@ export default function DsaStudio() {
       </header>
 
       <div className="flex-1 min-h-0 flex">
-        {/* Sidebar - independent scroll, sits beside main */}
-        {desktopNavOpen && (
+        {/* Sidebar - independent scroll, sits beside main. Only shown on /problems. */}
+        {showSidebar && desktopNavOpen && (
           <aside
             id="dsa-desktop-sidebar"
             aria-label="Topics navigation"
@@ -548,7 +553,7 @@ export default function DsaStudio() {
         )}
 
         {/* Mobile sidebar drawer */}
-        {mobileNavOpen && typeof document !== "undefined" && createPortal(
+        {showSidebar && mobileNavOpen && typeof document !== "undefined" && createPortal(
           <div className="fixed inset-0 z-50 lg:hidden" role="presentation">
             <button
               type="button"
