@@ -51,7 +51,6 @@ import CodeTricksView from "@/components/dsa/CodeTricksView";
 
 const REFERENCE = [
   { id: "patterns", label: "Common Patterns", icon: Puzzle, count: 43 },
-  { id: "system", label: "System Design", icon: Cpu, badge: "NEW" },
   { id: "tricks", label: "Code Tricks", icon: Wrench },
   { id: "edge", label: "Edge Cases", icon: AlertTriangle },
 ];
@@ -59,18 +58,12 @@ const REFERENCE = [
 const TABS = [
   { id: "problems", label: "Problems", icon: ListChecks, accent: "text-sky-400" },
   { id: "patterns", label: "Common Patterns", icon: Puzzle, accent: "text-emerald-400" },
-  { id: "system", label: "System Design", icon: Cpu, accent: "text-violet-400" },
   { id: "tricks", label: "Code Tricks", icon: Wrench, accent: "text-amber-400" },
   { id: "edge", label: "Edge Cases", icon: AlertTriangle, accent: "text-orange-400" },
-  { id: "jobs", label: "Jobs", icon: Briefcase, accent: "text-pink-400" },
-  { id: "mock", label: "Mock Interview", icon: Mic, accent: "text-rose-400" },
-  { id: "java", label: "Java", icon: Coffee, accent: "text-yellow-500" },
 ];
 
 const SUB_TABS = [
-  { id: "quiz", label: "Quiz", icon: Target, accent: "text-rose-400" },
   { id: "focus", label: "Focus", icon: Flame, accent: "text-orange-400" },
-  { id: "explore", label: "Explore", icon: Globe, accent: "text-sky-400", badge: "AD" },
 ];
 
 const SEQUENCE = [
