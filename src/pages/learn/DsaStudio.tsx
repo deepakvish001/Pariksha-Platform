@@ -676,65 +676,153 @@ export default function DsaStudio() {
               </p>
             </section>
           ) : (<>
-          {/* Recommended sequence */}
-          <section className="rounded-xl border border-border/40 bg-card/40 p-4 md:p-5">
-            <h2 className="flex items-center gap-2 text-base font-semibold text-emerald-400 mb-3">
-              <ListChecks className="h-4 w-4" />
-              Recommended Learning Sequence
-            </h2>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {SEQUENCE.map((s, i) => (
-                <span key={s} className="flex items-center gap-1.5">
-                  <span className="px-3 py-1 rounded-md text-xs bg-muted/40 border border-border/40 text-muted-foreground">
-                    {i + 1}. {s}
-                  </span>
-                  {i < SEQUENCE.length - 1 && <span className="text-muted-foreground/50 text-xs">→</span>}
-                </span>
-              ))}
-            </div>
-          </section>
-
-          {/* Progress hero */}
-          <section className="rounded-xl border border-border/40 bg-gradient-to-br from-primary/5 via-card/40 to-card/40 p-4 md:p-5">
-            <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
-              <div>
-                <h2 className="flex items-center gap-2 text-base font-semibold">
-                  <Target className="h-4 w-4 text-primary" />
-                  Your Progress
-                </h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Keep solving — small daily reps compound fast.
-                </p>
-              </div>
-              <div className="flex items-center gap-4 text-xs">
-                <div className="text-right">
-                  <div className="text-muted-foreground">Solved</div>
-                  <div className="text-emerald-400 font-bold text-lg leading-none">{totalSolved}<span className="text-muted-foreground/60 text-sm font-normal"> / {grandTotal}</span></div>
+          {/* Progress hero + Priority legend */}
+          {(() => {
+            const pct = grandTotal ? Math.round((totalSolved / grandTotal) * 100) : 0;
+            const r = 52;
+            const C = 2 * Math.PI * r;
+            const dash = (pct / 100) * C;
+            return (
+              <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Hero card */}
+                <div className="lg:col-span-2 relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/80 via-card/40 to-background p-5 md:p-6">
+                  <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+                  <div className="relative flex items-center gap-5 md:gap-7">
+                    {/* Ring */}
+                    <div className="relative h-28 w-28 shrink-0 grid place-items-center">
+                      <svg className="absolute inset-0 -rotate-90" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r={r} fill="none" stroke="hsl(var(--muted))" strokeOpacity="0.25" strokeWidth="8" />
+                        <circle
+                          cx="60" cy="60" r={r} fill="none"
+                          stroke="hsl(var(--primary))" strokeWidth="8" strokeLinecap="round"
+                          strokeDasharray={`${dash} ${C}`}
+                          className="transition-[stroke-dasharray] duration-700 ease-out drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]"
+                        />
+                      </svg>
+                      <div className="text-center leading-tight">
+                        <div className="text-2xl font-bold">{pct}%</div>
+                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Done</div>
+                      </div>
+                    </div>
+                    {/* Stats */}
+                    <div className="flex-1 min-w-0 space-y-3">
+                      <div>
+                        <h2 className="flex items-center gap-2 text-base md:text-lg font-bold">
+                          <Target className="h-4 w-4 text-primary" />
+                          Your Progress
+                        </h2>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Keep solving — small daily reps compound fast.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="rounded-xl border border-border/40 bg-card/50 px-3 py-2">
+                          <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Solved</div>
+                          <div className="text-emerald-400 font-bold text-lg leading-none mt-1">
+                            {totalSolved}
+                            <span className="text-muted-foreground/60 text-xs font-normal"> / {grandTotal}</span>
+                          </div>
+                        </div>
+                        <div className="rounded-xl border border-border/40 bg-card/50 px-3 py-2">
+                          <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Saved</div>
+                          <div className="text-amber-400 font-bold text-lg leading-none mt-1">{totalSaved}</div>
+                        </div>
+                        <div className="rounded-xl border border-border/40 bg-card/50 px-3 py-2">
+                          <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Topics</div>
+                          <div className="text-sky-400 font-bold text-lg leading-none mt-1">{TOPICS.length}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-muted-foreground">Saved</div>
-                  <div className="text-amber-400 font-bold text-lg leading-none">{totalSaved}</div>
-                </div>
-              </div>
-            </div>
-            <div className="h-2 w-full rounded-full bg-muted/40 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-emerald-500 to-sky-400 transition-all"
-                style={{ width: `${grandTotal ? Math.round((totalSolved / grandTotal) * 100) : 0}%` }}
-              />
-            </div>
-          </section>
 
-          {/* Priority legend */}
-          <section className="rounded-xl border border-border/40 bg-card/30 p-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
-            <span className="text-muted-foreground font-medium">Priority:</span>
-            {PRIORITY_LEVELS.map((p) => (
-              <div key={p.label} className="flex items-center gap-1.5">
-                <span className={cn("h-2 w-2 rounded-full", p.dot)} />
-                <span className="font-semibold">{p.label}</span>
-                <span className="text-muted-foreground">{p.desc}</span>
+                {/* Priority legend card */}
+                <div className="rounded-2xl border border-border/50 bg-card/40 p-5">
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-3">
+                    Priority Guide
+                  </div>
+                  <div className="space-y-2.5">
+                    {PRIORITY_LEVELS.map((p) => (
+                      <div key={p.label} className="flex items-start gap-2.5">
+                        <span className={cn("h-1.5 w-1.5 rounded-full mt-1.5 shrink-0", p.dot)} />
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold leading-tight">{p.label}</div>
+                          <div className="text-[11px] text-muted-foreground leading-snug">{p.desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
+
+          {/* Recommended sequence — connected stepper */}
+          <section className="rounded-2xl border border-border/50 bg-card/40 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                <ListChecks className="h-4 w-4 text-emerald-400" />
+                Recommended Learning Path
+              </h2>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                {SEQUENCE.length} Modules
+              </span>
+            </div>
+            <div className="relative overflow-x-auto -mx-1 px-1 pb-1">
+              <div className="flex items-stretch gap-2 min-w-max">
+                {SEQUENCE.map((s, i) => {
+                  const item = filteredByTopic.find(
+                    (ft) => ft.topic.label.toLowerCase() === s.toLowerCase(),
+                  );
+                  const tid = item?.topic.id;
+                  const done = item?.solvedInTopic ?? 0;
+                  const total = item?.total ?? 0;
+                  const isDone = total > 0 && done >= total;
+                  return (
+                    <div key={s} className="flex items-center gap-2 group">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          tid &&
+                          document
+                            .querySelector(`[data-topic-id="${tid}"]`)
+                            ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                        className={cn(
+                          "w-32 rounded-xl border p-2.5 text-left transition-all hover:border-primary/50 hover:bg-card/70",
+                          isDone
+                            ? "border-emerald-500/40 bg-emerald-500/5"
+                            : "border-border/40 bg-card/30",
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase tracking-widest",
+                            isDone ? "text-emerald-400" : "text-muted-foreground",
+                          )}>
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          {isDone ? (
+                            <Check className="h-3.5 w-3.5 text-emerald-400" />
+                          ) : (
+                            <span className="h-3.5 w-3.5 rounded-full border border-border/60" />
+                          )}
+                        </div>
+                        <div className="text-xs font-semibold truncate">{s}</div>
+                        {total > 0 && (
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {done}/{total}
+                          </div>
+                        )}
+                      </button>
+                      {i < SEQUENCE.length - 1 && (
+                        <div className="w-4 h-px bg-border/60 shrink-0" />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            </div>
           </section>
 
           {/* Sticky filter bar */}
