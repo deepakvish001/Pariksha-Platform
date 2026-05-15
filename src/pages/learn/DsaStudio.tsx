@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -449,6 +450,13 @@ export default function DsaStudio() {
 
   return (
     <div className="absolute inset-0 flex flex-col overflow-hidden bg-background text-foreground">
+      <Helmet>
+        <title>DSA Studio — Pattern-Based Problem Practice | Parikshaa</title>
+        <meta name="description" content="Practice data structures and algorithms by pattern. Sliding window, two pointers, graphs, DP and more — with curated problems, hints, and progress tracking." />
+        <meta property="og:title" content="DSA Studio — Pattern-Based Problem Practice" />
+        <meta property="og:description" content="Master DSA patterns with curated problems, hints, and tracked progress." />
+        <link rel="canonical" href="https://www.parikshaa.org/learn/dsa-studio" />
+      </Helmet>
       {/* Skip to content link (a11y) */}
       <a
         href="#dsa-main-content"

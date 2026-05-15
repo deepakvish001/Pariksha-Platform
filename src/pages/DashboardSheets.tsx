@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import MobileFAB from "@/components/MobileFAB";
 import SheetsHeroSection from "@/components/sheets/SheetsHeroSection";
@@ -357,6 +358,13 @@ const DashboardSheets = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Learning Sheets — DSA, SQL, Aptitude & Interview Prep | Parikshaa</title>
+        <meta name="description" content="Browse curated learning sheets including Striver's SDE, A2Z DSA, Blind 75, SQL, aptitude, and interview prep tracks. Track progress and master one sheet at a time." />
+        <meta property="og:title" content="Learning Sheets — DSA, SQL, Aptitude & Interview Prep" />
+        <meta property="og:description" content="Curated study sheets with progress tracking — Striver's SDE, A2Z DSA, Blind 75, SQL, aptitude and more." />
+        <link rel="canonical" href="https://www.parikshaa.org/learn/sheets" />
+      </Helmet>
       {/* Hero Section */}
       <SheetsHeroSection 
         totalSheets={sheets.length} 
