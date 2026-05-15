@@ -139,6 +139,8 @@ export default function DsaStudio() {
   };
   const [search, setSearch] = useState(initial.search);
   const [priority, setPriority] = useState<PriorityFilter>(initial.priority);
+  const [status, setStatus] = useState<StatusFilter>(initial.status ?? "all");
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const qaMode = searchParams.get("qa") === "1";
   const toggleQa = () => {
