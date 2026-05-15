@@ -159,9 +159,9 @@ export default function DsaStudio() {
   useEffect(() => {
     window.localStorage.setItem(
       LS_PREFS,
-      JSON.stringify({ activeTopic, activeTab, search, priority }),
+      JSON.stringify({ activeTopic, activeTab, search, priority, status }),
     );
-  }, [activeTopic, activeTab, search, priority]);
+  }, [activeTopic, activeTab, search, priority, status]);
 
   useEffect(() => {
     window.localStorage.setItem(LS_SOLVED, JSON.stringify(Array.from(solved)));
