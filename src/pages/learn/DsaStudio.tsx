@@ -95,6 +95,7 @@ const diffStyles: Record<Diff, string> = {
 };
 
 type PriorityFilter = "all" | "p1" | "p1p2" | "p3" | "free";
+type StatusFilter = "all" | "todo" | "solved" | "saved";
 
 const LS_PREFS = "dsaStudio:prefs:v1";
 const LS_SOLVED = "dsaStudio:solved:v1";
