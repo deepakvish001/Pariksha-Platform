@@ -609,26 +609,6 @@ export default function DsaStudio() {
             })}
           </motion.div>
 
-          <div className="flex flex-wrap gap-2">
-            {SUB_TABS.map((t) => {
-              const Icon = t.icon;
-              return (
-                <button
-                  key={t.id}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-border/50 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border transition-all"
-                >
-                  <Icon className={cn("h-4 w-4", t.accent)} />
-                  <span className="font-medium">{t.label}</span>
-                  {t.badge && (
-                    <Badge className="h-4 px-1.5 text-[9px] bg-violet-500/20 text-violet-400 border-violet-500/30">
-                      {t.badge}
-                    </Badge>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
           {activeTab === "patterns" ? <CommonPatternsView /> : activeTab === "tricks" ? <CodeTricksView /> : (<>
           {/* Recommended sequence */}
           <section className="rounded-xl border border-border/40 bg-card/40 p-4 md:p-5">
