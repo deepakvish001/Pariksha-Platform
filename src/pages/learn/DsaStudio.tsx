@@ -170,6 +170,23 @@ export default function DsaStudio() {
     window.localStorage.setItem(LS_SAVED, JSON.stringify(Array.from(saved)));
   }, [saved]);
 
+  // Keyboard shortcut: "/" focuses search
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      e.preventDefault();
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const hasActiveFilters = search.trim() !== "" || priority !== "all" || status !== "all";
+  const clearAllFilters = () => { setSearch(""); setPriority("all"); setStatus("all"); };
+
   // Ref to scrollable main container (the right-side scroll area)
   const mainScrollRef = useRef<HTMLElement | null>(null);
 
