@@ -49,20 +49,20 @@ import { DSA_TOPICS as TOPICS, type Diff, type DsaProblem as Problem } from "@/d
 import CommonPatternsView from "@/components/dsa/CommonPatternsView";
 import CodeTricksView from "@/components/dsa/CodeTricksView";
 
-const REFERENCE = [
+const REFERENCE: { id: string; label: string; icon: any; count?: number; badge?: string }[] = [
   { id: "patterns", label: "Common Patterns", icon: Puzzle, count: 43 },
   { id: "tricks", label: "Code Tricks", icon: Wrench },
   { id: "edge", label: "Edge Cases", icon: AlertTriangle },
 ];
 
-const TABS = [
+const TABS: { id: string; label: string; icon: any; accent: string; badge?: string }[] = [
   { id: "problems", label: "Problems", icon: ListChecks, accent: "text-sky-400" },
   { id: "patterns", label: "Common Patterns", icon: Puzzle, accent: "text-emerald-400" },
   { id: "tricks", label: "Code Tricks", icon: Wrench, accent: "text-amber-400" },
   { id: "edge", label: "Edge Cases", icon: AlertTriangle, accent: "text-orange-400" },
 ];
 
-const SUB_TABS = [
+const SUB_TABS: { id: string; label: string; icon: any; accent: string; badge?: string }[] = [
   { id: "focus", label: "Focus", icon: Flame, accent: "text-orange-400" },
 ];
 
