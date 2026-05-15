@@ -3,9 +3,10 @@
   <url><loc>https://www.parikshaa.org/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://www.parikshaa.org/login</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
   <url><loc>https://www.parikshaa.org/signup</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://www.parikshaa.org/forgot-password</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://www.parikshaa.org/reset-password</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
   <url><loc>https://www.parikshaa.org/b2b</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.parikshaa.org/b2b/onboarding</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.parikshaa.org/b2b/dashboard</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.parikshaa.org/b2b/assessments</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.parikshaa.org/pricing</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://www.parikshaa.org/learn/sheets</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://www.parikshaa.org/learn/dsa-studio</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
