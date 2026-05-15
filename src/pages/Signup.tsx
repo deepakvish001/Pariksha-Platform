@@ -55,15 +55,11 @@ const Signup = () => {
         title: "Signup failed",
         description: error.message,
       });
-      const { trackEvent } = await import("@/lib/analytics/track");
-      trackEvent("sign_up_failed", { method: "email", reason: error.message });
     } else {
       toast({
         title: "Check your email",
         description: "We've sent you a confirmation link to verify your account.",
       });
-      const { trackSignup } = await import("@/lib/analytics/track");
-      trackSignup("email");
       navigate("/login");
     }
 
@@ -72,8 +68,6 @@ const Signup = () => {
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
-    const { trackSignup } = await import("@/lib/analytics/track");
-    trackSignup("google");
     const { error } = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });

@@ -32,7 +32,6 @@ export function B2BSiteFooter() {
           <a
             href="mailto:hello@byteskill.in"
             className="hover:text-[hsl(var(--foreground))]"
-            onClick={() => import("@/lib/analytics/track").then((m) => m.trackContactClick("email", "site_footer"))}
           >
             Contact
           </a>
