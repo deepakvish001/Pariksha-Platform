@@ -890,9 +890,13 @@ export default function DsaStudio() {
           )}
 
           {/* All topics rendered as scroll-spy sections */}
-          {filteredByTopic.map(({ topic: t, groups, rendered, total }) => {
+          {filteredByTopic.map(({ topic: t, groups, rendered, total, solvedInTopic }) => {
             const TIcon = t.icon;
             const hasMismatch = mismatchIds.has(t.id);
+            const pct = total ? Math.round((solvedInTopic / total) * 100) : 0;
+            // When status/priority/search filters hide every problem in a topic, skip rendering it
+            // (the global empty state already covers the "nothing matches anywhere" case).
+            if (rendered === 0 && hasActiveFilters) return null;
             return (
               <section
                 key={t.id}
@@ -901,14 +905,22 @@ export default function DsaStudio() {
                 tabIndex={-1}
                 aria-labelledby={`dsa-topic-${t.id}-heading`}
                 className="space-y-5 outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:rounded-md"
-                style={{ scrollMarginTop: "calc(var(--dsa-header-h, 57px) + 0.75rem)" }}
+                style={{ scrollMarginTop: "calc(var(--dsa-header-h, 57px) + 4.5rem)" }}
               >
                 {/* Topic header */}
-                <div className="flex items-end justify-between flex-wrap gap-2 pt-2">
-                  <div>
+                <div className="flex items-end justify-between flex-wrap gap-3 pt-2">
+                  <div className="min-w-0">
                     <h2 id={`dsa-topic-${t.id}-heading`} className="flex items-center gap-2 text-2xl font-bold">
                       <TIcon className={cn("h-6 w-6", qaMode && hasMismatch ? "text-amber-400" : "text-primary")} />
                       {t.label}
+                      <Badge variant="outline" className="h-5 text-[10px] font-mono">
+                        {solvedInTopic}/{total}
+                      </Badge>
+                      {pct === 100 && total > 0 && (
+                        <Badge className="h-5 text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/40">
+                          ✓ Complete
+                        </Badge>
+                      )}
                       {qaMode && hasMismatch && (
                         <Badge className="h-5 text-[10px] bg-amber-500/20 text-amber-300 border-amber-500/40">
                           mismatch
@@ -919,21 +931,27 @@ export default function DsaStudio() {
                       {t.subtitle}
                     </p>
                   </div>
-                  <div className="flex flex-col items-end gap-0.5">
-                    <span className="text-sm text-muted-foreground">{t.count} problems</span>
+                  <div className="flex flex-col items-end gap-1 min-w-[140px]">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{rendered === total ? `${total} problems` : `${rendered} of ${total} shown`}</span>
+                      <span className="text-emerald-400 font-mono">{pct}%</span>
+                    </div>
+                    <div className="h-1.5 w-32 rounded-full bg-muted/40 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-sky-400 transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
                     <span
                       data-testid="dsa-rendered-indicator"
-                      className={cn(
-                        "text-[11px] font-mono",
-                        rendered === total ? "text-emerald-400" : "text-amber-400",
-                      )}
+                      className="sr-only"
                     >
                       Rendered: {rendered}/{total}
                     </span>
                   </div>
                 </div>
 
-                {groups.length === 0 && (
+                {groups.length === 0 && !hasActiveFilters && (
                   <div className="rounded-xl border border-dashed border-border/40 bg-card/20 p-10 text-center text-muted-foreground">
                     No problems indexed for <span className="text-foreground font-medium">{t.label}</span> yet — coming soon.
                   </div>
