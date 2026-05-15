@@ -62,9 +62,19 @@ const TABS: { id: string; label: string; icon: any; accent: string; badge?: stri
   { id: "edge", label: "Edge Cases", icon: AlertTriangle, accent: "text-orange-400" },
 ];
 
-const SUB_TABS: { id: string; label: string; icon: any; accent: string; badge?: string }[] = [
-  { id: "focus", label: "Focus", icon: Flame, accent: "text-orange-400" },
-];
+const TAB_PATHS: Record<string, string> = {
+  problems: "/learn/dsa-studio/problems",
+  patterns: "/learn/dsa-studio/patterns",
+  tricks: "/learn/dsa-studio/tricks",
+  edge: "/learn/dsa-studio/edge",
+};
+
+const pathToTab = (pathname: string): string => {
+  if (pathname.endsWith("/patterns")) return "patterns";
+  if (pathname.endsWith("/tricks")) return "tricks";
+  if (pathname.endsWith("/edge")) return "edge";
+  return "problems";
+};
 
 const SEQUENCE = [
   "Arrays", "Strings", "Matrix", "Stack", "Queue", "Binary Search", "Linked List", "Greedy",
