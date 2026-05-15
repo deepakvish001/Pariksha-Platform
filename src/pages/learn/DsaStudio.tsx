@@ -1035,3 +1035,20 @@ function DsaStudioHub() {
   );
 }
 
+  // Keyboard shortcut: "/" focuses search
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      e.preventDefault();
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const hasActiveFilters = search.trim() !== "" || priority !== "all" || status !== "all";
+  const clearAllFilters = () => { setSearch(""); setPriority("all"); setStatus("all"); };
+
