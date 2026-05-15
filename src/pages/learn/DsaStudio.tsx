@@ -884,3 +884,122 @@ export default function DsaStudio() {
     </div>
   );
 }
+
+const HUB_CARDS = [
+  {
+    to: "/learn/dsa-studio/problems",
+    label: "Problems",
+    desc: "Curated DSA problems by topic with priorities, hints and progress tracking.",
+    icon: ListChecks,
+    accent: "from-sky-500/20 to-cyan-500/10 border-sky-500/30",
+    iconBg: "bg-sky-500/15 text-sky-400",
+    cta: "Start Practicing",
+  },
+  {
+    to: "/learn/dsa-studio/patterns",
+    label: "Common Patterns",
+    desc: "43 reusable patterns — sliding window, two pointers, backtracking, DP and more.",
+    icon: Puzzle,
+    accent: "from-emerald-500/20 to-teal-500/10 border-emerald-500/30",
+    iconBg: "bg-emerald-500/15 text-emerald-400",
+    cta: "Explore Patterns",
+  },
+  {
+    to: "/learn/dsa-studio/tricks",
+    label: "Code Tricks",
+    desc: "Battle-tested code idioms and shortcuts that save you precious interview time.",
+    icon: Wrench,
+    accent: "from-amber-500/20 to-yellow-500/10 border-amber-500/30",
+    iconBg: "bg-amber-500/15 text-amber-400",
+    cta: "Open Tricks",
+  },
+  {
+    to: "/learn/dsa-studio/edge",
+    label: "Edge Cases",
+    desc: "Tricky inputs, boundary conditions and gotchas that interviewers love to test.",
+    icon: AlertTriangle,
+    accent: "from-orange-500/20 to-rose-500/10 border-orange-500/30",
+    iconBg: "bg-orange-500/15 text-orange-400",
+    cta: "View Edge Cases",
+  },
+];
+
+function DsaStudioHub() {
+  return (
+    <div className="space-y-6">
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-br from-primary/10 via-card/40 to-card/20 p-6 md:p-8"
+      >
+        <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+        <div className="relative">
+          <Badge className="mb-3 bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">
+            <Flame className="h-3 w-3 mr-1" /> DSA Studio
+          </Badge>
+          <h1 className="text-2xl md:text-4xl font-bold tracking-tight">
+            Master DSA the <span className="bg-gradient-to-r from-primary via-emerald-400 to-sky-400 bg-clip-text text-transparent">pattern-first</span> way.
+          </h1>
+          <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-2xl">
+            Practice curated problems, learn reusable patterns, master code tricks and never miss an edge case. Pick a track to begin.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link
+              to="/learn/dsa-studio/problems"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition"
+            >
+              <ListChecks className="h-4 w-4" />
+              Start with Problems
+            </Link>
+            <Link
+              to="/learn/dsa-studio/patterns"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border/60 bg-card/40 text-sm font-medium hover:border-border transition"
+            >
+              <Puzzle className="h-4 w-4 text-emerald-400" />
+              Browse Patterns
+            </Link>
+          </div>
+        </div>
+      </motion.section>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {HUB_CARDS.map((c, i) => {
+          const Icon = c.icon;
+          return (
+            <motion.div
+              key={c.to}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 * i }}
+            >
+              <Link
+                to={c.to}
+                className={cn(
+                  "group block h-full rounded-xl border bg-gradient-to-br p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5",
+                  c.accent,
+                )}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0", c.iconBg)}>
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-semibold text-base">{c.label}</h3>
+                      <span className="text-xs text-muted-foreground group-hover:text-foreground transition">→</span>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{c.desc}</p>
+                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary/90 group-hover:text-primary">
+                      {c.cta}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
