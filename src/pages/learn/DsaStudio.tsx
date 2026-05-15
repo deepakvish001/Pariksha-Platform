@@ -117,6 +117,7 @@ interface Prefs {
   activeTab: string;
   search: string;
   priority: PriorityFilter;
+  status?: StatusFilter;
 }
 
 const DEFAULT_PREFS: Prefs = {
@@ -124,6 +125,7 @@ const DEFAULT_PREFS: Prefs = {
   activeTab: "problems",
   search: "",
   priority: "all",
+  status: "all",
 };
 
 export default function DsaStudio() {
