@@ -694,59 +694,163 @@ export default function DsaStudio() {
             </div>
           </section>
 
-          {/* Priority */}
-          <section className="rounded-xl border border-border/40 bg-card/30 p-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          {/* Progress hero */}
+          <section className="rounded-xl border border-border/40 bg-gradient-to-br from-primary/5 via-card/40 to-card/40 p-4 md:p-5">
+            <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
+              <div>
+                <h2 className="flex items-center gap-2 text-base font-semibold">
+                  <Target className="h-4 w-4 text-primary" />
+                  Your Progress
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Keep solving — small daily reps compound fast.
+                </p>
+              </div>
+              <div className="flex items-center gap-4 text-xs">
+                <div className="text-right">
+                  <div className="text-muted-foreground">Solved</div>
+                  <div className="text-emerald-400 font-bold text-lg leading-none">{totalSolved}<span className="text-muted-foreground/60 text-sm font-normal"> / {grandTotal}</span></div>
+                </div>
+                <div className="text-right">
+                  <div className="text-muted-foreground">Saved</div>
+                  <div className="text-amber-400 font-bold text-lg leading-none">{totalSaved}</div>
+                </div>
+              </div>
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted/40 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-sky-400 transition-all"
+                style={{ width: `${grandTotal ? Math.round((totalSolved / grandTotal) * 100) : 0}%` }}
+              />
+            </div>
+          </section>
+
+          {/* Priority legend */}
+          <section className="rounded-xl border border-border/40 bg-card/30 p-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
             <span className="text-muted-foreground font-medium">Priority:</span>
             {PRIORITY_LEVELS.map((p) => (
-              <div key={p.label} className="flex items-center gap-2">
-                <span className={cn("h-2.5 w-2.5 rounded-full", p.dot)} />
+              <div key={p.label} className="flex items-center gap-1.5">
+                <span className={cn("h-2 w-2 rounded-full", p.dot)} />
                 <span className="font-semibold">{p.label}</span>
-                <span className="text-muted-foreground text-xs">{p.desc}</span>
+                <span className="text-muted-foreground">{p.desc}</span>
               </div>
             ))}
           </section>
 
-          {/* Search & filters */}
-          <div className="flex flex-col md:flex-row gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search problem name or number..."
-                className="pl-9 h-10 bg-card/40"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {([
-                { id: "all", label: "All" },
-                { id: "p1", label: "P1 Only", dot: "bg-rose-500" },
-                { id: "p1p2", label: "P1 + P2", dot: "bg-amber-400" },
-                { id: "p3", label: "P3 Only", dot: "bg-zinc-500" },
-                { id: "free", label: "Free Only", icon: Lock },
-              ] as { id: PriorityFilter; label: string; dot?: string; icon?: typeof Lock }[]).map((b) => {
-                const active = priority === b.id;
-                const Icon = b.icon;
-                return (
-                  <Button
-                    key={b.id}
-                    size="sm"
-                    variant={active ? "default" : "outline"}
-                    onClick={() => setPriority(b.id)}
-                    className="h-10 gap-1.5"
+          {/* Sticky filter bar */}
+          <div
+            className="sticky z-20 -mx-4 md:-mx-6 px-4 md:px-6 py-3 bg-background/85 backdrop-blur-md border-y border-border/40 space-y-2"
+            style={{ top: "calc(var(--dsa-header-h, 57px) - 1px)" }}
+          >
+            <div className="flex flex-col md:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  ref={searchInputRef}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder='Search by name or number…  (press "/" to focus)'
+                  className="pl-9 pr-9 h-10 bg-card/40"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 grid place-items-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   >
-                    {b.dot && <span className={cn("h-2 w-2 rounded-full", b.dot)} />}
-                    {Icon && <Icon className="h-3.5 w-3.5" />}
-                    {b.label}
+                    <XIcon className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {([
+                  { id: "all", label: "All" },
+                  { id: "p1", label: "P1", dot: "bg-rose-500" },
+                  { id: "p1p2", label: "P1+P2", dot: "bg-amber-400" },
+                  { id: "p3", label: "P3", dot: "bg-zinc-500" },
+                  { id: "free", label: "Free", icon: Lock },
+                ] as { id: PriorityFilter; label: string; dot?: string; icon?: typeof Lock }[]).map((b) => {
+                  const active = priority === b.id;
+                  const Icon = b.icon;
+                  return (
+                    <Button
+                      key={b.id}
+                      size="sm"
+                      variant={active ? "default" : "outline"}
+                      onClick={() => setPriority(b.id)}
+                      className="h-10 gap-1.5"
+                    >
+                      {b.dot && <span className={cn("h-2 w-2 rounded-full", b.dot)} />}
+                      {Icon && <Icon className="h-3.5 w-3.5" />}
+                      {b.label}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="inline-flex rounded-md border border-border/50 bg-card/40 p-0.5 text-xs">
+                {([
+                  { id: "all", label: "All" },
+                  { id: "todo", label: "To-do" },
+                  { id: "solved", label: "Solved" },
+                  { id: "saved", label: "Saved" },
+                ] as { id: StatusFilter; label: string }[]).map((s) => {
+                  const active = status === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setStatus(s.id)}
+                      className={cn(
+                        "px-3 h-8 rounded-[5px] font-medium transition-colors",
+                        active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>
+                  Showing <span className="text-foreground font-semibold">{totalRendered}</span>
+                  {" "}of <span className="text-foreground font-semibold">{grandTotal}</span>
+                </span>
+                {hasActiveFilters && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={clearAllFilters}
+                    className="h-7 px-2 gap-1 text-xs"
+                  >
+                    <XIcon className="h-3 w-3" />
+                    Clear filters
                   </Button>
-                );
-              })}
-              <Button variant="outline" size="sm" className="h-10 gap-2">
-                <span className="text-xs text-muted-foreground">STATUS</span>
-                <span className="text-xs font-medium">All</span>
-              </Button>
-      </div>
-    </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Empty state when filters yield nothing */}
+          {totalRendered === 0 && (
+            <div className="rounded-xl border border-dashed border-border/50 bg-card/20 p-10 md:p-14 text-center space-y-3">
+              <div className="mx-auto h-12 w-12 rounded-full bg-muted/40 grid place-items-center">
+                <Search className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <h3 className="text-base font-semibold">No problems match your filters</h3>
+              <p className="text-sm text-muted-foreground">
+                Try a different search term, change the priority, or clear filters to see everything.
+              </p>
+              {hasActiveFilters && (
+                <Button size="sm" onClick={clearAllFilters} className="mt-1">
+                  <XIcon className="h-3.5 w-3.5" /> Clear all filters
+                </Button>
+              )}
+            </div>
+          )}
+
 
           {/* QA mode banner */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
