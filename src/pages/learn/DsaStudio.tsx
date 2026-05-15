@@ -255,6 +255,15 @@ export default function DsaStudio() {
     }
   };
 
+  const matchesStatus = (p: Problem) => {
+    switch (status) {
+      case "all": return true;
+      case "todo": return !solved.has(p.slug);
+      case "solved": return solved.has(p.slug);
+      case "saved": return saved.has(p.slug);
+    }
+  };
+
   const filteredByTopic = useMemo(() => {
     const q = search.trim().toLowerCase();
     return TOPICS.map((t) => {
@@ -263,6 +272,7 @@ export default function DsaStudio() {
           ...g,
           problems: g.problems.filter((p) => {
             if (!matchesPriority(p)) return false;
+            if (!matchesStatus(p)) return false;
             if (!q) return true;
             return p.title.toLowerCase().includes(q) || String(p.id).includes(q);
           }),
@@ -270,9 +280,20 @@ export default function DsaStudio() {
         .filter((g) => g.problems.length);
       const rendered = groups.reduce((s, g) => s + g.problems.length, 0);
       const total = t.groups.reduce((s, g) => s + g.problems.length, 0);
-      return { topic: t, groups, rendered, total };
+      const solvedInTopic = t.groups.reduce(
+        (s, g) => s + g.problems.filter((p) => solved.has(p.slug)).length,
+        0,
+      );
+      return { topic: t, groups, rendered, total, solvedInTopic };
     });
-  }, [search, priority]);
+  }, [search, priority, status, solved, saved]);
+
+  const totalRendered = useMemo(
+    () => filteredByTopic.reduce((s, t) => s + t.rendered, 0),
+    [filteredByTopic],
+  );
+  const totalSolved = solved.size;
+  const totalSaved = saved.size;
 
   const grandTotal = useMemo(
     () => TOPICS.reduce((s, t) => s + t.groups.reduce((x, g) => x + g.problems.length, 0), 0),
