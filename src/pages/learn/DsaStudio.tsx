@@ -771,16 +771,23 @@ export default function DsaStudio() {
             <div className="relative overflow-x-auto -mx-1 px-1 pb-1">
               <div className="flex items-stretch gap-2 min-w-max">
                 {SEQUENCE.map((s, i) => {
-                  const topic = TOPICS.find((t) => t.title.toLowerCase() === s.toLowerCase());
-                  const slug = topic?.slug;
-                  const done = !!slug && filteredByTopic.find((ft) => ft.topic.slug === slug)?.solvedInTopic;
-                  const total = topic?.problems.length ?? 0;
-                  const isDone = done && total > 0 && done >= total;
+                  const item = filteredByTopic.find(
+                    (ft) => ft.topic.label.toLowerCase() === s.toLowerCase(),
+                  );
+                  const tid = item?.topic.id;
+                  const done = item?.solvedInTopic ?? 0;
+                  const total = item?.total ?? 0;
+                  const isDone = total > 0 && done >= total;
                   return (
                     <div key={s} className="flex items-center gap-2 group">
                       <button
                         type="button"
-                        onClick={() => slug && document.getElementById(`topic-${slug}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                        onClick={() =>
+                          tid &&
+                          document
+                            .querySelector(`[data-topic-id="${tid}"]`)
+                            ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
                         className={cn(
                           "w-32 rounded-xl border p-2.5 text-left transition-all hover:border-primary/50 hover:bg-card/70",
                           isDone
@@ -804,7 +811,7 @@ export default function DsaStudio() {
                         <div className="text-xs font-semibold truncate">{s}</div>
                         {total > 0 && (
                           <div className="text-[10px] text-muted-foreground mt-0.5">
-                            {done ?? 0}/{total}
+                            {done}/{total}
                           </div>
                         )}
                       </button>
