@@ -615,7 +615,9 @@ export default function DsaStudio() {
             })}
           </motion.div>
 
-          {activeTab === "patterns" ? <CommonPatternsView /> : activeTab === "tricks" ? <CodeTricksView /> : activeTab === "edge" ? (
+          {activeTab === "hub" ? (
+            <DsaStudioHub />
+          ) : activeTab === "patterns" ? <CommonPatternsView /> : activeTab === "tricks" ? <CodeTricksView /> : activeTab === "edge" ? (
             <section className="rounded-xl border border-border/40 bg-card/40 p-6 md:p-8">
               <h2 className="flex items-center gap-2 text-lg font-semibold text-orange-400 mb-3">
                 <AlertTriangle className="h-5 w-5" />
