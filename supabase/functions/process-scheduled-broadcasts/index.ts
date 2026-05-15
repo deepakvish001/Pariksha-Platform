@@ -10,8 +10,20 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  // Cron-only endpoint: require shared secret or service role key.
+  const cronSecret = Deno.env.get("CRON_SECRET_TOKEN");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const provided = req.headers.get("X-Cron-Secret")
+    || req.headers.get("Authorization")?.replace("Bearer ", "");
+  const authorized = (cronSecret && provided === cronSecret) || provided === serviceKey;
+  if (!authorized) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
   try {

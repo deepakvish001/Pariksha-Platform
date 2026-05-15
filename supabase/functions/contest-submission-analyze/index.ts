@@ -29,6 +29,30 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    // --- Authentication: require a valid JWT and ensure caller matches user_id (or is admin) ---
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = (await req.json()) as Body;
     if (!body.session_id || !body.user_id || !body.contest_id || !body.problem_id) {
       return new Response(JSON.stringify({ error: "missing_fields" }), {
@@ -37,23 +61,37 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    // Caller must be analysing their own submission, unless they are an admin.
+    if (body.user_id !== userData.user.id) {
+      const { data: isAdmin } = await userClient.rpc("has_role", {
+        _user_id: userData.user.id,
+        _role: "admin",
+      });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // Bound numeric input
+    const actualSeconds = Math.max(0, Math.min(86_400, Number(body.actual_seconds) || 0));
+
+    const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
     const expectedMin = MIN_SECONDS[body.problem_difficulty ?? "medium"] ?? 240;
     let verdict: "normal" | "fast" | "too_fast" | "impossible" = "normal";
-    if (body.actual_seconds < expectedMin * 0.25) verdict = "impossible";
-    else if (body.actual_seconds < expectedMin * 0.5) verdict = "too_fast";
-    else if (body.actual_seconds < expectedMin) verdict = "fast";
+    if (actualSeconds < expectedMin * 0.25) verdict = "impossible";
+    else if (actualSeconds < expectedMin * 0.5) verdict = "too_fast";
+    else if (actualSeconds < expectedMin) verdict = "fast";
 
     // Cheap AI-likelihood heuristics:
     //   - very high comment density
     //   - canonical variable names (i, j, k, n, ans, dp, vis)
     //   - perfectly even indentation
     let aiLikelihood = 0;
-    const code = body.code ?? "";
+    const code = (body.code ?? "").slice(0, 50_000);
     if (code.length > 0) {
       const lines = code.split("\n");
       const commentLines = lines.filter((l) =>
@@ -69,7 +107,7 @@ Deno.serve(async (req) => {
     }
     aiLikelihood = Math.min(1, aiLikelihood);
 
-    const z = (expectedMin - body.actual_seconds) / Math.max(expectedMin / 2, 1);
+    const z = (expectedMin - actualSeconds) / Math.max(expectedMin / 2, 1);
 
     const { data: row, error } = await supabase
       .from("contest_solve_time_analysis")
@@ -79,7 +117,7 @@ Deno.serve(async (req) => {
         contest_id: body.contest_id,
         problem_id: body.problem_id,
         expected_min_seconds: expectedMin,
-        actual_seconds: body.actual_seconds,
+        actual_seconds: actualSeconds,
         z_score: Number(z.toFixed(3)),
         ai_likelihood: Number(aiLikelihood.toFixed(3)),
         verdict,
@@ -98,7 +136,7 @@ Deno.serve(async (req) => {
         alert_type: "contest_solve_time_outlier",
         severity: verdict === "impossible" ? "critical" : "high",
         title: `Suspicious solve time (${verdict})`,
-        message: `User solved in ${body.actual_seconds}s vs expected ≥${expectedMin}s. AI-likelihood ${(aiLikelihood * 100).toFixed(0)}%.`,
+        message: `User solved in ${actualSeconds}s vs expected ≥${expectedMin}s. AI-likelihood ${(aiLikelihood * 100).toFixed(0)}%.`,
         metadata: { row, contest_id: body.contest_id, session_id: body.session_id },
       });
     }
@@ -107,7 +145,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
+    console.error("contest-submission-analyze error", err);
+    return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

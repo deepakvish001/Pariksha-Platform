@@ -24,6 +24,19 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  // Cron-only endpoint: require shared secret or service role key.
+  const cronSecret = Deno.env.get("CRON_SECRET_TOKEN");
+  const provided = req.headers.get("X-Cron-Secret")
+    || req.headers.get("Authorization")?.replace("Bearer ", "");
+  const authorized = (cronSecret && provided === cronSecret) || provided === SERVICE_KEY;
+  if (!authorized) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const { data: pending, error } = await admin
