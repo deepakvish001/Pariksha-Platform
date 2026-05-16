@@ -142,9 +142,17 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
 
 
 
-  // Load persisted position when the attempt changes
+  // Load persisted position when the attempt changes, with a brief
+  // animated transition so the PIP eases to its new corner instead of
+  // teleporting between attempts.
   useEffect(() => {
-    setPos(loadPos(attemptId));
+    const next = loadPos(attemptId);
+    setPos((prev) => {
+      if (prev.x === next.x && prev.y === next.y) return prev;
+      setSwitching(true);
+      window.setTimeout(() => setSwitching(false), 420);
+      return next;
+    });
   }, [attemptId]);
 
   // Persist position whenever it changes (scoped per attempt)
