@@ -104,7 +104,23 @@ export default function Player() {
   if (error) return <div className="theme-b2b p-8 min-h-screen">Failed to load: {(error as Error).message}</div>;
   if (!paper) return null;
 
+  const isAnswered = (qq: PaperQuestion, a: Record<string, unknown> | undefined): boolean => {
+    if (!a) return false;
+    if (qq.type === "mcq" || qq.type === "true_false")
+      return Array.isArray(a.selected) && (a.selected as string[]).length > 0;
+    if (qq.type === "subjective") return typeof a.text === "string" && (a.text as string).trim().length > 0;
+    if (qq.type === "short_answer") return typeof a.text === "string" && (a.text as string).trim().length > 0;
+    if (qq.type === "sql") return typeof a.query === "string" && (a.query as string).trim().length > 0;
+    if (qq.type === "coding") return typeof a.code === "string" && (a.code as string).trim().length > 0;
+    if (qq.type === "matching") {
+      const pairs = (a.pairs as Record<string, string>) ?? {};
+      return Object.values(pairs).some((v) => v && v.trim().length > 0);
+    }
+    return false;
+  };
+
   if (paper.attempt.status !== "in_progress" || submitted) {
+    const assessmentId = paper.assessment.id;
     return (
       <div className="theme-b2b min-h-screen grid place-items-center p-8 bg-[hsl(var(--background))]">
         <Card className="max-w-md w-full">
@@ -112,11 +128,20 @@ export default function Player() {
             <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-green-600" /> Submitted</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Your responses have been recorded. The recruiter will review your attempt.</p>
+            <p>Your responses have been recorded.{!isPreview && " The recruiter will review your attempt."}</p>
             {typeof paper.attempt.score === "number" && (
-              <p>Auto-graded score: <b>{paper.attempt.score}</b></p>
+              <p>Auto-graded score: <b className="text-foreground">{paper.attempt.score}</b></p>
             )}
-            <Button onClick={() => navigate("/assessments")}>Back to my assessments</Button>
+            <div className="flex flex-wrap gap-2 pt-1">
+              {isPreview && (
+                <Button onClick={() => navigate(`/b2b/assessments/${assessmentId}/attempts/${attemptId}`)}>
+                  View grading & feedback
+                </Button>
+              )}
+              <Button variant={isPreview ? "outline" : "default"} onClick={() => navigate(isPreview ? `/b2b/assessments/${assessmentId}` : "/assessments")}>
+                {isPreview ? "Back to assessment" : "Back to my assessments"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -125,15 +150,7 @@ export default function Player() {
 
   const q = flatQuestions[idx];
   const totalQ = flatQuestions.length;
-  const answeredCount = flatQuestions.filter((x) => {
-    const a = answers[x.id];
-    if (!a) return false;
-    if (x.type === "mcq") return Array.isArray(a.selected) && (a.selected as string[]).length > 0;
-    if (x.type === "subjective") return typeof a.text === "string" && (a.text as string).trim().length > 0;
-    if (x.type === "sql") return typeof a.query === "string" && (a.query as string).trim().length > 0;
-    if (x.type === "coding") return typeof a.code === "string" && (a.code as string).trim().length > 0;
-    return false;
-  }).length;
+  const answeredCount = flatQuestions.filter((x) => isAnswered(x, answers[x.id])).length;
 
   const mins = Math.floor(remaining / 60_000);
   const secs = Math.floor((remaining % 60_000) / 1000);
