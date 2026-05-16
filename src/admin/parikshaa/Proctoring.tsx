@@ -339,8 +339,8 @@ export default function ParikshaaProctoring() {
                 const open = !!expanded[r.id];
                 const events = expanded[r.id];
                 return (
-                  <>
-                    <TableRow key={r.id} className="hover:bg-muted/40 cursor-pointer" onClick={() => toggleExpand(r.id)}>
+                  <Fragment key={r.id}>
+                    <TableRow className="hover:bg-muted/40 cursor-pointer" onClick={() => toggleExpand(r.id)}>
                       <TableCell>
                         {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                       </TableCell>
@@ -364,7 +364,7 @@ export default function ParikshaaProctoring() {
                       <TableCell className="font-mono text-xs">{r.last_snapshot_at ? fmtTs(r.last_snapshot_at) : "—"}</TableCell>
                     </TableRow>
                     {open && (
-                      <TableRow key={`${r.id}-exp`} className="bg-muted/20 hover:bg-muted/20">
+                      <TableRow className="bg-muted/20 hover:bg-muted/20">
                         <TableCell />
                         <TableCell colSpan={8} className="py-3">
                           {events === "loading" ? (
@@ -375,7 +375,7 @@ export default function ParikshaaProctoring() {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 );
               })
             )}
