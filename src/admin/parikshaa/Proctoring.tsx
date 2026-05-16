@@ -123,10 +123,12 @@ async function downloadSnapshot(
     a.remove();
     URL.revokeObjectURL(href);
     onProgress?.(100);
+    return "ok";
   } catch {
     toast.error("Couldn't download snapshot. Opening in a new tab instead.");
     window.open(url, "_blank", "noopener,noreferrer");
     onProgress?.(null);
+    return "error";
   }
 }
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
