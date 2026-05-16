@@ -820,7 +820,7 @@ function SnapshotGroup({
     let cancelled = false;
     (async () => {
       const next: Record<string, string> = {};
-      for (const e of pageItems) {
+      for (const { e } of pageItems) {
         const path = snapshotPath(e);
         if (!path || thumbs[path]) continue;
         const url = await signSnapshot(path);
