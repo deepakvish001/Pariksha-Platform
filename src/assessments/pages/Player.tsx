@@ -84,11 +84,24 @@ export default function Player() {
 
 
   useEffect(() => {
-    if (!existing) return;
+    if (!existing || restoredRef.current || !pendingKey) return;
+    restoredRef.current = true;
     const map: AnswerMap = {};
     for (const a of existing) map[a.question_id] = (a.answer as Record<string, unknown>) ?? {};
+    // Replay anything that was queued before a crash / hard close
+    try {
+      const raw = localStorage.getItem(pendingKey);
+      if (raw) {
+        const stashed = JSON.parse(raw) as Record<string, Record<string, unknown>>;
+        for (const [qid, ans] of Object.entries(stashed)) {
+          map[qid] = ans; // stashed value is newer than server
+          pendingQueueRef.current[qid] = ans;
+        }
+        setPendingCount(Object.keys(pendingQueueRef.current).length);
+      }
+    } catch { /* noop */ }
     setAnswers((prev) => ({ ...map, ...prev }));
-  }, [existing]);
+  }, [existing, pendingKey]);
 
   // Timer
   const deadline = useMemo(() => {
