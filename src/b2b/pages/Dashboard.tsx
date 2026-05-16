@@ -102,8 +102,8 @@ function KpiCard({
                 <TooltipContent side="top" className="max-w-[240px] text-xs leading-relaxed">
                   <p className="font-medium mb-1">How this is calculated</p>
                   <p className="text-[hsl(var(--muted-foreground))]">
-                    Current window: the last 30 days. Previous window: the 30 days
-                    before that (days 31–60). Delta ={" "}
+                    Current window: the last {windowDays} days. Previous window: the {windowDays} days
+                    before that ({prevRangeLabel}). Delta ={" "}
                     <span className="font-mono">(current − previous) ÷ previous × 100</span>.
                   </p>
                   <p className="mt-1.5">{tooltipBody}</p>
