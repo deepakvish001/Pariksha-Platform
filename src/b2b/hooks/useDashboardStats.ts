@@ -91,6 +91,13 @@ export function useDashboardStats(orgId?: string, range: StatsRange = "30d") {
           submissions: pctChange(s.curr, s.prev),
           avgIntegrity: integrityDelta,
         },
+        windows: {
+          windowDays,
+          assessments: { curr: a.curr, prev: a.prev },
+          invites: { curr: i.curr, prev: i.prev },
+          submissions: { curr: s.curr, prev: s.prev },
+          avgIntegrity: { curr: ig.curr, prev: ig.prev },
+        },
       };
     },
   });
