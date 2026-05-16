@@ -24,6 +24,7 @@ import {
   UserPlus,
   Webhook,
   ChevronRight,
+  RefreshCw,
   LucideIcon,
 } from "lucide-react";
 import { amberGradientText } from "../components/B2BBackdrop";
