@@ -1231,6 +1231,22 @@ export default function DsaStudio() {
                                         <Lock className="h-2.5 w-2.5" /> Free
                                       </Badge>
                                     )}
+                                    {isSolved && (
+                                      <Badge
+                                        variant="outline"
+                                        className="h-5 text-[10px] px-1.5 gap-1 text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+                                      >
+                                        <Check className="h-2.5 w-2.5" strokeWidth={3} /> Solved
+                                      </Badge>
+                                    )}
+                                    {isSaved && (
+                                      <Badge
+                                        variant="outline"
+                                        className="h-5 text-[10px] px-1.5 gap-1 text-amber-400 bg-amber-500/10 border-amber-500/30"
+                                      >
+                                        <Bookmark className="h-2.5 w-2.5 fill-current" /> Saved
+                                      </Badge>
+                                    )}
                                   </div>
 
                                   <div className="text-[11px] text-muted-foreground truncate">
