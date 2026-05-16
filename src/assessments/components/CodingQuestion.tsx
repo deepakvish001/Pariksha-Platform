@@ -323,9 +323,9 @@ export function CodingQuestion({ question, value, onChange, isPreview }: Props) 
                         {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                       </IconBtn>
                       <IconBtn
-                        tip={`Download .${(langInfo as { ext?: string }).ext ?? lang}`}
+                        tip={`Download .${LANG_EXT[lang] ?? lang}`}
                         onClick={() => {
-                          const ext = (langInfo as { ext?: string }).ext ?? lang;
+                          const ext = LANG_EXT[lang] ?? lang;
                           const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement("a");
