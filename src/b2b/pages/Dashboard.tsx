@@ -1299,7 +1299,11 @@ export default function B2BDashboard() {
                             : "border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-rose-500 hover:border-rose-500/40"
                         }`}
                       >
-                        <ThumbsDown className="h-3.5 w-3.5" />
+                        {downBusy ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <ThumbsDown className="h-3.5 w-3.5" />
+                        )}
                       </button>
                     </div>
                   </div>
