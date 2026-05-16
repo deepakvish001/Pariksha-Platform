@@ -1578,6 +1578,8 @@ function AttemptDetailSheet({
                 </div>
               )}
             </div>
+
+            <AIFindingsPanel attemptId={attempt.id} />
           </div>
         )}
       </SheetContent>
