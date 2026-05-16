@@ -262,6 +262,17 @@ export default function Player() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // ⌘/Ctrl+S — flush any pending saves now
+      if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        void flushPending();
+        return;
+      }
+      // Esc exits focus mode
+      if (e.key === "Escape" && focusMode) {
+        setFocusMode(false);
+        return;
+      }
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName?.toLowerCase();
       const inEditor =
