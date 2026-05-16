@@ -55,13 +55,7 @@ export default function Player() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-  const [focusMode, setFocusMode] = useState<boolean>(
-    () => safeStorage.get(`assess.focus.${attemptId}`) === "1"
-  );
-  const [zenTimer, setZenTimer] = useState<boolean>(
-    () => safeStorage.get(`assess.zen.${attemptId}`) === "1"
-  );
-  const [helpOpen, setHelpOpen] = useState(false);
+  const focusMode = false;
   const online = useOnline();
   const pendingQueueRef = useRef<Record<string, Record<string, unknown>>>({});
   const [pendingCount, setPendingCount] = useState(0);
