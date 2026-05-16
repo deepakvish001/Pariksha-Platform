@@ -198,10 +198,34 @@ const Navbar = () => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/learn" className="cursor-pointer">
-                        <User className="w-4 h-4 mr-2" />
-                        Dashboard
+                        <GraduationCap className="w-4 h-4 mr-2" />
+                        Learning Dashboard
                       </Link>
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="cursor-pointer">
+                          <Shield className="w-4 h-4 mr-2" />
+                          Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    {hasCollege && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/b2b/dashboard" className="cursor-pointer">
+                          <Building2 className="w-4 h-4 mr-2" />
+                          College Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    {hasCompany && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/b2b/dashboard" className="cursor-pointer">
+                          <Briefcase className="w-4 h-4 mr-2" />
+                          Employer Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
                       <LogOut className="w-4 h-4 mr-2" />
