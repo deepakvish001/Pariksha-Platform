@@ -172,6 +172,16 @@ function loadSnapPref(): boolean {
   }
 }
 
+function loadAvoidPref(): boolean {
+  try {
+    const raw = localStorage.getItem(AVOID_PREF_KEY);
+    if (raw == null) return true; // default ON — most users want this
+    return raw === "1" || raw === "true";
+  } catch {
+    return true;
+  }
+}
+
 function loadHiddenPref(): boolean {
   try {
     return localStorage.getItem(HIDDEN_PREF_KEY) === "1";
