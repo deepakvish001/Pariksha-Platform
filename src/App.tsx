@@ -45,6 +45,7 @@ import ParikshaaDemoRequests from "@/admin/parikshaa/DemoRequests";
 import ParikshaaFunnel from "@/admin/parikshaa/Funnel";
 import ParikshaaEmailPreview from "@/admin/parikshaa/EmailPreview";
 import ParikshaaInviteSourceBackfill from "@/admin/parikshaa/InviteSourceBackfill";
+import ParikshaaProctoring from "@/admin/parikshaa/Proctoring";
 import StudentJoin from "@/assessments/pages/Join";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
@@ -537,6 +538,7 @@ const App = () => (
                   <Route path="funnel" element={<ParikshaaFunnel />} />
                   <Route path="email-preview" element={<ParikshaaEmailPreview />} />
                   <Route path="invite-source-backfill" element={<ParikshaaInviteSourceBackfill />} />
+                  <Route path="proctoring" element={<ParikshaaProctoring />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
