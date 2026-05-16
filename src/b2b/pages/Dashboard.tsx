@@ -516,13 +516,30 @@ export default function B2BDashboard() {
               {channelTotal} invites
             </Badge>
           </div>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-            Real source mix across all assessments
-          </p>
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              Source mix · {RANGE_LABELS[channelRange].toLowerCase()}
+            </p>
+            <Select
+              value={channelRange}
+              onValueChange={(v) => setChannelRange(v as ChannelRange)}
+            >
+              <SelectTrigger className="h-7 w-[130px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(RANGE_LABELS) as ChannelRange[]).map((r) => (
+                  <SelectItem key={r} value={r} className="text-xs">
+                    {RANGE_LABELS[r]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="mt-5 space-y-4">
             {channelTotal === 0 ? (
               <p className="text-xs text-[hsl(var(--muted-foreground))] py-6 text-center">
-                No invites sent yet. Add candidates to see your channel mix.
+                No invites in this range yet. Try a wider window.
               </p>
             ) : (
               channelData.map((c) => <ChannelRow key={c.source} {...c} />)
