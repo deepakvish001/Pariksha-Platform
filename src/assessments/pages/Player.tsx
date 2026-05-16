@@ -39,8 +39,11 @@ export default function Player() {
   const { data: existing } = useExistingAnswers(attemptId);
   const saveAnswer = useSaveAnswer();
   const submitAttempt = useSubmitAttempt();
-  const proctoringEnabled = !!paper?.assessment.proctoring_enabled && paper?.attempt.status === "in_progress";
-  const { requestFullscreen } = useProctoring(attemptId, proctoringEnabled);
+  const proctoringEnabled = paper?.attempt.status === "in_progress";
+
+  // Lockdown gate + webcam stream are required before the player content renders.
+  const [lockdownReady, setLockdownReady] = useState(false);
+  const [camStream, setCamStream] = useState<MediaStream | null>(null);
 
   const flatQuestions = useMemo<PaperQuestion[]>(
     () => (paper?.sections ?? []).flatMap((s) => s.questions),
@@ -55,6 +58,12 @@ export default function Player() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [paletteCollapsed, setPaletteCollapsed] = useState<boolean>(() => {
+    return safeStorage.get("assess.palette.collapsed") === "1";
+  });
+  useEffect(() => {
+    safeStorage.set("assess.palette.collapsed", paletteCollapsed ? "1" : "0");
+  }, [paletteCollapsed]);
   
   const online = useOnline();
   const pendingQueueRef = useRef<Record<string, Record<string, unknown>>>({});
