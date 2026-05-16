@@ -837,9 +837,9 @@ export default function DsaStudio() {
             </div>
           </section>
 
-          {/* Sticky filter bar — sticks to top of <main> scroll container */}
+          {/* Sticky filter bar — compensates for main padding so it locks directly below the header */}
           <div
-            className="sticky top-0 z-20 -mx-4 md:-mx-6 px-4 md:px-6 py-3 bg-background/90 backdrop-blur-xl border-y border-border/40 space-y-2 shadow-[0_8px_24px_-12px_hsl(var(--background))]"
+            className="sticky -top-4 z-20 -mx-4 md:-mx-6 px-4 md:px-6 py-3 bg-background/90 backdrop-blur-xl border-y border-border/40 space-y-2 shadow-[0_8px_24px_-12px_hsl(var(--background))]"
           >
             <div className="flex flex-col md:flex-row gap-2">
               <div className="relative flex-1">
