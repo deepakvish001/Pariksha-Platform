@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, Sun, Moon, User, LogOut } from "lucide-react";
+import { Menu, X, Sun, Moon, GraduationCap, LogOut, Shield, Building2, Briefcase } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeSync } from "@/hooks/useThemeSync";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useMyOrganizations } from "@/b2b/hooks/useOrg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -30,6 +32,10 @@ const Navbar = () => {
   const { theme, setTheme } = useThemeSync();
   const [mounted, setMounted] = useState(false);
   const { user, profile, signOut, loading } = useAuth();
+  const { isAdmin } = useUserRole();
+  const { data: orgs } = useMyOrganizations();
+  const hasCollege = !!orgs?.some((o) => o.type === "college");
+  const hasCompany = !!orgs?.some((o) => o.type === "company");
   const navigate = useNavigate();
   
   // Use resolved theme for display (handles "system" preference)
@@ -192,10 +198,34 @@ const Navbar = () => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/learn" className="cursor-pointer">
-                        <User className="w-4 h-4 mr-2" />
-                        Dashboard
+                        <GraduationCap className="w-4 h-4 mr-2" />
+                        Learning Dashboard
                       </Link>
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="cursor-pointer">
+                          <Shield className="w-4 h-4 mr-2" />
+                          Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    {hasCollege && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/b2b/dashboard" className="cursor-pointer">
+                          <Building2 className="w-4 h-4 mr-2" />
+                          College Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    {hasCompany && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/b2b/dashboard" className="cursor-pointer">
+                          <Briefcase className="w-4 h-4 mr-2" />
+                          Employer Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
                       <LogOut className="w-4 h-4 mr-2" />
