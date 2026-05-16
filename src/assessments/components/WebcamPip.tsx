@@ -263,7 +263,11 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
       <div
         role="region"
         aria-label="Live webcam preview"
-        style={{ right: pos.x, bottom: pos.y }}
+        style={{
+          right: pos.x,
+          bottom: pos.y,
+          transition: snapping ? "right 180ms ease-out, bottom 180ms ease-out" : undefined,
+        }}
         className="fixed z-[60] select-none"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
