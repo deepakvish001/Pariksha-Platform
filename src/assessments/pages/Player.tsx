@@ -23,7 +23,6 @@ import { QuestionPalette } from "../components/QuestionPalette";
 import { CodingQuestion } from "../components/CodingQuestion";
 import { SqlQuestion } from "../components/SqlQuestion";
 import { PlayerBottomBar } from "../components/PlayerBottomBar";
-import { PlayerHelpSheet } from "../components/PlayerHelpSheet";
 import { useOnline } from "../hooks/useOnline";
 import { safeStorage } from "../lib/safeStorage";
 import { getPlayerMainClass } from "../lib/playerLayout";
@@ -56,13 +55,7 @@ export default function Player() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-  const [focusMode, setFocusMode] = useState<boolean>(
-    () => safeStorage.get(`assess.focus.${attemptId}`) === "1"
-  );
-  const [zenTimer, setZenTimer] = useState<boolean>(
-    () => safeStorage.get(`assess.zen.${attemptId}`) === "1"
-  );
-  const [helpOpen, setHelpOpen] = useState(false);
+  const focusMode = false;
   const online = useOnline();
   const pendingQueueRef = useRef<Record<string, Record<string, unknown>>>({});
   const [pendingCount, setPendingCount] = useState(0);
@@ -75,12 +68,6 @@ export default function Player() {
   }, [pendingKey]);
   const restoredRef = useRef(false);
 
-  useEffect(() => {
-    safeStorage.set(`assess.focus.${attemptId}`, focusMode ? "1" : "0");
-  }, [focusMode, attemptId]);
-  useEffect(() => {
-    safeStorage.set(`assess.zen.${attemptId}`, zenTimer ? "1" : "0");
-  }, [zenTimer, attemptId]);
 
 
   useEffect(() => {
@@ -310,11 +297,6 @@ export default function Player() {
         void flushPending();
         return;
       }
-      // Esc exits focus mode
-      if (e.key === "Escape" && focusMode) {
-        setFocusMode(false);
-        return;
-      }
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName?.toLowerCase();
       const inEditor =
@@ -434,14 +416,9 @@ export default function Player() {
         isPreview={isPreview}
         submitting={submitAttempt.isPending}
         online={online}
-        focusMode={focusMode}
-        zenTimer={zenTimer}
         onSubmit={() => setConfirmOpen(true)}
         onFullscreen={requestFullscreen}
         onPrefillKey={prefillAnswerKey}
-        onToggleFocus={() => setFocusMode((v) => !v)}
-        onToggleZen={() => setZenTimer((v) => !v)}
-        onOpenHelp={() => setHelpOpen(true)}
       />
 
       <main
@@ -551,7 +528,7 @@ export default function Player() {
         onReviewSubmit={() => setConfirmOpen(true)}
       />
 
-      <PlayerHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
+      
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="max-w-md">

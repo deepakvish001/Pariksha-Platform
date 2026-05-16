@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  Clock, HelpCircle, Maximize2, Minimize2, Send, ShieldCheck, Wand2, Loader2,
-  Focus, Wifi, WifiOff, Timer as TimerIcon,
+  Clock, Maximize2, Send, ShieldCheck, Wand2, Loader2,
+  Wifi, WifiOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,14 +18,9 @@ interface Props {
   isPreview: boolean;
   submitting: boolean;
   online: boolean;
-  focusMode: boolean;
-  zenTimer: boolean;
   onSubmit: () => void;
   onFullscreen: () => void;
   onPrefillKey: () => void;
-  onToggleFocus: () => void;
-  onToggleZen: () => void;
-  onOpenHelp: () => void;
 }
 
 export function PlayerTopBar({
@@ -40,14 +35,9 @@ export function PlayerTopBar({
   isPreview,
   submitting,
   online,
-  focusMode,
-  zenTimer,
   onSubmit,
   onFullscreen,
   onPrefillKey,
-  onToggleFocus,
-  onToggleZen,
-  onOpenHelp,
 }: Props) {
   const totalSec = Math.max(0, Math.floor(remainingMs / 1000));
   const hh = Math.floor(totalSec / 3600);
@@ -98,30 +88,6 @@ export function PlayerTopBar({
       </TooltipTrigger>
       <TooltipContent>
         {deadlineMs ? `Ends at ${deadlineLabel}` : "No time limit"}
-      </TooltipContent>
-    </Tooltip>
-  );
-
-  const TimerBar = (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="hidden xs:flex items-center gap-2 h-8 px-2 rounded-md border border-border bg-muted/40 w-[160px]">
-          <TimerIcon className="h-3.5 w-3.5 text-muted-foreground" />
-          <div className="relative h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
-            <div
-              className={cn(
-                "absolute inset-y-0 left-0 transition-[width] duration-1000 ease-linear",
-                urgent ? "bg-destructive" : warning ? "bg-amber-500" : "bg-primary/70"
-              )}
-              style={{ width: `${elapsedPct}%` }}
-            />
-          </div>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        {deadlineMs
-          ? `Time left ${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")} · ends at ${deadlineLabel}`
-          : "No time limit"}
       </TooltipContent>
     </Tooltip>
   );
@@ -192,56 +158,9 @@ export function PlayerTopBar({
               </Tooltip>
             )}
 
-            {/* Timer (chip or zen bar) */}
-            {zenTimer ? TimerBar : TimerChip}
+            {/* Timer */}
+            {TimerChip}
 
-            {/* Zen toggle */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 p-0"
-                  onClick={onToggleZen}
-                  aria-pressed={zenTimer}
-                  aria-label={zenTimer ? "Show full timer" : "Calm timer"}
-                >
-                  <TimerIcon className={cn("h-4 w-4", zenTimer && "text-primary")} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{zenTimer ? "Show full timer" : "Calm timer (less anxiety)"}</TooltipContent>
-            </Tooltip>
-
-            {/* Focus mode */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 p-0"
-                  onClick={onToggleFocus}
-                  aria-pressed={focusMode}
-                  aria-label={focusMode ? "Exit focus mode" : "Enter focus mode"}
-                >
-                  {focusMode ? (
-                    <Minimize2 className="h-4 w-4 text-primary" />
-                  ) : (
-                    <Focus className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{focusMode ? "Exit focus mode (Esc)" : "Focus mode"}</TooltipContent>
-            </Tooltip>
-
-            {/* Help */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onOpenHelp} aria-label="Help and shortcuts">
-                  <HelpCircle className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Help & shortcuts</TooltipContent>
-            </Tooltip>
 
             {isPreview && (
               <Button size="sm" variant="outline" onClick={onPrefillKey} className="h-8">
