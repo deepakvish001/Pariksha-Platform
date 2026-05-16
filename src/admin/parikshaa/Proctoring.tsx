@@ -1083,15 +1083,37 @@ function SnapshotLightbox({
                   <ChevronRight className="h-4 w-4" />
                 </Button>
                 {url && (
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center h-7 w-7 rounded hover:bg-muted text-muted-foreground"
-                    title="Open in new tab"
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    title="Download snapshot"
+                    aria-label="Download snapshot"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(url);
+                        const blob = await res.blob();
+                        const href = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        const base = path ? path.split("/").pop() : null;
+                        const tsName = new Date(event.created_at)
+                          .toISOString()
+                          .replace(/[:.]/g, "-");
+                        a.href = href;
+                        a.download = base || `snapshot-${tsName}.jpg`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(href);
+                      } catch {
+                        // Fallback: open the signed URL in a new tab so the
+                        // admin can still save it manually.
+                        window.open(url, "_blank", "noopener,noreferrer");
+                      }
+                    }}
                   >
                     <Download className="h-4 w-4" />
-                  </a>
+                  </Button>
                 )}
                 <Button
                   size="icon"
