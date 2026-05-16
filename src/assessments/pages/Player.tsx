@@ -297,11 +297,6 @@ export default function Player() {
         void flushPending();
         return;
       }
-      // Esc exits focus mode
-      if (e.key === "Escape" && focusMode) {
-        setFocusMode(false);
-        return;
-      }
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName?.toLowerCase();
       const inEditor =
