@@ -192,7 +192,19 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
                 </>
               )}
             </span>
-            <Camera className="h-3 w-3 opacity-70" />
+            <span className="inline-flex items-center gap-1">
+              <button
+                type="button"
+                onClick={resetPos}
+                onPointerDown={(e) => e.stopPropagation()}
+                title="Reset webcam position"
+                aria-label="Reset webcam position"
+                className="grid place-items-center h-4 w-4 rounded hover:bg-white/15 text-white/80 hover:text-white transition-colors"
+              >
+                <RotateCcw className="h-3 w-3" />
+              </button>
+              <Camera className="h-3 w-3 opacity-70" />
+            </span>
           </div>
           <video
             ref={videoRef}
