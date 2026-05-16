@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ShellHeader } from "./ParikshaaShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -782,6 +783,9 @@ function SnapshotGroup({
 }) {
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState<"newest" | "oldest">("oldest");
+  const [hover, setHover] = useState<
+    { src: string; alt: string; ts: string; x: number; y: number } | null
+  >(null);
 
   // Sorted view of the snapshots, with the original index preserved so the
   // lightbox (which still indexes into the unsorted prop) opens the right item.
@@ -914,6 +918,23 @@ function SnapshotGroup({
                   type="button"
                   key={e.id}
                   onClick={() => onOpen(originalIndex)}
+                  onMouseEnter={(ev) => {
+                    if (!src) return;
+                    setHover({
+                      src,
+                      alt: `Webcam snapshot at ${fmtTs(e.created_at)}`,
+                      ts: fmtTs(e.created_at),
+                      x: ev.clientX,
+                      y: ev.clientY,
+                    });
+                  }}
+                  onMouseMove={(ev) => {
+                    if (!src) return;
+                    setHover((h) =>
+                      h ? { ...h, x: ev.clientX, y: ev.clientY } : h,
+                    );
+                  }}
+                  onMouseLeave={() => setHover(null)}
                   title={`${fmtTs(e.created_at)}${path ? ` — ${path}` : ""}`}
                   className="group relative aspect-[4/3] overflow-hidden rounded border border-border/60 bg-muted/40 hover:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
                 >
@@ -939,6 +960,36 @@ function SnapshotGroup({
           </div>
         </div>
       )}
+      {hover &&
+        createPortal(
+          <div
+            // Anchor near cursor, flip to the other side when near the right/bottom edge.
+            style={{
+              position: "fixed",
+              left:
+                typeof window !== "undefined" && hover.x + 280 > window.innerWidth
+                  ? Math.max(8, hover.x - 268)
+                  : hover.x + 16,
+              top:
+                typeof window !== "undefined" && hover.y + 220 > window.innerHeight
+                  ? Math.max(8, hover.y - 212)
+                  : hover.y + 16,
+              zIndex: 70,
+              pointerEvents: "none",
+            }}
+            className="rounded-md border border-border bg-popover shadow-2xl p-1.5 animate-in fade-in zoom-in-95"
+          >
+            <img
+              src={hover.src}
+              alt={hover.alt}
+              className="block w-64 h-48 object-cover rounded"
+            />
+            <div className="mt-1 text-[10px] text-muted-foreground tabular-nums text-center">
+              {hover.ts}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
