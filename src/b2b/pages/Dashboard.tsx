@@ -35,6 +35,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   Download,
+  MessageSquare,
   LucideIcon,
 } from "lucide-react";
 import jsPDF from "jspdf";
@@ -1085,6 +1086,18 @@ export default function B2BDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <Button
+                asChild
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs"
+                title="View feedback dashboard"
+                aria-label="View AI insights feedback dashboard"
+              >
+                <a href={base === "/b2b" ? "/b2b/insights/feedback" : `${base}/insights/feedback`}>
+                  <MessageSquare className="h-3.5 w-3.5" />
+                </a>
+              </Button>
               <Button
                 size="sm"
                 variant="ghost"
