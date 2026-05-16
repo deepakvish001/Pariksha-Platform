@@ -195,11 +195,7 @@ export default function Player() {
             <CardContent className="grid grid-cols-5 gap-2">
               {flatQuestions.map((qi, i) => {
                 const a = answers[qi.id];
-                const done =
-                  (qi.type === "mcq" && Array.isArray(a?.selected) && (a!.selected as string[]).length > 0) ||
-                  (qi.type === "subjective" && typeof a?.text === "string" && (a!.text as string).trim()) ||
-                  (qi.type === "sql" && typeof a?.query === "string" && (a!.query as string).trim()) ||
-                  (qi.type === "coding" && typeof a?.code === "string" && (a!.code as string).trim());
+                const done = isAnswered(qi, a);
                 return (
                   <button
                     key={qi.id}
