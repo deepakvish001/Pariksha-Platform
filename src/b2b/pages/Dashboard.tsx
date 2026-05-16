@@ -32,6 +32,8 @@ import {
   Webhook,
   ChevronRight,
   RefreshCw,
+  ThumbsUp,
+  ThumbsDown,
   LucideIcon,
 } from "lucide-react";
 import { amberGradientText } from "../components/B2BBackdrop";
