@@ -50,6 +50,14 @@ import { formatDistanceToNow } from "date-fns";
 
 type Delta = { value: number; positive: boolean; unit?: "%" | "pts" };
 
+import { Info } from "lucide-react";
+import {
+  Tooltip as UiTooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 function KpiCard({
   label,
   value,
@@ -63,14 +71,48 @@ function KpiCard({
   delta?: Delta;
   hint?: string;
 }) {
+  const unitLabel = delta?.unit === "pts" ? "percentage points" : "percent";
+  const tooltipBody = delta
+    ? `Change vs the previous 30-day window. ${delta.positive ? "Up" : "Down"} ${delta.value} ${unitLabel} compared to days 31–60.`
+    : `No baseline: there was no activity in the previous 30-day window (days 31–60), so a % change can't be computed yet.`;
+
   return (
     <div className="relative overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5 transition-all hover:border-[hsl(var(--primary))]/40 hover:shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.35)]">
       <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-[hsl(var(--primary))]/10 blur-2xl" />
       <div className="relative">
         <div className="flex items-start justify-between">
-          <p className="text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-            {label}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+              {label}
+            </p>
+            <TooltipProvider delayDuration={150}>
+              <UiTooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`How ${label} delta is calculated`}
+                    className="text-[hsl(var(--muted-foreground))]/70 hover:text-[hsl(var(--foreground))] transition-colors"
+                  >
+                    <Info className="h-3 w-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[240px] text-xs leading-relaxed">
+                  <p className="font-medium mb-1">How this is calculated</p>
+                  <p className="text-[hsl(var(--muted-foreground))]">
+                    Current window: the last 30 days. Previous window: the 30 days
+                    before that (days 31–60). Delta ={" "}
+                    <span className="font-mono">(current − previous) ÷ previous × 100</span>.
+                  </p>
+                  <p className="mt-1.5">{tooltipBody}</p>
+                  {!delta && (
+                    <p className="mt-1.5 text-[hsl(var(--muted-foreground))]">
+                      Once the previous window has any activity, a percentage will appear here.
+                    </p>
+                  )}
+                </TooltipContent>
+              </UiTooltip>
+            </TooltipProvider>
+          </div>
           <div className="h-8 w-8 rounded-lg bg-[hsl(var(--secondary))]/60 grid place-items-center">
             <Icon className="h-4 w-4 text-[hsl(var(--primary))]" />
           </div>
@@ -90,7 +132,11 @@ function KpiCard({
               )}
               {delta.value}{delta.unit ?? "%"}
             </span>
-          ) : null}
+          ) : (
+            <span className="text-[hsl(var(--muted-foreground))] italic">
+              no baseline
+            </span>
+          )}
           {hint && (
             <span className="text-[hsl(var(--muted-foreground))]">{hint}</span>
           )}
