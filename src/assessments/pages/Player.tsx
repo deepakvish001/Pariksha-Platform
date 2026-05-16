@@ -54,6 +54,24 @@ export default function Player() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [focusMode, setFocusMode] = useState<boolean>(() => {
+    try { return localStorage.getItem(`assess.focus.${attemptId}`) === "1"; } catch { return false; }
+  });
+  const [zenTimer, setZenTimer] = useState<boolean>(() => {
+    try { return localStorage.getItem(`assess.zen.${attemptId}`) === "1"; } catch { return false; }
+  });
+  const [helpOpen, setHelpOpen] = useState(false);
+  const online = useOnline();
+  const pendingQueueRef = useRef<Record<string, Record<string, unknown>>>({});
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    try { localStorage.setItem(`assess.focus.${attemptId}`, focusMode ? "1" : "0"); } catch { /* noop */ }
+  }, [focusMode, attemptId]);
+  useEffect(() => {
+    try { localStorage.setItem(`assess.zen.${attemptId}`, zenTimer ? "1" : "0"); } catch { /* noop */ }
+  }, [zenTimer, attemptId]);
+
 
   useEffect(() => {
     if (!existing) return;
