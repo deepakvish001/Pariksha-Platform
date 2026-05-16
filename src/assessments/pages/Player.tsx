@@ -425,6 +425,7 @@ export default function Player() {
   const flaggedCount = flagged.size;
   const paletteItems = flatQuestions.map((qq) => ({
     id: qq.id,
+    title: qq.title,
     answered: isAnswered(qq, answers[qq.id]),
     flagged: flagged.has(qq.id),
     visited: visited.has(qq.id),
