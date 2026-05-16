@@ -856,18 +856,6 @@ export default function B2BDashboard() {
   });
 
   const recent = (assessments ?? []).slice(0, 5);
-  const {
-    insights,
-    loading: insightsLoading,
-    error: insightsError,
-    refresh: refreshInsights,
-    cooldownRemaining: insightsCooldown,
-  } = useAiInsights(org?.id, statsWindowDays);
-  const {
-    ratings: insightRatings,
-    pending: insightPending,
-    submit: submitInsightFeedback,
-  } = useInsightFeedback(org?.id, insights);
 
   return (
     <OrgShell
