@@ -294,6 +294,22 @@ type AiInsight = {
   action?: string | null;
 };
 
+// Short explanations of how each KPI in the "underlying numbers"/"view sources"
+// panels is computed. Surfaced as tooltips next to each row.
+const KPI_HELP: Record<
+  "Assessments" | "Candidates invited" | "Submissions" | "Avg integrity",
+  string
+> = {
+  Assessments:
+    "Count of assessments created in this window (any status: draft, published, archived).",
+  "Candidates invited":
+    "Number of invite rows created in this window, across all assessments in the org.",
+  Submissions:
+    "Attempts whose status reached 'submitted' with a submitted_at timestamp inside this window.",
+  "Avg integrity":
+    "Mean integrity score across submitted attempts in this window, rounded to one decimal. 100% = clean, lower = more proctoring flags.",
+};
+
 type InsightWindowsForExport = {
   windowDays: number;
   assessments: { curr: number | null; prev: number | null };
