@@ -165,6 +165,7 @@ import LeaderboardsAdmin from "./pages/admin/LeaderboardsAdmin";
 
 import NotificationsAdmin from "./pages/admin/NotificationsAdmin";
 import AdminAlerts from "./pages/admin/AdminAlerts";
+import AiInsightFeedback from "./pages/admin/AiInsightFeedback";
 import QuizzesAdmin from "./pages/admin/QuizzesAdmin";
 
 import SubmissionsAdmin from "./pages/admin/SubmissionsAdmin";
