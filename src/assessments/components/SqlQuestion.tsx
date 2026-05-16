@@ -161,13 +161,14 @@ export function SqlQuestion({ question, value, onChange }: Props) {
                           <div className="text-xs">
                             <div className="flex items-center justify-between mb-1.5">
                               <span className="text-muted-foreground">Font size</span>
-                              <span className="font-mono tabular-nums">{fontSize}px</span>
+                              <span className="font-mono tabular-nums">{editorPrefs.fontSize}px</span>
                             </div>
                             <input
-                              type="range" min={11} max={20} value={fontSize}
-                              onChange={(e) => setFontSize(Number(e.target.value))}
+                              type="range" min={11} max={20} value={editorPrefs.fontSize}
+                              onChange={(e) => updateEditorPrefs({ fontSize: Number(e.target.value) })}
                               className="w-full accent-primary"
                             />
+                            <p className="text-[10px] text-muted-foreground mt-1">Saved across questions.</p>
                           </div>
                         </PopoverContent>
                       </Popover>
@@ -193,7 +194,7 @@ export function SqlQuestion({ question, value, onChange }: Props) {
                     </div>
                   </div>
                   <div className="flex-1 min-h-0">
-                    <MonacoEditor ref={editorRef} value={query} onChange={setQuery} language="sql" fontSize={fontSize} />
+                    <MonacoEditor ref={editorRef} value={query} onChange={setQuery} language="sql" fontSize={editorPrefs.fontSize} />
                   </div>
                 </div>
               </ResizablePanel>
