@@ -9,7 +9,7 @@ export type DashboardStats = {
   invites: number;
   submissions: number;
   avgIntegrity: number | null;
-  // Deltas: current 30-day window vs previous 30-day window.
+  // Deltas: current window vs previous window of equal length.
   deltas: {
     assessments: DeltaPct;
     invites: DeltaPct;
@@ -31,137 +31,54 @@ function pctChange(curr: number, prev: number): DeltaPct {
   return Math.round(((curr - prev) / prev) * 1000) / 10; // 1 decimal
 }
 
+type Bucket = { total: number; curr: number; prev: number };
+type IntegrityBucket = {
+  total: number | null;
+  curr: number | null;
+  prev: number | null;
+};
+type RpcShape = {
+  window_days: number;
+  assessments: Bucket;
+  invites: Bucket;
+  submissions: Bucket;
+  integrity: IntegrityBucket;
+};
+
 export function useDashboardStats(orgId?: string, range: StatsRange = "30d") {
   return useQuery({
     queryKey: ["b2b", "dashboard-stats", orgId, range],
     enabled: !!orgId,
     queryFn: async (): Promise<DashboardStats> => {
       const windowDays = RANGE_DAYS[range];
-      const now = new Date();
-      const currStart = new Date(now);
-      currStart.setDate(now.getDate() - windowDays);
-      const prevStart = new Date(now);
-      prevStart.setDate(now.getDate() - windowDays * 2);
-      const currStartIso = currStart.toISOString();
-      const prevStartIso = prevStart.toISOString();
 
-      const [{ count: aCount }, { data: assessments }] = await Promise.all([
-        supabase
-          .from("assessments")
-          .select("id", { count: "exact", head: true })
-          .eq("org_id", orgId!),
-        supabase
-          .from("assessments")
-          .select("id, created_at")
-          .eq("org_id", orgId!),
-      ]);
+      // Single server-side aggregation — replaces 5 client queries + filtering.
+      const { data, error } = await supabase.rpc("get_b2b_dashboard_stats", {
+        _org_id: orgId!,
+        _window_days: windowDays,
+      });
+      if (error) throw error;
 
-      const ids = (assessments ?? []).map((a: any) => a.id);
-
-      // Assessment created-at windows
-      const assessmentsCurr = (assessments ?? []).filter(
-        (a: any) => a.created_at >= currStartIso,
-      ).length;
-      const assessmentsPrev = (assessments ?? []).filter(
-        (a: any) => a.created_at >= prevStartIso && a.created_at < currStartIso,
-      ).length;
-
-      let invites = 0;
-      let submissions = 0;
-      let avgIntegrity: number | null = null;
-      let invitesCurr = 0;
-      let invitesPrev = 0;
-      let submissionsCurr = 0;
-      let submissionsPrev = 0;
-      let avgIntegrityCurr: number | null = null;
-      let avgIntegrityPrev: number | null = null;
-
-      if (ids.length) {
-        const [
-          { count: iCount },
-          { data: invitesRows },
-          { data: attempts },
-        ] = await Promise.all([
-          supabase
-            .from("assessment_invites")
-            .select("id", { count: "exact", head: true })
-            .in("assessment_id", ids),
-          supabase
-            .from("assessment_invites")
-            .select("created_at")
-            .in("assessment_id", ids)
-            .gte("created_at", prevStartIso),
-          supabase
-            .from("assessment_attempts")
-            .select("status, integrity_score, submitted_at")
-            .in("assessment_id", ids),
-        ]);
-
-        invites = iCount ?? 0;
-        invitesCurr = (invitesRows ?? []).filter(
-          (r: any) => r.created_at >= currStartIso,
-        ).length;
-        invitesPrev = (invitesRows ?? []).filter(
-          (r: any) =>
-            r.created_at >= prevStartIso && r.created_at < currStartIso,
-        ).length;
-
-        const submitted = (attempts ?? []).filter(
-          (a: any) => a.status === "submitted",
-        );
-        submissions = submitted.length;
-        if (submitted.length) {
-          const sum = submitted.reduce(
-            (s: number, a: any) => s + (a.integrity_score ?? 0),
-            0,
-          );
-          avgIntegrity = Math.round(sum / submitted.length);
-        }
-
-        const submittedCurr = submitted.filter(
-          (a: any) => a.submitted_at && a.submitted_at >= currStartIso,
-        );
-        const submittedPrev = submitted.filter(
-          (a: any) =>
-            a.submitted_at &&
-            a.submitted_at >= prevStartIso &&
-            a.submitted_at < currStartIso,
-        );
-        submissionsCurr = submittedCurr.length;
-        submissionsPrev = submittedPrev.length;
-
-        if (submittedCurr.length) {
-          avgIntegrityCurr = Math.round(
-            submittedCurr.reduce(
-              (s: number, a: any) => s + (a.integrity_score ?? 0),
-              0,
-            ) / submittedCurr.length,
-          );
-        }
-        if (submittedPrev.length) {
-          avgIntegrityPrev = Math.round(
-            submittedPrev.reduce(
-              (s: number, a: any) => s + (a.integrity_score ?? 0),
-              0,
-            ) / submittedPrev.length,
-          );
-        }
-      }
+      const r = (data ?? {}) as Partial<RpcShape>;
+      const a = r.assessments ?? { total: 0, curr: 0, prev: 0 };
+      const i = r.invites ?? { total: 0, curr: 0, prev: 0 };
+      const s = r.submissions ?? { total: 0, curr: 0, prev: 0 };
+      const ig = r.integrity ?? { total: null, curr: null, prev: null };
 
       const integrityDelta: DeltaPct =
-        avgIntegrityCurr != null && avgIntegrityPrev != null
-          ? Math.round((avgIntegrityCurr - avgIntegrityPrev) * 10) / 10 // absolute pts diff
+        ig.curr != null && ig.prev != null
+          ? Math.round((ig.curr - ig.prev) * 10) / 10 // absolute pts diff
           : null;
 
       return {
-        assessments: aCount ?? 0,
-        invites,
-        submissions,
-        avgIntegrity,
+        assessments: a.total,
+        invites: i.total,
+        submissions: s.total,
+        avgIntegrity: ig.total,
         deltas: {
-          assessments: pctChange(assessmentsCurr, assessmentsPrev),
-          invites: pctChange(invitesCurr, invitesPrev),
-          submissions: pctChange(submissionsCurr, submissionsPrev),
+          assessments: pctChange(a.curr, a.prev),
+          invites: pctChange(i.curr, i.prev),
+          submissions: pctChange(s.curr, s.prev),
           avgIntegrity: integrityDelta,
         },
       };
