@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type DeltaPct = number | null; // % change vs previous period; null = no baseline
 
+export type WindowPair<T = number> = { curr: T; prev: T };
+
 export type DashboardStats = {
   // Totals (all-time) — used for the big KPI numbers.
   assessments: number;
@@ -15,6 +17,14 @@ export type DashboardStats = {
     invites: DeltaPct;
     submissions: DeltaPct;
     avgIntegrity: DeltaPct;
+  };
+  // Underlying curr/prev numbers that the deltas (and AI insights) are based on.
+  windows: {
+    windowDays: number;
+    assessments: WindowPair;
+    invites: WindowPair;
+    submissions: WindowPair;
+    avgIntegrity: WindowPair<number | null>;
   };
 };
 
@@ -80,6 +90,13 @@ export function useDashboardStats(orgId?: string, range: StatsRange = "30d") {
           invites: pctChange(i.curr, i.prev),
           submissions: pctChange(s.curr, s.prev),
           avgIntegrity: integrityDelta,
+        },
+        windows: {
+          windowDays,
+          assessments: { curr: a.curr, prev: a.prev },
+          invites: { curr: i.curr, prev: i.prev },
+          submissions: { curr: s.curr, prev: s.prev },
+          avgIntegrity: { curr: ig.curr, prev: ig.prev },
         },
       };
     },
