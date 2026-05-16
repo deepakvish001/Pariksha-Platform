@@ -392,14 +392,18 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
 }
 
 function QuestionEditorDialog({ question, onClose }: { question: Question; onClose: () => void }) {
+  const { data: options } = useMcqOptions(
+    question.type === "true_false" || question.type === "mcq" ? question.id : undefined,
+  );
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Badge variant="outline">{question.type}</Badge>
             {question.title}
           </DialogTitle>
+          <DialogDescription>Edit the answer key below. Changes are saved automatically.</DialogDescription>
         </DialogHeader>
         {question.body_md && (
           <div className="text-sm text-[hsl(var(--muted-foreground))] whitespace-pre-wrap border rounded-md p-3 bg-[hsl(var(--secondary))]">
@@ -407,12 +411,23 @@ function QuestionEditorDialog({ question, onClose }: { question: Question; onClo
           </div>
         )}
         {question.type === "mcq" && <McqEditor questionId={question.id} />}
+        {question.type === "true_false" && <TrueFalseEditor question={question} />}
+        {question.type === "matching" && <MatchingEditor question={question} />}
+        {question.type === "short_answer" && <ShortAnswerEditor question={question} />}
         {(question.type === "coding" || question.type === "sql") && <TestCaseEditor questionId={question.id} />}
         {question.type === "subjective" && (
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             Subjective answers are graded manually from the results dashboard.
           </p>
         )}
+
+        <div className="border-t pt-4 mt-2">
+          <h4 className="text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-2">Candidate preview</h4>
+          <div className="border rounded-md p-3 bg-[hsl(var(--background))]">
+            <CandidatePreview question={question} options={options ?? []} />
+          </div>
+        </div>
+
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Close</Button>
         </DialogFooter>
