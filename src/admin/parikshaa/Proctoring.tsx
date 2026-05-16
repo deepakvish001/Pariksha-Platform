@@ -349,6 +349,54 @@ export default function ParikshaaProctoring() {
         </div>
       </div>
 
+      {/* Violation kind chips — multi-select. */}
+      <div className="rounded-lg border bg-card p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-xs">Violation kinds</Label>
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <span className="tabular-nums">
+              {selectedKinds.size === 0
+                ? "any"
+                : `${selectedKinds.size} selected (matches any)`}
+            </span>
+            {selectedKinds.size > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[11px]"
+                onClick={() => setSelectedKinds(new Set())}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {VIOLATION_KIND_LIST.map((k) => {
+            const active = selectedKinds.has(k);
+            let count = 0;
+            for (const set of kindsByAttempt.values()) if (set.has(k)) count += 1;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => toggleKind(k)}
+                aria-pressed={active}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-mono transition-colors",
+                  active
+                    ? "bg-amber-500/15 border-amber-500/60 text-amber-700 dark:text-amber-300"
+                    : "border-border hover:bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {k}
+                <span className="opacity-60 tabular-nums">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Table */}
       <div className="rounded-lg border bg-card overflow-hidden">
         <Table>
