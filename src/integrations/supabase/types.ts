@@ -7614,6 +7614,13 @@ export type Database = {
         Returns: Json
       }
       b2b_user_owns_org: { Args: { _org_id: string }; Returns: boolean }
+      backfill_assessment_invite_sources: {
+        Args: never
+        Returns: {
+          by_source: Json
+          updated_count: number
+        }[]
+      }
       battle_accept_invite: { Args: { _invite: string }; Returns: string }
       battle_create_code: {
         Args: {
