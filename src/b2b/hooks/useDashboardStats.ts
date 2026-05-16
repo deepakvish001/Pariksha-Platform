@@ -112,6 +112,23 @@ export function useDashboardStats(orgId?: string, range: StatsRange = "30d") {
           invites: { curr: i.curr, prev: i.prev },
           submissions: { curr: s.curr, prev: s.prev },
           avgIntegrity: { curr: ig.curr, prev: ig.prev },
+          breakdowns: {
+            assessments: {
+              drafts: a.breakdown?.drafts ?? ZP,
+              published: a.breakdown?.published ?? ZP,
+            },
+            invites: {
+              pending: i.breakdown?.pending ?? ZP,
+              accepted: i.breakdown?.accepted ?? ZP,
+            },
+            submissions: {
+              started: s.breakdown?.started ?? ZP,
+              completed: s.breakdown?.completed ?? ZP,
+            },
+            integrity: {
+              flaggedLow: ig.breakdown?.flagged_low ?? ZP,
+            },
+          },
         },
       };
     },
