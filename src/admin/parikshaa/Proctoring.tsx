@@ -1340,7 +1340,27 @@ function RetentionCard() {
           {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
           Save
         </Button>
-        <AlertDialog>
+        <Button
+          onClick={() => void runDryRun()}
+          disabled={dryRunning || purging || loading}
+          size="sm"
+          variant="outline"
+          title="Estimate without deleting"
+        >
+          {dryRunning ? (
+            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+          ) : (
+            <Eye className="h-3.5 w-3.5 mr-1.5" />
+          )}
+          Dry run
+        </Button>
+        <AlertDialog
+          open={confirmOpen}
+          onOpenChange={(o) => {
+            setConfirmOpen(o);
+            if (o && !dryRunning) void runDryRun(true);
+          }}
+        >
           <AlertDialogTrigger asChild>
             <Button disabled={purging || loading} size="sm" variant="outline">
               {purging ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
@@ -1359,6 +1379,23 @@ function RetentionCard() {
                 <span className="font-semibold text-foreground">{eventsDays} days</span>. This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium">Estimated impact</span>
+                {dryRunning ? (
+                  <span className="text-muted-foreground inline-flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Calculating…
+                  </span>
+                ) : estimate ? (
+                  <span className="tabular-nums">
+                    <span className="font-semibold text-foreground">{estimate.snapshots}</span> snapshots ·{" "}
+                    <span className="font-semibold text-foreground">{estimate.events}</span> events
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground italic">unavailable</span>
+                )}
+              </div>
+            </div>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={purging}>Cancel</AlertDialogCancel>
               <AlertDialogAction
