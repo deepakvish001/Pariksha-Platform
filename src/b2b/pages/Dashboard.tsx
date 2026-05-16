@@ -1,12 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { OrgShell } from "../layouts/OrgShell";
 import { StatTile } from "../components/StatTile";
 import { useCurrentOrg, useOrgBasePath } from "../context/OrgContext";
 import { useDashboardStats } from "../hooks/useDashboardStats";
 import { Button } from "@/components/ui/button";
-import { FileText, Users, CheckCircle2, ShieldCheck, Plus, Home } from "lucide-react";
+import { FileText, Users, CheckCircle2, ShieldCheck, Plus, Home, Play, ClipboardList } from "lucide-react";
 import { amberGradientText } from "../components/B2BBackdrop";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function B2BDashboard() {
   const { org, isLoading } = useCurrentOrg();
@@ -24,6 +26,40 @@ export default function B2BDashboard() {
   }, [org, isLoading, navigate, base]);
 
   const { data: stats } = useDashboardStats(org?.id);
+
+  // E2E test assessment quick-launcher: finds the latest draft assessment for this org
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [launching, setLaunching] = useState(false);
+  useEffect(() => {
+    if (!org?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("assessments")
+        .select("id")
+        .eq("org_id", org.id)
+        .eq("status", "draft")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setDraftId((data as { id?: string } | null)?.id ?? null);
+    })();
+  }, [org?.id]);
+
+  const launchPreview = async () => {
+    if (!draftId) return;
+    setLaunching(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("start_preview_attempt", { _assessment: draftId });
+      if (error) throw error;
+      const attemptId = typeof data === "string" ? data : (data as { id?: string })?.id;
+      if (!attemptId) throw new Error("No attempt id returned");
+      navigate(`/assessments/${attemptId}/play?preview=1`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to launch preview");
+    } finally {
+      setLaunching(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -68,6 +104,27 @@ export default function B2BDashboard() {
           hint="Across submissions"
         />
       </div>
+
+      {draftId && (
+        <div className="mt-6 b2b-card p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold">End-to-end test assessment</h2>
+              <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
+                Launch the draft in test mode or jump straight to submitted results.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={launchPreview} disabled={launching} className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+                <Play className="h-4 w-4 mr-1" /> {launching ? "Launching…" : "Take test"}
+              </Button>
+              <Button variant="outline" onClick={() => navigate(`${base}/assessments/${draftId}`)}>
+                <ClipboardList className="h-4 w-4 mr-1" /> View results
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-8 b2b-card p-8 text-center">
         <h2 className="text-base font-semibold">You're all set, {org.name}.</h2>
