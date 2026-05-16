@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { safeStorage } from "../lib/safeStorage";
 
 export interface EditorPrefs {
   fontSize: number;
@@ -10,10 +11,9 @@ const KEY = "assess.editor.prefs";
 const DEFAULTS: EditorPrefs = { fontSize: 13, tabSize: 2, wordWrap: false };
 
 function read(): EditorPrefs {
-  if (typeof window === "undefined") return DEFAULTS;
+  const raw = safeStorage.get(KEY);
+  if (!raw) return DEFAULTS;
   try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) return DEFAULTS;
     const parsed = JSON.parse(raw) as Partial<EditorPrefs>;
     return { ...DEFAULTS, ...parsed };
   } catch {
@@ -25,15 +25,12 @@ export function useEditorPrefs() {
   const [prefs, setPrefs] = useState<EditorPrefs>(() => read());
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(KEY, JSON.stringify(prefs));
-    } catch {
-      /* noop */
-    }
+    safeStorage.set(KEY, JSON.stringify(prefs));
   }, [prefs]);
 
-  // Cross-tab + cross-component sync
+  // Cross-tab + cross-component sync (only fires when real localStorage works)
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const onStorage = (e: StorageEvent) => {
       if (e.key === KEY) setPrefs(read());
     };
