@@ -41,7 +41,7 @@ export function useAssessmentInsights(assessmentId?: string) {
         supabase
           .from("assessment_sections")
           .select(
-            "id, assessment_section_questions(question_id, question:questions(id,title,type,points))"
+            "id, section_questions(question_id, question:questions(id,title,type,points))"
           )
           .eq("assessment_id", assessmentId!),
       ]);
