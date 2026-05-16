@@ -496,6 +496,28 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
                 </button>
                 <button
                   type="button"
+                  onClick={() => setAvoidContent((v) => !v)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  title={
+                    avoidContent
+                      ? "Avoid covering question content: on"
+                      : "Avoid covering question content: off"
+                  }
+                  aria-label="Toggle avoid content overlap"
+                  aria-pressed={avoidContent}
+                  disabled={!snapEnabled}
+                  className={
+                    "grid place-items-center h-4 w-4 rounded transition-colors " +
+                    (!snapEnabled
+                      ? "text-white/25 cursor-not-allowed"
+                      : avoidContent
+                      ? "bg-sky-500/30 text-sky-200 hover:bg-sky-500/40"
+                      : "text-white/60 hover:bg-white/15 hover:text-white")
+                  }
+                >
+                  <Shield className="h-3 w-3" />
+                <button
+                  type="button"
                   onClick={resetPos}
                   onPointerDown={(e) => e.stopPropagation()}
                   title="Reset webcam position"
