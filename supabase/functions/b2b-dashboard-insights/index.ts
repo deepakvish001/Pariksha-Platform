@@ -304,7 +304,8 @@ Return STRICT JSON with this shape:
           }))
         : fallbackInsights(stats);
 
-    const insights = rerank(rawInsights, keyNet, titleNet).slice(0, 4);
+    const filtered = rawInsights.filter((i) => !isFlagged(i));
+    const insights = rerank(filtered.length ? filtered : rawInsights, keyNet, titleNet).slice(0, 4);
 
     return json({ insights, stats });
   } catch (err) {
