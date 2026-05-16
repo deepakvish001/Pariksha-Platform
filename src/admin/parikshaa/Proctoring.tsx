@@ -95,6 +95,7 @@ export default function ParikshaaProctoring() {
 
       const ids = (att ?? []).map((a) => a.id);
       let snapMap = new Map<string, { count: number; first: string | null; last: string | null }>();
+      const kMap = new Map<string, Set<string>>();
       if (ids.length > 0) {
         const { data: ev } = await supabase
           .from("attempt_events")
@@ -108,7 +109,20 @@ export default function ParikshaaProctoring() {
           if (!prev.last || e.created_at > prev.last) prev.last = e.created_at;
           snapMap.set(e.attempt_id, prev);
         }
+
+        // Aggregate violation kinds present per attempt (drives kind filter).
+        const { data: vev } = await supabase
+          .from("attempt_events")
+          .select("attempt_id,kind")
+          .in("attempt_id", ids)
+          .in("kind", VIOLATION_KIND_LIST as unknown as string[]);
+        for (const e of vev ?? []) {
+          const set = kMap.get(e.attempt_id) ?? new Set<string>();
+          set.add(e.kind);
+          kMap.set(e.attempt_id, set);
+        }
       }
+      setKindsByAttempt(kMap);
 
       const mapped: AttemptRow[] = (att ?? []).map((a: any) => {
         const s = snapMap.get(a.id);
