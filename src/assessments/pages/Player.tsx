@@ -146,18 +146,28 @@ export default function Player() {
   const doSubmitRef = useRef(doSubmit);
   useEffect(() => { doSubmitRef.current = doSubmit; }, [doSubmit]);
 
-  const { requestFullscreen, violations, fullscreenLost, logEvent: logProctorEvent } = useProctoring(
+  const proctoringConfig = useMemo(
+    () =>
+      resolveProctoringConfig(
+        paper?.assessment.proctoring_config,
+        !!paper?.assessment.proctoring_enabled
+      ),
+    [paper?.assessment.proctoring_config, paper?.assessment.proctoring_enabled]
+  );
+
+  const { requestFullscreen, violations, fullscreenLost, logEvent: logProctorEvent, maxViolations } = useProctoring(
     attemptId,
     proctoringEnabled && lockdownReady,
     {
+      config: proctoringConfig,
       onAutoSubmit: () => {
         if (!submittedRef.current) {
           submittedRef.current = true;
           doSubmitRef.current(true);
         }
       },
-      onStrike: (total, kind) => {
-        toast.warning(`Violation ${total}/${MAX_VIOLATIONS}: ${kind.replace(/_/g, " ")}`);
+      onStrike: (total, _kind, reason) => {
+        toast.warning(`Violation ${total}/${proctoringConfig.max_violations}: ${reason}`);
       },
     }
   );
