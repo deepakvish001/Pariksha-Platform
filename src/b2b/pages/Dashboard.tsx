@@ -237,6 +237,7 @@ export default function B2BDashboard() {
   const { data: stats } = useDashboardStats(org?.id);
   const { data: assessments } = useAssessments(org?.id);
   const series = useSubmissionsSeries(org?.id, 30);
+  const channelCounts = useInviteChannelCounts(org?.id);
 
   const totalSubmissions = useMemo(
     () => series.reduce((s, p) => s + p.submissions, 0),
