@@ -54,6 +54,7 @@ Deno.serve(async (req) => {
   // Parse optional run metadata from caller.
   let source = "manual";
   let triggeredBy: string | null = null;
+  let dryRun = false;
   try {
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
@@ -63,6 +64,7 @@ Deno.serve(async (req) => {
       if (typeof body?.triggered_by === "string" && body.triggered_by.length === 36) {
         triggeredBy = body.triggered_by;
       }
+      if (body?.dry_run === true) dryRun = true;
     }
   } catch (_) { /* ignore */ }
 
@@ -84,6 +86,45 @@ Deno.serve(async (req) => {
   const eventCutoff = new Date(now - retention.events_days * 86400_000).toISOString();
 
   const errors: string[] = [];
+
+  // ─── DRY RUN: count only, do not delete or log ─────────────────────────
+  if (dryRun) {
+    let snapshotsToDelete = 0;
+    let eventsToDelete = 0;
+    try {
+      const { count } = await admin
+        .from("attempt_events")
+        .select("id", { count: "exact", head: true })
+        .eq("kind", "webcam_snapshot")
+        .lt("created_at", snapCutoff);
+      snapshotsToDelete = count ?? 0;
+    } catch (e) {
+      errors.push(`snapshot-count: ${(e as Error).message}`);
+    }
+    try {
+      const { count } = await admin
+        .from("attempt_events")
+        .select("id", { count: "exact", head: true })
+        .in("kind", PROCTORING_EVENT_KINDS)
+        .lt("created_at", eventCutoff);
+      eventsToDelete = count ?? 0;
+    } catch (e) {
+      errors.push(`event-count: ${(e as Error).message}`);
+    }
+    return new Response(
+      JSON.stringify({
+        ok: errors.length === 0,
+        dry_run: true,
+        retention,
+        snapshots_to_delete: snapshotsToDelete,
+        events_to_delete: eventsToDelete,
+        snapshot_cutoff: snapCutoff,
+        event_cutoff: eventCutoff,
+        errors,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+    );
+  }
 
   // ─── Delete old webcam snapshots from storage ──────────────────────────
   let snapshotsDeleted = 0;
@@ -163,4 +204,5 @@ Deno.serve(async (req) => {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status: 200,
   });
+});
 });

@@ -1211,6 +1211,9 @@ function RetentionCard() {
   const [purging, setPurging] = useState(false);
   const [lastResult, setLastResult] = useState<{ snapshots_deleted: number; events_deleted: number } | null>(null);
   const [historyKey, setHistoryKey] = useState(0);
+  const [dryRunning, setDryRunning] = useState(false);
+  const [estimate, setEstimate] = useState<{ snapshots: number; events: number; at: number } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -1244,6 +1247,30 @@ function RetentionCard() {
     toast.success("Retention settings saved");
   };
 
+  const runDryRun = useCallback(async (silent = false) => {
+    setDryRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("purge-proctoring-data", {
+        body: { dry_run: true, source: "manual_dry_run" },
+      });
+      if (error) throw error;
+      const snapshots = (data as any)?.snapshots_to_delete ?? 0;
+      const events = (data as any)?.events_to_delete ?? 0;
+      setEstimate({ snapshots, events, at: Date.now() });
+      if (!silent) {
+        toast.success("Dry run complete", {
+          description: `Would delete ${snapshots} snapshots & ${events} events`,
+        });
+      }
+      return { snapshots, events };
+    } catch (e: any) {
+      if (!silent) toast.error("Dry run failed", { description: e.message });
+      return null;
+    } finally {
+      setDryRunning(false);
+    }
+  }, []);
+
   const runPurge = async () => {
     setPurging(true);
     try {
@@ -1257,6 +1284,8 @@ function RetentionCard() {
         events_deleted: (data as any)?.events_deleted ?? 0,
       });
       setHistoryKey((k) => k + 1);
+      setEstimate(null);
+      setConfirmOpen(false);
       toast.success("Purge complete", {
         description: `${(data as any)?.snapshots_deleted ?? 0} snapshots & ${(data as any)?.events_deleted ?? 0} events removed`,
       });
@@ -1278,13 +1307,18 @@ function RetentionCard() {
             Automatically deleted daily. Snapshots are removed from storage; proctoring events are removed from the audit log.
           </p>
         </div>
-        {lastResult && (
-          <div className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
-            Last purge: {lastResult.snapshots_deleted} snapshots, {lastResult.events_deleted} events
-          </div>
-        )}
+        <div className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap text-right space-y-0.5">
+          {lastResult && (
+            <div>Last purge: {lastResult.snapshots_deleted} snapshots, {lastResult.events_deleted} events</div>
+          )}
+          {estimate && !confirmOpen && (
+            <div className="text-emerald-600">
+              Dry run: would delete {estimate.snapshots} snapshots, {estimate.events} events
+            </div>
+          )}
+        </div>
       </div>
-      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto] items-end">
+      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto_auto] items-end">
         <div className="space-y-1">
           <Label className="text-xs">Webcam snapshots — keep for (days)</Label>
           <Input
@@ -1311,7 +1345,27 @@ function RetentionCard() {
           {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
           Save
         </Button>
-        <AlertDialog>
+        <Button
+          onClick={() => void runDryRun()}
+          disabled={dryRunning || purging || loading}
+          size="sm"
+          variant="outline"
+          title="Estimate without deleting"
+        >
+          {dryRunning ? (
+            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+          ) : (
+            <Eye className="h-3.5 w-3.5 mr-1.5" />
+          )}
+          Dry run
+        </Button>
+        <AlertDialog
+          open={confirmOpen}
+          onOpenChange={(o) => {
+            setConfirmOpen(o);
+            if (o && !dryRunning) void runDryRun(true);
+          }}
+        >
           <AlertDialogTrigger asChild>
             <Button disabled={purging || loading} size="sm" variant="outline">
               {purging ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
@@ -1330,6 +1384,23 @@ function RetentionCard() {
                 <span className="font-semibold text-foreground">{eventsDays} days</span>. This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium">Estimated impact</span>
+                {dryRunning ? (
+                  <span className="text-muted-foreground inline-flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Calculating…
+                  </span>
+                ) : estimate ? (
+                  <span className="tabular-nums">
+                    <span className="font-semibold text-foreground">{estimate.snapshots}</span> snapshots ·{" "}
+                    <span className="font-semibold text-foreground">{estimate.events}</span> events
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground italic">unavailable</span>
+                )}
+              </div>
+            </div>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={purging}>Cancel</AlertDialogCancel>
               <AlertDialogAction
