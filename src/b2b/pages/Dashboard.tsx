@@ -899,7 +899,7 @@ export default function B2BDashboard() {
                 </span>
                 <Select
                   value={statsRange}
-                  onValueChange={(v) => setStatsRange(v as "7d" | "30d" | "90d")}
+                  onValueChange={(v) => setStatsRange(v as "7d" | "30d" | "60d" | "90d")}
                 >
                   <SelectTrigger
                     aria-label="KPI comparison window"
@@ -910,6 +910,7 @@ export default function B2BDashboard() {
                   <SelectContent>
                     <SelectItem value="7d">Last 7 days</SelectItem>
                     <SelectItem value="30d">Last 30 days</SelectItem>
+                    <SelectItem value="60d">Last 60 days</SelectItem>
                     <SelectItem value="90d">Last 90 days</SelectItem>
                   </SelectContent>
                 </Select>
