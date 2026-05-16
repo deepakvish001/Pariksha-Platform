@@ -292,6 +292,140 @@ type AiInsight = {
   action?: string | null;
 };
 
+type InsightWindowsForExport = {
+  windowDays: number;
+  assessments: { curr: number | null; prev: number | null };
+  invites: { curr: number | null; prev: number | null };
+  submissions: { curr: number | null; prev: number | null };
+  avgIntegrity: { curr: number | null; prev: number | null };
+};
+
+function exportInsightsToPdf(
+  orgName: string,
+  insights: AiInsight[],
+  windows: InsightWindowsForExport | null,
+) {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 40;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("AI Insights Report", margin, 50);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(110);
+  doc.text(`${orgName} · Generated ${new Date().toLocaleString()}`, margin, 68);
+  doc.setTextColor(0);
+
+  let cursorY = 90;
+
+  if (windows) {
+    const wd = windows.windowDays;
+    const fmt = (v: number | null, suffix = "") => (v == null ? "—" : `${v}${suffix}`);
+    autoTable(doc, {
+      startY: cursorY,
+      head: [["Metric", `Last ${wd}d`, `Prev ${wd}d`]],
+      body: [
+        ["Assessments", fmt(windows.assessments.curr), fmt(windows.assessments.prev)],
+        ["Candidates invited", fmt(windows.invites.curr), fmt(windows.invites.prev)],
+        ["Submissions", fmt(windows.submissions.curr), fmt(windows.submissions.prev)],
+        ["Avg integrity", fmt(windows.avgIntegrity.curr, "%"), fmt(windows.avgIntegrity.prev, "%")],
+      ],
+      styles: { font: "helvetica", fontSize: 10, cellPadding: 6 },
+      headStyles: { fillColor: [30, 30, 30], textColor: 255 },
+      margin: { left: margin, right: margin },
+      theme: "grid",
+    });
+    // @ts-expect-error autotable adds lastAutoTable
+    cursorY = (doc.lastAutoTable?.finalY ?? cursorY) + 24;
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text("Recommendations", margin, cursorY);
+  cursorY += 14;
+
+  const maxWidth = pageWidth - margin * 2;
+  const ensureSpace = (needed: number) => {
+    const pageHeight = doc.internal.pageSize.getHeight();
+    if (cursorY + needed > pageHeight - margin) {
+      doc.addPage();
+      cursorY = margin;
+    }
+  };
+
+  if (insights.length === 0) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    doc.setTextColor(110);
+    doc.text("No insights available.", margin, cursorY + 10);
+  }
+
+  insights.forEach((ins, idx) => {
+    const sevLabel = ins.severity.toUpperCase();
+    const sevColor: [number, number, number] =
+      ins.severity === "positive" ? [16, 185, 129]
+      : ins.severity === "warning" ? [245, 158, 11]
+      : [100, 116, 139];
+
+    ensureSpace(60);
+
+    // Severity tag
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...sevColor);
+    doc.text(sevLabel, margin, cursorY);
+
+    // Title
+    doc.setTextColor(0);
+    doc.setFontSize(12);
+    const titleLines = doc.splitTextToSize(`${idx + 1}. ${ins.title}`, maxWidth);
+    doc.text(titleLines, margin, cursorY + 14);
+    cursorY += 14 + titleLines.length * 14;
+
+    // Body
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(60);
+    const bodyLines = doc.splitTextToSize(ins.body, maxWidth);
+    ensureSpace(bodyLines.length * 12 + 10);
+    doc.text(bodyLines, margin, cursorY);
+    cursorY += bodyLines.length * 12 + 4;
+
+    if (ins.action) {
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0);
+      const actionLines = doc.splitTextToSize(`Action: ${ins.action}`, maxWidth);
+      ensureSpace(actionLines.length * 12 + 6);
+      doc.text(actionLines, margin, cursorY);
+      cursorY += actionLines.length * 12;
+    }
+
+    cursorY += 16;
+    doc.setTextColor(0);
+  });
+
+  const pageCount = doc.getNumberOfPages();
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(140);
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.text(
+      `Page ${i} of ${pageCount}`,
+      pageWidth - margin,
+      doc.internal.pageSize.getHeight() - 20,
+      { align: "right" },
+    );
+  }
+
+  const safeName = orgName.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "org";
+  const stamp = new Date().toISOString().slice(0, 10);
+  doc.save(`ai-insights-${safeName}-${stamp}.pdf`);
+}
+
 // Cache + in-flight dedupe for AI insights. Keyed by org id, kept module-level
 // so navigations between pages don't refetch within the TTL.
 const INSIGHTS_TTL_MS = 5 * 60 * 1000; // 5 minutes — matches edge function cost
