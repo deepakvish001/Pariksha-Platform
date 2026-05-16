@@ -444,7 +444,11 @@ export default function Player() {
         onOpenHelp={() => setHelpOpen(true)}
       />
 
-      <main className={getPlayerMainClass({ focusMode, questionType: q?.type ?? null })}>
+      <main
+        data-testid="player-main"
+        data-question-type={q?.type ?? ""}
+        className={getPlayerMainClass({ focusMode, questionType: q?.type ?? null })}
+      >
         {/* Mobile palette trigger */}
         {!focusMode && (
           <div className="lg:hidden">
