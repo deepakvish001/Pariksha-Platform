@@ -1282,13 +1282,19 @@ function SnapshotLightbox({
                         variant="ghost"
                         className="h-7 px-2 gap-1 tabular-nums"
                         title={
-                          dl
+                          denied
+                            ? "You don't have permission to download this snapshot"
+                            : dl
                             ? `Downloading ${dl.format.toUpperCase()}${dl.pct != null ? ` (${dl.pct}%)` : "…"}`
                             : "Download snapshot"
                         }
-                        aria-label="Download snapshot"
+                        aria-label={
+                          denied
+                            ? "Download unavailable: permission denied"
+                            : "Download snapshot"
+                        }
                         aria-busy={!!dl}
-                        disabled={!!dl}
+                        disabled={!!dl || denied}
                       >
                         {dl ? (
                           <>
@@ -1307,25 +1313,37 @@ function SnapshotLightbox({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[10rem]">
                       <DropdownMenuItem
-                        disabled={!!dl}
+                        disabled={!!dl || denied}
                         onClick={async () => {
                           setDl({ format: "jpg", pct: 0 });
-                          await downloadSnapshot(url, event, path, "jpg", (pct) =>
-                            setDl(pct == null ? null : { format: "jpg", pct }),
+                          const result = await downloadSnapshot(
+                            url,
+                            event,
+                            path,
+                            "jpg",
+                            (pct) =>
+                              setDl(pct == null ? null : { format: "jpg", pct }),
                           );
                           setDl(null);
+                          if (result === "denied") setDeniedUrl(url);
                         }}
                       >
                         Download as JPG
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        disabled={!!dl}
+                        disabled={!!dl || denied}
                         onClick={async () => {
                           setDl({ format: "png", pct: 0 });
-                          await downloadSnapshot(url, event, path, "png", (pct) =>
-                            setDl(pct == null ? null : { format: "png", pct }),
+                          const result = await downloadSnapshot(
+                            url,
+                            event,
+                            path,
+                            "png",
+                            (pct) =>
+                              setDl(pct == null ? null : { format: "png", pct }),
                           );
                           setDl(null);
+                          if (result === "denied") setDeniedUrl(url);
                         }}
                       >
                         Download as PNG
