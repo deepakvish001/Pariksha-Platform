@@ -1,12 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { OrgShell } from "../layouts/OrgShell";
 import { StatTile } from "../components/StatTile";
 import { useCurrentOrg, useOrgBasePath } from "../context/OrgContext";
 import { useDashboardStats } from "../hooks/useDashboardStats";
 import { Button } from "@/components/ui/button";
-import { FileText, Users, CheckCircle2, ShieldCheck, Plus, Home } from "lucide-react";
+import { FileText, Users, CheckCircle2, ShieldCheck, Plus, Home, Play, ClipboardList } from "lucide-react";
 import { amberGradientText } from "../components/B2BBackdrop";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function B2BDashboard() {
   const { org, isLoading } = useCurrentOrg();
