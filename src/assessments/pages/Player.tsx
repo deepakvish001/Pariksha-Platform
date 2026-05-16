@@ -145,7 +145,7 @@ export default function Player() {
   const doSubmitRef = useRef(doSubmit);
   useEffect(() => { doSubmitRef.current = doSubmit; }, [doSubmit]);
 
-  const { requestFullscreen, violations, maxViolations, fullscreenLost } = useProctoring(
+  const { requestFullscreen, violations, fullscreenLost, logEvent: logProctorEvent } = useProctoring(
     attemptId,
     proctoringEnabled && lockdownReady,
     {
