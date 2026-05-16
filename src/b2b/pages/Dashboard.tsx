@@ -36,6 +36,7 @@ import {
   ThumbsDown,
   Download,
   MessageSquare,
+  Loader2,
   LucideIcon,
 } from "lucide-react";
 import jsPDF from "jspdf";
@@ -558,7 +559,10 @@ function insightKey(i: { title: string; body: string }) {
 
 function useInsightFeedback(orgId: string | undefined, insights: AiInsight[]) {
   const [ratings, setRatings] = useState<Record<string, InsightRating>>({});
-  const [pending, setPending] = useState<Record<string, boolean>>({});
+  // Per-key pending action: which button is mid-flight ("up" | "down" | "remove")
+  const [pending, setPending] = useState<
+    Record<string, "up" | "down" | "remove">
+  >({});
 
   const keys = useMemo(() => insights.map(insightKey), [insights]);
 
@@ -590,13 +594,27 @@ function useInsightFeedback(orgId: string | undefined, insights: AiInsight[]) {
     if (!orgId) return;
     const key = insightKey(insight);
     const current = ratings[key];
-    setPending((p) => ({ ...p, [key]: true }));
+    const isRemoval = current === rating;
+    const action: "up" | "down" | "remove" = isRemoval ? "remove" : rating;
+
+    // Block double-clicks on this insight while a request is in flight.
+    if (pending[key]) return;
+    setPending((p) => ({ ...p, [key]: action }));
+
+    const toastId = toast.loading(
+      isRemoval
+        ? "Removing your feedback…"
+        : rating === "up"
+          ? "Saving 👍…"
+          : "Saving 👎…",
+    );
+
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId) throw new Error("Please sign in to leave feedback.");
 
-      if (current === rating) {
+      if (isRemoval) {
         // Toggle off → remove feedback
         const { error } = await supabase
           .from("ai_insight_feedback")
@@ -609,7 +627,7 @@ function useInsightFeedback(orgId: string | undefined, insights: AiInsight[]) {
           const { [key]: _, ...rest } = r;
           return rest;
         });
-        toast.success("Feedback removed");
+        toast.success("Feedback removed", { id: toastId });
       } else {
         const { error } = await supabase
           .from("ai_insight_feedback")
@@ -625,10 +643,15 @@ function useInsightFeedback(orgId: string | undefined, insights: AiInsight[]) {
           );
         if (error) throw error;
         setRatings((r) => ({ ...r, [key]: rating }));
-        toast.success(rating === "up" ? "Thanks for the 👍" : "Thanks — we'll use this to improve");
+        toast.success(
+          rating === "up"
+            ? "Thanks for the 👍"
+            : "Thanks — we'll use this to improve",
+          { id: toastId },
+        );
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not save feedback");
+      toast.error(e?.message ?? "Could not save feedback", { id: toastId });
     } finally {
       setPending((p) => {
         const { [key]: _, ...rest } = p;
@@ -1212,7 +1235,14 @@ export default function B2BDashboard() {
                   : "bg-[hsl(var(--primary))]";
               const key = insightKey(i);
               const rating = insightRatings[key];
-              const isPending = !!insightPending[key];
+              const pendingAction = insightPending[key];
+              const isPending = !!pendingAction;
+              const upBusy =
+                pendingAction === "up" ||
+                (pendingAction === "remove" && rating === "up");
+              const downBusy =
+                pendingAction === "down" ||
+                (pendingAction === "remove" && rating === "down");
               const thumbBase =
                 "inline-flex items-center justify-center h-6 w-6 rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
               return (
@@ -1241,6 +1271,7 @@ export default function B2BDashboard() {
                         type="button"
                         aria-label="Mark insight as helpful"
                         aria-pressed={rating === "up"}
+                        aria-busy={upBusy}
                         disabled={isPending}
                         onClick={() => submitInsightFeedback(i, "up")}
                         className={`${thumbBase} ${
@@ -1249,12 +1280,17 @@ export default function B2BDashboard() {
                             : "border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-emerald-500 hover:border-emerald-500/40"
                         }`}
                       >
-                        <ThumbsUp className="h-3.5 w-3.5" />
+                        {upBusy ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <ThumbsUp className="h-3.5 w-3.5" />
+                        )}
                       </button>
                       <button
                         type="button"
                         aria-label="Mark insight as not helpful"
                         aria-pressed={rating === "down"}
+                        aria-busy={downBusy}
                         disabled={isPending}
                         onClick={() => submitInsightFeedback(i, "down")}
                         className={`${thumbBase} ${
@@ -1263,7 +1299,11 @@ export default function B2BDashboard() {
                             : "border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-rose-500 hover:border-rose-500/40"
                         }`}
                       >
-                        <ThumbsDown className="h-3.5 w-3.5" />
+                        {downBusy ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <ThumbsDown className="h-3.5 w-3.5" />
+                        )}
                       </button>
                     </div>
                   </div>
