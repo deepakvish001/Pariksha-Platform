@@ -389,6 +389,14 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
             kind: "webcam_snapshot",
             payload: { path, ts } as never,
           });
+        // Enqueue for async AI review
+        await supabase
+          .from("assessment_proctor_snapshots")
+          .insert({
+            attempt_id: attemptId,
+            source: "webcam",
+            storage_path: path,
+          });
       }
     };
 
