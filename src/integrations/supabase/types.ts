@@ -737,6 +737,7 @@ export type Database = {
         Row: {
           assessment_id: string
           created_at: string
+          description: string | null
           id: string
           order_index: number
           title: string
@@ -745,6 +746,7 @@ export type Database = {
         Insert: {
           assessment_id: string
           created_at?: string
+          description?: string | null
           id?: string
           order_index?: number
           title: string
@@ -753,6 +755,7 @@ export type Database = {
         Update: {
           assessment_id?: string
           created_at?: string
+          description?: string | null
           id?: string
           order_index?: number
           title?: string
