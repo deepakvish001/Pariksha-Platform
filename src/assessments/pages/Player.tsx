@@ -583,7 +583,19 @@ export default function Player() {
         onReviewSubmit={() => setConfirmOpen(true)}
       />
 
-      
+      {attemptId && camStream && (
+        <WebcamPip
+          attemptId={attemptId}
+          stream={camStream}
+          onLost={() => {
+            // Hook log + strike via proctoring system by writing a webcam_lost event.
+            void supabase
+              .from("attempt_events")
+              .insert({ attempt_id: attemptId, kind: "webcam_lost", payload: {} as never });
+          }}
+        />
+      )}
+
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="max-w-md">
