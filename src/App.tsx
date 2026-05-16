@@ -538,6 +538,7 @@ const App = () => (
                   <Route path="funnel" element={<ParikshaaFunnel />} />
                   <Route path="email-preview" element={<ParikshaaEmailPreview />} />
                   <Route path="invite-source-backfill" element={<ParikshaaInviteSourceBackfill />} />
+                  <Route path="proctoring" element={<ParikshaaProctoring />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
