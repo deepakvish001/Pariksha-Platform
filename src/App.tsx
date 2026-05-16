@@ -34,7 +34,6 @@ import B2BTeam from "@/b2b/pages/Team";
 import B2BSettings from "@/b2b/pages/Settings";
 import B2BInsightsFeedback from "@/b2b/pages/InsightsFeedback";
 import B2BPricing from "@/b2b/pages/Pricing";
-import CollegeDashboard from "@/pages/CollegeDashboard";
 import { OrgWorkspace } from "@/b2b/context/OrgContext";
 import { ParikshaaShell } from "@/admin/parikshaa/ParikshaaShell";
 import ParikshaaOverview from "@/admin/parikshaa/Overview";
@@ -246,7 +245,6 @@ const App = () => (
               <RouteSeo />
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/college-dashboard" element={<CollegeDashboard />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
