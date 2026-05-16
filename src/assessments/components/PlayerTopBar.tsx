@@ -18,14 +18,9 @@ interface Props {
   isPreview: boolean;
   submitting: boolean;
   online: boolean;
-  focusMode: boolean;
-  zenTimer: boolean;
   onSubmit: () => void;
   onFullscreen: () => void;
   onPrefillKey: () => void;
-  onToggleFocus: () => void;
-  onToggleZen: () => void;
-  onOpenHelp: () => void;
 }
 
 export function PlayerTopBar({
@@ -40,14 +35,9 @@ export function PlayerTopBar({
   isPreview,
   submitting,
   online,
-  focusMode,
-  zenTimer,
   onSubmit,
   onFullscreen,
   onPrefillKey,
-  onToggleFocus,
-  onToggleZen,
-  onOpenHelp,
 }: Props) {
   const totalSec = Math.max(0, Math.floor(remainingMs / 1000));
   const hh = Math.floor(totalSec / 3600);
