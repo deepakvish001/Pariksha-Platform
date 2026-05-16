@@ -318,8 +318,12 @@ export default function ParikshaaProctoring() {
     setExpanded((p) => ({ ...p, [id]: (data ?? []) as AttemptEvent[] }));
   };
 
-  const exportCsv = () => {
+  const [exporting, setExporting] = useState(false);
+  const exportCsv = async () => {
+    if (filtered.length === 0) return;
+    setExporting(true);
     const headers = [
+      "row_type",
       "attempt_id",
       "user_id",
       "assessment_id",
@@ -332,41 +336,93 @@ export default function ParikshaaProctoring() {
       "snapshot_count",
       "first_snapshot_at",
       "last_snapshot_at",
+      "event_kind",
+      "event_at",
+      "event_payload",
     ];
     const esc = (v: unknown) => {
       if (v === null || v === undefined) return "";
-      const s = String(v);
+      const s = typeof v === "object" ? JSON.stringify(v) : String(v);
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const lines = [headers.join(",")];
-    for (const r of filtered) {
-      lines.push(
-        [
-          r.id,
-          r.user_id,
-          r.assessment_id,
-          r.assessment_title,
-          r.status,
-          r.violations,
-          r.integrity_score,
-          r.started_at,
-          r.submitted_at,
-          r.snapshot_count,
-          r.first_snapshot_at,
-          r.last_snapshot_at,
-        ]
-          .map(esc)
-          .join(",")
-      );
+    const blank = (n: number) => Array(n).fill("");
+    try {
+      const ids = filtered.map((r) => r.id);
+      // Fetch events in batches to avoid URL length / row limits
+      const eventsByAttempt = new Map<string, AttemptEvent[]>();
+      const BATCH = 50;
+      const VIOL = Array.from(VIOLATION_KINDS);
+      const KINDS = [...VIOL, "webcam_snapshot"];
+      for (let i = 0; i < ids.length; i += BATCH) {
+        const slice = ids.slice(i, i + BATCH);
+        const { data, error } = await supabase
+          .from("attempt_events")
+          .select("attempt_id,kind,payload,created_at")
+          .in("attempt_id", slice)
+          .in("kind", KINDS)
+          .order("created_at", { ascending: true })
+          .limit(5000);
+        if (error) throw error;
+        for (const ev of (data ?? []) as Array<AttemptEvent & { attempt_id: string }>) {
+          const arr = eventsByAttempt.get(ev.attempt_id) ?? [];
+          arr.push(ev);
+          eventsByAttempt.set(ev.attempt_id, arr);
+        }
+      }
+      for (const r of filtered) {
+        lines.push(
+          [
+            "attempt",
+            r.id,
+            r.user_id,
+            r.assessment_id,
+            r.assessment_title,
+            r.status,
+            r.violations,
+            r.integrity_score,
+            r.started_at,
+            r.submitted_at,
+            r.snapshot_count,
+            r.first_snapshot_at,
+            r.last_snapshot_at,
+            "",
+            "",
+            "",
+          ].map(esc).join(",")
+        );
+        const evs = eventsByAttempt.get(r.id) ?? [];
+        for (const ev of evs) {
+          const rowType = ev.kind === "webcam_snapshot" ? "snapshot" : "violation";
+          lines.push(
+            [
+              rowType,
+              r.id,
+              r.user_id,
+              r.assessment_id,
+              r.assessment_title,
+              ...blank(8),
+              ev.kind,
+              ev.created_at,
+              ev.payload ?? "",
+            ].map(esc).join(",")
+          );
+        }
+      }
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `proctoring-attempts-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${filtered.length} attempts (${lines.length - 1} rows)`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Export failed");
+    } finally {
+      setExporting(false);
     }
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `proctoring-attempts-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(`Exported ${filtered.length} rows`);
   };
 
   const totalViolations = filtered.reduce((acc, r) => acc + r.violations, 0);
@@ -381,8 +437,8 @@ export default function ParikshaaProctoring() {
             <Button size="sm" variant="outline" onClick={load} disabled={loading}>
               <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} /> Refresh
             </Button>
-            <Button size="sm" onClick={exportCsv} disabled={filtered.length === 0}>
-              <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+            <Button size="sm" onClick={exportCsv} disabled={filtered.length === 0 || exporting}>
+              <Download className={cn("h-3.5 w-3.5 mr-1.5", exporting && "animate-pulse")} /> {exporting ? "Exporting…" : "Export CSV"}
             </Button>
           </div>
         }
