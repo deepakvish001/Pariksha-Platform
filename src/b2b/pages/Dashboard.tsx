@@ -454,16 +454,23 @@ export default function B2BDashboard() {
         </div>
 
         <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-2">
             <h2 className="text-base font-semibold">Top Invite Channels</h2>
+            <Badge variant="secondary" className="font-medium">
+              {channelTotal} invites
+            </Badge>
           </div>
           <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-            How candidates are reaching you
+            Real source mix across all assessments
           </p>
           <div className="mt-5 space-y-4">
-            {channelData.map((c) => (
-              <ChannelRow key={c.label} {...c} />
-            ))}
+            {channelTotal === 0 ? (
+              <p className="text-xs text-[hsl(var(--muted-foreground))] py-6 text-center">
+                No invites sent yet. Add candidates to see your channel mix.
+              </p>
+            ) : (
+              channelData.map((c) => <ChannelRow key={c.source} {...c} />)
+            )}
           </div>
         </div>
       </div>
