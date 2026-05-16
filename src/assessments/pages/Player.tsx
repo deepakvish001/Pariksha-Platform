@@ -452,7 +452,7 @@ export default function Player() {
   const flagAndNext = () => { toggleFlag(); goNext(); };
 
   return (
-    <div className="theme-b2b min-h-screen flex flex-col bg-background">
+    <div className="theme-b2b min-h-screen flex flex-col bg-background select-none">
       <PlayerTopBar
         title={paper.assessment.title}
         answered={answeredCount}
@@ -470,10 +470,18 @@ export default function Player() {
         onPrefillKey={prefillAnswerKey}
       />
 
+      <ViolationBanner
+        violations={violations}
+        max={MAX_VIOLATIONS}
+        fullscreenLost={fullscreenLost}
+        onReturnFullscreen={requestFullscreen}
+      />
+
       <main
         data-testid="player-main"
         data-question-type={q?.type ?? ""}
-        className={getPlayerMainClass({ focusMode: false, questionType: q?.type ?? null })}
+        data-palette-collapsed={paletteCollapsed ? "1" : "0"}
+        className={getPlayerMainClass({ focusMode: false, paletteCollapsed, questionType: q?.type ?? null })}
       >
         {/* Mobile palette trigger */}
         <div className="lg:hidden">
@@ -510,6 +518,8 @@ export default function Player() {
               currentIndex={idx}
               sections={paletteSections}
               onJump={setIdx}
+              collapsed={paletteCollapsed}
+              onToggleCollapsed={() => setPaletteCollapsed((c) => !c)}
             />
           </div>
         </aside>
