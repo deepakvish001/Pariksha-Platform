@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  Clock, HelpCircle, Maximize2, Minimize2, Send, ShieldCheck, Wand2, Loader2,
-  Focus, Wifi, WifiOff, Timer as TimerIcon,
+  Clock, Maximize2, Send, ShieldCheck, Wand2, Loader2,
+  Wifi, WifiOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
