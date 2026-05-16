@@ -35,14 +35,14 @@ async function downloadSnapshot(
   path: string | null,
   format: "jpg" | "png",
   onProgress?: (pct: number | null) => void,
-) {
+): Promise<"ok" | "denied" | "error"> {
   try {
     onProgress?.(0);
     const res = await fetch(url);
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
         toast.error("You don't have permission to download this snapshot.");
-        return;
+        return "denied";
       }
       throw new Error(`HTTP ${res.status}`);
     }
