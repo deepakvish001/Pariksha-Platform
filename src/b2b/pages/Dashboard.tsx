@@ -80,7 +80,7 @@ function KpiCard({
               ) : (
                 <ArrowDownRight className="h-3.5 w-3.5" />
               )}
-              {delta.value}%
+              {delta.value}{delta.unit ?? "%"}
             </span>
           ) : null}
           {hint && (
