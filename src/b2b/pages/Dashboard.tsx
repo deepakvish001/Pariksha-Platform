@@ -48,7 +48,11 @@ import {
 } from "recharts";
 import { formatDistanceToNow } from "date-fns";
 
-type Delta = { value: number; positive: boolean; unit?: "%" | "pts" };
+type Delta = {
+  value: number; // absolute magnitude, already rounded by the hook
+  direction: "up" | "down" | "flat";
+  unit?: "%" | "pts";
+};
 
 import { Info } from "lucide-react";
 import {
@@ -75,8 +79,16 @@ function KpiCard({
 }) {
   const unitLabel = delta?.unit === "pts" ? "percentage points" : "percent";
   const prevRangeLabel = `days ${windowDays + 1}–${windowDays * 2}`;
+  const directionWord =
+    delta?.direction === "up"
+      ? "Up"
+      : delta?.direction === "down"
+        ? "Down"
+        : "Unchanged";
   const tooltipBody = delta
-    ? `Change vs the previous ${windowDays}-day window. ${delta.positive ? "Up" : "Down"} ${delta.value} ${unitLabel} compared to ${prevRangeLabel}.`
+    ? delta.direction === "flat"
+      ? `Unchanged vs the previous ${windowDays}-day window (${prevRangeLabel}).`
+      : `Change vs the previous ${windowDays}-day window. ${directionWord} ${delta.value} ${unitLabel} compared to ${prevRangeLabel}.`
     : `No baseline: there was no activity in the previous ${windowDays}-day window (${prevRangeLabel}), so a % change can't be computed yet.`;
 
   return (
@@ -122,20 +134,44 @@ function KpiCard({
         </div>
         <p className="mt-3 text-3xl font-semibold tracking-tight">{value}</p>
         <div className="mt-2 flex items-center gap-2 text-xs">
-          {delta ? (
-            <span
-              className={`inline-flex items-center gap-0.5 font-medium ${
-                delta.positive ? "text-emerald-500" : "text-rose-500"
-              }`}
-            >
-              {delta.positive ? (
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              ) : (
-                <ArrowDownRight className="h-3.5 w-3.5" />
-              )}
-              {delta.value}{delta.unit ?? "%"}
-            </span>
-          ) : (
+          {delta ? (() => {
+            const unitSuffix = delta.unit === "pts" ? " pts" : "%";
+            const sign =
+              delta.direction === "up"
+                ? "+"
+                : delta.direction === "down"
+                  ? "−"
+                  : "";
+            const colorClass =
+              delta.direction === "up"
+                ? "text-emerald-500"
+                : delta.direction === "down"
+                  ? "text-rose-500"
+                  : "text-[hsl(var(--muted-foreground))]";
+            const Arrow =
+              delta.direction === "up"
+                ? ArrowUpRight
+                : delta.direction === "down"
+                  ? ArrowDownRight
+                  : null;
+            const ariaLabel =
+              delta.direction === "flat"
+                ? `No change vs previous ${windowDays} days`
+                : `${delta.direction === "up" ? "Up" : "Down"} ${delta.value}${unitSuffix} vs previous ${windowDays} days`;
+            return (
+              <span
+                aria-label={ariaLabel}
+                className={`inline-flex items-center gap-0.5 font-medium tabular-nums ${colorClass}`}
+              >
+                {Arrow ? <Arrow aria-hidden="true" className="h-3.5 w-3.5" /> : null}
+                <span>
+                  {sign}
+                  {delta.value}
+                  {unitSuffix}
+                </span>
+              </span>
+            );
+          })() : (
             <span
               role="status"
               aria-label="No baseline: previous 30-day window had no activity, so percent change cannot be calculated"
@@ -468,10 +504,17 @@ export default function B2BDashboard() {
       {/* KPI tiles */}
       {(() => {
         const d = stats?.deltas;
-        const toDelta = (v: number | null | undefined, unit: "%" | "pts") =>
-          v == null
-            ? undefined
-            : { value: Math.abs(v), positive: v >= 0, unit };
+        const toDelta = (
+          v: number | null | undefined,
+          unit: "%" | "pts",
+        ): Delta | undefined => {
+          if (v == null) return undefined;
+          // Round magnitude to 1 decimal so "pts" deltas read consistently as
+          // absolute percentage-point changes (e.g. "+3.2 pts", "−1.5 pts").
+          const magnitude = Math.round(Math.abs(v) * 10) / 10;
+          const direction = v > 0 ? "up" : v < 0 ? "down" : "flat";
+          return { value: magnitude, direction, unit };
+        };
         const windowDays = statsRange === "7d" ? 7 : statsRange === "90d" ? 90 : 30;
         const hint = `vs prev ${windowDays}d`;
         return (
