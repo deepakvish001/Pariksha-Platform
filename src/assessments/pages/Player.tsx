@@ -28,6 +28,8 @@ import { AssessmentLockdownGate } from "../components/AssessmentLockdownGate";
 import { WebcamPip } from "../components/WebcamPip";
 import { ViolationBanner } from "../components/ViolationBanner";
 import { useOnline } from "../hooks/useOnline";
+import { useDeviceLock } from "../hooks/useDeviceLock";
+import { useDisplayCapture } from "../hooks/useDisplayCapture";
 import { safeStorage } from "../lib/safeStorage";
 import { getPlayerMainClass } from "../lib/playerLayout";
 import { cn } from "@/lib/utils";
