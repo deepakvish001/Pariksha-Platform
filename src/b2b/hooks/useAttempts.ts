@@ -69,7 +69,7 @@ export function useAttemptDetail(attemptId?: string) {
       const { data: answers, error: e2 } = await supabase
         .from("attempt_answers")
         .select(
-          "id, question_id, answer, auto_score, manual_score, question:questions(id,type,title,body_md,language,points, mcq_options(id,body,is_correct,order_index), question_test_cases(input,expected_output,is_hidden,order_index))"
+          "id, question_id, answer, auto_score, manual_score, question:questions(id,type,title,body_md,language,points,meta, mcq_options(id,body,is_correct,order_index), question_test_cases(input,expected_output,is_hidden,order_index))"
         )
         .eq("attempt_id", attemptId!);
       if (e2) throw e2;
