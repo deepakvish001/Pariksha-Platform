@@ -14,6 +14,7 @@ import {
   Filter,
   BarChart3,
   Mail,
+  Wrench,
 } from "lucide-react";
 import {
   Sidebar,
@@ -100,6 +101,16 @@ const GROUPS: NavGroup[] = [
       { to: "/admin/parikshaa/demo-requests", label: "Demo Requests", icon: Sparkles },
       { to: "/admin/parikshaa/funnel", label: "Conversion Funnel", icon: BarChart3 },
       { to: "/admin/parikshaa/email-preview", label: "Email Preview", icon: Mail },
+    ],
+  },
+  {
+    label: "Maintenance",
+    items: [
+      {
+        to: "/admin/parikshaa/invite-source-backfill",
+        label: "Invite Source Backfill",
+        icon: Wrench,
+      },
     ],
   },
 ];
@@ -303,6 +314,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   "demo-requests": "Demo Requests",
   funnel: "Conversion Funnel",
   "email-preview": "Email Preview",
+  "invite-source-backfill": "Invite Source Backfill",
 };
 
 const buildCrumbs = (pathname: string) => {
