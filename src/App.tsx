@@ -477,6 +477,7 @@ const App = () => (
                   
                   <Route path="notifications" element={<NotificationsAdmin />} />
                   <Route path="alerts" element={<AdminAlerts />} />
+                  <Route path="ai-insight-feedback" element={<AiInsightFeedback />} />
                   <Route path="quizzes" element={<QuizzesAdmin />} />
                   
                   <Route path="submissions" element={<SubmissionsAdmin />} />
