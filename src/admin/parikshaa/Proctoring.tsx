@@ -771,6 +771,8 @@ async function signSnapshot(path: string): Promise<string | null> {
   return data.signedUrl;
 }
 
+const SNAPSHOT_PAGE_SIZE = 36;
+
 function SnapshotGroup({
   snapshots,
   onOpen,
@@ -778,13 +780,33 @@ function SnapshotGroup({
   snapshots: AttemptEvent[];
   onOpen: (index: number) => void;
 }) {
-  // Lazily generate signed thumbnail URLs once per mount.
+  const [page, setPage] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(snapshots.length / SNAPSHOT_PAGE_SIZE));
+
+  // Reset to first page when the underlying list changes (different attempt).
+  useEffect(() => {
+    setPage(0);
+  }, [snapshots]);
+
+  // Clamp page if list shrinks below current page bounds.
+  useEffect(() => {
+    if (page > pageCount - 1) setPage(pageCount - 1);
+  }, [page, pageCount]);
+
+  const pageStart = page * SNAPSHOT_PAGE_SIZE;
+  const pageItems = useMemo(
+    () => snapshots.slice(pageStart, pageStart + SNAPSHOT_PAGE_SIZE),
+    [snapshots, pageStart],
+  );
+
+  // Lazily sign thumbnail URLs only for items on the current page so we
+  // never issue hundreds of storage calls on attempts with long timelines.
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const next: Record<string, string> = {};
-      for (const e of snapshots) {
+      for (const e of pageItems) {
         const path = snapshotPath(e);
         if (!path || thumbs[path]) continue;
         const url = await signSnapshot(path);
@@ -798,27 +820,55 @@ function SnapshotGroup({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [snapshots]);
+  }, [pageItems]);
 
   return (
     <div className="rounded-md border bg-background/60 p-2">
-      <div className="text-[11px] font-semibold uppercase tracking-wide mb-2 text-emerald-600">
-        Webcam snapshots{" "}
-        <span className="opacity-60 tabular-nums">({snapshots.length})</span>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-emerald-600">
+          Webcam snapshots{" "}
+          <span className="opacity-60 tabular-nums">({snapshots.length})</span>
+        </div>
+        {pageCount > 1 && (
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground tabular-nums">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="px-1.5 py-0.5 rounded border border-border/60 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Previous page of snapshots"
+            >
+              Prev
+            </button>
+            <span>
+              {pageStart + 1}–{Math.min(snapshots.length, pageStart + pageItems.length)} of {snapshots.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+              disabled={page >= pageCount - 1}
+              className="px-1.5 py-0.5 rounded border border-border/60 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Next page of snapshots"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
       {snapshots.length === 0 ? (
         <div className="text-muted-foreground italic text-[11px]">none</div>
       ) : (
         <div className="max-h-64 overflow-y-auto pr-1">
           <div className="grid grid-cols-3 gap-1.5">
-            {snapshots.map((e, i) => {
+            {pageItems.map((e, i) => {
               const path = snapshotPath(e);
               const src = path ? thumbs[path] : undefined;
+              const absoluteIndex = pageStart + i;
               return (
                 <button
                   type="button"
                   key={e.id}
-                  onClick={() => onOpen(i)}
+                  onClick={() => onOpen(absoluteIndex)}
                   title={`${fmtTs(e.created_at)}${path ? ` — ${path}` : ""}`}
                   className="group relative aspect-[4/3] overflow-hidden rounded border border-border/60 bg-muted/40 hover:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
                 >
@@ -827,6 +877,7 @@ function SnapshotGroup({
                       src={src}
                       alt={`Webcam snapshot at ${fmtTs(e.created_at)}`}
                       loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                   ) : (
