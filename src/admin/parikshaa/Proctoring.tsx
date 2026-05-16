@@ -1157,49 +1157,32 @@ function SnapshotLightbox({
                   <ChevronRight className="h-4 w-4" />
                 </Button>
                 {url && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7"
-                    title="Download snapshot"
-                    aria-label="Download snapshot"
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(url);
-                        if (!res.ok) {
-                          if (res.status === 401 || res.status === 403) {
-                            toast.error(
-                              "You don't have permission to download this snapshot.",
-                            );
-                            return;
-                          }
-                          throw new Error(`HTTP ${res.status}`);
-                        }
-                        const blob = await res.blob();
-                        const href = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        const base = path ? path.split("/").pop() : null;
-                        const tsName = new Date(event.created_at)
-                          .toISOString()
-                          .replace(/[:.]/g, "-");
-                        a.href = href;
-                        a.download = base || `snapshot-${tsName}.jpg`;
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                        URL.revokeObjectURL(href);
-                      } catch (err) {
-                        toast.error(
-                          "Couldn't download snapshot. Opening in a new tab instead.",
-                        );
-                        // Fallback: open the signed URL in a new tab so the
-                        // admin can still save it manually.
-                        window.open(url, "_blank", "noopener,noreferrer");
-                      }
-                    }}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 gap-1"
+                        title="Download snapshot"
+                        aria-label="Download snapshot"
+                      >
+                        <Download className="h-4 w-4" />
+                        <ChevronDown className="h-3 w-3 opacity-60" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-[10rem]">
+                      <DropdownMenuItem
+                        onClick={() => downloadSnapshot(url, event, path, "jpg")}
+                      >
+                        Download as JPG
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => downloadSnapshot(url, event, path, "png")}
+                      >
+                        Download as PNG
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
                 <Button
                   size="icon"
