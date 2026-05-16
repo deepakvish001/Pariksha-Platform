@@ -73,6 +73,7 @@ export function useCreateQuestion() {
       language?: string;
       starter_code?: string;
       points?: number;
+      meta?: Record<string, unknown>;
     }) => {
       const { data, error } = await supabase
         .from("questions")
@@ -84,6 +85,7 @@ export function useCreateQuestion() {
           language: input.language ?? null,
           starter_code: input.starter_code ?? null,
           points: input.points ?? 10,
+          meta: (input.meta ?? {}) as never,
         })
         .select("*")
         .single();
