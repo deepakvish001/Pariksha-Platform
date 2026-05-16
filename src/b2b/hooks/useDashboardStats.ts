@@ -25,6 +25,12 @@ export type DashboardStats = {
     invites: WindowPair;
     submissions: WindowPair;
     avgIntegrity: WindowPair<number | null>;
+    breakdowns: {
+      assessments: { drafts: WindowPair; published: WindowPair };
+      invites: { pending: WindowPair; accepted: WindowPair };
+      submissions: { started: WindowPair; completed: WindowPair };
+      integrity: { flaggedLow: WindowPair };
+    };
   };
 };
 
