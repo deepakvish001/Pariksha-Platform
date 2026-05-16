@@ -349,3 +349,33 @@ function fallbackInsights(stats: any): Insight[] {
   }
   return out.slice(0, 3);
 }
+
+// djb2 hash matching the frontend's insightKey() so a re-generated insight with
+// the exact same title+body matches stored feedback by key.
+function insightKey(i: { title: string; body: string }): string {
+  const s = `${i.title}\u0001${i.body}`;
+  let h = 5381;
+  for (let n = 0; n < s.length; n++) h = ((h << 5) + h + s.charCodeAt(n)) | 0;
+  return `v1:${(h >>> 0).toString(36)}`;
+}
+
+// Rerank insights by historical org feedback. Exact insight_key matches weigh
+// 2x; title-level matches contribute their net score. Stable sort preserves
+// the model's original ordering on ties.
+function rerank(
+  insights: Insight[],
+  keyNet: Map<string, number>,
+  titleNet: Map<string, number>,
+): Insight[] {
+  if (!insights.length) return insights;
+  const scored = insights.map((ins, idx) => {
+    const k = insightKey(ins);
+    const t = (ins.title ?? "").trim().toLowerCase();
+    const score = 2 * (keyNet.get(k) ?? 0) + (titleNet.get(t) ?? 0);
+    return { ins, idx, score };
+  });
+  scored.sort((a, b) =>
+    b.score !== a.score ? b.score - a.score : a.idx - b.idx,
+  );
+  return scored.map((s) => s.ins);
+}
