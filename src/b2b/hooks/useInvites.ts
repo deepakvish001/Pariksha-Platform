@@ -40,8 +40,13 @@ export function useCreateInvites() {
     mutationFn: async (input: {
       assessment_id: string;
       rows: { email: string; name?: string; external_id?: string }[];
+      source?: InviteSource;
     }) => {
       const seen = new Set<string>();
+      // Default heuristic: >1 row implies a paste/CSV bulk upload; a single
+      // row is a manual one-off add. Callers can override via `source`.
+      const source: InviteSource =
+        input.source ?? (input.rows.length > 1 ? "bulk_upload" : "manual");
       const payload = input.rows
         .map((r) => ({ ...r, email: r.email.trim().toLowerCase() }))
         .filter((r) => {
@@ -54,6 +59,7 @@ export function useCreateInvites() {
           email: r.email,
           name: r.name ?? null,
           external_id: r.external_id ?? null,
+          source,
         }));
       if (!payload.length) return [] as Invite[];
       const { data, error } = await supabase
