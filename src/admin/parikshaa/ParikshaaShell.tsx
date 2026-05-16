@@ -316,6 +316,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   funnel: "Conversion Funnel",
   "email-preview": "Email Preview",
   "invite-source-backfill": "Invite Source Backfill",
+  proctoring: "Proctoring Review",
 };
 
 const buildCrumbs = (pathname: string) => {
