@@ -575,6 +575,11 @@ export default function B2BDashboard() {
   const recent = (assessments ?? []).slice(0, 5);
   const { insights, loading: insightsLoading, error: insightsError, refresh: refreshInsights } =
     useAiInsights(org?.id);
+  const {
+    ratings: insightRatings,
+    pending: insightPending,
+    submit: submitInsightFeedback,
+  } = useInsightFeedback(org?.id, insights);
 
   return (
     <OrgShell
