@@ -35,14 +35,14 @@ async function downloadSnapshot(
   path: string | null,
   format: "jpg" | "png",
   onProgress?: (pct: number | null) => void,
-) {
+): Promise<"ok" | "denied" | "error"> {
   try {
     onProgress?.(0);
     const res = await fetch(url);
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
         toast.error("You don't have permission to download this snapshot.");
-        return;
+        return "denied";
       }
       throw new Error(`HTTP ${res.status}`);
     }
@@ -123,10 +123,12 @@ async function downloadSnapshot(
     a.remove();
     URL.revokeObjectURL(href);
     onProgress?.(100);
+    return "ok";
   } catch {
     toast.error("Couldn't download snapshot. Opening in a new tab instead.");
     window.open(url, "_blank", "noopener,noreferrer");
     onProgress?.(null);
+    return "error";
   }
 }
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -1192,6 +1194,14 @@ function SnapshotLightbox({
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [dl, setDl] = useState<{ format: "jpg" | "png"; pct: number } | null>(null);
+  // Remember signed URLs that returned 401/403 so we don't re-attempt the
+  // same download and spam toasts. Cleared automatically when the URL changes
+  // (e.g. user navigates to a different snapshot and a new URL is signed).
+  const [deniedUrl, setDeniedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    setDeniedUrl(null);
+  }, [url]);
+  const denied = !!url && deniedUrl === url;
 
   useEffect(() => {
     if (!open || !path) {
@@ -1272,13 +1282,19 @@ function SnapshotLightbox({
                         variant="ghost"
                         className="h-7 px-2 gap-1 tabular-nums"
                         title={
-                          dl
+                          denied
+                            ? "You don't have permission to download this snapshot"
+                            : dl
                             ? `Downloading ${dl.format.toUpperCase()}${dl.pct != null ? ` (${dl.pct}%)` : "…"}`
                             : "Download snapshot"
                         }
-                        aria-label="Download snapshot"
+                        aria-label={
+                          denied
+                            ? "Download unavailable: permission denied"
+                            : "Download snapshot"
+                        }
                         aria-busy={!!dl}
-                        disabled={!!dl}
+                        disabled={!!dl || denied}
                       >
                         {dl ? (
                           <>
@@ -1297,25 +1313,37 @@ function SnapshotLightbox({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[10rem]">
                       <DropdownMenuItem
-                        disabled={!!dl}
+                        disabled={!!dl || denied}
                         onClick={async () => {
                           setDl({ format: "jpg", pct: 0 });
-                          await downloadSnapshot(url, event, path, "jpg", (pct) =>
-                            setDl(pct == null ? null : { format: "jpg", pct }),
+                          const result = await downloadSnapshot(
+                            url,
+                            event,
+                            path,
+                            "jpg",
+                            (pct) =>
+                              setDl(pct == null ? null : { format: "jpg", pct }),
                           );
                           setDl(null);
+                          if (result === "denied") setDeniedUrl(url);
                         }}
                       >
                         Download as JPG
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        disabled={!!dl}
+                        disabled={!!dl || denied}
                         onClick={async () => {
                           setDl({ format: "png", pct: 0 });
-                          await downloadSnapshot(url, event, path, "png", (pct) =>
-                            setDl(pct == null ? null : { format: "png", pct }),
+                          const result = await downloadSnapshot(
+                            url,
+                            event,
+                            path,
+                            "png",
+                            (pct) =>
+                              setDl(pct == null ? null : { format: "png", pct }),
                           );
                           setDl(null);
+                          if (result === "denied") setDeniedUrl(url);
                         }}
                       >
                         Download as PNG
