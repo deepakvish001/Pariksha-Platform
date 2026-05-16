@@ -20,8 +20,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, RefreshCw, ChevronDown, ChevronRight, Camera, ShieldAlert, Loader2, Trash2, Save, ChevronLeft as ChevronLeftIcon, X } from "lucide-react";
+import { Download, RefreshCw, ChevronDown, ChevronRight, Camera, ShieldAlert, Loader2, Trash2, Save, ChevronLeft as ChevronLeftIcon, X, Eye, Copy } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -84,6 +85,9 @@ export default function ParikshaaProctoring() {
   const [selectedKinds, setSelectedKinds] = useState<Set<string>>(new Set());
 
   const [expanded, setExpanded] = useState<Record<string, AttemptEvent[] | "loading">>({});
+
+  /** Selected attempt id for the detail side-sheet (null = closed). */
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   /**
    * Fetch snapshot stats + violation kind sets for a batch of attempt ids
@@ -563,15 +567,16 @@ export default function ParikshaaProctoring() {
               <TableHead className="text-right">Integrity</TableHead>
               <TableHead className="text-right">Snapshots</TableHead>
               <TableHead>Last snapshot</TableHead>
+              <TableHead className="w-8" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin inline mr-2" /> Loading…
               </TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                 No attempts match the current filters.
               </TableCell></TableRow>
             ) : (
@@ -602,11 +607,26 @@ export default function ParikshaaProctoring() {
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{r.snapshot_count}</TableCell>
                       <TableCell className="font-mono text-xs">{r.last_snapshot_at ? fmtTs(r.last_snapshot_at) : "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          aria-label="Open attempt details"
+                          title="Open attempt details"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDetailId(r.id);
+                          }}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                     {open && (
                       <TableRow className="bg-muted/20 hover:bg-muted/20">
                         <TableCell />
-                        <TableCell colSpan={8} className="py-3">
+                        <TableCell colSpan={9} className="py-3">
                           {events === "loading" ? (
                             <div className="text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin inline mr-1" /> Loading events…</div>
                           ) : (
@@ -654,6 +674,12 @@ export default function ParikshaaProctoring() {
         {/* IntersectionObserver target — kicks loadMore in before the user hits the end. */}
         {hasMore && <div ref={sentinelRef} aria-hidden className="h-1" />}
       </div>
+
+      <AttemptDetailSheet
+        attempt={detailId ? rows.find((r) => r.id === detailId) ?? null : null}
+        kinds={detailId ? kindsByAttempt.get(detailId) ?? null : null}
+        onClose={() => setDetailId(null)}
+      />
     </div>
   );
 }
@@ -938,6 +964,210 @@ function SnapshotLightbox({
       </DialogContent>
     </Dialog>
   );
+}
+
+function AttemptDetailSheet({
+  attempt,
+  kinds,
+  onClose,
+}: {
+  attempt: AttemptRow | null;
+  kinds: Set<string> | null;
+  onClose: () => void;
+}) {
+  const open = !!attempt;
+  const [events, setEvents] = useState<AttemptEvent[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [truncated, setTruncated] = useState(false);
+
+  useEffect(() => {
+    if (!attempt) {
+      setEvents(null);
+      setTruncated(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setEvents(null);
+    setTruncated(false);
+    const LIMIT = 2000;
+    (async () => {
+      const { data, error } = await supabase
+        .from("attempt_events")
+        .select("id,kind,payload,created_at")
+        .eq("attempt_id", attempt.id)
+        .order("created_at", { ascending: false })
+        .limit(LIMIT);
+      if (cancelled) return;
+      if (error) {
+        toast.error("Failed to load events", { description: error.message });
+        setEvents([]);
+      } else {
+        const list = (data ?? []) as AttemptEvent[];
+        setEvents(list);
+        setTruncated(list.length >= LIMIT);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
+
+  const durationMs = useMemo(() => {
+    if (!attempt?.started_at) return null;
+    const start = new Date(attempt.started_at).getTime();
+    const end = attempt.submitted_at
+      ? new Date(attempt.submitted_at).getTime()
+      : Date.now();
+    return Math.max(0, end - start);
+  }, [attempt]);
+
+  const copyId = async () => {
+    if (!attempt) return;
+    try {
+      await navigator.clipboard.writeText(attempt.id);
+      toast.success("Attempt ID copied");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-0">
+        <SheetHeader className="px-5 pt-5 pb-3 border-b">
+          <SheetTitle className="text-base flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-amber-600" />
+            Attempt details
+          </SheetTitle>
+          <SheetDescription className="sr-only">
+            Full metadata and event history for the selected attempt.
+          </SheetDescription>
+          {attempt && (
+            <div className="flex items-center gap-1.5 pt-1">
+              <code className="text-[11px] font-mono text-muted-foreground truncate">{attempt.id}</code>
+              <Button size="icon" variant="ghost" className="h-6 w-6" aria-label="Copy attempt id" onClick={copyId}>
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+        </SheetHeader>
+
+        {attempt && (
+          <div className="p-5 space-y-5">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <Meta label="Assessment" value={attempt.assessment_title} />
+              <Meta label="Status">
+                <Badge variant={attempt.status === "auto_submitted" ? "destructive" : "secondary"} className="capitalize text-[10px]">
+                  {attempt.status.replace(/_/g, " ")}
+                </Badge>
+              </Meta>
+              <Meta label="User" value={attempt.user_id} mono />
+              <Meta
+                label="Integrity score"
+                value={attempt.integrity_score.toFixed(0)}
+                valueClass={cn("tabular-nums font-semibold", attempt.integrity_score < 70 && "text-destructive")}
+              />
+              <Meta label="Started" value={fmtTs(attempt.started_at)} mono />
+              <Meta label="Submitted" value={attempt.submitted_at ? fmtTs(attempt.submitted_at) : "—"} mono />
+              <Meta label="Duration" value={durationMs !== null ? fmtDuration(durationMs) : "—"} />
+              <Meta
+                label="Violations"
+                value={String(attempt.violations)}
+                valueClass={cn("tabular-nums font-semibold", attempt.violations > 0 && "text-amber-600")}
+              />
+              <Meta label="Snapshots" value={String(attempt.snapshot_count)} valueClass="tabular-nums" />
+              <Meta label="First snapshot" value={attempt.first_snapshot_at ? fmtTs(attempt.first_snapshot_at) : "—"} mono />
+              <Meta label="Last snapshot" value={attempt.last_snapshot_at ? fmtTs(attempt.last_snapshot_at) : "—"} mono />
+              <Meta label="Assessment ID" value={attempt.assessment_id} mono />
+            </div>
+
+            {kinds && kinds.size > 0 && (
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Violation kinds</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.from(kinds).map((k) => (
+                    <span
+                      key={k}
+                      className="inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-mono text-amber-700 dark:text-amber-300"
+                    >
+                      {k}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Event history
+                  {events && (
+                    <span className="ml-1.5 opacity-70 tabular-nums">
+                      ({events.length}{truncated ? "+" : ""})
+                    </span>
+                  )}
+                </h4>
+                {truncated && (
+                  <span className="text-[10px] text-amber-600">Showing most recent 2000 events</span>
+                )}
+              </div>
+              {loading ? (
+                <div className="text-xs text-muted-foreground py-6 text-center">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin inline mr-1.5" />
+                  Loading events…
+                </div>
+              ) : events && events.length > 0 ? (
+                <EventTimeline events={events} />
+              ) : (
+                <div className="text-xs text-muted-foreground py-6 text-center italic">
+                  No proctoring events recorded.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function Meta({
+  label,
+  value,
+  children,
+  mono,
+  valueClass,
+}: {
+  label: string;
+  value?: string;
+  children?: React.ReactNode;
+  mono?: boolean;
+  valueClass?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
+      {children ? (
+        <div>{children}</div>
+      ) : (
+        <span className={cn("truncate", mono && "font-mono text-[11px]", valueClass)} title={value}>
+          {value || "—"}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function fmtDuration(ms: number) {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}h ${m}m ${sec}s`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
 }
 
 function StatCard({ label, value, tone, icon }: { label: string; value: number; tone?: "amber" | "muted"; icon?: React.ReactNode }) {
