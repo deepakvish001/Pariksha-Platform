@@ -63,13 +63,16 @@ describe("Player main container width is fixed across question types", () => {
     expect(sql).toBe(mcq);
   });
 
-  it("toggles the sidebar column purely off focus mode", () => {
-    const withSidebar = getPlayerMainClass({ focusMode: false, questionType: "coding" });
+  it("toggles the sidebar column purely off focus mode and palette collapse", () => {
+    const expanded = getPlayerMainClass({ focusMode: false, questionType: "coding" });
+    const collapsed = getPlayerMainClass({ focusMode: false, paletteCollapsed: true, questionType: "coding" });
     const focused = getPlayerMainClass({ focusMode: true, questionType: "coding" });
-    expect(withSidebar).toContain("lg:grid-cols-[240px_1fr]");
-    expect(focused).not.toContain("lg:grid-cols-[240px_1fr]");
-    // Width stays identical — only the column track changes.
-    expect(widthTokens(withSidebar)).toEqual(widthTokens(focused));
+    expect(expanded).toContain("lg:grid-cols-[300px_1fr]");
+    expect(collapsed).toContain("lg:grid-cols-[56px_1fr]");
+    expect(focused).not.toContain("lg:grid-cols-[");
+    // Width stays identical across every variant — only the column track changes.
+    expect(widthTokens(expanded)).toEqual(widthTokens(focused));
+    expect(widthTokens(expanded)).toEqual(widthTokens(collapsed));
   });
 
   it("handles null/undefined questionType safely (initial load)", () => {
