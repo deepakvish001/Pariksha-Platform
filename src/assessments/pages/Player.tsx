@@ -28,6 +28,8 @@ import { AssessmentLockdownGate } from "../components/AssessmentLockdownGate";
 import { WebcamPip } from "../components/WebcamPip";
 import { ViolationBanner } from "../components/ViolationBanner";
 import { useOnline } from "../hooks/useOnline";
+import { useDeviceLock } from "../hooks/useDeviceLock";
+import { useDisplayCapture } from "../hooks/useDisplayCapture";
 import { safeStorage } from "../lib/safeStorage";
 import { getPlayerMainClass } from "../lib/playerLayout";
 import { cn } from "@/lib/utils";
@@ -178,6 +180,28 @@ export default function Player() {
       doSubmit(true);
     }
   }, [remaining, deadline, paper, doSubmit]);
+
+  // Device fingerprint lock — pins on first attempt start, auto-submits on mismatch
+  useDeviceLock({
+    attemptId,
+    enabled: proctoringEnabled && lockdownReady,
+    onMismatch: (current, stored) => {
+      void logProctorEvent("device_change", { current, stored });
+    },
+  });
+
+  // Screen capture monitoring — required only when proctoring_config.require_screen_share
+  const secondMonitorLoggedRef = useRef(false);
+  useDisplayCapture({
+    attemptId,
+    enabled: proctoringEnabled && lockdownReady && proctoringConfig.require_screen_share,
+    onSecondMonitor: () => {
+      if (secondMonitorLoggedRef.current) return;
+      secondMonitorLoggedRef.current = true;
+      void logProctorEvent("second_monitor");
+    },
+    onShareLost: () => { void logProctorEvent("screenshare_lost"); },
+  });
 
   // Track latest answers without re-creating queueSave on every keystroke
   const answersRef = useRef<AnswerMap>({});
@@ -422,6 +446,7 @@ export default function Player() {
     return (
       <AssessmentLockdownGate
         attemptId={attemptId}
+        config={proctoringConfig}
         onReady={(s) => {
           setCamStream(s);
           setLockdownReady(true);
