@@ -388,7 +388,7 @@ export function CodingQuestion({ question, value, onChange, isPreview }: Props) 
                       value={code}
                       onChange={setCode}
                       language={langInfo.monaco}
-                      fontSize={fontSize}
+                      fontSize={editorPrefs.fontSize}
                     />
                   </div>
                 </div>
