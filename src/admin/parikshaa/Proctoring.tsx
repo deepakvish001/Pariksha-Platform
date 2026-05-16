@@ -20,7 +20,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, RefreshCw, ChevronDown, ChevronRight, Camera, ShieldAlert, Loader2, Trash2, Save } from "lucide-react";
+import { Download, RefreshCw, ChevronDown, ChevronRight, Camera, ShieldAlert, Loader2, Trash2, Save, ChevronLeft as ChevronLeftIcon, X } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
