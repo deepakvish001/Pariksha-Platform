@@ -292,16 +292,26 @@ export default function B2BDashboard() {
 
   if (!org) return <Navigate to="/b2b/onboarding" replace />;
 
-  // Synthetic channel mix derived from invite totals (keeps the card alive
-  // even before per-channel tracking is wired).
-  const invites = stats?.invites ?? 0;
-  const channelData = [
-    { label: "Email Invites", icon: Mail, color: "hsl(var(--primary))", pct: 42 },
-    { label: "Shareable Link", icon: Link2, color: "#3b82f6", pct: 26 },
-    { label: "Bulk Upload", icon: Upload, color: "#f97316", pct: 16 },
-    { label: "Manual Add", icon: UserPlus, color: "#a855f7", pct: 10 },
-    { label: "API / SSO", icon: Webhook, color: "#22d3ee", pct: 6 },
-  ].map((c) => ({ ...c, value: Math.round((invites * c.pct) / 100) }));
+  // Real per-source invite counts (assessment_invites.source).
+  const CHANNEL_DEFS: {
+    source: string;
+    label: string;
+    icon: LucideIcon;
+    color: string;
+  }[] = [
+    { source: "email", label: "Email Invites", icon: Mail, color: "hsl(var(--primary))" },
+    { source: "link", label: "Shareable Link", icon: Link2, color: "#3b82f6" },
+    { source: "bulk_upload", label: "Bulk Upload", icon: Upload, color: "#f97316" },
+    { source: "manual", label: "Manual Add", icon: UserPlus, color: "#a855f7" },
+    { source: "api", label: "API / SSO", icon: Webhook, color: "#22d3ee" },
+  ];
+  const countBySource = new Map(channelCounts.map((c) => [c.source, c.count]));
+  const channelTotal = channelCounts.reduce((s, c) => s + c.count, 0);
+  const channelData = CHANNEL_DEFS.map((c) => {
+    const value = countBySource.get(c.source) ?? 0;
+    const pct = channelTotal ? Math.round((value / channelTotal) * 100) : 0;
+    return { ...c, value, pct };
+  });
 
   const recent = (assessments ?? []).slice(0, 5);
   const insights = [
