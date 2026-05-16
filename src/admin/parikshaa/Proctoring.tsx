@@ -1247,12 +1247,16 @@ function RetentionCard() {
   const runPurge = async () => {
     setPurging(true);
     try {
-      const { data, error } = await supabase.functions.invoke("purge-proctoring-data");
+      const { data: userData } = await supabase.auth.getUser();
+      const { data, error } = await supabase.functions.invoke("purge-proctoring-data", {
+        body: { source: "manual", triggered_by: userData?.user?.id ?? null },
+      });
       if (error) throw error;
       setLastResult({
         snapshots_deleted: (data as any)?.snapshots_deleted ?? 0,
         events_deleted: (data as any)?.events_deleted ?? 0,
       });
+      setHistoryKey((k) => k + 1);
       toast.success("Purge complete", {
         description: `${(data as any)?.snapshots_deleted ?? 0} snapshots & ${(data as any)?.events_deleted ?? 0} events removed`,
       });
