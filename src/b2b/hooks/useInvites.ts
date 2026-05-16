@@ -34,6 +34,14 @@ export function useInvites(assessmentId?: string) {
   });
 }
 
+const ALLOWED_SOURCES: ReadonlySet<InviteSource> = new Set([
+  "email",
+  "link",
+  "bulk_upload",
+  "manual",
+  "api",
+]);
+
 export function useCreateInvites() {
   const qc = useQueryClient();
   return useMutation({
@@ -42,11 +50,15 @@ export function useCreateInvites() {
       rows: { email: string; name?: string; external_id?: string }[];
       source?: InviteSource;
     }) => {
-      const seen = new Set<string>();
       // Default heuristic: >1 row implies a paste/CSV bulk upload; a single
       // row is a manual one-off add. Callers can override via `source`.
-      const source: InviteSource =
-        input.source ?? (input.rows.length > 1 ? "bulk_upload" : "manual");
+      const inferred: InviteSource =
+        input.rows.length > 1 ? "bulk_upload" : "manual";
+      const requested = (input.source ?? inferred) as InviteSource;
+      const source: InviteSource = ALLOWED_SOURCES.has(requested)
+        ? requested
+        : inferred;
+      const seen = new Set<string>();
       const payload = input.rows
         .map((r) => ({ ...r, email: r.email.trim().toLowerCase() }))
         .filter((r) => {
