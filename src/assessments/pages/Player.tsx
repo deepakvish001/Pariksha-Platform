@@ -50,7 +50,6 @@ export default function Player() {
   // Lockdown gate + webcam stream are required before the player content renders.
   const [lockdownReady, setLockdownReady] = useState(false);
   const [camStream, setCamStream] = useState<MediaStream | null>(null);
-  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
 
   const flatQuestions = useMemo<PaperQuestion[]>(
     () => (paper?.sections ?? []).flatMap((s) => s.questions),
