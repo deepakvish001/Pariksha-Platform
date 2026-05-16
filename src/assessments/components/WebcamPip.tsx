@@ -56,13 +56,10 @@ function loadPos(attemptId: string): { x: number; y: number } {
 export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [pos, setPos] = useState<{ x: number; y: number }>(() => loadPos());
-  const dragRef = useRef<{ ox: number; oy: number } | null>(null);
-  const [active, setActive] = useState(true);
-
   const [pos, setPos] = useState<{ x: number; y: number }>(() => loadPos(attemptId));
   const dragRef = useRef<{ ox: number; oy: number } | null>(null);
   const [active, setActive] = useState(true);
+
 
   // Load persisted position when the attempt changes
   useEffect(() => {
