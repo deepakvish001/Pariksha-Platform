@@ -96,7 +96,11 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
     }
   };
 
-  const canStart = !!stream && acknowledged && (!requireScreen || !!screen);
+  const canStart =
+    !!stream &&
+    acknowledged &&
+    (!requireScreen || !!screen) &&
+    (!requireSideEye || sideEyePaired);
 
   const enterSecure = async () => {
     if (!canStart || !stream) return;
