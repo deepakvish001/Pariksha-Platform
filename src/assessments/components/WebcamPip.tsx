@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Camera, CameraOff, Eye, EyeOff, Magnet, RotateCcw, Shield } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Props {
   attemptId: string;
@@ -219,6 +229,7 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
   const [snapping, setSnapping] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [hidden, setHidden] = useState<boolean>(() => loadHiddenPref());
+  const [confirmReset, setConfirmReset] = useState(false);
 
   // Persist snap preference
   useEffect(() => {
@@ -534,7 +545,7 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
                 </button>
                 <button
                   type="button"
-                  onClick={resetPos}
+                  onClick={() => setConfirmReset(true)}
                   onPointerDown={(e) => e.stopPropagation()}
                   title="Reset webcam position"
                   aria-label="Reset webcam position"
@@ -581,6 +592,30 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
         />
       )}
       <canvas ref={canvasRef} className="hidden" aria-hidden />
+
+      <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset webcam position?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This moves the webcam preview back to its default corner for this
+              attempt. Your saved position for this attempt will be cleared;
+              other attempts are not affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                resetPos();
+                setConfirmReset(false);
+              }}
+            >
+              Reset position
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
