@@ -47,6 +47,7 @@ import ParikshaaEmailPreview from "@/admin/parikshaa/EmailPreview";
 import ParikshaaInviteSourceBackfill from "@/admin/parikshaa/InviteSourceBackfill";
 import ParikshaaProctoring from "@/admin/parikshaa/Proctoring";
 import StudentJoin from "@/assessments/pages/Join";
+import StudentSideCamera from "@/assessments/pages/SideCamera";
 import MyAssessments from "@/assessments/pages/MyAssessments";
 import StudentLobby from "@/assessments/pages/Lobby";
 import StudentPlayer from "@/assessments/pages/Player";
@@ -298,6 +299,7 @@ const App = () => (
 
                 {/* Student-side assessments */}
                 <Route path="/assessments/join/:token" element={<StudentJoin />} />
+                <Route path="/assessments/sidecam/:token" element={<StudentSideCamera />} />
                 <Route path="/assessments" element={<ProtectedRoute><MyAssessments /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/lobby" element={<ProtectedRoute><StudentLobby /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/play" element={<ProtectedRoute><StudentPlayer /></ProtectedRoute>} />

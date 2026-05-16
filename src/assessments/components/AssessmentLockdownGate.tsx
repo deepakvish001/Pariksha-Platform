@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ShieldCheck, Camera, Maximize2, AlertTriangle, CheckCircle2, MonitorUp } from "lucide-react";
+import { ShieldCheck, Camera, Maximize2, AlertTriangle, CheckCircle2, MonitorUp, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { describeRulesForCandidate, type ProctoringConfig } from "../lib/proctoringConfig";
+import { SideCameraPairing } from "./SideCameraPairing";
 
 interface Props {
   attemptId: string;
@@ -19,6 +20,7 @@ interface Props {
  */
 export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
   const requireScreen = !!config?.require_screen_share;
+  const requireSideEye = !!config?.require_side_eye;
   const rules = config ? describeRulesForCandidate(config) : [
     "Stay in fullscreen for the entire attempt.",
     "Do not switch tabs, windows, or apps.",
@@ -27,6 +29,7 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
   ];
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [screen, setScreen] = useState<MediaStream | null>(null);
+  const [sideEyePaired, setSideEyePaired] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -93,7 +96,11 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
     }
   };
 
-  const canStart = !!stream && acknowledged && (!requireScreen || !!screen);
+  const canStart =
+    !!stream &&
+    acknowledged &&
+    (!requireScreen || !!screen) &&
+    (!requireSideEye || sideEyePaired);
 
   const enterSecure = async () => {
     if (!canStart || !stream) return;
@@ -166,43 +173,67 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
             </Step>
           )}
 
-          <Step
-            n={requireScreen ? 3 : 2}
-            title="Acknowledge the rules"
-            done={acknowledged}
-            icon={<AlertTriangle className="h-4 w-4" />}
-          >
-            <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-              {rules.map((r, i) => (
-                <li key={i}>{r}</li>
-              ))}
-            </ul>
-            <label className="flex items-start gap-2 mt-3 cursor-pointer text-xs">
-              <input
-                type="checkbox"
-                checked={acknowledged}
-                onChange={(e) => setAcknowledged(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
-              />
-              <span>I understand and agree to the rules above.</span>
-            </label>
-          </Step>
-
-          <Step
-            n={requireScreen ? 4 : 3}
-            title="Enter secure fullscreen"
-            done={false}
-            icon={<Maximize2 className="h-4 w-4" />}
-          >
-            <Button
-              onClick={enterSecure}
-              disabled={!canStart || busy}
-              className="bg-gradient-to-r from-primary to-primary/80"
+          {requireSideEye && (
+            <Step
+              n={requireScreen ? 3 : 2}
+              title="Pair your phone as side camera (Third Eye)"
+              done={sideEyePaired}
+              icon={<Smartphone className="h-4 w-4" />}
             >
-              <Maximize2 className="h-4 w-4 mr-2" />
-              Enter secure mode & start
-            </Button>
-          </Step>
+              <SideCameraPairing
+                attemptId={attemptId}
+                onPaired={() => {
+                  setSideEyePaired(true);
+                  log("side_eye_paired");
+                }}
+              />
+            </Step>
+          )}
+
+          {(() => {
+            const baseN = 2 + (requireScreen ? 1 : 0) + (requireSideEye ? 1 : 0);
+            return (
+              <>
+                <Step
+                  n={baseN}
+                  title="Acknowledge the rules"
+                  done={acknowledged}
+                  icon={<AlertTriangle className="h-4 w-4" />}
+                >
+                  <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
+                    {rules.map((r, i) => (
+                      <li key={i}>{r}</li>
+                    ))}
+                  </ul>
+                  <label className="flex items-start gap-2 mt-3 cursor-pointer text-xs">
+                    <input
+                      type="checkbox"
+                      checked={acknowledged}
+                      onChange={(e) => setAcknowledged(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                    />
+                    <span>I understand and agree to the rules above.</span>
+                  </label>
+                </Step>
+
+                <Step
+                  n={baseN + 1}
+                  title="Enter secure fullscreen"
+                  done={false}
+                  icon={<Maximize2 className="h-4 w-4" />}
+                >
+                  <Button
+                    onClick={enterSecure}
+                    disabled={!canStart || busy}
+                    className="bg-gradient-to-r from-primary to-primary/80"
+                  >
+                    <Maximize2 className="h-4 w-4 mr-2" />
+                    Enter secure mode & start
+                  </Button>
+                </Step>
+              </>
+            );
+          })()}
 
           {error && (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">

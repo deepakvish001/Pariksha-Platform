@@ -35,3 +35,5 @@ verify_jwt = false
 
 [functions.submit-demo-request]
 verify_jwt = false
+[functions.assessment-sidecam]
+verify_jwt = false
