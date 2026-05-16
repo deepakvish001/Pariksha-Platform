@@ -66,7 +66,7 @@ async function downloadSnapshot(
           onProgress?.(Math.min(99, Math.round((received / total) * 100)));
         }
       }
-      sourceBlob = new Blob(chunks, {
+      sourceBlob = new Blob(chunks as BlobPart[], {
         type: res.headers.get("Content-Type") || "",
       });
     } else {
