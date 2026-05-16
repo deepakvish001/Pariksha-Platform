@@ -395,6 +395,12 @@ function SettingsPanel({
         </button>
       </div>
 
+      <AssessmentProctoringConfig
+        value={proctoringConfig}
+        enabled={proctoring}
+        onChange={(cfg) => setProctoringConfig(cfg)}
+      />
+
       <div className="flex gap-2 pt-2 border-t">
         <Button
           className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
