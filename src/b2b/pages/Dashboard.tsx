@@ -558,7 +558,10 @@ function insightKey(i: { title: string; body: string }) {
 
 function useInsightFeedback(orgId: string | undefined, insights: AiInsight[]) {
   const [ratings, setRatings] = useState<Record<string, InsightRating>>({});
-  const [pending, setPending] = useState<Record<string, boolean>>({});
+  // Per-key pending action: which button is mid-flight ("up" | "down" | "remove")
+  const [pending, setPending] = useState<
+    Record<string, "up" | "down" | "remove">
+  >({});
 
   const keys = useMemo(() => insights.map(insightKey), [insights]);
 
@@ -590,13 +593,27 @@ function useInsightFeedback(orgId: string | undefined, insights: AiInsight[]) {
     if (!orgId) return;
     const key = insightKey(insight);
     const current = ratings[key];
-    setPending((p) => ({ ...p, [key]: true }));
+    const isRemoval = current === rating;
+    const action: "up" | "down" | "remove" = isRemoval ? "remove" : rating;
+
+    // Block double-clicks on this insight while a request is in flight.
+    if (pending[key]) return;
+    setPending((p) => ({ ...p, [key]: action }));
+
+    const toastId = toast.loading(
+      isRemoval
+        ? "Removing your feedback…"
+        : rating === "up"
+          ? "Saving 👍…"
+          : "Saving 👎…",
+    );
+
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId) throw new Error("Please sign in to leave feedback.");
 
-      if (current === rating) {
+      if (isRemoval) {
         // Toggle off → remove feedback
         const { error } = await supabase
           .from("ai_insight_feedback")
@@ -609,7 +626,7 @@ function useInsightFeedback(orgId: string | undefined, insights: AiInsight[]) {
           const { [key]: _, ...rest } = r;
           return rest;
         });
-        toast.success("Feedback removed");
+        toast.success("Feedback removed", { id: toastId });
       } else {
         const { error } = await supabase
           .from("ai_insight_feedback")
@@ -625,10 +642,15 @@ function useInsightFeedback(orgId: string | undefined, insights: AiInsight[]) {
           );
         if (error) throw error;
         setRatings((r) => ({ ...r, [key]: rating }));
-        toast.success(rating === "up" ? "Thanks for the 👍" : "Thanks — we'll use this to improve");
+        toast.success(
+          rating === "up"
+            ? "Thanks for the 👍"
+            : "Thanks — we'll use this to improve",
+          { id: toastId },
+        );
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not save feedback");
+      toast.error(e?.message ?? "Could not save feedback", { id: toastId });
     } finally {
       setPending((p) => {
         const { [key]: _, ...rest } = p;
