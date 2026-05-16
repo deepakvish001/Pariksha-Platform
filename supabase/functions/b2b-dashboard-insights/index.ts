@@ -255,7 +255,7 @@ Return STRICT JSON with this shape:
         );
       }
       console.error("AI gateway error", aiResp.status, await aiResp.text());
-      return json({ insights: fallbackInsights(stats) });
+      return json({ insights: rerank(fallbackInsights(stats), keyNet, titleNet) });
     }
 
     const payload = await aiResp.json();
@@ -269,9 +269,9 @@ Return STRICT JSON with this shape:
       console.error("Failed to parse insights JSON", e, raw);
     }
 
-    const insights: Insight[] =
+    const rawInsights: Insight[] =
       Array.isArray(parsed.insights) && parsed.insights.length
-        ? parsed.insights.slice(0, 4).map((i) => ({
+        ? parsed.insights.slice(0, 6).map((i) => ({
             title: String(i.title ?? "Insight").slice(0, 80),
             body: String(i.body ?? "").slice(0, 280),
             severity:
@@ -281,6 +281,8 @@ Return STRICT JSON with this shape:
             action: i.action ? String(i.action).slice(0, 120) : null,
           }))
         : fallbackInsights(stats);
+
+    const insights = rerank(rawInsights, keyNet, titleNet).slice(0, 4);
 
     return json({ insights, stats });
   } catch (err) {
