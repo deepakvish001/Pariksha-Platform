@@ -36,17 +36,33 @@ async function downloadSnapshot(
   format: "jpg" | "png",
   onProgress?: (pct: number | null) => void,
 ): Promise<"ok" | "denied" | "error"> {
+  // Tracks where in the pipeline we are so the catch block can emit a more
+  // accurate error toast (network vs. server vs. generic post-processing).
+  let stage: "fetch" | "stream" | "encode" | "save" = "fetch";
+  let serverStatus: number | null = null;
   try {
     onProgress?.(0);
-    const res = await fetch(url);
+    let res: Response;
+    try {
+      res = await fetch(url);
+    } catch (networkErr) {
+      toast.error(
+        "Network error: couldn't reach the snapshot server. Check your connection and try again.",
+      );
+      window.open(url, "_blank", "noopener,noreferrer");
+      onProgress?.(null);
+      return "error";
+    }
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
         toast.error("You don't have permission to download this snapshot.");
         return "denied";
       }
+      serverStatus = res.status;
       throw new Error(`HTTP ${res.status}`);
     }
 
+    stage = "stream";
     // Stream the body so we can report download progress when the server
     // sends a Content-Length header. Fall back to res.blob() otherwise.
     const totalHeader = res.headers.get("Content-Length");
@@ -77,6 +93,7 @@ async function downloadSnapshot(
     const baseName = path ? path.split("/").pop()?.replace(/\.[^.]+$/, "") : null;
     const fileName = `${baseName || `snapshot-${tsName}`}.${format}`;
 
+    stage = "encode";
     let outBlob: Blob = sourceBlob;
     const sourceType = sourceBlob.type || "";
     const targetType = format === "png" ? "image/png" : "image/jpeg";
@@ -114,6 +131,7 @@ async function downloadSnapshot(
       }
     }
 
+    stage = "save";
     const href = URL.createObjectURL(outBlob);
     const a = document.createElement("a");
     a.href = href;
@@ -125,7 +143,25 @@ async function downloadSnapshot(
     onProgress?.(100);
     return "ok";
   } catch {
-    toast.error("Couldn't download snapshot. Opening in a new tab instead.");
+    if (serverStatus !== null) {
+      const family =
+        serverStatus >= 500
+          ? "Server error"
+          : serverStatus >= 400
+          ? "Request failed"
+          : "Download failed";
+      toast.error(
+        `${family} (HTTP ${serverStatus}). Opening in a new tab instead.`,
+      );
+    } else if (stage === "stream") {
+      toast.error(
+        "Network error while downloading the snapshot. Opening in a new tab instead.",
+      );
+    } else {
+      toast.error(
+        "Couldn't prepare the snapshot file. Opening in a new tab instead.",
+      );
+    }
     window.open(url, "_blank", "noopener,noreferrer");
     onProgress?.(null);
     return "error";
