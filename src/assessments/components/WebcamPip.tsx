@@ -30,19 +30,15 @@ function storageKeyFor(attemptId: string) {
 }
 
 /**
- * Clamp a right/bottom offset so the PIP stays fully on-screen.
- * Uses visualViewport when available so pinch-zoom and on-screen
- * keyboards still keep the PIP within the visible area, then falls
- * back to layout viewport dimensions.
+ * Clamp a right/bottom offset so the PIP stays fully on-screen in any
+ * orientation. Uses the layout viewport (innerWidth/innerHeight) so
+ * coordinates stay consistent with the `right`/`bottom` CSS the PIP
+ * uses, and never allows the PIP to extend past any edge.
  */
 function clampPos(p: { x: number; y: number }) {
   if (typeof window === "undefined") return p;
-  const vv = window.visualViewport;
-  const w = vv?.width ?? window.innerWidth;
-  const h = vv?.height ?? window.innerHeight;
-  // Right/bottom offsets must keep the PIP fully inside [0, viewport - PIP_size].
-  const maxX = Math.max(0, w - PIP_W);
-  const maxY = Math.max(0, h - PIP_H);
+  const maxX = Math.max(0, window.innerWidth - PIP_W);
+  const maxY = Math.max(0, window.innerHeight - PIP_H);
   return {
     x: Math.min(maxX, Math.max(0, p.x)),
     y: Math.min(maxY, Math.max(0, p.y)),
