@@ -874,15 +874,14 @@ function SnapshotGroup({
       ) : (
         <div className="max-h-64 overflow-y-auto pr-1">
           <div className="grid grid-cols-3 gap-1.5">
-            {pageItems.map((e, i) => {
+            {pageItems.map(({ e, originalIndex }) => {
               const path = snapshotPath(e);
               const src = path ? thumbs[path] : undefined;
-              const absoluteIndex = pageStart + i;
               return (
                 <button
                   type="button"
                   key={e.id}
-                  onClick={() => onOpen(absoluteIndex)}
+                  onClick={() => onOpen(originalIndex)}
                   title={`${fmtTs(e.created_at)}${path ? ` — ${path}` : ""}`}
                   className="group relative aspect-[4/3] overflow-hidden rounded border border-border/60 bg-muted/40 hover:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
                 >
