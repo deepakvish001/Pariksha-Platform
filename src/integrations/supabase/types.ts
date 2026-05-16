@@ -341,6 +341,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_insight_flags: {
+        Row: {
+          created_at: string
+          flagged_by: string
+          insight_key: string
+          insight_title: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          flagged_by?: string
+          insight_key: string
+          insight_title: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          flagged_by?: string
+          insight_key?: string
+          insight_title?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       analytics_cache: {
         Row: {
           cache_key: string
@@ -7112,6 +7136,22 @@ export type Database = {
           rule_key: string
         }[]
       }
+      admin_get_ai_insight_overview: {
+        Args: { _days?: number }
+        Returns: {
+          down_count: number
+          flag_reason: string
+          flagged_at: string
+          insight_key: string
+          insight_title: string
+          is_flagged: boolean
+          last_at: string
+          net_score: number
+          org_count: number
+          total_count: number
+          up_count: number
+        }[]
+      }
       admin_get_daily_review_audit: {
         Args: { _limit?: number; _offset?: number }
         Returns: {
@@ -7151,6 +7191,31 @@ export type Database = {
           user_id: string
           username: string
           xp_this_week: number
+        }[]
+      }
+      admin_list_ai_insight_feedback: {
+        Args: {
+          _insight_key?: string
+          _limit?: number
+          _offset?: number
+          _org_id?: string
+          _rating?: Database["public"]["Enums"]["ai_insight_rating"]
+        }
+        Returns: {
+          comment: string
+          created_at: string
+          id: string
+          insight_key: string
+          insight_title: string
+          org_id: string
+          org_name: string
+          rating: Database["public"]["Enums"]["ai_insight_rating"]
+          total_count: number
+          updated_at: string
+          user_avatar_url: string
+          user_email: string
+          user_full_name: string
+          user_id: string
         }[]
       }
       admin_list_audit_log: {
@@ -7504,6 +7569,15 @@ export type Database = {
       admin_set_gamification_rule: {
         Args: { _key: string; _note?: string; _value: Json }
         Returns: undefined
+      }
+      admin_set_insight_flag: {
+        Args: {
+          _flagged?: boolean
+          _insight_key: string
+          _insight_title: string
+          _reason?: string
+        }
+        Returns: boolean
       }
       admin_set_leaderboard_hidden: {
         Args: { _hidden: boolean; _user_id: string }

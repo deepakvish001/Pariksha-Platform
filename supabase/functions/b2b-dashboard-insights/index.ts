@@ -180,6 +180,27 @@ serve(async (req) => {
       const t = (r.insight_title ?? "").trim().toLowerCase();
       if (t) titleNet.set(t, (titleNet.get(t) ?? 0) + (Number(r.net_score) || 0));
     }
+    // Admin-flagged low-quality insights — suppressed regardless of feedback.
+    const flaggedKeys = new Set<string>();
+    const flaggedTitles = new Set<string>();
+    {
+      const { data: flags, error: flagsErr } = await supabase
+        .from("ai_insight_flags")
+        .select("insight_key, insight_title");
+      if (flagsErr) {
+        console.error("flags fetch error", flagsErr);
+      } else {
+        for (const f of flags ?? []) {
+          if (f.insight_key) flaggedKeys.add(String(f.insight_key));
+          if (f.insight_title)
+            flaggedTitles.add(String(f.insight_title).trim().toLowerCase());
+        }
+      }
+    }
+    const isFlagged = (ins: Insight) =>
+      flaggedKeys.has(insightKey(ins)) ||
+      flaggedTitles.has((ins.title ?? "").trim().toLowerCase());
+
     const likedTitles = [...titleNet.entries()]
       .filter(([, n]) => n > 0)
       .sort((a, b) => b[1] - a[1])
@@ -192,7 +213,8 @@ serve(async (req) => {
       .map(([t]) => t);
 
     if (!LOVABLE_API_KEY) {
-      return json({ insights: rerank(fallbackInsights(stats), keyNet, titleNet) });
+      const fb = fallbackInsights(stats).filter((i) => !isFlagged(i));
+      return json({ insights: rerank(fb, keyNet, titleNet) });
     }
 
     const feedbackHint =
@@ -282,7 +304,8 @@ Return STRICT JSON with this shape:
           }))
         : fallbackInsights(stats);
 
-    const insights = rerank(rawInsights, keyNet, titleNet).slice(0, 4);
+    const filtered = rawInsights.filter((i) => !isFlagged(i));
+    const insights = rerank(filtered.length ? filtered : rawInsights, keyNet, titleNet).slice(0, 4);
 
     return json({ insights, stats });
   } catch (err) {
