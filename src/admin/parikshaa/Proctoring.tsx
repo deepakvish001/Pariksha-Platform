@@ -959,6 +959,36 @@ function SnapshotGroup({
           </div>
         </div>
       )}
+      {hover &&
+        createPortal(
+          <div
+            // Anchor near cursor, flip to the other side when near the right/bottom edge.
+            style={{
+              position: "fixed",
+              left:
+                typeof window !== "undefined" && hover.x + 280 > window.innerWidth
+                  ? Math.max(8, hover.x - 268)
+                  : hover.x + 16,
+              top:
+                typeof window !== "undefined" && hover.y + 220 > window.innerHeight
+                  ? Math.max(8, hover.y - 212)
+                  : hover.y + 16,
+              zIndex: 70,
+              pointerEvents: "none",
+            }}
+            className="rounded-md border border-border bg-popover shadow-2xl p-1.5 animate-in fade-in zoom-in-95"
+          >
+            <img
+              src={hover.src}
+              alt={hover.alt}
+              className="block w-64 h-48 object-cover rounded"
+            />
+            <div className="mt-1 text-[10px] text-muted-foreground tabular-nums text-center">
+              {hover.ts}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
