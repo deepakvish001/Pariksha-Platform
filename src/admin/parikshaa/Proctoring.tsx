@@ -47,7 +47,7 @@ interface AttemptEvent {
   created_at: string;
 }
 
-const VIOLATION_KINDS = new Set([
+const VIOLATION_KIND_LIST = [
   "violation_strike",
   "tab_hidden",
   "window_blur",
@@ -57,7 +57,8 @@ const VIOLATION_KINDS = new Set([
   "devtools_attempt",
   "print_blocked",
   "auto_submitted",
-]);
+] as const;
+const VIOLATION_KINDS = new Set<string>(VIOLATION_KIND_LIST);
 
 const STATUS_OPTIONS = ["all", "in_progress", "submitted", "auto_submitted", "abandoned"];
 
@@ -65,6 +66,8 @@ export default function ParikshaaProctoring() {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AttemptRow[]>([]);
   const [assessments, setAssessments] = useState<{ id: string; title: string }[]>([]);
+  /** Map of attempt_id → set of violation kinds present on that attempt. */
+  const [kindsByAttempt, setKindsByAttempt] = useState<Map<string, Set<string>>>(new Map());
 
   // filters
   const [assessmentId, setAssessmentId] = useState<string>("all");
@@ -73,6 +76,8 @@ export default function ParikshaaProctoring() {
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [search, setSearch] = useState<string>("");
+  /** Selected violation kinds; empty = no kind filter. */
+  const [selectedKinds, setSelectedKinds] = useState<Set<string>>(new Set());
 
   const [expanded, setExpanded] = useState<Record<string, AttemptEvent[] | "loading">>({});
 
