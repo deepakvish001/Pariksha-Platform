@@ -204,6 +204,29 @@ export default function Player() {
     onShareLost: () => { void logProctorEvent("screenshare_lost"); },
   });
 
+  // Typing analytics — flags super-human typing bursts inside any text input or editor
+  const typing = useTypingAnalytics({
+    onBurst: (cpm) => { void logProctorEvent("typing_burst", { cpm }); },
+  });
+  useEffect(() => {
+    if (!proctoringEnabled || !lockdownReady) return;
+    const onInput = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      const inEditor =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable ||
+        !!target?.closest(".monaco-editor");
+      if (!inEditor) return;
+      // Each input event ≈ 1 keystroke; large diffs are bursts.
+      const ie = e as InputEvent;
+      const added = ie.data ? ie.data.length : 1;
+      typing.record(added);
+    };
+    document.addEventListener("input", onInput, true);
+    return () => document.removeEventListener("input", onInput, true);
+  }, [proctoringEnabled, lockdownReady, typing, logProctorEvent]);
+
   // Track latest answers without re-creating queueSave on every keystroke
   const answersRef = useRef<AnswerMap>({});
   useEffect(() => { answersRef.current = answers; }, [answers]);
