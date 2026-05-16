@@ -630,6 +630,7 @@ export type Database = {
           external_id: string | null
           id: string
           name: string | null
+          source: Database["public"]["Enums"]["invite_source"]
           status: Database["public"]["Enums"]["invite_status"]
           token: string
           updated_at: string
@@ -643,6 +644,7 @@ export type Database = {
           external_id?: string | null
           id?: string
           name?: string | null
+          source?: Database["public"]["Enums"]["invite_source"]
           status?: Database["public"]["Enums"]["invite_status"]
           token?: string
           updated_at?: string
@@ -656,6 +658,7 @@ export type Database = {
           external_id?: string | null
           id?: string
           name?: string | null
+          source?: Database["public"]["Enums"]["invite_source"]
           status?: Database["public"]["Enums"]["invite_status"]
           token?: string
           updated_at?: string
@@ -8076,6 +8079,7 @@ export type Database = {
       blog_comment_status: "visible" | "hidden" | "reported" | "deleted"
       blog_post_status: "draft" | "scheduled" | "published" | "archived"
       friendship_status: "pending" | "accepted" | "blocked"
+      invite_source: "email" | "link" | "bulk_upload" | "manual" | "api"
       invite_status: "pending" | "claimed" | "submitted" | "expired"
       org_member_role: "owner" | "admin" | "recruiter" | "viewer"
       org_type: "college" | "company"
@@ -8244,6 +8248,7 @@ export const Constants = {
       blog_comment_status: ["visible", "hidden", "reported", "deleted"],
       blog_post_status: ["draft", "scheduled", "published", "archived"],
       friendship_status: ["pending", "accepted", "blocked"],
+      invite_source: ["email", "link", "bulk_upload", "manual", "api"],
       invite_status: ["pending", "claimed", "submitted", "expired"],
       org_member_role: ["owner", "admin", "recruiter", "viewer"],
       org_type: ["college", "company"],
