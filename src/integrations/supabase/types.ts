@@ -7764,6 +7764,10 @@ export type Database = {
             Returns: string
           }
       ensure_player_rating: { Args: { _user: string }; Returns: undefined }
+      get_assessment_answer_key: {
+        Args: { _assessment: string }
+        Returns: Json
+      }
       get_attempt_paper: { Args: { _attempt: string }; Returns: Json }
       get_coding_leaderboard:
         | {

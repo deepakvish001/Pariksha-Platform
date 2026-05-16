@@ -10,9 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Clock, Send, ChevronLeft, ChevronRight, CheckCircle2, ShieldCheck, Maximize2 } from "lucide-react";
+import { Clock, Send, ChevronLeft, ChevronRight, CheckCircle2, ShieldCheck, Maximize2, Wand2 } from "lucide-react";
 import { usePaper, useExistingAnswers, useSaveAnswer, useSubmitAttempt, type PaperQuestion } from "../hooks/usePaper";
 import { useProctoring } from "../hooks/useProctoring";
+import { supabase } from "@/integrations/supabase/client";
 
 type AnswerMap = Record<string, Record<string, unknown>>;
 
@@ -103,6 +104,31 @@ export default function Player() {
     }
   };
 
+  const prefillAnswerKey = async () => {
+    if (!attemptId || !paper) return;
+    try {
+      const { data, error: rpcErr } = await (supabase as any).rpc("get_assessment_answer_key", {
+        _assessment: paper.assessment.id,
+      });
+      if (rpcErr) throw rpcErr;
+      const key = (data ?? {}) as Record<string, Record<string, unknown>>;
+      const next: AnswerMap = { ...answers };
+      for (const qq of flatQuestions) {
+        if (key[qq.id]) next[qq.id] = key[qq.id];
+      }
+      setAnswers(next);
+      // Persist each immediately
+      for (const [qid, ans] of Object.entries(next)) {
+        try {
+          await saveAnswer.mutateAsync({ attempt_id: attemptId, question_id: qid, answer: ans });
+        } catch { /* noop */ }
+      }
+      toast.success("Answer key prefilled");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load answer key");
+    }
+  };
+
   if (isLoading) return null;
   if (error) return <div className="theme-b2b p-8 min-h-screen">Failed to load: {(error as Error).message}</div>;
   if (!paper) return null;
@@ -185,6 +211,11 @@ export default function Player() {
             <Button size="sm" onClick={() => doSubmit(false)} disabled={submitAttempt.isPending}>
               <Send className="h-4 w-4 mr-1" /> Submit
             </Button>
+            {isPreview && (
+              <Button size="sm" variant="outline" onClick={prefillAnswerKey} title="Prefill correct answers">
+                <Wand2 className="h-4 w-4 mr-1" /> Prefill key
+              </Button>
+            )}
           </div>
         </div>
         <Progress value={(answeredCount / Math.max(1, totalQ)) * 100} className="h-1 rounded-none" />
