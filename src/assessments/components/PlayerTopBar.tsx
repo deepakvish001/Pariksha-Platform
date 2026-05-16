@@ -158,56 +158,9 @@ export function PlayerTopBar({
               </Tooltip>
             )}
 
-            {/* Timer (chip or zen bar) */}
-            {zenTimer ? TimerBar : TimerChip}
+            {/* Timer */}
+            {TimerChip}
 
-            {/* Zen toggle */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 p-0"
-                  onClick={onToggleZen}
-                  aria-pressed={zenTimer}
-                  aria-label={zenTimer ? "Show full timer" : "Calm timer"}
-                >
-                  <TimerIcon className={cn("h-4 w-4", zenTimer && "text-primary")} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{zenTimer ? "Show full timer" : "Calm timer (less anxiety)"}</TooltipContent>
-            </Tooltip>
-
-            {/* Focus mode */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 p-0"
-                  onClick={onToggleFocus}
-                  aria-pressed={focusMode}
-                  aria-label={focusMode ? "Exit focus mode" : "Enter focus mode"}
-                >
-                  {focusMode ? (
-                    <Minimize2 className="h-4 w-4 text-primary" />
-                  ) : (
-                    <Focus className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{focusMode ? "Exit focus mode (Esc)" : "Focus mode"}</TooltipContent>
-            </Tooltip>
-
-            {/* Help */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onOpenHelp} aria-label="Help and shortcuts">
-                  <HelpCircle className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Help & shortcuts</TooltipContent>
-            </Tooltip>
 
             {isPreview && (
               <Button size="sm" variant="outline" onClick={onPrefillKey} className="h-8">
