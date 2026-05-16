@@ -10,9 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Clock, Send, ChevronLeft, ChevronRight, CheckCircle2, ShieldCheck, Maximize2 } from "lucide-react";
+import { Clock, Send, ChevronLeft, ChevronRight, CheckCircle2, ShieldCheck, Maximize2, Wand2 } from "lucide-react";
 import { usePaper, useExistingAnswers, useSaveAnswer, useSubmitAttempt, type PaperQuestion } from "../hooks/usePaper";
 import { useProctoring } from "../hooks/useProctoring";
+import { supabase } from "@/integrations/supabase/client";
 
 type AnswerMap = Record<string, Record<string, unknown>>;
 
