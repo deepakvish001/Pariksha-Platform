@@ -300,6 +300,7 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
   const [points, setPoints] = useState(10);
   const [language, setLanguage] = useState("");
   const create = useCreateQuestion();
+  const upsertOption = useUpsertMcqOption();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -344,6 +345,15 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
               </div>
             )}
           </div>
+          {type === "true_false" && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Two options (True / False) will be created. Choose the correct one from the editor.</p>
+          )}
+          {type === "matching" && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Add Left → Right pairs from the editor after creating.</p>
+          )}
+          {type === "short_answer" && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Add accepted answer variants from the editor after creating.</p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
@@ -351,14 +361,23 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
             className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
             disabled={!title.trim() || create.isPending}
             onClick={async () => {
-              await create.mutateAsync({
+              const meta: Record<string, unknown> =
+                type === "matching" ? { pairs: [] } :
+                type === "short_answer" ? { accepted: [], case_sensitive: false, max_length: 200 } :
+                type === "true_false" ? { correct: true } : {};
+              const q = await create.mutateAsync({
                 org_id: orgId,
                 type,
                 title: title.trim(),
                 body_md: body || undefined,
                 points,
                 language: language || undefined,
+                meta,
               });
+              if (type === "true_false") {
+                await upsertOption.mutateAsync({ question_id: q.id, body: "True", is_correct: true, order_index: 0 });
+                await upsertOption.mutateAsync({ question_id: q.id, body: "False", is_correct: false, order_index: 1 });
+              }
               toast.success("Question created");
               setOpen(false);
               setTitle(""); setBody(""); setLanguage(""); setPoints(10);
