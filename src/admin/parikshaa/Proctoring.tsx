@@ -20,7 +20,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, RefreshCw, ChevronDown, ChevronRight, Camera, ShieldAlert, Loader2, Trash2, Save } from "lucide-react";
+import { Download, RefreshCw, ChevronDown, ChevronRight, Camera, ShieldAlert, Loader2, Trash2, Save, ChevronLeft as ChevronLeftIcon, X } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -389,16 +390,38 @@ export default function ParikshaaProctoring() {
 }
 
 function EventTimeline({ events }: { events: AttemptEvent[] }) {
-  if (events.length === 0) return <div className="text-xs text-muted-foreground">No proctoring events.</div>;
-  const snapshots = events.filter((e) => e.kind === "webcam_snapshot");
+  const snapshots = useMemo(
+    () => events.filter((e) => e.kind === "webcam_snapshot"),
+    [events],
+  );
   const violations = events.filter((e) => VIOLATION_KINDS.has(e.kind));
-  const other = events.filter((e) => e.kind !== "webcam_snapshot" && !VIOLATION_KINDS.has(e.kind));
+  const other = events.filter(
+    (e) => e.kind !== "webcam_snapshot" && !VIOLATION_KINDS.has(e.kind),
+  );
+
+  // Lightbox state — index into `snapshots`, or null when closed.
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+  if (events.length === 0)
+    return <div className="text-xs text-muted-foreground">No proctoring events.</div>;
+
   return (
-    <div className="grid md:grid-cols-3 gap-4 text-xs">
-      <Group title="Violations" tone="amber" items={violations} />
-      <Group title="Webcam snapshots" tone="emerald" items={snapshots} showPath />
-      <Group title="Other events" tone="muted" items={other} />
-    </div>
+    <>
+      <div className="grid md:grid-cols-3 gap-4 text-xs">
+        <Group title="Violations" tone="amber" items={violations} />
+        <SnapshotGroup
+          snapshots={snapshots}
+          onOpen={(i) => setLightboxIdx(i)}
+        />
+        <Group title="Other events" tone="muted" items={other} />
+      </div>
+      <SnapshotLightbox
+        snapshots={snapshots}
+        index={lightboxIdx}
+        onClose={() => setLightboxIdx(null)}
+        onIndexChange={setLightboxIdx}
+      />
+    </>
   );
 }
 
@@ -424,6 +447,227 @@ function Group({ title, tone, items, showPath }: { title: string; tone: "amber" 
         ))}
       </ul>
     </div>
+  );
+}
+
+/** Resolves the storage path on a webcam_snapshot event payload. */
+function snapshotPath(e: AttemptEvent): string | null {
+  const p = (e.payload as any)?.path;
+  return typeof p === "string" && p.length > 0 ? p : null;
+}
+
+/** Creates a short-lived signed URL for a snapshot path. */
+async function signSnapshot(path: string): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from("assessment-proctor")
+    .createSignedUrl(path, 60 * 10); // 10 minutes
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+}
+
+function SnapshotGroup({
+  snapshots,
+  onOpen,
+}: {
+  snapshots: AttemptEvent[];
+  onOpen: (index: number) => void;
+}) {
+  // Lazily generate signed thumbnail URLs once per mount.
+  const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const next: Record<string, string> = {};
+      for (const e of snapshots) {
+        const path = snapshotPath(e);
+        if (!path || thumbs[path]) continue;
+        const url = await signSnapshot(path);
+        if (url) next[path] = url;
+      }
+      if (!cancelled && Object.keys(next).length) {
+        setThumbs((prev) => ({ ...prev, ...next }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshots]);
+
+  return (
+    <div className="rounded-md border bg-background/60 p-2">
+      <div className="text-[11px] font-semibold uppercase tracking-wide mb-2 text-emerald-600">
+        Webcam snapshots{" "}
+        <span className="opacity-60 tabular-nums">({snapshots.length})</span>
+      </div>
+      {snapshots.length === 0 ? (
+        <div className="text-muted-foreground italic text-[11px]">none</div>
+      ) : (
+        <div className="max-h-64 overflow-y-auto pr-1">
+          <div className="grid grid-cols-3 gap-1.5">
+            {snapshots.map((e, i) => {
+              const path = snapshotPath(e);
+              const src = path ? thumbs[path] : undefined;
+              return (
+                <button
+                  type="button"
+                  key={e.id}
+                  onClick={() => onOpen(i)}
+                  title={`${fmtTs(e.created_at)}${path ? ` — ${path}` : ""}`}
+                  className="group relative aspect-[4/3] overflow-hidden rounded border border-border/60 bg-muted/40 hover:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
+                >
+                  {src ? (
+                    <img
+                      src={src}
+                      alt={`Webcam snapshot at ${fmtTs(e.created_at)}`}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full grid place-items-center">
+                      <Camera className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  )}
+                  <span className="absolute inset-x-0 bottom-0 bg-black/55 text-[9px] text-white tabular-nums px-1 py-0.5 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    {new Date(e.created_at).toLocaleTimeString()}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SnapshotLightbox({
+  snapshots,
+  index,
+  onClose,
+  onIndexChange,
+}: {
+  snapshots: AttemptEvent[];
+  index: number | null;
+  onClose: () => void;
+  onIndexChange: (i: number) => void;
+}) {
+  const open = index !== null;
+  const event = open ? snapshots[index!] : null;
+  const path = event ? snapshotPath(event) : null;
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open || !path) {
+      setUrl(null);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setUrl(null);
+    signSnapshot(path).then((u) => {
+      if (cancelled) return;
+      setUrl(u);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, path]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft" && index! > 0) onIndexChange(index! - 1);
+      else if (e.key === "ArrowRight" && index! < snapshots.length - 1)
+        onIndexChange(index! + 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, index, snapshots.length, onIndexChange]);
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-background">
+        <DialogTitle className="sr-only">Webcam snapshot preview</DialogTitle>
+        <DialogDescription className="sr-only">
+          Full-size webcam snapshot captured during the assessment attempt.
+        </DialogDescription>
+        {event && (
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between gap-2 px-4 py-2 border-b text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <Camera className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span className="font-medium tabular-nums">{fmtTs(event.created_at)}</span>
+                {path && (
+                  <code className="text-[10px] text-muted-foreground truncate">{path}</code>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-[11px] text-muted-foreground tabular-nums">
+                  {index! + 1} / {snapshots.length}
+                </span>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  disabled={index! <= 0}
+                  onClick={() => onIndexChange(index! - 1)}
+                  aria-label="Previous snapshot"
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  disabled={index! >= snapshots.length - 1}
+                  onClick={() => onIndexChange(index! + 1)}
+                  aria-label="Next snapshot"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                {url && (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center h-7 w-7 rounded hover:bg-muted text-muted-foreground"
+                    title="Open in new tab"
+                  >
+                    <Download className="h-4 w-4" />
+                  </a>
+                )}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={onClose}
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="bg-black grid place-items-center min-h-[320px] max-h-[70vh]">
+              {loading && <Loader2 className="h-6 w-6 animate-spin text-white/70" />}
+              {!loading && url && (
+                <img
+                  src={url}
+                  alt={`Webcam snapshot at ${fmtTs(event.created_at)}`}
+                  className="max-h-[70vh] w-auto object-contain"
+                />
+              )}
+              {!loading && !url && (
+                <div className="text-xs text-white/70 p-6">Snapshot unavailable.</div>
+              )}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
