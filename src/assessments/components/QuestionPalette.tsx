@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -8,54 +9,103 @@ interface PaletteItem {
   visited?: boolean;
 }
 
+interface PaletteSection {
+  title: string;
+  /** Global indices (into the flat questions array) that belong to this section. */
+  indices: number[];
+}
+
 interface Props {
   items: PaletteItem[];
   currentIndex: number;
   onJump: (idx: number) => void;
   variant?: "rail" | "compact";
+  sections?: PaletteSection[];
 }
 
-export function QuestionPalette({ items, currentIndex, onJump, variant = "rail" }: Props) {
+type Filter = "all" | "unanswered" | "flagged";
+
+export function QuestionPalette({
+  items,
+  currentIndex,
+  onJump,
+  variant = "rail",
+  sections,
+}: Props) {
   const answered = items.filter((i) => i.answered).length;
   const flagged = items.filter((i) => i.flagged).length;
   const unanswered = items.length - answered;
   const compact = variant === "compact";
 
-  const grid = (
-    <div className={cn("grid gap-1.5", compact ? "grid-cols-10" : "grid-cols-5 lg:grid-cols-6")}>
-      {items.map((it, i) => {
-        const active = i === currentIndex;
-        return (
-          <button
-            key={it.id}
-            onClick={() => onJump(i)}
-            title={`Question ${i + 1}${it.answered ? " · answered" : it.visited ? " · visited" : ""}${
-              it.flagged ? " · flagged" : ""
-            }`}
+  const [filter, setFilter] = useState<Filter>("all");
+
+  const passes = (i: number) => {
+    const it = items[i];
+    if (!it) return false;
+    if (filter === "unanswered") return !it.answered;
+    if (filter === "flagged") return it.flagged;
+    return true;
+  };
+
+  const effectiveSections = useMemo<PaletteSection[]>(() => {
+    if (sections && sections.length > 0) return sections;
+    return [{ title: "", indices: items.map((_, i) => i) }];
+  }, [sections, items]);
+
+  const renderChip = (i: number) => {
+    const it = items[i];
+    if (!it) return null;
+    const active = i === currentIndex;
+    const dim = !passes(i);
+    return (
+      <button
+        key={it.id}
+        onClick={() => onJump(i)}
+        title={`Question ${i + 1}${it.answered ? " · answered" : it.visited ? " · visited" : ""}${
+          it.flagged ? " · flagged" : ""
+        }`}
+        aria-current={active ? "true" : undefined}
+        className={cn(
+          "relative rounded-md border text-xs font-semibold transition-all tabular-nums grid place-items-center",
+          compact ? "h-8" : "h-9",
+          dim && "opacity-30 hover:opacity-100",
+          active
+            ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/30"
+            : it.answered
+            ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
+            : it.visited
+            ? "border-dashed border-border bg-muted/30 text-muted-foreground hover:bg-muted/60"
+            : "border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        {i + 1}
+        {it.flagged && (
+          <Flag
             className={cn(
-              "relative rounded-md border text-xs font-semibold transition-all tabular-nums grid place-items-center",
-              compact ? "h-8" : "h-10",
-              active
-                ? "bg-primary text-primary-foreground border-primary shadow-md ring-2 ring-primary/30 scale-[1.04]"
-                : it.answered
-                ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/70"
-                : it.visited
-                ? "border-dashed border-border bg-muted/30 text-muted-foreground hover:bg-muted/60"
-                : "border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+              "absolute -top-1 -right-1 h-3 w-3 fill-amber-500 text-amber-500 drop-shadow",
+              active && "fill-amber-300 text-amber-300"
             )}
-          >
-            {i + 1}
-            {it.flagged && (
-              <Flag
-                className={cn(
-                  "absolute -top-1 -right-1 h-3 w-3 fill-amber-500 text-amber-500 drop-shadow",
-                  active && "fill-amber-300 text-amber-300"
-                )}
-              />
-            )}
-          </button>
-        );
-      })}
+          />
+        )}
+      </button>
+    );
+  };
+
+  const grid = (
+    <div className="space-y-3">
+      {effectiveSections.map((sec, sIdx) => (
+        <div key={sIdx} className="space-y-1.5">
+          {sec.title && (
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold">
+              <span className="truncate">{sec.title}</span>
+              <span className="h-px flex-1 bg-border" />
+            </div>
+          )}
+          <div className={cn("grid gap-1.5", compact ? "grid-cols-10" : "grid-cols-5 lg:grid-cols-6")}>
+            {sec.indices.map(renderChip)}
+          </div>
+        </div>
+      ))}
     </div>
   );
 
@@ -75,19 +125,36 @@ export function QuestionPalette({ items, currentIndex, onJump, variant = "rail" 
 
   return (
     <div className="rounded-xl border border-border bg-card p-3 space-y-3 shadow-sm">
-      <div>
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-semibold">Question palette</span>
-          <span className="text-muted-foreground tabular-nums">
-            {answered}/{items.length}
-          </span>
-        </div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-semibold">Question palette</span>
+        <span className="text-muted-foreground tabular-nums">
+          {answered}/{items.length}
+        </span>
       </div>
 
       <div className="grid grid-cols-3 gap-1.5">
         <StatPill label="Done" value={answered} tone="emerald" />
         <StatPill label="Left" value={unanswered} tone={unanswered > 0 ? "amber" : "muted"} />
         <StatPill label="Flag" value={flagged} tone={flagged > 0 ? "amber" : "muted"} />
+      </div>
+
+      {/* Filter row */}
+      <div className="grid grid-cols-3 gap-1 p-0.5 rounded-md bg-muted/40 border border-border text-[11px] font-medium">
+        {(["all", "unanswered", "flagged"] as const).map((f) => (
+          <button
+            key={f}
+            type="button"
+            onClick={() => setFilter(f)}
+            className={cn(
+              "rounded px-1.5 py-1 capitalize transition-colors",
+              filter === f
+                ? "bg-card text-foreground shadow-sm border border-border"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {f}
+          </button>
+        ))}
       </div>
 
       {grid}
