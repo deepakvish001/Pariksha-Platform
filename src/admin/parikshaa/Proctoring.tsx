@@ -1211,6 +1211,9 @@ function RetentionCard() {
   const [purging, setPurging] = useState(false);
   const [lastResult, setLastResult] = useState<{ snapshots_deleted: number; events_deleted: number } | null>(null);
   const [historyKey, setHistoryKey] = useState(0);
+  const [dryRunning, setDryRunning] = useState(false);
+  const [estimate, setEstimate] = useState<{ snapshots: number; events: number; at: number } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
