@@ -895,6 +895,41 @@ export default function B2BDashboard() {
                   Not enough activity yet. Run an assessment to unlock insights.
                 </p>
               )}
+            {stats?.windows && (insights.length > 0 || !insightsLoading) && (() => {
+              const w = stats.windows;
+              const fmtPair = (curr: number | null, prev: number | null, suffix = "") => {
+                const c = curr == null ? "—" : `${curr}${suffix}`;
+                const p = prev == null ? "—" : `${prev}${suffix}`;
+                return `${c} vs ${p}`;
+              };
+              const rows: { label: string; value: string }[] = [
+                { label: "Assessments", value: fmtPair(w.assessments.curr, w.assessments.prev) },
+                { label: "Candidates invited", value: fmtPair(w.invites.curr, w.invites.prev) },
+                { label: "Submissions", value: fmtPair(w.submissions.curr, w.submissions.prev) },
+                { label: "Avg integrity", value: fmtPair(w.avgIntegrity.curr, w.avgIntegrity.prev, "%") },
+              ];
+              return (
+                <details className="group rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/30 text-xs">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
+                    <span>
+                      Underlying numbers
+                      <span className="ml-1.5 text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]/80">
+                        last {w.windowDays}d vs prev {w.windowDays}d
+                      </span>
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+                  </summary>
+                  <dl className="divide-y divide-[hsl(var(--border))]/40 border-t border-[hsl(var(--border))]/40">
+                    {rows.map((r) => (
+                      <div key={r.label} className="flex items-center justify-between gap-3 px-3 py-1.5">
+                        <dt className="text-[hsl(var(--muted-foreground))]">{r.label}</dt>
+                        <dd className="font-mono tabular-nums">{r.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </details>
+              );
+            })()}
             {insights.map((i, idx) => {
               const tone =
                 i.severity === "positive"
