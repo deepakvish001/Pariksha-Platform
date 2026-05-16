@@ -416,14 +416,9 @@ export default function Player() {
         isPreview={isPreview}
         submitting={submitAttempt.isPending}
         online={online}
-        focusMode={focusMode}
-        zenTimer={zenTimer}
         onSubmit={() => setConfirmOpen(true)}
         onFullscreen={requestFullscreen}
         onPrefillKey={prefillAnswerKey}
-        onToggleFocus={() => setFocusMode((v) => !v)}
-        onToggleZen={() => setZenTimer((v) => !v)}
-        onOpenHelp={() => setHelpOpen(true)}
       />
 
       <main
