@@ -221,6 +221,15 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
     }
   }, [snapEnabled]);
 
+  // Persist avoid-content preference
+  useEffect(() => {
+    try {
+      localStorage.setItem(AVOID_PREF_KEY, avoidContent ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [avoidContent]);
+
   // Persist hidden preference (proctoring keeps running either way)
   useEffect(() => {
     try {
