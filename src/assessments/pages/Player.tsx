@@ -1,24 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, CheckCircle2, Flag } from "lucide-react";
+import { CheckCircle2, Flag, LayoutGrid, Send, Trophy } from "lucide-react";
 import { usePaper, useExistingAnswers, useSaveAnswer, useSubmitAttempt, type PaperQuestion } from "../hooks/usePaper";
 import { useProctoring } from "../hooks/useProctoring";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +22,7 @@ import { PlayerTopBar } from "../components/PlayerTopBar";
 import { QuestionPalette } from "../components/QuestionPalette";
 import { CodingQuestion } from "../components/CodingQuestion";
 import { SqlQuestion } from "../components/SqlQuestion";
+import { PlayerBottomBar } from "../components/PlayerBottomBar";
 import { cn } from "@/lib/utils";
 
 type AnswerMap = Record<string, Record<string, unknown>>;
@@ -48,13 +45,14 @@ export default function Player() {
   );
 
   const [answers, setAnswers] = useState<AnswerMap>({});
+  const [visited, setVisited] = useState<Set<string>>(new Set());
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
   const [idx, setIdx] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
-  // Hydrate from existing answers
   useEffect(() => {
     if (!existing) return;
     const map: AnswerMap = {};
@@ -84,9 +82,7 @@ export default function Player() {
       for (const [qid, ans] of Object.entries(answers)) {
         try {
           await saveAnswer.mutateAsync({ attempt_id: attemptId, question_id: qid, answer: ans });
-        } catch {
-          /* noop */
-        }
+        } catch { /* noop */ }
       }
       try {
         await submitAttempt.mutateAsync(attemptId);
@@ -100,7 +96,6 @@ export default function Player() {
     [attemptId, answers, saveAnswer, submitAttempt]
   );
 
-  // Auto-submit on timer end
   useEffect(() => {
     if (deadline && remaining === 0 && !submittedRef.current && paper && paper.attempt.status === "in_progress") {
       submittedRef.current = true;
@@ -108,7 +103,6 @@ export default function Player() {
     }
   }, [remaining, deadline, paper, doSubmit]);
 
-  // Debounced autosave
   const queueSave = (qid: string, ans: Record<string, unknown>) => {
     if (!attemptId) return;
     window.clearTimeout(debounceRef.current[qid]);
@@ -140,11 +134,8 @@ export default function Player() {
       }
       setAnswers(next);
       for (const [qid, ans] of Object.entries(next)) {
-        try {
-          await saveAnswer.mutateAsync({ attempt_id: attemptId, question_id: qid, answer: ans });
-        } catch {
-          /* noop */
-        }
+        try { await saveAnswer.mutateAsync({ attempt_id: attemptId, question_id: qid, answer: ans }); }
+        catch { /* noop */ }
       }
       toast.success("Answer key prefilled");
     } catch (e: unknown) {
@@ -171,37 +162,56 @@ export default function Player() {
   const answeredCount = flatQuestions.filter((x) => isAnswered(x, answers[x.id])).length;
   const q = flatQuestions[idx];
 
-  // Keyboard shortcuts (skip when typing in inputs / monaco)
+  // Mark current as visited
+  useEffect(() => {
+    if (!q) return;
+    setVisited((prev) => (prev.has(q.id) ? prev : new Set(prev).add(q.id)));
+  }, [q]);
+
+  const toggleFlag = useCallback(() => {
+    if (!q) return;
+    setFlagged((prev) => {
+      const next = new Set(prev);
+      if (next.has(q.id)) next.delete(q.id);
+      else next.add(q.id);
+      return next;
+    });
+  }, [q]);
+
+  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName?.toLowerCase();
       const inEditor =
-        tag === "input" ||
-        tag === "textarea" ||
-        target?.isContentEditable ||
-        !!target?.closest(".monaco-editor");
+        tag === "input" || tag === "textarea" ||
+        target?.isContentEditable || !!target?.closest(".monaco-editor");
       if (inEditor) return;
       if (e.key === "ArrowLeft") setIdx((i) => Math.max(0, i - 1));
       else if (e.key === "ArrowRight") setIdx((i) => Math.min(totalQ - 1, i + 1));
-      else if (e.key === "f" || e.key === "F") {
-        if (!q) return;
-        setFlagged((prev) => {
-          const next = new Set(prev);
-          if (next.has(q.id)) next.delete(q.id);
-          else next.add(q.id);
-          return next;
-        });
+      else if (e.key === "f" || e.key === "F") toggleFlag();
+      else if (q && (q.type === "mcq" || q.type === "true_false") && /^[1-9]$/.test(e.key)) {
+        const opt = (q.options ?? [])[Number(e.key) - 1];
+        if (!opt) return;
+        if (q.type === "mcq") {
+          const cur = new Set<string>(((answers[q.id]?.selected as string[]) ?? []));
+          if (cur.has(opt.id)) cur.delete(opt.id);
+          else cur.add(opt.id);
+          setQuestionAnswer(q.id, { selected: Array.from(cur) });
+        } else {
+          setQuestionAnswer(q.id, { selected: [opt.id] });
+        }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [q, totalQ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, totalQ, answers, toggleFlag]);
 
   if (isLoading) return null;
   if (error)
     return (
-      <div className="theme-b2b p-8 min-h-screen bg-[hsl(var(--background))]">
+      <div className="theme-b2b p-8 min-h-screen bg-background">
         Failed to load: {(error as Error).message}
       </div>
     );
@@ -210,35 +220,34 @@ export default function Player() {
   if (paper.attempt.status !== "in_progress" || submitted) {
     const assessmentId = paper.assessment.id;
     return (
-      <div className="theme-b2b min-h-screen grid place-items-center p-8 bg-[hsl(var(--background))]">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" /> Submitted
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>
+      <div className="theme-b2b min-h-screen grid place-items-center p-8 bg-gradient-to-b from-background via-background to-muted/30">
+        <Card className="max-w-md w-full overflow-hidden shadow-lg border-emerald-500/30">
+          <div className="bg-gradient-to-br from-emerald-500/20 via-emerald-500/5 to-transparent p-8 text-center space-y-3 border-b border-emerald-500/20">
+            <div className="mx-auto h-14 w-14 rounded-full bg-emerald-500/20 grid place-items-center">
+              <Trophy className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <h1 className="text-xl font-bold">Assessment submitted</h1>
+            <p className="text-sm text-muted-foreground">
               Your responses have been recorded.{!isPreview && " The recruiter will review your attempt."}
             </p>
             {typeof paper.attempt.score === "number" && (
-              <p>
-                Auto-graded score: <b className="text-foreground">{paper.attempt.score}</b>
-              </p>
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-card px-4 py-1.5 text-sm font-semibold">
+                Score · <span className="text-emerald-600 dark:text-emerald-400">{paper.attempt.score}</span>
+              </div>
             )}
-            <div className="flex flex-wrap gap-2 pt-1">
-              {isPreview && (
-                <Button onClick={() => navigate(`/b2b/assessments/${assessmentId}/attempts/${attemptId}`)}>
-                  View grading & feedback
-                </Button>
-              )}
-              <Button
-                variant={isPreview ? "outline" : "default"}
-                onClick={() => navigate(isPreview ? `/b2b/assessments/${assessmentId}` : "/assessments")}
-              >
-                {isPreview ? "Back to assessment" : "Back to my assessments"}
+          </div>
+          <CardContent className="p-6 flex flex-wrap gap-2 justify-center">
+            {isPreview && (
+              <Button onClick={() => navigate(`/b2b/assessments/${assessmentId}/attempts/${attemptId}`)}>
+                View grading & feedback
               </Button>
-            </div>
+            )}
+            <Button
+              variant={isPreview ? "outline" : "default"}
+              onClick={() => navigate(isPreview ? `/b2b/assessments/${assessmentId}` : "/assessments")}
+            >
+              {isPreview ? "Back to assessment" : "Back to my assessments"}
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -249,14 +258,22 @@ export default function Player() {
   const isFlagged = q ? flagged.has(q.id) : false;
   const unansweredCount = totalQ - answeredCount;
   const flaggedCount = flagged.size;
+  const paletteItems = flatQuestions.map((qq) => ({
+    id: qq.id,
+    answered: isAnswered(qq, answers[qq.id]),
+    flagged: flagged.has(qq.id),
+    visited: visited.has(qq.id),
+  }));
 
   return (
-    <div className="theme-b2b min-h-screen bg-[hsl(var(--background))] flex flex-col">
+    <div className="theme-b2b min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-muted/20">
       <PlayerTopBar
         title={paper.assessment.title}
         answered={answeredCount}
+        flagged={flaggedCount}
         total={totalQ}
         remainingMs={remaining}
+        deadlineMs={deadline}
         proctoring={proctoringEnabled}
         isPreview={isPreview}
         submitting={submitAttempt.isPending}
@@ -268,145 +285,146 @@ export default function Player() {
       <main
         className={cn(
           "flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4",
-          isWideQuestion ? "max-w-[1600px] md:grid-cols-[220px_1fr]" : "max-w-6xl md:grid-cols-[220px_1fr]"
+          isWideQuestion ? "max-w-[1600px] lg:grid-cols-[240px_1fr]" : "max-w-6xl lg:grid-cols-[240px_1fr]"
         )}
       >
-        <aside className="hidden md:block">
+        {/* Mobile palette trigger */}
+        <div className="lg:hidden">
+          <Sheet open={paletteOpen} onOpenChange={setPaletteOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full justify-between h-10">
+                <span className="flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4" />
+                  Question {idx + 1} of {totalQ}
+                </span>
+                <span className="text-xs text-muted-foreground tabular-nums">{answeredCount}/{totalQ} done</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[300px] sm:w-[340px] p-4">
+              <SheetHeader>
+                <SheetTitle>Navigation</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4">
+                <QuestionPalette
+                  items={paletteItems}
+                  currentIndex={idx}
+                  onJump={(i) => { setIdx(i); setPaletteOpen(false); }}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        <aside className="hidden lg:block">
           <div className="sticky top-[5rem]">
-            <QuestionPalette
-              items={flatQuestions.map((qq) => ({
-                id: qq.id,
-                answered: isAnswered(qq, answers[qq.id]),
-                flagged: flagged.has(qq.id),
-              }))}
-              currentIndex={idx}
-              onJump={setIdx}
-            />
+            <QuestionPalette items={paletteItems} currentIndex={idx} onJump={setIdx} />
           </div>
         </aside>
 
         <section className="min-w-0">
-          {q ? (
-            isWideQuestion ? (
-              q.type === "coding" ? (
-                <CodingQuestion
-                  question={q}
-                  value={answers[q.id]}
-                  onChange={(v) => setQuestionAnswer(q.id, v)}
-                  isPreview={isPreview}
-                />
-              ) : (
-                <SqlQuestion question={q} value={answers[q.id]} onChange={(v) => setQuestionAnswer(q.id, v)} />
-              )
-            ) : (
-              <Card className="overflow-hidden">
-                <CardHeader className="bg-[hsl(var(--muted))]/30 border-b border-[hsl(var(--border))]">
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge variant="outline" className="uppercase text-[10px]">
-                      {q.type.replace("_", " ")}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      Q {idx + 1} of {totalQ} · {q.points} pts
-                    </span>
-                  </div>
-                  <CardTitle className="text-lg mt-2">{q.title}</CardTitle>
-                  {q.body_md && (
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{q.body_md}</p>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-4 pt-5">
-                  <QuestionInput
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={q?.id ?? "empty"}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+            >
+              {q ? (
+                isWideQuestion ? (
+                  q.type === "coding" ? (
+                    <CodingQuestion
+                      question={q}
+                      value={answers[q.id]}
+                      onChange={(v) => setQuestionAnswer(q.id, v)}
+                      isPreview={isPreview}
+                    />
+                  ) : (
+                    <SqlQuestion question={q} value={answers[q.id]} onChange={(v) => setQuestionAnswer(q.id, v)} />
+                  )
+                ) : (
+                  <ChoiceQuestionCard
                     question={q}
+                    index={idx}
+                    total={totalQ}
                     value={answers[q.id]}
                     onChange={(v) => setQuestionAnswer(q.id, v)}
+                    isFlagged={isFlagged}
+                    onToggleFlag={toggleFlag}
                   />
-                </CardContent>
-              </Card>
-            )
-          ) : (
-            <Card>
-              <CardContent className="p-8 text-sm text-muted-foreground">
-                No questions in this assessment yet.
-              </CardContent>
-            </Card>
-          )}
+                )
+              ) : (
+                <Card>
+                  <CardContent className="p-8 text-sm text-muted-foreground">
+                    No questions in this assessment yet.
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </section>
       </main>
 
-      {/* Sticky bottom bar */}
-      <footer className="sticky bottom-0 z-30 border-t border-[hsl(var(--border))] bg-[hsl(var(--card))]/95 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--card))]/80">
-        <div className="px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={idx === 0}
-            onClick={() => setIdx((i) => i - 1)}
-            className="h-8"
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" /> Prev
-          </Button>
-          <div className="flex items-center gap-2 sm:gap-4 text-xs">
-            <Button
-              variant={isFlagged ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                if (!q) return;
-                setFlagged((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(q.id)) next.delete(q.id);
-                  else next.add(q.id);
-                  return next;
-                });
-              }}
-              className={cn(
-                "h-8",
-                isFlagged && "bg-amber-500 hover:bg-amber-500/90 text-white border-amber-500"
-              )}
-            >
-              <Flag className={cn("h-3.5 w-3.5 mr-1.5", isFlagged && "fill-current")} />
-              {isFlagged ? "Flagged" : "Flag"}
-            </Button>
-            <span className="text-muted-foreground hidden sm:inline tabular-nums">
-              {lastSavedAt
-                ? `Saved · ${new Date(lastSavedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                : "Autosaving"}
-            </span>
-          </div>
-          <Button
-            size="sm"
-            disabled={idx >= totalQ - 1}
-            onClick={() => setIdx((i) => i + 1)}
-            className="h-8"
-          >
-            Next <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-      </footer>
+      <PlayerBottomBar
+        index={idx}
+        total={totalQ}
+        isFlagged={isFlagged}
+        saving={saveAnswer.isPending}
+        lastSavedAt={lastSavedAt}
+        onPrev={() => setIdx((i) => Math.max(0, i - 1))}
+        onNext={() => setIdx((i) => Math.min(totalQ - 1, i + 1))}
+        onToggleFlag={toggleFlag}
+        onReviewSubmit={() => setConfirmOpen(true)}
+      />
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Submit your assessment?</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Send className="h-4 w-4 text-primary" />
+              Submit your assessment?
+            </AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-2">
+              <div className="space-y-3 pt-1">
                 <p>Once submitted, you will not be able to change your answers.</p>
-                <div className="grid grid-cols-3 gap-2 pt-2">
-                  <Stat label="Answered" value={answeredCount} tone="emerald" />
+                <div className="grid grid-cols-3 gap-2">
+                  <Stat label="Answered" value={answeredCount} tone="emerald" icon={<CheckCircle2 className="h-3 w-3" />} />
                   <Stat label="Unanswered" value={unansweredCount} tone={unansweredCount > 0 ? "amber" : "muted"} />
-                  <Stat label="Flagged" value={flaggedCount} tone={flaggedCount > 0 ? "amber" : "muted"} />
+                  <Stat label="Flagged" value={flaggedCount} tone={flaggedCount > 0 ? "amber" : "muted"} icon={<Flag className="h-3 w-3" />} />
                 </div>
+                {(unansweredCount > 0 || flaggedCount > 0) && (
+                  <div className="space-y-2">
+                    {unansweredCount > 0 && (
+                      <ChipList
+                        label="Unanswered"
+                        questions={flatQuestions
+                          .map((qq, i) => ({ i, answered: isAnswered(qq, answers[qq.id]) }))
+                          .filter((x) => !x.answered)
+                          .map((x) => x.i)}
+                        tone="amber"
+                        onJump={(i) => { setConfirmOpen(false); setIdx(i); }}
+                      />
+                    )}
+                    {flaggedCount > 0 && (
+                      <ChipList
+                        label="Flagged"
+                        questions={flatQuestions.map((qq, i) => ({ i, id: qq.id })).filter((x) => flagged.has(x.id)).map((x) => x.i)}
+                        tone="amber"
+                        onJump={(i) => { setConfirmOpen(false); setIdx(i); }}
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep working</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                setConfirmOpen(false);
-                doSubmit(false);
-              }}
+              className="bg-gradient-to-r from-primary to-primary/80"
+              onClick={() => { setConfirmOpen(false); doSubmit(false); }}
             >
-              Submit now
+              Submit assessment
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -415,25 +433,96 @@ export default function Player() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone: "emerald" | "amber" | "muted" }) {
+function Stat({ label, value, tone, icon }: { label: string; value: number; tone: "emerald" | "amber" | "muted"; icon?: React.ReactNode }) {
   const toneClass =
     tone === "emerald"
       ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
       : tone === "amber"
       ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-      : "border-[hsl(var(--border))] bg-[hsl(var(--muted))]/40 text-muted-foreground";
+      : "border-border bg-muted/40 text-muted-foreground";
   return (
     <div className={cn("rounded-md border p-2 text-center", toneClass)}>
-      <div className="text-lg font-semibold tabular-nums">{value}</div>
-      <div className="text-[10px] uppercase tracking-wide">{label}</div>
+      <div className="text-lg font-bold tabular-nums leading-none">{value}</div>
+      <div className="text-[10px] uppercase tracking-wide mt-1 flex items-center justify-center gap-1">
+        {icon}{label}
+      </div>
     </div>
   );
 }
 
+function ChipList({ label, questions, tone, onJump }: {
+  label: string; questions: number[]; tone: "amber"; onJump: (i: number) => void;
+}) {
+  if (questions.length === 0) return null;
+  const toneClass = tone === "amber"
+    ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20"
+    : "";
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5 font-semibold">{label}</div>
+      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+        {questions.map((i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onJump(i)}
+            className={cn("h-7 min-w-[28px] px-1.5 rounded border text-[11px] font-semibold tabular-nums transition", toneClass)}
+          >
+            {i + 1}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChoiceQuestionCard({
+  question, index, total, value, onChange, isFlagged, onToggleFlag,
+}: {
+  question: PaperQuestion;
+  index: number; total: number;
+  value: Record<string, unknown> | undefined;
+  onChange: (v: Record<string, unknown>) => void;
+  isFlagged: boolean;
+  onToggleFlag: () => void;
+}) {
+  return (
+    <Card className="overflow-hidden shadow-sm">
+      <div className="bg-gradient-to-r from-muted/50 via-muted/20 to-transparent border-b border-border px-5 py-3.5">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="uppercase text-[10px] font-bold tracking-wider">
+              {question.type.replace("_", " ")}
+            </Badge>
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              Question {index + 1} of {total} · {question.points} pts
+            </span>
+          </div>
+          <Button
+            size="sm" variant="ghost" onClick={onToggleFlag}
+            className={cn(
+              "h-7 px-2 text-[11px]",
+              isFlagged && "text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15"
+            )}
+          >
+            <Flag className={cn("h-3 w-3 mr-1", isFlagged && "fill-current")} />
+            {isFlagged ? "Flagged" : "Flag"}
+          </Button>
+        </div>
+        <h2 className="text-base font-semibold leading-snug">{question.title}</h2>
+        {question.body_md && (
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed mt-2">{question.body_md}</p>
+        )}
+      </div>
+      <CardContent className="space-y-4 pt-5">
+        <QuestionInput question={question} value={value} onChange={onChange} />
+      </CardContent>
+    </Card>
+  );
+}
+
 function QuestionInput({
-  question,
-  value,
-  onChange,
+  question, value, onChange,
 }: {
   question: PaperQuestion;
   value: Record<string, unknown> | undefined;
@@ -445,17 +534,27 @@ function QuestionInput({
       <div className="space-y-2">
         {(question.options ?? []).map((o, i) => {
           const checked = selected.has(o.id);
+          const letter = String.fromCharCode(65 + i);
           return (
             <label
               key={o.id}
               className={cn(
-                "flex items-start gap-3 p-3.5 border rounded-lg cursor-pointer transition group",
+                "flex items-start gap-3 p-3.5 border rounded-lg cursor-pointer transition-all group",
                 checked
-                  ? "border-primary bg-primary/5 shadow-sm"
-                  : "border-[hsl(var(--border))] hover:border-primary/40 hover:bg-[hsl(var(--muted))]/40"
+                  ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm"
+                  : "border-border hover:border-primary/40 hover:bg-muted/40 hover:-translate-y-px"
               )}
             >
+              <span className={cn(
+                "h-7 w-7 rounded-full grid place-items-center text-xs font-bold border shrink-0 transition-colors",
+                checked
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-muted text-muted-foreground group-hover:border-primary/40 group-hover:text-foreground"
+              )}>
+                {checked ? <CheckCircle2 className="h-4 w-4" /> : letter}
+              </span>
               <Checkbox
+                className="sr-only"
                 checked={checked}
                 onCheckedChange={(c) => {
                   const next = new Set(selected);
@@ -464,58 +563,65 @@ function QuestionInput({
                   onChange({ selected: Array.from(next) });
                 }}
               />
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 pt-0.5">
                 <span className="text-sm leading-relaxed">{o.body}</span>
               </div>
-              <span className="text-[10px] text-muted-foreground tabular-nums opacity-60 group-hover:opacity-100">
-                {String.fromCharCode(65 + i)}
-              </span>
             </label>
           );
         })}
+        <p className="text-[10px] text-muted-foreground pt-1">
+          Press <kbd className="px-1 py-0.5 rounded border border-border bg-muted font-mono">1</kbd>–
+          <kbd className="px-1 py-0.5 rounded border border-border bg-muted font-mono">9</kbd> to toggle options
+        </p>
       </div>
     );
   }
   if (question.type === "subjective") {
     const text = (value?.text as string) ?? "";
+    const words = text.trim().split(/\s+/).filter(Boolean).length;
     return (
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Textarea
           rows={10}
           placeholder="Type your answer here…"
           value={text}
           onChange={(e) => onChange({ text: e.target.value })}
-          className="resize-y"
+          className="resize-y min-h-[220px] text-sm leading-relaxed"
         />
-        <p className="text-[11px] text-muted-foreground tabular-nums">
-          {text.trim().split(/\s+/).filter(Boolean).length} words · {text.length} chars
-        </p>
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
+          <span>{words} {words === 1 ? "word" : "words"}</span>
+          <span>{text.length} characters</span>
+        </div>
       </div>
     );
   }
   if (question.type === "true_false") {
     const selected = ((value?.selected as string[]) ?? [])[0] ?? "";
     return (
-      <RadioGroup
-        value={selected}
-        onValueChange={(v) => onChange({ selected: [v] })}
-        className="space-y-2"
-      >
-        {(question.options ?? []).map((o) => {
+      <RadioGroup value={selected} onValueChange={(v) => onChange({ selected: [v] })} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {(question.options ?? []).map((o, i) => {
           const active = selected === o.id;
           return (
             <label
               key={o.id}
               htmlFor={`tf-${o.id}`}
               className={cn(
-                "flex items-center gap-3 p-3.5 border rounded-lg cursor-pointer transition",
+                "flex items-center gap-3 p-3.5 border rounded-lg cursor-pointer transition-all",
                 active
-                  ? "border-primary bg-primary/5 shadow-sm"
-                  : "border-[hsl(var(--border))] hover:border-primary/40 hover:bg-[hsl(var(--muted))]/40"
+                  ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm"
+                  : "border-border hover:border-primary/40 hover:bg-muted/40"
               )}
             >
-              <RadioGroupItem id={`tf-${o.id}`} value={o.id} />
-              <span className="text-sm">{o.body}</span>
+              <RadioGroupItem id={`tf-${o.id}`} value={o.id} className="sr-only" />
+              <span className={cn(
+                "h-6 w-6 rounded-full grid place-items-center text-[10px] font-bold border shrink-0",
+                active
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-muted text-muted-foreground"
+              )}>
+                {String.fromCharCode(65 + i)}
+              </span>
+              <span className="text-sm font-medium">{o.body}</span>
             </label>
           );
         })}
@@ -532,6 +638,7 @@ function QuestionInput({
           placeholder="Type your answer…"
           value={text}
           onChange={(e) => onChange({ text: e.target.value })}
+          className="h-11 text-sm"
         />
         <p className="text-[11px] text-muted-foreground tabular-nums text-right">
           {text.length} / {maxLen}
@@ -542,14 +649,11 @@ function QuestionInput({
   if (question.type === "matching") {
     return <MatchingInput question={question} value={value} onChange={onChange} />;
   }
-  // fallback (coding/sql handled by parent in wide layout)
   return null;
 }
 
 function MatchingInput({
-  question,
-  value,
-  onChange,
+  question, value, onChange,
 }: {
   question: PaperQuestion;
   value: Record<string, unknown> | undefined;
@@ -608,11 +712,7 @@ function MatchingInput({
   const onLeftClick = (left: string) => setSelectedLeft((s) => (s === left ? null : left));
   const onRightClick = (right: string) => {
     const owner = rightToLeft(right);
-    if (selectedLeft) {
-      setPair(selectedLeft, right);
-      setSelectedLeft(null);
-      return;
-    }
+    if (selectedLeft) { setPair(selectedLeft, right); setSelectedLeft(null); return; }
     if (owner) setPair(owner, null);
   };
 
@@ -627,9 +727,7 @@ function MatchingInput({
             : "Click an item on the left, then click its match on the right."}
         </span>
         <div className="flex items-center gap-3">
-          <span>
-            {matchedCount} / {lefts.length} matched
-          </span>
+          <span className="tabular-nums">{matchedCount} / {lefts.length} matched</span>
           {matchedCount > 0 && (
             <button type="button" onClick={() => onChange({ pairs: {} })} className="underline hover:text-foreground">
               Clear all
@@ -646,22 +744,18 @@ function MatchingInput({
             const isSelected = selectedLeft === left;
             return (
               <button
-                key={left}
-                type="button"
-                onClick={() => onLeftClick(left)}
+                key={left} type="button" onClick={() => onLeftClick(left)}
                 className={cn(
-                  "w-full text-left text-sm px-3 py-2 rounded-md border transition flex items-center justify-between gap-2",
+                  "w-full text-left text-sm px-3 py-2.5 rounded-md border transition flex items-center justify-between gap-2",
                   isSelected
                     ? "border-primary ring-2 ring-primary/40 bg-primary/5"
                     : paired
                     ? colorClasses[color]
-                    : "border-[hsl(var(--border))] bg-[hsl(var(--muted))] hover:bg-[hsl(var(--accent))]"
+                    : "border-border bg-muted hover:bg-accent"
                 )}
               >
                 <span className="font-medium truncate">{left}</span>
-                {paired && (
-                  <span className="text-[10px] uppercase tracking-wide opacity-80 shrink-0">→ {paired}</span>
-                )}
+                {paired && <span className="text-[10px] uppercase tracking-wide opacity-80 shrink-0">→ {paired}</span>}
               </button>
             );
           })}
@@ -672,19 +766,15 @@ function MatchingInput({
             const color = owner ? colorFor(owner) : null;
             return (
               <button
-                key={right}
-                type="button"
-                onClick={() => onRightClick(right)}
+                key={right} type="button" onClick={() => onRightClick(right)}
                 className={cn(
-                  "w-full text-left text-sm px-3 py-2 rounded-md border transition flex items-center justify-between gap-2",
-                  color ? colorClasses[color] : "border-[hsl(var(--border))] bg-[hsl(var(--muted))] hover:bg-[hsl(var(--accent))]",
+                  "w-full text-left text-sm px-3 py-2.5 rounded-md border transition flex items-center justify-between gap-2",
+                  color ? colorClasses[color] : "border-border bg-muted hover:bg-accent",
                   selectedLeft && !owner && "ring-1 ring-primary/40"
                 )}
               >
                 <span className="font-medium truncate">{right}</span>
-                {owner && (
-                  <span className="text-[10px] uppercase tracking-wide opacity-80 shrink-0">{owner} ←</span>
-                )}
+                {owner && <span className="text-[10px] uppercase tracking-wide opacity-80 shrink-0">{owner} ←</span>}
               </button>
             );
           })}

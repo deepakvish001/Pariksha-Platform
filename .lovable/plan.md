@@ -1,114 +1,118 @@
+# Test Player — Industry-Grade UI/UX Polish
 
-## Goal
+Goal: take the already-refactored test player (TopBar + Palette + Coding/SQL split panes + choice questions) and bring every surface to a LeetCode/HackerRank-grade level of polish. Pure presentation work — no backend, schema, grading, or business-logic changes.
 
-Rebuild `src/assessments/pages/Player.tsx` into an industry-level test-taking experience modeled on LeetCode and on your existing Contest play page. Coding and SQL questions get a real Monaco editor with language switcher, sample tests, Run, and Submit — wired to the same Fermion/SQLite edge functions the Contest already uses. Other question types get matching polish (cleaner cards, keyboard nav, question palette, flag-for-review, sticky bars).
+## Scope
 
-## What we reuse (no new infra)
+In: `Player.tsx`, `PlayerTopBar.tsx`, `QuestionPalette.tsx`, `CodingQuestion.tsx`, `SqlQuestion.tsx`, the inline `QuestionInput` / `MatchingInput` blocks inside `Player.tsx`, plus a new `PlayerBottomBar.tsx` extracted from `Player.tsx`.
 
-- `@monaco-editor/react` already installed
-- `src/components/coding/MonacoEditor.tsx` — theme-aware, auto-relayout
-- `src/hooks/useCodeRunner.ts` — wraps `run-code`, `submit-code`, `run-sql`, `submit-sql` edge functions (Judge0-compatible response shape)
-- Language-id helpers in `src/lib/coding/executionLimits.ts`
-- `src/components/library/coding/SqlResultDiff.tsx` for SQL result vs expected diff
-- `PaperQuestion.sample_tests`, `starter_code`, `language` already returned by `get_attempt_paper` RPC
+Out: `usePaper`, `useCodeRunner`, `useProctoring`, RPCs, edge functions, MonacoEditor internals, authoring UI, language list, grading.
 
-No new edge functions. No Judge0 keys. No DB schema changes — the existing `attempt_answers.answer` jsonb column absorbs the new fields (`code`, `language`, `language_id`, `query`, `last_run_result`).
+All colors via semantic Tailwind tokens (`bg-card`, `text-foreground`, `border-border`, `bg-muted`, `text-muted-foreground`, `primary`, `destructive`, `accent`). Status colors (emerald/amber) kept but only for verdict/answered/flag semantics, paired with icons so dark mode reads cleanly.
 
-## New layout
+## 1. Player shell
 
-### Shell — every question type
+- Replace `bg-[hsl(var(--background))]` brackets with semantic classes (`bg-background`).
+- Add a subtle ambient gradient backdrop behind `main` (`bg-gradient-to-b from-background via-background to-muted/30`) so the editor card floats.
+- Tighten responsive grid: palette becomes 240px rail on `lg+`, collapses to a slim horizontal strip above the question on `md`, and to a sheet trigger on mobile (uses existing `Sheet` component).
+- Extract sticky footer into `PlayerBottomBar.tsx` for clarity.
+- Smooth question transitions with a small `motion.div` fade/slide on `idx` change (framer-motion already in project).
 
-```text
-+----------------------------------------------------------------+
-|  Title             Timer ⏱  Proctor ●  Fullscreen ⛶  Submit ▸ |  sticky top bar
-+------+---------------------------------------------------------+
-|  Q   |                                                          |
-|  Pal |   Question viewport (varies by type — see below)         |
-|  ette|                                                          |
-+------+---------------------------------------------------------+
-|  ◀ Prev    🚩 Flag for review    Saved ✓             Next ▶   |  sticky bottom bar
-+----------------------------------------------------------------+
-```
+## 2. PlayerTopBar
 
-- Left rail: collapsible "question palette" with status dots (unanswered / answered / flagged / current). Keyboard shortcuts: `←/→` nav, `F` flag, `Ctrl+Enter` Run, `Ctrl+Shift+Enter` Submit.
-- Top bar: monospace countdown turns amber under 5 min, red under 1 min. Proctor chip and fullscreen request preserved from current player.
-- Bottom bar: autosave indicator dot + last-saved timestamp.
+- Replace the gradient "P" tile with the actual brand B lettermark used elsewhere in the platform.
+- Title row: title + subtle muted "assessment" eyebrow; right-side cluster gets visible separators between proctor pill, fullscreen, timer, prefill, submit.
+- Timer: monospace, larger (`text-base`), with a leading dot that pulses red < 60s and amber < 5min; tooltip shows the exact deadline.
+- Progress bar under header: 2 stacked thin bars — answered (primary) + flagged (amber) overlay — for at-a-glance status.
+- Submit becomes a gradient primary button with `Send` icon; disabled state shows `Submitting...` with spinner.
+- Add a "Help / shortcuts" `?` icon that opens a popover listing `←/→`, `F`, `Ctrl+Enter`, `Ctrl+Shift+Enter`, `Ctrl+S`.
 
-### Coding question — LeetCode-style split pane
+## 3. QuestionPalette
 
-```text
-+--------------------------+------------------------------+
-| Problem statement (md)   |  Lang ▾  Reset  Format  Run  |
-| Examples / constraints   +------------------------------+
-| Sample I/O cards         |                              |
-|                          |     Monaco editor            |
-|                          |                              |
-|                          +------------------------------+
-|                          |  Tabs: Testcase | Result     |
-|                          |  - per-test pass/fail pills  |
-|                          |  - stdout / stderr / compile |
-+--------------------------+------------------------------+
-                                                   [Submit]
-```
+- Bigger touch targets (h-10), 6-column grid on lg, 5 on md.
+- Status now uses 4 states with distinct chips: not-visited (outline), visited-blank (dashed), answered (emerald solid), answered+flagged (emerald + amber corner flag), current (primary ring).
+- Mini-stats row at top: 3 pill counters (Answered / Unanswered / Flagged) styled like the Stat block already in `Player.tsx` — reuse and export it.
+- Add a slim section header per section (when assessment has multiple sections) — read from `paper.sections` and group the grid.
 
-- `react-resizable-panels` for the split (verify it's already installed; if not, add it — it's a dep of the contest page).
-- Language switcher uses the same Judge0 IDs and labels the contest uses. Persists last-used per question in the answer payload.
-- Starter code from `question.starter_code` seeded once; "Reset" restores it.
-- "Run" → `useCodeRunner.run` against visible sample tests; renders verdict pills (Accepted / Wrong Answer / TLE / Compile Error) with expandable stdout/stderr.
-- "Submit" → `useCodeRunner.submit` AND `useSaveAnswer` stores `{ code, language, language_id, last_run_result }`. Does not auto-advance.
+## 4. Coding question (LeetCode-style)
 
-### SQL question — Workbench-style
+Layout already uses `react-resizable-panels`. Polish targets:
 
-```text
-+----------------------+------------------------------+
-| Problem statement    |  Run query   Reset           |
-| Expected output card +------------------------------+
-| Schema viewer:       |     Monaco (language=sql)    |
-|  - table chips with  |                              |
-|    columns + types   +------------------------------+
-|  - "Preview rows"    |  Tabs: Result | Expected     |
-|    top 5 rows        |  - row-level diff (reused)   |
-+----------------------+------------------------------+
-```
+- **Header bar**: pill with difficulty (read from `question.meta?.difficulty` if present, else hide), points, language. Subtle `border-b` accent line in primary when problem accepted.
+- **Problem panel**:
+  - Render `body_md` through the existing markdown renderer (project uses `react-markdown` elsewhere — import the shared `MarkdownRenderer` component instead of `whitespace-pre-wrap`).
+  - Examples: card with monospace input/output stacked, copy-to-clipboard icon button per block, "Explanation" collapsible when provided.
+  - Add a "Constraints" section if `question.meta?.constraints` exists (string list).
+  - Tabbed left panel: `Description` / `Hints` / `Submissions` (Submissions tab lists prior `last_submit_result` verdicts from the answer; Hints from `meta.hints` string[]).
+- **Editor toolbar**: language `Select` styled as a chip; `Reset`, `Format`, `Settings` (popover: font size 12-18, tab size 2/4, theme toggle that flips Monaco between `vs-dark`/`light` independent of app theme), `Run`, `Submit`. Run is outline, Submit is gradient primary. Both keyboard hinted (`⌘⏎`, `⌘⇧⏎`).
+- **Bottom result panel**:
+  - Tabs: `Testcase` (sample inputs as horizontal pill tabs you can click to pick which one Run uses) | `Result` (verdict + per-case rows with green/red dot, runtime, memory, expand to see expected vs actual diff).
+  - Verdict header gets a colored banner: emerald gradient on Accepted, amber on WA, red on RE/CE/TLE. Shows tests passed `x/y` with a mini progress bar.
+  - Failing-case block uses side-by-side `Expected` / `Got` columns with a unified diff highlight on differing lines.
+- **Empty states**: friendly illustration-less prompt blocks with kbd hints.
+- Add `⌘⏎` and `⌘⇧⏎` listeners scoped to the editor pane.
 
-- Schema/preview pulled from `question.meta.schema` when present (already a free-form jsonb on the question). Panel hidden when absent.
-- "Run" → `run-sql`; result grid + expected grid using existing `SqlResultDiff`.
-- Answer payload: `{ query, language: "sql", last_run_result }`.
+## 5. SQL question (Workbench-style)
 
-### Other question types
+- **Schema viewer**: each table becomes a collapsible card with header showing name + row count (from sample length). Columns rendered as a 2-col table (name · type) with PK badge when type contains `primary key`. Click a column name to insert it into the editor at cursor (via `editorRef.current.insertAtCursor`).
+- **Seed preview**: small tabbed grid of first 5 rows per table, monospace.
+- **Editor toolbar**: same look as coding (Reset / Format / Settings / Run). Add a `Saved` indicator chip near Run.
+- **Result panel**: keep the existing `ResultGrid` but add row count chip, execution time, and a `Download CSV` button. Diff tab: re-skin `SqlResultDiff` with green/red line highlights matching the coding diff style.
+- **Reference query**: if `meta.reference_query` exists and `isPreview`, show a "Peek reference" popover (preview-only).
 
-Same shell. The existing renderers (MCQ, true-false, short answer, matching, subjective) get a styling pass — larger type, card-style choices with check-icon on select, keyboard 1–9 to pick options, live char counters for text — all using semantic tokens.
+## 6. Choice / short-answer / matching questions
 
-### Submission flow
+- Wrap each question type in a single polished `Card` with:
+  - Header: gradient-tinted strip (`bg-gradient-to-r from-muted/40 to-transparent`), type badge, "Q n of N · X pts", flag toggle inline.
+  - Body: larger type (`text-base` for stem, `text-sm` for options), generous spacing.
+- **MCQ / true-false**: option cards with circular index badge (A/B/C/D), hover lift, checked = primary ring + soft fill + check icon. Multi-select shows checkboxes; single-select shows radios.
+- **Short answer**: large `Input` with live char counter (right-aligned) and an optional `maxLength` from `question.meta?.max_length`.
+- **Subjective**: `Textarea` with min-height 220, word + char counter, autosize.
+- **Matching**: 2-column grid; left items as static chips, right side as `Select` per item; visual line/arrow indicator when matched. Reset-all button.
+- Keyboard: `1..9` selects option n for MCQ/true-false (already partially scoped — finish wiring).
 
-- "Submit Assessment" in top bar opens a confirm dialog showing answered / unanswered / flagged counts before calling `useSubmitAttempt`.
-- Auto-submit on timer end stays; shows a "Time's up" overlay then routes to results.
+## 7. Bottom bar
 
-## Files to touch
+- Extract to `PlayerBottomBar.tsx`.
+- Left: Prev with question number ("← Q4").
+- Center: Flag toggle (amber when on), Save status (`Saved 12:04` / `Saving…` / `Saved just now` with `Loader2` when in-flight).
+- Right: Next with question number, or `Review & Submit` button on last question (opens existing AlertDialog).
 
-| File | Change |
-|---|---|
-| `src/assessments/pages/Player.tsx` | Refactor into shell + per-type renderers; sticky top/bottom bars; palette; confirm-submit dialog |
-| `src/assessments/components/PlayerTopBar.tsx` | NEW — timer, proctor chip, fullscreen, submit |
-| `src/assessments/components/QuestionPalette.tsx` | NEW — left rail, status dots, keyboard nav |
-| `src/assessments/components/CodingQuestion.tsx` | NEW — split pane, Monaco, lang switcher, Run/Submit, test panel |
-| `src/assessments/components/SqlQuestion.tsx` | NEW — split pane, Monaco SQL, schema viewer, result diff |
-| `src/assessments/components/ChoiceQuestion.tsx` | NEW — polished MCQ / true-false / short answer wrappers |
-| `src/assessments/hooks/usePaper.ts` | Extend `PaperQuestion` answer typing for `language_id`, `last_run_result` (no DB change) |
+## 8. Submit confirmation dialog
 
-No migrations. No edge function changes. No new secrets.
+- Keep current AlertDialog. Add:
+  - A 3-up Stat grid (already present) but with icons.
+  - A scrollable list of unanswered + flagged question numbers as small clickable chips that jump to the question (closes dialog).
+  - Primary action becomes "Submit assessment" gradient button.
+
+## 9. Submitted/finished screen
+
+- Replace single Card with a centered hero: large check, headline, score chip (large), CTA cluster. Confetti is optional and skipped (no new deps).
 
 ## Technical notes
 
-- All colors via semantic tokens (`hsl(var(--background))`, `--primary`, `--border`, etc.) — no hard-coded hex. Matches deep-black glassmorphic theme.
-- Monaco already honors `next-themes`.
-- `useProctoring` stays wrapped around the shell — unchanged.
-- Autosave path unchanged: `useSaveAnswer` upserts `attempt_answers`; new fields land in the existing `answer` jsonb column.
-- Single keydown listener for shortcuts; disabled while Monaco is focused except for `Ctrl+Enter` / `Ctrl+Shift+Enter` — same UX as contest play.
-- The preview-mode path (`?preview=1`) keeps working: Run is enabled, Submit is disabled with a tooltip.
+- Reuse existing primitives only: `Card`, `Button`, `Badge`, `Tabs`, `Tooltip`, `Popover`, `Sheet`, `AlertDialog`, `Progress`, `Input`, `Textarea`, `Select`, `RadioGroup`, `Checkbox`, `ScrollArea`, `Separator`, `react-resizable-panels`, `framer-motion`, `lucide-react`. No new packages.
+- Read shared `MarkdownRenderer` from `src/components/...` (search for existing usage, e.g. interview answers) — fallback to `whitespace-pre-wrap` if not found.
+- Add `editorRef.current.insertAtCursor(text)` to `MonacoEditor` handle if not present (small, isolated additive change to that component's imperative handle). If owners prefer no MonacoEditor change, fall back to appending text — flag and ask before touching.
+- All status colors continue using emerald/amber/destructive utility classes (allowed for semantic verdicts), but borders/backgrounds use `border-border` / `bg-card` / `bg-muted` tokens.
+- File watch: avoid changing `Player.tsx` answer state shape; only its presentation.
+
+## Files
+
+Created
+- `src/assessments/components/PlayerBottomBar.tsx`
+
+Edited
+- `src/assessments/pages/Player.tsx`
+- `src/assessments/components/PlayerTopBar.tsx`
+- `src/assessments/components/QuestionPalette.tsx`
+- `src/assessments/components/CodingQuestion.tsx`
+- `src/assessments/components/SqlQuestion.tsx`
 
 ## Out of scope
 
-- Authoring UI (`src/b2b/pages/assessments/*`).
-- Adding new languages beyond what `useCodeRunner` already exposes.
-- Backend grading changes — code/SQL grading still happens server-side as today.
+- New languages or runtimes
+- Backend grading rubric, RLS, or RPC changes
+- New assessment authoring UI
+- Persisting editor settings (font size, theme) across sessions
+- Realtime collaboration / cursor presence
