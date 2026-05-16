@@ -305,6 +305,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_insight_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          insight_key: string
+          insight_title: string
+          org_id: string
+          rating: Database["public"]["Enums"]["ai_insight_rating"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          insight_key: string
+          insight_title: string
+          org_id: string
+          rating: Database["public"]["Enums"]["ai_insight_rating"]
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          insight_key?: string
+          insight_title?: string
+          org_id?: string
+          rating?: Database["public"]["Enums"]["ai_insight_rating"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       analytics_cache: {
         Row: {
           cache_key: string
@@ -8063,6 +8099,7 @@ export type Database = {
       }
     }
     Enums: {
+      ai_insight_rating: "up" | "down"
       app_role:
         | "admin"
         | "moderator"
@@ -8230,6 +8267,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_insight_rating: ["up", "down"],
       app_role: [
         "admin",
         "moderator",

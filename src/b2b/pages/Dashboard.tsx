@@ -32,6 +32,8 @@ import {
   Webhook,
   ChevronRight,
   RefreshCw,
+  ThumbsUp,
+  ThumbsDown,
   LucideIcon,
 } from "lucide-react";
 import { amberGradientText } from "../components/B2BBackdrop";
@@ -321,6 +323,103 @@ function useAiInsights(orgId?: string) {
   return { insights: insights ?? [], loading, error, refresh: load };
 }
 
+type InsightRating = "up" | "down";
+
+// Stable key for an insight so feedback can be tied to a specific recommendation
+// even though we don't persist insights themselves.
+function insightKey(i: { title: string; body: string }) {
+  // Lightweight, deterministic hash (djb2-ish) of title|body. Sufficient for
+  // a per-(user, org) uniqueness key — not used for security.
+  const s = `${i.title}\u0001${i.body}`;
+  let h = 5381;
+  for (let n = 0; n < s.length; n++) h = ((h << 5) + h + s.charCodeAt(n)) | 0;
+  return `v1:${(h >>> 0).toString(36)}`;
+}
+
+function useInsightFeedback(orgId: string | undefined, insights: AiInsight[]) {
+  const [ratings, setRatings] = useState<Record<string, InsightRating>>({});
+  const [pending, setPending] = useState<Record<string, boolean>>({});
+
+  const keys = useMemo(() => insights.map(insightKey), [insights]);
+
+  useEffect(() => {
+    if (!orgId || keys.length === 0) {
+      setRatings({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("ai_insight_feedback")
+        .select("insight_key, rating")
+        .eq("org_id", orgId)
+        .in("insight_key", keys);
+      if (cancelled || error) return;
+      const next: Record<string, InsightRating> = {};
+      for (const r of data ?? []) {
+        next[r.insight_key as string] = r.rating as InsightRating;
+      }
+      setRatings(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId, keys.join("|")]);
+
+  const submit = async (insight: AiInsight, rating: InsightRating) => {
+    if (!orgId) return;
+    const key = insightKey(insight);
+    const current = ratings[key];
+    setPending((p) => ({ ...p, [key]: true }));
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) throw new Error("Please sign in to leave feedback.");
+
+      if (current === rating) {
+        // Toggle off → remove feedback
+        const { error } = await supabase
+          .from("ai_insight_feedback")
+          .delete()
+          .eq("user_id", userId)
+          .eq("org_id", orgId)
+          .eq("insight_key", key);
+        if (error) throw error;
+        setRatings((r) => {
+          const { [key]: _, ...rest } = r;
+          return rest;
+        });
+        toast.success("Feedback removed");
+      } else {
+        const { error } = await supabase
+          .from("ai_insight_feedback")
+          .upsert(
+            {
+              user_id: userId,
+              org_id: orgId,
+              insight_key: key,
+              insight_title: insight.title,
+              rating,
+            },
+            { onConflict: "user_id,org_id,insight_key" },
+          );
+        if (error) throw error;
+        setRatings((r) => ({ ...r, [key]: rating }));
+        toast.success(rating === "up" ? "Thanks for the 👍" : "Thanks — we'll use this to improve");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not save feedback");
+    } finally {
+      setPending((p) => {
+        const { [key]: _, ...rest } = p;
+        return rest;
+      });
+    }
+  };
+
+  return { ratings, pending, submit };
+}
+
 type ChannelCount = { source: string; count: number };
 export type ChannelRange = "7d" | "30d" | "90d" | "all";
 
@@ -476,6 +575,11 @@ export default function B2BDashboard() {
   const recent = (assessments ?? []).slice(0, 5);
   const { insights, loading: insightsLoading, error: insightsError, refresh: refreshInsights } =
     useAiInsights(org?.id);
+  const {
+    ratings: insightRatings,
+    pending: insightPending,
+    submit: submitInsightFeedback,
+  } = useInsightFeedback(org?.id, insights);
 
   return (
     <OrgShell
@@ -804,6 +908,11 @@ export default function B2BDashboard() {
                   : i.severity === "warning"
                   ? "bg-amber-500"
                   : "bg-[hsl(var(--primary))]";
+              const key = insightKey(i);
+              const rating = insightRatings[key];
+              const isPending = !!insightPending[key];
+              const thumbBase =
+                "inline-flex items-center justify-center h-6 w-6 rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
               return (
                 <div
                   key={`${i.title}-${idx}`}
@@ -821,6 +930,41 @@ export default function B2BDashboard() {
                       → {i.action}
                     </p>
                   )}
+                  <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[hsl(var(--border))]/40 pt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                      Was this helpful?
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-label="Mark insight as helpful"
+                        aria-pressed={rating === "up"}
+                        disabled={isPending}
+                        onClick={() => submitInsightFeedback(i, "up")}
+                        className={`${thumbBase} ${
+                          rating === "up"
+                            ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-500"
+                            : "border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-emerald-500 hover:border-emerald-500/40"
+                        }`}
+                      >
+                        <ThumbsUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Mark insight as not helpful"
+                        aria-pressed={rating === "down"}
+                        disabled={isPending}
+                        onClick={() => submitInsightFeedback(i, "down")}
+                        className={`${thumbBase} ${
+                          rating === "down"
+                            ? "border-rose-500/60 bg-rose-500/15 text-rose-500"
+                            : "border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-rose-500 hover:border-rose-500/40"
+                        }`}
+                      >
+                        <ThumbsDown className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               );
             })}
