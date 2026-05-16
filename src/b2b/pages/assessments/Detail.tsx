@@ -28,6 +28,8 @@ import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon, Play } 
 import { toast } from "sonner";
 import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
 import { Textarea } from "@/components/ui/textarea";
+import { AssessmentProctoringConfig } from "../../components/AssessmentProctoringConfig";
+import type { ProctoringConfig } from "@/assessments/lib/proctoringConfig";
 import { useAttempts } from "../../hooks/useAttempts";
 import { useAssessmentInsights } from "../../hooks/useInsights";
 import { Link } from "react-router-dom";
