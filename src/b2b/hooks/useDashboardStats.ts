@@ -34,11 +34,12 @@ export type DashboardStats = {
   };
 };
 
-export type StatsRange = "7d" | "30d" | "90d";
+export type StatsRange = "7d" | "30d" | "60d" | "90d";
 
 const RANGE_DAYS: Record<StatsRange, number> = {
   "7d": 7,
   "30d": 30,
+  "60d": 60,
   "90d": 90,
 };
 

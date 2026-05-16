@@ -39,12 +39,18 @@ serve(async (req) => {
     }
     const userId = claims.claims.sub as string;
 
-    const { org_id } = (await req.json().catch(() => ({}))) as {
+    const { org_id, window_days } = (await req.json().catch(() => ({}))) as {
       org_id?: string;
+      window_days?: number;
     };
     if (!org_id || typeof org_id !== "string") {
       return json({ error: "org_id required" }, 400);
     }
+    // Clamp window_days into a sensible range. Defaults to 30 if missing/invalid.
+    const windowDays =
+      typeof window_days === "number" && Number.isFinite(window_days)
+        ? Math.min(180, Math.max(1, Math.round(window_days)))
+        : 30;
 
     // Verify membership (RLS would also block, but be explicit).
     const { data: membership } = await supabase
@@ -58,9 +64,9 @@ serve(async (req) => {
     // Aggregate stats on the server.
     const now = new Date();
     const dStart = new Date(now);
-    dStart.setDate(now.getDate() - 30);
+    dStart.setDate(now.getDate() - windowDays);
     const pStart = new Date(now);
-    pStart.setDate(now.getDate() - 60);
+    pStart.setDate(now.getDate() - windowDays * 2);
     const dStartIso = dStart.toISOString();
     const pStartIso = pStart.toISOString();
 
@@ -132,7 +138,7 @@ serve(async (req) => {
     ).length;
 
     const stats = {
-      window_days: 30,
+      window_days: windowDays,
       assessments_total: assessments?.length ?? 0,
       drafts: (assessments ?? []).filter((a: any) => a.status === "draft")
         .length,

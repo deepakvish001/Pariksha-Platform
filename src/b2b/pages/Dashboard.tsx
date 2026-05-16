@@ -452,39 +452,48 @@ type InsightsCacheEntry = { data: AiInsight[]; fetchedAt: number };
 const insightsCache = new Map<string, InsightsCacheEntry>();
 const insightsInFlight = new Map<string, Promise<AiInsight[]>>();
 
-async function fetchInsights(orgId: string, force: boolean): Promise<AiInsight[]> {
+function insightsCacheKey(orgId: string, windowDays: number) {
+  return `${orgId}:${windowDays}`;
+}
+
+async function fetchInsights(
+  orgId: string,
+  windowDays: number,
+  force: boolean,
+): Promise<AiInsight[]> {
+  const key = insightsCacheKey(orgId, windowDays);
   const now = Date.now();
   if (!force) {
-    const cached = insightsCache.get(orgId);
+    const cached = insightsCache.get(key);
     if (cached && now - cached.fetchedAt < INSIGHTS_TTL_MS) {
       return cached.data;
     }
   }
-  const existing = insightsInFlight.get(orgId);
+  const existing = insightsInFlight.get(key);
   if (existing) return existing;
 
   const p = (async () => {
     const { data, error: invokeErr } = await supabase.functions.invoke(
       "b2b-dashboard-insights",
-      { body: { org_id: orgId } },
+      { body: { org_id: orgId, window_days: windowDays } },
     );
     if (invokeErr) throw invokeErr;
     if (data?.error) throw new Error(data.error);
     const list = (data?.insights ?? []) as AiInsight[];
-    insightsCache.set(orgId, { data: list, fetchedAt: Date.now() });
+    insightsCache.set(key, { data: list, fetchedAt: Date.now() });
     return list;
   })().finally(() => {
-    insightsInFlight.delete(orgId);
+    insightsInFlight.delete(key);
   });
 
-  insightsInFlight.set(orgId, p);
+  insightsInFlight.set(key, p);
   return p;
 }
 
-function useAiInsights(orgId?: string) {
+function useAiInsights(orgId?: string, windowDays: number = 30) {
   const [insights, setInsights] = useState<AiInsight[] | null>(() => {
     if (!orgId) return null;
-    const c = insightsCache.get(orgId);
+    const c = insightsCache.get(insightsCacheKey(orgId, windowDays));
     return c && Date.now() - c.fetchedAt < INSIGHTS_TTL_MS ? c.data : null;
   });
   const [loading, setLoading] = useState(false);
@@ -496,7 +505,7 @@ function useAiInsights(orgId?: string) {
     setLoading(true);
     setError(null);
     try {
-      const list = await fetchInsights(orgId, force);
+      const list = await fetchInsights(orgId, windowDays, force);
       setInsights(list);
       setLastRefreshAt(Date.now());
     } catch (e: any) {
@@ -519,14 +528,14 @@ function useAiInsights(orgId?: string) {
       setInsights(null);
       return;
     }
-    const cached = insightsCache.get(orgId);
+    const cached = insightsCache.get(insightsCacheKey(orgId, windowDays));
     if (cached && Date.now() - cached.fetchedAt < INSIGHTS_TTL_MS) {
       setInsights(cached.data);
       return;
     }
     load(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId]);
+  }, [orgId, windowDays]);
 
   // Tick once per second while the refresh cooldown is active so the UI
   // (disabled state + countdown label) updates without extra refetches.
@@ -750,7 +759,9 @@ export default function B2BDashboard() {
     navigate(target, { replace: true });
   }, [org, isLoading, navigate, base]);
 
-  const [statsRange, setStatsRange] = useState<"7d" | "30d" | "90d">("30d");
+  const [statsRange, setStatsRange] = useState<"7d" | "30d" | "60d" | "90d">("30d");
+  const statsWindowDays =
+    statsRange === "7d" ? 7 : statsRange === "60d" ? 60 : statsRange === "90d" ? 90 : 30;
   const { data: stats } = useDashboardStats(org?.id, statsRange);
   const { data: assessments } = useAssessments(org?.id);
   const series = useSubmissionsSeries(org?.id, 30);
@@ -838,7 +849,7 @@ export default function B2BDashboard() {
     error: insightsError,
     refresh: refreshInsights,
     cooldownRemaining: insightsCooldown,
-  } = useAiInsights(org?.id);
+  } = useAiInsights(org?.id, statsWindowDays);
   const {
     ratings: insightRatings,
     pending: insightPending,
@@ -883,7 +894,7 @@ export default function B2BDashboard() {
           const direction = v > 0 ? "up" : v < 0 ? "down" : "flat";
           return { value: magnitude, direction, unit };
         };
-        const windowDays = statsRange === "7d" ? 7 : statsRange === "90d" ? 90 : 30;
+        const windowDays = statsWindowDays;
         const hint = `vs prev ${windowDays}d`;
         return (
           <div>
@@ -897,7 +908,7 @@ export default function B2BDashboard() {
                 </span>
                 <Select
                   value={statsRange}
-                  onValueChange={(v) => setStatsRange(v as "7d" | "30d" | "90d")}
+                  onValueChange={(v) => setStatsRange(v as "7d" | "30d" | "60d" | "90d")}
                 >
                   <SelectTrigger
                     aria-label="KPI comparison window"
@@ -908,6 +919,7 @@ export default function B2BDashboard() {
                   <SelectContent>
                     <SelectItem value="7d">Last 7 days</SelectItem>
                     <SelectItem value="30d">Last 30 days</SelectItem>
+                    <SelectItem value="60d">Last 60 days</SelectItem>
                     <SelectItem value="90d">Last 90 days</SelectItem>
                   </SelectContent>
                 </Select>
