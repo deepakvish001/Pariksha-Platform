@@ -118,6 +118,7 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
   const [active, setActive] = useState(true);
   const [snapEnabled, setSnapEnabled] = useState<boolean>(() => loadSnapPref());
   const [snapping, setSnapping] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const [hidden, setHidden] = useState<boolean>(() => loadHiddenPref());
 
   // Persist snap preference
@@ -141,9 +142,17 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
 
 
 
-  // Load persisted position when the attempt changes
+  // Load persisted position when the attempt changes, with a brief
+  // animated transition so the PIP eases to its new corner instead of
+  // teleporting between attempts.
   useEffect(() => {
-    setPos(loadPos(attemptId));
+    const next = loadPos(attemptId);
+    setPos((prev) => {
+      if (prev.x === next.x && prev.y === next.y) return prev;
+      setSwitching(true);
+      window.setTimeout(() => setSwitching(false), 420);
+      return next;
+    });
   }, [attemptId]);
 
   // Persist position whenever it changes (scoped per attempt)
@@ -289,7 +298,11 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
           style={{
             right: pos.x,
             bottom: pos.y,
-            transition: snapping ? "right 180ms ease-out, bottom 180ms ease-out" : undefined,
+            transition: switching
+              ? "right 380ms cubic-bezier(0.22, 1, 0.36, 1), bottom 380ms cubic-bezier(0.22, 1, 0.36, 1)"
+              : snapping
+              ? "right 180ms ease-out, bottom 180ms ease-out"
+              : undefined,
           }}
           className={
             "fixed z-[60] inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold shadow-lg border bg-black/80 backdrop-blur text-white hover:bg-black " +
@@ -315,7 +328,11 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
           style={{
             right: pos.x,
             bottom: pos.y,
-            transition: snapping ? "right 180ms ease-out, bottom 180ms ease-out" : undefined,
+            transition: switching
+              ? "right 380ms cubic-bezier(0.22, 1, 0.36, 1), bottom 380ms cubic-bezier(0.22, 1, 0.36, 1)"
+              : snapping
+              ? "right 180ms ease-out, bottom 180ms ease-out"
+              : undefined,
           }}
           className="fixed z-[60] select-none"
           onPointerDown={onPointerDown}
