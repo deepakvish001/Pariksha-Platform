@@ -34,8 +34,10 @@ async function downloadSnapshot(
   event: { created_at: string },
   path: string | null,
   format: "jpg" | "png",
+  onProgress?: (pct: number | null) => void,
 ) {
   try {
+    onProgress?.(0);
     const res = await fetch(url);
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
@@ -44,7 +46,33 @@ async function downloadSnapshot(
       }
       throw new Error(`HTTP ${res.status}`);
     }
-    const sourceBlob = await res.blob();
+
+    // Stream the body so we can report download progress when the server
+    // sends a Content-Length header. Fall back to res.blob() otherwise.
+    const totalHeader = res.headers.get("Content-Length");
+    const total = totalHeader ? Number(totalHeader) : 0;
+    let sourceBlob: Blob;
+    if (res.body && total > 0) {
+      const reader = res.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let received = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+          chunks.push(value);
+          received += value.length;
+          onProgress?.(Math.min(99, Math.round((received / total) * 100)));
+        }
+      }
+      sourceBlob = new Blob(chunks, {
+        type: res.headers.get("Content-Type") || "",
+      });
+    } else {
+      onProgress?.(null);
+      sourceBlob = await res.blob();
+    }
     const tsName = new Date(event.created_at).toISOString().replace(/[:.]/g, "-");
     const baseName = path ? path.split("/").pop()?.replace(/\.[^.]+$/, "") : null;
     const fileName = `${baseName || `snapshot-${tsName}`}.${format}`;
