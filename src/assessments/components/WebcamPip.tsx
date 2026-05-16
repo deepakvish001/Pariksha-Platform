@@ -229,6 +229,7 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
   const [snapping, setSnapping] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [hidden, setHidden] = useState<boolean>(() => loadHiddenPref());
+  const [confirmReset, setConfirmReset] = useState(false);
 
   // Persist snap preference
   useEffect(() => {
