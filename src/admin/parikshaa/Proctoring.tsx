@@ -34,8 +34,10 @@ async function downloadSnapshot(
   event: { created_at: string },
   path: string | null,
   format: "jpg" | "png",
+  onProgress?: (pct: number | null) => void,
 ) {
   try {
+    onProgress?.(0);
     const res = await fetch(url);
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
@@ -44,7 +46,33 @@ async function downloadSnapshot(
       }
       throw new Error(`HTTP ${res.status}`);
     }
-    const sourceBlob = await res.blob();
+
+    // Stream the body so we can report download progress when the server
+    // sends a Content-Length header. Fall back to res.blob() otherwise.
+    const totalHeader = res.headers.get("Content-Length");
+    const total = totalHeader ? Number(totalHeader) : 0;
+    let sourceBlob: Blob;
+    if (res.body && total > 0) {
+      const reader = res.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let received = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+          chunks.push(value);
+          received += value.length;
+          onProgress?.(Math.min(99, Math.round((received / total) * 100)));
+        }
+      }
+      sourceBlob = new Blob(chunks as BlobPart[], {
+        type: res.headers.get("Content-Type") || "",
+      });
+    } else {
+      onProgress?.(null);
+      sourceBlob = await res.blob();
+    }
     const tsName = new Date(event.created_at).toISOString().replace(/[:.]/g, "-");
     const baseName = path ? path.split("/").pop()?.replace(/\.[^.]+$/, "") : null;
     const fileName = `${baseName || `snapshot-${tsName}`}.${format}`;
@@ -94,9 +122,11 @@ async function downloadSnapshot(
     a.click();
     a.remove();
     URL.revokeObjectURL(href);
+    onProgress?.(100);
   } catch {
     toast.error("Couldn't download snapshot. Opening in a new tab instead.");
     window.open(url, "_blank", "noopener,noreferrer");
+    onProgress?.(null);
   }
 }
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -1161,6 +1191,7 @@ function SnapshotLightbox({
   const path = event ? snapshotPath(event) : null;
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dl, setDl] = useState<{ format: "jpg" | "png"; pct: number } | null>(null);
 
   useEffect(() => {
     if (!open || !path) {
@@ -1239,22 +1270,53 @@ function SnapshotLightbox({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 px-2 gap-1"
-                        title="Download snapshot"
+                        className="h-7 px-2 gap-1 tabular-nums"
+                        title={
+                          dl
+                            ? `Downloading ${dl.format.toUpperCase()}${dl.pct != null ? ` (${dl.pct}%)` : "…"}`
+                            : "Download snapshot"
+                        }
                         aria-label="Download snapshot"
+                        aria-busy={!!dl}
+                        disabled={!!dl}
                       >
-                        <Download className="h-4 w-4" />
-                        <ChevronDown className="h-3 w-3 opacity-60" />
+                        {dl ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-[10px]">
+                              {dl.pct != null ? `${dl.pct}%` : "…"}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4" />
+                            <ChevronDown className="h-3 w-3 opacity-60" />
+                          </>
+                        )}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[10rem]">
                       <DropdownMenuItem
-                        onClick={() => downloadSnapshot(url, event, path, "jpg")}
+                        disabled={!!dl}
+                        onClick={async () => {
+                          setDl({ format: "jpg", pct: 0 });
+                          await downloadSnapshot(url, event, path, "jpg", (pct) =>
+                            setDl(pct == null ? null : { format: "jpg", pct }),
+                          );
+                          setDl(null);
+                        }}
                       >
                         Download as JPG
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => downloadSnapshot(url, event, path, "png")}
+                        disabled={!!dl}
+                        onClick={async () => {
+                          setDl({ format: "png", pct: 0 });
+                          await downloadSnapshot(url, event, path, "png", (pct) =>
+                            setDl(pct == null ? null : { format: "png", pct }),
+                          );
+                          setDl(null);
+                        }}
                       >
                         Download as PNG
                       </DropdownMenuItem>
