@@ -1336,23 +1336,27 @@ export default function B2BDashboard() {
                       return `${c} vs ${p}`;
                     };
                     const allRows: {
-                      label: string;
+                      label: keyof typeof KPI_HELP;
                       value: string;
+                      prevMissing: boolean;
                       keywords: RegExp;
                     }[] = [
                       {
                         label: "Assessments",
                         value: fmtPair(w.assessments.curr, w.assessments.prev),
+                        prevMissing: w.assessments.prev == null,
                         keywords: /assessment|test|exam|quiz/i,
                       },
                       {
                         label: "Candidates invited",
                         value: fmtPair(w.invites.curr, w.invites.prev),
+                        prevMissing: w.invites.prev == null,
                         keywords: /invit|candidat|pending|reminder|outreach/i,
                       },
                       {
                         label: "Submissions",
                         value: fmtPair(w.submissions.curr, w.submissions.prev),
+                        prevMissing: w.submissions.prev == null,
                         keywords: /submission|submit|complet|response|attempt/i,
                       },
                       {
@@ -1362,6 +1366,7 @@ export default function B2BDashboard() {
                           w.avgIntegrity.prev,
                           "%",
                         ),
+                        prevMissing: w.avgIntegrity.prev == null,
                         keywords: /integrity|cheat|proctor|flag|suspicious|honest/i,
                       },
                     ];
@@ -1385,8 +1390,32 @@ export default function B2BDashboard() {
                               key={r.label}
                               className="flex items-center justify-between gap-3 px-2.5 py-1.5"
                             >
-                              <dt className="text-[hsl(var(--muted-foreground))]">
-                                {r.label}
+                              <dt className="flex items-center gap-1 text-[hsl(var(--muted-foreground))]">
+                                <span>{r.label}</span>
+                                <TooltipProvider delayDuration={150}>
+                                  <UiTooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        type="button"
+                                        aria-label={`How ${r.label} is calculated`}
+                                        className="text-[hsl(var(--muted-foreground))]/60 hover:text-[hsl(var(--foreground))] transition-colors"
+                                      >
+                                        <Info className="h-3 w-3" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
+                                      <p className="font-medium mb-1">{r.label}</p>
+                                      <p className="text-[hsl(var(--muted-foreground))]">
+                                        {KPI_HELP[r.label]}
+                                      </p>
+                                      {r.prevMissing && (
+                                        <p className="mt-1.5 text-amber-500">
+                                          No baseline yet — the previous {w.windowDays}-day window had no qualifying data, so a comparison can't be computed.
+                                        </p>
+                                      )}
+                                    </TooltipContent>
+                                  </UiTooltip>
+                                </TooltipProvider>
                               </dt>
                               <dd className="font-mono tabular-nums">
                                 {r.value}
