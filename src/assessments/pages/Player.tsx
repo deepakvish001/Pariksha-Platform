@@ -182,6 +182,30 @@ export default function Player() {
     }
   }, [remaining, deadline, paper, doSubmit]);
 
+  // Device fingerprint lock — pins on first attempt start, auto-submits on mismatch
+  useDeviceLock({
+    attemptId,
+    enabled: proctoringEnabled && lockdownReady,
+    onMismatch: (current, stored) => {
+      void logProctorEvent("device_change", { current, stored });
+    },
+  });
+
+  // Screen capture monitoring — required only when proctoring_config.require_screen_share
+  const secondMonitorLoggedRef = useRef(false);
+  useDisplayCapture({
+    attemptId,
+    enabled: proctoringEnabled && lockdownReady && proctoringConfig.require_screen_share,
+    onSecondMonitor: () => {
+      if (secondMonitorLoggedRef.current) return;
+      secondMonitorLoggedRef.current = true;
+      void logProctorEvent("second_monitor");
+    },
+    onShareLost: () => { void logProctorEvent("screenshare_lost"); },
+  });
+  // Hold ref to screen stream so we can stop tracks on unmount if needed in future.
+  void screenStream;
+
   // Track latest answers without re-creating queueSave on every keystroke
   const answersRef = useRef<AnswerMap>({});
   useEffect(() => { answersRef.current = answers; }, [answers]);
