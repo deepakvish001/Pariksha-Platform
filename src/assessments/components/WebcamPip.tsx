@@ -516,6 +516,7 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
                   }
                 >
                   <Shield className="h-3 w-3" />
+                </button>
                 <button
                   type="button"
                   onClick={resetPos}
