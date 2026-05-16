@@ -44,7 +44,7 @@ export function OrgShell({
         <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl min-h-screen sticky top-0">
           <div className="px-5 py-5 border-b">
             <NavLink to={homeHref} className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] grid place-items-center font-bold">
+              <div className="h-8 w-8 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 text-white grid place-items-center font-bold">
                 P
               </div>
               <div className="leading-tight">
