@@ -23,6 +23,8 @@ export default function B2BDashboard() {
     navigate(target, { replace: true });
   }, [org, isLoading, navigate, base]);
 
+  const { data: stats } = useDashboardStats(org?.id);
+
   if (isLoading) {
     return (
       <OrgShell title="Dashboard">
@@ -32,7 +34,6 @@ export default function B2BDashboard() {
   }
 
   if (!org) return <Navigate to="/b2b/onboarding" replace />;
-  const { data: stats } = useDashboardStats(org.id);
 
   return (
     <OrgShell
