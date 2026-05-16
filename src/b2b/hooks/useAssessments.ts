@@ -13,6 +13,7 @@ export type Assessment = {
   ends_at: string | null;
   max_attempts: number;
   proctoring_enabled: boolean;
+  proctoring_config: Record<string, unknown> | null;
   status: AssessmentStatus;
   created_by: string;
   created_at: string;
@@ -87,7 +88,8 @@ export function useUpdateAssessment() {
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Assessment> }) => {
       const { data, error } = await supabase
         .from("assessments")
-        .update(patch)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update(patch as any)
         .eq("id", id)
         .select("*")
         .single();

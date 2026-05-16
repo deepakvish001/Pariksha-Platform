@@ -28,6 +28,8 @@ import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon, Play } 
 import { toast } from "sonner";
 import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
 import { Textarea } from "@/components/ui/textarea";
+import { AssessmentProctoringConfig } from "../../components/AssessmentProctoringConfig";
+import type { ProctoringConfig } from "@/assessments/lib/proctoringConfig";
 import { useAttempts } from "../../hooks/useAttempts";
 import { useAssessmentInsights } from "../../hooks/useInsights";
 import { Link } from "react-router-dom";
@@ -284,6 +286,9 @@ function SettingsPanel({
   const [duration, setDuration] = useState(assessment.duration_min);
   const [maxAttempts, setMaxAttempts] = useState(assessment.max_attempts);
   const [proctoring, setProctoring] = useState<boolean>(!!assessment.proctoring_enabled);
+  const [proctoringConfig, setProctoringConfig] = useState<ProctoringConfig | null>(
+    (assessment.proctoring_config as ProctoringConfig | null) ?? null
+  );
   const [startsAt, setStartsAt] = useState(toLocalInput(assessment.starts_at));
   const [endsAt, setEndsAt] = useState(toLocalInput(assessment.ends_at));
 
@@ -390,6 +395,12 @@ function SettingsPanel({
         </button>
       </div>
 
+      <AssessmentProctoringConfig
+        value={proctoringConfig}
+        enabled={proctoring}
+        onChange={(cfg) => setProctoringConfig(cfg)}
+      />
+
       <div className="flex gap-2 pt-2 border-t">
         <Button
           className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
@@ -402,6 +413,7 @@ function SettingsPanel({
                 duration_min: duration,
                 max_attempts: maxAttempts,
                 proctoring_enabled: proctoring,
+                proctoring_config: (proctoringConfig as unknown as Record<string, unknown>) ?? null,
                 starts_at: fromLocalInput(startsAt),
                 ends_at: fromLocalInput(endsAt),
               },
