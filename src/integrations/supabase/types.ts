@@ -4372,6 +4372,48 @@ export type Database = {
         }
         Relationships: []
       }
+      invite_source_backfill_runs: {
+        Row: {
+          by_source: Json
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          rows_scanned: number
+          rows_updated: number
+          started_at: string
+          status: string
+          triggered_by: string | null
+        }
+        Insert: {
+          by_source?: Json
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          rows_scanned?: number
+          rows_updated?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          by_source?: Json
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          rows_scanned?: number
+          rows_updated?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       lead_events: {
         Row: {
           created_at: string
@@ -7622,7 +7664,10 @@ export type Database = {
         Args: never
         Returns: {
           by_source: Json
-          updated_count: number
+          duration_ms: number
+          rows_scanned: number
+          rows_updated: number
+          run_id: string
         }[]
       }
       battle_accept_invite: { Args: { _invite: string }; Returns: string }
@@ -7959,6 +8004,28 @@ export type Database = {
           total_score: number
           user_id: string
         }[]
+      }
+      get_invite_source_backfill_runs: {
+        Args: { p_limit?: number }
+        Returns: {
+          by_source: Json
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          rows_scanned: number
+          rows_updated: number
+          started_at: string
+          status: string
+          triggered_by: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "invite_source_backfill_runs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_quiz_leaderboard: {
         Args: {
