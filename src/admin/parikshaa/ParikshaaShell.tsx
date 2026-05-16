@@ -101,6 +101,7 @@ const GROUPS: NavGroup[] = [
       { to: "/admin/parikshaa/demo-requests", label: "Demo Requests", icon: Sparkles },
       { to: "/admin/parikshaa/funnel", label: "Conversion Funnel", icon: BarChart3 },
       { to: "/admin/parikshaa/email-preview", label: "Email Preview", icon: Mail },
+      { to: "/admin/parikshaa/proctoring", label: "Proctoring Review", icon: Filter },
     ],
   },
   {
