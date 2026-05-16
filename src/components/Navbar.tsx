@@ -32,6 +32,10 @@ const Navbar = () => {
   const { theme, setTheme } = useThemeSync();
   const [mounted, setMounted] = useState(false);
   const { user, profile, signOut, loading } = useAuth();
+  const { isAdmin } = useUserRole();
+  const { data: orgs } = useMyOrganizations();
+  const hasCollege = !!orgs?.some((o) => o.type === "college");
+  const hasCompany = !!orgs?.some((o) => o.type === "company");
   const navigate = useNavigate();
   
   // Use resolved theme for display (handles "system" preference)
