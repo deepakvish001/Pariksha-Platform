@@ -27,6 +27,40 @@ export default function B2BDashboard() {
 
   const { data: stats } = useDashboardStats(org?.id);
 
+  // E2E test assessment quick-launcher: finds the latest draft assessment for this org
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [launching, setLaunching] = useState(false);
+  useEffect(() => {
+    if (!org?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("assessments")
+        .select("id")
+        .eq("org_id", org.id)
+        .eq("status", "draft")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setDraftId((data as { id?: string } | null)?.id ?? null);
+    })();
+  }, [org?.id]);
+
+  const launchPreview = async () => {
+    if (!draftId) return;
+    setLaunching(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("start_preview_attempt", { _assessment: draftId });
+      if (error) throw error;
+      const attemptId = typeof data === "string" ? data : (data as { id?: string })?.id;
+      if (!attemptId) throw new Error("No attempt id returned");
+      navigate(`/assessments/${attemptId}/play?preview=1`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to launch preview");
+    } finally {
+      setLaunching(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <OrgShell title="Dashboard">
