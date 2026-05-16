@@ -185,7 +185,24 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
     };
   }, []);
 
-  const resetPos = () => setPos(DEFAULT_POS);
+  /**
+   * Clear the saved position for the *current* attempt only and ease
+   * the PIP back to its default corner. Other attempts' saved
+   * positions are left untouched.
+   */
+  const resetPos = () => {
+    try {
+      localStorage.removeItem(storageKeyFor(attemptId));
+    } catch {
+      /* ignore */
+    }
+    setPos((prev) => {
+      if (prev.x === DEFAULT_POS.x && prev.y === DEFAULT_POS.y) return prev;
+      setSwitching(true);
+      window.setTimeout(() => setSwitching(false), 420);
+      return DEFAULT_POS;
+    });
+  };
 
   // Attach stream
   useEffect(() => {
