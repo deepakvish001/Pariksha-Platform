@@ -1194,6 +1194,14 @@ function SnapshotLightbox({
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [dl, setDl] = useState<{ format: "jpg" | "png"; pct: number } | null>(null);
+  // Remember signed URLs that returned 401/403 so we don't re-attempt the
+  // same download and spam toasts. Cleared automatically when the URL changes
+  // (e.g. user navigates to a different snapshot and a new URL is signed).
+  const [deniedUrl, setDeniedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    setDeniedUrl(null);
+  }, [url]);
+  const denied = !!url && deniedUrl === url;
 
   useEffect(() => {
     if (!open || !path) {
