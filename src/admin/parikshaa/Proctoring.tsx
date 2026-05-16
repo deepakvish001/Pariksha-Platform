@@ -1307,11 +1307,16 @@ function RetentionCard() {
             Automatically deleted daily. Snapshots are removed from storage; proctoring events are removed from the audit log.
           </p>
         </div>
-        {lastResult && (
-          <div className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
-            Last purge: {lastResult.snapshots_deleted} snapshots, {lastResult.events_deleted} events
-          </div>
-        )}
+        <div className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap text-right space-y-0.5">
+          {lastResult && (
+            <div>Last purge: {lastResult.snapshots_deleted} snapshots, {lastResult.events_deleted} events</div>
+          )}
+          {estimate && !confirmOpen && (
+            <div className="text-emerald-600">
+              Dry run: would delete {estimate.snapshots} snapshots, {estimate.events} events
+            </div>
+          )}
+        </div>
       </div>
       <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto_auto] items-end">
         <div className="space-y-1">
