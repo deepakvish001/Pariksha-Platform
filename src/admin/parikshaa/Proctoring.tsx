@@ -783,6 +783,7 @@ function SnapshotGroup({
 }) {
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState<"newest" | "oldest">("oldest");
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [hover, setHover] = useState<
     { src: string; alt: string; ts: string; x: number; y: number } | null
   >(null);
