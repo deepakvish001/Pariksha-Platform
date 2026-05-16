@@ -29,11 +29,19 @@ function storageKeyFor(attemptId: string) {
   return `${POS_STORAGE_PREFIX}${attemptId || "default"}`;
 }
 
+/**
+ * Clamp a right/bottom offset so the PIP stays fully on-screen in any
+ * orientation. Uses the layout viewport (innerWidth/innerHeight) so
+ * coordinates stay consistent with the `right`/`bottom` CSS the PIP
+ * uses, and never allows the PIP to extend past any edge.
+ */
 function clampPos(p: { x: number; y: number }) {
   if (typeof window === "undefined") return p;
+  const maxX = Math.max(0, window.innerWidth - PIP_W);
+  const maxY = Math.max(0, window.innerHeight - PIP_H);
   return {
-    x: Math.max(4, Math.min(window.innerWidth - PIP_W, p.x)),
-    y: Math.max(4, Math.min(window.innerHeight - PIP_H + 10, p.y)),
+    x: Math.min(maxX, Math.max(0, p.x)),
+    y: Math.min(maxY, Math.max(0, p.y)),
   };
 }
 
@@ -278,10 +286,17 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
     window.addEventListener("orientationchange", onOrientation);
     const mql = window.matchMedia?.("(orientation: portrait)");
     mql?.addEventListener?.("change", onOrientation);
+    // visualViewport fires on pinch-zoom and mobile keyboard show/hide;
+    // re-clamp so the PIP stays within the visible region.
+    const vv = window.visualViewport;
+    vv?.addEventListener?.("resize", reclamp);
+    vv?.addEventListener?.("scroll", reclamp);
     return () => {
       window.removeEventListener("resize", reclamp);
       window.removeEventListener("orientationchange", onOrientation);
       mql?.removeEventListener?.("change", onOrientation);
+      vv?.removeEventListener?.("resize", reclamp);
+      vv?.removeEventListener?.("scroll", reclamp);
     };
   }, []);
 
