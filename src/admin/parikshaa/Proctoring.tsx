@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ShellHeader } from "./ParikshaaShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
