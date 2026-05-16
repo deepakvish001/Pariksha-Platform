@@ -183,11 +183,24 @@ export function QuestionPalette({
     >
       {/* Header: progress */}
       <header className="px-3 py-3 border-b border-border bg-muted/30">
-        <div className="flex items-center justify-between text-xs mb-2">
+        <div className="flex items-center justify-between text-xs mb-2 gap-2">
           <span className="font-semibold tracking-tight">Questions</span>
-          <span className="text-muted-foreground tabular-nums">
-            {answered}/{items.length} · {pct}%
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground tabular-nums">
+              {answered}/{items.length} · {pct}%
+            </span>
+            {onToggleCollapsed && (
+              <button
+                type="button"
+                onClick={onToggleCollapsed}
+                aria-label="Collapse question palette"
+                title="Collapse (])"
+                className="h-6 w-6 grid place-items-center rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <PanelLeftClose className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
           <div
