@@ -587,12 +587,7 @@ export default function Player() {
         <WebcamPip
           attemptId={attemptId}
           stream={camStream}
-          onLost={() => {
-            // Hook log + strike via proctoring system by writing a webcam_lost event.
-            void supabase
-              .from("attempt_events")
-              .insert({ attempt_id: attemptId, kind: "webcam_lost", payload: {} as never });
-          }}
+          onLost={() => { void logProctorEvent("webcam_lost"); }}
         />
       )}
 
