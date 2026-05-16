@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type InviteStatus = "pending" | "claimed" | "submitted" | "expired";
+export type InviteSource = "email" | "link" | "bulk_upload" | "manual" | "api";
 
 export type Invite = {
   id: string;
@@ -11,6 +12,7 @@ export type Invite = {
   external_id: string | null;
   token: string;
   status: InviteStatus;
+  source: InviteSource;
   expires_at: string | null;
   created_at: string;
   updated_at: string;
