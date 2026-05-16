@@ -86,6 +86,9 @@ export default function ParikshaaProctoring() {
 
   const [expanded, setExpanded] = useState<Record<string, AttemptEvent[] | "loading">>({});
 
+  /** Selected attempt id for the detail side-sheet (null = closed). */
+  const [detailId, setDetailId] = useState<string | null>(null);
+
   /**
    * Fetch snapshot stats + violation kind sets for a batch of attempt ids
    * and merge them into the running maps. Used by both `load` (reset) and
