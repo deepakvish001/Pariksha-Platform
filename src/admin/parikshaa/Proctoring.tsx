@@ -781,12 +781,26 @@ function SnapshotGroup({
   onOpen: (index: number) => void;
 }) {
   const [page, setPage] = useState(0);
-  const pageCount = Math.max(1, Math.ceil(snapshots.length / SNAPSHOT_PAGE_SIZE));
+  const [sort, setSort] = useState<"newest" | "oldest">("oldest");
 
-  // Reset to first page when the underlying list changes (different attempt).
+  // Sorted view of the snapshots, with the original index preserved so the
+  // lightbox (which still indexes into the unsorted prop) opens the right item.
+  const sorted = useMemo(() => {
+    const indexed = snapshots.map((e, originalIndex) => ({ e, originalIndex }));
+    indexed.sort((a, b) => {
+      const ta = new Date(a.e.created_at).getTime();
+      const tb = new Date(b.e.created_at).getTime();
+      return sort === "newest" ? tb - ta : ta - tb;
+    });
+    return indexed;
+  }, [snapshots, sort]);
+
+  const pageCount = Math.max(1, Math.ceil(sorted.length / SNAPSHOT_PAGE_SIZE));
+
+  // Reset to first page when the underlying list or sort order changes.
   useEffect(() => {
     setPage(0);
-  }, [snapshots]);
+  }, [snapshots, sort]);
 
   // Clamp page if list shrinks below current page bounds.
   useEffect(() => {
@@ -795,8 +809,8 @@ function SnapshotGroup({
 
   const pageStart = page * SNAPSHOT_PAGE_SIZE;
   const pageItems = useMemo(
-    () => snapshots.slice(pageStart, pageStart + SNAPSHOT_PAGE_SIZE),
-    [snapshots, pageStart],
+    () => sorted.slice(pageStart, pageStart + SNAPSHOT_PAGE_SIZE),
+    [sorted, pageStart],
   );
 
   // Lazily sign thumbnail URLs only for items on the current page so we
@@ -806,7 +820,7 @@ function SnapshotGroup({
     let cancelled = false;
     (async () => {
       const next: Record<string, string> = {};
-      for (const e of pageItems) {
+      for (const { e } of pageItems) {
         const path = snapshotPath(e);
         if (!path || thumbs[path]) continue;
         const url = await signSnapshot(path);
@@ -825,9 +839,41 @@ function SnapshotGroup({
   return (
     <div className="rounded-md border bg-background/60 p-2">
       <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-emerald-600">
-          Webcam snapshots{" "}
-          <span className="opacity-60 tabular-nums">({snapshots.length})</span>
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-600">
+          <span>
+            Webcam snapshots{" "}
+            <span className="opacity-60 tabular-nums">({snapshots.length})</span>
+          </span>
+          <div className="inline-flex rounded border border-border/60 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setSort("oldest")}
+              aria-pressed={sort === "oldest"}
+              className={
+                "px-1.5 py-0.5 text-[10px] normal-case tracking-normal transition-colors " +
+                (sort === "oldest"
+                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                  : "text-muted-foreground hover:bg-muted")
+              }
+              title="Sort oldest first"
+            >
+              Oldest
+            </button>
+            <button
+              type="button"
+              onClick={() => setSort("newest")}
+              aria-pressed={sort === "newest"}
+              className={
+                "px-1.5 py-0.5 text-[10px] normal-case tracking-normal transition-colors border-l border-border/60 " +
+                (sort === "newest"
+                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                  : "text-muted-foreground hover:bg-muted")
+              }
+              title="Sort newest first"
+            >
+              Newest
+            </button>
+          </div>
         </div>
         {pageCount > 1 && (
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground tabular-nums">
@@ -860,15 +906,14 @@ function SnapshotGroup({
       ) : (
         <div className="max-h-64 overflow-y-auto pr-1">
           <div className="grid grid-cols-3 gap-1.5">
-            {pageItems.map((e, i) => {
+            {pageItems.map(({ e, originalIndex }) => {
               const path = snapshotPath(e);
               const src = path ? thumbs[path] : undefined;
-              const absoluteIndex = pageStart + i;
               return (
                 <button
                   type="button"
                   key={e.id}
-                  onClick={() => onOpen(absoluteIndex)}
+                  onClick={() => onOpen(originalIndex)}
                   title={`${fmtTs(e.created_at)}${path ? ` — ${path}` : ""}`}
                   className="group relative aspect-[4/3] overflow-hidden rounded border border-border/60 bg-muted/40 hover:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
                 >
