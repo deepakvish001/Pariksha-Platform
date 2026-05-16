@@ -23,6 +23,17 @@ import { Badge } from "@/components/ui/badge";
 import { Download, RefreshCw, ChevronDown, ChevronRight, Camera, ShieldAlert, Loader2, Trash2, Save, ChevronLeft as ChevronLeftIcon, X, Eye, Copy } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
