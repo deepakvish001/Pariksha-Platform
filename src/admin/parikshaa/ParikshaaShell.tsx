@@ -314,6 +314,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   "demo-requests": "Demo Requests",
   funnel: "Conversion Funnel",
   "email-preview": "Email Preview",
+  "invite-source-backfill": "Invite Source Backfill",
 };
 
 const buildCrumbs = (pathname: string) => {
