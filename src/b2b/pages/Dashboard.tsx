@@ -490,10 +490,10 @@ async function fetchInsights(
   return p;
 }
 
-function useAiInsights(orgId?: string) {
+function useAiInsights(orgId?: string, windowDays: number = 30) {
   const [insights, setInsights] = useState<AiInsight[] | null>(() => {
     if (!orgId) return null;
-    const c = insightsCache.get(orgId);
+    const c = insightsCache.get(insightsCacheKey(orgId, windowDays));
     return c && Date.now() - c.fetchedAt < INSIGHTS_TTL_MS ? c.data : null;
   });
   const [loading, setLoading] = useState(false);
@@ -505,7 +505,7 @@ function useAiInsights(orgId?: string) {
     setLoading(true);
     setError(null);
     try {
-      const list = await fetchInsights(orgId, force);
+      const list = await fetchInsights(orgId, windowDays, force);
       setInsights(list);
       setLastRefreshAt(Date.now());
     } catch (e: any) {
@@ -528,14 +528,14 @@ function useAiInsights(orgId?: string) {
       setInsights(null);
       return;
     }
-    const cached = insightsCache.get(orgId);
+    const cached = insightsCache.get(insightsCacheKey(orgId, windowDays));
     if (cached && Date.now() - cached.fetchedAt < INSIGHTS_TTL_MS) {
       setInsights(cached.data);
       return;
     }
     load(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId]);
+  }, [orgId, windowDays]);
 
   // Tick once per second while the refresh cooldown is active so the UI
   // (disabled state + countdown label) updates without extra refetches.
