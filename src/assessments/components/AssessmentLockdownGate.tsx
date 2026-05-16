@@ -20,6 +20,7 @@ interface Props {
  */
 export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
   const requireScreen = !!config?.require_screen_share;
+  const requireSideEye = !!config?.require_side_eye;
   const rules = config ? describeRulesForCandidate(config) : [
     "Stay in fullscreen for the entire attempt.",
     "Do not switch tabs, windows, or apps.",
@@ -28,6 +29,7 @@ export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
   ];
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [screen, setScreen] = useState<MediaStream | null>(null);
+  const [sideEyePaired, setSideEyePaired] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
