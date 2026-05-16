@@ -425,3 +425,149 @@ function QuestionInput({
     </div>
   );
 }
+
+function MatchingInput({
+  question,
+  value,
+  onChange,
+}: {
+  question: PaperQuestion;
+  value: Record<string, unknown> | undefined;
+  onChange: (v: Record<string, unknown>) => void;
+}) {
+  const meta = (question.meta as { pairs?: { left: string; right: string }[] } | null) ?? {};
+  const pairs = meta.pairs ?? [];
+  const lefts = pairs.map((p) => p.left);
+  const rights = Array.from(new Set(pairs.map((p) => p.right)));
+  const current = (value?.pairs as Record<string, string>) ?? {};
+
+  // Stable shuffle of rights keyed off the question id
+  const shuffledRights = useMemo(() => {
+    const arr = [...rights];
+    let seed = 0;
+    for (let i = 0; i < question.id.length; i++) seed = (seed * 31 + question.id.charCodeAt(i)) >>> 0;
+    for (let i = arr.length - 1; i > 0; i--) {
+      seed = (seed * 1103515245 + 12345) >>> 0;
+      const j = seed % (i + 1);
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [question.id]);
+
+  const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
+
+  const palette = ["sky", "emerald", "amber", "violet", "rose", "cyan", "lime", "fuchsia"] as const;
+  const colorFor = (left: string) => palette[lefts.indexOf(left) % palette.length];
+  const colorClasses: Record<string, string> = {
+    sky: "border-sky-500/60 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+    emerald: "border-emerald-500/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    amber: "border-amber-500/60 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    violet: "border-violet-500/60 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+    rose: "border-rose-500/60 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+    cyan: "border-cyan-500/60 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
+    lime: "border-lime-500/60 bg-lime-500/10 text-lime-700 dark:text-lime-300",
+    fuchsia: "border-fuchsia-500/60 bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300",
+  };
+
+  const rightToLeft = (right: string): string | null => {
+    for (const [l, r] of Object.entries(current)) if (r === right) return l;
+    return null;
+  };
+
+  const setPair = (left: string, right: string | null) => {
+    const next = { ...current };
+    if (right !== null) {
+      for (const [l, r] of Object.entries(next)) if (r === right) delete next[l];
+      next[left] = right;
+    } else {
+      delete next[left];
+    }
+    onChange({ pairs: next });
+  };
+
+  const onLeftClick = (left: string) => setSelectedLeft((s) => (s === left ? null : left));
+  const onRightClick = (right: string) => {
+    const owner = rightToLeft(right);
+    if (selectedLeft) {
+      setPair(selectedLeft, right);
+      setSelectedLeft(null);
+      return;
+    }
+    if (owner) setPair(owner, null);
+  };
+
+  const matchedCount = Object.values(current).filter((v) => v && rights.includes(v)).length;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          {selectedLeft
+            ? `Now click a match on the right for "${selectedLeft}"`
+            : "Click an item on the left, then click its match on the right."}
+        </span>
+        <div className="flex items-center gap-3">
+          <span>{matchedCount} / {lefts.length} matched</span>
+          {matchedCount > 0 && (
+            <button type="button" onClick={() => onChange({ pairs: {} })} className="underline hover:text-foreground">
+              Clear all
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          {lefts.map((left) => {
+            const paired = current[left];
+            const color = colorFor(left);
+            const isSelected = selectedLeft === left;
+            return (
+              <button
+                key={left}
+                type="button"
+                onClick={() => onLeftClick(left)}
+                className={`w-full text-left text-sm px-3 py-2 rounded-md border transition flex items-center justify-between gap-2 ${
+                  isSelected
+                    ? "border-primary ring-2 ring-primary/40 bg-primary/5"
+                    : paired
+                    ? colorClasses[color]
+                    : "border-[hsl(var(--border))] bg-[hsl(var(--muted))] hover:bg-[hsl(var(--accent))]"
+                }`}
+              >
+                <span className="font-medium truncate">{left}</span>
+                {paired && (
+                  <span className="text-[10px] uppercase tracking-wide opacity-80 shrink-0">→ {paired}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="space-y-2">
+          {shuffledRights.map((right) => {
+            const owner = rightToLeft(right);
+            const color = owner ? colorFor(owner) : null;
+            return (
+              <button
+                key={right}
+                type="button"
+                onClick={() => onRightClick(right)}
+                className={`w-full text-left text-sm px-3 py-2 rounded-md border transition flex items-center justify-between gap-2 ${
+                  color
+                    ? colorClasses[color]
+                    : "border-[hsl(var(--border))] bg-[hsl(var(--muted))] hover:bg-[hsl(var(--accent))]"
+                } ${selectedLeft && !owner ? "ring-1 ring-primary/40" : ""}`}
+              >
+                <span className="font-medium truncate">{right}</span>
+                {owner && (
+                  <span className="text-[10px] uppercase tracking-wide opacity-80 shrink-0">{owner} ←</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
