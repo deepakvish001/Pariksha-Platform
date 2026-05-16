@@ -1137,19 +1137,74 @@ export default function DsaStudio() {
                                     )}>
                                       {p.title}
                                     </h4>
-                                    <button
-                                      onClick={(e) => { stop(e); toggleSaved(p.slug); }}
-                                      aria-label={isSaved ? "Remove from saved" : "Save for later"}
-                                      title={isSaved ? "Remove from saved" : "Save for later"}
-                                      className={cn(
-                                        "shrink-0 -mr-1 -mt-0.5 h-7 w-7 grid place-items-center rounded-md transition-all",
-                                        isSaved
-                                          ? "text-amber-400 bg-amber-500/10"
-                                          : "text-muted-foreground/50 hover:text-amber-400 hover:bg-amber-500/10 opacity-0 group-hover:opacity-100",
-                                      )}
-                                    >
-                                      <Star className={cn("h-3.5 w-3.5", isSaved && "fill-current")} />
-                                    </button>
+                                    <div className="flex items-center gap-0.5 -mr-1 -mt-0.5 shrink-0">
+                                      <button
+                                        onClick={(e) => { stop(e); toggleSaved(p.slug); }}
+                                        aria-label={isSaved ? "Remove from saved" : "Save for later"}
+                                        title={isSaved ? "Remove from saved" : "Save for later"}
+                                        className={cn(
+                                          "h-7 w-7 grid place-items-center rounded-md transition-all",
+                                          isSaved
+                                            ? "text-amber-400 bg-amber-500/10"
+                                            : "text-muted-foreground/50 hover:text-amber-400 hover:bg-amber-500/10 opacity-0 group-hover:opacity-100 focus:opacity-100",
+                                        )}
+                                      >
+                                        <Star className={cn("h-3.5 w-3.5", isSaved && "fill-current")} />
+                                      </button>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <button
+                                            onClick={stop}
+                                            aria-label="Quick actions"
+                                            title="Quick actions"
+                                            className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted/40 opacity-0 group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100 data-[state=open]:bg-muted/50 data-[state=open]:text-foreground transition-all"
+                                          >
+                                            <MoreHorizontal className="h-4 w-4" />
+                                          </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent
+                                          align="end"
+                                          className="w-52"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <DropdownMenuItem asChild>
+                                            <Link
+                                              to={`/learn/dsa-studio/${p.slug}?mode=practice`}
+                                              state={{ from: "/learn/dsa-studio" }}
+                                              className="gap-2 cursor-pointer"
+                                            >
+                                              <Play className="h-4 w-4 text-emerald-400" />
+                                              Start practice
+                                            </Link>
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem asChild>
+                                            <Link
+                                              to={`/learn/dsa-studio/${p.slug}`}
+                                              state={{ from: "/learn/dsa-studio" }}
+                                              className="gap-2 cursor-pointer"
+                                            >
+                                              <ExternalLink className="h-4 w-4 text-sky-400" />
+                                              Open details
+                                            </Link>
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            onSelect={(e) => { e.preventDefault(); toggleSolved(p.slug); }}
+                                            className="gap-2 cursor-pointer"
+                                          >
+                                            <CircleCheck className={cn("h-4 w-4", isSolved ? "text-muted-foreground" : "text-emerald-400")} />
+                                            {isSolved ? "Mark as unsolved" : "Mark as solved"}
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onSelect={(e) => { e.preventDefault(); toggleSaved(p.slug); }}
+                                            className="gap-2 cursor-pointer"
+                                          >
+                                            <Bookmark className={cn("h-4 w-4", isSaved ? "text-muted-foreground" : "text-amber-400")} />
+                                            {isSaved ? "Remove from saved" : "Save for later"}
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
                                   </div>
 
                                   <div className="flex flex-wrap items-center gap-1.5">
