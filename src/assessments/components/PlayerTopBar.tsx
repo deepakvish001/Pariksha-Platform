@@ -92,30 +92,6 @@ export function PlayerTopBar({
     </Tooltip>
   );
 
-  const TimerBar = (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="hidden xs:flex items-center gap-2 h-8 px-2 rounded-md border border-border bg-muted/40 w-[160px]">
-          <TimerIcon className="h-3.5 w-3.5 text-muted-foreground" />
-          <div className="relative h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
-            <div
-              className={cn(
-                "absolute inset-y-0 left-0 transition-[width] duration-1000 ease-linear",
-                urgent ? "bg-destructive" : warning ? "bg-amber-500" : "bg-primary/70"
-              )}
-              style={{ width: `${elapsedPct}%` }}
-            />
-          </div>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        {deadlineMs
-          ? `Time left ${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")} · ends at ${deadlineLabel}`
-          : "No time limit"}
-      </TooltipContent>
-    </Tooltip>
-  );
-
   return (
     <TooltipProvider delayDuration={150}>
       <header className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur supports-[backdrop-filter]:bg-card/65">
