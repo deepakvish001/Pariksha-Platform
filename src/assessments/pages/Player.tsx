@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import { CheckCircle2, Flag, LayoutGrid, Send, Trophy } from "lucide-react";
 import { usePaper, useExistingAnswers, useSaveAnswer, useSubmitAttempt, type PaperQuestion } from "../hooks/usePaper";
-import { useProctoring } from "../hooks/useProctoring";
+import { useProctoring, MAX_VIOLATIONS } from "../hooks/useProctoring";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerTopBar } from "../components/PlayerTopBar";
 import { QuestionPalette } from "../components/QuestionPalette";
