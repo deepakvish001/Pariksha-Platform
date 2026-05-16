@@ -76,6 +76,7 @@ export default function Player() {
   const remaining = deadline ? Math.max(0, deadline - now) : 0;
 
   const submittedRef = useRef(false);
+  const debounceRef = useRef<Record<string, number>>({});
   const doSubmit = useCallback(
     async (auto = false) => {
       if (!attemptId) return;
