@@ -79,8 +79,16 @@ function KpiCard({
 }) {
   const unitLabel = delta?.unit === "pts" ? "percentage points" : "percent";
   const prevRangeLabel = `days ${windowDays + 1}–${windowDays * 2}`;
+  const directionWord =
+    delta?.direction === "up"
+      ? "Up"
+      : delta?.direction === "down"
+        ? "Down"
+        : "Unchanged";
   const tooltipBody = delta
-    ? `Change vs the previous ${windowDays}-day window. ${delta.positive ? "Up" : "Down"} ${delta.value} ${unitLabel} compared to ${prevRangeLabel}.`
+    ? delta.direction === "flat"
+      ? `Unchanged vs the previous ${windowDays}-day window (${prevRangeLabel}).`
+      : `Change vs the previous ${windowDays}-day window. ${directionWord} ${delta.value} ${unitLabel} compared to ${prevRangeLabel}.`
     : `No baseline: there was no activity in the previous ${windowDays}-day window (${prevRangeLabel}), so a % change can't be computed yet.`;
 
   return (
