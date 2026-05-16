@@ -290,10 +290,17 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
     window.addEventListener("orientationchange", onOrientation);
     const mql = window.matchMedia?.("(orientation: portrait)");
     mql?.addEventListener?.("change", onOrientation);
+    // visualViewport fires on pinch-zoom and mobile keyboard show/hide;
+    // re-clamp so the PIP stays within the visible region.
+    const vv = window.visualViewport;
+    vv?.addEventListener?.("resize", reclamp);
+    vv?.addEventListener?.("scroll", reclamp);
     return () => {
       window.removeEventListener("resize", reclamp);
       window.removeEventListener("orientationchange", onOrientation);
       mql?.removeEventListener?.("change", onOrientation);
+      vv?.removeEventListener?.("resize", reclamp);
+      vv?.removeEventListener?.("scroll", reclamp);
     };
   }, []);
 
