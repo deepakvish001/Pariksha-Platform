@@ -1981,3 +1981,158 @@ function PurgeHistoryPanel({ refreshKey }: { refreshKey: number }) {
     </div>
   );
 }
+
+type ProctorFinding = {
+  id: string;
+  severity: string;
+  finding: {
+    phone_in_frame?: boolean;
+    looking_away?: boolean;
+    person_count?: number;
+    identity_unclear?: boolean;
+    notes?: string;
+  };
+  created_at: string;
+  snapshot_id: string;
+};
+
+function AIFindingsPanel({ attemptId }: { attemptId: string }) {
+  const [findings, setFindings] = useState<ProctorFinding[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from("assessment_proctor_findings")
+      .select("id,severity,finding,created_at,snapshot_id")
+      .eq("attempt_id", attemptId)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    setLoading(false);
+    if (error) {
+      toast.error("Failed to load AI findings", { description: error.message });
+      setFindings([]);
+      return;
+    }
+    setFindings((data ?? []) as ProctorFinding[]);
+  }, [attemptId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const runReview = async () => {
+    setReviewing(true);
+    try {
+      const { error } = await supabase.functions.invoke("assessment-snapshot-review", {
+        body: { attempt_id: attemptId },
+      });
+      if (error) throw error;
+      toast.success("AI review triggered");
+      await load();
+    } catch (e) {
+      toast.error("AI review failed", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setReviewing(false);
+    }
+  };
+
+  const counts = useMemo(() => {
+    const all = findings ?? [];
+    return {
+      high: all.filter((f) => f.severity === "high").length,
+      medium: all.filter((f) => f.severity === "medium").length,
+      low: all.filter((f) => f.severity === "low").length,
+    };
+  }, [findings]);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+          AI proctor findings
+          {findings && (
+            <span className="opacity-70 tabular-nums">({findings.length})</span>
+          )}
+        </h4>
+        <div className="flex items-center gap-2">
+          {findings && findings.length > 0 && (
+            <div className="flex items-center gap-1.5 text-[10px]">
+              <Badge variant="destructive" className="text-[10px]">{counts.high} high</Badge>
+              <Badge variant="secondary" className="text-[10px]">{counts.medium} med</Badge>
+              <Badge variant="outline" className="text-[10px]">{counts.low} low</Badge>
+            </div>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-[11px]"
+            onClick={runReview}
+            disabled={reviewing}
+          >
+            {reviewing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+            Run AI review
+          </Button>
+        </div>
+      </div>
+      {loading ? (
+        <div className="text-xs text-muted-foreground py-4 text-center">
+          <Loader2 className="h-3.5 w-3.5 animate-spin inline mr-1.5" />
+          Loading findings…
+        </div>
+      ) : findings && findings.length > 0 ? (
+        <div className="space-y-1.5 max-h-80 overflow-y-auto rounded-md border">
+          {findings.map((f) => (
+            <div
+              key={f.id}
+              className={cn(
+                "px-3 py-2 text-xs border-b last:border-b-0 flex flex-col gap-1",
+                f.severity === "high" && "bg-destructive/5",
+                f.severity === "medium" && "bg-amber-500/5"
+              )}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Badge
+                    variant={f.severity === "high" ? "destructive" : f.severity === "medium" ? "secondary" : "outline"}
+                    className="text-[10px] capitalize"
+                  >
+                    {f.severity}
+                  </Badge>
+                  {f.finding.phone_in_frame && (
+                    <Badge variant="outline" className="text-[10px]">📱 phone</Badge>
+                  )}
+                  {f.finding.looking_away && (
+                    <Badge variant="outline" className="text-[10px]">👀 away</Badge>
+                  )}
+                  {typeof f.finding.person_count === "number" && f.finding.person_count !== 1 && (
+                    <Badge variant="outline" className="text-[10px]">
+                      {f.finding.person_count} people
+                    </Badge>
+                  )}
+                  {f.finding.identity_unclear && (
+                    <Badge variant="outline" className="text-[10px]">❓ identity</Badge>
+                  )}
+                </div>
+                <span className="text-[10px] font-mono text-muted-foreground">
+                  {fmtTs(f.created_at)}
+                </span>
+              </div>
+              {f.finding.notes && (
+                <p className="text-[11px] text-muted-foreground italic">{f.finding.notes}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs text-muted-foreground py-4 text-center italic">
+          No AI findings yet. Snapshots will be reviewed automatically (or click <em>Run AI review</em>).
+        </div>
+      )}
+    </div>
+  );
+}
