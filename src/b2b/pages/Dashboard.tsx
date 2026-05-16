@@ -1271,6 +1271,7 @@ export default function B2BDashboard() {
                         type="button"
                         aria-label="Mark insight as helpful"
                         aria-pressed={rating === "up"}
+                        aria-busy={upBusy}
                         disabled={isPending}
                         onClick={() => submitInsightFeedback(i, "up")}
                         className={`${thumbBase} ${
@@ -1279,12 +1280,17 @@ export default function B2BDashboard() {
                             : "border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-emerald-500 hover:border-emerald-500/40"
                         }`}
                       >
-                        <ThumbsUp className="h-3.5 w-3.5" />
+                        {upBusy ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <ThumbsUp className="h-3.5 w-3.5" />
+                        )}
                       </button>
                       <button
                         type="button"
                         aria-label="Mark insight as not helpful"
                         aria-pressed={rating === "down"}
+                        aria-busy={downBusy}
                         disabled={isPending}
                         onClick={() => submitInsightFeedback(i, "down")}
                         className={`${thumbBase} ${
