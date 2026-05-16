@@ -62,9 +62,13 @@ const VIOLATION_KINDS = new Set<string>(VIOLATION_KIND_LIST);
 
 const STATUS_OPTIONS = ["all", "in_progress", "submitted", "auto_submitted", "abandoned"];
 
+const PAGE_SIZE = 50;
+
 export default function ParikshaaProctoring() {
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [rows, setRows] = useState<AttemptRow[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [assessments, setAssessments] = useState<{ id: string; title: string }[]>([]);
   /** Map of attempt_id → set of violation kinds present on that attempt. */
   const [kindsByAttempt, setKindsByAttempt] = useState<Map<string, Set<string>>>(new Map());
@@ -81,75 +85,99 @@ export default function ParikshaaProctoring() {
 
   const [expanded, setExpanded] = useState<Record<string, AttemptEvent[] | "loading">>({});
 
-  const load = async () => {
+  /**
+   * Fetch snapshot stats + violation kind sets for a batch of attempt ids
+   * and merge them into the running maps. Used by both `load` (reset) and
+   * `loadMore` (append) so we never refetch what we already have.
+   */
+  const fetchEventAggregates = async (ids: string[]) => {
+    if (ids.length === 0) {
+      return {
+        snapMap: new Map<string, { count: number; first: string | null; last: string | null }>(),
+        kMap: new Map<string, Set<string>>(),
+      };
+    }
+    const snapMap = new Map<string, { count: number; first: string | null; last: string | null }>();
+    const kMap = new Map<string, Set<string>>();
+    const [{ data: snaps }, { data: vev }] = await Promise.all([
+      supabase
+        .from("attempt_events")
+        .select("attempt_id,created_at")
+        .eq("kind", "webcam_snapshot")
+        .in("attempt_id", ids),
+      supabase
+        .from("attempt_events")
+        .select("attempt_id,kind")
+        .in("attempt_id", ids)
+        .in("kind", VIOLATION_KIND_LIST as unknown as string[]),
+    ]);
+    for (const e of snaps ?? []) {
+      const prev = snapMap.get(e.attempt_id) ?? { count: 0, first: null, last: null };
+      prev.count += 1;
+      if (!prev.first || e.created_at < prev.first) prev.first = e.created_at;
+      if (!prev.last || e.created_at > prev.last) prev.last = e.created_at;
+      snapMap.set(e.attempt_id, prev);
+    }
+    for (const e of vev ?? []) {
+      const set = kMap.get(e.attempt_id) ?? new Set<string>();
+      set.add(e.kind);
+      kMap.set(e.attempt_id, set);
+    }
+    return { snapMap, kMap };
+  };
+
+  const mapAttempts = (
+    att: any[],
+    snapMap: Map<string, { count: number; first: string | null; last: string | null }>,
+  ): AttemptRow[] =>
+    att.map((a) => {
+      const s = snapMap.get(a.id);
+      return {
+        id: a.id,
+        user_id: a.user_id,
+        assessment_id: a.assessment_id,
+        assessment_title: a.assessments?.title ?? "—",
+        status: a.status,
+        violations: a.violations ?? 0,
+        integrity_score: Number(a.integrity_score ?? 100),
+        started_at: a.started_at,
+        submitted_at: a.submitted_at,
+        snapshot_count: s?.count ?? 0,
+        first_snapshot_at: s?.first ?? null,
+        last_snapshot_at: s?.last ?? null,
+      };
+    });
+
+  /** Reset and load the first page. */
+  const load = useCallback(async () => {
     setLoading(true);
+    setRows([]);
     try {
-      const { data: att, error } = await supabase
+      const { data: att, count, error } = await supabase
         .from("assessment_attempts")
         .select(
-          "id,user_id,assessment_id,status,violations,integrity_score,started_at,submitted_at,assessments(title)"
+          "id,user_id,assessment_id,status,violations,integrity_score,started_at,submitted_at,assessments(title)",
+          { count: "exact" },
         )
         .order("started_at", { ascending: false })
-        .limit(500);
+        .range(0, PAGE_SIZE - 1);
       if (error) throw error;
 
       const ids = (att ?? []).map((a) => a.id);
-      let snapMap = new Map<string, { count: number; first: string | null; last: string | null }>();
-      const kMap = new Map<string, Set<string>>();
-      if (ids.length > 0) {
-        const { data: ev } = await supabase
-          .from("attempt_events")
-          .select("attempt_id,created_at")
-          .eq("kind", "webcam_snapshot")
-          .in("attempt_id", ids);
-        for (const e of ev ?? []) {
-          const prev = snapMap.get(e.attempt_id) ?? { count: 0, first: null, last: null };
-          prev.count += 1;
-          if (!prev.first || e.created_at < prev.first) prev.first = e.created_at;
-          if (!prev.last || e.created_at > prev.last) prev.last = e.created_at;
-          snapMap.set(e.attempt_id, prev);
-        }
-
-        // Aggregate violation kinds present per attempt (drives kind filter).
-        const { data: vev } = await supabase
-          .from("attempt_events")
-          .select("attempt_id,kind")
-          .in("attempt_id", ids)
-          .in("kind", VIOLATION_KIND_LIST as unknown as string[]);
-        for (const e of vev ?? []) {
-          const set = kMap.get(e.attempt_id) ?? new Set<string>();
-          set.add(e.kind);
-          kMap.set(e.attempt_id, set);
-        }
-      }
+      const { snapMap, kMap } = await fetchEventAggregates(ids);
       setKindsByAttempt(kMap);
 
-      const mapped: AttemptRow[] = (att ?? []).map((a: any) => {
-        const s = snapMap.get(a.id);
-        return {
-          id: a.id,
-          user_id: a.user_id,
-          assessment_id: a.assessment_id,
-          assessment_title: a.assessments?.title ?? "—",
-          status: a.status,
-          violations: a.violations ?? 0,
-          integrity_score: Number(a.integrity_score ?? 100),
-          started_at: a.started_at,
-          submitted_at: a.submitted_at,
-          snapshot_count: s?.count ?? 0,
-          first_snapshot_at: s?.first ?? null,
-          last_snapshot_at: s?.last ?? null,
-        };
-      });
+      const mapped = mapAttempts(att ?? [], snapMap);
       setRows(mapped);
+      setTotalCount(typeof count === "number" ? count : null);
 
-      // assessments dropdown
+      // assessments dropdown — refreshed from the first page only.
       const uniq = Array.from(
         new Map(
           mapped
             .filter((r) => r.assessment_title !== "—")
-            .map((r) => [r.assessment_id, { id: r.assessment_id, title: r.assessment_title }])
-        ).values()
+            .map((r) => [r.assessment_id, { id: r.assessment_id, title: r.assessment_title }]),
+        ).values(),
       );
       setAssessments(uniq);
     } catch (e: any) {
@@ -157,11 +185,79 @@ export default function ParikshaaProctoring() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  /** Append the next page to the existing rows. */
+  const loadMore = useCallback(async () => {
+    if (loading || loadingMore) return;
+    if (totalCount !== null && rows.length >= totalCount) return;
+    setLoadingMore(true);
+    try {
+      const fromIdx = rows.length;
+      const toIdx = fromIdx + PAGE_SIZE - 1;
+      const { data: att, error } = await supabase
+        .from("assessment_attempts")
+        .select(
+          "id,user_id,assessment_id,status,violations,integrity_score,started_at,submitted_at,assessments(title)",
+        )
+        .order("started_at", { ascending: false })
+        .range(fromIdx, toIdx);
+      if (error) throw error;
+
+      const ids = (att ?? []).map((a) => a.id);
+      const { snapMap, kMap } = await fetchEventAggregates(ids);
+
+      // Merge violation kinds into existing map.
+      setKindsByAttempt((prev) => {
+        const next = new Map(prev);
+        for (const [k, v] of kMap.entries()) next.set(k, v);
+        return next;
+      });
+
+      const mapped = mapAttempts(att ?? [], snapMap);
+      setRows((prev) => {
+        // De-dupe in case the page boundary shifted between calls.
+        const seen = new Set(prev.map((r) => r.id));
+        return [...prev, ...mapped.filter((r) => !seen.has(r.id))];
+      });
+
+      // Top up the assessments dropdown with any newly-seen titles.
+      setAssessments((prev) => {
+        const known = new Map(prev.map((a) => [a.id, a]));
+        for (const r of mapped) {
+          if (r.assessment_title !== "—" && !known.has(r.assessment_id)) {
+            known.set(r.assessment_id, { id: r.assessment_id, title: r.assessment_title });
+          }
+        }
+        return Array.from(known.values());
+      });
+    } catch (e: any) {
+      toast.error("Failed to load more", { description: e.message });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loading, loadingMore, totalCount, rows.length]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
+
+  const hasMore = totalCount === null ? false : rows.length < totalCount;
+
+  // Infinite scroll sentinel.
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasMore) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) void loadMore();
+      },
+      { rootMargin: "400px 0px" },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [hasMore, loadMore]);
 
   const filtered = useMemo(() => {
     const min = parseInt(minViolations || "0", 10) || 0;
