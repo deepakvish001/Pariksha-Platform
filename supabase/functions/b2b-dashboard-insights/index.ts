@@ -151,11 +151,60 @@ serve(async (req) => {
     };
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+    // Pull historical feedback so we can (a) bias the prompt away from disliked
+    // recommendations and toward liked ones, and (b) re-rank the model output.
+    type FeedbackRow = {
+      insight_key: string;
+      insight_title: string;
+      up_count: number;
+      down_count: number;
+      net_score: number;
+    };
+    let feedbackRows: FeedbackRow[] = [];
+    {
+      const { data, error } = await supabase.rpc(
+        "get_insight_feedback_signals",
+        { _org_id: org_id, _days: 90 },
+      );
+      if (error) {
+        console.error("feedback signals error", error);
+      } else if (Array.isArray(data)) {
+        feedbackRows = data as FeedbackRow[];
+      }
+    }
+    const keyNet = new Map<string, number>();
+    const titleNet = new Map<string, number>();
+    for (const r of feedbackRows) {
+      keyNet.set(r.insight_key, Number(r.net_score) || 0);
+      const t = (r.insight_title ?? "").trim().toLowerCase();
+      if (t) titleNet.set(t, (titleNet.get(t) ?? 0) + (Number(r.net_score) || 0));
+    }
+    const likedTitles = [...titleNet.entries()]
+      .filter(([, n]) => n > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([t]) => t);
+    const dislikedTitles = [...titleNet.entries()]
+      .filter(([, n]) => n < 0)
+      .sort((a, b) => a[1] - b[1])
+      .slice(0, 5)
+      .map(([t]) => t);
+
     if (!LOVABLE_API_KEY) {
-      return json({ insights: fallbackInsights(stats) });
+      return json({ insights: rerank(fallbackInsights(stats), keyNet, titleNet) });
     }
 
-    const systemPrompt = `You are an assessment-platform analyst. Generate 3 short, specific, actionable insights for an admin based on the JSON stats they provide. Compare current vs previous 30-day window. Mention concrete numbers when useful. Avoid generic advice. Each insight must be a complete thought in 1-2 sentences.
+    const feedbackHint =
+      likedTitles.length || dislikedTitles.length
+        ? `\n\nAdmin feedback signal (last 90 days):\n- Insights similar to these were RATED HIGHLY, prefer this style/angle: ${
+            likedTitles.length ? JSON.stringify(likedTitles) : "(none)"
+          }\n- Insights similar to these were RATED POORLY, avoid repeating them: ${
+            dislikedTitles.length ? JSON.stringify(dislikedTitles) : "(none)"
+          }`
+        : "";
+
+    const systemPrompt = `You are an assessment-platform analyst. Generate 3 short, specific, actionable insights for an admin based on the JSON stats they provide. Compare current vs previous 30-day window. Mention concrete numbers when useful. Avoid generic advice. Each insight must be a complete thought in 1-2 sentences.${feedbackHint}
 
 Return STRICT JSON with this shape:
 {
@@ -206,7 +255,7 @@ Return STRICT JSON with this shape:
         );
       }
       console.error("AI gateway error", aiResp.status, await aiResp.text());
-      return json({ insights: fallbackInsights(stats) });
+      return json({ insights: rerank(fallbackInsights(stats), keyNet, titleNet) });
     }
 
     const payload = await aiResp.json();
@@ -220,9 +269,9 @@ Return STRICT JSON with this shape:
       console.error("Failed to parse insights JSON", e, raw);
     }
 
-    const insights: Insight[] =
+    const rawInsights: Insight[] =
       Array.isArray(parsed.insights) && parsed.insights.length
-        ? parsed.insights.slice(0, 4).map((i) => ({
+        ? parsed.insights.slice(0, 6).map((i) => ({
             title: String(i.title ?? "Insight").slice(0, 80),
             body: String(i.body ?? "").slice(0, 280),
             severity:
@@ -232,6 +281,8 @@ Return STRICT JSON with this shape:
             action: i.action ? String(i.action).slice(0, 120) : null,
           }))
         : fallbackInsights(stats);
+
+    const insights = rerank(rawInsights, keyNet, titleNet).slice(0, 4);
 
     return json({ insights, stats });
   } catch (err) {
@@ -297,4 +348,34 @@ function fallbackInsights(stats: any): Insight[] {
     });
   }
   return out.slice(0, 3);
+}
+
+// djb2 hash matching the frontend's insightKey() so a re-generated insight with
+// the exact same title+body matches stored feedback by key.
+function insightKey(i: { title: string; body: string }): string {
+  const s = `${i.title}\u0001${i.body}`;
+  let h = 5381;
+  for (let n = 0; n < s.length; n++) h = ((h << 5) + h + s.charCodeAt(n)) | 0;
+  return `v1:${(h >>> 0).toString(36)}`;
+}
+
+// Rerank insights by historical org feedback. Exact insight_key matches weigh
+// 2x; title-level matches contribute their net score. Stable sort preserves
+// the model's original ordering on ties.
+function rerank(
+  insights: Insight[],
+  keyNet: Map<string, number>,
+  titleNet: Map<string, number>,
+): Insight[] {
+  if (!insights.length) return insights;
+  const scored = insights.map((ins, idx) => {
+    const k = insightKey(ins);
+    const t = (ins.title ?? "").trim().toLowerCase();
+    const score = 2 * (keyNet.get(k) ?? 0) + (titleNet.get(t) ?? 0);
+    return { ins, idx, score };
+  });
+  scored.sort((a, b) =>
+    b.score !== a.score ? b.score - a.score : a.idx - b.idx,
+  );
+  return scored.map((s) => s.ins);
 }
