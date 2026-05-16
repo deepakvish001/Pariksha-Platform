@@ -103,6 +103,16 @@ const GROUPS: NavGroup[] = [
       { to: "/admin/parikshaa/email-preview", label: "Email Preview", icon: Mail },
     ],
   },
+  {
+    label: "Maintenance",
+    items: [
+      {
+        to: "/admin/parikshaa/invite-source-backfill",
+        label: "Invite Source Backfill",
+        icon: Wrench,
+      },
+    ],
+  },
 ];
 
 const ParikshaaSidebar = () => {
