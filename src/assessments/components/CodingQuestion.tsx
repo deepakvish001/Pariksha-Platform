@@ -29,6 +29,10 @@ interface Props {
 }
 
 const CODING_LANGS = LANGUAGES.filter((l) => l.id !== "sql");
+const LANG_EXT: Record<string, string> = {
+  python: "py", cpp: "cpp", java: "java", javascript: "js",
+  typescript: "ts", c: "c", go: "go",
+};
 
 function pickInitialLang(question: PaperQuestion, value: Record<string, unknown> | undefined): LangId {
   const fromAnswer = value?.language as LangId | undefined;
