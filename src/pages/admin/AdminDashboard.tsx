@@ -7,6 +7,7 @@ import {
   Plus,
   Upload,
   Megaphone,
+  Home,
   AlertTriangle,
   Users,
   Activity,
