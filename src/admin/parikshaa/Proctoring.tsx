@@ -783,6 +783,7 @@ function SnapshotGroup({
 }) {
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState<"newest" | "oldest">("oldest");
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [hover, setHover] = useState<
     { src: string; alt: string; ts: string; x: number; y: number } | null
   >(null);
@@ -878,6 +879,79 @@ function SnapshotGroup({
               Newest
             </button>
           </div>
+          <button
+            type="button"
+            disabled={bulkBusy || pageItems.length === 0}
+            onClick={async () => {
+              setBulkBusy(true);
+              let ok = 0;
+              let denied = 0;
+              let failed = 0;
+              try {
+                for (const { e } of pageItems) {
+                  const path = snapshotPath(e);
+                  if (!path) {
+                    failed++;
+                    continue;
+                  }
+                  const url = thumbs[path] || (await signSnapshot(path));
+                  if (!url) {
+                    failed++;
+                    continue;
+                  }
+                  try {
+                    const res = await fetch(url);
+                    if (!res.ok) {
+                      if (res.status === 401 || res.status === 403) denied++;
+                      else failed++;
+                      continue;
+                    }
+                    const blob = await res.blob();
+                    const href = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    const base = path.split("/").pop();
+                    const tsName = new Date(e.created_at)
+                      .toISOString()
+                      .replace(/[:.]/g, "-");
+                    a.href = href;
+                    a.download = base || `snapshot-${tsName}.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(href);
+                    ok++;
+                    // Small gap so the browser doesn't drop rapid downloads.
+                    await new Promise((r) => setTimeout(r, 120));
+                  } catch {
+                    failed++;
+                  }
+                }
+                if (denied > 0) {
+                  toast.error(
+                    `You don't have permission to download ${denied} snapshot${denied === 1 ? "" : "s"}.`,
+                  );
+                }
+                if (failed > 0) {
+                  toast.error(
+                    `Couldn't download ${failed} snapshot${failed === 1 ? "" : "s"}.`,
+                  );
+                }
+                if (ok > 0) {
+                  toast.success(
+                    `Downloaded ${ok} snapshot${ok === 1 ? "" : "s"}.`,
+                  );
+                }
+              } finally {
+                setBulkBusy(false);
+              }
+            }}
+            className="px-1.5 py-0.5 text-[10px] normal-case tracking-normal rounded border border-border/60 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
+            title="Download all snapshots on this page"
+            aria-label="Download all snapshots on this page"
+          >
+            <Download className="h-3 w-3" />
+            {bulkBusy ? "Downloading…" : "Download page"}
+          </button>
         </div>
         {pageCount > 1 && (
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground tabular-nums">
