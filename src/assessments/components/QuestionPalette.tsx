@@ -123,6 +123,59 @@ export function QuestionPalette({
   /* -------------------------------------------------------------------- */
   const pct = items.length === 0 ? 0 : Math.round((answered / items.length) * 100);
 
+  /* Collapsed rail — thin icon strip with toggle + flagged dots */
+  if (collapsedRail) {
+    return (
+      <aside
+        aria-label="Question navigator (collapsed)"
+        className="flex flex-col items-center rounded-xl border border-border bg-card shadow-sm overflow-hidden max-h-[calc(100vh-9rem)] sticky top-20 w-[56px] py-2"
+      >
+        <button
+          type="button"
+          onClick={onToggleCollapsed}
+          aria-label="Expand question palette"
+          title="Expand (])"
+          className="h-9 w-9 grid place-items-center rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+        </button>
+        <div className="text-[10px] font-semibold tabular-nums text-muted-foreground mt-1">
+          {answered}/{items.length}
+        </div>
+        <div className="h-1 w-8 rounded-full bg-muted overflow-hidden mt-1.5">
+          <div className="h-full bg-emerald-500" style={{ width: `${pct}%` }} />
+        </div>
+        <nav className="flex-1 w-full overflow-y-auto mt-2 px-1 space-y-1">
+          {items.map((it, i) => {
+            const active = i === currentIndex;
+            return (
+              <button
+                key={it.id}
+                type="button"
+                onClick={() => onJump(i)}
+                aria-current={active ? "true" : undefined}
+                title={`Question ${i + 1}${it.flagged ? " (flagged)" : ""}`}
+                className={cn(
+                  "relative w-full h-7 rounded-md text-[10px] font-semibold tabular-nums grid place-items-center transition-colors",
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : it.answered
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                    : "text-muted-foreground hover:bg-muted/60"
+                )}
+              >
+                {i + 1}
+                {it.flagged && (
+                  <Flag className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 fill-amber-500 text-amber-500" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </aside>
+    );
+  }
+
   return (
     <aside
       aria-label="Question navigator"
