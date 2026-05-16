@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Flag, ChevronDown, CheckCircle2, Circle, CircleDot } from "lucide-react";
+import { Flag, ChevronDown, CheckCircle2, Circle, CircleDot, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PaletteItem {
@@ -21,6 +21,10 @@ interface Props {
   onJump: (idx: number) => void;
   variant?: "rail" | "compact";
   sections?: PaletteSection[];
+  /** When true, render the thin icon strip instead of the full rail. */
+  collapsed?: boolean;
+  /** Toggle expanded/collapsed (only meaningful for variant="rail"). */
+  onToggleCollapsed?: () => void;
 }
 
 type Filter = "all" | "unanswered" | "flagged";
