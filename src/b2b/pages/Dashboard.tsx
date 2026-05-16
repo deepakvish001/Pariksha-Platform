@@ -504,10 +504,17 @@ export default function B2BDashboard() {
       {/* KPI tiles */}
       {(() => {
         const d = stats?.deltas;
-        const toDelta = (v: number | null | undefined, unit: "%" | "pts") =>
-          v == null
-            ? undefined
-            : { value: Math.abs(v), positive: v >= 0, unit };
+        const toDelta = (
+          v: number | null | undefined,
+          unit: "%" | "pts",
+        ): Delta | undefined => {
+          if (v == null) return undefined;
+          // Round magnitude to 1 decimal so "pts" deltas read consistently as
+          // absolute percentage-point changes (e.g. "+3.2 pts", "−1.5 pts").
+          const magnitude = Math.round(Math.abs(v) * 10) / 10;
+          const direction = v > 0 ? "up" : v < 0 ? "down" : "flat";
+          return { value: magnitude, direction, unit };
+        };
         const windowDays = statsRange === "7d" ? 7 : statsRange === "90d" ? 90 : 30;
         const hint = `vs prev ${windowDays}d`;
         return (
