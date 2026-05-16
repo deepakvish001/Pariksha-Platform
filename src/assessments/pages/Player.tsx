@@ -64,6 +64,16 @@ export default function Player() {
   const online = useOnline();
   const pendingQueueRef = useRef<Record<string, Record<string, unknown>>>({});
   const [pendingCount, setPendingCount] = useState(0);
+  const pendingKey = attemptId ? `assess.pending.${attemptId}` : null;
+  const persistQueue = useCallback(() => {
+    if (!pendingKey) return;
+    try {
+      const q = pendingQueueRef.current;
+      if (Object.keys(q).length === 0) localStorage.removeItem(pendingKey);
+      else localStorage.setItem(pendingKey, JSON.stringify(q));
+    } catch { /* quota / private mode — ignore */ }
+  }, [pendingKey]);
+  const restoredRef = useRef(false);
 
   useEffect(() => {
     try { localStorage.setItem(`assess.focus.${attemptId}`, focusMode ? "1" : "0"); } catch { /* noop */ }
@@ -74,11 +84,24 @@ export default function Player() {
 
 
   useEffect(() => {
-    if (!existing) return;
+    if (!existing || restoredRef.current || !pendingKey) return;
+    restoredRef.current = true;
     const map: AnswerMap = {};
     for (const a of existing) map[a.question_id] = (a.answer as Record<string, unknown>) ?? {};
+    // Replay anything that was queued before a crash / hard close
+    try {
+      const raw = localStorage.getItem(pendingKey);
+      if (raw) {
+        const stashed = JSON.parse(raw) as Record<string, Record<string, unknown>>;
+        for (const [qid, ans] of Object.entries(stashed)) {
+          map[qid] = ans; // stashed value is newer than server
+          pendingQueueRef.current[qid] = ans;
+        }
+        setPendingCount(Object.keys(pendingQueueRef.current).length);
+      }
+    } catch { /* noop */ }
     setAnswers((prev) => ({ ...map, ...prev }));
-  }, [existing]);
+  }, [existing, pendingKey]);
 
   // Timer
   const deadline = useMemo(() => {
@@ -136,20 +159,21 @@ export default function Player() {
     pendingQueueRef.current = {};
     setPendingCount(0);
     const entries = Object.entries(queue);
-    if (entries.length === 0) return;
+    if (entries.length === 0) { persistQueue(); return; }
     let ok = 0;
     for (const [qid, ans] of entries) {
       try {
         await saveAnswer.mutateAsync({ attempt_id: attemptId, question_id: qid, answer: ans });
         ok++;
       } catch {
-        // Put back so we retry later
-        pendingQueueRef.current[qid] = ans;
+        // Put back (unless user typed a newer value in the meantime — keep newest)
+        if (!pendingQueueRef.current[qid]) pendingQueueRef.current[qid] = ans;
       }
     }
     setPendingCount(Object.keys(pendingQueueRef.current).length);
+    persistQueue();
     if (ok > 0) setLastSavedAt(Date.now());
-  }, [attemptId, saveAnswer]);
+  }, [attemptId, saveAnswer, persistQueue]);
 
   // Reconnect → flush
   useEffect(() => {
@@ -161,6 +185,7 @@ export default function Player() {
     // Always stash the latest value for offline replay / global flush
     pendingQueueRef.current[qid] = ans;
     setPendingCount(Object.keys(pendingQueueRef.current).length);
+    persistQueue();
 
     window.clearTimeout(debounceRef.current[qid]);
     debounceRef.current[qid] = window.setTimeout(() => {
@@ -169,8 +194,12 @@ export default function Player() {
         { attempt_id: attemptId, question_id: qid, answer: ans },
         {
           onSuccess: () => {
-            delete pendingQueueRef.current[qid];
-            setPendingCount(Object.keys(pendingQueueRef.current).length);
+            // Only clear if user hasn't typed a newer value since
+            if (pendingQueueRef.current[qid] === ans) {
+              delete pendingQueueRef.current[qid];
+              setPendingCount(Object.keys(pendingQueueRef.current).length);
+              persistQueue();
+            }
             setLastSavedAt(Date.now());
           },
           onError: () => {
@@ -186,18 +215,28 @@ export default function Player() {
     queueSave(qid, ans);
   };
 
-  // Safety net: flush on tab hide / page unload
+  // Safety net: flush on tab hide / page unload.
+  // NOTE: async flushPending will not complete during pagehide/beforeunload —
+  // persistQueue() synchronously mirrors the pending queue to localStorage so
+  // a hard close / reload can replay on next mount.
   useEffect(() => {
-    const onHide = () => { void flushPending(); };
+    const onHide = () => {
+      persistQueue();
+      if (document.visibilityState === "hidden" || document.visibilityState === undefined) {
+        // tab hidden but page may still be alive — try the network too
+        void flushPending();
+      }
+    };
+    const onUnload = () => { persistQueue(); };
     document.addEventListener("visibilitychange", onHide);
-    window.addEventListener("pagehide", onHide);
-    window.addEventListener("beforeunload", onHide);
+    window.addEventListener("pagehide", onUnload);
+    window.addEventListener("beforeunload", onUnload);
     return () => {
       document.removeEventListener("visibilitychange", onHide);
-      window.removeEventListener("pagehide", onHide);
-      window.removeEventListener("beforeunload", onHide);
+      window.removeEventListener("pagehide", onUnload);
+      window.removeEventListener("beforeunload", onUnload);
     };
-  }, [flushPending]);
+  }, [flushPending, persistQueue]);
 
 
   const prefillAnswerKey = async () => {
