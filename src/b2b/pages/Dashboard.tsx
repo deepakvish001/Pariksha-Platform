@@ -35,6 +35,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   Download,
+  MessageSquare,
   LucideIcon,
 } from "lucide-react";
 import jsPDF from "jspdf";
