@@ -437,8 +437,8 @@ export default function ParikshaaProctoring() {
             <Button size="sm" variant="outline" onClick={load} disabled={loading}>
               <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} /> Refresh
             </Button>
-            <Button size="sm" onClick={exportCsv} disabled={filtered.length === 0}>
-              <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+            <Button size="sm" onClick={exportCsv} disabled={filtered.length === 0 || exporting}>
+              <Download className={cn("h-3.5 w-3.5 mr-1.5", exporting && "animate-pulse")} /> {exporting ? "Exporting…" : "Export CSV"}
             </Button>
           </div>
         }
