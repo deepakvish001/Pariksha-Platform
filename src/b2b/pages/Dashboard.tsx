@@ -133,8 +133,13 @@ function KpiCard({
               {delta.value}{delta.unit ?? "%"}
             </span>
           ) : (
-            <span className="text-[hsl(var(--muted-foreground))] italic">
-              no baseline
+            <span
+              role="status"
+              aria-label="No baseline: previous 30-day window had no activity, so percent change cannot be calculated"
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-[hsl(var(--border))] bg-[hsl(var(--muted))]/40 px-1.5 py-0.5 font-medium text-[hsl(var(--muted-foreground))]"
+            >
+              <span aria-hidden="true" className="font-mono leading-none">—</span>
+              <span>No baseline</span>
             </span>
           )}
           {hint && (
