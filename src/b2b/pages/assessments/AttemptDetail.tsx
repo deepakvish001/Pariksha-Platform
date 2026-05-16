@@ -81,6 +81,8 @@ export default function AttemptDetail() {
         </Card>
       </div>
 
+      <AttemptProctoringPanel attemptId={data.attempt.id} />
+
       {events && events.length > 0 && (
         <Card className="mb-4">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Proctoring log ({events.length} events)</CardTitle></CardHeader>
