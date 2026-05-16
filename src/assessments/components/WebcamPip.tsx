@@ -207,6 +207,7 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
   const dragRef = useRef<{ ox: number; oy: number } | null>(null);
   const [active, setActive] = useState(true);
   const [snapEnabled, setSnapEnabled] = useState<boolean>(() => loadSnapPref());
+  const [avoidContent, setAvoidContent] = useState<boolean>(() => loadAvoidPref());
   const [snapping, setSnapping] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [hidden, setHidden] = useState<boolean>(() => loadHiddenPref());
