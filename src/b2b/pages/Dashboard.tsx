@@ -1093,7 +1093,7 @@ export default function B2BDashboard() {
                 title="View feedback dashboard"
                 aria-label="View AI insights feedback dashboard"
               >
-                <a href={basePath === "/b2b" ? "/b2b/insights/feedback" : `${basePath}/insights/feedback`}>
+                <a href={base === "/b2b" ? "/b2b/insights/feedback" : `${base}/insights/feedback`}>
                   <MessageSquare className="h-3.5 w-3.5" />
                 </a>
               </Button>
