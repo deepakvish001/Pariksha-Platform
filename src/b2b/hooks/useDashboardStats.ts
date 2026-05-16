@@ -18,23 +18,30 @@ export type DashboardStats = {
   };
 };
 
-const WINDOW_DAYS = 30;
+export type StatsRange = "7d" | "30d" | "90d";
+
+const RANGE_DAYS: Record<StatsRange, number> = {
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+};
 
 function pctChange(curr: number, prev: number): DeltaPct {
   if (prev === 0) return curr === 0 ? 0 : null; // no baseline to compare
   return Math.round(((curr - prev) / prev) * 1000) / 10; // 1 decimal
 }
 
-export function useDashboardStats(orgId?: string) {
+export function useDashboardStats(orgId?: string, range: StatsRange = "30d") {
   return useQuery({
-    queryKey: ["b2b", "dashboard-stats", orgId],
+    queryKey: ["b2b", "dashboard-stats", orgId, range],
     enabled: !!orgId,
     queryFn: async (): Promise<DashboardStats> => {
+      const windowDays = RANGE_DAYS[range];
       const now = new Date();
       const currStart = new Date(now);
-      currStart.setDate(now.getDate() - WINDOW_DAYS);
+      currStart.setDate(now.getDate() - windowDays);
       const prevStart = new Date(now);
-      prevStart.setDate(now.getDate() - WINDOW_DAYS * 2);
+      prevStart.setDate(now.getDate() - windowDays * 2);
       const currStartIso = currStart.toISOString();
       const prevStartIso = prevStart.toISOString();
 
