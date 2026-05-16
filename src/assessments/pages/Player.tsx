@@ -23,7 +23,6 @@ import { QuestionPalette } from "../components/QuestionPalette";
 import { CodingQuestion } from "../components/CodingQuestion";
 import { SqlQuestion } from "../components/SqlQuestion";
 import { PlayerBottomBar } from "../components/PlayerBottomBar";
-import { PlayerHelpSheet } from "../components/PlayerHelpSheet";
 import { useOnline } from "../hooks/useOnline";
 import { safeStorage } from "../lib/safeStorage";
 import { getPlayerMainClass } from "../lib/playerLayout";
