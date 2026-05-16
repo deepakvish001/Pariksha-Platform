@@ -6933,6 +6933,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      _infer_invite_source: {
+        Args: { p_email: string; p_external_id: string; p_name: string }
+        Returns: Database["public"]["Enums"]["invite_source"]
+      }
       acknowledge_logout: { Args: never; Returns: undefined }
       admin_achievement_stats: {
         Args: never
@@ -8099,6 +8103,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      test_invite_source_heuristics: { Args: never; Returns: Json }
       user_pending_logout: { Args: { _user_id: string }; Returns: boolean }
       validate_contest_submission: {
         Args: { _contest_id: string; _problem_slug: string }
