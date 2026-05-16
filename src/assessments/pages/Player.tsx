@@ -26,6 +26,7 @@ import { PlayerBottomBar } from "../components/PlayerBottomBar";
 import { PlayerHelpSheet } from "../components/PlayerHelpSheet";
 import { useOnline } from "../hooks/useOnline";
 import { safeStorage } from "../lib/safeStorage";
+import { getPlayerMainClass } from "../lib/playerLayout";
 import { cn } from "@/lib/utils";
 
 type AnswerMap = Record<string, Record<string, unknown>>;
@@ -443,13 +444,7 @@ export default function Player() {
         onOpenHelp={() => setHelpOpen(true)}
       />
 
-      <main
-        className={cn(
-          // Fixed width across all question types — no layout shift when navigating.
-          "flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px]",
-          !focusMode && "lg:grid-cols-[240px_1fr]"
-        )}
-      >
+      <main className={getPlayerMainClass({ focusMode, questionType: q?.type ?? null })}>
         {/* Mobile palette trigger */}
         {!focusMode && (
           <div className="lg:hidden">
