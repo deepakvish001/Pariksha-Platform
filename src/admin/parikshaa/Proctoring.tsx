@@ -782,6 +782,9 @@ function SnapshotGroup({
 }) {
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState<"newest" | "oldest">("oldest");
+  const [hover, setHover] = useState<
+    { src: string; alt: string; ts: string; x: number; y: number } | null
+  >(null);
 
   // Sorted view of the snapshots, with the original index preserved so the
   // lightbox (which still indexes into the unsorted prop) opens the right item.
