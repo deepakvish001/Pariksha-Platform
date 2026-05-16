@@ -25,6 +25,7 @@ import { SqlQuestion } from "../components/SqlQuestion";
 import { PlayerBottomBar } from "../components/PlayerBottomBar";
 import { PlayerHelpSheet } from "../components/PlayerHelpSheet";
 import { useOnline } from "../hooks/useOnline";
+import { safeStorage } from "../lib/safeStorage";
 import { cn } from "@/lib/utils";
 
 type AnswerMap = Record<string, Record<string, unknown>>;
