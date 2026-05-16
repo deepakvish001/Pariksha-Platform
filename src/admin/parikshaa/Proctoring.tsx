@@ -674,6 +674,12 @@ export default function ParikshaaProctoring() {
         {/* IntersectionObserver target — kicks loadMore in before the user hits the end. */}
         {hasMore && <div ref={sentinelRef} aria-hidden className="h-1" />}
       </div>
+
+      <AttemptDetailSheet
+        attempt={detailId ? rows.find((r) => r.id === detailId) ?? null : null}
+        kinds={detailId ? kindsByAttempt.get(detailId) ?? null : null}
+        onClose={() => setDetailId(null)}
+      />
     </div>
   );
 }
