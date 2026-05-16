@@ -636,6 +636,7 @@ export type Database = {
           submitted_at: string | null
           updated_at: string
           user_id: string
+          violations: number
         }
         Insert: {
           assessment_id: string
@@ -649,6 +650,7 @@ export type Database = {
           submitted_at?: string | null
           updated_at?: string
           user_id: string
+          violations?: number
         }
         Update: {
           assessment_id?: string
@@ -662,6 +664,7 @@ export type Database = {
           submitted_at?: string | null
           updated_at?: string
           user_id?: string
+          violations?: number
         }
         Relationships: [
           {
@@ -7830,6 +7833,7 @@ export type Database = {
           submitted_at: string | null
           updated_at: string
           user_id: string
+          violations: number
         }
         SetofOptions: {
           from: "*"
@@ -8267,6 +8271,7 @@ export type Database = {
           submitted_at: string | null
           updated_at: string
           user_id: string
+          violations: number
         }
         SetofOptions: {
           from: "*"
@@ -8289,6 +8294,7 @@ export type Database = {
           submitted_at: string | null
           updated_at: string
           user_id: string
+          violations: number
         }
         SetofOptions: {
           from: "*"
