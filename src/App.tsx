@@ -32,6 +32,7 @@ import B2BAttemptDetail from "@/b2b/pages/assessments/AttemptDetail";
 import B2BQuestionBank from "@/b2b/pages/QuestionBank";
 import B2BTeam from "@/b2b/pages/Team";
 import B2BSettings from "@/b2b/pages/Settings";
+import B2BInsightsFeedback from "@/b2b/pages/InsightsFeedback";
 import B2BPricing from "@/b2b/pages/Pricing";
 import { OrgWorkspace } from "@/b2b/context/OrgContext";
 import { ParikshaaShell } from "@/admin/parikshaa/ParikshaaShell";
