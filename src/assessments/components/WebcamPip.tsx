@@ -297,6 +297,22 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
             <span className="inline-flex items-center gap-1">
               <button
                 type="button"
+                onClick={() => setSnapEnabled((v) => !v)}
+                onPointerDown={(e) => e.stopPropagation()}
+                title={snapEnabled ? "Snap to corners: on" : "Snap to corners: off"}
+                aria-label="Toggle snap to corners"
+                aria-pressed={snapEnabled}
+                className={
+                  "grid place-items-center h-4 w-4 rounded transition-colors " +
+                  (snapEnabled
+                    ? "bg-emerald-500/30 text-emerald-200 hover:bg-emerald-500/40"
+                    : "text-white/60 hover:bg-white/15 hover:text-white")
+                }
+              >
+                <Magnet className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
                 onClick={resetPos}
                 onPointerDown={(e) => e.stopPropagation()}
                 title="Reset webcam position"
