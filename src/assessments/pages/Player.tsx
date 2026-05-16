@@ -488,7 +488,7 @@ export default function Player() {
           </aside>
         )}
 
-        <section className={cn("min-w-0", !isWideQuestion && !focusMode && "mx-auto w-full max-w-3xl")}>
+        <section className="min-w-0 w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={q?.id ?? "empty"}
