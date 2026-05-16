@@ -567,15 +567,16 @@ export default function ParikshaaProctoring() {
               <TableHead className="text-right">Integrity</TableHead>
               <TableHead className="text-right">Snapshots</TableHead>
               <TableHead>Last snapshot</TableHead>
+              <TableHead className="w-8" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin inline mr-2" /> Loading…
               </TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                 No attempts match the current filters.
               </TableCell></TableRow>
             ) : (
