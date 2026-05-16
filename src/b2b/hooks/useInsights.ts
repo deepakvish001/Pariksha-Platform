@@ -41,7 +41,7 @@ export function useAssessmentInsights(assessmentId?: string) {
         supabase
           .from("assessment_sections")
           .select(
-            "id, assessment_section_questions(question_id, question:questions(id,title,type,points))"
+            "id, section_questions(question_id, question:questions(id,title,type,points))"
           )
           .eq("assessment_id", assessmentId!),
       ]);
@@ -56,7 +56,7 @@ export function useAssessmentInsights(assessmentId?: string) {
       const qList: { id: string; title: string; type: string; points: number }[] = [];
       const seen = new Set<string>();
       for (const s of (sectionsRes.data ?? []) as any[]) {
-        for (const link of s.assessment_section_questions ?? []) {
+        for (const link of s.section_questions ?? []) {
           const q = link.question;
           if (q && !seen.has(q.id)) {
             seen.add(q.id);
