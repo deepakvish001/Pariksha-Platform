@@ -885,7 +885,7 @@ export default function B2BDashboard() {
           const direction = v > 0 ? "up" : v < 0 ? "down" : "flat";
           return { value: magnitude, direction, unit };
         };
-        const windowDays = statsRange === "7d" ? 7 : statsRange === "90d" ? 90 : 30;
+        const windowDays = statsWindowDays;
         const hint = `vs prev ${windowDays}d`;
         return (
           <div>
