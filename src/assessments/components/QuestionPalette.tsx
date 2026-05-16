@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { Flag, ChevronDown, CheckCircle2, Circle, CircleDot, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PaletteItem {
   id: string;
+  title?: string;
   answered: boolean;
   flagged: boolean;
   visited?: boolean;
@@ -148,27 +150,57 @@ export function QuestionPalette({
         <nav className="flex-1 w-full overflow-y-auto mt-2 px-1 space-y-1">
           {items.map((it, i) => {
             const active = i === currentIndex;
+            const status = it.answered
+              ? "Answered"
+              : active
+              ? "Current"
+              : it.visited
+              ? "Visited"
+              : "Not visited";
             return (
-              <button
-                key={it.id}
-                type="button"
-                onClick={() => onJump(i)}
-                aria-current={active ? "true" : undefined}
-                title={`Question ${i + 1}${it.flagged ? " (flagged)" : ""}`}
-                className={cn(
-                  "relative w-full h-7 rounded-md text-[10px] font-semibold tabular-nums grid place-items-center transition-colors",
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : it.answered
-                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                    : "text-muted-foreground hover:bg-muted/60"
-                )}
-              >
-                {i + 1}
-                {it.flagged && (
-                  <Flag className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 fill-amber-500 text-amber-500" />
-                )}
-              </button>
+              <Tooltip key={it.id} delayDuration={150}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => onJump(i)}
+                    aria-current={active ? "true" : undefined}
+                    aria-label={`Question ${i + 1}${it.title ? `: ${it.title}` : ""} — ${status}${it.flagged ? ", flagged" : ""}`}
+                    className={cn(
+                      "relative w-full h-7 rounded-md text-[10px] font-semibold tabular-nums grid place-items-center transition-colors",
+                      active
+                        ? "bg-primary text-primary-foreground"
+                        : it.answered
+                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                        : "text-muted-foreground hover:bg-muted/60"
+                    )}
+                  >
+                    {i + 1}
+                    {it.flagged && (
+                      <Flag className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 fill-amber-500 text-amber-500" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[260px]">
+                  <div className="space-y-1">
+                    <div className="text-xs font-semibold leading-tight">
+                      Q{i + 1}
+                      {it.title ? <span className="text-muted-foreground"> · </span> : null}
+                      {it.title && <span className="font-normal">{it.title}</span>}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <StatusIcon answered={it.answered} visited={!!it.visited} active={active} />
+                      <span>{status}</span>
+                      {it.flagged && (
+                        <>
+                          <span className="opacity-50">·</span>
+                          <Flag className="h-3 w-3 fill-amber-500 text-amber-500" />
+                          <span>Flagged</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             );
           })}
         </nav>
