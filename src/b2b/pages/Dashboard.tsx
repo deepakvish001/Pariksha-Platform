@@ -314,23 +314,8 @@ export default function B2BDashboard() {
   });
 
   const recent = (assessments ?? []).slice(0, 5);
-  const insights = [
-    {
-      title: "Submission velocity up",
-      body: `${totalSubmissions} attempts submitted in the last 30 days.`,
-    },
-    {
-      title: "Integrity looks healthy",
-      body:
-        stats?.avgIntegrity != null
-          ? `Average integrity score is ${stats.avgIntegrity}% across submissions.`
-          : "Run an assessment to start tracking integrity scores.",
-    },
-    {
-      title: "Reach more candidates",
-      body: "Bulk-invite via CSV to grow your candidate funnel this week.",
-    },
-  ];
+  const { insights, loading: insightsLoading, error: insightsError, refresh: refreshInsights } =
+    useAiInsights(org?.id);
 
   return (
     <OrgShell
