@@ -97,7 +97,6 @@ export function useProctoring(
           .from("assessment_attempts")
           .update({
             integrity_score: integrityRef.current,
-            // @ts-expect-error column added via migration; types regen handled by tooling
             violations: total,
           })
           .eq("id", attemptId);
