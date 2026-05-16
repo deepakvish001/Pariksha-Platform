@@ -908,6 +908,11 @@ export default function B2BDashboard() {
                   : i.severity === "warning"
                   ? "bg-amber-500"
                   : "bg-[hsl(var(--primary))]";
+              const key = insightKey(i);
+              const rating = insightRatings[key];
+              const isPending = !!insightPending[key];
+              const thumbBase =
+                "inline-flex items-center justify-center h-6 w-6 rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
               return (
                 <div
                   key={`${i.title}-${idx}`}
@@ -925,6 +930,41 @@ export default function B2BDashboard() {
                       → {i.action}
                     </p>
                   )}
+                  <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[hsl(var(--border))]/40 pt-2">
+                    <span className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                      Was this helpful?
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-label="Mark insight as helpful"
+                        aria-pressed={rating === "up"}
+                        disabled={isPending}
+                        onClick={() => submitInsightFeedback(i, "up")}
+                        className={`${thumbBase} ${
+                          rating === "up"
+                            ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-500"
+                            : "border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-emerald-500 hover:border-emerald-500/40"
+                        }`}
+                      >
+                        <ThumbsUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Mark insight as not helpful"
+                        aria-pressed={rating === "down"}
+                        disabled={isPending}
+                        onClick={() => submitInsightFeedback(i, "down")}
+                        className={`${thumbBase} ${
+                          rating === "down"
+                            ? "border-rose-500/60 bg-rose-500/15 text-rose-500"
+                            : "border-[hsl(var(--border))]/60 text-[hsl(var(--muted-foreground))] hover:text-rose-500 hover:border-rose-500/40"
+                        }`}
+                      >
+                        <ThumbsDown className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               );
             })}
