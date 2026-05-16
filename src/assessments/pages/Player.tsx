@@ -323,8 +323,8 @@ export default function Player() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // ⌘/Ctrl+S — flush any pending saves now
-      if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) {
+      // ⌘/Ctrl+Enter — flush any pending saves now (Ctrl+S is blocked by proctoring)
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
         void flushPending();
         return;
@@ -335,6 +335,10 @@ export default function Player() {
         tag === "input" || tag === "textarea" ||
         target?.isContentEditable || !!target?.closest(".monaco-editor");
       if (inEditor) return;
+      if (e.key === "[" || e.key === "]") {
+        setPaletteCollapsed((c) => !c);
+        return;
+      }
       if (e.key === "ArrowLeft") setIdx((i) => Math.max(0, i - 1));
       else if (e.key === "ArrowRight") setIdx((i) => Math.min(totalQ - 1, i + 1));
       else if (e.key === "f" || e.key === "F") toggleFlag();
