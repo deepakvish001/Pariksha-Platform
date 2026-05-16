@@ -452,32 +452,41 @@ type InsightsCacheEntry = { data: AiInsight[]; fetchedAt: number };
 const insightsCache = new Map<string, InsightsCacheEntry>();
 const insightsInFlight = new Map<string, Promise<AiInsight[]>>();
 
-async function fetchInsights(orgId: string, force: boolean): Promise<AiInsight[]> {
+function insightsCacheKey(orgId: string, windowDays: number) {
+  return `${orgId}:${windowDays}`;
+}
+
+async function fetchInsights(
+  orgId: string,
+  windowDays: number,
+  force: boolean,
+): Promise<AiInsight[]> {
+  const key = insightsCacheKey(orgId, windowDays);
   const now = Date.now();
   if (!force) {
-    const cached = insightsCache.get(orgId);
+    const cached = insightsCache.get(key);
     if (cached && now - cached.fetchedAt < INSIGHTS_TTL_MS) {
       return cached.data;
     }
   }
-  const existing = insightsInFlight.get(orgId);
+  const existing = insightsInFlight.get(key);
   if (existing) return existing;
 
   const p = (async () => {
     const { data, error: invokeErr } = await supabase.functions.invoke(
       "b2b-dashboard-insights",
-      { body: { org_id: orgId } },
+      { body: { org_id: orgId, window_days: windowDays } },
     );
     if (invokeErr) throw invokeErr;
     if (data?.error) throw new Error(data.error);
     const list = (data?.insights ?? []) as AiInsight[];
-    insightsCache.set(orgId, { data: list, fetchedAt: Date.now() });
+    insightsCache.set(key, { data: list, fetchedAt: Date.now() });
     return list;
   })().finally(() => {
-    insightsInFlight.delete(orgId);
+    insightsInFlight.delete(key);
   });
 
-  insightsInFlight.set(orgId, p);
+  insightsInFlight.set(key, p);
   return p;
 }
 
