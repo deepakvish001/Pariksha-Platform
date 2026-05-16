@@ -92,6 +92,14 @@ function loadSnapPref(): boolean {
   }
 }
 
+function loadHiddenPref(): boolean {
+  try {
+    return localStorage.getItem(HIDDEN_PREF_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 
 /**
  * Always-visible draggable PIP of the candidate webcam.
