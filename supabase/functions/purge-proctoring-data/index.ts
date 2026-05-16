@@ -7,6 +7,8 @@
 //   - storage objects in `assessment-proctor` bucket older than snapshot_days
 //   - `attempt_events` rows older than events_days (proctoring kinds only)
 //
+// Records each run into `proctoring_purge_runs` for the admin history panel.
+//
 // Designed to be invoked by pg_cron via pg_net, or manually by admins.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -49,6 +51,21 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
+  // Parse optional run metadata from caller.
+  let source = "manual";
+  let triggeredBy: string | null = null;
+  try {
+    if (req.method === "POST") {
+      const body = await req.json().catch(() => ({}));
+      if (typeof body?.source === "string" && body.source.length <= 32) {
+        source = body.source;
+      }
+      if (typeof body?.triggered_by === "string" && body.triggered_by.length === 36) {
+        triggeredBy = body.triggered_by;
+      }
+    }
+  } catch (_) { /* ignore */ }
+
   // Load settings
   const { data: setting } = await admin
     .from("platform_settings")
@@ -66,6 +83,8 @@ Deno.serve(async (req) => {
   const snapCutoff = new Date(now - retention.snapshot_days * 86400_000).toISOString();
   const eventCutoff = new Date(now - retention.events_days * 86400_000).toISOString();
 
+  const errors: string[] = [];
+
   // ─── Delete old webcam snapshots from storage ──────────────────────────
   let snapshotsDeleted = 0;
   try {
@@ -81,18 +100,19 @@ Deno.serve(async (req) => {
       .filter((p: unknown): p is string => typeof p === "string" && p.length > 0);
 
     if (paths.length > 0) {
-      // Remove in chunks of 100 (Supabase storage cap)
       for (let i = 0; i < paths.length; i += 100) {
         const chunk = paths.slice(i, i + 100);
         const { error: rmErr } = await admin.storage.from("assessment-proctor").remove(chunk);
         if (!rmErr) snapshotsDeleted += chunk.length;
+        else errors.push(`storage: ${rmErr.message}`);
       }
     }
   } catch (e) {
     console.error("snapshot purge error", e);
+    errors.push(`snapshot: ${(e as Error).message}`);
   }
 
-  // ─── Delete old proctoring events (cascade-safe, capped per run) ───────
+  // ─── Delete old proctoring events ──────────────────────────────────────
   let eventsDeleted = 0;
   try {
     const { data: oldEvents } = await admin
@@ -105,18 +125,38 @@ Deno.serve(async (req) => {
     if (ids.length > 0) {
       const { error: delErr } = await admin.from("attempt_events").delete().in("id", ids);
       if (!delErr) eventsDeleted = ids.length;
+      else errors.push(`events: ${delErr.message}`);
     }
   } catch (e) {
     console.error("event purge error", e);
+    errors.push(`events: ${(e as Error).message}`);
+  }
+
+  // ─── Log this run ──────────────────────────────────────────────────────
+  try {
+    await admin.from("proctoring_purge_runs").insert({
+      snapshots_deleted: snapshotsDeleted,
+      events_deleted: eventsDeleted,
+      snapshot_days: retention.snapshot_days,
+      events_days: retention.events_days,
+      snapshot_cutoff: snapCutoff,
+      event_cutoff: eventCutoff,
+      source,
+      triggered_by: triggeredBy,
+      error: errors.length ? errors.join("; ").slice(0, 1000) : null,
+    });
+  } catch (e) {
+    console.error("failed to log purge run", e);
   }
 
   const result = {
-    ok: true,
+    ok: errors.length === 0,
     retention,
     snapshots_deleted: snapshotsDeleted,
     events_deleted: eventsDeleted,
     snapshot_cutoff: snapCutoff,
     event_cutoff: eventCutoff,
+    errors,
   };
 
   return new Response(JSON.stringify(result), {
