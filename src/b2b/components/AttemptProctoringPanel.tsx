@@ -1,0 +1,196 @@
+import { useEffect, useMemo, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { Camera, Monitor, Smartphone, Sparkles, RefreshCw, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+
+type Snap = { id: string; source: string; storage_path: string; captured_at: string; reviewed: boolean };
+type Frame = { id: string; storage_path: string; captured_at: string };
+type Finding = { id: string; snapshot_id: string; severity: string; finding: any; created_at: string };
+
+const BUCKET = "assessment-proctor";
+
+async function signMany(paths: string[]) {
+  if (paths.length === 0) return {};
+  const { data } = await supabase.storage.from(BUCKET).createSignedUrls(paths, 600);
+  const map: Record<string, string> = {};
+  (data ?? []).forEach((d) => { if (d.path && d.signedUrl) map[d.path] = d.signedUrl; });
+  return map;
+}
+
+export default function AttemptProctoringPanel({ attemptId }: { attemptId: string }) {
+  const [snaps, setSnaps] = useState<Snap[]>([]);
+  const [frames, setFrames] = useState<Frame[]>([]);
+  const [findings, setFindings] = useState<Finding[]>([]);
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [running, setRunning] = useState(false);
+
+  const refresh = async () => {
+    setLoading(true);
+    const [s, f, fd] = await Promise.all([
+      supabase.from("assessment_proctor_snapshots").select("id,source,storage_path,captured_at,reviewed")
+        .eq("attempt_id", attemptId).order("captured_at", { ascending: false }).limit(36),
+      supabase.from("assessment_side_camera_frames").select("id,storage_path,captured_at")
+        .eq("attempt_id", attemptId).order("captured_at", { ascending: false }).limit(18),
+      supabase.from("assessment_proctor_findings").select("id,snapshot_id,severity,finding,created_at")
+        .eq("attempt_id", attemptId).order("created_at", { ascending: false }).limit(50),
+    ]);
+    const snapRows = (s.data ?? []) as Snap[];
+    const frameRows = (f.data ?? []) as Frame[];
+    setSnaps(snapRows);
+    setFrames(frameRows);
+    setFindings((fd.data ?? []) as Finding[]);
+    const allPaths = [...snapRows.map((x) => x.storage_path), ...frameRows.map((x) => x.storage_path)];
+    setUrls(await signMany(allPaths));
+    setLoading(false);
+  };
+
+  useEffect(() => { void refresh(); }, [attemptId]);
+
+  useEffect(() => {
+    const ch = supabase.channel(`attempt-proctor-${attemptId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "assessment_proctor_snapshots", filter: `attempt_id=eq.${attemptId}` }, () => void refresh())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "assessment_side_camera_frames", filter: `attempt_id=eq.${attemptId}` }, () => void refresh())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "assessment_proctor_findings", filter: `attempt_id=eq.${attemptId}` }, () => void refresh())
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [attemptId]);
+
+  const findingBySnap = useMemo(() => {
+    const m = new Map<string, Finding>();
+    for (const f of findings) if (!m.has(f.snapshot_id)) m.set(f.snapshot_id, f);
+    return m;
+  }, [findings]);
+
+  const webcam = snaps.filter((s) => s.source === "webcam");
+  const screen = snaps.filter((s) => s.source === "screen");
+
+  const sevColor = (sev: string) =>
+    sev === "high" || sev === "critical" ? "bg-red-500/15 text-red-600 border-red-500/30"
+    : sev === "medium" ? "bg-amber-500/15 text-amber-600 border-amber-500/30"
+    : "bg-emerald-500/15 text-emerald-700 border-emerald-500/30";
+
+  const runReview = async () => {
+    setRunning(true);
+    try {
+      const { error } = await supabase.functions.invoke("assessment-snapshot-review", { body: { attempt_id: attemptId } });
+      if (error) throw error;
+      toast.success("AI review queued");
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message ?? "Review failed");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const Tile = ({ path, captured_at, source, finding }: { path: string; captured_at: string; source?: string; finding?: Finding }) => {
+    const url = urls[path];
+    const sev = finding?.severity ?? "";
+    return (
+      <div className="relative rounded-md overflow-hidden border border-[hsl(var(--border))] bg-black/40 aspect-video">
+        {url ? <img src={url} alt={path} className="w-full h-full object-cover" loading="lazy" />
+             : <div className="w-full h-full animate-pulse bg-muted" />}
+        <div className="absolute top-1 left-1 flex gap-1">
+          {source && (
+            <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+              {source === "screen" ? <Monitor className="h-3 w-3" /> : source === "sideeye" ? <Smartphone className="h-3 w-3" /> : <Camera className="h-3 w-3" />}
+              {source}
+            </Badge>
+          )}
+          {finding && <Badge variant="outline" className={`text-[10px] h-5 ${sevColor(sev)}`}>{sev}</Badge>}
+        </div>
+        <div className="absolute bottom-0 inset-x-0 px-1.5 py-0.5 text-[10px] text-white/85 bg-gradient-to-t from-black/70 to-transparent">
+          {new Date(captured_at).toLocaleTimeString()}
+        </div>
+      </div>
+    );
+  };
+
+  const highCount = findings.filter((f) => f.severity === "high" || f.severity === "critical").length;
+
+  return (
+    <Card className="mb-4">
+      <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          Proctoring evidence
+          {highCount > 0 && (
+            <Badge variant="outline" className="text-[10px] bg-red-500/15 text-red-600 border-red-500/30 gap-1">
+              <AlertTriangle className="h-3 w-3" /> {highCount} high
+            </Badge>
+          )}
+        </CardTitle>
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+          <Button size="sm" variant="outline" onClick={runReview} disabled={running || snaps.length === 0}>
+            <Sparkles className="h-3 w-3 mr-1" /> {running ? "Reviewing…" : "Run AI review"}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {snaps.length === 0 && frames.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No proctoring evidence captured for this attempt.</p>
+        ) : null}
+
+        {webcam.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1"><Camera className="h-3 w-3" /> Webcam snapshots ({webcam.length})</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {webcam.slice(0, 12).map((s) => <Tile key={s.id} path={s.storage_path} captured_at={s.captured_at} finding={findingBySnap.get(s.id)} />)}
+            </div>
+          </div>
+        )}
+
+        {screen.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1"><Monitor className="h-3 w-3" /> Screen captures ({screen.length})</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {screen.slice(0, 9).map((s) => <Tile key={s.id} path={s.storage_path} captured_at={s.captured_at} finding={findingBySnap.get(s.id)} />)}
+            </div>
+          </div>
+        )}
+
+        {frames.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1"><Smartphone className="h-3 w-3" /> Third Eye side-camera ({frames.length})</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {frames.slice(0, 12).map((f) => <Tile key={f.id} path={f.storage_path} captured_at={f.captured_at} source="sideeye" />)}
+            </div>
+          </div>
+        )}
+
+        {findings.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">AI findings ({findings.length})</p>
+            <div className="space-y-1.5 max-h-56 overflow-auto">
+              {findings.map((f) => {
+                const d = f.finding ?? {};
+                const flags = [
+                  d.phone_in_frame && "phone",
+                  d.looking_away && "away",
+                  typeof d.person_count === "number" && d.person_count !== 1 && `${d.person_count} people`,
+                  d.identity_unclear && "identity unclear",
+                ].filter(Boolean);
+                return (
+                  <div key={f.id} className="flex items-start gap-2 text-xs p-2 rounded border border-[hsl(var(--border))]">
+                    <Badge variant="outline" className={`text-[10px] ${sevColor(f.severity)}`}>{f.severity}</Badge>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium">{flags.length ? flags.join(" · ") : "clean"}</div>
+                      {d.notes && <div className="text-muted-foreground line-clamp-2">{d.notes}</div>}
+                    </div>
+                    <span className="text-muted-foreground shrink-0">{new Date(f.created_at).toLocaleTimeString()}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
