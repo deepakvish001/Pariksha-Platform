@@ -34,8 +34,11 @@ import {
   RefreshCw,
   ThumbsUp,
   ThumbsDown,
+  Download,
   LucideIcon,
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { amberGradientText } from "../components/B2BBackdrop";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
