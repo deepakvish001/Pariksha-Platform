@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { Flag, ChevronDown, CheckCircle2, Circle, CircleDot, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PaletteItem {
   id: string;
+  title?: string;
   answered: boolean;
   flagged: boolean;
   visited?: boolean;
