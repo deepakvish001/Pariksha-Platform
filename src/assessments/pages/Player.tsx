@@ -16,13 +16,16 @@ import {
 import { toast } from "sonner";
 import { CheckCircle2, Flag, LayoutGrid, Send, Trophy } from "lucide-react";
 import { usePaper, useExistingAnswers, useSaveAnswer, useSubmitAttempt, type PaperQuestion } from "../hooks/usePaper";
-import { useProctoring } from "../hooks/useProctoring";
+import { useProctoring, MAX_VIOLATIONS } from "../hooks/useProctoring";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerTopBar } from "../components/PlayerTopBar";
 import { QuestionPalette } from "../components/QuestionPalette";
 import { CodingQuestion } from "../components/CodingQuestion";
 import { SqlQuestion } from "../components/SqlQuestion";
 import { PlayerBottomBar } from "../components/PlayerBottomBar";
+import { AssessmentLockdownGate } from "../components/AssessmentLockdownGate";
+import { WebcamPip } from "../components/WebcamPip";
+import { ViolationBanner } from "../components/ViolationBanner";
 import { useOnline } from "../hooks/useOnline";
 import { safeStorage } from "../lib/safeStorage";
 import { getPlayerMainClass } from "../lib/playerLayout";
@@ -39,8 +42,11 @@ export default function Player() {
   const { data: existing } = useExistingAnswers(attemptId);
   const saveAnswer = useSaveAnswer();
   const submitAttempt = useSubmitAttempt();
-  const proctoringEnabled = !!paper?.assessment.proctoring_enabled && paper?.attempt.status === "in_progress";
-  const { requestFullscreen } = useProctoring(attemptId, proctoringEnabled);
+  const proctoringEnabled = paper?.attempt.status === "in_progress";
+
+  // Lockdown gate + webcam stream are required before the player content renders.
+  const [lockdownReady, setLockdownReady] = useState(false);
+  const [camStream, setCamStream] = useState<MediaStream | null>(null);
 
   const flatQuestions = useMemo<PaperQuestion[]>(
     () => (paper?.sections ?? []).flatMap((s) => s.questions),
@@ -55,6 +61,12 @@ export default function Player() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [paletteCollapsed, setPaletteCollapsed] = useState<boolean>(() => {
+    return safeStorage.get("assess.palette.collapsed") === "1";
+  });
+  useEffect(() => {
+    safeStorage.set("assess.palette.collapsed", paletteCollapsed ? "1" : "0");
+  }, [paletteCollapsed]);
   
   const online = useOnline();
   const pendingQueueRef = useRef<Record<string, Record<string, unknown>>>({});
@@ -127,6 +139,26 @@ export default function Player() {
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [attemptId, answers, saveAnswer, submitAttempt]
+  );
+
+  // Auto-submit hooks (proctoring + timer share the same doSubmit)
+  const doSubmitRef = useRef(doSubmit);
+  useEffect(() => { doSubmitRef.current = doSubmit; }, [doSubmit]);
+
+  const { requestFullscreen, violations, fullscreenLost, logEvent: logProctorEvent } = useProctoring(
+    attemptId,
+    proctoringEnabled && lockdownReady,
+    {
+      onAutoSubmit: () => {
+        if (!submittedRef.current) {
+          submittedRef.current = true;
+          doSubmitRef.current(true);
+        }
+      },
+      onStrike: (total, kind) => {
+        toast.warning(`Violation ${total}/${MAX_VIOLATIONS}: ${kind.replace(/_/g, " ")}`);
+      },
+    }
   );
 
   useEffect(() => {
@@ -291,8 +323,8 @@ export default function Player() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // ⌘/Ctrl+S — flush any pending saves now
-      if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) {
+      // ⌘/Ctrl+Enter — flush any pending saves now (Ctrl+S is blocked by proctoring)
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
         void flushPending();
         return;
@@ -303,6 +335,10 @@ export default function Player() {
         tag === "input" || tag === "textarea" ||
         target?.isContentEditable || !!target?.closest(".monaco-editor");
       if (inEditor) return;
+      if (e.key === "[" || e.key === "]") {
+        setPaletteCollapsed((c) => !c);
+        return;
+      }
       if (e.key === "ArrowLeft") setIdx((i) => Math.max(0, i - 1));
       else if (e.key === "ArrowRight") setIdx((i) => Math.min(totalQ - 1, i + 1));
       else if (e.key === "f" || e.key === "F") toggleFlag();
@@ -370,6 +406,19 @@ export default function Player() {
     );
   }
 
+  // Lockdown gate — block the player until camera + fullscreen are granted.
+  if (!lockdownReady && attemptId) {
+    return (
+      <AssessmentLockdownGate
+        attemptId={attemptId}
+        onReady={(s) => {
+          setCamStream(s);
+          setLockdownReady(true);
+        }}
+      />
+    );
+  }
+
   const isWideQuestion = q?.type === "coding" || q?.type === "sql";
   const isFlagged = q ? flagged.has(q.id) : false;
   const unansweredCount = totalQ - answeredCount;
@@ -403,7 +452,7 @@ export default function Player() {
   const flagAndNext = () => { toggleFlag(); goNext(); };
 
   return (
-    <div className="theme-b2b min-h-screen flex flex-col bg-background">
+    <div className="theme-b2b min-h-screen flex flex-col bg-background select-none">
       <PlayerTopBar
         title={paper.assessment.title}
         answered={answeredCount}
@@ -421,10 +470,18 @@ export default function Player() {
         onPrefillKey={prefillAnswerKey}
       />
 
+      <ViolationBanner
+        violations={violations}
+        max={MAX_VIOLATIONS}
+        fullscreenLost={fullscreenLost}
+        onReturnFullscreen={requestFullscreen}
+      />
+
       <main
         data-testid="player-main"
         data-question-type={q?.type ?? ""}
-        className={getPlayerMainClass({ focusMode: false, questionType: q?.type ?? null })}
+        data-palette-collapsed={paletteCollapsed ? "1" : "0"}
+        className={getPlayerMainClass({ focusMode: false, paletteCollapsed, questionType: q?.type ?? null })}
       >
         {/* Mobile palette trigger */}
         <div className="lg:hidden">
@@ -461,6 +518,8 @@ export default function Player() {
               currentIndex={idx}
               sections={paletteSections}
               onJump={setIdx}
+              collapsed={paletteCollapsed}
+              onToggleCollapsed={() => setPaletteCollapsed((c) => !c)}
             />
           </div>
         </aside>
@@ -524,7 +583,14 @@ export default function Player() {
         onReviewSubmit={() => setConfirmOpen(true)}
       />
 
-      
+      {attemptId && camStream && (
+        <WebcamPip
+          attemptId={attemptId}
+          stream={camStream}
+          onLost={() => { void logProctorEvent("webcam_lost"); }}
+        />
+      )}
+
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="max-w-md">

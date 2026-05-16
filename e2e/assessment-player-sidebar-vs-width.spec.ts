@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 /**
- * End-to-end assertion: the sidebar grid track (`lg:grid-cols-[240px_1fr]`)
+ * End-to-end assertion: the sidebar grid track (`lg:grid-cols-[300px_1fr]`)
  * toggles ONLY with `focusMode`, while the width tokens of the Player <main>
  * container (`max-w-[1600px]` + `w-full` + `min-w-0` + `overflow-x-clip`)
  * stay byte-identical across every question type AND across both focus
@@ -26,7 +26,7 @@ import { test, expect, type Page } from "@playwright/test";
 // spec guards what the *browser* resolves it to.
 const BASE_WIDTH_CLASS =
   "flex-1 w-full min-w-0 mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px] overflow-x-clip";
-const SIDEBAR_TRACK = "lg:grid-cols-[240px_1fr]";
+const SIDEBAR_TRACK = "lg:grid-cols-[300px_1fr]";
 
 const CLASS_BY_FOCUS = {
   off: `${BASE_WIDTH_CLASS} ${SIDEBAR_TRACK}`,
@@ -168,8 +168,8 @@ test.describe("Player main — sidebar toggles with focusMode, width is invarian
     const offGrid = cells.find((c) => c.focus === "off")!.snap.gridTemplateColumns;
     const onGrid = cells.find((c) => c.focus === "on")!.snap.gridTemplateColumns;
     expect(offGrid).not.toBe(onGrid);
-    // The "off" track must contain the literal 240px sidebar column.
-    expect(offGrid).toMatch(/(^|\s)240px(\s|$)/);
+    // The "off" track must contain the literal 300px sidebar column.
+    expect(offGrid).toMatch(/(^|\s)300px(\s|$)/);
   });
 
   test("focusMode toggle on a single mounted node does not perturb width tokens", async ({

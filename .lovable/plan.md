@@ -1,98 +1,64 @@
+## 1. Lockdown anti-cheat for the assessment player
 
-# Test Player — Calm Pro Polish + Rich Working Features
+Applies to every attempt — including `?preview=1` — so recruiters see the exact candidate experience.
 
-The player was just overhauled, so this pass focuses on **non-disruptive UX upgrades** and making every interactive feature **work end to end** (no decorative buttons). Pure presentation + small client-side state — no schema, grading, or backend changes.
+### Pre-flight gate (before the player mounts)
+A new `<AssessmentLockdownGate>` blocks the player until the candidate:
+1. Grants webcam permission (camera test with live preview).
+2. Clicks "Enter secure mode" → triggers `requestFullscreen()` on `document.documentElement`.
+3. Acknowledges the rules card (tab switch, copy/paste, exit fullscreen = violation → 3 strikes auto-submit).
 
-## Design principles (do-no-harm to candidates)
+If permission is denied or fullscreen is rejected, the player stays gated with a retry button. No question content is rendered.
 
-- Reduce visual noise during the test: muted ambient surfaces, no animated orbs, no marketing gradients, no celebratory motion mid-attempt.
-- Color is reserved for *state* (answered / flagged / timer urgency / verdict), never for decoration.
-- Motion ≤ 150ms, no layout shift on save/auto-save, no toasts for routine autosave (icon-only indicator already in bottom bar).
-- Fullscreen / proctoring banners are passive (no flashing); warnings only on actual violation.
-- All shortcuts are opt-in-discoverable via a `?` help sheet, none hijack typing inside editors/inputs.
+### Active enforcement (inside the player)
+Extend `useProctoring` (rename effective behavior to "lockdown" — same hook):
 
-## Player shell (`Player.tsx`)
+- **Fullscreen lock** — if `fullscreenchange` fires and `document.fullscreenElement === null`, show a blocking modal "Return to fullscreen to continue" + `Re-enter` button. Counts as 1 violation.
+- **Tab/window switching** — `visibilitychange` (hidden) and `window.blur` each count as 1 violation. Banner toast: "Violation X of 3 — next switch auto-submits."
+- **Copy / cut / paste / contextmenu / selectstart / dragstart** — `preventDefault()` + log event. Cumulative — every 5 blocks = 1 violation.
+- **Print / Save** — block `Ctrl/Cmd+P`, `Ctrl/Cmd+S` (currently used for flush-save — remap flush to `Ctrl/Cmd+Enter`), `F12`, `Ctrl/Cmd+Shift+I/J/C` (devtools), `Ctrl/Cmd+U` (view source).
+- **Text selection / drag** — global CSS `user-select: none` on the player root (editor / textarea / input children get `user-select: text` so candidates can still type/select inside answer fields).
+- **Auto-submit** at violation #3 — calls existing submit flow with `auto_submitted: true` payload event.
 
-- Replace the gradient page background with a flat `bg-background` + 1px hairline divider under the topbar (calmer).
-- Constrain content widths: choice questions `max-w-3xl` centered for readability; coding/SQL stay wide.
-- Add a **focus mode** toggle in the top bar (icon only): hides the palette rail and bottom bar chrome to just Prev/Next + timer. State stored in `localStorage` per-attempt. ESC exits.
-- Add a **zen timer toggle**: collapses the timer to a thin progress bar (still visible, less anxiety). Persists per-attempt.
-- Add a **`?` help sheet** listing shortcuts (←/→, F, 1–9, ⌘/Ctrl+S save now, ⌘/Ctrl+Enter run code, G then number → jump).
-- Implement **`G` + number** jump (vim-style) and **⌘/Ctrl+S** = flush pending debounced save + brief "Saved" pulse.
-- Replace routine save toasts with the existing bottom-bar indicator (already shows `lastSavedAt`); only toast on **save failure**.
+### Webcam proctoring
+- Acquire `getUserMedia({ video: { width: 320, height: 240 }, audio: false })` once at gate-pass; keep the stream alive in a hidden `<video>`.
+- A tiny always-visible PIP (bottom-right, 96×72, draggable) shows the live feed so the candidate sees "you are being recorded".
+- Every 15s, capture a JPEG snapshot via `<canvas>` → upload to a new private `assessment-proctor` storage bucket at `<attempt_id>/<timestamp>.jpg`, then log an `attempt_events` row of kind `webcam_snapshot` with `{ path }`.
+- If the camera track ends/`muted` (covered, unplugged), log `webcam_lost` → counts as a violation.
 
-## Top bar (`PlayerTopBar.tsx`)
+### Backend changes
+- New migration:
+  - Storage bucket `assessment-proctor` (private), with RLS:
+    - Insert: only the attempt owner may upload to `<attempt_id>/*`.
+    - Select: org members of the attempt's assessment may read; the attempt owner may read their own.
+  - Extend `attempt_events.kind` allowed values list (no enum — already free `text`) with: `lockdown_enter`, `lockdown_fail`, `webcam_grant`, `webcam_deny`, `webcam_snapshot`, `webcam_lost`, `devtools_attempt`, `print_blocked`, `auto_submitted`, `violation_strike`.
+  - Add `assessment_attempts.violations smallint NOT NULL DEFAULT 0` (server-side counter, kept in sync from the client; integrity_score continues to drop too).
 
-- Lower contrast: `bg-card/80 backdrop-blur` instead of gradient.
-- Timer states: normal (muted) → amber at ≤5 min → red pulse at ≤60s (pulse uses `opacity` only, not scale, to avoid distraction).
-- Add a compact **connection indicator** (online/offline via `navigator.onLine` + `online`/`offline` listeners). When offline, queue writes in memory and show "Offline — your answers are safe" chip; flush queue on reconnect.
-- Add **Focus**, **Zen timer**, **Help** icon buttons (ghost, 32px). All wired.
-- Keep proctoring & preview chips, dedupe spacing.
+### Files to touch
+- `src/assessments/hooks/useProctoring.ts` — extend penalties, add devtools/print/copy-block handlers, add webcam snapshot loop, add violation counter & auto-submit callback.
+- `src/assessments/components/AssessmentLockdownGate.tsx` (new) — full-screen gate UI.
+- `src/assessments/components/WebcamPip.tsx` (new) — draggable live-feed pill.
+- `src/assessments/components/ViolationBanner.tsx` (new) — strike toast + fullscreen-lost modal.
+- `src/assessments/pages/Player.tsx` — wrap mount with gate, render PIP + banner, wire auto-submit, remove `Ctrl+S` shortcut (move flush to `Ctrl+Enter`).
 
-## Palette (`QuestionPalette.tsx`)
+## 2. Collapsible left Questions drawer
 
-- Tighter 8-col grid, 32px chips, 4-state legend already exists — verify color tokens are semantic (no raw hex).
-- Add **section headers** from `paper.sections` (group chips under section names).
-- Add a small filter row: `All · Unanswered · Flagged` (client-side filter of chips). Clicking a chip still jumps.
-- Hidden when Focus mode is on.
+Replace the current 240px `lg:grid-cols-[240px_1fr]` static column with a **persistent collapsible rail** that owns the full viewport height (from below the top bar to above the bottom bar).
 
-## Bottom bar (`PlayerBottomBar.tsx`)
+### Behavior
+- **Expanded (default)** — 300px wide, full height, internal scroll. Shows the existing `QuestionPalette` rail with filters + section groups + legend.
+- **Collapsed** — 48px icon strip showing only: a chevron toggle, a small `answered/total` count, and dots for flagged questions (clickable to jump).
+- **Toggle** — chevron button at the top of the rail; state persisted in `localStorage` (`assess.palette.collapsed`). Keyboard shortcut `[` to toggle.
+- **Mobile (<lg)** — unchanged: tap "Question X of N" pill to open the existing sheet drawer.
+- The main question content reflows to fill remaining width; `max-w-[1600px]` cap on `<main>` stays intact (existing playerLayout invariant tests still pass — width token doesn't change, only the grid columns).
 
-- Show **"Saved Xs ago"** (live, ticks every 10s) using `lastSavedAt`; "Saving…" while pending; "Unsaved" if `>2s` since last edit with no success.
-- Add **Mark for review & next** (single button = flag + next) — common LeetCode pattern.
-- Hide entirely in Focus mode; keep a floating minimal Prev/Next pill bottom-right instead.
-
-## Coding question (`CodingQuestion.tsx`) — wire features end-to-end
-
-- Verify **Run** uses `samples` only; **Submit (run all)** uses full cases — both must round-trip via existing edge function/hook. If a hook is missing, use the existing path already wired in the file.
-- **Language switcher** persists per-question in `localStorage`; starter code restored when switching back.
-- **Editor settings popover** (font size 12/14/16, tab size 2/4, word-wrap, vim/default keymap off by default) — persists globally in `localStorage` (`assess.editor.*`). All values actually applied to Monaco.
-- **Reset to starter** with confirm (uses question's starter for current language).
-- **Copy code**, **Download `.ext`** buttons — working.
-- **Console/Tests/Output** tabs: tests tab shows each sample with input / expected / actual / pass dot.
-- Keep `⌘/Ctrl+Enter` (Run) and `⌘/Ctrl+Shift+Enter` (Submit). Show binding hints on the buttons.
-- Persist editor scroll/cursor position per-question in memory so navigating away & back resumes exactly.
-
-## SQL question (`SqlQuestion.tsx`)
-
-- Schema cards: confirm click-to-insert table/column names actually dispatches into the Monaco model (not just selection).
-- **Run query** → table view of rows + row count + execution time (already supported by hook); error state shown inline, never as toast.
-- **Format SQL** button (lightweight regex-based formatter, or `sql-formatter` if already present — check `package.json` before adding).
-- **Export CSV** wired to current result set.
-- **Reset query** to starter, confirm.
-- Diff view stays for expected-vs-actual when available.
-
-## Choice / Short / Subjective / Matching
-
-- Wrap each in a uniform `Card` with: question number chip, points, type label, optional difficulty.
-- MCQ/TF: large option rows, circular index badge (`A/B/C…`), `aria-pressed` correctly, keyboard `1–9` already wired — verify focus ring visible.
-- Subjective / short answer: live **character & word counter**; honor `max_chars` if present (soft warn at 90%, hard block at 100%).
-- Matching: two-column with select dropdowns; show "X of N matched" progress.
-
-## Submit & success
-
-- Confirm dialog already has 3-up stats — add: *time remaining* line and "You can still go back" hint.
-- Success screen: keep it quiet (no confetti, no trophy bounce). Single check, score chip, two buttons.
-
-## Accessibility / safety
-
-- Focus rings on every interactive element via shadcn defaults — audit `outline-none` overrides and remove where they suppress focus.
-- All icon-only buttons get `aria-label` + tooltip.
-- `prefers-reduced-motion`: short-circuit framer-motion transitions.
-- Autosave on `visibilitychange` (tab hidden) and `beforeunload` — flushes pending debounce.
-
-## Technical notes
-
-- New state on `Player.tsx`: `focusMode`, `zenTimer`, `online`, `editorPrefs` (read from localStorage on mount, written on change).
-- Add `useOnline()` and `useEditorPrefs()` tiny hooks in `src/assessments/hooks/`.
-- No new deps unless `sql-formatter` is missing and needed — will fall back to a 30-line in-file formatter if so.
-- No DB migration, no edge-function changes, no changes to `usePaper` / `useSaveAnswer` / `useSubmitAttempt` signatures.
-
-## Files
-
-- Edit: `src/assessments/pages/Player.tsx`, `PlayerTopBar.tsx`, `PlayerBottomBar.tsx`, `QuestionPalette.tsx`, `CodingQuestion.tsx`, `SqlQuestion.tsx`.
-- Add: `src/assessments/hooks/useOnline.ts`, `src/assessments/hooks/useEditorPrefs.ts`, `src/assessments/components/PlayerHelpSheet.tsx`.
+### Files to touch
+- `src/assessments/lib/playerLayout.ts` — accept `paletteCollapsed` flag; emit `lg:grid-cols-[48px_1fr]` vs `lg:grid-cols-[300px_1fr]`. Width cap untouched.
+- `src/assessments/components/QuestionPalette.tsx` — add `collapsed` prop + collapsed mini-strip render path.
+- `src/assessments/pages/Player.tsx` — add `paletteCollapsed` state (persisted), pass to layout helper + palette, add `[` shortcut.
+- `src/assessments/lib/playerLayout.test.ts` + snapshot — extend cases to lock the new grid tokens.
 
 ## Out of scope
-
-- Grading logic, new question types, authoring UI, realtime collaboration, server-side proctoring rules, new languages, AI hints.
+- Hard kiosk lockdown (browser extensions that fully disable OS-level shortcuts) — impossible from a web app.
+- Recording audio or screen — only periodic webcam stills.
+- AI-driven snapshot analysis (a separate edge function can be added later; this plan only stores the evidence).
