@@ -47,6 +47,9 @@ const TYPES: { value: QuestionType; label: string }[] = [
   { value: "mcq", label: "MCQ" },
   { value: "sql", label: "SQL" },
   { value: "subjective", label: "Subjective" },
+  { value: "true_false", label: "True/False" },
+  { value: "matching", label: "Matching" },
+  { value: "short_answer", label: "Short answer" },
 ];
 
 const FILTERS: { value: "all" | QuestionType; label: string }[] = [
