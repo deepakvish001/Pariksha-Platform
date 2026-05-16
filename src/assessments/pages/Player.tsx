@@ -202,8 +202,6 @@ export default function Player() {
     },
     onShareLost: () => { void logProctorEvent("screenshare_lost"); },
   });
-  // Hold ref to screen stream so we can stop tracks on unmount if needed in future.
-  void screenStream;
 
   // Track latest answers without re-creating queueSave on every keystroke
   const answersRef = useRef<AnswerMap>({});
