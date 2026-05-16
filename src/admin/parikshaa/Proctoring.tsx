@@ -168,6 +168,7 @@ export default function ParikshaaProctoring() {
     const fromTs = from ? new Date(from).getTime() : null;
     const toTs = to ? new Date(to).getTime() : null;
     const q = search.trim().toLowerCase();
+    const kindFilterActive = selectedKinds.size > 0;
     return rows.filter((r) => {
       if (assessmentId !== "all" && r.assessment_id !== assessmentId) return false;
       if (status !== "all" && r.status !== status) return false;
@@ -176,9 +177,26 @@ export default function ParikshaaProctoring() {
       if (fromTs && t < fromTs) return false;
       if (toTs && t > toTs) return false;
       if (q && !(r.user_id.toLowerCase().includes(q) || r.id.toLowerCase().includes(q) || r.assessment_title.toLowerCase().includes(q))) return false;
+      if (kindFilterActive) {
+        const present = kindsByAttempt.get(r.id);
+        if (!present) return false;
+        let any = false;
+        for (const k of selectedKinds) {
+          if (present.has(k)) { any = true; break; }
+        }
+        if (!any) return false;
+      }
       return true;
     });
-  }, [rows, assessmentId, status, minViolations, from, to, search]);
+  }, [rows, assessmentId, status, minViolations, from, to, search, selectedKinds, kindsByAttempt]);
+
+  const toggleKind = (k: string) =>
+    setSelectedKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
 
   const toggleExpand = async (id: string) => {
     if (expanded[id]) {
