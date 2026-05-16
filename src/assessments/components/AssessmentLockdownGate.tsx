@@ -1,21 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ShieldCheck, Camera, Maximize2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Camera, Maximize2, AlertTriangle, CheckCircle2, MonitorUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { describeRulesForCandidate, type ProctoringConfig } from "../lib/proctoringConfig";
 
 interface Props {
   attemptId: string;
-  /** Called once camera is granted and fullscreen requested. Receives the live stream. */
-  onReady: (stream: MediaStream) => void;
+  config?: ProctoringConfig;
+  /** Called once camera (and screen-share, if required) are granted. */
+  onReady: (stream: MediaStream, screen: MediaStream | null) => void;
 }
 
 /**
- * Blocks the assessment until the candidate grants webcam + enters fullscreen
- * and acknowledges the rules. Same UX in preview to mirror candidate reality.
+ * Blocks the assessment until the candidate grants webcam (and optionally
+ * full-screen sharing) + enters fullscreen and acknowledges the rules.
+ * Same UX in preview to mirror candidate reality.
  */
-export function AssessmentLockdownGate({ attemptId, onReady }: Props) {
+export function AssessmentLockdownGate({ attemptId, config, onReady }: Props) {
+  const requireScreen = !!config?.require_screen_share;
+  const rules = config ? describeRulesForCandidate(config) : [
+    "Stay in fullscreen for the entire attempt.",
+    "Do not switch tabs, windows, or apps.",
+    "Copy, paste, right-click, printing and developer tools are blocked.",
+    "Your webcam will be sampled periodically for review.",
+  ];
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [screen, setScreen] = useState<MediaStream | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -57,8 +68,35 @@ export function AssessmentLockdownGate({ attemptId, onReady }: Props) {
     }
   };
 
+  const requestScreen = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const s = await navigator.mediaDevices.getDisplayMedia({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        video: { displaySurface: "monitor" } as any,
+        audio: false,
+      });
+      const track = s.getVideoTracks()[0];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const surface = (track?.getSettings() as any)?.displaySurface;
+      if (surface && surface !== "monitor") {
+        s.getTracks().forEach((t) => t.stop());
+        setError("Please share your ENTIRE screen, not just a window or tab.");
+        return;
+      }
+      setScreen(s);
+    } catch (e) {
+      setError(e instanceof Error ? `Screen share blocked: ${e.message}` : "Screen share required.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const canStart = !!stream && acknowledged && (!requireScreen || !!screen);
+
   const enterSecure = async () => {
-    if (!stream || !acknowledged) return;
+    if (!canStart || !stream) return;
     setBusy(true);
     try {
       try {
@@ -67,7 +105,7 @@ export function AssessmentLockdownGate({ attemptId, onReady }: Props) {
         // some browsers (Safari iOS) reject — we proceed anyway
       }
       log("lockdown_enter");
-      onReady(stream);
+      onReady(stream, screen);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to enter secure mode.");
       log("lockdown_fail", { error: String(e) });
@@ -92,13 +130,7 @@ export function AssessmentLockdownGate({ attemptId, onReady }: Props) {
         </div>
 
         <CardContent className="p-6 space-y-5">
-          {/* Step 1: camera */}
-          <Step
-            n={1}
-            title="Enable your camera"
-            done={!!stream}
-            icon={<Camera className="h-4 w-4" />}
-          >
+          <Step n={1} title="Enable your camera" done={!!stream} icon={<Camera className="h-4 w-4" />}>
             {stream ? (
               <div className="flex items-center gap-3">
                 <video
@@ -119,21 +151,31 @@ export function AssessmentLockdownGate({ attemptId, onReady }: Props) {
             )}
           </Step>
 
-          {/* Step 2: rules */}
+          {requireScreen && (
+            <Step n={2} title="Share your entire screen" done={!!screen} icon={<MonitorUp className="h-4 w-4" />}>
+              {screen ? (
+                <span className="text-xs text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Screen sharing active
+                </span>
+              ) : (
+                <Button size="sm" variant="outline" onClick={requestScreen} disabled={busy || !stream}>
+                  <MonitorUp className="h-4 w-4 mr-2" />
+                  Share entire screen
+                </Button>
+              )}
+            </Step>
+          )}
+
           <Step
-            n={2}
+            n={requireScreen ? 3 : 2}
             title="Acknowledge the rules"
             done={acknowledged}
             icon={<AlertTriangle className="h-4 w-4" />}
           >
             <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-              <li>Stay in fullscreen for the entire attempt.</li>
-              <li>Do not switch tabs, windows, or apps.</li>
-              <li>Copy, paste, right-click, printing and developer tools are blocked.</li>
-              <li>Your webcam will be sampled periodically for review.</li>
-              <li>
-                <strong>3 violations auto-submit</strong> your attempt immediately.
-              </li>
+              {rules.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
             </ul>
             <label className="flex items-start gap-2 mt-3 cursor-pointer text-xs">
               <input
@@ -146,16 +188,15 @@ export function AssessmentLockdownGate({ attemptId, onReady }: Props) {
             </label>
           </Step>
 
-          {/* Step 3: enter */}
           <Step
-            n={3}
+            n={requireScreen ? 4 : 3}
             title="Enter secure fullscreen"
             done={false}
             icon={<Maximize2 className="h-4 w-4" />}
           >
             <Button
               onClick={enterSecure}
-              disabled={!stream || !acknowledged || busy}
+              disabled={!canStart || busy}
               className="bg-gradient-to-r from-primary to-primary/80"
             >
               <Maximize2 className="h-4 w-4 mr-2" />
