@@ -138,7 +138,7 @@ serve(async (req) => {
     ).length;
 
     const stats = {
-      window_days: 30,
+      window_days: windowDays,
       assessments_total: assessments?.length ?? 0,
       drafts: (assessments ?? []).filter((a: any) => a.status === "draft")
         .length,
