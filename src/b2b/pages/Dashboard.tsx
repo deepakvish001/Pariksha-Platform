@@ -5,7 +5,7 @@ import { StatTile } from "../components/StatTile";
 import { useCurrentOrg, useOrgBasePath } from "../context/OrgContext";
 import { useDashboardStats } from "../hooks/useDashboardStats";
 import { Button } from "@/components/ui/button";
-import { FileText, Users, CheckCircle2, ShieldCheck, Plus } from "lucide-react";
+import { FileText, Users, CheckCircle2, ShieldCheck, Plus, Home } from "lucide-react";
 import { amberGradientText } from "../components/B2BBackdrop";
 
 export default function B2BDashboard() {
