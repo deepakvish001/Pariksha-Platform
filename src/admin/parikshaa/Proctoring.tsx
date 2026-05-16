@@ -1092,6 +1092,15 @@ function SnapshotLightbox({
                     onClick={async () => {
                       try {
                         const res = await fetch(url);
+                        if (!res.ok) {
+                          if (res.status === 401 || res.status === 403) {
+                            toast.error(
+                              "You don't have permission to download this snapshot.",
+                            );
+                            return;
+                          }
+                          throw new Error(`HTTP ${res.status}`);
+                        }
                         const blob = await res.blob();
                         const href = URL.createObjectURL(blob);
                         const a = document.createElement("a");
@@ -1105,7 +1114,10 @@ function SnapshotLightbox({
                         a.click();
                         a.remove();
                         URL.revokeObjectURL(href);
-                      } catch {
+                      } catch (err) {
+                        toast.error(
+                          "Couldn't download snapshot. Opening in a new tab instead.",
+                        );
                         // Fallback: open the signed URL in a new tab so the
                         // admin can still save it manually.
                         window.open(url, "_blank", "noopener,noreferrer");
