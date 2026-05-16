@@ -304,6 +304,35 @@ export function CodingQuestion({ question, value, onChange, isPreview }: Props) 
                       <IconBtn tip="Format (Shift+Alt+F)" onClick={() => editorRef.current?.format()}>
                         <WandSparkles className="h-3.5 w-3.5" />
                       </IconBtn>
+                      <IconBtn
+                        tip={copied ? "Copied!" : "Copy code"}
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(code);
+                            setCopied(true);
+                            window.setTimeout(() => setCopied(false), 1500);
+                          } catch {
+                            toast.error("Couldn't copy");
+                          }
+                        }}
+                      >
+                        {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      </IconBtn>
+                      <IconBtn
+                        tip={`Download .${(langInfo as { ext?: string }).ext ?? lang}`}
+                        onClick={() => {
+                          const ext = (langInfo as { ext?: string }).ext ?? lang;
+                          const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `solution.${ext}`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                      </IconBtn>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Editor settings">
@@ -316,16 +345,17 @@ export function CodingQuestion({ question, value, onChange, isPreview }: Props) 
                             <div>
                               <div className="flex items-center justify-between mb-1.5">
                                 <span className="text-muted-foreground">Font size</span>
-                                <span className="font-mono tabular-nums">{fontSize}px</span>
+                                <span className="font-mono tabular-nums">{editorPrefs.fontSize}px</span>
                               </div>
                               <input
                                 type="range"
                                 min={11}
                                 max={20}
-                                value={fontSize}
-                                onChange={(e) => setFontSize(Number(e.target.value))}
+                                value={editorPrefs.fontSize}
+                                onChange={(e) => updateEditorPrefs({ fontSize: Number(e.target.value) })}
                                 className="w-full accent-primary"
                               />
+                              <p className="text-[10px] text-muted-foreground mt-1">Saved across questions.</p>
                             </div>
                           </div>
                         </PopoverContent>
