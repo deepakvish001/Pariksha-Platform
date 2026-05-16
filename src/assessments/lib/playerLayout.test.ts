@@ -76,4 +76,33 @@ describe("Player main container width is fixed across question types", () => {
     const cls = getPlayerMainClass({ focusMode: false, questionType: null });
     expect(widthTokens(cls)).toEqual([FIXED_MAX_WIDTH]);
   });
+
+  it("never declares a responsive max-w override (sm:/md:/lg:/xl:/2xl:)", () => {
+    // The cap MUST stay constant across every breakpoint — mobile, tablet,
+    // desktop, and the Lovable preview iframe. Any `<bp>:max-w-*` token would
+    // silently change the cap at that breakpoint and break the invariant.
+    const RESPONSIVE_MAX_W = /(?:^|\s)(sm|md|lg|xl|2xl):max-w-/;
+    for (const t of [...ALL_TYPES, null]) {
+      for (const focusMode of [false, true]) {
+        const cls = getPlayerMainClass({ focusMode, questionType: t });
+        expect(
+          RESPONSIVE_MAX_W.test(cls),
+          `type=${t} focus=${focusMode} introduced a responsive max-w override: ${cls}`
+        ).toBe(false);
+      }
+    }
+  });
+
+  it("includes mobile guardrails: w-full, min-w-0, and overflow-x-clip", () => {
+    // Together these prevent the container from being widened by a child
+    // (wide code editor, SQL result table) on small viewports.
+    for (const t of ALL_TYPES) {
+      for (const focusMode of [false, true]) {
+        const cls = getPlayerMainClass({ focusMode, questionType: t });
+        expect(cls).toContain("w-full");
+        expect(cls).toContain("min-w-0");
+        expect(cls).toContain("overflow-x-clip");
+      }
+    }
+  });
 });
