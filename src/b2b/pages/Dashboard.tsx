@@ -750,7 +750,9 @@ export default function B2BDashboard() {
     navigate(target, { replace: true });
   }, [org, isLoading, navigate, base]);
 
-  const [statsRange, setStatsRange] = useState<"7d" | "30d" | "90d">("30d");
+  const [statsRange, setStatsRange] = useState<"7d" | "30d" | "60d" | "90d">("30d");
+  const statsWindowDays =
+    statsRange === "7d" ? 7 : statsRange === "60d" ? 60 : statsRange === "90d" ? 90 : 30;
   const { data: stats } = useDashboardStats(org?.id, statsRange);
   const { data: assessments } = useAssessments(org?.id);
   const series = useSubmissionsSeries(org?.id, 30);
