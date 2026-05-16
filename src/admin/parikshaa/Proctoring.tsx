@@ -126,7 +126,6 @@ async function downloadSnapshot(
   } catch {
     toast.error("Couldn't download snapshot. Opening in a new tab instead.");
     window.open(url, "_blank", "noopener,noreferrer");
-  } finally {
     onProgress?.(null);
   }
 }
