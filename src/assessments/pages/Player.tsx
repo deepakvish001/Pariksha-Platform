@@ -88,17 +88,20 @@ export default function Player() {
     const map: AnswerMap = {};
     for (const a of existing) map[a.question_id] = (a.answer as Record<string, unknown>) ?? {};
     // Replay anything that was queued before a crash / hard close
-    try {
-      const raw = localStorage.getItem(pendingKey);
-      if (raw) {
+    const raw = safeStorage.get(pendingKey);
+    if (raw) {
+      try {
         const stashed = JSON.parse(raw) as Record<string, Record<string, unknown>>;
         for (const [qid, ans] of Object.entries(stashed)) {
           map[qid] = ans; // stashed value is newer than server
           pendingQueueRef.current[qid] = ans;
         }
         setPendingCount(Object.keys(pendingQueueRef.current).length);
+      } catch {
+        // Corrupted blob — drop it so we don't loop forever
+        safeStorage.remove(pendingKey);
       }
-    } catch { /* noop */ }
+    }
     setAnswers((prev) => ({ ...map, ...prev }));
   }, [existing, pendingKey]);
 
