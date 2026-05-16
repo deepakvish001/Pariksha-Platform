@@ -68,12 +68,6 @@ export default function Player() {
   }, [pendingKey]);
   const restoredRef = useRef(false);
 
-  useEffect(() => {
-    safeStorage.set(`assess.focus.${attemptId}`, focusMode ? "1" : "0");
-  }, [focusMode, attemptId]);
-  useEffect(() => {
-    safeStorage.set(`assess.zen.${attemptId}`, zenTimer ? "1" : "0");
-  }, [zenTimer, attemptId]);
 
 
   useEffect(() => {
