@@ -25,6 +25,7 @@ import { SqlQuestion } from "../components/SqlQuestion";
 import { PlayerBottomBar } from "../components/PlayerBottomBar";
 import { PlayerHelpSheet } from "../components/PlayerHelpSheet";
 import { useOnline } from "../hooks/useOnline";
+import { safeStorage } from "../lib/safeStorage";
 import { cn } from "@/lib/utils";
 
 type AnswerMap = Record<string, Record<string, unknown>>;
@@ -54,12 +55,12 @@ export default function Player() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-  const [focusMode, setFocusMode] = useState<boolean>(() => {
-    try { return localStorage.getItem(`assess.focus.${attemptId}`) === "1"; } catch { return false; }
-  });
-  const [zenTimer, setZenTimer] = useState<boolean>(() => {
-    try { return localStorage.getItem(`assess.zen.${attemptId}`) === "1"; } catch { return false; }
-  });
+  const [focusMode, setFocusMode] = useState<boolean>(
+    () => safeStorage.get(`assess.focus.${attemptId}`) === "1"
+  );
+  const [zenTimer, setZenTimer] = useState<boolean>(
+    () => safeStorage.get(`assess.zen.${attemptId}`) === "1"
+  );
   const [helpOpen, setHelpOpen] = useState(false);
   const online = useOnline();
   const pendingQueueRef = useRef<Record<string, Record<string, unknown>>>({});
@@ -67,19 +68,17 @@ export default function Player() {
   const pendingKey = attemptId ? `assess.pending.${attemptId}` : null;
   const persistQueue = useCallback(() => {
     if (!pendingKey) return;
-    try {
-      const q = pendingQueueRef.current;
-      if (Object.keys(q).length === 0) localStorage.removeItem(pendingKey);
-      else localStorage.setItem(pendingKey, JSON.stringify(q));
-    } catch { /* quota / private mode — ignore */ }
+    const q = pendingQueueRef.current;
+    if (Object.keys(q).length === 0) safeStorage.remove(pendingKey);
+    else safeStorage.set(pendingKey, JSON.stringify(q));
   }, [pendingKey]);
   const restoredRef = useRef(false);
 
   useEffect(() => {
-    try { localStorage.setItem(`assess.focus.${attemptId}`, focusMode ? "1" : "0"); } catch { /* noop */ }
+    safeStorage.set(`assess.focus.${attemptId}`, focusMode ? "1" : "0");
   }, [focusMode, attemptId]);
   useEffect(() => {
-    try { localStorage.setItem(`assess.zen.${attemptId}`, zenTimer ? "1" : "0"); } catch { /* noop */ }
+    safeStorage.set(`assess.zen.${attemptId}`, zenTimer ? "1" : "0");
   }, [zenTimer, attemptId]);
 
 
@@ -89,17 +88,20 @@ export default function Player() {
     const map: AnswerMap = {};
     for (const a of existing) map[a.question_id] = (a.answer as Record<string, unknown>) ?? {};
     // Replay anything that was queued before a crash / hard close
-    try {
-      const raw = localStorage.getItem(pendingKey);
-      if (raw) {
+    const raw = safeStorage.get(pendingKey);
+    if (raw) {
+      try {
         const stashed = JSON.parse(raw) as Record<string, Record<string, unknown>>;
         for (const [qid, ans] of Object.entries(stashed)) {
           map[qid] = ans; // stashed value is newer than server
           pendingQueueRef.current[qid] = ans;
         }
         setPendingCount(Object.keys(pendingQueueRef.current).length);
+      } catch {
+        // Corrupted blob — drop it so we don't loop forever
+        safeStorage.remove(pendingKey);
       }
-    } catch { /* noop */ }
+    }
     setAnswers((prev) => ({ ...map, ...prev }));
   }, [existing, pendingKey]);
 
