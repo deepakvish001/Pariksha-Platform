@@ -246,6 +246,16 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
   };
   const onPointerUp = () => {
     dragRef.current = null;
+    if (snapEnabled) {
+      setPos((p) => {
+        const snapped = snapToCorner(p);
+        if (snapped.x !== p.x || snapped.y !== p.y) {
+          setSnapping(true);
+          window.setTimeout(() => setSnapping(false), 220);
+        }
+        return snapped;
+      });
+    }
   };
 
   return (
