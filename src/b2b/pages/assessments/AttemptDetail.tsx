@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle2, XCircle, Save } from "lucide-react";
 import { toast } from "sonner";
+import AttemptProctoringPanel from "../../components/AttemptProctoringPanel";
 
 export default function AttemptDetail() {
   const { id, attemptId } = useParams();
