@@ -35,6 +35,8 @@ export function QuestionPalette({
   onJump,
   variant = "rail",
   sections,
+  collapsed: collapsedRail = false,
+  onToggleCollapsed,
 }: Props) {
   const answered = items.filter((i) => i.answered).length;
   const flagged = items.filter((i) => i.flagged).length;
