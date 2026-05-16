@@ -266,6 +266,7 @@ const App = () => (
                 <Route path="/b2b/question-bank" element={<ProtectedRoute><B2BQuestionBank /></ProtectedRoute>} />
                 <Route path="/b2b/settings/team" element={<ProtectedRoute><B2BTeam /></ProtectedRoute>} />
                 <Route path="/b2b/settings" element={<ProtectedRoute><B2BSettings /></ProtectedRoute>} />
+                <Route path="/b2b/insights/feedback" element={<ProtectedRoute><B2BInsightsFeedback /></ProtectedRoute>} />
 
                 {/* Vanity org workspaces — members only, slug-resolved */}
                 {(["companies", "colleges"] as const).map((seg) => {
