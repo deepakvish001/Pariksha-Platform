@@ -280,78 +280,134 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
 
   return (
     <>
-      <div
-        role="region"
-        aria-label="Live webcam preview"
-        style={{
-          right: pos.x,
-          bottom: pos.y,
-          transition: snapping ? "right 180ms ease-out, bottom 180ms ease-out" : undefined,
-        }}
-        className="fixed z-[60] select-none"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-      >
-        <div
+      {hidden ? (
+        // Collapsed pill — keeps proctoring running (video stays mounted
+        // off-screen below) but frees the PIP area on screen.
+        <button
+          type="button"
+          onClick={() => setHidden(false)}
+          style={{
+            right: pos.x,
+            bottom: pos.y,
+            transition: snapping ? "right 180ms ease-out, bottom 180ms ease-out" : undefined,
+          }}
           className={
-            "w-[120px] rounded-lg overflow-hidden border shadow-xl bg-black cursor-grab active:cursor-grabbing " +
+            "fixed z-[60] inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold shadow-lg border bg-black/80 backdrop-blur text-white hover:bg-black " +
             (active
               ? "border-emerald-500/60 ring-1 ring-emerald-500/40"
               : "border-destructive/70 ring-1 ring-destructive/40")
           }
+          title="Show webcam preview (proctoring is still recording)"
+          aria-label="Show webcam preview"
         >
-          <div className="flex items-center justify-between gap-1 px-2 py-1 text-[10px] font-semibold bg-black/70 text-white">
-            <span className="inline-flex items-center gap-1">
-              {active ? (
-                <>
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                  REC
-                </>
-              ) : (
-                <>
-                  <CameraOff className="h-3 w-3" /> LOST
-                </>
-              )}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setSnapEnabled((v) => !v)}
-                onPointerDown={(e) => e.stopPropagation()}
-                title={snapEnabled ? "Snap to corners: on" : "Snap to corners: off"}
-                aria-label="Toggle snap to corners"
-                aria-pressed={snapEnabled}
-                className={
-                  "grid place-items-center h-4 w-4 rounded transition-colors " +
-                  (snapEnabled
-                    ? "bg-emerald-500/30 text-emerald-200 hover:bg-emerald-500/40"
-                    : "text-white/60 hover:bg-white/15 hover:text-white")
-                }
-              >
-                <Magnet className="h-3 w-3" />
-              </button>
-              <button
-                type="button"
-                onClick={resetPos}
-                onPointerDown={(e) => e.stopPropagation()}
-                title="Reset webcam position"
-                aria-label="Reset webcam position"
-                className="grid place-items-center h-4 w-4 rounded hover:bg-white/15 text-white/80 hover:text-white transition-colors"
-              >
-                <RotateCcw className="h-3 w-3" />
-              </button>
-              <Camera className="h-3 w-3 opacity-70" />
-            </span>
+          {active ? (
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+          ) : (
+            <CameraOff className="h-3 w-3" />
+          )}
+          <span>REC</span>
+          <Eye className="h-3 w-3 opacity-80" />
+        </button>
+      ) : (
+        <div
+          role="region"
+          aria-label="Live webcam preview"
+          style={{
+            right: pos.x,
+            bottom: pos.y,
+            transition: snapping ? "right 180ms ease-out, bottom 180ms ease-out" : undefined,
+          }}
+          className="fixed z-[60] select-none"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+        >
+          <div
+            className={
+              "w-[120px] rounded-lg overflow-hidden border shadow-xl bg-black cursor-grab active:cursor-grabbing " +
+              (active
+                ? "border-emerald-500/60 ring-1 ring-emerald-500/40"
+                : "border-destructive/70 ring-1 ring-destructive/40")
+            }
+          >
+            <div className="flex items-center justify-between gap-1 px-2 py-1 text-[10px] font-semibold bg-black/70 text-white">
+              <span className="inline-flex items-center gap-1">
+                {active ? (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                    REC
+                  </>
+                ) : (
+                  <>
+                    <CameraOff className="h-3 w-3" /> LOST
+                  </>
+                )}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setSnapEnabled((v) => !v)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  title={snapEnabled ? "Snap to corners: on" : "Snap to corners: off"}
+                  aria-label="Toggle snap to corners"
+                  aria-pressed={snapEnabled}
+                  className={
+                    "grid place-items-center h-4 w-4 rounded transition-colors " +
+                    (snapEnabled
+                      ? "bg-emerald-500/30 text-emerald-200 hover:bg-emerald-500/40"
+                      : "text-white/60 hover:bg-white/15 hover:text-white")
+                  }
+                >
+                  <Magnet className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={resetPos}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  title="Reset webcam position"
+                  aria-label="Reset webcam position"
+                  className="grid place-items-center h-4 w-4 rounded hover:bg-white/15 text-white/80 hover:text-white transition-colors"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHidden(true)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  title="Hide webcam preview (proctoring keeps recording)"
+                  aria-label="Hide webcam preview"
+                  className="grid place-items-center h-4 w-4 rounded hover:bg-white/15 text-white/80 hover:text-white transition-colors"
+                >
+                  <EyeOff className="h-3 w-3" />
+                </button>
+                <Camera className="h-3 w-3 opacity-70" />
+              </span>
+            </div>
+            <video
+              ref={videoRef}
+              muted
+              playsInline
+              className="w-full h-[90px] object-cover bg-black"
+            />
           </div>
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            className="w-full h-[90px] object-cover bg-black"
-          />
         </div>
-      </div>
+      )}
+
+      {/*
+        When hidden, the video element must still exist (and be playing) so
+        the snapshot loop can draw frames. We render it off-screen but with
+        non-zero size so the browser keeps decoding frames.
+      */}
+      {hidden && (
+        <video
+          ref={videoRef}
+          muted
+          playsInline
+          aria-hidden
+          tabIndex={-1}
+          className="fixed left-[-9999px] top-0 w-[2px] h-[2px] opacity-0 pointer-events-none"
+        />
+      )}
       <canvas ref={canvasRef} className="hidden" aria-hidden />
     </>
   );
