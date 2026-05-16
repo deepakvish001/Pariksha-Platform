@@ -1230,6 +1230,7 @@ export default function DsaStudio() {
                                       >
                                         <Lock className="h-2.5 w-2.5" /> Free
                                       </Badge>
+                                    )}
                                     {isSolved && (
                                       <Badge
                                         variant="outline"
