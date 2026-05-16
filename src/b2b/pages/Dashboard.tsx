@@ -1208,30 +1208,47 @@ export default function B2BDashboard() {
                 const p = prev == null ? "—" : `${prev}${suffix}`;
                 return `${c} vs ${p}`;
               };
+              const bd = w.breakdowns;
               const rows: {
                 label: keyof typeof KPI_HELP;
                 value: string;
                 prevMissing: boolean;
+                breakdown?: { label: string; value: string }[];
               }[] = [
                 {
                   label: "Assessments",
                   value: fmtPair(w.assessments.curr, w.assessments.prev),
                   prevMissing: w.assessments.prev == null,
+                  breakdown: [
+                    { label: "Drafts", value: fmtPair(bd.assessments.drafts.curr, bd.assessments.drafts.prev) },
+                    { label: "Published", value: fmtPair(bd.assessments.published.curr, bd.assessments.published.prev) },
+                  ],
                 },
                 {
                   label: "Candidates invited",
                   value: fmtPair(w.invites.curr, w.invites.prev),
                   prevMissing: w.invites.prev == null,
+                  breakdown: [
+                    { label: "Pending", value: fmtPair(bd.invites.pending.curr, bd.invites.pending.prev) },
+                    { label: "Accepted", value: fmtPair(bd.invites.accepted.curr, bd.invites.accepted.prev) },
+                  ],
                 },
                 {
                   label: "Submissions",
                   value: fmtPair(w.submissions.curr, w.submissions.prev),
                   prevMissing: w.submissions.prev == null,
+                  breakdown: [
+                    { label: "Started", value: fmtPair(bd.submissions.started.curr, bd.submissions.started.prev) },
+                    { label: "Completed", value: fmtPair(bd.submissions.completed.curr, bd.submissions.completed.prev) },
+                  ],
                 },
                 {
                   label: "Avg integrity",
                   value: fmtPair(w.avgIntegrity.curr, w.avgIntegrity.prev, "%"),
                   prevMissing: w.avgIntegrity.prev == null,
+                  breakdown: [
+                    { label: "Flagged < 70%", value: fmtPair(bd.integrity.flaggedLow.curr, bd.integrity.flaggedLow.prev) },
+                  ],
                 },
               ];
               return (
@@ -1247,35 +1264,53 @@ export default function B2BDashboard() {
                   </summary>
                   <dl className="divide-y divide-[hsl(var(--border))]/40 border-t border-[hsl(var(--border))]/40">
                     {rows.map((r) => (
-                      <div key={r.label} className="flex items-center justify-between gap-3 px-3 py-1.5">
-                        <dt className="flex items-center gap-1 text-[hsl(var(--muted-foreground))]">
-                          <span>{r.label}</span>
-                          <TooltipProvider delayDuration={150}>
-                            <UiTooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  aria-label={`How ${r.label} is calculated`}
-                                  className="text-[hsl(var(--muted-foreground))]/60 hover:text-[hsl(var(--foreground))] transition-colors"
-                                >
-                                  <Info className="h-3 w-3" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
-                                <p className="font-medium mb-1">{r.label}</p>
-                                <p className="text-[hsl(var(--muted-foreground))]">
-                                  {KPI_HELP[r.label]}
-                                </p>
-                                {r.prevMissing && (
-                                  <p className="mt-1.5 text-amber-500">
-                                    No baseline yet — the previous {w.windowDays}-day window had no qualifying data, so a comparison can't be computed.
+                      <div key={r.label} className="px-3 py-1.5">
+                        <div className="flex items-center justify-between gap-3">
+                          <dt className="flex items-center gap-1 text-[hsl(var(--muted-foreground))]">
+                            <span>{r.label}</span>
+                            <TooltipProvider delayDuration={150}>
+                              <UiTooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    aria-label={`How ${r.label} is calculated`}
+                                    className="text-[hsl(var(--muted-foreground))]/60 hover:text-[hsl(var(--foreground))] transition-colors"
+                                  >
+                                    <Info className="h-3 w-3" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
+                                  <p className="font-medium mb-1">{r.label}</p>
+                                  <p className="text-[hsl(var(--muted-foreground))]">
+                                    {KPI_HELP[r.label]}
                                   </p>
-                                )}
-                              </TooltipContent>
-                            </UiTooltip>
-                          </TooltipProvider>
-                        </dt>
-                        <dd className="font-mono tabular-nums">{r.value}</dd>
+                                  {r.prevMissing && (
+                                    <p className="mt-1.5 text-amber-500">
+                                      No baseline yet — the previous {w.windowDays}-day window had no qualifying data, so a comparison can't be computed.
+                                    </p>
+                                  )}
+                                </TooltipContent>
+                              </UiTooltip>
+                            </TooltipProvider>
+                          </dt>
+                          <dd className="font-mono tabular-nums">{r.value}</dd>
+                        </div>
+                        {r.breakdown && r.breakdown.length > 0 && (
+                          <details className="group/bd mt-1 ml-2">
+                            <summary className="flex cursor-pointer list-none items-center gap-1 text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]/70 hover:text-[hsl(var(--foreground))] transition-colors">
+                              <ChevronRight className="h-2.5 w-2.5 transition-transform group-open/bd:rotate-90" />
+                              <span>Breakdown</span>
+                            </summary>
+                            <dl className="mt-1 ml-3 border-l border-[hsl(var(--border))]/40 pl-2 space-y-0.5">
+                              {r.breakdown.map((b) => (
+                                <div key={b.label} className="flex items-center justify-between gap-3">
+                                  <dt className="text-[11px] text-[hsl(var(--muted-foreground))]/80">{b.label}</dt>
+                                  <dd className="font-mono tabular-nums text-[11px] text-[hsl(var(--muted-foreground))]">{b.value}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          </details>
+                        )}
                       </div>
                     ))}
                   </dl>

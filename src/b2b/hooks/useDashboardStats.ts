@@ -25,6 +25,12 @@ export type DashboardStats = {
     invites: WindowPair;
     submissions: WindowPair;
     avgIntegrity: WindowPair<number | null>;
+    breakdowns: {
+      assessments: { drafts: WindowPair; published: WindowPair };
+      invites: { pending: WindowPair; accepted: WindowPair };
+      submissions: { started: WindowPair; completed: WindowPair };
+      integrity: { flaggedLow: WindowPair };
+    };
   };
 };
 
@@ -41,11 +47,18 @@ function pctChange(curr: number, prev: number): DeltaPct {
   return Math.round(((curr - prev) / prev) * 1000) / 10; // 1 decimal
 }
 
-type Bucket = { total: number; curr: number; prev: number };
+type Pair = { curr: number; prev: number };
+type Bucket = {
+  total: number;
+  curr: number;
+  prev: number;
+  breakdown?: Record<string, Pair>;
+};
 type IntegrityBucket = {
   total: number | null;
   curr: number | null;
   prev: number | null;
+  breakdown?: Record<string, Pair>;
 };
 type RpcShape = {
   window_days: number;
@@ -54,6 +67,8 @@ type RpcShape = {
   submissions: Bucket;
   integrity: IntegrityBucket;
 };
+
+const ZP: Pair = { curr: 0, prev: 0 };
 
 export function useDashboardStats(orgId?: string, range: StatsRange = "30d") {
   return useQuery({
@@ -97,6 +112,23 @@ export function useDashboardStats(orgId?: string, range: StatsRange = "30d") {
           invites: { curr: i.curr, prev: i.prev },
           submissions: { curr: s.curr, prev: s.prev },
           avgIntegrity: { curr: ig.curr, prev: ig.prev },
+          breakdowns: {
+            assessments: {
+              drafts: a.breakdown?.drafts ?? ZP,
+              published: a.breakdown?.published ?? ZP,
+            },
+            invites: {
+              pending: i.breakdown?.pending ?? ZP,
+              accepted: i.breakdown?.accepted ?? ZP,
+            },
+            submissions: {
+              started: s.breakdown?.started ?? ZP,
+              completed: s.breakdown?.completed ?? ZP,
+            },
+            integrity: {
+              flaggedLow: ig.breakdown?.flagged_low ?? ZP,
+            },
+          },
         },
       };
     },
