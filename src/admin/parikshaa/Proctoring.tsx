@@ -22,6 +22,83 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Download, RefreshCw, ChevronDown, ChevronRight, Camera, ShieldAlert, Loader2, Trash2, Save, ChevronLeft as ChevronLeftIcon, X, Eye, Copy } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+async function downloadSnapshot(
+  url: string,
+  event: { created_at: string },
+  path: string | null,
+  format: "jpg" | "png",
+) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        toast.error("You don't have permission to download this snapshot.");
+        return;
+      }
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const sourceBlob = await res.blob();
+    const tsName = new Date(event.created_at).toISOString().replace(/[:.]/g, "-");
+    const baseName = path ? path.split("/").pop()?.replace(/\.[^.]+$/, "") : null;
+    const fileName = `${baseName || `snapshot-${tsName}`}.${format}`;
+
+    let outBlob: Blob = sourceBlob;
+    const sourceType = sourceBlob.type || "";
+    const targetType = format === "png" ? "image/png" : "image/jpeg";
+
+    if (!sourceType.includes(format === "png" ? "png" : "jpeg")) {
+      try {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result as string);
+          r.onerror = reject;
+          r.readAsDataURL(sourceBlob);
+        });
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const i = new Image();
+          i.onload = () => resolve(i);
+          i.onerror = reject;
+          i.src = dataUrl;
+        });
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("canvas unavailable");
+        if (format === "jpg") {
+          ctx.fillStyle = "#000";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        ctx.drawImage(img, 0, 0);
+        const converted = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, targetType, format === "jpg" ? 0.92 : undefined),
+        );
+        if (converted) outBlob = converted;
+      } catch {
+        // Fall through with original blob; extension still hints format.
+      }
+    }
+
+    const href = URL.createObjectURL(outBlob);
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(href);
+  } catch {
+    toast.error("Couldn't download snapshot. Opening in a new tab instead.");
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
