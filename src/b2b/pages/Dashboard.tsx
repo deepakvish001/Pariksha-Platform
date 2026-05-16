@@ -134,20 +134,44 @@ function KpiCard({
         </div>
         <p className="mt-3 text-3xl font-semibold tracking-tight">{value}</p>
         <div className="mt-2 flex items-center gap-2 text-xs">
-          {delta ? (
-            <span
-              className={`inline-flex items-center gap-0.5 font-medium ${
-                delta.positive ? "text-emerald-500" : "text-rose-500"
-              }`}
-            >
-              {delta.positive ? (
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              ) : (
-                <ArrowDownRight className="h-3.5 w-3.5" />
-              )}
-              {delta.value}{delta.unit ?? "%"}
-            </span>
-          ) : (
+          {delta ? (() => {
+            const unitSuffix = delta.unit === "pts" ? " pts" : "%";
+            const sign =
+              delta.direction === "up"
+                ? "+"
+                : delta.direction === "down"
+                  ? "−"
+                  : "";
+            const colorClass =
+              delta.direction === "up"
+                ? "text-emerald-500"
+                : delta.direction === "down"
+                  ? "text-rose-500"
+                  : "text-[hsl(var(--muted-foreground))]";
+            const Arrow =
+              delta.direction === "up"
+                ? ArrowUpRight
+                : delta.direction === "down"
+                  ? ArrowDownRight
+                  : null;
+            const ariaLabel =
+              delta.direction === "flat"
+                ? `No change vs previous ${windowDays} days`
+                : `${delta.direction === "up" ? "Up" : "Down"} ${delta.value}${unitSuffix} vs previous ${windowDays} days`;
+            return (
+              <span
+                aria-label={ariaLabel}
+                className={`inline-flex items-center gap-0.5 font-medium tabular-nums ${colorClass}`}
+              >
+                {Arrow ? <Arrow aria-hidden="true" className="h-3.5 w-3.5" /> : null}
+                <span>
+                  {sign}
+                  {delta.value}
+                  {unitSuffix}
+                </span>
+              </span>
+            );
+          })() : (
             <span
               role="status"
               aria-label="No baseline: previous 30-day window had no activity, so percent change cannot be calculated"
