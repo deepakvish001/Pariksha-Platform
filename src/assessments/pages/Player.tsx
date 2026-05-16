@@ -484,7 +484,7 @@ export default function Player() {
 
       <ViolationBanner
         violations={violations}
-        max={MAX_VIOLATIONS}
+        max={maxViolations}
         fullscreenLost={fullscreenLost}
         onReturnFullscreen={requestFullscreen}
       />
