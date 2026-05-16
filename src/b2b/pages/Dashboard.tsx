@@ -289,23 +289,61 @@ type AiInsight = {
   action?: string | null;
 };
 
+// Cache + in-flight dedupe for AI insights. Keyed by org id, kept module-level
+// so navigations between pages don't refetch within the TTL.
+const INSIGHTS_TTL_MS = 5 * 60 * 1000; // 5 minutes — matches edge function cost
+const INSIGHTS_MIN_REFRESH_MS = 15 * 1000; // user-facing refresh debounce
+type InsightsCacheEntry = { data: AiInsight[]; fetchedAt: number };
+const insightsCache = new Map<string, InsightsCacheEntry>();
+const insightsInFlight = new Map<string, Promise<AiInsight[]>>();
+
+async function fetchInsights(orgId: string, force: boolean): Promise<AiInsight[]> {
+  const now = Date.now();
+  if (!force) {
+    const cached = insightsCache.get(orgId);
+    if (cached && now - cached.fetchedAt < INSIGHTS_TTL_MS) {
+      return cached.data;
+    }
+  }
+  const existing = insightsInFlight.get(orgId);
+  if (existing) return existing;
+
+  const p = (async () => {
+    const { data, error: invokeErr } = await supabase.functions.invoke(
+      "b2b-dashboard-insights",
+      { body: { org_id: orgId } },
+    );
+    if (invokeErr) throw invokeErr;
+    if (data?.error) throw new Error(data.error);
+    const list = (data?.insights ?? []) as AiInsight[];
+    insightsCache.set(orgId, { data: list, fetchedAt: Date.now() });
+    return list;
+  })().finally(() => {
+    insightsInFlight.delete(orgId);
+  });
+
+  insightsInFlight.set(orgId, p);
+  return p;
+}
+
 function useAiInsights(orgId?: string) {
-  const [insights, setInsights] = useState<AiInsight[] | null>(null);
+  const [insights, setInsights] = useState<AiInsight[] | null>(() => {
+    if (!orgId) return null;
+    const c = insightsCache.get(orgId);
+    return c && Date.now() - c.fetchedAt < INSIGHTS_TTL_MS ? c.data : null;
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastRefreshAt, setLastRefreshAt] = useState<number>(0);
 
-  const load = async () => {
+  const load = async (force = false) => {
     if (!orgId) return;
     setLoading(true);
     setError(null);
     try {
-      const { data, error: invokeErr } = await supabase.functions.invoke(
-        "b2b-dashboard-insights",
-        { body: { org_id: orgId } },
-      );
-      if (invokeErr) throw invokeErr;
-      if (data?.error) throw new Error(data.error);
-      setInsights((data?.insights ?? []) as AiInsight[]);
+      const list = await fetchInsights(orgId, force);
+      setInsights(list);
+      setLastRefreshAt(Date.now());
     } catch (e: any) {
       setError(e?.message ?? "Failed to load insights");
       setInsights([]);
@@ -314,13 +352,57 @@ function useAiInsights(orgId?: string) {
     }
   };
 
+  // Debounced user-initiated refresh: ignore clicks within the cooldown window.
+  const refresh = () => {
+    if (loading) return;
+    if (Date.now() - lastRefreshAt < INSIGHTS_MIN_REFRESH_MS) return;
+    load(true);
+  };
+
   useEffect(() => {
-    setInsights(null);
-    if (orgId) load();
+    if (!orgId) {
+      setInsights(null);
+      return;
+    }
+    const cached = insightsCache.get(orgId);
+    if (cached && Date.now() - cached.fetchedAt < INSIGHTS_TTL_MS) {
+      setInsights(cached.data);
+      return;
+    }
+    load(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId]);
 
-  return { insights: insights ?? [], loading, error, refresh: load };
+  // Tick once per second while the refresh cooldown is active so the UI
+  // (disabled state + countdown label) updates without extra refetches.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    if (!lastRefreshAt) return;
+    const remaining = INSIGHTS_MIN_REFRESH_MS - (Date.now() - lastRefreshAt);
+    if (remaining <= 0) return;
+    const id = window.setInterval(() => forceTick((n) => n + 1), 1000);
+    const timeout = window.setTimeout(() => {
+      window.clearInterval(id);
+      forceTick((n) => n + 1);
+    }, remaining + 50);
+    return () => {
+      window.clearInterval(id);
+      window.clearTimeout(timeout);
+    };
+  }, [lastRefreshAt]);
+
+  const cooldownRemaining = Math.max(
+    0,
+    INSIGHTS_MIN_REFRESH_MS - (Date.now() - lastRefreshAt),
+  );
+
+  return {
+    insights: insights ?? [],
+    loading,
+    error,
+    refresh,
+    cooldownRemaining,
+  };
 }
 
 type InsightRating = "up" | "down";
@@ -573,8 +655,13 @@ export default function B2BDashboard() {
   });
 
   const recent = (assessments ?? []).slice(0, 5);
-  const { insights, loading: insightsLoading, error: insightsError, refresh: refreshInsights } =
-    useAiInsights(org?.id);
+  const {
+    insights,
+    loading: insightsLoading,
+    error: insightsError,
+    refresh: refreshInsights,
+    cooldownRemaining: insightsCooldown,
+  } = useAiInsights(org?.id);
   const {
     ratings: insightRatings,
     pending: insightPending,
@@ -865,11 +952,22 @@ export default function B2BDashboard() {
               variant="ghost"
               className="h-7 px-2 text-xs"
               onClick={() => refreshInsights()}
-              disabled={insightsLoading}
+              disabled={insightsLoading || insightsCooldown > 0}
+              title={
+                insightsCooldown > 0
+                  ? `Please wait ${Math.ceil(insightsCooldown / 1000)}s before refreshing again`
+                  : "Refresh insights"
+              }
+              aria-label="Refresh AI insights"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 ${insightsLoading ? "animate-spin" : ""}`}
               />
+              {insightsCooldown > 0 && !insightsLoading && (
+                <span className="ml-1 tabular-nums text-[hsl(var(--muted-foreground))]">
+                  {Math.ceil(insightsCooldown / 1000)}s
+                </span>
+              )}
             </Button>
           </div>
           <div className="mt-4 space-y-3">
