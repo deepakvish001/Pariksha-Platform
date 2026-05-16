@@ -1269,22 +1269,53 @@ function SnapshotLightbox({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 px-2 gap-1"
-                        title="Download snapshot"
+                        className="h-7 px-2 gap-1 tabular-nums"
+                        title={
+                          dl
+                            ? `Downloading ${dl.format.toUpperCase()}${dl.pct != null ? ` (${dl.pct}%)` : "…"}`
+                            : "Download snapshot"
+                        }
                         aria-label="Download snapshot"
+                        aria-busy={!!dl}
+                        disabled={!!dl}
                       >
-                        <Download className="h-4 w-4" />
-                        <ChevronDown className="h-3 w-3 opacity-60" />
+                        {dl ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-[10px]">
+                              {dl.pct != null ? `${dl.pct}%` : "…"}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4" />
+                            <ChevronDown className="h-3 w-3 opacity-60" />
+                          </>
+                        )}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[10rem]">
                       <DropdownMenuItem
-                        onClick={() => downloadSnapshot(url, event, path, "jpg")}
+                        disabled={!!dl}
+                        onClick={async () => {
+                          setDl({ format: "jpg", pct: 0 });
+                          await downloadSnapshot(url, event, path, "jpg", (pct) =>
+                            setDl(pct == null ? null : { format: "jpg", pct }),
+                          );
+                          setDl(null);
+                        }}
                       >
                         Download as JPG
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => downloadSnapshot(url, event, path, "png")}
+                        disabled={!!dl}
+                        onClick={async () => {
+                          setDl({ format: "png", pct: 0 });
+                          await downloadSnapshot(url, event, path, "png", (pct) =>
+                            setDl(pct == null ? null : { format: "png", pct }),
+                          );
+                          setDl(null);
+                        }}
                       >
                         Download as PNG
                       </DropdownMenuItem>
