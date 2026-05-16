@@ -8037,6 +8037,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_insight_feedback_signals: {
+        Args: { _days?: number; _org_id: string }
+        Returns: {
+          down_count: number
+          insight_key: string
+          insight_title: string
+          net_score: number
+          up_count: number
+        }[]
+      }
       get_invite_source_backfill_runs: {
         Args: { p_limit?: number }
         Returns: {
