@@ -107,6 +107,18 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
   const [pos, setPos] = useState<{ x: number; y: number }>(() => loadPos(attemptId));
   const dragRef = useRef<{ ox: number; oy: number } | null>(null);
   const [active, setActive] = useState(true);
+  const [snapEnabled, setSnapEnabled] = useState<boolean>(() => loadSnapPref());
+  const [snapping, setSnapping] = useState(false);
+
+  // Persist snap preference
+  useEffect(() => {
+    try {
+      localStorage.setItem(SNAP_PREF_KEY, snapEnabled ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [snapEnabled]);
+
 
 
   // Load persisted position when the attempt changes
