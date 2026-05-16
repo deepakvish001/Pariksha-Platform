@@ -357,8 +357,29 @@ export default function Player() {
     visited: visited.has(qq.id),
   }));
 
+  // Group palette chips by section (preserving global order)
+  const paletteSections = (() => {
+    if (!paper) return undefined;
+    const out: { title: string; indices: number[] }[] = [];
+    let offset = 0;
+    for (const s of paper.sections) {
+      const count = s.questions.length;
+      if (count === 0) continue;
+      out.push({
+        title: s.title ?? "",
+        indices: Array.from({ length: count }, (_, i) => offset + i),
+      });
+      offset += count;
+    }
+    return out.length > 1 ? out : undefined;
+  })();
+
+  const totalDurationMs = paper.assessment.duration_min * 60_000;
+  const goNext = () => setIdx((i) => Math.min(totalQ - 1, i + 1));
+  const flagAndNext = () => { toggleFlag(); goNext(); };
+
   return (
-    <div className="theme-b2b min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-muted/20">
+    <div className="theme-b2b min-h-screen flex flex-col bg-background">
       <PlayerTopBar
         title={paper.assessment.title}
         answered={answeredCount}
@@ -366,61 +387,82 @@ export default function Player() {
         total={totalQ}
         remainingMs={remaining}
         deadlineMs={deadline}
+        totalDurationMs={totalDurationMs}
         proctoring={proctoringEnabled}
         isPreview={isPreview}
         submitting={submitAttempt.isPending}
+        online={online}
+        focusMode={focusMode}
+        zenTimer={zenTimer}
         onSubmit={() => setConfirmOpen(true)}
         onFullscreen={requestFullscreen}
         onPrefillKey={prefillAnswerKey}
+        onToggleFocus={() => setFocusMode((v) => !v)}
+        onToggleZen={() => setZenTimer((v) => !v)}
+        onOpenHelp={() => setHelpOpen(true)}
       />
 
       <main
         className={cn(
           "flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4",
-          isWideQuestion ? "max-w-[1600px] lg:grid-cols-[240px_1fr]" : "max-w-6xl lg:grid-cols-[240px_1fr]"
+          focusMode
+            ? "max-w-[1600px]"
+            : isWideQuestion
+            ? "max-w-[1600px] lg:grid-cols-[240px_1fr]"
+            : "max-w-5xl lg:grid-cols-[240px_1fr]"
         )}
       >
         {/* Mobile palette trigger */}
-        <div className="lg:hidden">
-          <Sheet open={paletteOpen} onOpenChange={setPaletteOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="w-full justify-between h-10">
-                <span className="flex items-center gap-2">
-                  <LayoutGrid className="h-4 w-4" />
-                  Question {idx + 1} of {totalQ}
-                </span>
-                <span className="text-xs text-muted-foreground tabular-nums">{answeredCount}/{totalQ} done</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[340px] p-4">
-              <SheetHeader>
-                <SheetTitle>Navigation</SheetTitle>
-              </SheetHeader>
-              <div className="mt-4">
-                <QuestionPalette
-                  items={paletteItems}
-                  currentIndex={idx}
-                  onJump={(i) => { setIdx(i); setPaletteOpen(false); }}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-
-        <aside className="hidden lg:block">
-          <div className="sticky top-[5rem]">
-            <QuestionPalette items={paletteItems} currentIndex={idx} onJump={setIdx} />
+        {!focusMode && (
+          <div className="lg:hidden">
+            <Sheet open={paletteOpen} onOpenChange={setPaletteOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full justify-between h-10">
+                  <span className="flex items-center gap-2">
+                    <LayoutGrid className="h-4 w-4" />
+                    Question {idx + 1} of {totalQ}
+                  </span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{answeredCount}/{totalQ} done</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[340px] p-4">
+                <SheetHeader>
+                  <SheetTitle>Navigation</SheetTitle>
+                </SheetHeader>
+                <div className="mt-4">
+                  <QuestionPalette
+                    items={paletteItems}
+                    currentIndex={idx}
+                    sections={paletteSections}
+                    onJump={(i) => { setIdx(i); setPaletteOpen(false); }}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
-        </aside>
+        )}
 
-        <section className="min-w-0">
+        {!focusMode && (
+          <aside className="hidden lg:block">
+            <div className="sticky top-[5rem]">
+              <QuestionPalette
+                items={paletteItems}
+                currentIndex={idx}
+                sections={paletteSections}
+                onJump={setIdx}
+              />
+            </div>
+          </aside>
+        )}
+
+        <section className={cn("min-w-0", !isWideQuestion && !focusMode && "mx-auto w-full max-w-3xl")}>
           <AnimatePresence mode="wait">
             <motion.div
               key={q?.id ?? "empty"}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
             >
               {q ? (
                 isWideQuestion ? (
@@ -463,11 +505,16 @@ export default function Player() {
         isFlagged={isFlagged}
         saving={saveAnswer.isPending}
         lastSavedAt={lastSavedAt}
+        online={online}
+        pendingCount={pendingCount}
         onPrev={() => setIdx((i) => Math.max(0, i - 1))}
-        onNext={() => setIdx((i) => Math.min(totalQ - 1, i + 1))}
+        onNext={goNext}
         onToggleFlag={toggleFlag}
+        onFlagAndNext={flagAndNext}
         onReviewSubmit={() => setConfirmOpen(true)}
       />
+
+      <PlayerHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="max-w-md">
