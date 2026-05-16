@@ -138,6 +138,26 @@ export default function Player() {
     [attemptId, answers, saveAnswer, submitAttempt]
   );
 
+  // Auto-submit hooks (proctoring + timer share the same doSubmit)
+  const doSubmitRef = useRef(doSubmit);
+  useEffect(() => { doSubmitRef.current = doSubmit; }, [doSubmit]);
+
+  const { requestFullscreen, violations, maxViolations, fullscreenLost } = useProctoring(
+    attemptId,
+    proctoringEnabled && lockdownReady,
+    {
+      onAutoSubmit: () => {
+        if (!submittedRef.current) {
+          submittedRef.current = true;
+          doSubmitRef.current(true);
+        }
+      },
+      onStrike: (total, kind) => {
+        toast.warning(`Violation ${total}/${maxViolationsConst}: ${kind.replace(/_/g, " ")}`);
+      },
+    }
+  );
+
   useEffect(() => {
     if (deadline && remaining === 0 && !submittedRef.current && paper && paper.attempt.status === "in_progress") {
       submittedRef.current = true;
