@@ -607,11 +607,26 @@ export default function ParikshaaProctoring() {
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{r.snapshot_count}</TableCell>
                       <TableCell className="font-mono text-xs">{r.last_snapshot_at ? fmtTs(r.last_snapshot_at) : "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          aria-label="Open attempt details"
+                          title="Open attempt details"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDetailId(r.id);
+                          }}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                     {open && (
                       <TableRow className="bg-muted/20 hover:bg-muted/20">
                         <TableCell />
-                        <TableCell colSpan={8} className="py-3">
+                        <TableCell colSpan={9} className="py-3">
                           {events === "loading" ? (
                             <div className="text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin inline mr-1" /> Loading events…</div>
                           ) : (
