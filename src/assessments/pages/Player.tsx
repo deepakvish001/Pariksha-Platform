@@ -298,7 +298,7 @@ export default function Player() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, totalQ, answers, toggleFlag]);
+  }, [q, totalQ, answers, toggleFlag, focusMode, flushPending]);
 
   if (isLoading) return null;
   if (error)
