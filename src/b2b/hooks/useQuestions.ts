@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type QuestionType = "coding" | "mcq" | "sql" | "subjective";
+export type QuestionType = "coding" | "mcq" | "sql" | "subjective" | "true_false" | "matching" | "short_answer";
 
 export type Question = {
   id: string;
@@ -73,6 +73,7 @@ export function useCreateQuestion() {
       language?: string;
       starter_code?: string;
       points?: number;
+      meta?: Record<string, unknown>;
     }) => {
       const { data, error } = await supabase
         .from("questions")
@@ -84,6 +85,7 @@ export function useCreateQuestion() {
           language: input.language ?? null,
           starter_code: input.starter_code ?? null,
           points: input.points ?? 10,
+          meta: (input.meta ?? {}) as never,
         })
         .select("*")
         .single();

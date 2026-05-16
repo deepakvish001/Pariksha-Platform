@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   useQuestions,
   useCreateQuestion,
+  useUpdateQuestion,
   useDeleteQuestion,
   useMcqOptions,
   useUpsertMcqOption,
@@ -15,6 +16,7 @@ import {
   useDeleteTestCase,
   type QuestionType,
   type Question,
+  type McqOption,
 } from "../hooks/useQuestions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +48,9 @@ const TYPES: { value: QuestionType; label: string }[] = [
   { value: "mcq", label: "MCQ" },
   { value: "sql", label: "SQL" },
   { value: "subjective", label: "Subjective" },
+  { value: "true_false", label: "True/False" },
+  { value: "matching", label: "Matching" },
+  { value: "short_answer", label: "Short answer" },
 ];
 
 const FILTERS: { value: "all" | QuestionType; label: string }[] = [
@@ -296,6 +301,7 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
   const [points, setPoints] = useState(10);
   const [language, setLanguage] = useState("");
   const create = useCreateQuestion();
+  const upsertOption = useUpsertMcqOption();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -340,6 +346,15 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
               </div>
             )}
           </div>
+          {type === "true_false" && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Two options (True / False) will be created. Choose the correct one from the editor.</p>
+          )}
+          {type === "matching" && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Add Left → Right pairs from the editor after creating.</p>
+          )}
+          {type === "short_answer" && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Add accepted answer variants from the editor after creating.</p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
@@ -347,14 +362,23 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
             className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
             disabled={!title.trim() || create.isPending}
             onClick={async () => {
-              await create.mutateAsync({
+              const meta: Record<string, unknown> =
+                type === "matching" ? { pairs: [] } :
+                type === "short_answer" ? { accepted: [], case_sensitive: false, max_length: 200 } :
+                type === "true_false" ? { correct: true } : {};
+              const q = await create.mutateAsync({
                 org_id: orgId,
                 type,
                 title: title.trim(),
                 body_md: body || undefined,
                 points,
                 language: language || undefined,
+                meta,
               });
+              if (type === "true_false") {
+                await upsertOption.mutateAsync({ question_id: q.id, body: "True", is_correct: true, order_index: 0 });
+                await upsertOption.mutateAsync({ question_id: q.id, body: "False", is_correct: false, order_index: 1 });
+              }
               toast.success("Question created");
               setOpen(false);
               setTitle(""); setBody(""); setLanguage(""); setPoints(10);
@@ -369,14 +393,18 @@ function NewQuestionDialog({ orgId }: { orgId: string }) {
 }
 
 function QuestionEditorDialog({ question, onClose }: { question: Question; onClose: () => void }) {
+  const { data: options } = useMcqOptions(
+    question.type === "true_false" || question.type === "mcq" ? question.id : undefined,
+  );
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Badge variant="outline">{question.type}</Badge>
             {question.title}
           </DialogTitle>
+          <DialogDescription>Edit the answer key below. Changes are saved automatically.</DialogDescription>
         </DialogHeader>
         {question.body_md && (
           <div className="text-sm text-[hsl(var(--muted-foreground))] whitespace-pre-wrap border rounded-md p-3 bg-[hsl(var(--secondary))]">
@@ -384,12 +412,23 @@ function QuestionEditorDialog({ question, onClose }: { question: Question; onClo
           </div>
         )}
         {question.type === "mcq" && <McqEditor questionId={question.id} />}
+        {question.type === "true_false" && <TrueFalseEditor question={question} />}
+        {question.type === "matching" && <MatchingEditor question={question} />}
+        {question.type === "short_answer" && <ShortAnswerEditor question={question} />}
         {(question.type === "coding" || question.type === "sql") && <TestCaseEditor questionId={question.id} />}
         {question.type === "subjective" && (
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             Subjective answers are graded manually from the results dashboard.
           </p>
         )}
+
+        <div className="border-t pt-4 mt-2">
+          <h4 className="text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-2">Candidate preview</h4>
+          <div className="border rounded-md p-3 bg-[hsl(var(--background))]">
+            <CandidatePreview question={question} options={options ?? []} />
+          </div>
+        </div>
+
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Close</Button>
         </DialogFooter>
@@ -658,5 +697,227 @@ function AIGenerateDialog({ orgId }: { orgId: string }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ───────── True/False editor ─────────
+function TrueFalseEditor({ question }: { question: Question }) {
+  const { data: options } = useMcqOptions(question.id);
+  const upsertOption = useUpsertMcqOption();
+  const update = useUpdateQuestion();
+  const metaCorrect = (question.meta as { correct?: boolean } | null)?.correct;
+  const current = typeof metaCorrect === "boolean"
+    ? metaCorrect
+    : (options ?? []).find((o) => o.is_correct)?.body?.toLowerCase() === "true";
+
+  const setCorrect = async (val: boolean) => {
+    await update.mutateAsync({ id: question.id, patch: { meta: { ...(question.meta ?? {}), correct: val } } });
+    // Sync mcq_options flags
+    for (const o of options ?? []) {
+      const shouldBe = o.body.trim().toLowerCase() === (val ? "true" : "false");
+      if (o.is_correct !== shouldBe) {
+        await upsertOption.mutateAsync({ id: o.id, question_id: question.id, body: o.body, is_correct: shouldBe, order_index: o.order_index });
+      }
+    }
+    toast.success(`Correct answer: ${val ? "True" : "False"}`);
+  };
+
+  return (
+    <div className="space-y-3">
+      <h4 className="text-sm font-medium">Correct answer</h4>
+      <div className="flex gap-2">
+        {[
+          { v: true, label: "True" },
+          { v: false, label: "False" },
+        ].map(({ v, label }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => setCorrect(v)}
+            className={`flex-1 px-3 py-2 rounded-md border text-sm font-medium transition ${
+              current === v
+                ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]"
+                : "border-[hsl(var(--border))] hover:bg-[hsl(var(--secondary))]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ───────── Matching editor ─────────
+type MatchPair = { left: string; right: string };
+function MatchingEditor({ question }: { question: Question }) {
+  const update = useUpdateQuestion();
+  const initial = ((question.meta as { pairs?: MatchPair[] } | null)?.pairs ?? []).map((p) => ({ ...p }));
+  const [pairs, setPairs] = useState<MatchPair[]>(initial.length ? initial : [{ left: "", right: "" }]);
+  const [dirty, setDirty] = useState(false);
+
+  const updatePair = (idx: number, patch: Partial<MatchPair>) => {
+    setPairs((arr) => arr.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
+    setDirty(true);
+  };
+  const addPair = () => { setPairs((a) => [...a, { left: "", right: "" }]); setDirty(true); };
+  const removePair = (idx: number) => { setPairs((a) => a.filter((_, i) => i !== idx)); setDirty(true); };
+
+  const save = async () => {
+    const clean = pairs
+      .map((p) => ({ left: p.left.trim(), right: p.right.trim() }))
+      .filter((p) => p.left && p.right);
+    await update.mutateAsync({ id: question.id, patch: { meta: { ...(question.meta ?? {}), pairs: clean } } });
+    setPairs(clean.length ? clean : [{ left: "", right: "" }]);
+    setDirty(false);
+    toast.success(`Saved ${clean.length} pair${clean.length === 1 ? "" : "s"}`);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-medium">Pairs</h4>
+        <Button variant="outline" size="sm" onClick={addPair}><Plus className="h-4 w-4 mr-1" />Add pair</Button>
+      </div>
+      <div className="space-y-2">
+        {pairs.map((p, i) => (
+          <div key={i} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2">
+            <Input value={p.left} onChange={(e) => updatePair(i, { left: e.target.value })} placeholder="Left item" maxLength={120} />
+            <span className="text-[hsl(var(--muted-foreground))]">→</span>
+            <Input value={p.right} onChange={(e) => updatePair(i, { right: e.target.value })} placeholder="Match (right)" maxLength={120} />
+            <Button variant="ghost" size="sm" onClick={() => removePair(i)}><Trash2 className="h-4 w-4" /></Button>
+          </div>
+        ))}
+      </div>
+      <Button onClick={save} disabled={!dirty || update.isPending} className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+        {update.isPending ? "Saving…" : "Save pairs"}
+      </Button>
+    </div>
+  );
+}
+
+// ───────── Short answer editor ─────────
+function ShortAnswerEditor({ question }: { question: Question }) {
+  const update = useUpdateQuestion();
+  const meta = (question.meta as { accepted?: string[]; case_sensitive?: boolean; max_length?: number } | null) ?? {};
+  const [accepted, setAccepted] = useState<string[]>(meta.accepted ?? []);
+  const [caseSensitive, setCaseSensitive] = useState<boolean>(!!meta.case_sensitive);
+  const [maxLength, setMaxLength] = useState<number>(meta.max_length ?? 200);
+  const [newVariant, setNewVariant] = useState("");
+  const [dirty, setDirty] = useState(false);
+
+  const addVariant = () => {
+    const v = newVariant.trim();
+    if (!v) return;
+    if (accepted.includes(v)) { toast.info("Already in the accepted list"); return; }
+    setAccepted((a) => [...a, v]);
+    setNewVariant("");
+    setDirty(true);
+  };
+  const removeVariant = (i: number) => { setAccepted((a) => a.filter((_, idx) => idx !== i)); setDirty(true); };
+
+  const save = async () => {
+    await update.mutateAsync({
+      id: question.id,
+      patch: { meta: { ...(question.meta ?? {}), accepted, case_sensitive: caseSensitive, max_length: Math.max(1, Math.min(1000, maxLength)) } },
+    });
+    setDirty(false);
+    toast.success("Short answer saved");
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <h4 className="text-sm font-medium">Accepted answers</h4>
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">Any exact match (after trim & case rule) earns full points.</p>
+      </div>
+      <div className="space-y-2">
+        {accepted.length === 0 && (
+          <p className="text-xs text-[hsl(var(--muted-foreground))] italic">No accepted answers yet — add at least one.</p>
+        )}
+        {accepted.map((a, i) => (
+          <div key={i} className="flex items-center gap-2 border rounded-md px-3 py-2">
+            <span className="flex-1 text-sm font-mono">{a}</span>
+            <Button variant="ghost" size="sm" onClick={() => removeVariant(i)}><Trash2 className="h-4 w-4" /></Button>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <Input value={newVariant} onChange={(e) => setNewVariant(e.target.value)} placeholder="Add variant…" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addVariant(); } }} />
+        <Button variant="outline" onClick={addVariant} disabled={!newVariant.trim()}><Plus className="h-4 w-4" /></Button>
+      </div>
+      <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox checked={caseSensitive} onCheckedChange={(v) => { setCaseSensitive(!!v); setDirty(true); }} />
+          Case sensitive
+        </label>
+        <div className="flex items-center gap-2 text-sm">
+          <Label className="text-xs">Max length</Label>
+          <Input
+            type="number"
+            min={1}
+            max={1000}
+            value={maxLength}
+            onChange={(e) => { setMaxLength(Number(e.target.value) || 1); setDirty(true); }}
+            className="h-8 w-24"
+          />
+        </div>
+      </div>
+      <Button onClick={save} disabled={!dirty || update.isPending} className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+        {update.isPending ? "Saving…" : "Save"}
+      </Button>
+    </div>
+  );
+}
+
+// ───────── Candidate preview (read-only render of what learners see) ─────────
+function CandidatePreview({ question, options }: { question: Question; options: McqOption[] }) {
+  if (question.type === "mcq" || question.type === "true_false") {
+    return (
+      <div className="space-y-1.5">
+        {options.length === 0 && <p className="text-xs text-[hsl(var(--muted-foreground))]">Add options to preview.</p>}
+        {options.map((o) => (
+          <div key={o.id} className={`text-sm px-3 py-2 rounded border ${o.is_correct ? "border-emerald-500/60 bg-emerald-500/10" : "border-[hsl(var(--border))]"}`}>
+            {o.body}{o.is_correct && <span className="ml-2 text-xs text-emerald-700 dark:text-emerald-300">✓ correct</span>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (question.type === "short_answer") {
+    const m = (question.meta as { accepted?: string[]; max_length?: number } | null) ?? {};
+    return (
+      <div className="space-y-2">
+        <Input disabled placeholder="Candidate types here…" maxLength={m.max_length ?? 200} />
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">Accepts: {(m.accepted ?? []).join(", ") || "—"}</p>
+      </div>
+    );
+  }
+  if (question.type === "matching") {
+    const pairs = ((question.meta as { pairs?: MatchPair[] } | null)?.pairs ?? []);
+    const rights = [...new Set(pairs.map((p) => p.right))];
+    if (!pairs.length) return <p className="text-xs text-[hsl(var(--muted-foreground))]">Add pairs to preview.</p>;
+    return (
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          {pairs.map((p) => (
+            <div key={`l-${p.left}`} className="text-sm px-3 py-2 rounded border bg-[hsl(var(--secondary))]">{p.left}</div>
+          ))}
+        </div>
+        <div className="space-y-1.5">
+          {rights.map((r) => (
+            <div key={`r-${r}`} className="text-sm px-3 py-2 rounded border bg-[hsl(var(--secondary))]">{r}</div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (question.type === "subjective") {
+    return <Textarea disabled placeholder="Candidate writes their answer here…" className="min-h-[80px]" />;
+  }
+  return (
+    <pre className="text-xs whitespace-pre-wrap text-[hsl(var(--muted-foreground))]">
+      {question.starter_code ?? `// ${question.type} preview not available here — use Take preview from the assessment page.`}
+    </pre>
   );
 }
