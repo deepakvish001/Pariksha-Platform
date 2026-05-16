@@ -109,7 +109,6 @@ export default function Player() {
   }, [remaining, deadline, paper, doSubmit]);
 
   // Debounced autosave
-  const debounceRef = useRef<Record<string, number>>({});
   const queueSave = (qid: string, ans: Record<string, unknown>) => {
     if (!attemptId) return;
     window.clearTimeout(debounceRef.current[qid]);
