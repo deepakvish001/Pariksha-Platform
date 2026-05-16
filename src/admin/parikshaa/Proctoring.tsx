@@ -1313,7 +1313,7 @@ function RetentionCard() {
           </div>
         )}
       </div>
-      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto] items-end">
+      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto_auto] items-end">
         <div className="space-y-1">
           <Label className="text-xs">Webcam snapshots — keep for (days)</Label>
           <Input
