@@ -182,6 +182,42 @@ function useSubmissionsSeries(orgId?: string, days = 30) {
   return data;
 }
 
+type ChannelCount = { source: string; count: number };
+
+function useInviteChannelCounts(orgId?: string) {
+  const [data, setData] = useState<ChannelCount[]>([]);
+  useEffect(() => {
+    if (!orgId) {
+      setData([]);
+      return;
+    }
+    (async () => {
+      const { data: aRows } = await supabase
+        .from("assessments")
+        .select("id")
+        .eq("org_id", orgId);
+      const ids = (aRows ?? []).map((r: any) => r.id);
+      if (!ids.length) {
+        setData([]);
+        return;
+      }
+      const { data: rows } = await supabase
+        .from("assessment_invites")
+        .select("source")
+        .in("assessment_id", ids);
+      const counts = new Map<string, number>();
+      (rows ?? []).forEach((r: any) => {
+        const k = r.source ?? "manual";
+        counts.set(k, (counts.get(k) ?? 0) + 1);
+      });
+      setData(
+        Array.from(counts.entries()).map(([source, count]) => ({ source, count })),
+      );
+    })();
+  }, [orgId]);
+  return data;
+}
+
 export default function B2BDashboard() {
   const { org, isLoading } = useCurrentOrg();
   const base = useOrgBasePath();
@@ -201,6 +237,7 @@ export default function B2BDashboard() {
   const { data: stats } = useDashboardStats(org?.id);
   const { data: assessments } = useAssessments(org?.id);
   const series = useSubmissionsSeries(org?.id, 30);
+  const channelCounts = useInviteChannelCounts(org?.id);
 
   const totalSubmissions = useMemo(
     () => series.reduce((s, p) => s + p.submissions, 0),
@@ -255,16 +292,26 @@ export default function B2BDashboard() {
 
   if (!org) return <Navigate to="/b2b/onboarding" replace />;
 
-  // Synthetic channel mix derived from invite totals (keeps the card alive
-  // even before per-channel tracking is wired).
-  const invites = stats?.invites ?? 0;
-  const channelData = [
-    { label: "Email Invites", icon: Mail, color: "hsl(var(--primary))", pct: 42 },
-    { label: "Shareable Link", icon: Link2, color: "#3b82f6", pct: 26 },
-    { label: "Bulk Upload", icon: Upload, color: "#f97316", pct: 16 },
-    { label: "Manual Add", icon: UserPlus, color: "#a855f7", pct: 10 },
-    { label: "API / SSO", icon: Webhook, color: "#22d3ee", pct: 6 },
-  ].map((c) => ({ ...c, value: Math.round((invites * c.pct) / 100) }));
+  // Real per-source invite counts (assessment_invites.source).
+  const CHANNEL_DEFS: {
+    source: string;
+    label: string;
+    icon: LucideIcon;
+    color: string;
+  }[] = [
+    { source: "email", label: "Email Invites", icon: Mail, color: "hsl(var(--primary))" },
+    { source: "link", label: "Shareable Link", icon: Link2, color: "#3b82f6" },
+    { source: "bulk_upload", label: "Bulk Upload", icon: Upload, color: "#f97316" },
+    { source: "manual", label: "Manual Add", icon: UserPlus, color: "#a855f7" },
+    { source: "api", label: "API / SSO", icon: Webhook, color: "#22d3ee" },
+  ];
+  const countBySource = new Map(channelCounts.map((c) => [c.source, c.count]));
+  const channelTotal = channelCounts.reduce((s, c) => s + c.count, 0);
+  const channelData = CHANNEL_DEFS.map((c) => {
+    const value = countBySource.get(c.source) ?? 0;
+    const pct = channelTotal ? Math.round((value / channelTotal) * 100) : 0;
+    return { ...c, value, pct };
+  });
 
   const recent = (assessments ?? []).slice(0, 5);
   const insights = [
@@ -407,16 +454,23 @@ export default function B2BDashboard() {
         </div>
 
         <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-2">
             <h2 className="text-base font-semibold">Top Invite Channels</h2>
+            <Badge variant="secondary" className="font-medium">
+              {channelTotal} invites
+            </Badge>
           </div>
           <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-            How candidates are reaching you
+            Real source mix across all assessments
           </p>
           <div className="mt-5 space-y-4">
-            {channelData.map((c) => (
-              <ChannelRow key={c.label} {...c} />
-            ))}
+            {channelTotal === 0 ? (
+              <p className="text-xs text-[hsl(var(--muted-foreground))] py-6 text-center">
+                No invites sent yet. Add candidates to see your channel mix.
+              </p>
+            ) : (
+              channelData.map((c) => <ChannelRow key={c.source} {...c} />)
+            )}
           </div>
         </div>
       </div>
