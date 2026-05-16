@@ -545,7 +545,7 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
                 </button>
                 <button
                   type="button"
-                  onClick={resetPos}
+                  onClick={() => setConfirmReset(true)}
                   onPointerDown={(e) => e.stopPropagation()}
                   title="Reset webcam position"
                   aria-label="Reset webcam position"
