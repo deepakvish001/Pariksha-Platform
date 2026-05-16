@@ -357,40 +357,49 @@ export default function B2BDashboard() {
       }
     >
       {/* KPI tiles */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          label="Assessments"
-          value={stats?.assessments ?? 0}
-          icon={FileText}
-          delta={{ value: 12, positive: true }}
-          hint="vs last 30d"
-        />
-        <KpiCard
-          label="Candidates Invited"
-          value={stats?.invites ?? 0}
-          icon={Users}
-          delta={{ value: 8, positive: true }}
-          hint="vs last 30d"
-        />
-        <KpiCard
-          label="Submissions"
-          value={stats?.submissions ?? 0}
-          icon={CheckCircle2}
-          delta={{ value: 5, positive: true }}
-          hint="vs last 30d"
-        />
-        <KpiCard
-          label="Avg Integrity"
-          value={stats?.avgIntegrity != null ? `${stats.avgIntegrity}%` : "—"}
-          icon={ShieldCheck}
-          delta={
-            stats?.avgIntegrity != null
-              ? { value: 0.6, positive: false }
-              : undefined
-          }
-          hint="across submissions"
-        />
-      </div>
+      {(() => {
+        const d = stats?.deltas;
+        const toDelta = (v: number | null | undefined, unit: "%" | "pts") =>
+          v == null
+            ? undefined
+            : { value: Math.abs(v), positive: v >= 0, unit };
+        // We pass the unit as part of the hint string since KpiCard only renders value%.
+        // Quick patch: append unit-aware hint, keep KpiCard contract.
+        return (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard
+              label="Assessments"
+              value={stats?.assessments ?? 0}
+              icon={FileText}
+              delta={toDelta(d?.assessments, "%")}
+              hint="vs prev 30d"
+            />
+            <KpiCard
+              label="Candidates Invited"
+              value={stats?.invites ?? 0}
+              icon={Users}
+              delta={toDelta(d?.invites, "%")}
+              hint="vs prev 30d"
+            />
+            <KpiCard
+              label="Submissions"
+              value={stats?.submissions ?? 0}
+              icon={CheckCircle2}
+              delta={toDelta(d?.submissions, "%")}
+              hint="vs prev 30d"
+            />
+            <KpiCard
+              label="Avg Integrity"
+              value={
+                stats?.avgIntegrity != null ? `${stats.avgIntegrity}%` : "—"
+              }
+              icon={ShieldCheck}
+              delta={toDelta(d?.avgIntegrity, "pts")}
+              hint="vs prev 30d"
+            />
+          </div>
+        );
+      })()}
 
       {/* Chart + Top Channels */}
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
