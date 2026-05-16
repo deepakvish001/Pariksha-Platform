@@ -1210,6 +1210,7 @@ function RetentionCard() {
   const [saving, setSaving] = useState(false);
   const [purging, setPurging] = useState(false);
   const [lastResult, setLastResult] = useState<{ snapshots_deleted: number; events_deleted: number } | null>(null);
+  const [historyKey, setHistoryKey] = useState(0);
 
   useEffect(() => {
     (async () => {
