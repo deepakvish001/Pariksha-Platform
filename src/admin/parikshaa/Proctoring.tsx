@@ -1191,6 +1191,7 @@ function SnapshotLightbox({
   const path = event ? snapshotPath(event) : null;
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dl, setDl] = useState<{ format: "jpg" | "png"; pct: number } | null>(null);
 
   useEffect(() => {
     if (!open || !path) {
