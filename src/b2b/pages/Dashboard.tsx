@@ -64,17 +64,20 @@ function KpiCard({
   icon: Icon,
   delta,
   hint,
+  windowDays = 30,
 }: {
   label: string;
   value: string | number;
   icon: LucideIcon;
   delta?: Delta;
   hint?: string;
+  windowDays?: number;
 }) {
   const unitLabel = delta?.unit === "pts" ? "percentage points" : "percent";
+  const prevRangeLabel = `days ${windowDays + 1}–${windowDays * 2}`;
   const tooltipBody = delta
-    ? `Change vs the previous 30-day window. ${delta.positive ? "Up" : "Down"} ${delta.value} ${unitLabel} compared to days 31–60.`
-    : `No baseline: there was no activity in the previous 30-day window (days 31–60), so a % change can't be computed yet.`;
+    ? `Change vs the previous ${windowDays}-day window. ${delta.positive ? "Up" : "Down"} ${delta.value} ${unitLabel} compared to ${prevRangeLabel}.`
+    : `No baseline: there was no activity in the previous ${windowDays}-day window (${prevRangeLabel}), so a % change can't be computed yet.`;
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5 transition-all hover:border-[hsl(var(--primary))]/40 hover:shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.35)]">
@@ -99,8 +102,8 @@ function KpiCard({
                 <TooltipContent side="top" className="max-w-[240px] text-xs leading-relaxed">
                   <p className="font-medium mb-1">How this is calculated</p>
                   <p className="text-[hsl(var(--muted-foreground))]">
-                    Current window: the last 30 days. Previous window: the 30 days
-                    before that (days 31–60). Delta ={" "}
+                    Current window: the last {windowDays} days. Previous window: the {windowDays} days
+                    before that ({prevRangeLabel}). Delta ={" "}
                     <span className="font-mono">(current − previous) ÷ previous × 100</span>.
                   </p>
                   <p className="mt-1.5">{tooltipBody}</p>
@@ -353,7 +356,8 @@ export default function B2BDashboard() {
     navigate(target, { replace: true });
   }, [org, isLoading, navigate, base]);
 
-  const { data: stats } = useDashboardStats(org?.id);
+  const [statsRange, setStatsRange] = useState<"7d" | "30d" | "90d">("30d");
+  const { data: stats } = useDashboardStats(org?.id, statsRange);
   const { data: assessments } = useAssessments(org?.id);
   const series = useSubmissionsSeries(org?.id, 30);
   const [channelRange, setChannelRange] = useState<ChannelRange>("30d");
@@ -468,40 +472,72 @@ export default function B2BDashboard() {
           v == null
             ? undefined
             : { value: Math.abs(v), positive: v >= 0, unit };
-        // We pass the unit as part of the hint string since KpiCard only renders value%.
-        // Quick patch: append unit-aware hint, keep KpiCard contract.
+        const windowDays = statsRange === "7d" ? 7 : statsRange === "90d" ? 90 : 30;
+        const hint = `vs prev ${windowDays}d`;
         return (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard
-              label="Assessments"
-              value={stats?.assessments ?? 0}
-              icon={FileText}
-              delta={toDelta(d?.assessments, "%")}
-              hint="vs prev 30d"
-            />
-            <KpiCard
-              label="Candidates Invited"
-              value={stats?.invites ?? 0}
-              icon={Users}
-              delta={toDelta(d?.invites, "%")}
-              hint="vs prev 30d"
-            />
-            <KpiCard
-              label="Submissions"
-              value={stats?.submissions ?? 0}
-              icon={CheckCircle2}
-              delta={toDelta(d?.submissions, "%")}
-              hint="vs prev 30d"
-            />
-            <KpiCard
-              label="Avg Integrity"
-              value={
-                stats?.avgIntegrity != null ? `${stats.avgIntegrity}%` : "—"
-              }
-              icon={ShieldCheck}
-              delta={toDelta(d?.avgIntegrity, "pts")}
-              hint="vs prev 30d"
-            />
+          <div>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                Key metrics
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                  Compare
+                </span>
+                <Select
+                  value={statsRange}
+                  onValueChange={(v) => setStatsRange(v as "7d" | "30d" | "90d")}
+                >
+                  <SelectTrigger
+                    aria-label="KPI comparison window"
+                    className="h-8 w-[140px] text-xs"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7d">Last 7 days</SelectItem>
+                    <SelectItem value="30d">Last 30 days</SelectItem>
+                    <SelectItem value="90d">Last 90 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <KpiCard
+                label="Assessments"
+                value={stats?.assessments ?? 0}
+                icon={FileText}
+                delta={toDelta(d?.assessments, "%")}
+                hint={hint}
+                windowDays={windowDays}
+              />
+              <KpiCard
+                label="Candidates Invited"
+                value={stats?.invites ?? 0}
+                icon={Users}
+                delta={toDelta(d?.invites, "%")}
+                hint={hint}
+                windowDays={windowDays}
+              />
+              <KpiCard
+                label="Submissions"
+                value={stats?.submissions ?? 0}
+                icon={CheckCircle2}
+                delta={toDelta(d?.submissions, "%")}
+                hint={hint}
+                windowDays={windowDays}
+              />
+              <KpiCard
+                label="Avg Integrity"
+                value={
+                  stats?.avgIntegrity != null ? `${stats.avgIntegrity}%` : "—"
+                }
+                icon={ShieldCheck}
+                delta={toDelta(d?.avgIntegrity, "pts")}
+                hint={hint}
+                windowDays={windowDays}
+              />
+            </div>
           </div>
         );
       })()}
