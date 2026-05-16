@@ -298,6 +298,65 @@ function QuestionInput({
       />
     );
   }
+  if (question.type === "true_false") {
+    const selected = ((value?.selected as string[]) ?? [])[0] ?? "";
+    return (
+      <RadioGroup
+        value={selected}
+        onValueChange={(v) => onChange({ selected: [v] })}
+        className="space-y-2"
+      >
+        {(question.options ?? []).map((o) => (
+          <label
+            key={o.id}
+            htmlFor={`tf-${o.id}`}
+            className="flex items-center gap-3 p-3 border border-[hsl(var(--border))] rounded-md cursor-pointer hover:bg-[hsl(var(--muted))]"
+          >
+            <RadioGroupItem id={`tf-${o.id}`} value={o.id} />
+            <span className="text-sm">{o.body}</span>
+          </label>
+        ))}
+      </RadioGroup>
+    );
+  }
+  if (question.type === "short_answer") {
+    const maxLen = Number((question.meta as Record<string, unknown> | null)?.max_length) || 200;
+    return (
+      <Input
+        maxLength={maxLen}
+        placeholder="Type your answer…"
+        value={(value?.text as string) ?? ""}
+        onChange={(e) => onChange({ text: e.target.value })}
+      />
+    );
+  }
+  if (question.type === "matching") {
+    const meta = (question.meta as { pairs?: { left: string; right: string }[] } | null) ?? {};
+    const pairs = meta.pairs ?? [];
+    const current = (value?.pairs as Record<string, string>) ?? {};
+    const rights = Array.from(new Set(pairs.map((p) => p.right)));
+    return (
+      <div className="space-y-2">
+        {pairs.map((p) => (
+          <div key={p.left} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <div className="text-sm font-medium px-3 py-2 rounded-md bg-[hsl(var(--muted))]">{p.left}</div>
+            <span className="text-muted-foreground">→</span>
+            <Select
+              value={current[p.left] ?? ""}
+              onValueChange={(v) => onChange({ pairs: { ...current, [p.left]: v } })}
+            >
+              <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+              <SelectContent>
+                {rights.map((r) => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ))}
+      </div>
+    );
+  }
   if (question.type === "sql") {
     return (
       <div className="space-y-2">
