@@ -1084,28 +1084,47 @@ export default function B2BDashboard() {
                 </p>
               </div>
             </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-xs"
-              onClick={() => refreshInsights()}
-              disabled={insightsLoading || insightsCooldown > 0}
-              title={
-                insightsCooldown > 0
-                  ? `Please wait ${Math.ceil(insightsCooldown / 1000)}s before refreshing again`
-                  : "Refresh insights"
-              }
-              aria-label="Refresh AI insights"
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${insightsLoading ? "animate-spin" : ""}`}
-              />
-              {insightsCooldown > 0 && !insightsLoading && (
-                <span className="ml-1 tabular-nums text-[hsl(var(--muted-foreground))]">
-                  {Math.ceil(insightsCooldown / 1000)}s
-                </span>
-              )}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs"
+                onClick={() =>
+                  exportInsightsToPdf(
+                    org.name,
+                    insights,
+                    stats?.windows ?? null,
+                  )
+                }
+                disabled={insightsLoading || insights.length === 0}
+                title="Export AI insights as PDF"
+                aria-label="Export AI insights as PDF"
+              >
+                <Download className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs"
+                onClick={() => refreshInsights()}
+                disabled={insightsLoading || insightsCooldown > 0}
+                title={
+                  insightsCooldown > 0
+                    ? `Please wait ${Math.ceil(insightsCooldown / 1000)}s before refreshing again`
+                    : "Refresh insights"
+                }
+                aria-label="Refresh AI insights"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${insightsLoading ? "animate-spin" : ""}`}
+                />
+                {insightsCooldown > 0 && !insightsLoading && (
+                  <span className="ml-1 tabular-nums text-[hsl(var(--muted-foreground))]">
+                    {Math.ceil(insightsCooldown / 1000)}s
+                  </span>
+                )}
+              </Button>
+            </div>
           </div>
           <div className="mt-4 space-y-3">
             {insightsLoading && insights.length === 0 && (
