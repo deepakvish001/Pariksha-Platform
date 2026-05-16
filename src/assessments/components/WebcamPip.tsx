@@ -592,6 +592,30 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
         />
       )}
       <canvas ref={canvasRef} className="hidden" aria-hidden />
+
+      <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset webcam position?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This moves the webcam preview back to its default corner for this
+              attempt. Your saved position for this attempt will be cleared;
+              other attempts are not affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                resetPos();
+                setConfirmReset(false);
+              }}
+            >
+              Reset position
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
