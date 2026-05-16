@@ -41,11 +41,12 @@ export type AttemptDetail = {
     manual_score: number | null;
     question: {
       id: string;
-      type: "coding" | "mcq" | "sql" | "subjective";
+      type: "coding" | "mcq" | "sql" | "subjective" | "true_false" | "short_answer" | "matching";
       title: string;
       body_md: string | null;
       language: string | null;
       points: number;
+      meta: Record<string, unknown> | null;
       mcq_options?: { id: string; body: string; is_correct: boolean; order_index: number }[];
       question_test_cases?: { input: string; expected_output: string; is_hidden: boolean; order_index: number }[];
     };
@@ -68,7 +69,7 @@ export function useAttemptDetail(attemptId?: string) {
       const { data: answers, error: e2 } = await supabase
         .from("attempt_answers")
         .select(
-          "id, question_id, answer, auto_score, manual_score, question:questions(id,type,title,body_md,language,points, mcq_options(id,body,is_correct,order_index), question_test_cases(input,expected_output,is_hidden,order_index))"
+          "id, question_id, answer, auto_score, manual_score, question:questions(id,type,title,body_md,language,points,meta, mcq_options(id,body,is_correct,order_index), question_test_cases(input,expected_output,is_hidden,order_index))"
         )
         .eq("attempt_id", attemptId!);
       if (e2) throw e2;

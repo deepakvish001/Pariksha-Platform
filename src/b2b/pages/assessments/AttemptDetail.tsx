@@ -119,7 +119,7 @@ export default function AttemptDetail() {
                 {q.body_md && <p className="text-sm text-[hsl(var(--muted-foreground))] whitespace-pre-wrap">{q.body_md}</p>}
               </CardHeader>
               <CardContent className="space-y-3">
-                {q.type === "mcq" && (
+                {(q.type === "mcq" || q.type === "true_false") && (
                   <ul className="space-y-1.5">
                     {(q.mcq_options ?? []).sort((x, y) => x.order_index - y.order_index).map((o) => {
                       const wasSelected = selected.has(o.id);
@@ -143,6 +143,46 @@ export default function AttemptDetail() {
                     })}
                   </ul>
                 )}
+
+                {q.type === "short_answer" && (() => {
+                  const given = (a.answer?.text as string) ?? "";
+                  const meta = (q.meta as { accepted?: string[]; case_sensitive?: boolean } | null) ?? {};
+                  const accepted = meta.accepted ?? [];
+                  const cs = !!meta.case_sensitive;
+                  const norm = (s: string) => (cs ? s.trim() : s.trim().toLowerCase());
+                  const isCorrect = !!given && accepted.some((x) => norm(x) === norm(given));
+                  return (
+                    <div className="space-y-2">
+                      <div className={`px-3 py-2 rounded-md border text-sm flex items-center gap-2 ${isCorrect ? "border-green-500/40 bg-green-500/10" : given ? "border-red-500/40 bg-red-500/10" : "border-[hsl(var(--border))]"}`}>
+                        {isCorrect ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : given ? <XCircle className="h-4 w-4 text-red-600" /> : null}
+                        <span>{given || <em className="text-muted-foreground">No response</em>}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Accepted: {accepted.join(", ") || "—"}</p>
+                    </div>
+                  );
+                })()}
+
+                {q.type === "matching" && (() => {
+                  const meta = (q.meta as { pairs?: { left: string; right: string }[] } | null) ?? {};
+                  const pairs = meta.pairs ?? [];
+                  const given = (a.answer?.pairs as Record<string, string>) ?? {};
+                  return (
+                    <ul className="space-y-1.5">
+                      {pairs.map((p) => {
+                        const g = given[p.left] ?? "";
+                        const ok = g === p.right;
+                        return (
+                          <li key={p.left} className={`grid grid-cols-[1fr_auto_1fr_auto] items-center gap-3 px-3 py-2 rounded-md border text-sm ${ok ? "border-green-500/40 bg-green-500/10" : g ? "border-red-500/40 bg-red-500/10" : "border-[hsl(var(--border))]"}`}>
+                            <span className="font-medium">{p.left}</span>
+                            <span className="text-muted-foreground">→</span>
+                            <span>{g || <em className="text-muted-foreground">—</em>}</span>
+                            <span className="text-xs text-muted-foreground">expected: {p.right}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  );
+                })()}
 
                 {q.type === "subjective" && (
                   <pre className="p-3 rounded-md bg-[hsl(var(--muted))] text-sm whitespace-pre-wrap font-sans">

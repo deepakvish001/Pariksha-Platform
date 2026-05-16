@@ -8001,6 +8001,28 @@ export type Database = {
         Args: { _difficulty?: string; _duration_sec?: number; _mode: string }
         Returns: string
       }
+      start_preview_attempt: {
+        Args: { _assessment: string }
+        Returns: {
+          assessment_id: string
+          created_at: string
+          id: string
+          integrity_score: number
+          invite_id: string | null
+          score: number | null
+          started_at: string
+          status: Database["public"]["Enums"]["attempt_status"]
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assessment_attempts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       submit_attempt: {
         Args: { _attempt: string }
         Returns: {

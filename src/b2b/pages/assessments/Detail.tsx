@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon } from "lucide-react";
+import { Trash2, Plus, ArrowLeft, Send, Archive, Copy, Link as LinkIcon, Play } from "lucide-react";
 import { toast } from "sonner";
 import { useInvites, useCreateInvites, useDeleteInvite, buildJoinUrl } from "../../hooks/useInvites";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,6 +60,19 @@ export default function AssessmentDetail() {
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
           <Badge variant={isPublished ? "default" : "secondary"}>{assessment.status}</Badge>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              const { supabase } = await import("@/integrations/supabase/client");
+              const { data, error } = await supabase.rpc("start_preview_attempt", { _assessment: assessment.id });
+              if (error) { toast.error(error.message); return; }
+              const attempt: any = data;
+              navigate(`/assessments/${attempt.id}/play?preview=1`);
+            }}
+          >
+            <Play className="h-4 w-4 mr-1" /> Take preview
+          </Button>
           {!isPublished ? (
             <Button
               size="sm"

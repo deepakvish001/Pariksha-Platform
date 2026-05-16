@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -15,6 +18,8 @@ type AnswerMap = Record<string, Record<string, unknown>>;
 
 export default function Player() {
   const { attemptId } = useParams();
+  const [search] = useSearchParams();
+  const isPreview = search.get("preview") === "1";
   const navigate = useNavigate();
   const { data: paper, isLoading, error } = usePaper(attemptId);
   const { data: existing } = useExistingAnswers(attemptId);
@@ -102,7 +107,23 @@ export default function Player() {
   if (error) return <div className="theme-b2b p-8 min-h-screen">Failed to load: {(error as Error).message}</div>;
   if (!paper) return null;
 
+  const isAnswered = (qq: PaperQuestion, a: Record<string, unknown> | undefined): boolean => {
+    if (!a) return false;
+    if (qq.type === "mcq" || qq.type === "true_false")
+      return Array.isArray(a.selected) && (a.selected as string[]).length > 0;
+    if (qq.type === "subjective") return typeof a.text === "string" && (a.text as string).trim().length > 0;
+    if (qq.type === "short_answer") return typeof a.text === "string" && (a.text as string).trim().length > 0;
+    if (qq.type === "sql") return typeof a.query === "string" && (a.query as string).trim().length > 0;
+    if (qq.type === "coding") return typeof a.code === "string" && (a.code as string).trim().length > 0;
+    if (qq.type === "matching") {
+      const pairs = (a.pairs as Record<string, string>) ?? {};
+      return Object.values(pairs).some((v) => v && v.trim().length > 0);
+    }
+    return false;
+  };
+
   if (paper.attempt.status !== "in_progress" || submitted) {
+    const assessmentId = paper.assessment.id;
     return (
       <div className="theme-b2b min-h-screen grid place-items-center p-8 bg-[hsl(var(--background))]">
         <Card className="max-w-md w-full">
@@ -110,11 +131,20 @@ export default function Player() {
             <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-green-600" /> Submitted</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Your responses have been recorded. The recruiter will review your attempt.</p>
+            <p>Your responses have been recorded.{!isPreview && " The recruiter will review your attempt."}</p>
             {typeof paper.attempt.score === "number" && (
-              <p>Auto-graded score: <b>{paper.attempt.score}</b></p>
+              <p>Auto-graded score: <b className="text-foreground">{paper.attempt.score}</b></p>
             )}
-            <Button onClick={() => navigate("/assessments")}>Back to my assessments</Button>
+            <div className="flex flex-wrap gap-2 pt-1">
+              {isPreview && (
+                <Button onClick={() => navigate(`/b2b/assessments/${assessmentId}/attempts/${attemptId}`)}>
+                  View grading & feedback
+                </Button>
+              )}
+              <Button variant={isPreview ? "outline" : "default"} onClick={() => navigate(isPreview ? `/b2b/assessments/${assessmentId}` : "/assessments")}>
+                {isPreview ? "Back to assessment" : "Back to my assessments"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -123,15 +153,7 @@ export default function Player() {
 
   const q = flatQuestions[idx];
   const totalQ = flatQuestions.length;
-  const answeredCount = flatQuestions.filter((x) => {
-    const a = answers[x.id];
-    if (!a) return false;
-    if (x.type === "mcq") return Array.isArray(a.selected) && (a.selected as string[]).length > 0;
-    if (x.type === "subjective") return typeof a.text === "string" && (a.text as string).trim().length > 0;
-    if (x.type === "sql") return typeof a.query === "string" && (a.query as string).trim().length > 0;
-    if (x.type === "coding") return typeof a.code === "string" && (a.code as string).trim().length > 0;
-    return false;
-  }).length;
+  const answeredCount = flatQuestions.filter((x) => isAnswered(x, answers[x.id])).length;
 
   const mins = Math.floor(remaining / 60_000);
   const secs = Math.floor((remaining % 60_000) / 1000);
@@ -176,11 +198,7 @@ export default function Player() {
             <CardContent className="grid grid-cols-5 gap-2">
               {flatQuestions.map((qi, i) => {
                 const a = answers[qi.id];
-                const done =
-                  (qi.type === "mcq" && Array.isArray(a?.selected) && (a!.selected as string[]).length > 0) ||
-                  (qi.type === "subjective" && typeof a?.text === "string" && (a!.text as string).trim()) ||
-                  (qi.type === "sql" && typeof a?.query === "string" && (a!.query as string).trim()) ||
-                  (qi.type === "coding" && typeof a?.code === "string" && (a!.code as string).trim());
+                const done = isAnswered(qi, a);
                 return (
                   <button
                     key={qi.id}
@@ -277,6 +295,65 @@ function QuestionInput({
         value={(value?.text as string) ?? ""}
         onChange={(e) => onChange({ text: e.target.value })}
       />
+    );
+  }
+  if (question.type === "true_false") {
+    const selected = ((value?.selected as string[]) ?? [])[0] ?? "";
+    return (
+      <RadioGroup
+        value={selected}
+        onValueChange={(v) => onChange({ selected: [v] })}
+        className="space-y-2"
+      >
+        {(question.options ?? []).map((o) => (
+          <label
+            key={o.id}
+            htmlFor={`tf-${o.id}`}
+            className="flex items-center gap-3 p-3 border border-[hsl(var(--border))] rounded-md cursor-pointer hover:bg-[hsl(var(--muted))]"
+          >
+            <RadioGroupItem id={`tf-${o.id}`} value={o.id} />
+            <span className="text-sm">{o.body}</span>
+          </label>
+        ))}
+      </RadioGroup>
+    );
+  }
+  if (question.type === "short_answer") {
+    const maxLen = Number((question.meta as Record<string, unknown> | null)?.max_length) || 200;
+    return (
+      <Input
+        maxLength={maxLen}
+        placeholder="Type your answer…"
+        value={(value?.text as string) ?? ""}
+        onChange={(e) => onChange({ text: e.target.value })}
+      />
+    );
+  }
+  if (question.type === "matching") {
+    const meta = (question.meta as { pairs?: { left: string; right: string }[] } | null) ?? {};
+    const pairs = meta.pairs ?? [];
+    const current = (value?.pairs as Record<string, string>) ?? {};
+    const rights = Array.from(new Set(pairs.map((p) => p.right)));
+    return (
+      <div className="space-y-2">
+        {pairs.map((p) => (
+          <div key={p.left} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <div className="text-sm font-medium px-3 py-2 rounded-md bg-[hsl(var(--muted))]">{p.left}</div>
+            <span className="text-muted-foreground">→</span>
+            <Select
+              value={current[p.left] ?? ""}
+              onValueChange={(v) => onChange({ pairs: { ...current, [p.left]: v } })}
+            >
+              <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+              <SelectContent>
+                {rights.map((r) => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ))}
+      </div>
     );
   }
   if (question.type === "sql") {

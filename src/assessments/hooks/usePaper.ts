@@ -2,9 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type PaperOption = { id: string; body: string; order_index: number };
+export type PaperQuestionType =
+  | "coding" | "mcq" | "sql" | "subjective"
+  | "true_false" | "short_answer" | "matching";
 export type PaperQuestion = {
   id: string;
-  type: "coding" | "mcq" | "sql" | "subjective";
+  type: PaperQuestionType;
   title: string;
   body_md: string | null;
   language: string | null;
@@ -13,6 +16,7 @@ export type PaperQuestion = {
   order_index: number;
   options?: PaperOption[] | null;
   sample_tests?: { input: string; expected_output: string }[] | null;
+  meta?: Record<string, unknown> | null;
 };
 export type PaperSection = {
   id: string;
