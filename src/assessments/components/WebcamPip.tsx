@@ -11,8 +11,14 @@ interface Props {
   onLost?: () => void;
 }
 
-const POS_STORAGE_KEY = "assess.webcam.pip.pos";
+const POS_STORAGE_PREFIX = "assess.webcam.pip.pos:";
+/** Legacy global key, kept for one-time migration to per-attempt storage. */
+const LEGACY_POS_STORAGE_KEY = "assess.webcam.pip.pos";
 const DEFAULT_POS = { x: 16, y: 16 };
+
+function storageKeyFor(attemptId: string) {
+  return `${POS_STORAGE_PREFIX}${attemptId || "default"}`;
+}
 
 function clampPos(p: { x: number; y: number }) {
   if (typeof window === "undefined") return p;
@@ -22,9 +28,11 @@ function clampPos(p: { x: number; y: number }) {
   };
 }
 
-function loadPos(): { x: number; y: number } {
+function loadPos(attemptId: string): { x: number; y: number } {
   try {
-    const raw = localStorage.getItem(POS_STORAGE_KEY);
+    const raw =
+      localStorage.getItem(storageKeyFor(attemptId)) ??
+      localStorage.getItem(LEGACY_POS_STORAGE_KEY);
     if (!raw) return DEFAULT_POS;
     const parsed = JSON.parse(raw);
     if (typeof parsed?.x === "number" && typeof parsed?.y === "number") {
@@ -48,18 +56,24 @@ function loadPos(): { x: number; y: number } {
 export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [pos, setPos] = useState<{ x: number; y: number }>(() => loadPos());
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => loadPos(attemptId));
   const dragRef = useRef<{ ox: number; oy: number } | null>(null);
   const [active, setActive] = useState(true);
 
-  // Persist position whenever it changes
+
+  // Load persisted position when the attempt changes
+  useEffect(() => {
+    setPos(loadPos(attemptId));
+  }, [attemptId]);
+
+  // Persist position whenever it changes (scoped per attempt)
   useEffect(() => {
     try {
-      localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(pos));
+      localStorage.setItem(storageKeyFor(attemptId), JSON.stringify(pos));
     } catch {
       /* ignore quota */
     }
-  }, [pos]);
+  }, [pos, attemptId]);
 
   // Keep PIP on-screen across viewport resizes
   useEffect(() => {
