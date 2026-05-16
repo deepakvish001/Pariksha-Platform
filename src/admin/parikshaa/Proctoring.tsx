@@ -839,9 +839,41 @@ function SnapshotGroup({
   return (
     <div className="rounded-md border bg-background/60 p-2">
       <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-emerald-600">
-          Webcam snapshots{" "}
-          <span className="opacity-60 tabular-nums">({snapshots.length})</span>
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-600">
+          <span>
+            Webcam snapshots{" "}
+            <span className="opacity-60 tabular-nums">({snapshots.length})</span>
+          </span>
+          <div className="inline-flex rounded border border-border/60 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setSort("oldest")}
+              aria-pressed={sort === "oldest"}
+              className={
+                "px-1.5 py-0.5 text-[10px] normal-case tracking-normal transition-colors " +
+                (sort === "oldest"
+                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                  : "text-muted-foreground hover:bg-muted")
+              }
+              title="Sort oldest first"
+            >
+              Oldest
+            </button>
+            <button
+              type="button"
+              onClick={() => setSort("newest")}
+              aria-pressed={sort === "newest"}
+              className={
+                "px-1.5 py-0.5 text-[10px] normal-case tracking-normal transition-colors border-l border-border/60 " +
+                (sort === "newest"
+                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                  : "text-muted-foreground hover:bg-muted")
+              }
+              title="Sort newest first"
+            >
+              Newest
+            </button>
+          </div>
         </div>
         {pageCount > 1 && (
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground tabular-nums">
