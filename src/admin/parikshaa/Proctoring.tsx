@@ -1344,6 +1344,126 @@ function RetentionCard() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+
+      <PurgeHistoryPanel refreshKey={historyKey} />
+    </div>
+  );
+}
+
+interface PurgeRun {
+  id: string;
+  ran_at: string;
+  snapshots_deleted: number;
+  events_deleted: number;
+  snapshot_days: number | null;
+  events_days: number | null;
+  source: string;
+  error: string | null;
+}
+
+function PurgeHistoryPanel({ refreshKey }: { refreshKey: number }) {
+  const [runs, setRuns] = useState<PurgeRun[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const { data, error: err } = await supabase
+      .from("proctoring_purge_runs")
+      .select("id,ran_at,snapshots_deleted,events_deleted,snapshot_days,events_days,source,error")
+      .order("ran_at", { ascending: false })
+      .limit(20);
+    if (err) {
+      setError(err.message);
+      setRuns([]);
+    } else {
+      setRuns((data ?? []) as PurgeRun[]);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load, refreshKey]);
+
+  return (
+    <div className="rounded-md border bg-background/40">
+      <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+        <h4 className="text-xs font-semibold flex items-center gap-1.5">
+          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+          Purge history
+          {runs && (
+            <span className="text-[10px] font-normal text-muted-foreground tabular-nums">
+              ({runs.length})
+            </span>
+          )}
+        </h4>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-6 w-6"
+          onClick={() => void load()}
+          disabled={loading}
+          aria-label="Refresh purge history"
+          title="Refresh"
+        >
+          <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
+        </Button>
+      </div>
+
+      {loading && !runs ? (
+        <div className="px-3 py-4 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin inline mr-1.5" /> Loading…
+        </div>
+      ) : error ? (
+        <div className="px-3 py-4 text-xs text-destructive">{error}</div>
+      ) : !runs || runs.length === 0 ? (
+        <div className="px-3 py-4 text-xs text-muted-foreground italic">
+          No purge runs recorded yet.
+        </div>
+      ) : (
+        <div className="max-h-72 overflow-y-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="h-8 text-[10px] uppercase tracking-wide">When</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-wide">Source</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-wide text-right">Snapshots</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-wide text-right">Events</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-wide text-right">Window</TableHead>
+                <TableHead className="h-8 text-[10px] uppercase tracking-wide">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {runs.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-mono text-[11px] py-1.5">{fmtTs(r.ran_at)}</TableCell>
+                  <TableCell className="text-[11px] py-1.5 capitalize">{r.source}</TableCell>
+                  <TableCell className="text-right tabular-nums text-[11px] py-1.5">
+                    {r.snapshots_deleted}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-[11px] py-1.5">
+                    {r.events_deleted}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-[11px] py-1.5 text-muted-foreground">
+                    {r.snapshot_days ?? "—"}d / {r.events_days ?? "—"}d
+                  </TableCell>
+                  <TableCell className="text-[11px] py-1.5">
+                    {r.error ? (
+                      <span className="text-destructive truncate inline-block max-w-[200px]" title={r.error}>
+                        Error
+                      </span>
+                    ) : (
+                      <span className="text-emerald-600">OK</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
