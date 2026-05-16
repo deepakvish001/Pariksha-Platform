@@ -159,20 +159,21 @@ export default function Player() {
     pendingQueueRef.current = {};
     setPendingCount(0);
     const entries = Object.entries(queue);
-    if (entries.length === 0) return;
+    if (entries.length === 0) { persistQueue(); return; }
     let ok = 0;
     for (const [qid, ans] of entries) {
       try {
         await saveAnswer.mutateAsync({ attempt_id: attemptId, question_id: qid, answer: ans });
         ok++;
       } catch {
-        // Put back so we retry later
-        pendingQueueRef.current[qid] = ans;
+        // Put back (unless user typed a newer value in the meantime — keep newest)
+        if (!pendingQueueRef.current[qid]) pendingQueueRef.current[qid] = ans;
       }
     }
     setPendingCount(Object.keys(pendingQueueRef.current).length);
+    persistQueue();
     if (ok > 0) setLastSavedAt(Date.now());
-  }, [attemptId, saveAnswer]);
+  }, [attemptId, saveAnswer, persistQueue]);
 
   // Reconnect → flush
   useEffect(() => {
