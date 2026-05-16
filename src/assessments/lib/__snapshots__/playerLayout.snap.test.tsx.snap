@@ -1,0 +1,29 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Player layout shell — structural snapshots > matches snapshot · coding · focus=off 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px] lg:grid-cols-[240px_1fr]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · coding · focus=on 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · matching · focus=off 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px] lg:grid-cols-[240px_1fr]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · matching · focus=on 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · mcq · focus=off 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px] lg:grid-cols-[240px_1fr]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · mcq · focus=on 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · short_answer · focus=off 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px] lg:grid-cols-[240px_1fr]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · short_answer · focus=on 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · sql · focus=off 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px] lg:grid-cols-[240px_1fr]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · sql · focus=on 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · subjective · focus=off 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px] lg:grid-cols-[240px_1fr]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · subjective · focus=on 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · true_false · focus=off 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px] lg:grid-cols-[240px_1fr]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
+
+exports[`Player layout shell — structural snapshots > matches snapshot · true_false · focus=on 1`] = `"<main data-testid="player-main" class="flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px]"><aside data-testid="palette-slot"></aside><section data-testid="question-slot"></section></main>"`;
