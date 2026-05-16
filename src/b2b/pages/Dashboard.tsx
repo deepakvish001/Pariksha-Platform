@@ -64,17 +64,20 @@ function KpiCard({
   icon: Icon,
   delta,
   hint,
+  windowDays = 30,
 }: {
   label: string;
   value: string | number;
   icon: LucideIcon;
   delta?: Delta;
   hint?: string;
+  windowDays?: number;
 }) {
   const unitLabel = delta?.unit === "pts" ? "percentage points" : "percent";
+  const prevRangeLabel = `days ${windowDays + 1}–${windowDays * 2}`;
   const tooltipBody = delta
-    ? `Change vs the previous 30-day window. ${delta.positive ? "Up" : "Down"} ${delta.value} ${unitLabel} compared to days 31–60.`
-    : `No baseline: there was no activity in the previous 30-day window (days 31–60), so a % change can't be computed yet.`;
+    ? `Change vs the previous ${windowDays}-day window. ${delta.positive ? "Up" : "Down"} ${delta.value} ${unitLabel} compared to ${prevRangeLabel}.`
+    : `No baseline: there was no activity in the previous ${windowDays}-day window (${prevRangeLabel}), so a % change can't be computed yet.`;
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5 transition-all hover:border-[hsl(var(--primary))]/40 hover:shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.35)]">
