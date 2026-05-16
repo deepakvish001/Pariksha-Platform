@@ -569,24 +569,86 @@ export default function B2BDashboard() {
         </div>
 
         <div className="rounded-xl border border-[hsl(var(--border))] bg-gradient-to-br from-[hsl(var(--card))]/70 to-[hsl(var(--primary))]/5 backdrop-blur-xl p-5">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-[hsl(var(--primary))]/15 grid place-items-center">
-              <Sparkles className="h-4 w-4 text-[hsl(var(--primary))]" />
-            </div>
-            <h2 className="text-base font-semibold">AI Insights</h2>
-          </div>
-          <div className="mt-4 space-y-3">
-            {insights.map((i) => (
-              <div
-                key={i.title}
-                className="rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/40 p-3"
-              >
-                <p className="text-sm font-medium">{i.title}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 leading-relaxed">
-                  {i.body}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-[hsl(var(--primary))]/15 grid place-items-center">
+                <Sparkles className="h-4 w-4 text-[hsl(var(--primary))]" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold">AI Insights</h2>
+                <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                  Generated from your last 30 days
                 </p>
               </div>
-            ))}
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+              onClick={() => refreshInsights()}
+              disabled={insightsLoading}
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${insightsLoading ? "animate-spin" : ""}`}
+              />
+            </Button>
+          </div>
+          <div className="mt-4 space-y-3">
+            {insightsLoading && insights.length === 0 && (
+              <>
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-16 rounded-lg border border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/30 animate-pulse"
+                  />
+                ))}
+              </>
+            )}
+            {!insightsLoading && insightsError && (
+              <div className="rounded-lg border border-rose-500/30 bg-rose-500/5 p-3 text-xs text-rose-400">
+                Could not generate insights: {insightsError}
+              </div>
+            )}
+            {!insightsLoading &&
+              !insightsError &&
+              insights.length === 0 && (
+                <p className="text-xs text-[hsl(var(--muted-foreground))] py-4 text-center">
+                  Not enough activity yet. Run an assessment to unlock insights.
+                </p>
+              )}
+            {insights.map((i, idx) => {
+              const tone =
+                i.severity === "positive"
+                  ? "border-emerald-500/30 bg-emerald-500/5"
+                  : i.severity === "warning"
+                  ? "border-amber-500/30 bg-amber-500/5"
+                  : "border-[hsl(var(--border))]/60 bg-[hsl(var(--background))]/40";
+              const dot =
+                i.severity === "positive"
+                  ? "bg-emerald-500"
+                  : i.severity === "warning"
+                  ? "bg-amber-500"
+                  : "bg-[hsl(var(--primary))]";
+              return (
+                <div
+                  key={`${i.title}-${idx}`}
+                  className={`rounded-lg border p-3 ${tone}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+                    <p className="text-sm font-medium">{i.title}</p>
+                  </div>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 leading-relaxed">
+                    {i.body}
+                  </p>
+                  {i.action && (
+                    <p className="text-xs text-[hsl(var(--primary))] mt-1.5 font-medium">
+                      → {i.action}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
