@@ -105,6 +105,27 @@ export default function B2BDashboard() {
         />
       </div>
 
+      {draftId && (
+        <div className="mt-6 b2b-card p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold">End-to-end test assessment</h2>
+              <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
+                Launch the draft in test mode or jump straight to submitted results.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={launchPreview} disabled={launching} className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90">
+                <Play className="h-4 w-4 mr-1" /> {launching ? "Launching…" : "Take test"}
+              </Button>
+              <Button variant="outline" onClick={() => navigate(`${base}/assessments/${draftId}`)}>
+                <ClipboardList className="h-4 w-4 mr-1" /> View results
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mt-8 b2b-card p-8 text-center">
         <h2 className="text-base font-semibold">You're all set, {org.name}.</h2>
         <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))] max-w-md mx-auto">
