@@ -15,6 +15,7 @@ const POS_STORAGE_PREFIX = "assess.webcam.pip.pos:";
 /** Legacy global key, kept for one-time migration to per-attempt storage. */
 const LEGACY_POS_STORAGE_KEY = "assess.webcam.pip.pos";
 const SNAP_PREF_KEY = "assess.webcam.pip.snap";
+const HIDDEN_PREF_KEY = "assess.webcam.pip.hidden";
 const DEFAULT_POS = { x: 16, y: 16 };
 /** PIP width / height for corner math (must match render below). */
 const PIP_W = 120;
