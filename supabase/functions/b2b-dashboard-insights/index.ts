@@ -59,7 +59,12 @@ serve(async (req) => {
       .eq("org_id", org_id)
       .eq("user_id", userId)
       .maybeSingle();
-    if (!membership) return json({ error: "Forbidden" }, 403);
+    if (!membership) {
+      // Caller isn't a member of this org (stale org_id, role switch, etc.).
+      // Return an empty payload instead of 403 so the dashboard renders without
+      // a blank screen — the UI will just show "no insights yet".
+      return json({ insights: [], stats: null, not_a_member: true });
+    }
 
     // Aggregate stats on the server.
     const now = new Date();
