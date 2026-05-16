@@ -528,7 +528,7 @@ export default function Player() {
         onReviewSubmit={() => setConfirmOpen(true)}
       />
 
-      <PlayerHelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
+      
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="max-w-md">
