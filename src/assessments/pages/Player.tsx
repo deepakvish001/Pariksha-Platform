@@ -123,13 +123,60 @@ export default function Player() {
     }
   }, [remaining, deadline, paper, doSubmit]);
 
+  // Track latest answers without re-creating queueSave on every keystroke
+  const answersRef = useRef<AnswerMap>({});
+  useEffect(() => { answersRef.current = answers; }, [answers]);
+
+  const flushPending = useCallback(async () => {
+    if (!attemptId) return;
+    // Cancel debounced timers — we are flushing everything now.
+    Object.values(debounceRef.current).forEach((t) => window.clearTimeout(t));
+    debounceRef.current = {};
+    const queue = pendingQueueRef.current;
+    pendingQueueRef.current = {};
+    setPendingCount(0);
+    const entries = Object.entries(queue);
+    if (entries.length === 0) return;
+    let ok = 0;
+    for (const [qid, ans] of entries) {
+      try {
+        await saveAnswer.mutateAsync({ attempt_id: attemptId, question_id: qid, answer: ans });
+        ok++;
+      } catch {
+        // Put back so we retry later
+        pendingQueueRef.current[qid] = ans;
+      }
+    }
+    setPendingCount(Object.keys(pendingQueueRef.current).length);
+    if (ok > 0) setLastSavedAt(Date.now());
+  }, [attemptId, saveAnswer]);
+
+  // Reconnect → flush
+  useEffect(() => {
+    if (online) void flushPending();
+  }, [online, flushPending]);
+
   const queueSave = (qid: string, ans: Record<string, unknown>) => {
     if (!attemptId) return;
+    // Always stash the latest value for offline replay / global flush
+    pendingQueueRef.current[qid] = ans;
+    setPendingCount(Object.keys(pendingQueueRef.current).length);
+
     window.clearTimeout(debounceRef.current[qid]);
     debounceRef.current[qid] = window.setTimeout(() => {
+      if (!navigator.onLine) return; // hold in queue; will flush on reconnect
       saveAnswer.mutate(
         { attempt_id: attemptId, question_id: qid, answer: ans },
-        { onSuccess: () => setLastSavedAt(Date.now()) }
+        {
+          onSuccess: () => {
+            delete pendingQueueRef.current[qid];
+            setPendingCount(Object.keys(pendingQueueRef.current).length);
+            setLastSavedAt(Date.now());
+          },
+          onError: () => {
+            // keep in queue for retry
+          },
+        }
       );
     }, 600);
   };
@@ -138,6 +185,20 @@ export default function Player() {
     setAnswers((prev) => ({ ...prev, [qid]: ans }));
     queueSave(qid, ans);
   };
+
+  // Safety net: flush on tab hide / page unload
+  useEffect(() => {
+    const onHide = () => { void flushPending(); };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onHide);
+    window.addEventListener("beforeunload", onHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onHide);
+      window.removeEventListener("beforeunload", onHide);
+    };
+  }, [flushPending]);
+
 
   const prefillAnswerKey = async () => {
     if (!attemptId || !paper) return;
