@@ -40,7 +40,7 @@ import {
 } from "recharts";
 import { formatDistanceToNow } from "date-fns";
 
-type Delta = { value: number; positive: boolean };
+type Delta = { value: number; positive: boolean; unit?: "%" | "pts" };
 
 function KpiCard({
   label,
