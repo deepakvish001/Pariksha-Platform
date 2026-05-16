@@ -30,6 +30,7 @@ import { ViolationBanner } from "../components/ViolationBanner";
 import { useOnline } from "../hooks/useOnline";
 import { useDeviceLock } from "../hooks/useDeviceLock";
 import { useDisplayCapture } from "../hooks/useDisplayCapture";
+import { useTypingAnalytics } from "../hooks/useTypingAnalytics";
 import { safeStorage } from "../lib/safeStorage";
 import { getPlayerMainClass } from "../lib/playerLayout";
 import { cn } from "@/lib/utils";
