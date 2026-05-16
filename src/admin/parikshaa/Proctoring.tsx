@@ -1247,6 +1247,30 @@ function RetentionCard() {
     toast.success("Retention settings saved");
   };
 
+  const runDryRun = useCallback(async (silent = false) => {
+    setDryRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("purge-proctoring-data", {
+        body: { dry_run: true, source: "manual_dry_run" },
+      });
+      if (error) throw error;
+      const snapshots = (data as any)?.snapshots_to_delete ?? 0;
+      const events = (data as any)?.events_to_delete ?? 0;
+      setEstimate({ snapshots, events, at: Date.now() });
+      if (!silent) {
+        toast.success("Dry run complete", {
+          description: `Would delete ${snapshots} snapshots & ${events} events`,
+        });
+      }
+      return { snapshots, events };
+    } catch (e: any) {
+      if (!silent) toast.error("Dry run failed", { description: e.message });
+      return null;
+    } finally {
+      setDryRunning(false);
+    }
+  }, []);
+
   const runPurge = async () => {
     setPurging(true);
     try {
@@ -1260,6 +1284,8 @@ function RetentionCard() {
         events_deleted: (data as any)?.events_deleted ?? 0,
       });
       setHistoryKey((k) => k + 1);
+      setEstimate(null);
+      setConfirmOpen(false);
       toast.success("Purge complete", {
         description: `${(data as any)?.snapshots_deleted ?? 0} snapshots & ${(data as any)?.events_deleted ?? 0} events removed`,
       });
