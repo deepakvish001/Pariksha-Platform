@@ -43,12 +43,17 @@ export default function B2BDashboard() {
         </>
       }
       actions={
-        <Button
-          className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
-          onClick={() => navigate(`${base}/assessments/new`)}
-        >
-          <Plus className="h-4 w-4 mr-1" /> New assessment
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={() => navigate("/")}>
+            <Home className="h-4 w-4 mr-1" /> Home
+          </Button>
+          <Button
+            className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
+            onClick={() => navigate(`${base}/assessments/new`)}
+          >
+            <Plus className="h-4 w-4 mr-1" /> New assessment
+          </Button>
+        </div>
       }
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
