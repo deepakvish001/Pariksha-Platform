@@ -1262,6 +1262,79 @@ export default function B2BDashboard() {
                       → {i.action}
                     </p>
                   )}
+                  {stats?.windows && (() => {
+                    const w = stats.windows;
+                    const fmtPair = (
+                      curr: number | null,
+                      prev: number | null,
+                      suffix = "",
+                    ) => {
+                      const c = curr == null ? "—" : `${curr}${suffix}`;
+                      const p = prev == null ? "—" : `${prev}${suffix}`;
+                      return `${c} vs ${p}`;
+                    };
+                    const allRows: {
+                      label: string;
+                      value: string;
+                      keywords: RegExp;
+                    }[] = [
+                      {
+                        label: "Assessments",
+                        value: fmtPair(w.assessments.curr, w.assessments.prev),
+                        keywords: /assessment|test|exam|quiz/i,
+                      },
+                      {
+                        label: "Candidates invited",
+                        value: fmtPair(w.invites.curr, w.invites.prev),
+                        keywords: /invit|candidat|pending|reminder|outreach/i,
+                      },
+                      {
+                        label: "Submissions",
+                        value: fmtPair(w.submissions.curr, w.submissions.prev),
+                        keywords: /submission|submit|complet|response|attempt/i,
+                      },
+                      {
+                        label: "Avg integrity",
+                        value: fmtPair(
+                          w.avgIntegrity.curr,
+                          w.avgIntegrity.prev,
+                          "%",
+                        ),
+                        keywords: /integrity|cheat|proctor|flag|suspicious|honest/i,
+                      },
+                    ];
+                    const haystack = `${i.title}\n${i.body}\n${i.action ?? ""}`;
+                    const matched = allRows.filter((r) =>
+                      r.keywords.test(haystack),
+                    );
+                    const rows = matched.length ? matched : allRows;
+                    return (
+                      <details className="group mt-2">
+                        <summary className="flex cursor-pointer list-none items-center gap-1 text-[11px] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
+                          <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
+                          <span>View sources</span>
+                          <span className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]/70">
+                            last {w.windowDays}d vs prev {w.windowDays}d
+                          </span>
+                        </summary>
+                        <dl className="mt-1.5 rounded-md border border-[hsl(var(--border))]/50 bg-[hsl(var(--background))]/40 divide-y divide-[hsl(var(--border))]/40 text-xs">
+                          {rows.map((r) => (
+                            <div
+                              key={r.label}
+                              className="flex items-center justify-between gap-3 px-2.5 py-1.5"
+                            >
+                              <dt className="text-[hsl(var(--muted-foreground))]">
+                                {r.label}
+                              </dt>
+                              <dd className="font-mono tabular-nums">
+                                {r.value}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </details>
+                    );
+                  })()}
                   <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[hsl(var(--border))]/40 pt-2">
                     <span className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
                       Was this helpful?
