@@ -917,6 +917,23 @@ function SnapshotGroup({
                   type="button"
                   key={e.id}
                   onClick={() => onOpen(originalIndex)}
+                  onMouseEnter={(ev) => {
+                    if (!src) return;
+                    setHover({
+                      src,
+                      alt: `Webcam snapshot at ${fmtTs(e.created_at)}`,
+                      ts: fmtTs(e.created_at),
+                      x: ev.clientX,
+                      y: ev.clientY,
+                    });
+                  }}
+                  onMouseMove={(ev) => {
+                    if (!src) return;
+                    setHover((h) =>
+                      h ? { ...h, x: ev.clientX, y: ev.clientY } : h,
+                    );
+                  }}
+                  onMouseLeave={() => setHover(null)}
                   title={`${fmtTs(e.created_at)}${path ? ` — ${path}` : ""}`}
                   className="group relative aspect-[4/3] overflow-hidden rounded border border-border/60 bg-muted/40 hover:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/60"
                 >
