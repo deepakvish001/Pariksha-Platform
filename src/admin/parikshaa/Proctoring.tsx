@@ -781,12 +781,26 @@ function SnapshotGroup({
   onOpen: (index: number) => void;
 }) {
   const [page, setPage] = useState(0);
-  const pageCount = Math.max(1, Math.ceil(snapshots.length / SNAPSHOT_PAGE_SIZE));
+  const [sort, setSort] = useState<"newest" | "oldest">("oldest");
 
-  // Reset to first page when the underlying list changes (different attempt).
+  // Sorted view of the snapshots, with the original index preserved so the
+  // lightbox (which still indexes into the unsorted prop) opens the right item.
+  const sorted = useMemo(() => {
+    const indexed = snapshots.map((e, originalIndex) => ({ e, originalIndex }));
+    indexed.sort((a, b) => {
+      const ta = new Date(a.e.created_at).getTime();
+      const tb = new Date(b.e.created_at).getTime();
+      return sort === "newest" ? tb - ta : ta - tb;
+    });
+    return indexed;
+  }, [snapshots, sort]);
+
+  const pageCount = Math.max(1, Math.ceil(sorted.length / SNAPSHOT_PAGE_SIZE));
+
+  // Reset to first page when the underlying list or sort order changes.
   useEffect(() => {
     setPage(0);
-  }, [snapshots]);
+  }, [snapshots, sort]);
 
   // Clamp page if list shrinks below current page bounds.
   useEffect(() => {
@@ -795,8 +809,8 @@ function SnapshotGroup({
 
   const pageStart = page * SNAPSHOT_PAGE_SIZE;
   const pageItems = useMemo(
-    () => snapshots.slice(pageStart, pageStart + SNAPSHOT_PAGE_SIZE),
-    [snapshots, pageStart],
+    () => sorted.slice(pageStart, pageStart + SNAPSHOT_PAGE_SIZE),
+    [sorted, pageStart],
   );
 
   // Lazily sign thumbnail URLs only for items on the current page so we
