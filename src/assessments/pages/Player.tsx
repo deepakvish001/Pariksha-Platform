@@ -153,7 +153,7 @@ export default function Player() {
         }
       },
       onStrike: (total, kind) => {
-        toast.warning(`Violation ${total}/${maxViolationsConst}: ${kind.replace(/_/g, " ")}`);
+        toast.warning(`Violation ${total}/${MAX_VIOLATIONS}: ${kind.replace(/_/g, " ")}`);
       },
     }
   );
