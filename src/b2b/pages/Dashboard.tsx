@@ -934,11 +934,22 @@ export default function B2BDashboard() {
               variant="ghost"
               className="h-7 px-2 text-xs"
               onClick={() => refreshInsights()}
-              disabled={insightsLoading}
+              disabled={insightsLoading || insightsCooldown > 0}
+              title={
+                insightsCooldown > 0
+                  ? `Please wait ${Math.ceil(insightsCooldown / 1000)}s before refreshing again`
+                  : "Refresh insights"
+              }
+              aria-label="Refresh AI insights"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 ${insightsLoading ? "animate-spin" : ""}`}
               />
+              {insightsCooldown > 0 && !insightsLoading && (
+                <span className="ml-1 tabular-nums text-[hsl(var(--muted-foreground))]">
+                  {Math.ceil(insightsCooldown / 1000)}s
+                </span>
+              )}
             </Button>
           </div>
           <div className="mt-4 space-y-3">
