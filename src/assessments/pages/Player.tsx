@@ -15,6 +15,8 @@ type AnswerMap = Record<string, Record<string, unknown>>;
 
 export default function Player() {
   const { attemptId } = useParams();
+  const [search] = useSearchParams();
+  const isPreview = search.get("preview") === "1";
   const navigate = useNavigate();
   const { data: paper, isLoading, error } = usePaper(attemptId);
   const { data: existing } = useExistingAnswers(attemptId);
