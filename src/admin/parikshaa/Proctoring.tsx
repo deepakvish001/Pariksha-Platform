@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, RefreshCw, ChevronDown, ChevronRight, Camera, ShieldAlert, Loader2 } from "lucide-react";
+import { Download, RefreshCw, ChevronDown, ChevronRight, Camera, ShieldAlert, Loader2, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -262,6 +262,8 @@ export default function ParikshaaProctoring() {
         <StatCard label="Auto-submitted" value={filtered.filter((r) => r.status === "auto_submitted").length} tone="amber" />
       </div>
 
+      <RetentionCard />
+
       {/* Filters */}
       <div className="rounded-lg border bg-card p-3 grid gap-3 md:grid-cols-6">
         <div className="md:col-span-2 space-y-1">
@@ -445,4 +447,116 @@ function fmtTs(iso: string) {
   } catch {
     return iso;
   }
+}
+
+function RetentionCard() {
+  const [snapshotDays, setSnapshotDays] = useState<string>("30");
+  const [eventsDays, setEventsDays] = useState<string>("90");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [purging, setPurging] = useState(false);
+  const [lastResult, setLastResult] = useState<{ snapshots_deleted: number; events_deleted: number } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("platform_settings")
+        .select("value")
+        .eq("key", "proctoring_retention")
+        .maybeSingle();
+      const v = (data?.value ?? {}) as { snapshot_days?: number; events_days?: number };
+      if (typeof v.snapshot_days === "number") setSnapshotDays(String(v.snapshot_days));
+      if (typeof v.events_days === "number") setEventsDays(String(v.events_days));
+      setLoading(false);
+    })();
+  }, []);
+
+  const save = async () => {
+    const sd = Math.max(1, Math.min(3650, parseInt(snapshotDays, 10) || 0));
+    const ed = Math.max(1, Math.min(3650, parseInt(eventsDays, 10) || 0));
+    setSaving(true);
+    const { error } = await supabase.from("platform_settings").upsert({
+      key: "proctoring_retention",
+      value: { snapshot_days: sd, events_days: ed } as never,
+    });
+    setSaving(false);
+    if (error) {
+      toast.error("Failed to save retention settings", { description: error.message });
+      return;
+    }
+    setSnapshotDays(String(sd));
+    setEventsDays(String(ed));
+    toast.success("Retention settings saved");
+  };
+
+  const runPurge = async () => {
+    setPurging(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("purge-proctoring-data");
+      if (error) throw error;
+      setLastResult({
+        snapshots_deleted: (data as any)?.snapshots_deleted ?? 0,
+        events_deleted: (data as any)?.events_deleted ?? 0,
+      });
+      toast.success("Purge complete", {
+        description: `${(data as any)?.snapshots_deleted ?? 0} snapshots & ${(data as any)?.events_deleted ?? 0} events removed`,
+      });
+    } catch (e: any) {
+      toast.error("Purge failed", { description: e.message });
+    } finally {
+      setPurging(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold flex items-center gap-1.5">
+            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" /> Data Retention
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Automatically deleted daily. Snapshots are removed from storage; proctoring events are removed from the audit log.
+          </p>
+        </div>
+        {lastResult && (
+          <div className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
+            Last purge: {lastResult.snapshots_deleted} snapshots, {lastResult.events_deleted} events
+          </div>
+        )}
+      </div>
+      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto] items-end">
+        <div className="space-y-1">
+          <Label className="text-xs">Webcam snapshots — keep for (days)</Label>
+          <Input
+            type="number"
+            min={1}
+            max={3650}
+            value={snapshotDays}
+            onChange={(e) => setSnapshotDays(e.target.value)}
+            disabled={loading}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Proctoring events — keep for (days)</Label>
+          <Input
+            type="number"
+            min={1}
+            max={3650}
+            value={eventsDays}
+            onChange={(e) => setEventsDays(e.target.value)}
+            disabled={loading}
+          />
+        </div>
+        <Button onClick={save} disabled={saving || loading} size="sm">
+          {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
+          Save
+        </Button>
+        <Button onClick={runPurge} disabled={purging || loading} size="sm" variant="outline">
+          {purging ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
+          Purge now
+        </Button>
+      </div>
+    </div>
+  );
 }
