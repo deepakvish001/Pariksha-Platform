@@ -104,6 +104,31 @@ export default function Player() {
     }
   };
 
+  const prefillAnswerKey = async () => {
+    if (!attemptId || !paper) return;
+    try {
+      const { data, error: rpcErr } = await (supabase as any).rpc("get_assessment_answer_key", {
+        _assessment: paper.assessment.id,
+      });
+      if (rpcErr) throw rpcErr;
+      const key = (data ?? {}) as Record<string, Record<string, unknown>>;
+      const next: AnswerMap = { ...answers };
+      for (const qq of flatQuestions) {
+        if (key[qq.id]) next[qq.id] = key[qq.id];
+      }
+      setAnswers(next);
+      // Persist each immediately
+      for (const [qid, ans] of Object.entries(next)) {
+        try {
+          await saveAnswer.mutateAsync({ attempt_id: attemptId, question_id: qid, answer: ans });
+        } catch { /* noop */ }
+      }
+      toast.success("Answer key prefilled");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load answer key");
+    }
+  };
+
   if (isLoading) return null;
   if (error) return <div className="theme-b2b p-8 min-h-screen">Failed to load: {(error as Error).message}</div>;
   if (!paper) return null;
