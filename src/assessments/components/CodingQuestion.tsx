@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { PaperQuestion } from "../hooks/usePaper";
+import { useEditorPrefs } from "../hooks/useEditorPrefs";
 
 interface Props {
   question: PaperQuestion;
@@ -75,8 +76,9 @@ export function CodingQuestion({ question, value, onChange, isPreview }: Props) 
   const [activeTab, setActiveTab] = useState<"tests" | "result">("tests");
   const [activeCase, setActiveCase] = useState(0);
   const [openCaseIdx, setOpenCaseIdx] = useState<number | null>(null);
-  const [fontSize, setFontSize] = useState(13);
+  const { prefs: editorPrefs, update: updateEditorPrefs } = useEditorPrefs();
   const [leftTab, setLeftTab] = useState<"description" | "hints" | "submissions">("description");
+  const [copied, setCopied] = useState(false);
   const editorRef = useRef<MonacoEditorHandle>(null);
   const { run, submit, isRunning, isSubmitting } = useCodeRunner();
 
