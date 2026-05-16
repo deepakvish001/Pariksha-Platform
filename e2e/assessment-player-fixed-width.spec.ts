@@ -23,7 +23,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 // Verbatim from src/assessments/lib/playerLayout.ts → getPlayerMainClass({focusMode:false}).
 const PLAYER_MAIN_CLASS =
-  "flex-1 w-full min-w-0 mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px] overflow-x-clip lg:grid-cols-[240px_1fr]";
+  "flex-1 w-full min-w-0 mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px] overflow-x-clip lg:grid-cols-[300px_1fr]";
 
 const QUESTION_TYPES = ["mcq", "coding", "sql"] as const;
 type QType = (typeof QUESTION_TYPES)[number];
