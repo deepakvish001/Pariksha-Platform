@@ -48,7 +48,11 @@ import {
 } from "recharts";
 import { formatDistanceToNow } from "date-fns";
 
-type Delta = { value: number; positive: boolean; unit?: "%" | "pts" };
+type Delta = {
+  value: number; // absolute magnitude, already rounded by the hook
+  direction: "up" | "down" | "flat";
+  unit?: "%" | "pts";
+};
 
 import { Info } from "lucide-react";
 import {
