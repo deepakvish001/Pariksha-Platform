@@ -60,14 +60,23 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
   const dragRef = useRef<{ ox: number; oy: number } | null>(null);
   const [active, setActive] = useState(true);
 
-  // Persist position whenever it changes
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => loadPos(attemptId));
+  const dragRef = useRef<{ ox: number; oy: number } | null>(null);
+  const [active, setActive] = useState(true);
+
+  // Load persisted position when the attempt changes
+  useEffect(() => {
+    setPos(loadPos(attemptId));
+  }, [attemptId]);
+
+  // Persist position whenever it changes (scoped per attempt)
   useEffect(() => {
     try {
-      localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(pos));
+      localStorage.setItem(storageKeyFor(attemptId), JSON.stringify(pos));
     } catch {
       /* ignore quota */
     }
-  }, [pos]);
+  }, [pos, attemptId]);
 
   // Keep PIP on-screen across viewport resizes
   useEffect(() => {
