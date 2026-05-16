@@ -54,6 +54,7 @@ Deno.serve(async (req) => {
   // Parse optional run metadata from caller.
   let source = "manual";
   let triggeredBy: string | null = null;
+  let dryRun = false;
   try {
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
@@ -63,6 +64,7 @@ Deno.serve(async (req) => {
       if (typeof body?.triggered_by === "string" && body.triggered_by.length === 36) {
         triggeredBy = body.triggered_by;
       }
+      if (body?.dry_run === true) dryRun = true;
     }
   } catch (_) { /* ignore */ }
 
