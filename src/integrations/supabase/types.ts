@@ -7772,6 +7772,10 @@ export type Database = {
         Returns: Json
       }
       get_attempt_paper: { Args: { _attempt: string }; Returns: Json }
+      get_b2b_dashboard_stats: {
+        Args: { _org_id: string; _window_days?: number }
+        Returns: Json
+      }
       get_coding_leaderboard:
         | {
             Args: {
