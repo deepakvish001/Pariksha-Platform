@@ -565,6 +565,38 @@ export default function ParikshaaProctoring() {
             )}
           </TableBody>
         </Table>
+
+        {/* Pagination footer: infinite-scroll sentinel + manual Load more. */}
+        <div className="flex items-center justify-between gap-3 border-t bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
+          <div className="tabular-nums">
+            Showing <span className="font-semibold text-foreground">{rows.length}</span>
+            {totalCount !== null && (
+              <>
+                {" "}of <span className="font-semibold text-foreground">{totalCount}</span> attempts
+              </>
+            )}
+            {selectedKinds.size > 0 || search || assessmentId !== "all" || status !== "all"
+              ? ` · ${filtered.length} after filters`
+              : ""}
+          </div>
+          <div className="flex items-center gap-2">
+            {loadingMore && (
+              <span className="inline-flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+              </span>
+            )}
+            {hasMore && !loadingMore && (
+              <Button size="sm" variant="outline" className="h-7" onClick={() => void loadMore()}>
+                Load more
+              </Button>
+            )}
+            {!hasMore && totalCount !== null && rows.length > 0 && (
+              <span className="italic">End of list</span>
+            )}
+          </div>
+        </div>
+        {/* IntersectionObserver target — kicks loadMore in before the user hits the end. */}
+        {hasMore && <div ref={sentinelRef} aria-hidden className="h-1" />}
       </div>
     </div>
   );
