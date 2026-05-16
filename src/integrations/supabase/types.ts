@@ -7452,6 +7452,16 @@ export type Database = {
         }[]
       }
       admin_rollback_daily_challenge: { Args: { _date: string }; Returns: Json }
+      admin_run_invite_source_backfill: {
+        Args: never
+        Returns: {
+          by_source: Json
+          duration_ms: number
+          rows_scanned: number
+          rows_updated: number
+          run_id: string
+        }[]
+      }
       admin_run_sideeye_purge: { Args: never; Returns: Json }
       admin_save_problem: { Args: { payload: Json }; Returns: Json }
       admin_schedule_broadcast: {
@@ -8087,6 +8097,14 @@ export type Database = {
       notify_admins: {
         Args: { _data?: Json; _message: string; _title: string; _type?: string }
         Returns: undefined
+      }
+      preview_invite_source_backfill: {
+        Args: never
+        Returns: {
+          count: number
+          inferred_source: string
+          sample: Json
+        }[]
       }
       question_org: { Args: { _question: string }; Returns: string }
       recompute_contest_leaderboard: {
