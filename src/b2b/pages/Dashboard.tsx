@@ -225,8 +225,24 @@ function useAiInsights(orgId?: string) {
 }
 
 type ChannelCount = { source: string; count: number };
+export type ChannelRange = "7d" | "30d" | "90d" | "all";
 
-function useInviteChannelCounts(orgId?: string) {
+const RANGE_LABELS: Record<ChannelRange, string> = {
+  "7d": "Last 7 days",
+  "30d": "Last 30 days",
+  "90d": "Last 90 days",
+  all: "All time",
+};
+
+function rangeSince(range: ChannelRange): string | null {
+  if (range === "all") return null;
+  const days = range === "7d" ? 7 : range === "30d" ? 30 : 90;
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString();
+}
+
+function useInviteChannelCounts(orgId?: string, range: ChannelRange = "30d") {
   const [data, setData] = useState<ChannelCount[]>([]);
   useEffect(() => {
     if (!orgId) {
@@ -243,10 +259,13 @@ function useInviteChannelCounts(orgId?: string) {
         setData([]);
         return;
       }
-      const { data: rows } = await supabase
+      let q = supabase
         .from("assessment_invites")
         .select("source")
         .in("assessment_id", ids);
+      const since = rangeSince(range);
+      if (since) q = q.gte("created_at", since);
+      const { data: rows } = await q;
       const counts = new Map<string, number>();
       (rows ?? []).forEach((r: any) => {
         const k = r.source ?? "manual";
@@ -256,7 +275,7 @@ function useInviteChannelCounts(orgId?: string) {
         Array.from(counts.entries()).map(([source, count]) => ({ source, count })),
       );
     })();
-  }, [orgId]);
+  }, [orgId, range]);
   return data;
 }
 
