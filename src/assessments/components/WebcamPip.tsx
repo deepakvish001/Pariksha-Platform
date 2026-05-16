@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Camera, CameraOff, Eye, EyeOff, Magnet, RotateCcw } from "lucide-react";
+import { Camera, CameraOff, Eye, EyeOff, Magnet, RotateCcw, Shield } from "lucide-react";
 
 interface Props {
   attemptId: string;
@@ -15,6 +15,7 @@ const POS_STORAGE_PREFIX = "assess.webcam.pip.pos:";
 /** Legacy global key, kept for one-time migration to per-attempt storage. */
 const LEGACY_POS_STORAGE_KEY = "assess.webcam.pip.pos";
 const SNAP_PREF_KEY = "assess.webcam.pip.snap";
+const AVOID_PREF_KEY = "assess.webcam.pip.avoid";
 const HIDDEN_PREF_KEY = "assess.webcam.pip.hidden";
 const DEFAULT_POS = { x: 16, y: 16 };
 /** PIP width / height for corner math (must match render below). */
@@ -37,12 +38,69 @@ function clampPos(p: { x: number; y: number }) {
 }
 
 /**
- * Snap to nearest corner if within SNAP_THRESHOLD of one.
+ * Selectors for assessment content regions the PIP should try not to
+ * cover when snapping to a corner. The first match wins; we also
+ * always avoid the question palette if visible.
+ */
+const AVOID_SELECTORS = [
+  '[data-testid="player-main"]',
+  '[data-assessment-content]',
+  'main[data-question-type]',
+];
+
+/** Returns the viewport rect (in right/bottom offset space) the PIP would occupy at corner `c`. */
+function pipRectAt(c: { x: number; y: number }) {
+  if (typeof window === "undefined") {
+    return { left: 0, top: 0, right: PIP_W, bottom: PIP_H };
+  }
+  const left = window.innerWidth - c.x - PIP_W;
+  const top = window.innerHeight - c.y - PIP_H;
+  return { left, top, right: left + PIP_W, bottom: top + PIP_H };
+}
+
+/** Pixel overlap area between the PIP at corner `c` and the avoid rects. */
+function overlapArea(
+  c: { x: number; y: number },
+  avoidRects: Array<{ left: number; top: number; right: number; bottom: number }>,
+) {
+  const r = pipRectAt(c);
+  let total = 0;
+  for (const a of avoidRects) {
+    const w = Math.max(0, Math.min(r.right, a.right) - Math.max(r.left, a.left));
+    const h = Math.max(0, Math.min(r.bottom, a.bottom) - Math.max(r.top, a.top));
+    total += w * h;
+  }
+  return total;
+}
+
+/** Collect bounding rects of assessment content nodes to avoid. */
+function collectAvoidRects() {
+  if (typeof document === "undefined") return [];
+  const rects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+  for (const sel of AVOID_SELECTORS) {
+    const nodes = document.querySelectorAll(sel);
+    nodes.forEach((n) => {
+      const r = (n as HTMLElement).getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        rects.push({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+      }
+    });
+    if (rects.length) break;
+  }
+  return rects;
+}
+
+/**
+ * Snap to a corner if the user dropped near one. When `avoidContent`
+ * is true, prefer corners whose PIP rect does not overlap the
+ * assessment content area; fall back to the least-overlapping corner
+ * within a wider radius if every corner overlaps.
+ *
  * Coordinates are stored as right/bottom offsets, so the four
  * corners are simple combinations of EDGE_MARGIN and
  * (viewport - PIP_size - EDGE_MARGIN).
  */
-function snapToCorner(p: { x: number; y: number }) {
+function snapToCorner(p: { x: number; y: number }, avoidContent: boolean = false) {
   if (typeof window === "undefined") return p;
   const rightX = EDGE_MARGIN;
   const leftX = Math.max(EDGE_MARGIN, window.innerWidth - PIP_W - EDGE_MARGIN);
@@ -54,16 +112,38 @@ function snapToCorner(p: { x: number; y: number }) {
     { x: rightX, y: topY }, // top-right
     { x: leftX, y: topY }, // top-left
   ];
-  let best = p;
-  let bestDist = Infinity;
+
+  // Nearest corner + its distance — this gates whether snapping fires at all.
+  let nearest = corners[0];
+  let nearestDist = Infinity;
   for (const c of corners) {
     const d = Math.hypot(c.x - p.x, c.y - p.y);
-    if (d < bestDist) {
-      bestDist = d;
-      best = c;
+    if (d < nearestDist) {
+      nearestDist = d;
+      nearest = c;
     }
   }
-  return bestDist <= SNAP_THRESHOLD ? best : p;
+  if (nearestDist > SNAP_THRESHOLD) return p;
+
+  if (!avoidContent) return nearest;
+
+  // Score corners by content overlap; tie-break by distance from drop point.
+  const avoidRects = collectAvoidRects();
+  if (avoidRects.length === 0) return nearest;
+
+  const scored = corners.map((c) => ({
+    c,
+    overlap: overlapArea(c, avoidRects),
+    dist: Math.hypot(c.x - p.x, c.y - p.y),
+  }));
+  scored.sort((a, b) => (a.overlap - b.overlap) || (a.dist - b.dist));
+
+  // If the best corner has no overlap, use it even if it's a bit farther
+  // (up to 3x the snap threshold) — that's the whole point of "avoid".
+  const best = scored[0];
+  if (best.overlap === 0 && best.dist <= SNAP_THRESHOLD * 3) return best.c;
+  // Otherwise stick to the nearest corner to respect user intent.
+  return nearest;
 }
 
 function loadPos(attemptId: string): { x: number; y: number } {
@@ -86,6 +166,16 @@ function loadSnapPref(): boolean {
   try {
     const raw = localStorage.getItem(SNAP_PREF_KEY);
     if (raw == null) return true; // default ON
+    return raw === "1" || raw === "true";
+  } catch {
+    return true;
+  }
+}
+
+function loadAvoidPref(): boolean {
+  try {
+    const raw = localStorage.getItem(AVOID_PREF_KEY);
+    if (raw == null) return true; // default ON — most users want this
     return raw === "1" || raw === "true";
   } catch {
     return true;
@@ -117,6 +207,7 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
   const dragRef = useRef<{ ox: number; oy: number } | null>(null);
   const [active, setActive] = useState(true);
   const [snapEnabled, setSnapEnabled] = useState<boolean>(() => loadSnapPref());
+  const [avoidContent, setAvoidContent] = useState<boolean>(() => loadAvoidPref());
   const [snapping, setSnapping] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [hidden, setHidden] = useState<boolean>(() => loadHiddenPref());
@@ -129,6 +220,15 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
       /* ignore */
     }
   }, [snapEnabled]);
+
+  // Persist avoid-content preference
+  useEffect(() => {
+    try {
+      localStorage.setItem(AVOID_PREF_KEY, avoidContent ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [avoidContent]);
 
   // Persist hidden preference (proctoring keeps running either way)
   useEffect(() => {
@@ -294,7 +394,7 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
     dragRef.current = null;
     if (snapEnabled) {
       setPos((p) => {
-        const snapped = snapToCorner(p);
+        const snapped = snapToCorner(p, avoidContent);
         if (snapped.x !== p.x || snapped.y !== p.y) {
           setSnapping(true);
           window.setTimeout(() => setSnapping(false), 220);
@@ -393,6 +493,29 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
                   }
                 >
                   <Magnet className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAvoidContent((v) => !v)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  title={
+                    avoidContent
+                      ? "Avoid covering question content: on"
+                      : "Avoid covering question content: off"
+                  }
+                  aria-label="Toggle avoid content overlap"
+                  aria-pressed={avoidContent}
+                  disabled={!snapEnabled}
+                  className={
+                    "grid place-items-center h-4 w-4 rounded transition-colors " +
+                    (!snapEnabled
+                      ? "text-white/25 cursor-not-allowed"
+                      : avoidContent
+                      ? "bg-sky-500/30 text-sky-200 hover:bg-sky-500/40"
+                      : "text-white/60 hover:bg-white/15 hover:text-white")
+                  }
+                >
+                  <Shield className="h-3 w-3" />
                 </button>
                 <button
                   type="button"
