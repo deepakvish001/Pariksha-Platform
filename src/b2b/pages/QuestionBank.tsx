@@ -16,6 +16,7 @@ import {
   useDeleteTestCase,
   type QuestionType,
   type Question,
+  type McqOption,
 } from "../hooks/useQuestions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
