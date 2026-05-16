@@ -4847,6 +4847,48 @@ export type Database = {
         }
         Relationships: []
       }
+      proctoring_purge_runs: {
+        Row: {
+          error: string | null
+          event_cutoff: string | null
+          events_days: number | null
+          events_deleted: number
+          id: string
+          ran_at: string
+          snapshot_cutoff: string | null
+          snapshot_days: number | null
+          snapshots_deleted: number
+          source: string
+          triggered_by: string | null
+        }
+        Insert: {
+          error?: string | null
+          event_cutoff?: string | null
+          events_days?: number | null
+          events_deleted?: number
+          id?: string
+          ran_at?: string
+          snapshot_cutoff?: string | null
+          snapshot_days?: number | null
+          snapshots_deleted?: number
+          source?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          error?: string | null
+          event_cutoff?: string | null
+          events_days?: number | null
+          events_deleted?: number
+          id?: string
+          ran_at?: string
+          snapshot_cutoff?: string | null
+          snapshot_days?: number | null
+          snapshots_deleted?: number
+          source?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
