@@ -8053,7 +8053,14 @@ export type Database = {
       invite_status: "pending" | "claimed" | "submitted" | "expired"
       org_member_role: "owner" | "admin" | "recruiter" | "viewer"
       org_type: "college" | "company"
-      question_type: "coding" | "mcq" | "sql" | "subjective"
+      question_type:
+        | "coding"
+        | "mcq"
+        | "sql"
+        | "subjective"
+        | "true_false"
+        | "matching"
+        | "short_answer"
       study_year:
         | "1st Year"
         | "2nd Year"
@@ -8214,7 +8221,15 @@ export const Constants = {
       invite_status: ["pending", "claimed", "submitted", "expired"],
       org_member_role: ["owner", "admin", "recruiter", "viewer"],
       org_type: ["college", "company"],
-      question_type: ["coding", "mcq", "sql", "subjective"],
+      question_type: [
+        "coding",
+        "mcq",
+        "sql",
+        "subjective",
+        "true_false",
+        "matching",
+        "short_answer",
+      ],
       study_year: [
         "1st Year",
         "2nd Year",
