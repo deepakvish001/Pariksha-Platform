@@ -64,6 +64,16 @@ export default function Player() {
   const online = useOnline();
   const pendingQueueRef = useRef<Record<string, Record<string, unknown>>>({});
   const [pendingCount, setPendingCount] = useState(0);
+  const pendingKey = attemptId ? `assess.pending.${attemptId}` : null;
+  const persistQueue = useCallback(() => {
+    if (!pendingKey) return;
+    try {
+      const q = pendingQueueRef.current;
+      if (Object.keys(q).length === 0) localStorage.removeItem(pendingKey);
+      else localStorage.setItem(pendingKey, JSON.stringify(q));
+    } catch { /* quota / private mode — ignore */ }
+  }, [pendingKey]);
+  const restoredRef = useRef(false);
 
   useEffect(() => {
     try { localStorage.setItem(`assess.focus.${attemptId}`, focusMode ? "1" : "0"); } catch { /* noop */ }
