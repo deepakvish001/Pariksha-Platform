@@ -856,7 +856,7 @@ export default function B2BDashboard() {
               <div>
                 <h2 className="text-base font-semibold">AI Insights</h2>
                 <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-                  Generated from your last 30 days
+                  Generated from your last {stats?.windows.windowDays ?? 30} days
                 </p>
               </div>
             </div>
