@@ -1234,7 +1234,14 @@ export default function B2BDashboard() {
                   : "bg-[hsl(var(--primary))]";
               const key = insightKey(i);
               const rating = insightRatings[key];
-              const isPending = !!insightPending[key];
+              const pendingAction = insightPending[key];
+              const isPending = !!pendingAction;
+              const upBusy =
+                pendingAction === "up" ||
+                (pendingAction === "remove" && rating === "up");
+              const downBusy =
+                pendingAction === "down" ||
+                (pendingAction === "remove" && rating === "down");
               const thumbBase =
                 "inline-flex items-center justify-center h-6 w-6 rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
               return (
