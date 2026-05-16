@@ -627,10 +627,14 @@ export type Database = {
         Row: {
           assessment_id: string
           created_at: string
+          device_fingerprint: string | null
+          device_ip: unknown
           id: string
           integrity_score: number
           invite_id: string | null
           score: number | null
+          screen_extended: boolean
+          sideeye_required: boolean
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null
@@ -641,10 +645,14 @@ export type Database = {
         Insert: {
           assessment_id: string
           created_at?: string
+          device_fingerprint?: string | null
+          device_ip?: unknown
           id?: string
           integrity_score?: number
           invite_id?: string | null
           score?: number | null
+          screen_extended?: boolean
+          sideeye_required?: boolean
           started_at?: string
           status?: Database["public"]["Enums"]["attempt_status"]
           submitted_at?: string | null
@@ -655,10 +663,14 @@ export type Database = {
         Update: {
           assessment_id?: string
           created_at?: string
+          device_fingerprint?: string | null
+          device_ip?: unknown
           id?: string
           integrity_score?: number
           invite_id?: string | null
           score?: number | null
+          screen_extended?: boolean
+          sideeye_required?: boolean
           started_at?: string
           status?: Database["public"]["Enums"]["attempt_status"]
           submitted_at?: string | null
@@ -736,6 +748,86 @@ export type Database = {
           },
         ]
       }
+      assessment_proctor_findings: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          finding: Json
+          id: string
+          severity: string
+          snapshot_id: string
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          finding?: Json
+          id?: string
+          severity?: string
+          snapshot_id: string
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          finding?: Json
+          id?: string
+          severity?: string
+          snapshot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_proctor_findings_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_proctor_findings_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_proctor_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_proctor_snapshots: {
+        Row: {
+          attempt_id: string
+          captured_at: string
+          created_at: string
+          id: string
+          reviewed: boolean
+          source: string
+          storage_path: string
+        }
+        Insert: {
+          attempt_id: string
+          captured_at?: string
+          created_at?: string
+          id?: string
+          reviewed?: boolean
+          source: string
+          storage_path: string
+        }
+        Update: {
+          attempt_id?: string
+          captured_at?: string
+          created_at?: string
+          id?: string
+          reviewed?: boolean
+          source?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_proctor_snapshots_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_sections: {
         Row: {
           assessment_id: string
@@ -774,6 +866,92 @@ export type Database = {
           },
         ]
       }
+      assessment_side_camera_frames: {
+        Row: {
+          attempt_id: string
+          captured_at: string
+          created_at: string
+          id: string
+          pairing_id: string
+          storage_path: string
+        }
+        Insert: {
+          attempt_id: string
+          captured_at?: string
+          created_at?: string
+          id?: string
+          pairing_id: string
+          storage_path: string
+        }
+        Update: {
+          attempt_id?: string
+          captured_at?: string
+          created_at?: string
+          id?: string
+          pairing_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_side_camera_frames_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_side_camera_frames_pairing_id_fkey"
+            columns: ["pairing_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_side_camera_pairings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_side_camera_pairings: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          id: string
+          last_seen_at: string | null
+          pair_code: string
+          pair_token: string
+          paired_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          id?: string
+          last_seen_at?: string | null
+          pair_code: string
+          pair_token?: string
+          paired_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          id?: string
+          last_seen_at?: string | null
+          pair_code?: string
+          pair_token?: string
+          paired_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_side_camera_pairings_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessments: {
         Row: {
           created_at: string
@@ -784,6 +962,7 @@ export type Database = {
           id: string
           max_attempts: number
           org_id: string
+          proctoring_config: Json
           proctoring_enabled: boolean
           starts_at: string | null
           status: Database["public"]["Enums"]["assessment_status"]
@@ -799,6 +978,7 @@ export type Database = {
           id?: string
           max_attempts?: number
           org_id: string
+          proctoring_config?: Json
           proctoring_enabled?: boolean
           starts_at?: string | null
           status?: Database["public"]["Enums"]["assessment_status"]
@@ -814,6 +994,7 @@ export type Database = {
           id?: string
           max_attempts?: number
           org_id?: string
+          proctoring_config?: Json
           proctoring_enabled?: boolean
           starts_at?: string | null
           status?: Database["public"]["Enums"]["assessment_status"]
@@ -7866,10 +8047,14 @@ export type Database = {
         Returns: {
           assessment_id: string
           created_at: string
+          device_fingerprint: string | null
+          device_ip: unknown
           id: string
           integrity_score: number
           invite_id: string | null
           score: number | null
+          screen_extended: boolean
+          sideeye_required: boolean
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null
@@ -8304,10 +8489,14 @@ export type Database = {
         Returns: {
           assessment_id: string
           created_at: string
+          device_fingerprint: string | null
+          device_ip: unknown
           id: string
           integrity_score: number
           invite_id: string | null
           score: number | null
+          screen_extended: boolean
+          sideeye_required: boolean
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null
@@ -8327,10 +8516,14 @@ export type Database = {
         Returns: {
           assessment_id: string
           created_at: string
+          device_fingerprint: string | null
+          device_ip: unknown
           id: string
           integrity_score: number
           invite_id: string | null
           score: number | null
+          screen_extended: boolean
+          sideeye_required: boolean
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
           submitted_at: string | null

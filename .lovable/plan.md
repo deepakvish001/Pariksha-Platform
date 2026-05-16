@@ -1,64 +1,140 @@
-## 1. Lockdown anti-cheat for the assessment player
+# Secure Assessments + Advanced Proctoring + Questions Drawer
 
-Applies to every attempt — including `?preview=1` — so recruiters see the exact candidate experience.
+Three independent workstreams, shipped in one pass. Backwards compatible — existing assessments keep working with current defaults.
 
-### Pre-flight gate (before the player mounts)
-A new `<AssessmentLockdownGate>` blocks the player until the candidate:
-1. Grants webcam permission (camera test with live preview).
-2. Clicks "Enter secure mode" → triggers `requestFullscreen()` on `document.documentElement`.
-3. Acknowledges the rules card (tab switch, copy/paste, exit fullscreen = violation → 3 strikes auto-submit).
+## 1. Configurable Anti-Cheat (admin chooses per assessment)
 
-If permission is denied or fullscreen is rejected, the player stays gated with a retry button. No question content is rendered.
+### Schema: `assessments.proctoring_config jsonb`
+Stored as JSON for forward-compatibility. Defaults to current behavior so old assessments are unaffected.
 
-### Active enforcement (inside the player)
-Extend `useProctoring` (rename effective behavior to "lockdown" — same hook):
+```text
+{
+  strictness: "lenient" | "balanced" | "strict",
+  events: {
+    tab_switch: { count: true, weight: 5 },
+    fullscreen_exit: { count: true, weight: 8, autosubmit_after: 1 },
+    paste_blocked: { count: true, weight: 4 },
+    no_face_seconds: { threshold: 10, weight: 6 },
+    multi_face: { weight: 10, autosubmit_after: 1 },
+    second_monitor: { weight: 10, autosubmit_after: 1 },
+    screenshare_lost: { weight: 8 },
+    webcam_lost: { weight: 10 },
+    device_change: { weight: 999, autosubmit_after: 1 },
+    side_eye_lost: { weight: 6 }
+  },
+  max_violations: 15,
+  require_screen_share: true,
+  require_side_eye: true,
+  require_face_detection: true,
+  allow_clipboard_in_inputs: false
+}
+```
 
-- **Fullscreen lock** — if `fullscreenchange` fires and `document.fullscreenElement === null`, show a blocking modal "Return to fullscreen to continue" + `Re-enter` button. Counts as 1 violation.
-- **Tab/window switching** — `visibilitychange` (hidden) and `window.blur` each count as 1 violation. Banner toast: "Violation X of 3 — next switch auto-submits."
-- **Copy / cut / paste / contextmenu / selectstart / dragstart** — `preventDefault()` + log event. Cumulative — every 5 blocks = 1 violation.
-- **Print / Save** — block `Ctrl/Cmd+P`, `Ctrl/Cmd+S` (currently used for flush-save — remap flush to `Ctrl/Cmd+Enter`), `F12`, `Ctrl/Cmd+Shift+I/J/C` (devtools), `Ctrl/Cmd+U` (view source).
-- **Text selection / drag** — global CSS `user-select: none` on the player root (editor / textarea / input children get `user-select: text` so candidates can still type/select inside answer fields).
-- **Auto-submit** at violation #3 — calls existing submit flow with `auto_submitted: true` payload event.
+Admin UI: new "Proctoring" tab on the assessment editor with three presets + an "Advanced" accordion to tweak weights, thresholds, and required streams.
 
-### Webcam proctoring
-- Acquire `getUserMedia({ video: { width: 320, height: 240 }, audio: false })` once at gate-pass; keep the stream alive in a hidden `<video>`.
-- A tiny always-visible PIP (bottom-right, 96×72, draggable) shows the live feed so the candidate sees "you are being recorded".
-- Every 15s, capture a JPEG snapshot via `<canvas>` → upload to a new private `assessment-proctor` storage bucket at `<attempt_id>/<timestamp>.jpg`, then log an `attempt_events` row of kind `webcam_snapshot` with `{ path }`.
-- If the camera track ends/`muted` (covered, unplugged), log `webcam_lost` → counts as a violation.
+### Player wiring
+`useProctoring` reads `proctoring_config` from the loaded assessment, replaces the current hard-coded `EVENT_WEIGHTS` / `MAX_VIOLATIONS`, and respects per-event `autosubmit_after`.
 
-### Backend changes
-- New migration:
-  - Storage bucket `assessment-proctor` (private), with RLS:
-    - Insert: only the attempt owner may upload to `<attempt_id>/*`.
-    - Select: org members of the attempt's assessment may read; the attempt owner may read their own.
-  - Extend `attempt_events.kind` allowed values list (no enum — already free `text`) with: `lockdown_enter`, `lockdown_fail`, `webcam_grant`, `webcam_deny`, `webcam_snapshot`, `webcam_lost`, `devtools_attempt`, `print_blocked`, `auto_submitted`, `violation_strike`.
-  - Add `assessment_attempts.violations smallint NOT NULL DEFAULT 0` (server-side counter, kept in sync from the client; integrity_score continues to drop too).
+## 2. Collapsible Left Question Drawer
 
-### Files to touch
-- `src/assessments/hooks/useProctoring.ts` — extend penalties, add devtools/print/copy-block handlers, add webcam snapshot loop, add violation counter & auto-submit callback.
-- `src/assessments/components/AssessmentLockdownGate.tsx` (new) — full-screen gate UI.
-- `src/assessments/components/WebcamPip.tsx` (new) — draggable live-feed pill.
-- `src/assessments/components/ViolationBanner.tsx` (new) — strike toast + fullscreen-lost modal.
-- `src/assessments/pages/Player.tsx` — wrap mount with gate, render PIP + banner, wire auto-submit, remove `Ctrl+S` shortcut (move flush to `Ctrl+Enter`).
+Replace the current top-bar palette with a left rail in `Player.tsx`.
 
-## 2. Collapsible left Questions drawer
+- Default expanded ~280px, collapsible to ~56px icon strip.
+- Persists state in `localStorage("assessment.palette")`.
+- Sticky full viewport height; main content shifts via CSS grid (`grid-cols-[auto_1fr]`).
+- Shows section groups, numbered tiles, status (answered / marked / current / unattempted), filters, search-by-number, and progress bar.
+- On mobile (<768px): renders as an off-canvas Sheet triggered by a FAB.
+- Built with shadcn `Sidebar` primitive for consistency with the rest of the app.
 
-Replace the current 240px `lg:grid-cols-[240px_1fr]` static column with a **persistent collapsible rail** that owns the full viewport height (from below the top bar to above the bottom bar).
+## 3. Advanced Proctoring
 
-### Behavior
-- **Expanded (default)** — 300px wide, full height, internal scroll. Shows the existing `QuestionPalette` rail with filters + section groups + legend.
-- **Collapsed** — 48px icon strip showing only: a chevron toggle, a small `answered/total` count, and dots for flagged questions (clickable to jump).
-- **Toggle** — chevron button at the top of the rail; state persisted in `localStorage` (`assess.palette.collapsed`). Keyboard shortcut `[` to toggle.
-- **Mobile (<lg)** — unchanged: tap "Question X of N" pill to open the existing sheet drawer.
-- The main question content reflows to fill remaining width; `max-w-[1600px]` cap on `<main>` stays intact (existing playerLayout invariant tests still pass — width token doesn't change, only the grid columns).
+### 3a. Face detection (in-browser)
+- Use `face-api.js` (tiny model, ~190KB) loaded from `/public/models/`.
+- Runs every 2s on the existing webcam stream.
+- Emits `no_face` (after threshold seconds) and `multi_face` events. Logged to `attempt_events`.
 
-### Files to touch
-- `src/assessments/lib/playerLayout.ts` — accept `paletteCollapsed` flag; emit `lg:grid-cols-[48px_1fr]` vs `lg:grid-cols-[300px_1fr]`. Width cap untouched.
-- `src/assessments/components/QuestionPalette.tsx` — add `collapsed` prop + collapsed mini-strip render path.
-- `src/assessments/pages/Player.tsx` — add `paletteCollapsed` state (persisted), pass to layout helper + palette, add `[` shortcut.
-- `src/assessments/lib/playerLayout.test.ts` + snapshot — extend cases to lock the new grid tokens.
+### 3b. Screen-share + second-monitor detection
+- During `AssessmentLockdownGate`, after webcam, request `navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } })`. Reject if `displaySurface !== "monitor"`.
+- Poll `window.screen.isExtended` every 5s; if true → `second_monitor` event.
+- Stream is sampled (1 frame / 10s) and uploaded same path as webcam snapshots.
+
+### 3c. Paste / typing-pattern detection
+- Wrap text inputs (code editor, SQL, text answers) with a `useTypingAnalytics` hook.
+- Flags: paste > 50 chars, typing speed > 800 cpm sustained 10s, identical keystroke bursts.
+- New event types: `paste_large`, `typing_burst`. Server-side cron job hashes final answers to flag duplicates across attempts.
+
+### 3d. Device / IP lock
+- On attempt start, compute a fingerprint (FingerprintJS open-source, no API key) + capture IP via edge function.
+- Store in `assessment_attempts.device_fingerprint` / `device_ip`.
+- Every resume / heartbeat compares; mismatch → `device_change` event + auto-submit.
+
+### 3e. AI snapshot review (async)
+- New edge function `assessment-snapshot-review` runs every 30s on a queue of unreviewed snapshots.
+- Calls Lovable AI (`google/gemini-3-flash-preview`) with structured output: `{ phone_in_frame, looking_away, identity_match, person_count, notes }`.
+- Persists to `assessment_proctor_findings`; surfaces flags in admin Proctoring view with severity badges.
+
+### 3f. Third Eye (multi-device side camera) — for assessments
+We already have the contest version. Generalize it.
+
+- Rename / extend `contest_side_camera_*` tables OR add parallel `assessment_side_camera_*` tables with the same shape, keyed by `attempt_id` instead of `contest_submission_id`. (Plan: parallel tables to avoid breaking contests.)
+- Reuse the existing pairing edge functions (`sideeye-pair`, `sideeye-signal`, `sideeye-frame-upload`) with an `attempt_id` parameter.
+- Candidate flow:
+  1. Lockdown gate shows QR + 6-digit code.
+  2. Candidate opens link on phone, accepts camera, places phone at side angle.
+  3. WebRTC P2P stream (signaling via existing `sideeye-signal` function) — phone → laptop preview tile + every 5s a JPEG chunk uploaded to storage.
+  4. Lockdown completes only after side-eye `paired` AND face detected on primary cam.
+- During exam:
+  - Phone disconnect > 15s → `side_eye_lost` event.
+  - Snapshots tied to `attempt_id` reviewed by the same `assessment-snapshot-review` edge function (extra prompt: hands on desk, phone presence, secondary person).
+- Admin dashboard: existing `Proctoring.tsx` gets a "Third Eye" tab per attempt that tiles webcam | screen | side-eye live (when active) or last frames (when not).
+
+## Technical Details
+
+### Files added
+- `src/assessments/hooks/useFaceDetection.ts`
+- `src/assessments/hooks/useDisplayCapture.ts`
+- `src/assessments/hooks/useTypingAnalytics.ts`
+- `src/assessments/hooks/useDeviceLock.ts`
+- `src/assessments/hooks/useSideEyeAssessment.ts` (wraps existing WebRTC client)
+- `src/assessments/components/QuestionDrawer.tsx` (replaces top palette in player layout)
+- `src/assessments/components/ThirdEyePairing.tsx`
+- `src/b2b/components/AssessmentProctoringConfig.tsx` (admin editor tab)
+- `supabase/functions/assessment-snapshot-review/index.ts`
+- `supabase/functions/assessment-sideeye-pair/index.ts` (thin wrapper or shared)
+- `public/models/tiny_face_detector*.json` + weights
+
+### Files edited
+- `src/assessments/pages/Player.tsx` — grid layout, mount drawer, wire all new hooks.
+- `src/assessments/hooks/useProctoring.ts` — config-driven weights, new event kinds, per-event auto-submit.
+- `src/assessments/components/AssessmentLockdownGate.tsx` — add screen-share + Third Eye gates.
+- `src/admin/parikshaa/Proctoring.tsx` — Third Eye tile + AI findings column.
+- `src/b2b/pages/AssessmentEditor.tsx` — new Proctoring tab.
+
+### Migrations
+1. `ALTER TABLE assessments ADD COLUMN proctoring_config jsonb NOT NULL DEFAULT '{}'::jsonb;`
+2. `ALTER TABLE assessment_attempts ADD COLUMN device_fingerprint text, ADD COLUMN device_ip inet, ADD COLUMN screen_extended boolean DEFAULT false;`
+3. New `assessment_proctor_snapshots` (attempt_id, source: 'webcam'|'screen'|'sideeye', storage_path, captured_at) + RLS.
+4. New `assessment_proctor_findings` (snapshot_id, finding jsonb, severity, created_at) + RLS.
+5. New `assessment_side_camera_pairings` + `assessment_side_camera_frames` (mirror of contest variants, keyed on attempt_id) + RLS.
+6. Storage bucket `assessment-proctor` (private) + read policies for org admins.
+
+### Edge functions
+- `assessment-snapshot-review` (cron every 30s via pg_cron + pg_net) → Gemini structured output.
+- `assessment-sideeye-pair` (POST: returns pairing code + token bound to attempt_id).
+- `assessment-sideeye-signal` (WebSocket-style POST for SDP/ICE exchange).
+- `assessment-device-claim` (POST on attempt start: writes fingerprint + IP, returns 409 if mismatch).
+
+### Libraries to add
+- `face-api.js` (or `@vladmandic/face-api` fork — better TS support)
+- `@fingerprintjs/fingerprintjs` (open source v3)
+
+### Backwards compatibility
+- `proctoring_config = {}` falls back to current hard-coded behavior.
+- Contests' existing `contest_side_camera_*` flow untouched.
+- Admin `Proctoring.tsx` continues to read existing tables; new columns rendered only when present.
 
 ## Out of scope
-- Hard kiosk lockdown (browser extensions that fully disable OS-level shortcuts) — impossible from a web app.
-- Recording audio or screen — only periodic webcam stills.
-- AI-driven snapshot analysis (a separate edge function can be added later; this plan only stores the evidence).
+- Audio monitoring (deferred — was not selected).
+- Live proctor video chat (the multi-view tile is offline / last-frame; no live human invigilator UI in this pass).
+- Mobile-as-primary-device support (laptop required).
+

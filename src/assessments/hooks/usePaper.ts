@@ -40,6 +40,7 @@ export type Paper = {
     description: string | null;
     duration_min: number;
     proctoring_enabled: boolean;
+    proctoring_config?: Record<string, unknown> | null;
   };
   sections: PaperSection[];
 };

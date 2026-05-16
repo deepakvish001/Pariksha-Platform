@@ -16,7 +16,8 @@ import {
 import { toast } from "sonner";
 import { CheckCircle2, Flag, LayoutGrid, Send, Trophy } from "lucide-react";
 import { usePaper, useExistingAnswers, useSaveAnswer, useSubmitAttempt, type PaperQuestion } from "../hooks/usePaper";
-import { useProctoring, MAX_VIOLATIONS } from "../hooks/useProctoring";
+import { useProctoring } from "../hooks/useProctoring";
+import { resolveProctoringConfig } from "../lib/proctoringConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerTopBar } from "../components/PlayerTopBar";
 import { QuestionPalette } from "../components/QuestionPalette";
@@ -145,18 +146,28 @@ export default function Player() {
   const doSubmitRef = useRef(doSubmit);
   useEffect(() => { doSubmitRef.current = doSubmit; }, [doSubmit]);
 
-  const { requestFullscreen, violations, fullscreenLost, logEvent: logProctorEvent } = useProctoring(
+  const proctoringConfig = useMemo(
+    () =>
+      resolveProctoringConfig(
+        paper?.assessment.proctoring_config,
+        !!paper?.assessment.proctoring_enabled
+      ),
+    [paper?.assessment.proctoring_config, paper?.assessment.proctoring_enabled]
+  );
+
+  const { requestFullscreen, violations, fullscreenLost, logEvent: logProctorEvent, maxViolations } = useProctoring(
     attemptId,
     proctoringEnabled && lockdownReady,
     {
+      config: proctoringConfig,
       onAutoSubmit: () => {
         if (!submittedRef.current) {
           submittedRef.current = true;
           doSubmitRef.current(true);
         }
       },
-      onStrike: (total, kind) => {
-        toast.warning(`Violation ${total}/${MAX_VIOLATIONS}: ${kind.replace(/_/g, " ")}`);
+      onStrike: (total, _kind, reason) => {
+        toast.warning(`Violation ${total}/${proctoringConfig.max_violations}: ${reason}`);
       },
     }
   );
@@ -473,7 +484,7 @@ export default function Player() {
 
       <ViolationBanner
         violations={violations}
-        max={MAX_VIOLATIONS}
+        max={maxViolations}
         fullscreenLost={fullscreenLost}
         onReturnFullscreen={requestFullscreen}
       />
