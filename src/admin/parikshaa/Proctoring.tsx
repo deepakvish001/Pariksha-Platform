@@ -262,6 +262,8 @@ export default function ParikshaaProctoring() {
         <StatCard label="Auto-submitted" value={filtered.filter((r) => r.status === "auto_submitted").length} tone="amber" />
       </div>
 
+      <RetentionCard />
+
       {/* Filters */}
       <div className="rounded-lg border bg-card p-3 grid gap-3 md:grid-cols-6">
         <div className="md:col-span-2 space-y-1">
