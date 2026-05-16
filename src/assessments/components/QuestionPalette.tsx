@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Flag } from "lucide-react";
+import { Flag, ChevronDown, CheckCircle2, Circle, CircleDot } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PaletteItem {
@@ -38,6 +38,7 @@ export function QuestionPalette({
   const compact = variant === "compact";
 
   const [filter, setFilter] = useState<Filter>("all");
+  const [collapsed, setCollapsed] = useState<Record<number, boolean>>({});
 
   const passes = (i: number) => {
     const it = items[i];
@@ -52,63 +53,9 @@ export function QuestionPalette({
     return [{ title: "", indices: items.map((_, i) => i) }];
   }, [sections, items]);
 
-  const renderChip = (i: number) => {
-    const it = items[i];
-    if (!it) return null;
-    const active = i === currentIndex;
-    const dim = !passes(i);
-    return (
-      <button
-        key={it.id}
-        onClick={() => onJump(i)}
-        title={`Question ${i + 1}${it.answered ? " · answered" : it.visited ? " · visited" : ""}${
-          it.flagged ? " · flagged" : ""
-        }`}
-        aria-current={active ? "true" : undefined}
-        className={cn(
-          "relative rounded-md border text-xs font-semibold transition-all tabular-nums grid place-items-center",
-          compact ? "h-8" : "h-9",
-          dim && "opacity-30 hover:opacity-100",
-          active
-            ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/30"
-            : it.answered
-            ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
-            : it.visited
-            ? "border-dashed border-border bg-muted/30 text-muted-foreground hover:bg-muted/60"
-            : "border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
-        )}
-      >
-        {i + 1}
-        {it.flagged && (
-          <Flag
-            className={cn(
-              "absolute -top-1 -right-1 h-3 w-3 fill-amber-500 text-amber-500 drop-shadow",
-              active && "fill-amber-300 text-amber-300"
-            )}
-          />
-        )}
-      </button>
-    );
-  };
-
-  const grid = (
-    <div className="space-y-3">
-      {effectiveSections.map((sec, sIdx) => (
-        <div key={sIdx} className="space-y-1.5">
-          {sec.title && (
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold">
-              <span className="truncate">{sec.title}</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-          )}
-          <div className={cn("grid gap-1.5", compact ? "grid-cols-10" : "grid-cols-5 lg:grid-cols-6")}>
-            {sec.indices.map(renderChip)}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
+  /* -------------------------------------------------------------------- */
+  /* Compact / mobile sheet — keep the chip grid (denser on small screens) */
+  /* -------------------------------------------------------------------- */
   if (compact) {
     return (
       <div className="rounded-lg border border-border bg-card p-2.5">
@@ -118,65 +65,227 @@ export function QuestionPalette({
             {answered}/{items.length}
           </span>
         </div>
-        {grid}
+        <div className="space-y-3">
+          {effectiveSections.map((sec, sIdx) => (
+            <div key={sIdx} className="space-y-1.5">
+              {sec.title && (
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold">
+                  <span className="truncate">{sec.title}</span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+              )}
+              <div className="grid gap-1.5 grid-cols-8">
+                {sec.indices.map((i) => {
+                  const it = items[i];
+                  if (!it) return null;
+                  const active = i === currentIndex;
+                  const dim = !passes(i);
+                  return (
+                    <button
+                      key={it.id}
+                      onClick={() => onJump(i)}
+                      aria-current={active ? "true" : undefined}
+                      className={cn(
+                        "relative h-8 rounded-md border text-xs font-semibold transition-all tabular-nums grid place-items-center",
+                        dim && "opacity-30",
+                        active
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/30"
+                          : it.answered
+                          ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                          : it.visited
+                          ? "border-dashed border-border bg-muted/30 text-muted-foreground"
+                          : "border-border bg-muted/40 text-muted-foreground"
+                      )}
+                    >
+                      {i + 1}
+                      {it.flagged && (
+                        <Flag className="absolute -top-1 -right-1 h-3 w-3 fill-amber-500 text-amber-500" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
+  /* -------------------------------------------------------------------- */
+  /* Rail — sidebar-style vertical list                                   */
+  /* -------------------------------------------------------------------- */
+  const pct = items.length === 0 ? 0 : Math.round((answered / items.length) * 100);
+
   return (
-    <div className="rounded-xl border border-border bg-card p-3 space-y-3 shadow-sm">
-      <div className="flex items-center justify-between text-xs">
-        <span className="font-semibold">Question palette</span>
-        <span className="text-muted-foreground tabular-nums">
-          {answered}/{items.length}
-        </span>
-      </div>
+    <aside
+      aria-label="Question navigator"
+      className="flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden max-h-[calc(100vh-9rem)] sticky top-20"
+    >
+      {/* Header: progress */}
+      <header className="px-3 py-3 border-b border-border bg-muted/30">
+        <div className="flex items-center justify-between text-xs mb-2">
+          <span className="font-semibold tracking-tight">Questions</span>
+          <span className="text-muted-foreground tabular-nums">
+            {answered}/{items.length} · {pct}%
+          </span>
+        </div>
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full bg-emerald-500 transition-all duration-300"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <div className="grid grid-cols-3 gap-1.5 mt-3">
+          <StatPill label="Done" value={answered} tone="emerald" />
+          <StatPill label="Left" value={unanswered} tone={unanswered > 0 ? "amber" : "muted"} />
+          <StatPill label="Flag" value={flagged} tone={flagged > 0 ? "amber" : "muted"} />
+        </div>
+      </header>
 
-      <div className="grid grid-cols-3 gap-1.5">
-        <StatPill label="Done" value={answered} tone="emerald" />
-        <StatPill label="Left" value={unanswered} tone={unanswered > 0 ? "amber" : "muted"} />
-        <StatPill label="Flag" value={flagged} tone={flagged > 0 ? "amber" : "muted"} />
-      </div>
-
-      {/* Filter row */}
-      <div className="grid grid-cols-3 gap-1 p-0.5 rounded-md bg-muted/40 border border-border text-[11px] font-medium">
-        {(["all", "unanswered", "flagged"] as const).map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={cn(
-              "rounded px-1.5 py-1 capitalize transition-colors",
-              filter === f
-                ? "bg-card text-foreground shadow-sm border border-border"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-
-      {grid}
-
-      <div className="pt-2.5 border-t border-border space-y-1.5 text-[11px] text-muted-foreground">
-        <LegendRow swatch="bg-primary" label="Current" />
-        <LegendRow swatch="border-emerald-500/50 bg-emerald-500/10 border" label="Answered" />
-        <LegendRow swatch="border-dashed border-border bg-muted/30 border" label="Visited / blank" />
-        <LegendRow swatch="border-border bg-muted/40 border" label="Not visited" />
-        <div className="flex items-center gap-2">
-          <Flag className="h-2.5 w-2.5 fill-amber-500 text-amber-500" />
-          <span>Flagged for review</span>
+      {/* Filter row (sticky-ish above scroll area) */}
+      <div className="px-3 pt-2.5 pb-2 border-b border-border">
+        <div className="grid grid-cols-3 gap-1 p-0.5 rounded-md bg-muted/40 border border-border text-[11px] font-medium">
+          {(["all", "unanswered", "flagged"] as const).map((f) => {
+            const count = f === "all" ? items.length : f === "unanswered" ? unanswered : flagged;
+            return (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFilter(f)}
+                className={cn(
+                  "rounded px-1.5 py-1 capitalize transition-colors flex items-center justify-center gap-1",
+                  filter === f
+                    ? "bg-card text-foreground shadow-sm border border-border"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <span>{f}</span>
+                <span className="tabular-nums opacity-60">{count}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
-    </div>
+
+      {/* Scrollable list of questions, grouped by section */}
+      <nav className="flex-1 overflow-y-auto px-1.5 py-2 space-y-3">
+        {effectiveSections.map((sec, sIdx) => {
+          const visibleIndices = sec.indices.filter(passes);
+          if (visibleIndices.length === 0 && filter !== "all") return null;
+          const isCollapsed = !!collapsed[sIdx];
+          const sectionDone = sec.indices.filter((i) => items[i]?.answered).length;
+          return (
+            <div key={sIdx}>
+              {sec.title && (
+                <button
+                  type="button"
+                  onClick={() => setCollapsed((c) => ({ ...c, [sIdx]: !c[sIdx] }))}
+                  className="w-full flex items-center gap-1.5 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold hover:text-foreground transition-colors"
+                >
+                  <ChevronDown
+                    className={cn(
+                      "h-3 w-3 transition-transform shrink-0",
+                      isCollapsed && "-rotate-90"
+                    )}
+                  />
+                  <span className="truncate flex-1 text-left">{sec.title}</span>
+                  <span className="tabular-nums normal-case opacity-70">
+                    {sectionDone}/{sec.indices.length}
+                  </span>
+                </button>
+              )}
+              {!isCollapsed && (
+                <ul className="space-y-0.5 mt-1">
+                  {sec.indices.map((i) => {
+                    const it = items[i];
+                    if (!it) return null;
+                    const active = i === currentIndex;
+                    const dim = !passes(i);
+                    if (dim && filter !== "all") return null;
+                    return (
+                      <li key={it.id}>
+                        <button
+                          onClick={() => onJump(i)}
+                          aria-current={active ? "true" : undefined}
+                          className={cn(
+                            "group w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors text-left",
+                            active
+                              ? "bg-primary/10 text-foreground ring-1 ring-primary/40"
+                              : "hover:bg-muted/60 text-foreground/80 hover:text-foreground"
+                          )}
+                        >
+                          {/* Status icon */}
+                          <StatusIcon
+                            answered={it.answered}
+                            visited={!!it.visited}
+                            active={active}
+                          />
+                          {/* Number */}
+                          <span
+                            className={cn(
+                              "tabular-nums font-semibold w-6 shrink-0 text-[11px]",
+                              active ? "text-primary" : "text-muted-foreground"
+                            )}
+                          >
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          {/* Label */}
+                          <span className="flex-1 truncate">
+                            Question {i + 1}
+                          </span>
+                          {/* Flag */}
+                          {it.flagged && (
+                            <Flag className="h-3 w-3 fill-amber-500 text-amber-500 shrink-0" />
+                          )}
+                          {/* Active rail accent */}
+                          {active && (
+                            <span className="h-4 w-0.5 rounded-full bg-primary shrink-0" />
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* Legend footer */}
+      <footer className="px-3 py-2 border-t border-border bg-muted/20 text-[10px] text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-1">
+        <LegendRow icon={<CheckCircle2 className="h-3 w-3 text-emerald-500" />} label="Answered" />
+        <LegendRow icon={<CircleDot className="h-3 w-3 text-muted-foreground" />} label="Visited" />
+        <LegendRow icon={<Circle className="h-3 w-3 text-muted-foreground/60" />} label="Not visited" />
+        <LegendRow icon={<Flag className="h-3 w-3 fill-amber-500 text-amber-500" />} label="Flagged" />
+      </footer>
+    </aside>
   );
 }
 
-function LegendRow({ swatch, label }: { swatch: string; label: string }) {
+function StatusIcon({
+  answered,
+  visited,
+  active,
+}: {
+  answered: boolean;
+  visited: boolean;
+  active: boolean;
+}) {
+  if (answered)
+    return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />;
+  if (active)
+    return <CircleDot className="h-3.5 w-3.5 text-primary shrink-0" />;
+  if (visited)
+    return <CircleDot className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+  return <Circle className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />;
+}
+
+function LegendRow({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className={cn("h-2.5 w-2.5 rounded-sm", swatch)} />
+    <div className="flex items-center gap-1.5">
+      {icon}
       <span>{label}</span>
     </div>
   );
