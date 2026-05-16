@@ -118,6 +118,7 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
   const [active, setActive] = useState(true);
   const [snapEnabled, setSnapEnabled] = useState<boolean>(() => loadSnapPref());
   const [snapping, setSnapping] = useState(false);
+  const [hidden, setHidden] = useState<boolean>(() => loadHiddenPref());
 
   // Persist snap preference
   useEffect(() => {
@@ -127,6 +128,16 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
       /* ignore */
     }
   }, [snapEnabled]);
+
+  // Persist hidden preference (proctoring keeps running either way)
+  useEffect(() => {
+    try {
+      localStorage.setItem(HIDDEN_PREF_KEY, hidden ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [hidden]);
+
 
 
 
