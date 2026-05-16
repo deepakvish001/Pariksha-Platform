@@ -1046,10 +1046,15 @@ export default function DsaStudio() {
 
                 {groups.map((g) => (
                   <section key={g.name} className="space-y-3">
-                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                      {g.name}
+                    <h3 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <span className="h-px flex-1 bg-border/40" />
+                      <span className="px-2">{g.name}</span>
+                      <span className="text-muted-foreground/60 font-mono normal-case tracking-normal">
+                        {g.problems.length}
+                      </span>
+                      <span className="h-px flex-1 bg-border/40" />
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                       {g.problems.map((p, idx) => {
                         const isSolved = solved.has(p.slug);
                         const isSaved = saved.has(p.slug);
@@ -1057,6 +1062,18 @@ export default function DsaStudio() {
                           e.preventDefault();
                           e.stopPropagation();
                         };
+                        const priorityAccent =
+                          p.priority === "P1"
+                            ? "from-rose-500/60 to-rose-500/0"
+                            : p.priority === "P2"
+                              ? "from-amber-400/60 to-amber-400/0"
+                              : "from-zinc-500/40 to-zinc-500/0";
+                        const priorityText =
+                          p.priority === "P1"
+                            ? "text-rose-400 bg-rose-500/10 border-rose-500/30"
+                            : p.priority === "P2"
+                              ? "text-amber-400 bg-amber-500/10 border-amber-500/30"
+                              : "text-zinc-400 bg-zinc-500/10 border-zinc-500/30";
                         return (
                           <motion.div
                             key={p.slug}
@@ -1070,61 +1087,90 @@ export default function DsaStudio() {
                               data-slug={p.slug}
                               state={{ from: "/learn/dsa-studio" }}
                               className={cn(
-                                "group flex items-center gap-2 rounded-lg border bg-card/40 px-3 py-2.5 hover:border-primary/40 hover:bg-card/60 transition-all",
+                                "group relative block overflow-hidden rounded-xl border bg-card/40 p-3.5 transition-all duration-200",
+                                "hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card/70 hover:shadow-lg hover:shadow-primary/5",
                                 isSolved
-                                  ? "border-emerald-500/40"
-                                  : idx === 0
-                                    ? "border-primary/40"
-                                    : "border-border/40",
+                                  ? "border-emerald-500/40 bg-emerald-500/[0.03]"
+                                  : "border-border/40",
                               )}
                             >
-                              <button
-                                onClick={(e) => { stop(e); toggleSaved(p.slug); }}
-                                aria-label={isSaved ? "Remove from saved" : "Save for later"}
-                                title={isSaved ? "Remove from saved" : "Save for later"}
+                              <span
+                                aria-hidden
                                 className={cn(
-                                  "transition-colors",
-                                  isSaved ? "text-amber-400" : "text-muted-foreground hover:text-amber-400",
+                                  "absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b opacity-80",
+                                  priorityAccent,
                                 )}
-                              >
-                                <Star className={cn("h-4 w-4", isSaved && "fill-current")} />
-                              </button>
-                              <button
-                                onClick={(e) => { stop(e); toggleSolved(p.slug); }}
-                                aria-label={isSolved ? "Mark as unsolved" : "Mark as solved"}
-                                title={isSolved ? "Mark as unsolved" : "Mark as solved"}
-                                className={cn(
-                                  "h-5 w-5 grid place-items-center rounded-full border transition-colors",
-                                  isSolved
-                                    ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
-                                    : "border-border/60 text-muted-foreground hover:text-emerald-400 hover:border-emerald-500/40",
-                                )}
-                              >
-                                <Check className="h-3 w-3" />
-                              </button>
-                              <span className="text-xs text-muted-foreground font-mono shrink-0">#{p.id}</span>
-                              <div className="flex-1 min-w-0">
-                                <div className={cn("text-sm font-medium truncate", isSolved && "line-through text-muted-foreground")}>
-                                  {p.title}
-                                </div>
-                                <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5">
-                                  <span>{p.tag}</span>
-                                  <span className="opacity-50">·</span>
-                                  <span className={cn(
-                                    "font-semibold",
-                                    p.priority === "P1" && "text-rose-400",
-                                    p.priority === "P2" && "text-amber-400",
-                                    p.priority === "P3" && "text-zinc-400",
-                                  )}>{p.priority}</span>
-                                  {p.free && <Lock className="h-2.5 w-2.5 opacity-40" />}
+                              />
+
+                              <div className="flex items-start gap-3 pl-1.5">
+                                <button
+                                  onClick={(e) => { stop(e); toggleSolved(p.slug); }}
+                                  aria-label={isSolved ? "Mark as unsolved" : "Mark as solved"}
+                                  title={isSolved ? "Mark as unsolved" : "Mark as solved"}
+                                  className={cn(
+                                    "mt-0.5 h-6 w-6 grid place-items-center rounded-full border-2 shrink-0 transition-all",
+                                    isSolved
+                                      ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-400"
+                                      : "border-border/60 text-transparent hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500/5",
+                                  )}
+                                >
+                                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                                </button>
+
+                                <div className="flex-1 min-w-0 space-y-1.5">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <h4 className={cn(
+                                      "text-sm font-semibold leading-snug line-clamp-2 group-hover:text-primary transition-colors",
+                                      isSolved && "text-muted-foreground line-through decoration-emerald-500/40",
+                                    )}>
+                                      {p.title}
+                                    </h4>
+                                    <button
+                                      onClick={(e) => { stop(e); toggleSaved(p.slug); }}
+                                      aria-label={isSaved ? "Remove from saved" : "Save for later"}
+                                      title={isSaved ? "Remove from saved" : "Save for later"}
+                                      className={cn(
+                                        "shrink-0 -mr-1 -mt-0.5 h-7 w-7 grid place-items-center rounded-md transition-all",
+                                        isSaved
+                                          ? "text-amber-400 bg-amber-500/10"
+                                          : "text-muted-foreground/50 hover:text-amber-400 hover:bg-amber-500/10 opacity-0 group-hover:opacity-100",
+                                      )}
+                                    >
+                                      <Star className={cn("h-3.5 w-3.5", isSaved && "fill-current")} />
+                                    </button>
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-[10px] font-mono text-muted-foreground/70 bg-muted/40 rounded px-1.5 py-0.5">
+                                      #{p.id}
+                                    </span>
+                                    <Badge
+                                      variant="outline"
+                                      className={cn("h-5 text-[10px] px-1.5 font-semibold border", diffStyles[p.difficulty])}
+                                    >
+                                      {p.difficulty}
+                                    </Badge>
+                                    <Badge
+                                      variant="outline"
+                                      className={cn("h-5 text-[10px] px-1.5 font-bold border", priorityText)}
+                                    >
+                                      {p.priority}
+                                    </Badge>
+                                    {p.free && (
+                                      <Badge
+                                        variant="outline"
+                                        className="h-5 text-[10px] px-1.5 gap-1 text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+                                      >
+                                        <Lock className="h-2.5 w-2.5" /> Free
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  <div className="text-[11px] text-muted-foreground truncate">
+                                    {p.tag}
+                                  </div>
                                 </div>
                               </div>
-                              <Badge variant="outline" className={cn("h-5 text-[10px]", diffStyles[p.difficulty])}>
-                                {p.difficulty}
-                              </Badge>
-                              {isSaved && (
-                                <BookmarkCheck className="h-3.5 w-3.5 text-amber-400" />
-                              )}
                             </Link>
                           </motion.div>
                         );
