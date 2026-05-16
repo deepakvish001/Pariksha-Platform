@@ -13,6 +13,7 @@ export type Assessment = {
   ends_at: string | null;
   max_attempts: number;
   proctoring_enabled: boolean;
+  proctoring_config: Record<string, unknown> | null;
   status: AssessmentStatus;
   created_by: string;
   created_at: string;
