@@ -353,7 +353,8 @@ export default function B2BDashboard() {
     navigate(target, { replace: true });
   }, [org, isLoading, navigate, base]);
 
-  const { data: stats } = useDashboardStats(org?.id);
+  const [statsRange, setStatsRange] = useState<"7d" | "30d" | "90d">("30d");
+  const { data: stats } = useDashboardStats(org?.id, statsRange);
   const { data: assessments } = useAssessments(org?.id);
   const series = useSubmissionsSeries(org?.id, 30);
   const [channelRange, setChannelRange] = useState<ChannelRange>("30d");
