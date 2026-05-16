@@ -1,51 +1,57 @@
-/* B2B (Parikshaa for Teams) theme — matches main landing page (dark + amber).
+/* B2B (Parikshaa for Teams) theme — dark indigo, matches /college-dashboard clone.
    Scoped to the .theme-b2b wrapper so it doesn't bleed into the learning app. */
 .theme-b2b {
-  --background: 0 0% 4%;
+  --background: 240 20% 3%;          /* #050508 */
   --foreground: 0 0% 98%;
 
-  --card: 0 0% 7%;
+  --card: 240 14% 6%;                /* #0d0d12 */
   --card-foreground: 0 0% 98%;
 
-  --popover: 0 0% 7%;
+  --popover: 240 14% 6%;
   --popover-foreground: 0 0% 98%;
 
-  --primary: 24 95% 53%;             /* amber/orange — same as landing */
+  --primary: 239 84% 67%;            /* indigo-500 #6366f1 */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 0 0% 12%;
+  --secondary: 240 10% 10%;
   --secondary-foreground: 0 0% 98%;
 
-  --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 65%;
+  --muted: 240 8% 12%;
+  --muted-foreground: 240 5% 65%;
 
-  --accent: 38 92% 55%;              /* warm amber accent */
+  --accent: 252 83% 70%;             /* violet/purple accent */
   --accent-foreground: 0 0% 9%;
 
   --destructive: 0 72% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 0 0% 18%;
-  --input: 0 0% 18%;
-  --ring: 24 95% 53%;
+  --border: 240 10% 14%;
+  --input: 240 10% 14%;
+  --ring: 239 84% 67%;
 
-  --radius: 0.625rem;
+  --radius: 0.875rem;
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
 }
 
-/* Glassy card to echo landing-page glassmorphism */
+/* Glassy card to echo the dark indigo dashboard aesthetic */
 .theme-b2b .b2b-card {
-  background: hsl(var(--card) / 0.6);
-  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card) / 0.85);
+  border: 1px solid hsl(0 0% 100% / 0.05);
   border-radius: var(--radius);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow:
     0 1px 0 hsl(0 0% 100% / 0.03) inset,
-    0 10px 30px -12px hsl(0 0% 0% / 0.5);
+    0 10px 30px -12px hsl(0 0% 0% / 0.6);
 }
 
 .theme-b2b .b2b-card:hover {
-  border-color: hsl(var(--primary) / 0.35);
+  border-color: hsl(var(--primary) / 0.4);
+}
+
+/* Soften default shadcn card borders inside the B2B theme to match the clone. */
+.theme-b2b [class*="rounded-lg"][class*="border"][class*="bg-card"],
+.theme-b2b .border {
+  border-color: hsl(0 0% 100% / 0.06);
 }
