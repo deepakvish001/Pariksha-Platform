@@ -211,6 +211,11 @@ export default function Player() {
             <Button size="sm" onClick={() => doSubmit(false)} disabled={submitAttempt.isPending}>
               <Send className="h-4 w-4 mr-1" /> Submit
             </Button>
+            {isPreview && (
+              <Button size="sm" variant="outline" onClick={prefillAnswerKey} title="Prefill correct answers">
+                <Wand2 className="h-4 w-4 mr-1" /> Prefill key
+              </Button>
+            )}
           </div>
         </div>
         <Progress value={(answeredCount / Math.max(1, totalQ)) * 100} className="h-1 rounded-none" />
