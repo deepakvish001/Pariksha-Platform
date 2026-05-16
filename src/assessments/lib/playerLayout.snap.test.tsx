@@ -74,10 +74,14 @@ describe("Player layout shell — structural snapshots", () => {
   }
 
   it("MCQ / coding / SQL render byte-identical shells", () => {
-    const html = (type: PaperQuestionType) =>
-      render(<LayoutShell questionType={type} focusMode={false} />).getByTestId(
-        "player-main"
-      ).outerHTML;
+    const html = (type: PaperQuestionType) => {
+      const { container, unmount } = render(
+        <LayoutShell questionType={type} focusMode={false} />
+      );
+      const out = container.querySelector('[data-testid="player-main"]')!.outerHTML;
+      unmount();
+      return out;
+    };
 
     const mcq = html("mcq");
     expect(html("coding")).toBe(mcq);
