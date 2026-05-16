@@ -47,7 +47,7 @@ interface AttemptEvent {
   created_at: string;
 }
 
-const VIOLATION_KINDS = new Set([
+const VIOLATION_KIND_LIST = [
   "violation_strike",
   "tab_hidden",
   "window_blur",
@@ -57,7 +57,8 @@ const VIOLATION_KINDS = new Set([
   "devtools_attempt",
   "print_blocked",
   "auto_submitted",
-]);
+] as const;
+const VIOLATION_KINDS = new Set<string>(VIOLATION_KIND_LIST);
 
 const STATUS_OPTIONS = ["all", "in_progress", "submitted", "auto_submitted", "abandoned"];
 
@@ -65,6 +66,8 @@ export default function ParikshaaProctoring() {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AttemptRow[]>([]);
   const [assessments, setAssessments] = useState<{ id: string; title: string }[]>([]);
+  /** Map of attempt_id → set of violation kinds present on that attempt. */
+  const [kindsByAttempt, setKindsByAttempt] = useState<Map<string, Set<string>>>(new Map());
 
   // filters
   const [assessmentId, setAssessmentId] = useState<string>("all");
@@ -73,6 +76,8 @@ export default function ParikshaaProctoring() {
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [search, setSearch] = useState<string>("");
+  /** Selected violation kinds; empty = no kind filter. */
+  const [selectedKinds, setSelectedKinds] = useState<Set<string>>(new Set());
 
   const [expanded, setExpanded] = useState<Record<string, AttemptEvent[] | "loading">>({});
 
@@ -90,6 +95,7 @@ export default function ParikshaaProctoring() {
 
       const ids = (att ?? []).map((a) => a.id);
       let snapMap = new Map<string, { count: number; first: string | null; last: string | null }>();
+      const kMap = new Map<string, Set<string>>();
       if (ids.length > 0) {
         const { data: ev } = await supabase
           .from("attempt_events")
@@ -103,7 +109,20 @@ export default function ParikshaaProctoring() {
           if (!prev.last || e.created_at > prev.last) prev.last = e.created_at;
           snapMap.set(e.attempt_id, prev);
         }
+
+        // Aggregate violation kinds present per attempt (drives kind filter).
+        const { data: vev } = await supabase
+          .from("attempt_events")
+          .select("attempt_id,kind")
+          .in("attempt_id", ids)
+          .in("kind", VIOLATION_KIND_LIST as unknown as string[]);
+        for (const e of vev ?? []) {
+          const set = kMap.get(e.attempt_id) ?? new Set<string>();
+          set.add(e.kind);
+          kMap.set(e.attempt_id, set);
+        }
       }
+      setKindsByAttempt(kMap);
 
       const mapped: AttemptRow[] = (att ?? []).map((a: any) => {
         const s = snapMap.get(a.id);
@@ -149,6 +168,7 @@ export default function ParikshaaProctoring() {
     const fromTs = from ? new Date(from).getTime() : null;
     const toTs = to ? new Date(to).getTime() : null;
     const q = search.trim().toLowerCase();
+    const kindFilterActive = selectedKinds.size > 0;
     return rows.filter((r) => {
       if (assessmentId !== "all" && r.assessment_id !== assessmentId) return false;
       if (status !== "all" && r.status !== status) return false;
@@ -157,9 +177,26 @@ export default function ParikshaaProctoring() {
       if (fromTs && t < fromTs) return false;
       if (toTs && t > toTs) return false;
       if (q && !(r.user_id.toLowerCase().includes(q) || r.id.toLowerCase().includes(q) || r.assessment_title.toLowerCase().includes(q))) return false;
+      if (kindFilterActive) {
+        const present = kindsByAttempt.get(r.id);
+        if (!present) return false;
+        let any = false;
+        for (const k of selectedKinds) {
+          if (present.has(k)) { any = true; break; }
+        }
+        if (!any) return false;
+      }
       return true;
     });
-  }, [rows, assessmentId, status, minViolations, from, to, search]);
+  }, [rows, assessmentId, status, minViolations, from, to, search, selectedKinds, kindsByAttempt]);
+
+  const toggleKind = (k: string) =>
+    setSelectedKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
 
   const toggleExpand = async (id: string) => {
     if (expanded[id]) {
@@ -309,6 +346,54 @@ export default function ParikshaaProctoring() {
         <div className="space-y-1 md:col-start-6">
           <Label className="text-xs">To</Label>
           <Input type="datetime-local" value={to} onChange={(e) => setTo(e.target.value)} />
+        </div>
+      </div>
+
+      {/* Violation kind chips — multi-select. */}
+      <div className="rounded-lg border bg-card p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-xs">Violation kinds</Label>
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <span className="tabular-nums">
+              {selectedKinds.size === 0
+                ? "any"
+                : `${selectedKinds.size} selected (matches any)`}
+            </span>
+            {selectedKinds.size > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[11px]"
+                onClick={() => setSelectedKinds(new Set())}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {VIOLATION_KIND_LIST.map((k) => {
+            const active = selectedKinds.has(k);
+            let count = 0;
+            for (const set of kindsByAttempt.values()) if (set.has(k)) count += 1;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => toggleKind(k)}
+                aria-pressed={active}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-mono transition-colors",
+                  active
+                    ? "bg-amber-500/15 border-amber-500/60 text-amber-700 dark:text-amber-300"
+                    : "border-border hover:bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {k}
+                <span className="opacity-60 tabular-nums">{count}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
