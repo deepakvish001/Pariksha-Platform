@@ -406,6 +406,19 @@ export default function Player() {
     );
   }
 
+  // Lockdown gate — block the player until camera + fullscreen are granted.
+  if (!lockdownReady && attemptId) {
+    return (
+      <AssessmentLockdownGate
+        attemptId={attemptId}
+        onReady={(s) => {
+          setCamStream(s);
+          setLockdownReady(true);
+        }}
+      />
+    );
+  }
+
   const isWideQuestion = q?.type === "coding" || q?.type === "sql";
   const isFlagged = q ? flagged.has(q.id) : false;
   const unansweredCount = totalQ - answeredCount;
