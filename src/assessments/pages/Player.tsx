@@ -1,19 +1,32 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Clock, Send, ChevronLeft, ChevronRight, CheckCircle2, ShieldCheck, Maximize2, Wand2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, Flag } from "lucide-react";
 import { usePaper, useExistingAnswers, useSaveAnswer, useSubmitAttempt, type PaperQuestion } from "../hooks/usePaper";
 import { useProctoring } from "../hooks/useProctoring";
 import { supabase } from "@/integrations/supabase/client";
+import { PlayerTopBar } from "../components/PlayerTopBar";
+import { QuestionPalette } from "../components/QuestionPalette";
+import { CodingQuestion } from "../components/CodingQuestion";
+import { SqlQuestion } from "../components/SqlQuestion";
+import { cn } from "@/lib/utils";
 
 type AnswerMap = Record<string, Record<string, unknown>>;
 
@@ -26,7 +39,7 @@ export default function Player() {
   const { data: existing } = useExistingAnswers(attemptId);
   const saveAnswer = useSaveAnswer();
   const submitAttempt = useSubmitAttempt();
-  const proctoringEnabled = !!paper?.assessment.proctoring_enabled && paper.attempt.status === "in_progress";
+  const proctoringEnabled = !!paper?.assessment.proctoring_enabled && paper?.attempt.status === "in_progress";
   const { requestFullscreen } = useProctoring(attemptId, proctoringEnabled);
 
   const flatQuestions = useMemo<PaperQuestion[]>(
@@ -35,8 +48,11 @@ export default function Player() {
   );
 
   const [answers, setAnswers] = useState<AnswerMap>({});
+  const [flagged, setFlagged] = useState<Set<string>>(new Set());
   const [idx, setIdx] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
   // Hydrate from existing answers
   useEffect(() => {
@@ -46,7 +62,7 @@ export default function Player() {
     setAnswers((prev) => ({ ...map, ...prev }));
   }, [existing]);
 
-  // Timer — based on assessment duration and started_at
+  // Timer
   const deadline = useMemo(() => {
     if (!paper) return null;
     const started = new Date(paper.attempt.started_at).getTime();
@@ -59,15 +75,37 @@ export default function Player() {
   }, []);
   const remaining = deadline ? Math.max(0, deadline - now) : 0;
 
-  // Auto-submit
   const submittedRef = useRef(false);
+  const doSubmit = useCallback(
+    async (auto = false) => {
+      if (!attemptId) return;
+      Object.values(debounceRef.current).forEach((t) => window.clearTimeout(t));
+      for (const [qid, ans] of Object.entries(answers)) {
+        try {
+          await saveAnswer.mutateAsync({ attempt_id: attemptId, question_id: qid, answer: ans });
+        } catch {
+          /* noop */
+        }
+      }
+      try {
+        await submitAttempt.mutateAsync(attemptId);
+        setSubmitted(true);
+        toast.success(auto ? "Time's up — auto-submitted" : "Submitted successfully");
+      } catch (e: unknown) {
+        toast.error(e instanceof Error ? e.message : "Failed to submit");
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [attemptId, answers, saveAnswer, submitAttempt]
+  );
+
+  // Auto-submit on timer end
   useEffect(() => {
     if (deadline && remaining === 0 && !submittedRef.current && paper && paper.attempt.status === "in_progress") {
       submittedRef.current = true;
       doSubmit(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remaining, deadline, paper]);
+  }, [remaining, deadline, paper, doSubmit]);
 
   // Debounced autosave
   const debounceRef = useRef<Record<string, number>>({});
@@ -75,7 +113,10 @@ export default function Player() {
     if (!attemptId) return;
     window.clearTimeout(debounceRef.current[qid]);
     debounceRef.current[qid] = window.setTimeout(() => {
-      saveAnswer.mutate({ attempt_id: attemptId, question_id: qid, answer: ans });
+      saveAnswer.mutate(
+        { attempt_id: attemptId, question_id: qid, answer: ans },
+        { onSuccess: () => setLastSavedAt(Date.now()) }
+      );
     }, 600);
   };
 
@@ -84,29 +125,10 @@ export default function Player() {
     queueSave(qid, ans);
   };
 
-  const doSubmit = async (auto = false) => {
-    if (!attemptId) return;
-    // flush pending saves
-    Object.values(debounceRef.current).forEach((t) => window.clearTimeout(t));
-    for (const [qid, ans] of Object.entries(answers)) {
-      try {
-        await saveAnswer.mutateAsync({ attempt_id: attemptId, question_id: qid, answer: ans });
-      } catch {
-        /* noop */
-      }
-    }
-    try {
-      await submitAttempt.mutateAsync(attemptId);
-      setSubmitted(true);
-      toast.success(auto ? "Time's up — auto-submitted" : "Submitted successfully");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to submit");
-    }
-  };
-
   const prefillAnswerKey = async () => {
     if (!attemptId || !paper) return;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error: rpcErr } = await (supabase as any).rpc("get_assessment_answer_key", {
         _assessment: paper.assessment.id,
       });
@@ -117,21 +139,18 @@ export default function Player() {
         if (key[qq.id]) next[qq.id] = key[qq.id];
       }
       setAnswers(next);
-      // Persist each immediately
       for (const [qid, ans] of Object.entries(next)) {
         try {
           await saveAnswer.mutateAsync({ attempt_id: attemptId, question_id: qid, answer: ans });
-        } catch { /* noop */ }
+        } catch {
+          /* noop */
+        }
       }
       toast.success("Answer key prefilled");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to load answer key");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to load answer key");
     }
   };
-
-  if (isLoading) return null;
-  if (error) return <div className="theme-b2b p-8 min-h-screen">Failed to load: {(error as Error).message}</div>;
-  if (!paper) return null;
 
   const isAnswered = (qq: PaperQuestion, a: Record<string, unknown> | undefined): boolean => {
     if (!a) return false;
@@ -148,18 +167,64 @@ export default function Player() {
     return false;
   };
 
+  const totalQ = flatQuestions.length;
+  const answeredCount = flatQuestions.filter((x) => isAnswered(x, answers[x.id])).length;
+  const q = flatQuestions[idx];
+
+  // Keyboard shortcuts (skip when typing in inputs / monaco)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const inEditor =
+        tag === "input" ||
+        tag === "textarea" ||
+        target?.isContentEditable ||
+        !!target?.closest(".monaco-editor");
+      if (inEditor) return;
+      if (e.key === "ArrowLeft") setIdx((i) => Math.max(0, i - 1));
+      else if (e.key === "ArrowRight") setIdx((i) => Math.min(totalQ - 1, i + 1));
+      else if (e.key === "f" || e.key === "F") {
+        if (!q) return;
+        setFlagged((prev) => {
+          const next = new Set(prev);
+          if (next.has(q.id)) next.delete(q.id);
+          else next.add(q.id);
+          return next;
+        });
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [q, totalQ]);
+
+  if (isLoading) return null;
+  if (error)
+    return (
+      <div className="theme-b2b p-8 min-h-screen bg-[hsl(var(--background))]">
+        Failed to load: {(error as Error).message}
+      </div>
+    );
+  if (!paper) return null;
+
   if (paper.attempt.status !== "in_progress" || submitted) {
     const assessmentId = paper.assessment.id;
     return (
       <div className="theme-b2b min-h-screen grid place-items-center p-8 bg-[hsl(var(--background))]">
         <Card className="max-w-md w-full">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-green-600" /> Submitted</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" /> Submitted
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Your responses have been recorded.{!isPreview && " The recruiter will review your attempt."}</p>
+            <p>
+              Your responses have been recorded.{!isPreview && " The recruiter will review your attempt."}
+            </p>
             {typeof paper.attempt.score === "number" && (
-              <p>Auto-graded score: <b className="text-foreground">{paper.attempt.score}</b></p>
+              <p>
+                Auto-graded score: <b className="text-foreground">{paper.attempt.score}</b>
+              </p>
             )}
             <div className="flex flex-wrap gap-2 pt-1">
               {isPreview && (
@@ -167,7 +232,10 @@ export default function Player() {
                   View grading & feedback
                 </Button>
               )}
-              <Button variant={isPreview ? "outline" : "default"} onClick={() => navigate(isPreview ? `/b2b/assessments/${assessmentId}` : "/assessments")}>
+              <Button
+                variant={isPreview ? "outline" : "default"}
+                onClick={() => navigate(isPreview ? `/b2b/assessments/${assessmentId}` : "/assessments")}
+              >
                 {isPreview ? "Back to assessment" : "Back to my assessments"}
               </Button>
             </div>
@@ -177,111 +245,187 @@ export default function Player() {
     );
   }
 
-  const q = flatQuestions[idx];
-  const totalQ = flatQuestions.length;
-  const answeredCount = flatQuestions.filter((x) => isAnswered(x, answers[x.id])).length;
-
-  const mins = Math.floor(remaining / 60_000);
-  const secs = Math.floor((remaining % 60_000) / 1000);
+  const isWideQuestion = q?.type === "coding" || q?.type === "sql";
+  const isFlagged = q ? flagged.has(q.id) : false;
+  const unansweredCount = totalQ - answeredCount;
+  const flaggedCount = flagged.size;
 
   return (
-    <div className="theme-b2b min-h-screen bg-[hsl(var(--background))]">
-      {/* Top bar */}
-      <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-sm font-semibold truncate">{paper.assessment.title}</h1>
-            <p className="text-xs text-muted-foreground">{answeredCount} / {totalQ} answered</p>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            {proctoringEnabled && (
-              <div className="hidden sm:flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                <ShieldCheck className="h-3.5 w-3.5" /> Proctored
-              </div>
-            )}
-            {proctoringEnabled && (
-              <Button size="sm" variant="outline" onClick={requestFullscreen} title="Enter fullscreen">
-                <Maximize2 className="h-4 w-4" />
-              </Button>
-            )}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[hsl(var(--muted))] text-sm font-mono">
-              <Clock className="h-4 w-4" />
-              {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
-            </div>
-            <Button size="sm" onClick={() => doSubmit(false)} disabled={submitAttempt.isPending}>
-              <Send className="h-4 w-4 mr-1" /> Submit
-            </Button>
-            {isPreview && (
-              <Button size="sm" variant="outline" onClick={prefillAnswerKey} title="Prefill correct answers">
-                <Wand2 className="h-4 w-4 mr-1" /> Prefill key
-              </Button>
-            )}
-          </div>
-        </div>
-        <Progress value={(answeredCount / Math.max(1, totalQ)) * 100} className="h-1 rounded-none" />
-      </header>
+    <div className="theme-b2b min-h-screen bg-[hsl(var(--background))] flex flex-col">
+      <PlayerTopBar
+        title={paper.assessment.title}
+        answered={answeredCount}
+        total={totalQ}
+        remainingMs={remaining}
+        proctoring={proctoringEnabled}
+        isPreview={isPreview}
+        submitting={submitAttempt.isPending}
+        onSubmit={() => setConfirmOpen(true)}
+        onFullscreen={requestFullscreen}
+        onPrefillKey={prefillAnswerKey}
+      />
 
-      <main className="max-w-6xl mx-auto p-4 grid md:grid-cols-[220px_1fr] gap-4">
-        {/* Question palette */}
+      <main
+        className={cn(
+          "flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4",
+          isWideQuestion ? "max-w-[1600px] md:grid-cols-[220px_1fr]" : "max-w-6xl md:grid-cols-[220px_1fr]"
+        )}
+      >
         <aside className="hidden md:block">
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Questions</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-5 gap-2">
-              {flatQuestions.map((qi, i) => {
-                const a = answers[qi.id];
-                const done = isAnswered(qi, a);
-                return (
-                  <button
-                    key={qi.id}
-                    onClick={() => setIdx(i)}
-                    className={`h-8 w-8 rounded text-xs font-medium border transition ${
-                      i === idx
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : done
-                        ? "bg-green-500/15 border-green-500/40 text-green-700 dark:text-green-400"
-                        : "bg-[hsl(var(--muted))] border-[hsl(var(--border))]"
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                );
-              })}
-            </CardContent>
-          </Card>
+          <div className="sticky top-[5rem]">
+            <QuestionPalette
+              items={flatQuestions.map((qq) => ({
+                id: qq.id,
+                answered: isAnswered(qq, answers[qq.id]),
+                flagged: flagged.has(qq.id),
+              }))}
+              currentIndex={idx}
+              onJump={setIdx}
+            />
+          </div>
         </aside>
 
-        {/* Active question */}
-        <section>
+        <section className="min-w-0">
           {q ? (
+            isWideQuestion ? (
+              q.type === "coding" ? (
+                <CodingQuestion
+                  question={q}
+                  value={answers[q.id]}
+                  onChange={(v) => setQuestionAnswer(q.id, v)}
+                  isPreview={isPreview}
+                />
+              ) : (
+                <SqlQuestion question={q} value={answers[q.id]} onChange={(v) => setQuestionAnswer(q.id, v)} />
+              )
+            ) : (
+              <Card className="overflow-hidden">
+                <CardHeader className="bg-[hsl(var(--muted))]/30 border-b border-[hsl(var(--border))]">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant="outline" className="uppercase text-[10px]">
+                      {q.type.replace("_", " ")}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Q {idx + 1} of {totalQ} · {q.points} pts
+                    </span>
+                  </div>
+                  <CardTitle className="text-lg mt-2">{q.title}</CardTitle>
+                  {q.body_md && (
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{q.body_md}</p>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4 pt-5">
+                  <QuestionInput
+                    question={q}
+                    value={answers[q.id]}
+                    onChange={(v) => setQuestionAnswer(q.id, v)}
+                  />
+                </CardContent>
+              </Card>
+            )
+          ) : (
             <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between gap-2">
-                  <Badge variant="outline" className="uppercase">{q.type}</Badge>
-                  <span className="text-xs text-muted-foreground">Q {idx + 1} of {totalQ} · {q.points} pts</span>
-                </div>
-                <CardTitle className="text-lg mt-2">{q.title}</CardTitle>
-                {q.body_md && (
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{q.body_md}</p>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <QuestionInput question={q} value={answers[q.id]} onChange={(v) => setQuestionAnswer(q.id, v)} />
-
-                <div className="flex items-center justify-between pt-2">
-                  <Button variant="outline" size="sm" disabled={idx === 0} onClick={() => setIdx((i) => i - 1)}>
-                    <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-                  </Button>
-                  <Button size="sm" disabled={idx >= totalQ - 1} onClick={() => setIdx((i) => i + 1)}>
-                    Next <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
+              <CardContent className="p-8 text-sm text-muted-foreground">
+                No questions in this assessment yet.
               </CardContent>
             </Card>
-          ) : (
-            <Card><CardContent className="p-8 text-sm text-muted-foreground">No questions in this assessment yet.</CardContent></Card>
           )}
         </section>
       </main>
+
+      {/* Sticky bottom bar */}
+      <footer className="sticky bottom-0 z-30 border-t border-[hsl(var(--border))] bg-[hsl(var(--card))]/95 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--card))]/80">
+        <div className="px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={idx === 0}
+            onClick={() => setIdx((i) => i - 1)}
+            className="h-8"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+          </Button>
+          <div className="flex items-center gap-2 sm:gap-4 text-xs">
+            <Button
+              variant={isFlagged ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                if (!q) return;
+                setFlagged((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(q.id)) next.delete(q.id);
+                  else next.add(q.id);
+                  return next;
+                });
+              }}
+              className={cn(
+                "h-8",
+                isFlagged && "bg-amber-500 hover:bg-amber-500/90 text-white border-amber-500"
+              )}
+            >
+              <Flag className={cn("h-3.5 w-3.5 mr-1.5", isFlagged && "fill-current")} />
+              {isFlagged ? "Flagged" : "Flag"}
+            </Button>
+            <span className="text-muted-foreground hidden sm:inline tabular-nums">
+              {lastSavedAt
+                ? `Saved · ${new Date(lastSavedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                : "Autosaving"}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            disabled={idx >= totalQ - 1}
+            onClick={() => setIdx((i) => i + 1)}
+            className="h-8"
+          >
+            Next <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      </footer>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit your assessment?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>Once submitted, you will not be able to change your answers.</p>
+                <div className="grid grid-cols-3 gap-2 pt-2">
+                  <Stat label="Answered" value={answeredCount} tone="emerald" />
+                  <Stat label="Unanswered" value={unansweredCount} tone={unansweredCount > 0 ? "amber" : "muted"} />
+                  <Stat label="Flagged" value={flaggedCount} tone={flaggedCount > 0 ? "amber" : "muted"} />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep working</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmOpen(false);
+                doSubmit(false);
+              }}
+            >
+              Submit now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: number; tone: "emerald" | "amber" | "muted" }) {
+  const toneClass =
+    tone === "emerald"
+      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+      : tone === "amber"
+      ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+      : "border-[hsl(var(--border))] bg-[hsl(var(--muted))]/40 text-muted-foreground";
+  return (
+    <div className={cn("rounded-md border p-2 text-center", toneClass)}>
+      <div className="text-lg font-semibold tabular-nums">{value}</div>
+      <div className="text-[10px] uppercase tracking-wide">{label}</div>
     </div>
   );
 }
@@ -299,33 +443,54 @@ function QuestionInput({
     const selected = new Set<string>(((value?.selected as string[]) ?? []));
     return (
       <div className="space-y-2">
-        {(question.options ?? []).map((o) => (
-          <label
-            key={o.id}
-            className="flex items-start gap-3 p-3 border border-[hsl(var(--border))] rounded-md cursor-pointer hover:bg-[hsl(var(--muted))]"
-          >
-            <Checkbox
-              checked={selected.has(o.id)}
-              onCheckedChange={(checked) => {
-                const next = new Set(selected);
-                if (checked) next.add(o.id); else next.delete(o.id);
-                onChange({ selected: Array.from(next) });
-              }}
-            />
-            <span className="text-sm">{o.body}</span>
-          </label>
-        ))}
+        {(question.options ?? []).map((o, i) => {
+          const checked = selected.has(o.id);
+          return (
+            <label
+              key={o.id}
+              className={cn(
+                "flex items-start gap-3 p-3.5 border rounded-lg cursor-pointer transition group",
+                checked
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-[hsl(var(--border))] hover:border-primary/40 hover:bg-[hsl(var(--muted))]/40"
+              )}
+            >
+              <Checkbox
+                checked={checked}
+                onCheckedChange={(c) => {
+                  const next = new Set(selected);
+                  if (c) next.add(o.id);
+                  else next.delete(o.id);
+                  onChange({ selected: Array.from(next) });
+                }}
+              />
+              <div className="flex-1 min-w-0">
+                <span className="text-sm leading-relaxed">{o.body}</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground tabular-nums opacity-60 group-hover:opacity-100">
+                {String.fromCharCode(65 + i)}
+              </span>
+            </label>
+          );
+        })}
       </div>
     );
   }
   if (question.type === "subjective") {
+    const text = (value?.text as string) ?? "";
     return (
-      <Textarea
-        rows={10}
-        placeholder="Type your answer here…"
-        value={(value?.text as string) ?? ""}
-        onChange={(e) => onChange({ text: e.target.value })}
-      />
+      <div className="space-y-1.5">
+        <Textarea
+          rows={10}
+          placeholder="Type your answer here…"
+          value={text}
+          onChange={(e) => onChange({ text: e.target.value })}
+          className="resize-y"
+        />
+        <p className="text-[11px] text-muted-foreground tabular-nums">
+          {text.trim().split(/\s+/).filter(Boolean).length} words · {text.length} chars
+        </p>
+      </div>
     );
   }
   if (question.type === "true_false") {
@@ -336,94 +501,49 @@ function QuestionInput({
         onValueChange={(v) => onChange({ selected: [v] })}
         className="space-y-2"
       >
-        {(question.options ?? []).map((o) => (
-          <label
-            key={o.id}
-            htmlFor={`tf-${o.id}`}
-            className="flex items-center gap-3 p-3 border border-[hsl(var(--border))] rounded-md cursor-pointer hover:bg-[hsl(var(--muted))]"
-          >
-            <RadioGroupItem id={`tf-${o.id}`} value={o.id} />
-            <span className="text-sm">{o.body}</span>
-          </label>
-        ))}
+        {(question.options ?? []).map((o) => {
+          const active = selected === o.id;
+          return (
+            <label
+              key={o.id}
+              htmlFor={`tf-${o.id}`}
+              className={cn(
+                "flex items-center gap-3 p-3.5 border rounded-lg cursor-pointer transition",
+                active
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-[hsl(var(--border))] hover:border-primary/40 hover:bg-[hsl(var(--muted))]/40"
+              )}
+            >
+              <RadioGroupItem id={`tf-${o.id}`} value={o.id} />
+              <span className="text-sm">{o.body}</span>
+            </label>
+          );
+        })}
       </RadioGroup>
     );
   }
   if (question.type === "short_answer") {
     const maxLen = Number((question.meta as Record<string, unknown> | null)?.max_length) || 200;
+    const text = (value?.text as string) ?? "";
     return (
-      <Input
-        maxLength={maxLen}
-        placeholder="Type your answer…"
-        value={(value?.text as string) ?? ""}
-        onChange={(e) => onChange({ text: e.target.value })}
-      />
+      <div className="space-y-1.5">
+        <Input
+          maxLength={maxLen}
+          placeholder="Type your answer…"
+          value={text}
+          onChange={(e) => onChange({ text: e.target.value })}
+        />
+        <p className="text-[11px] text-muted-foreground tabular-nums text-right">
+          {text.length} / {maxLen}
+        </p>
+      </div>
     );
   }
   if (question.type === "matching") {
     return <MatchingInput question={question} value={value} onChange={onChange} />;
   }
-  if (question.type === "sql") {
-    return (
-      <div className="space-y-2">
-        <Textarea
-          rows={8}
-          className="font-mono text-sm"
-          placeholder="-- Write your SQL query"
-          value={(value?.query as string) ?? ""}
-          onChange={(e) => onChange({ ...(value ?? {}), query: e.target.value })}
-        />
-        <Textarea
-          rows={4}
-          className="font-mono text-sm"
-          placeholder="Paste the output your query produces (used for auto-grading)"
-          value={(value?.output as string) ?? ""}
-          onChange={(e) => onChange({ ...(value ?? {}), output: e.target.value })}
-        />
-        {question.sample_tests && question.sample_tests.length > 0 && (
-          <details className="text-xs text-muted-foreground">
-            <summary className="cursor-pointer">Sample expected output</summary>
-            <pre className="mt-2 p-2 bg-[hsl(var(--muted))] rounded">{question.sample_tests[0].expected_output}</pre>
-          </details>
-        )}
-      </div>
-    );
-  }
-  // coding
-  return (
-    <div className="space-y-2">
-      {question.language && (
-        <Badge variant="secondary" className="text-xs">{question.language}</Badge>
-      )}
-      <Textarea
-        rows={14}
-        className="font-mono text-sm"
-        placeholder={question.starter_code ?? "// Write your solution"}
-        value={(value?.code as string) ?? question.starter_code ?? ""}
-        onChange={(e) => onChange({ code: e.target.value, language: question.language })}
-      />
-      {question.sample_tests && question.sample_tests.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Sample tests</p>
-          {question.sample_tests.map((t, i) => (
-            <div key={i} className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <p className="text-muted-foreground mb-1">Input</p>
-                <pre className="p-2 bg-[hsl(var(--muted))] rounded whitespace-pre-wrap">{t.input}</pre>
-              </div>
-              <div>
-                <p className="text-muted-foreground mb-1">Expected</p>
-                <pre className="p-2 bg-[hsl(var(--muted))] rounded whitespace-pre-wrap">{t.expected_output}</pre>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <p className="text-xs text-muted-foreground">
-        Code submissions are queued for review. Automated grading for coding will arrive in a later step.
-      </p>
-    </div>
-  );
+  // fallback (coding/sql handled by parent in wide layout)
+  return null;
 }
 
 function MatchingInput({
@@ -441,7 +561,6 @@ function MatchingInput({
   const rights = Array.from(new Set(pairs.map((p) => p.right)));
   const current = (value?.pairs as Record<string, string>) ?? {};
 
-  // Stable shuffle of rights keyed off the question id
   const shuffledRights = useMemo(() => {
     const arr = [...rights];
     let seed = 0;
@@ -508,7 +627,9 @@ function MatchingInput({
             : "Click an item on the left, then click its match on the right."}
         </span>
         <div className="flex items-center gap-3">
-          <span>{matchedCount} / {lefts.length} matched</span>
+          <span>
+            {matchedCount} / {lefts.length} matched
+          </span>
           {matchedCount > 0 && (
             <button type="button" onClick={() => onChange({ pairs: {} })} className="underline hover:text-foreground">
               Clear all
@@ -528,13 +649,14 @@ function MatchingInput({
                 key={left}
                 type="button"
                 onClick={() => onLeftClick(left)}
-                className={`w-full text-left text-sm px-3 py-2 rounded-md border transition flex items-center justify-between gap-2 ${
+                className={cn(
+                  "w-full text-left text-sm px-3 py-2 rounded-md border transition flex items-center justify-between gap-2",
                   isSelected
                     ? "border-primary ring-2 ring-primary/40 bg-primary/5"
                     : paired
                     ? colorClasses[color]
                     : "border-[hsl(var(--border))] bg-[hsl(var(--muted))] hover:bg-[hsl(var(--accent))]"
-                }`}
+                )}
               >
                 <span className="font-medium truncate">{left}</span>
                 {paired && (
@@ -553,11 +675,11 @@ function MatchingInput({
                 key={right}
                 type="button"
                 onClick={() => onRightClick(right)}
-                className={`w-full text-left text-sm px-3 py-2 rounded-md border transition flex items-center justify-between gap-2 ${
-                  color
-                    ? colorClasses[color]
-                    : "border-[hsl(var(--border))] bg-[hsl(var(--muted))] hover:bg-[hsl(var(--accent))]"
-                } ${selectedLeft && !owner ? "ring-1 ring-primary/40" : ""}`}
+                className={cn(
+                  "w-full text-left text-sm px-3 py-2 rounded-md border transition flex items-center justify-between gap-2",
+                  color ? colorClasses[color] : "border-[hsl(var(--border))] bg-[hsl(var(--muted))] hover:bg-[hsl(var(--accent))]",
+                  selectedLeft && !owner && "ring-1 ring-primary/40"
+                )}
               >
                 <span className="font-medium truncate">{right}</span>
                 {owner && (
