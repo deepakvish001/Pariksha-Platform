@@ -37,12 +37,69 @@ function clampPos(p: { x: number; y: number }) {
 }
 
 /**
- * Snap to nearest corner if within SNAP_THRESHOLD of one.
+ * Selectors for assessment content regions the PIP should try not to
+ * cover when snapping to a corner. The first match wins; we also
+ * always avoid the question palette if visible.
+ */
+const AVOID_SELECTORS = [
+  '[data-testid="player-main"]',
+  '[data-assessment-content]',
+  'main[data-question-type]',
+];
+
+/** Returns the viewport rect (in right/bottom offset space) the PIP would occupy at corner `c`. */
+function pipRectAt(c: { x: number; y: number }) {
+  if (typeof window === "undefined") {
+    return { left: 0, top: 0, right: PIP_W, bottom: PIP_H };
+  }
+  const left = window.innerWidth - c.x - PIP_W;
+  const top = window.innerHeight - c.y - PIP_H;
+  return { left, top, right: left + PIP_W, bottom: top + PIP_H };
+}
+
+/** Pixel overlap area between the PIP at corner `c` and the avoid rects. */
+function overlapArea(
+  c: { x: number; y: number },
+  avoidRects: Array<{ left: number; top: number; right: number; bottom: number }>,
+) {
+  const r = pipRectAt(c);
+  let total = 0;
+  for (const a of avoidRects) {
+    const w = Math.max(0, Math.min(r.right, a.right) - Math.max(r.left, a.left));
+    const h = Math.max(0, Math.min(r.bottom, a.bottom) - Math.max(r.top, a.top));
+    total += w * h;
+  }
+  return total;
+}
+
+/** Collect bounding rects of assessment content nodes to avoid. */
+function collectAvoidRects() {
+  if (typeof document === "undefined") return [];
+  const rects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+  for (const sel of AVOID_SELECTORS) {
+    const nodes = document.querySelectorAll(sel);
+    nodes.forEach((n) => {
+      const r = (n as HTMLElement).getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        rects.push({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+      }
+    });
+    if (rects.length) break;
+  }
+  return rects;
+}
+
+/**
+ * Snap to a corner if the user dropped near one. When `avoidContent`
+ * is true, prefer corners whose PIP rect does not overlap the
+ * assessment content area; fall back to the least-overlapping corner
+ * within a wider radius if every corner overlaps.
+ *
  * Coordinates are stored as right/bottom offsets, so the four
  * corners are simple combinations of EDGE_MARGIN and
  * (viewport - PIP_size - EDGE_MARGIN).
  */
-function snapToCorner(p: { x: number; y: number }) {
+function snapToCorner(p: { x: number; y: number }, avoidContent: boolean = false) {
   if (typeof window === "undefined") return p;
   const rightX = EDGE_MARGIN;
   const leftX = Math.max(EDGE_MARGIN, window.innerWidth - PIP_W - EDGE_MARGIN);
@@ -54,16 +111,38 @@ function snapToCorner(p: { x: number; y: number }) {
     { x: rightX, y: topY }, // top-right
     { x: leftX, y: topY }, // top-left
   ];
-  let best = p;
-  let bestDist = Infinity;
+
+  // Nearest corner + its distance — this gates whether snapping fires at all.
+  let nearest = corners[0];
+  let nearestDist = Infinity;
   for (const c of corners) {
     const d = Math.hypot(c.x - p.x, c.y - p.y);
-    if (d < bestDist) {
-      bestDist = d;
-      best = c;
+    if (d < nearestDist) {
+      nearestDist = d;
+      nearest = c;
     }
   }
-  return bestDist <= SNAP_THRESHOLD ? best : p;
+  if (nearestDist > SNAP_THRESHOLD) return p;
+
+  if (!avoidContent) return nearest;
+
+  // Score corners by content overlap; tie-break by distance from drop point.
+  const avoidRects = collectAvoidRects();
+  if (avoidRects.length === 0) return nearest;
+
+  const scored = corners.map((c) => ({
+    c,
+    overlap: overlapArea(c, avoidRects),
+    dist: Math.hypot(c.x - p.x, c.y - p.y),
+  }));
+  scored.sort((a, b) => (a.overlap - b.overlap) || (a.dist - b.dist));
+
+  // If the best corner has no overlap, use it even if it's a bit farther
+  // (up to 3x the snap threshold) — that's the whole point of "avoid".
+  const best = scored[0];
+  if (best.overlap === 0 && best.dist <= SNAP_THRESHOLD * 3) return best.c;
+  // Otherwise stick to the nearest corner to respect user intent.
+  return nearest;
 }
 
 function loadPos(attemptId: string): { x: number; y: number } {
