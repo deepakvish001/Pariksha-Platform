@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Clock, Keyboard, Maximize2, Send, ShieldCheck, Wand2, Loader2 } from "lucide-react";
+import {
+  Clock, HelpCircle, Maximize2, Minimize2, Send, ShieldCheck, Wand2, Loader2,
+  Focus, Wifi, WifiOff, Timer as TimerIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -11,12 +13,19 @@ interface Props {
   total: number;
   remainingMs: number;
   deadlineMs: number | null;
+  totalDurationMs: number | null;
   proctoring: boolean;
   isPreview: boolean;
   submitting: boolean;
+  online: boolean;
+  focusMode: boolean;
+  zenTimer: boolean;
   onSubmit: () => void;
   onFullscreen: () => void;
   onPrefillKey: () => void;
+  onToggleFocus: () => void;
+  onToggleZen: () => void;
+  onOpenHelp: () => void;
 }
 
 export function PlayerTopBar({
@@ -26,12 +35,19 @@ export function PlayerTopBar({
   total,
   remainingMs,
   deadlineMs,
+  totalDurationMs,
   proctoring,
   isPreview,
   submitting,
+  online,
+  focusMode,
+  zenTimer,
   onSubmit,
   onFullscreen,
   onPrefillKey,
+  onToggleFocus,
+  onToggleZen,
+  onOpenHelp,
 }: Props) {
   const totalSec = Math.max(0, Math.floor(remainingMs / 1000));
   const hh = Math.floor(totalSec / 3600);
@@ -44,29 +60,80 @@ export function PlayerTopBar({
     ? "bg-destructive/10 text-destructive border-destructive/40"
     : warning
     ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/40"
-    : "bg-muted text-foreground border-border";
+    : "bg-muted/60 text-foreground border-border";
 
   const dotTone = urgent
     ? "bg-destructive animate-pulse"
     : warning
-    ? "bg-amber-500 animate-pulse"
+    ? "bg-amber-500"
     : "bg-emerald-500";
 
   const answeredPct = total > 0 ? (answered / total) * 100 : 0;
   const flaggedPct = total > 0 ? (flagged / total) * 100 : 0;
+  const elapsedPct =
+    totalDurationMs && totalDurationMs > 0
+      ? Math.min(100, Math.max(0, ((totalDurationMs - remainingMs) / totalDurationMs) * 100))
+      : 0;
 
   const deadlineLabel = deadlineMs
     ? new Date(deadlineMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : "";
 
+  const TimerChip = (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className={cn(
+            "hidden xs:flex items-center gap-2 px-3 h-8 rounded-md border text-sm font-mono tabular-nums font-semibold",
+            timerTone,
+            urgent && "animate-[pulse_1.6s_ease-in-out_infinite]"
+          )}
+          aria-label="Time remaining"
+        >
+          <span className={cn("h-1.5 w-1.5 rounded-full", dotTone)} />
+          <Clock className="h-3.5 w-3.5 opacity-70" />
+          {hh > 0 && <>{String(hh).padStart(2, "0")}:</>}
+          {String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        {deadlineMs ? `Ends at ${deadlineLabel}` : "No time limit"}
+      </TooltipContent>
+    </Tooltip>
+  );
+
+  const TimerBar = (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="hidden xs:flex items-center gap-2 h-8 px-2 rounded-md border border-border bg-muted/40 w-[160px]">
+          <TimerIcon className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="relative h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+            <div
+              className={cn(
+                "absolute inset-y-0 left-0 transition-[width] duration-1000 ease-linear",
+                urgent ? "bg-destructive" : warning ? "bg-amber-500" : "bg-primary/70"
+              )}
+              style={{ width: `${elapsedPct}%` }}
+            />
+          </div>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        {deadlineMs
+          ? `Time left ${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")} · ends at ${deadlineLabel}`
+          : "No time limit"}
+      </TooltipContent>
+    </Tooltip>
+  );
+
   return (
     <TooltipProvider delayDuration={150}>
-      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/75">
+      <header className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur supports-[backdrop-filter]:bg-card/65">
         <div className="px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
           {/* Brand + title */}
           <div className="min-w-0 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 grid place-items-center text-white font-black text-sm shadow-md shrink-0">
-              B
+            <div className="h-9 w-9 rounded-lg bg-foreground text-background grid place-items-center font-black text-sm shrink-0">
+              P
             </div>
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground leading-none">
@@ -85,7 +152,29 @@ export function PlayerTopBar({
               <span className="text-muted-foreground/70">answered</span>
             </div>
 
-            <div className="hidden md:block h-5 w-px bg-border mx-1" />
+            {/* Online indicator */}
+            {!online && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 text-[11px] px-2 h-7 rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium">
+                    <WifiOff className="h-3.5 w-3.5" /> Offline
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>Your answers are safe — they will sync when you’re back online.</TooltipContent>
+              </Tooltip>
+            )}
+            {online && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="hidden sm:inline-flex h-7 w-7 items-center justify-center text-emerald-500" aria-label="Online">
+                    <Wifi className="h-3.5 w-3.5" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>Connected</TooltipContent>
+              </Tooltip>
+            )}
+
+            <div className="hidden md:block h-5 w-px bg-border mx-0.5" />
 
             {proctoring && (
               <div className="hidden lg:flex items-center gap-1.5 text-[11px] px-2 h-7 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium">
@@ -103,44 +192,56 @@ export function PlayerTopBar({
               </Tooltip>
             )}
 
-            {/* Timer */}
+            {/* Timer (chip or zen bar) */}
+            {zenTimer ? TimerBar : TimerChip}
+
+            {/* Zen toggle */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <div
-                  className={cn(
-                    "hidden xs:flex items-center gap-2 px-3 h-8 rounded-md border text-sm font-mono tabular-nums font-semibold",
-                    timerTone
-                  )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  onClick={onToggleZen}
+                  aria-pressed={zenTimer}
+                  aria-label={zenTimer ? "Show full timer" : "Calm timer"}
                 >
-                  <span className={cn("h-1.5 w-1.5 rounded-full", dotTone)} />
-                  <Clock className="h-3.5 w-3.5 opacity-70" />
-                  {hh > 0 && <>{String(hh).padStart(2, "0")}:</>}
-                  {String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}
-                </div>
+                  <TimerIcon className={cn("h-4 w-4", zenTimer && "text-primary")} />
+                </Button>
               </TooltipTrigger>
-              <TooltipContent>
-                {deadlineMs ? `Ends at ${deadlineLabel}` : "No time limit"}
-              </TooltipContent>
+              <TooltipContent>{zenTimer ? "Show full timer" : "Calm timer (less anxiety)"}</TooltipContent>
             </Tooltip>
 
-            {/* Shortcuts */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Keyboard shortcuts">
-                  <Keyboard className="h-4 w-4" />
+            {/* Focus mode */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  onClick={onToggleFocus}
+                  aria-pressed={focusMode}
+                  aria-label={focusMode ? "Exit focus mode" : "Enter focus mode"}
+                >
+                  {focusMode ? (
+                    <Minimize2 className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Focus className="h-4 w-4" />
+                  )}
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-72 text-xs">
-                <p className="font-semibold mb-2">Keyboard shortcuts</p>
-                <ul className="space-y-1.5">
-                  <ShortcutRow keys={["←", "→"]} label="Prev / Next question" />
-                  <ShortcutRow keys={["1", "–", "9"]} label="Pick option (MCQ / T-F)" />
-                  <ShortcutRow keys={["F"]} label="Flag for review" />
-                  <ShortcutRow keys={["⌘", "↵"]} label="Run code" />
-                  <ShortcutRow keys={["⌘", "⇧", "↵"]} label="Submit code" />
-                </ul>
-              </PopoverContent>
-            </Popover>
+              </TooltipTrigger>
+              <TooltipContent>{focusMode ? "Exit focus mode (Esc)" : "Focus mode"}</TooltipContent>
+            </Tooltip>
+
+            {/* Help */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onOpenHelp} aria-label="Help and shortcuts">
+                  <HelpCircle className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Help & shortcuts</TooltipContent>
+            </Tooltip>
 
             {isPreview && (
               <Button size="sm" variant="outline" onClick={onPrefillKey} className="h-8">
@@ -153,7 +254,7 @@ export function PlayerTopBar({
               size="sm"
               onClick={onSubmit}
               disabled={submitting}
-              className="h-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary hover:to-primary/70 shadow-sm font-semibold"
+              className="h-8 font-semibold"
             >
               {submitting ? (
                 <Loader2 className="h-4 w-4 sm:mr-1.5 animate-spin" />
@@ -168,35 +269,17 @@ export function PlayerTopBar({
         {/* Dual progress (answered + flagged overlay) */}
         <div className="relative h-[3px] bg-muted">
           <div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary/80 to-primary transition-[width] duration-500 ease-out"
+            className="absolute inset-y-0 left-0 bg-primary/70 transition-[width] duration-500 ease-out"
             style={{ width: `${answeredPct}%` }}
           />
           {flagged > 0 && (
             <div
-              className="absolute inset-y-0 right-0 bg-amber-500/70"
+              className="absolute inset-y-0 right-0 bg-amber-500/60"
               style={{ width: `${flaggedPct}%` }}
             />
           )}
         </div>
       </header>
     </TooltipProvider>
-  );
-}
-
-function ShortcutRow({ keys, label }: { keys: string[]; label: string }) {
-  return (
-    <li className="flex items-center justify-between gap-3">
-      <span className="text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-1">
-        {keys.map((k, i) => (
-          <kbd
-            key={i}
-            className="px-1.5 py-0.5 rounded border border-border bg-muted text-[10px] font-mono font-medium min-w-[20px] text-center"
-          >
-            {k}
-          </kbd>
-        ))}
-      </div>
-    </li>
   );
 }
