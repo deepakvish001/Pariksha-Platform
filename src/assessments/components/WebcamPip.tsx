@@ -75,11 +75,25 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
     }
   }, [pos, attemptId]);
 
-  // Keep PIP on-screen across viewport resizes
+  // Keep PIP on-screen across viewport resizes and orientation changes.
+  // Orientation flips swap width/height, which can leave the persisted
+  // position off-screen; we re-clamp on the next frame (after the browser
+  // has reported the new innerWidth/innerHeight).
   useEffect(() => {
-    const onResize = () => setPos((p) => clampPos(p));
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    const reclamp = () => setPos((p) => clampPos(p));
+    const onOrientation = () => {
+      // Delay to let the viewport settle after rotation.
+      window.requestAnimationFrame(() => window.setTimeout(reclamp, 50));
+    };
+    window.addEventListener("resize", reclamp);
+    window.addEventListener("orientationchange", onOrientation);
+    const mql = window.matchMedia?.("(orientation: portrait)");
+    mql?.addEventListener?.("change", onOrientation);
+    return () => {
+      window.removeEventListener("resize", reclamp);
+      window.removeEventListener("orientationchange", onOrientation);
+      mql?.removeEventListener?.("change", onOrientation);
+    };
   }, []);
 
   const resetPos = () => setPos(DEFAULT_POS);
