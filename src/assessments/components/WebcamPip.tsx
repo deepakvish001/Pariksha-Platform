@@ -154,10 +154,7 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
     if (!dragRef.current) return;
     const nx = window.innerWidth - (e.clientX - dragRef.current.ox);
     const ny = window.innerHeight - (e.clientY - dragRef.current.oy);
-    setPos({
-      x: Math.max(4, Math.min(window.innerWidth - 120, nx)),
-      y: Math.max(4, Math.min(window.innerHeight - 100, ny)),
-    });
+    setPos(clampPos({ x: nx, y: ny }));
   };
   const onPointerUp = () => {
     dragRef.current = null;
