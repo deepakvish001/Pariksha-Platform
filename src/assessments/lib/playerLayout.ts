@@ -17,7 +17,17 @@ export function getPlayerMainClass(opts: {
   questionType?: PaperQuestionType | null;
 }): string {
   return cn(
-    "flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px]",
+    // Width guardrails:
+    //   - `w-full` + `max-w-[1600px]` caps the container at the same upper bound
+    //     on every breakpoint (mobile, tablet, desktop, preview iframe).
+    //   - `min-w-0` prevents flex/grid children from forcing the container wider
+    //     than the viewport (common cause of horizontal scroll on mobile).
+    //   - `overflow-x-clip` is a hard backstop: even if a child overflows
+    //     (e.g. wide code editor / SQL result table), the container itself
+    //     never widens beyond the cap.
+    //   - No responsive `sm:max-w-*` / `md:max-w-*` / `lg:max-w-*` overrides
+    //     are allowed here — the cap must stay invariant across breakpoints.
+    "flex-1 w-full min-w-0 mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px] overflow-x-clip",
     !opts.focusMode && "lg:grid-cols-[240px_1fr]"
   );
 }
