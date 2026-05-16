@@ -446,6 +446,7 @@ export default function Player() {
     return (
       <AssessmentLockdownGate
         attemptId={attemptId}
+        config={proctoringConfig}
         onReady={(s) => {
           setCamStream(s);
           setLockdownReady(true);
