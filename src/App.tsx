@@ -299,6 +299,7 @@ const App = () => (
 
                 {/* Student-side assessments */}
                 <Route path="/assessments/join/:token" element={<StudentJoin />} />
+                <Route path="/assessments/sidecam/:token" element={<StudentSideCamera />} />
                 <Route path="/assessments" element={<ProtectedRoute><MyAssessments /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/lobby" element={<ProtectedRoute><StudentLobby /></ProtectedRoute>} />
                 <Route path="/assessments/:attemptId/play" element={<ProtectedRoute><StudentPlayer /></ProtectedRoute>} />
