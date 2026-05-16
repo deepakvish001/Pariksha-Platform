@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Camera, CameraOff, Eye, EyeOff, Magnet, RotateCcw } from "lucide-react";
+import { Camera, CameraOff, Eye, EyeOff, Magnet, RotateCcw, Shield } from "lucide-react";
 
 interface Props {
   attemptId: string;
