@@ -151,11 +151,60 @@ serve(async (req) => {
     };
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+    // Pull historical feedback so we can (a) bias the prompt away from disliked
+    // recommendations and toward liked ones, and (b) re-rank the model output.
+    type FeedbackRow = {
+      insight_key: string;
+      insight_title: string;
+      up_count: number;
+      down_count: number;
+      net_score: number;
+    };
+    let feedbackRows: FeedbackRow[] = [];
+    {
+      const { data, error } = await supabase.rpc(
+        "get_insight_feedback_signals",
+        { _org_id: org_id, _days: 90 },
+      );
+      if (error) {
+        console.error("feedback signals error", error);
+      } else if (Array.isArray(data)) {
+        feedbackRows = data as FeedbackRow[];
+      }
+    }
+    const keyNet = new Map<string, number>();
+    const titleNet = new Map<string, number>();
+    for (const r of feedbackRows) {
+      keyNet.set(r.insight_key, Number(r.net_score) || 0);
+      const t = (r.insight_title ?? "").trim().toLowerCase();
+      if (t) titleNet.set(t, (titleNet.get(t) ?? 0) + (Number(r.net_score) || 0));
+    }
+    const likedTitles = [...titleNet.entries()]
+      .filter(([, n]) => n > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([t]) => t);
+    const dislikedTitles = [...titleNet.entries()]
+      .filter(([, n]) => n < 0)
+      .sort((a, b) => a[1] - b[1])
+      .slice(0, 5)
+      .map(([t]) => t);
+
     if (!LOVABLE_API_KEY) {
-      return json({ insights: fallbackInsights(stats) });
+      return json({ insights: rerank(fallbackInsights(stats), keyNet, titleNet) });
     }
 
-    const systemPrompt = `You are an assessment-platform analyst. Generate 3 short, specific, actionable insights for an admin based on the JSON stats they provide. Compare current vs previous 30-day window. Mention concrete numbers when useful. Avoid generic advice. Each insight must be a complete thought in 1-2 sentences.
+    const feedbackHint =
+      likedTitles.length || dislikedTitles.length
+        ? `\n\nAdmin feedback signal (last 90 days):\n- Insights similar to these were RATED HIGHLY, prefer this style/angle: ${
+            likedTitles.length ? JSON.stringify(likedTitles) : "(none)"
+          }\n- Insights similar to these were RATED POORLY, avoid repeating them: ${
+            dislikedTitles.length ? JSON.stringify(dislikedTitles) : "(none)"
+          }`
+        : "";
+
+    const systemPrompt = `You are an assessment-platform analyst. Generate 3 short, specific, actionable insights for an admin based on the JSON stats they provide. Compare current vs previous 30-day window. Mention concrete numbers when useful. Avoid generic advice. Each insight must be a complete thought in 1-2 sentences.${feedbackHint}
 
 Return STRICT JSON with this shape:
 {
