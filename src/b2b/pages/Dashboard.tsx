@@ -182,6 +182,42 @@ function useSubmissionsSeries(orgId?: string, days = 30) {
   return data;
 }
 
+type ChannelCount = { source: string; count: number };
+
+function useInviteChannelCounts(orgId?: string) {
+  const [data, setData] = useState<ChannelCount[]>([]);
+  useEffect(() => {
+    if (!orgId) {
+      setData([]);
+      return;
+    }
+    (async () => {
+      const { data: aRows } = await supabase
+        .from("assessments")
+        .select("id")
+        .eq("org_id", orgId);
+      const ids = (aRows ?? []).map((r: any) => r.id);
+      if (!ids.length) {
+        setData([]);
+        return;
+      }
+      const { data: rows } = await supabase
+        .from("assessment_invites")
+        .select("source")
+        .in("assessment_id", ids);
+      const counts = new Map<string, number>();
+      (rows ?? []).forEach((r: any) => {
+        const k = r.source ?? "manual";
+        counts.set(k, (counts.get(k) ?? 0) + 1);
+      });
+      setData(
+        Array.from(counts.entries()).map(([source, count]) => ({ source, count })),
+      );
+    })();
+  }, [orgId]);
+  return data;
+}
+
 export default function B2BDashboard() {
   const { org, isLoading } = useCurrentOrg();
   const base = useOrgBasePath();
