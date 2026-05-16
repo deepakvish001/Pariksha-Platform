@@ -445,12 +445,9 @@ export default function Player() {
 
       <main
         className={cn(
-          "flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4",
-          focusMode
-            ? "max-w-[1600px]"
-            : isWideQuestion
-            ? "max-w-[1600px] lg:grid-cols-[240px_1fr]"
-            : "max-w-5xl lg:grid-cols-[240px_1fr]"
+          // Fixed width across all question types — no layout shift when navigating.
+          "flex-1 w-full mx-auto px-3 sm:px-5 py-4 grid gap-4 max-w-[1600px]",
+          !focusMode && "lg:grid-cols-[240px_1fr]"
         )}
       >
         {/* Mobile palette trigger */}
