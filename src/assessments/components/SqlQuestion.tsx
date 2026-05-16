@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { SqlResultDiff } from "@/components/library/coding/SqlResultDiff";
 import { cn } from "@/lib/utils";
 import type { PaperQuestion } from "../hooks/usePaper";
+import { useEditorPrefs } from "../hooks/useEditorPrefs";
 
 interface Props {
   question: PaperQuestion;
@@ -41,7 +42,7 @@ export function SqlQuestion({ question, value, onChange }: Props) {
     (value?.last_run_result as RunResult | undefined) ?? null
   );
   const [tab, setTab] = useState<"result" | "diff">("result");
-  const [fontSize, setFontSize] = useState(13);
+  const { prefs: editorPrefs, update: updateEditorPrefs } = useEditorPrefs();
   const editorRef = useRef<MonacoEditorHandle>(null);
   const { run, isRunning } = useCodeRunner();
 
