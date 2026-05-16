@@ -185,6 +185,7 @@ export default function Player() {
     // Always stash the latest value for offline replay / global flush
     pendingQueueRef.current[qid] = ans;
     setPendingCount(Object.keys(pendingQueueRef.current).length);
+    persistQueue();
 
     window.clearTimeout(debounceRef.current[qid]);
     debounceRef.current[qid] = window.setTimeout(() => {
@@ -193,8 +194,12 @@ export default function Player() {
         { attempt_id: attemptId, question_id: qid, answer: ans },
         {
           onSuccess: () => {
-            delete pendingQueueRef.current[qid];
-            setPendingCount(Object.keys(pendingQueueRef.current).length);
+            // Only clear if user hasn't typed a newer value since
+            if (pendingQueueRef.current[qid] === ans) {
+              delete pendingQueueRef.current[qid];
+              setPendingCount(Object.keys(pendingQueueRef.current).length);
+              persistQueue();
+            }
             setLastSavedAt(Date.now());
           },
           onError: () => {
@@ -210,18 +215,28 @@ export default function Player() {
     queueSave(qid, ans);
   };
 
-  // Safety net: flush on tab hide / page unload
+  // Safety net: flush on tab hide / page unload.
+  // NOTE: async flushPending will not complete during pagehide/beforeunload —
+  // persistQueue() synchronously mirrors the pending queue to localStorage so
+  // a hard close / reload can replay on next mount.
   useEffect(() => {
-    const onHide = () => { void flushPending(); };
+    const onHide = () => {
+      persistQueue();
+      if (document.visibilityState === "hidden" || document.visibilityState === undefined) {
+        // tab hidden but page may still be alive — try the network too
+        void flushPending();
+      }
+    };
+    const onUnload = () => { persistQueue(); };
     document.addEventListener("visibilitychange", onHide);
-    window.addEventListener("pagehide", onHide);
-    window.addEventListener("beforeunload", onHide);
+    window.addEventListener("pagehide", onUnload);
+    window.addEventListener("beforeunload", onUnload);
     return () => {
       document.removeEventListener("visibilitychange", onHide);
-      window.removeEventListener("pagehide", onHide);
-      window.removeEventListener("beforeunload", onHide);
+      window.removeEventListener("pagehide", onUnload);
+      window.removeEventListener("beforeunload", onUnload);
     };
-  }, [flushPending]);
+  }, [flushPending, persistQueue]);
 
 
   const prefillAnswerKey = async () => {
