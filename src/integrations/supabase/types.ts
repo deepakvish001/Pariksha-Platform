@@ -7869,6 +7869,28 @@ export type Database = {
             Returns: string
           }
       ensure_player_rating: { Args: { _user: string }; Returns: undefined }
+      get_ai_insight_feedback_summary: {
+        Args: { _org_id: string }
+        Returns: {
+          down_count: number
+          insight_key: string
+          insight_title: string
+          last_at: string
+          net_score: number
+          total_count: number
+          up_count: number
+        }[]
+      }
+      get_ai_insight_feedback_trend: {
+        Args: { _days?: number; _org_id: string }
+        Returns: {
+          day: string
+          down_count: number
+          insight_key: string
+          insight_title: string
+          up_count: number
+        }[]
+      }
       get_assessment_answer_key: {
         Args: { _assessment: string }
         Returns: Json
