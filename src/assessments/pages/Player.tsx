@@ -55,12 +55,12 @@ export default function Player() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-  const [focusMode, setFocusMode] = useState<boolean>(() => {
-    try { return localStorage.getItem(`assess.focus.${attemptId}`) === "1"; } catch { return false; }
-  });
-  const [zenTimer, setZenTimer] = useState<boolean>(() => {
-    try { return localStorage.getItem(`assess.zen.${attemptId}`) === "1"; } catch { return false; }
-  });
+  const [focusMode, setFocusMode] = useState<boolean>(
+    () => safeStorage.get(`assess.focus.${attemptId}`) === "1"
+  );
+  const [zenTimer, setZenTimer] = useState<boolean>(
+    () => safeStorage.get(`assess.zen.${attemptId}`) === "1"
+  );
   const [helpOpen, setHelpOpen] = useState(false);
   const online = useOnline();
   const pendingQueueRef = useRef<Record<string, Record<string, unknown>>>({});
@@ -68,19 +68,17 @@ export default function Player() {
   const pendingKey = attemptId ? `assess.pending.${attemptId}` : null;
   const persistQueue = useCallback(() => {
     if (!pendingKey) return;
-    try {
-      const q = pendingQueueRef.current;
-      if (Object.keys(q).length === 0) localStorage.removeItem(pendingKey);
-      else localStorage.setItem(pendingKey, JSON.stringify(q));
-    } catch { /* quota / private mode — ignore */ }
+    const q = pendingQueueRef.current;
+    if (Object.keys(q).length === 0) safeStorage.remove(pendingKey);
+    else safeStorage.set(pendingKey, JSON.stringify(q));
   }, [pendingKey]);
   const restoredRef = useRef(false);
 
   useEffect(() => {
-    try { localStorage.setItem(`assess.focus.${attemptId}`, focusMode ? "1" : "0"); } catch { /* noop */ }
+    safeStorage.set(`assess.focus.${attemptId}`, focusMode ? "1" : "0");
   }, [focusMode, attemptId]);
   useEffect(() => {
-    try { localStorage.setItem(`assess.zen.${attemptId}`, zenTimer ? "1" : "0"); } catch { /* noop */ }
+    safeStorage.set(`assess.zen.${attemptId}`, zenTimer ? "1" : "0");
   }, [zenTimer, attemptId]);
 
 
