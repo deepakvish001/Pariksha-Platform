@@ -289,6 +289,7 @@ const App = () => (
                       <Route path="question-bank" element={<B2BQuestionBank />} />
                       <Route path="team" element={<B2BTeam />} />
                       <Route path="settings" element={<B2BSettings />} />
+                      <Route path="insights/feedback" element={<B2BInsightsFeedback />} />
                     </Route>
                   );
                 })}
