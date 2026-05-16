@@ -182,6 +182,47 @@ function useSubmissionsSeries(orgId?: string, days = 30) {
   return data;
 }
 
+type AiInsight = {
+  title: string;
+  body: string;
+  severity: "info" | "positive" | "warning";
+  action?: string | null;
+};
+
+function useAiInsights(orgId?: string) {
+  const [insights, setInsights] = useState<AiInsight[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    if (!orgId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke(
+        "b2b-dashboard-insights",
+        { body: { org_id: orgId } },
+      );
+      if (invokeErr) throw invokeErr;
+      if (data?.error) throw new Error(data.error);
+      setInsights((data?.insights ?? []) as AiInsight[]);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to load insights");
+      setInsights([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setInsights(null);
+    if (orgId) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId]);
+
+  return { insights: insights ?? [], loading, error, refresh: load };
+}
+
 type ChannelCount = { source: string; count: number };
 
 function useInviteChannelCounts(orgId?: string) {
