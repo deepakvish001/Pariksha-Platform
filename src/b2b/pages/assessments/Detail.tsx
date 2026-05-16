@@ -413,6 +413,7 @@ function SettingsPanel({
                 duration_min: duration,
                 max_attempts: maxAttempts,
                 proctoring_enabled: proctoring,
+                proctoring_config: (proctoringConfig as unknown as Record<string, unknown>) ?? null,
                 starts_at: fromLocalInput(startsAt),
                 ends_at: fromLocalInput(endsAt),
               },
