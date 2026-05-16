@@ -328,7 +328,11 @@ export function WebcamPip({ attemptId, stream, intervalSec = 15, onLost }: Props
           style={{
             right: pos.x,
             bottom: pos.y,
-            transition: snapping ? "right 180ms ease-out, bottom 180ms ease-out" : undefined,
+            transition: switching
+              ? "right 380ms cubic-bezier(0.22, 1, 0.36, 1), bottom 380ms cubic-bezier(0.22, 1, 0.36, 1)"
+              : snapping
+              ? "right 180ms ease-out, bottom 180ms ease-out"
+              : undefined,
           }}
           className="fixed z-[60] select-none"
           onPointerDown={onPointerDown}
