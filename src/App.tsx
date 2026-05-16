@@ -246,6 +246,7 @@ const App = () => (
               <RouteSeo />
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/college-dashboard" element={<CollegeDashboard />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
