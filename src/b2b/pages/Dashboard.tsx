@@ -373,6 +373,24 @@ function useAiInsights(orgId?: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId]);
 
+  // Tick once per second while the refresh cooldown is active so the UI
+  // (disabled state + countdown label) updates without extra refetches.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    if (!lastRefreshAt) return;
+    const remaining = INSIGHTS_MIN_REFRESH_MS - (Date.now() - lastRefreshAt);
+    if (remaining <= 0) return;
+    const id = window.setInterval(() => forceTick((n) => n + 1), 1000);
+    const timeout = window.setTimeout(() => {
+      window.clearInterval(id);
+      forceTick((n) => n + 1);
+    }, remaining + 50);
+    return () => {
+      window.clearInterval(id);
+      window.clearTimeout(timeout);
+    };
+  }, [lastRefreshAt]);
+
   const cooldownRemaining = Math.max(
     0,
     INSIGHTS_MIN_REFRESH_MS - (Date.now() - lastRefreshAt),
