@@ -361,31 +361,7 @@ function QuestionInput({
     );
   }
   if (question.type === "matching") {
-    const meta = (question.meta as { pairs?: { left: string; right: string }[] } | null) ?? {};
-    const pairs = meta.pairs ?? [];
-    const current = (value?.pairs as Record<string, string>) ?? {};
-    const rights = Array.from(new Set(pairs.map((p) => p.right)));
-    return (
-      <div className="space-y-2">
-        {pairs.map((p) => (
-          <div key={p.left} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <div className="text-sm font-medium px-3 py-2 rounded-md bg-[hsl(var(--muted))]">{p.left}</div>
-            <span className="text-muted-foreground">→</span>
-            <Select
-              value={current[p.left] ?? ""}
-              onValueChange={(v) => onChange({ pairs: { ...current, [p.left]: v } })}
-            >
-              <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
-              <SelectContent>
-                {rights.map((r) => (
-                  <SelectItem key={r} value={r}>{r}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ))}
-      </div>
-    );
+    return <MatchingInput question={question} value={value} onChange={onChange} />;
   }
   if (question.type === "sql") {
     return (
