@@ -23,6 +23,17 @@ import { Badge } from "@/components/ui/badge";
 import { Download, RefreshCw, ChevronDown, ChevronRight, Camera, ShieldAlert, Loader2, Trash2, Save, ChevronLeft as ChevronLeftIcon, X, Eye, Copy } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -1295,10 +1306,38 @@ function RetentionCard() {
           {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
           Save
         </Button>
-        <Button onClick={runPurge} disabled={purging || loading} size="sm" variant="outline">
-          {purging ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
-          Purge now
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button disabled={purging || loading} size="sm" variant="outline">
+              {purging ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
+              Purge now
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-destructive" />
+                Purge proctoring data now?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently deletes webcam snapshots older than{" "}
+                <span className="font-semibold text-foreground">{snapshotDays} days</span> and proctoring events older than{" "}
+                <span className="font-semibold text-foreground">{eventsDays} days</span>. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={purging}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={runPurge}
+                disabled={purging}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {purging && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                Yes, purge now
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
